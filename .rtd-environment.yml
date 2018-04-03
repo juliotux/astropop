@@ -1,0 +1,12 @@
+name: astropop
+
+channels:
+    - astropy
+
+dependencies:
+    - astropy
+    - Cython
+    - matplotlib
+    - numpy
+    - sep
+    - astroquery

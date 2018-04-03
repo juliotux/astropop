@@ -24,11 +24,12 @@ A paper with the science verification results and the full methodology is in pre
 # Requirements:
 - Python 3.5 or above;
 - [SEP (Source Extractor and Photometry)](https://sep.readthedocs.io/)
-- [Astropy](https://www.astropy.org/)
-- [Scipy stack (Numpy, Scipy, Matplotlib)](https://www.scipy.org/)
-- [Cython](http://cython.org/)
-- [Astroquery](https://github.com/astropy/astroquery)
+- [astropy](https://www.astropy.org/)
+- [scipy stack (numpy, scipy, matplotlib)](https://www.scipy.org/)
+- [cython](http://cython.org/)
+- [astroquery](https://github.com/astropy/astroquery)
 - [Local astrometry.net installation](https://astrometry.net)
+- [scikit-image](http://scikit-image.org/)
 
 # Documentation
 
