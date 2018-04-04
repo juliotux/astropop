@@ -1,3 +1,5 @@
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
+
 # This file is used to configure the behavior of pytest when using the Astropy
 # test infrastructure.
 
