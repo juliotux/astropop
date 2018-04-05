@@ -1,10 +1,10 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
 import six
+import numpy as np
 from astropy.io import fits
 
-__all__ = ['imhdus', 'check_header_keys', 'check_hdu', 'read_fits',
-           'write_fits']
+__all__ = ['imhdus', 'check_header_keys', 'check_hdu']
 
 imhdus = (fits.ImageHDU, fits.PrimaryHDU, fits.CompImageHDU,
           fits.StreamingHDU)
