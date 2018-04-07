@@ -33,6 +33,7 @@ class _BaseCatalog():
     # stores all the needed information to avoid continuous redundat queries
     _last_query_info = None
     _last_query_table = None
+    comment = None
 
     def __evaluate__(self, center, radius=None, **kwargs):
         '''Query the results in the catalog.

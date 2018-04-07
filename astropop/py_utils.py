@@ -1,6 +1,6 @@
 import six
 
-from .logging import log as logger
+from .logger import logger
 
 
 def string_fix(string):
