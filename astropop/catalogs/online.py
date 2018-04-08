@@ -17,6 +17,10 @@ from ..py_utils import string_fix
 MAX_PARALLEL_QUERY = 30
 MAX_RETRIES_TIMEOUT = 10
 
+__all__ = ['VizierCatalogClass', 'SimbadCatalogClass',
+           'SimbadCatalog', 'UCAC4Catalog', 'GSC23Catalog', 'APASSCalatolg',
+           'DENISCatalog', 'TWOMASSCatalog', 'default_catalogs']
+
 
 def _timeout_retry(func, *args, **kwargs):
     tried = kwargs.pop('_____retires', 0)

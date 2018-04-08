@@ -2,7 +2,6 @@
 
 import numpy as np
 import sep
-import sys
 
 
 def _fix_byte_order(data):

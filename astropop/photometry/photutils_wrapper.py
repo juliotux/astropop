@@ -12,8 +12,7 @@ from photutils import aperture_photometry as photutils_aperture
 from photutils import DAOStarFinder, IRAFStarFinder
 from photutils.psf import IntegratedGaussianPRF, DAOPhotPSFPhotometry
 
-from ..logging import log as logger
-from ..math.moffat_psf import Moffat2D_parallel as Moffat2D
+# from ..logger import logger
 
 
 def find_sources(data, fwhm, threshold=None, bkg=0.0, rms=None, snr=None,
@@ -90,9 +89,9 @@ def psf_photometry(data, x=None, y=None, sigma_psf=1.0, snr=10, box_size=20,
     if model == 'gaussian':
         photargs['psf_model'] = IntegratedGaussianPRF(sigma=sigma_psf)
         photargs['psf_model'].sigma.fixed = False
-    elif model == 'moffat':
-        photargs['psf_model'] = Moffat2D(alpha=0.5, gamma=1.5)
-        photargs['psf_model'].alpha.fixed = False
+    # elif model == 'moffat':
+    #     photargs['psf_model'] = Moffat2D(alpha=0.5, gamma=1.5)
+    #     photargs['psf_model'].alpha.fixed = False
     else:
         raise ValueError('Model not supported.')
 
