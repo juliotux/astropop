@@ -1,6 +1,24 @@
 import six
+from os import path, makedirs
+import errno
 
 from .logger import logger
+
+__all__ = ['mkdir_p', 'string_fix', 'process_list', 'check_iterable',
+           'batch_key_replace']
+
+
+def mkdir_p(fname):
+    '''
+    Function to simulate 'mkdir -p' bash function, with error handling.
+    '''
+    try:
+        makedirs(fname)
+    except OSError as exc:
+        if exc.errno == errno.EEXIST and path.isdir(fname):
+            pass
+        else:
+            raise exc
 
 
 def string_fix(string):

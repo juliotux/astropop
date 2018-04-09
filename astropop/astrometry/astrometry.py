@@ -45,29 +45,3 @@ def solve_astrometry(table, header, shape, ra_key=None, dec_key=None,
         wcs = solve_astrometry_xy(x, y, flux, header, imw, imh,
                                   image_params=im_params, return_wcs=True)
     return wcs
-
-
-def identify_stars(table, wcs, filter, identify_catalog,
-                   science_catalog, identify_limit_angle='2 arcsec'):
-    cat = identify_catalog
-    x, y = table['x'], table['y']
-    ra, dec = wcs_xy2radec(x, y, wcs)
-
-    name, mag, mag_err = cat.query_id_mag(ra, dec, filter,
-                                          limit_angle=identify_limit_angle)
-
-    res = Table()
-    if science_catalog is not None:
-        sci = science_catalog
-        limit_angle = identify_limit_angle
-        sci_names, _, _ = sci.query_id_mag(ra, dec, None,
-                                           limit_angle=limit_angle)
-        res['sci_id'] = process_list(string_fix, sci_names)
-
-    res['cat_id'] = process_list(string_fix, name)
-    res['ra'] = ra
-    res['dec'] = dec
-    res['cat_mag'] = mag
-    res['cat_mag_err'] = mag_err
-
-    return res
