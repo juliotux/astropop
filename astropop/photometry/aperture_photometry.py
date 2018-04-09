@@ -3,14 +3,14 @@ from astropy.table import Table, hstack, vstack
 from astropy.stats import gaussian_sigma_to_fwhm
 import numpy as np
 
-from ..math.imarith import imhdus
-from .image_processing import check_hdu
-from .catalog_wrapper import (solve_photometry_montecarlo,
-                              solve_photometry_median,
-                              solve_photometry_average)
-from .astrometry import identify_stars, solve_astrometry
+from ..fits_utils import check_hdu, imhdus
+from .solve_photometry import (solve_photometry_montecarlo,
+                               solve_photometry_median,
+                               solve_photometry_average)
+from ..astrometry import solve_astrometry
+from ..catalogs import identify_stars
 from ..py_utils import check_iterable
-from ..logging import log as logger
+from ..logger import logger
 
 try:
     from . import photutils_wrapper as phot

@@ -85,12 +85,12 @@ def apply_shift_list(image_list, shift_list, method='fft'):
                                                              shift_list)]
 
 
-def ccddata_shift_images(ccddata_list, method='fft'):
+def hdu_shift_images(hdu_list, method='fft'):
     """Calculate and apply shifts in a set of ccddata images.
     The function process the list inplace. Original data altered."""
-    shifts = create_fft_shift_list([ccd.data for ccd in ccddata_list])
+    shifts = create_fft_shift_list([ccd.data for ccd in hdu_list])
     logger.info("Aligning CCDData with shifts: {}".format(shifts))
-    for ccd, shift in zip(ccddata_list, shifts):
+    for ccd, shift in zip(hdu_list, shifts):
         ccd.data = apply_shift(ccd.data, shift, method=method)
 
-    return ccddata_list
+    return hdu_list

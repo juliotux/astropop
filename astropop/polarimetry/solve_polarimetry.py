@@ -1,23 +1,18 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
-import os
-import shutil
 import copy
-import six
-import time
 import numpy as np
 from scipy.spatial import cKDTree
 from astropy.modeling.fitting import LevMarLSQFitter
 from astropy.table import Table, Column, vstack
-from tempfile import mkdtemp
 
-from ..math.polarimetry_models import HalfWaveModel, QuarterWaveModel
-from .image_processing import check_hdu
-from .photometry import (aperture_photometry, process_photometry,
-                         solve_photometry)
-from .astrometry import identify_stars, solve_astrometry, wcs_from_coords
-from . import pccdpack_wrapper as pccd
-from ..py_utils import (process_list, check_iterable)
-from ..logging import log as logger
+from .polarimetry_models import HalfWaveModel, QuarterWaveModel
+from ..fits_utils import check_hdu
+from ..photometry import (aperture_photometry, process_photometry,
+                          solve_photometry)
+from ..astrometry import solve_astrometry, wcs_from_coords
+from ..catalogs import identify_stars
+from ..py_utils import process_list, check_iterable
+from ..logger import logger
 
 
 def estimate_dxdy(x, y, steps=[100, 30, 5, 3], bins=30):
@@ -303,93 +298,6 @@ def _do_polarimetry(phot_table, psi, retarder_type, pairs, positions=None):
         _process(idx=i)
 
     return tmp
-
-
-def run_pccdpack(image_set, retarder_type=None, retarder_key=None,
-                 retarder_rotation=22.5, retarder_direction=None,
-                 save_calib_path=None, r=np.arange(1, 21, 1),
-                 r_in=60, r_out=70, gain_key=None, rdnoise_key=None,
-                 wcs=None, **kwargs):
-    files = []
-    dtmp = mkdtemp(prefix='pccdpack')
-
-    for i in range(len(image_set)):
-        if isinstance(image_set[i], six.string_types):
-            files.append(os.path.join(dtmp,
-                                      os.path.basename(image_set[i])))
-            try:
-                shutil.copy(image_set[i], files[-1])
-            except Exception:
-                pass
-        else:
-            name = os.path.join(dtmp, "image{:02d}.fits".format(i))
-            im = check_hdu(image_set[i])
-            im.writeto(name)
-            logger.debug("image {} saved to {}".format(i, name))
-            files.append(name)
-
-    script = pccd.create_script(result_dir=dtmp, image_list=files,
-                                star_name='object', apertures=r, r_ann=r_in,
-                                r_dann=r_out-r_in,
-                                readnoise_key=rdnoise_key,
-                                retarder=retarder_type,
-                                auto_pol=True)
-    print('\n\nExecute the following script:\n-----------------------------\n')
-    print(script)
-    time.sleep(0.5)
-    print('------------------------------------\n')
-    input('Press Enter when finished!')
-
-    out_table = pccd.read_out(os.path.join(dtmp, 'object.out'),
-                              os.path.join(dtmp, 'object.ord'))
-    dat_table = Table.read(os.path.join(dtmp, 'dat.001'),
-                           format='ascii.no_header')
-    log_table = pccd.read_log(os.path.join(dtmp, 'object.log'),
-                              return_table=True)
-
-    x, y = out_table['x0'], out_table['x0']
-    data = check_hdu(files[0])
-    ft = aperture_photometry(data.data, x=x, y=y, r=5)
-
-    if wcs is None:
-        try:
-            if kwargs.get('astrometry_calib', True):
-                astkwargs = {}
-                for i in ['ra_key', 'dec_key', 'plate_scale']:
-                    if i in kwargs.keys():
-                        astkwargs[i] = kwargs[i]
-                wcs = solve_astrometry(data.header, ft, data.data.shape,
-                                       **astkwargs)
-        except Exception as e:
-            for i in ['brightest_star_ra', 'brightest_star_dec', 'plate_scale',
-                      'image_north_direction']:
-                if i not in kwargs.keys():
-                    raise e
-            logger.info('Guessing wcs from brightest star coordinates.')
-            bright = ft.sort('flux')[-1]
-            wcs = wcs_from_coords(bright['xo'][0], bright['yo'][0],
-                                  kwargs['brightest_star_ra'],
-                                  kwargs['brightest_star_dec'],
-                                  kwargs['plate_scale'],
-                                  kwargs['image_north_direction'],
-                                  kwargs['image_flip'])
-
-    if wcs is not None:
-        idkwargs = {}
-        for i in ['identify_catalog_file', 'identify_catalog_name', 'filter',
-                  'identify_limit_angle', 'science_catalog',
-                  'science_id_key', 'science_ra_key', 'science_dec_key']:
-            if i in kwargs.keys():
-                idkwargs[i] = kwargs[i]
-        ids = identify_stars(Table([x, y], names=('x', 'y')), wcs, **idkwargs)
-        out_table['cat_id'] = ids['cat_id']
-        out_table['sci_id'] = ids['sci_id']
-        out_table['ra'] = ids['ra']
-        out_table['dec'] = ids['dec']
-
-    shutil.rmtree(dtmp)
-
-    return out_table, dat_table, log_table, wcs
 
 
 def process_polarimetry(image_set, align_images=True, retarder_type=None,

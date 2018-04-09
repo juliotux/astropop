@@ -1,11 +1,7 @@
 import numpy as np
 from astropy.modeling import custom_model
 
-# from ._vectorize import vectorize, vectorize_target
 
-
-# @vectorize('float64(float64,float64,float64,float64)',
-#            target=vectorize_target)
 def quarter(psi, q=1.0, u=1.0, v=1.0):
     '''Polarimetry z(psi) model for quarter wavelenght retarder.
 
@@ -15,8 +11,6 @@ def quarter(psi, q=1.0, u=1.0, v=1.0):
     return z
 
 
-# @vectorize('float64(float64,float64,float64,float64)',
-#            target=vectorize_target)
 def quarter_deriv(psi, q=1.0, u=1.0, v=1.0):
     x = 2*psi
     dq = np.cos(x)**2
@@ -25,8 +19,6 @@ def quarter_deriv(psi, q=1.0, u=1.0, v=1.0):
     return (dq, du, dv)
 
 
-# @vectorize('float64(float64,float64,float64)',
-#            target=vectorize_target)
 def half(psi, q=1.0, u=1.0):
     '''Polarimetry z(psi) model for half wavelenght retarder.
 
@@ -34,8 +26,6 @@ def half(psi, q=1.0, u=1.0):
     return q*np.cos(4*psi) + u*np.sin(4*psi)
 
 
-# @vectorize('float64(float64,float64,float64)',
-#            target=vectorize_target)
 def half_deriv(psi, q=1.0, u=1.0):
     return (np.cos(4*psi), np.sin(4*psi))
 
