@@ -35,6 +35,7 @@ def wcs_from_coords(x, y, ra, dec, plate_scale, north, flip=None):
     This algorith is not good for coordinates far from crpix. But is useful
     when you cannot solve with other algorithms. (Like just one star in field).
     """
+    # FIXME: not flipping?
     sk = guess_coordinates(ra, dec)
     ra, dec = sk.ra.degree, sk.dec.degree
 

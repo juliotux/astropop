@@ -3,3 +3,5 @@
 from .online import *
 from .local import ASCIICatalogClass
 from .utils import identify_stars
+
+catalogs_available = default_catalogs.keys()

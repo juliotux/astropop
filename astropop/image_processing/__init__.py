@@ -4,3 +4,6 @@ from .ccd_processing import *
 from .imarith import *
 from .register import *
 from . import ccdproc
+
+register_available_methods = [None, 'fft']
+combine_available_methods = ['median', 'sum', 'average']

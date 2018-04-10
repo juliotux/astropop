@@ -3,11 +3,11 @@ import json
 import copy
 from collections import OrderedDict
 
-from ..logger import logger
-from ..py_utils import batch_key_replace, check_iterable
+from ...logger import logger
+from ...py_utils import batch_key_replace, check_iterable
 
 
-class ReduceScript():
+class ReducePipeline():
     """Simple class to process pipeline scripts with configuration files."""
     # TODO: introduce parameters checking
     def __init__(self, config=None):
@@ -83,6 +83,11 @@ class ReduceScript():
         parameters."""
         raise NotImplementedError('This pipeline is not a valid implemented'
                                   ' pipeline!')
+
+    @property
+    def parameters(self):
+        '''Print the acceptable parameters of the pipeline.'''
+        raise NotImplementedError('This pipeline has no parameters.')
 
     def __call__(self, name, **config):
         return self.run(name, **config)

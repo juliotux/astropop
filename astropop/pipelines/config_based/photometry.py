@@ -1,8 +1,68 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
+import os
+from collections import OrderedDict
+import numpy as np
+from astropy.io import fits
+from astropy.table import Table
 
-class PhotometryScript(ReduceScript):
+from .base import ReducePipeline
+from .image_processing import CalibPipeline
+from ..calib_scripts import calib_science
+from ...py_utils import process_list, check_iterable, mkdir_p
+from ...image_processing import combine
+from ...astrometry.manual_wcs import _angles
+from ...photometry import (process_calib_photometry, psf_available_model,
+                           photometry_available_methods,
+                           solve_photometry_available_methods)
+from ...catalogs import catalogs_available
+
+
+calib_parameters = CalibPipeline().parameters
+
+
+class PhotometryPipeline(ReducePipeline):
     def __init__(self, config=None):
-        super(PhotometryScript, self).__init__(config=config)
+        super(PhotometryPipeline, self).__init__(config=config)
+
+    @property
+    def parameters(self):
+        calib_parameters.update(OrderedDict(
+            ra_key="RA header keyword",
+            dec_key="Dec header keyword",
+            photometry_type="Type of photometry to perform: {}"
+                            .format(photometry_available_methods),
+            detect_snr="Minimum signal to noise to detect sources in image",
+            detect_fwhm="Approximate FWHM of the sources in the image. "
+                        "If None, the code will compute it.",
+            psf_model="PSF model to use: {}".format(psf_available_model),
+            psf_niters="Number of iterations in subtracted psf photometry",
+            box_size="Box size to fit each star in psf photometry",
+            r="Aperture radius in aperture photometry. Can be a list of "
+              "apertures",
+            r_in="Inner annulus radius for sky subtraction",
+            r_out="Outer annulus radius for sky subtraction",
+            solve_photometry_type="Calibrated photometry solving type: {}"
+                                  .format(solve_photometry_available_methods),
+            montecarlo_niters="Number of iterations in montecarlo photometry "
+                              "solving method",
+            montecarlo_percentage="Percentage of the field in each montecarlo "
+                                  "photometry solving iteration",
+            identify_catalog="Catalog name to identify the stars. Available: "
+                             "{}".format(catalogs_available),
+            science_catalog="Table with ID, RA and Dec to identify science "
+                            "stars",
+            science_id_key="Column of the star name in the science catalog",
+            science_ra_key="Column of the RA in the science catalog",
+            science_dec_key="Column of the DEC in the science catalog",
+            brightest_star_ra="RA of the brightest star in field, for"
+                              " astrometry solving",
+            brightest_star_dec="DEC of the brightest star in field, for"
+                               " astrometry solving",
+            image_north_direction="Direction of the north in the image: {}"
+                                  " or angle in degrees (x positive=0, ccw)"
+                                  .format(_angles.keys),
+            image_flip="Flip image in axis: 'x', 'y' or 'xy'"))
+        return calib_parameters
 
     def run(self, name, **config):
         """Run this pipeline script"""

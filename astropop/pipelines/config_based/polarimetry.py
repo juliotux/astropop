@@ -1,8 +1,43 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
+import os
+import numpy as np
+from collections import OrderedDict
+from astropy.io import fits
+from astropy.table import Table
 
-class PolarimetryScript(ReduceScript):
+from .base import ReducePipeline
+from .photometry import PhotometryPipeline
+from ..calib_scripts import calib_science
+from ...fits_utils import check_hdu
+from ...py_utils import process_list, check_iterable, mkdir_p
+from ...image_processing import combine
+from ...logger import logger
+from ...polarimetry.calcite_polarimetry import process_polarimetry
+from ...polarimetry.pccdpack_wrapper import run_pccdpack
+
+
+phot_parameters = PhotometryPipeline().parameters
+
+
+class PolarimetryPipeline(ReducePipeline):
     def __init__(self, config=None):
-        super(PolarimetryScript, self).__init__(config=config)
+        super(PolarimetryPipeline, self).__init__(config=config)
+
+    @property
+    def parameters(self):
+        phot_parameters.update(OrderedDict(
+            retarder_key="Polarimeter retarder key position",
+            retarder_type="Type of retarder: 'half' or 'quarter'",
+            retarder_rotation="Retarder rotation of each position, in degrees",
+            retarder_direction="Direction of the retarder rotation: "
+                               "1 (following equatorial PA convention), "
+                               "-1 (counter equatorial PA convention)",
+            match_pairs_tolerance="Maximum tolerance to match ordinary/"
+                                  "extraordinary pairs",
+            delta_x="Default distance between the beans in x axis (pixels)",
+            delta_y="Default distance between the beans in y axis (pixels)"
+        ))
+        return phot_parameters
 
     def run(self, name, **config):
         """Run this pipeline script"""
@@ -79,7 +114,7 @@ class PolarimetryScript(ReduceScript):
         mkdir_p(product_dir)
 
         image = combine(ccds, method='sum', mem_limit=config.get('mem_limit',
-                                                                 _mem_limit))
+                                                                 1e9))
 
         hdus = []
         for i in [i for i in t.keys() if t[i] is not None]:
