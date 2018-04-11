@@ -89,5 +89,9 @@ class ReducePipeline():
         '''Print the acceptable parameters of the pipeline.'''
         raise NotImplementedError('This pipeline has no parameters.')
 
+    def pprint(self):
+        for i,v in self.parameters.items():
+            print('{}: {}'.format(i, v))
+
     def __call__(self, name, **config):
         return self.run(name, **config)

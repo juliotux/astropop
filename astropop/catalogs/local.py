@@ -1,11 +1,11 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 import numpy as np
 from astropy.table import Table
-from astropy.coordinates import SkyCoord
+from astropy.coordinates import SkyCoord, match_coordinates_sky
 from astropy import units as u
 
 from ..astrometry.coords_utils import guess_coordinates
-from .base_catalog import _BasePhotometryCatalog
+from .base_catalog import _BasePhotometryCatalog, match_indexes
 
 
 class _LocalCatalog(_BasePhotometryCatalog):
@@ -47,7 +47,7 @@ class _LocalCatalog(_BasePhotometryCatalog):
         If center is None, return all
         """
         if center is None:
-            return np.arange(0, len(self._talbe), 1)
+            return np.arange(0, len(self._table), 1)
 
         center = self._get_center(center)
         radius = self._get_radius(radius)
@@ -69,12 +69,12 @@ class _LocalCatalog(_BasePhotometryCatalog):
             flux = np.array(self._table[self.flux_key][filt])
         else:
             flux = np.zeros(len(filt))
-            flux = flux.fill(np.nan)
+            flux.fill(np.nan)
         if self.flux_error_key is not None:
             error = np.array(self._table[self.flux_error_key][filt])
         else:
             error = np.zeros(len(filt))
-            error = flux.fill(np.nan)
+            error.fill(np.nan)
         return flux, error
 
     def query_id(self, center=None, radius=None):
@@ -87,21 +87,21 @@ class _LocalCatalog(_BasePhotometryCatalog):
         coordinates, matching the stars by a limit_angle.
         '''
         rac, decc = self.query_ra_dec()
-        coords = SkyCoord(rac, decc, unit=('degree', 'degree'))
 
-        indx, sep2, sep3 = coords.match_coordinates_sky(ra, dec)
-        filt = sep2 <= self._get_radius(limit_angle)*u.degree
+        indx = match_indexes(ra, dec, rac, decc, limit_angle)
 
         nstars = len(ra)
         m_id = self.query_id()
-        m_id = [m_id[i] if filt[i] else '' for i in range(nstars)]
+        m_id = np.array([m_id[i] if i != -1 else '' for i in indx])
         m_ra, m_dec = self.query_ra_dec()
-        m_ra = [m_ra[i] if filt[i] else np.nan for i in range(nstars)]
-        m_dec = [m_dec[i] if filt[i] else np.nan for i in range(nstars)]
+        m_ra = np.array([m_ra[i] if i != -1 else np.nan for i in indx])
+        m_dec = np.array([m_dec[i] if i != -1 else np.nan for i in indx])
         try:
             flux, error = self.query_flux()
-            m_f = [flux[i] if filt[i] else np.nan for i in range(nstars)]
-            m_e = [error[i] if filt[i] else np.nan for i in range(nstars)]
+            m_f = np.array([flux[i] if i != -1 else np.nan
+                            for i in indx])
+            m_e = np.array([error[i] if i != -1 else np.nan
+                            for i in indx])
         except NotImplementedError:
             m_f = np.zeros(nstars)
             m_f.fill(np.nan)
@@ -129,6 +129,7 @@ class ASCIICatalogClass(_LocalCatalog):
         """
         **reader_kwargs : kwargs to be passed to the Table.read function
         """
+        print(reader_kwargs)
         self._table = Table.read(filename, **reader_kwargs)
 
         self.id_key = id_key

@@ -49,7 +49,7 @@ class PhotometryPipeline(ReducePipeline):
             montecarlo_percentage="Percentage of the field in each montecarlo "
                                   "photometry solving iteration",
             identify_catalog="Catalog name to identify the stars. Available: "
-                             "{}".format(catalogs_available),
+                             "{}".format(list(catalogs_available)),
             science_catalog="Table with ID, RA and Dec to identify science "
                             "stars",
             science_id_key="Column of the star name in the science catalog",
@@ -61,7 +61,7 @@ class PhotometryPipeline(ReducePipeline):
                                " astrometry solving",
             image_north_direction="Direction of the north in the image: {}"
                                   " or angle in degrees (x positive=0, ccw)"
-                                  .format(_angles.keys),
+                                  .format(list(_angles.keys())),
             image_flip="Flip image in axis: 'x', 'y' or 'xy'"))
         return calib_parameters
 

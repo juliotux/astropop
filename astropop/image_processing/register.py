@@ -5,7 +5,7 @@ from scipy.ndimage import fourier_shift
 import numpy as np
 from astropy.wcs import WCS
 
-from ..logging import log as logger
+from ..logger import logger
 
 
 def create_fft_shift_list(image_list):

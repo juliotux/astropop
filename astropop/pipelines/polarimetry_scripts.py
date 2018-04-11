@@ -8,10 +8,10 @@ import numpy as np
 
 from astropy.table import Table, Column, vstack
 
-from .photometry_scripts import solve_photometry, process_photometry
+from .photometry_scripts import solve_photometry
 from .astrometry_scripts import solve_astrometry, identify_stars
 from ..fits_utils import check_hdu
-from ..photometry import aperture_photometry
+from ..photometry import aperture_photometry, process_photometry
 from ..astrometry import wcs_from_coords
 from ..logger import logger
 from ..polarimetry import pccdpack_wrapper as pccd
@@ -234,14 +234,12 @@ def process_polarimetry(image_set, align_images=True, retarder_type=None,
 
     if wcs is not None:
         idkwargs = {}
-        for i in ['identify_catalog_file', 'identify_catalog_name', 'filter',
-                  'identify_limit_angle', 'science_catalog',
-                  'science_id_key', 'science_ra_key', 'science_dec_key']:
+        for i in ['identify_catalog', 'filter',
+                  'limit_angle', 'science_catalog']:
             if i in kwargs.keys():
                 idkwargs[i] = kwargs[i]
-        ids = identify_stars(Table([res_tmp['xo'], res_tmp['yo']],
-                                   names=('x', 'y')), wcs,
-                             **idkwargs)
+        ids = identify_stars(res_tmp['xo'], res_tmp['yo'], wcs, **idkwargs)
+        ids = Table(ids)
         if 'sci_id' in ids.colnames:
             if not np.array(ids['sci_id'] != '').any():
                 logger.warn('No science stars found')
@@ -306,7 +304,9 @@ def process_polarimetry(image_set, align_images=True, retarder_type=None,
                                      pairs=pairs,
                                      positions=ret)
                 if wcs is not None:
+                    cat_unit = kwargs['identify_catalog'].flux_unit
                     tmp = solve_photometry(ap, cat_mag=ids['cat_mag'],
+                                           cat_scale=cat_unit,
                                            **solvekwargs)
                     ap['mag'] = tmp['mag']
                     ap['mag_err'] = tmp['mag_err']

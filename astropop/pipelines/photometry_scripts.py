@@ -12,10 +12,11 @@ from ..logger import logger
 
 
 def solve_photometry(table, wcs=None, cat_mag=None,
-                     identify_catalog=None, identify_limit_angle='2 arcsec',
+                     identify_catalog=None, limit_angle='2 arcsec',
                      science_catalog=None, montecarlo_iters=100,
                      montecarlo_percentage=0.5, filter=None,
-                     solve_photometry_type=None, flux_scale='linear'):
+                     solve_photometry_type=None, flux_scale='linear',
+                     cat_scale='mag'):
     """Solve the absolute photometry of a field using a catalog."""
     if solve_photometry_type == 'montecarlo':
         solver = solve_photometry_montecarlo
@@ -36,13 +37,15 @@ def solve_photometry(table, wcs=None, cat_mag=None,
                                   wcs=wcs, filter=filter,
                                   identify_catalog=identify_catalog,
                                   science_catalog=science_catalog,
-                                  limit_angle=identify_limit_angle)
+                                  limit_angle=limit_angle)
         cat_mag = id_table['cat_mag']
 
     mags = Table()
 
     if 'flux' in table.colnames:
-        solver_kwargs.update({'ref_scale': identify_catalog.flux_unit,
+        if identify_catalog is not None:
+            cat_scale = identify_catalog.flux_unit
+        solver_kwargs.update({'ref_scale': cat_scale,
                               'flux_scale': flux_scale})
         mags['mag'], mags['mag_err'] = solver(table['flux'],
                                               table['flux_error'],
@@ -51,11 +54,9 @@ def solve_photometry(table, wcs=None, cat_mag=None,
     return mags
 
 
-def process_calib_photometry(image, identify_catalog_file=None,
-                             identify_catalog_name=None,
+def process_calib_photometry(image, identify_catalog=None,
                              identify_limit_angle='2 arcsec',
-                             science_catalog=None, science_ra_key=None,
-                             science_dec_key=None, science_id_key=None,
+                             science_catalog=None,
                              montecarlo_iters=100,
                              montecarlo_percentage=0.2, filter=None,
                              solve_photometry_type=None, **kwargs):
@@ -98,13 +99,9 @@ def process_calib_photometry(image, identify_catalog_file=None,
                                 x=sources['x'], y=sources['y'],
                                 **photkwargs)
         ids = identify_stars(ph, wcs, filter=filter,
-                             identify_catalog_file=identify_catalog_file,
-                             identify_catalog_name=identify_catalog_name,
-                             identify_limit_angle=identify_limit_angle,
-                             science_catalog=science_catalog,
-                             science_id_key=science_id_key,
-                             science_ra_key=science_ra_key,
-                             science_dec_key=science_dec_key)
+                             identify_catalog=identify_catalog,
+                             limit_angle=identify_limit_angle,
+                             science_catalog=science_catalog)
         res = solve_photometry(ph, wcs, ids['cat_mag'],
                                montecarlo_iters=montecarlo_iters,
                                montecarlo_percentage=montecarlo_percentage,

@@ -1,8 +1,13 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 import os
+import six
+import numpy as np
+from astropy.io import fits
 
 from ..image_processing.ccd_processing import process_image
-from ..py_utils import process_list
+from ..image_processing.register import hdu_shift_images
+from ..image_processing.imarith import imcombine as combine
+from ..py_utils import process_list, mkdir_p
 from ..fits_utils import check_hdu
 
 _mem_limit = 1e9
@@ -78,7 +83,7 @@ def create_calib(sources, result_file=None, calib_type=None, master_bias=None,
         result_file = os.path.join(calib_dir, result_file)
 
     if combine_align_method in ['fft', 'wcs']:
-        s = ccddata_shift_images(s, combine_align_method)
+        s = hdu_shift_images(s, combine_align_method)
 
     res = combine(s, output_file=result_file, method=combine_method,
                   reject=reject, sigma_clip_low=combine_sigma,
@@ -116,7 +121,7 @@ def calib_science(sources, master_bias=None, master_flat=None, dark_frame=None,
     s = process_list(check_hdu, s)
 
     if combine_align_method in ['fft', 'wcs']:
-        s = ccddata_shift_images(s, method=combine_align_method)
+        s = hdu_shift_images(s, method=combine_align_method)
 
     if save_calib_path is not None and isinstance(sources[0],
                                                   six.string_types):
@@ -132,7 +137,7 @@ def calib_science(sources, master_bias=None, master_flat=None, dark_frame=None,
 
     if combine_method is not None:
         if combine_align_method is not None:
-            s = ccddata_shift_images(s, combine_align_method)
+            s = hdu_shift_images(s, combine_align_method)
         if combine_sigma is not None:
             reject = ['sigmaclip']
         else:

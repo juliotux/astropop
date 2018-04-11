@@ -2,3 +2,5 @@
 
 from .astrometry import *
 from .astrometrynet import *
+from .manual_wcs import *
+from .coords_utils import *

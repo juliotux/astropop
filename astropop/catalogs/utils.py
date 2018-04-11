@@ -15,15 +15,16 @@ def identify_stars(x, y, wcs, identify_catalog,
     cat = identify_catalog
     ra, dec = wcs_xy2radec(x, y, wcs)
 
-    name, mag, mag_err = cat.query_id_mag(ra, dec, filter,
-                                          limit_angle=limit_angle)
+    cat_res = cat.match_objects(ra, dec, filter, limit_angle=limit_angle)
+    name = cat_res['id']
+    mag = cat_res['flux']
+    mag_err = cat_res['flux_error']
 
     res = Table()
     if science_catalog is not None:
         sci = science_catalog
-        sci_names, _, _ = sci.query_id_mag(ra, dec, None,
-                                           limit_angle=limit_angle)
-        res['sci_id'] = process_list(string_fix, sci_names)
+        sci_res = sci.match_objects(ra, dec, limit_angle=limit_angle)
+        res['sci_id'] = process_list(string_fix, sci_res['id'])
 
     res['cat_id'] = process_list(string_fix, name)
     res['ra'] = ra

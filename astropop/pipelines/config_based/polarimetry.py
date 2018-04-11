@@ -7,6 +7,7 @@ from astropy.table import Table
 
 from .base import ReducePipeline
 from .photometry import PhotometryPipeline
+from ...catalogs import default_catalogs, ASCIICatalogClass
 from ..calib_scripts import calib_science
 from ...fits_utils import check_hdu
 from ...py_utils import process_list, check_iterable, mkdir_p
@@ -46,18 +47,18 @@ class PolarimetryPipeline(ReducePipeline):
 
         check_exist = config.get('check_exist', False)
 
-        astrojc_prod = os.path.join(product_dir, "{}_polarimetry_astrojc_{}"
+        astrojc_prod = os.path.join(product_dir, "{}_polarimetry_astropop_{}"
                                     .format(night, name))
         pccd_prod = os.path.join(product_dir, "{}_polarimetry_pccdpack_{}"
                                  .format(night, name))
         if check_exist:
-            process_astrojc = (config.get('astrojc_pol', True) and not
+            process_astrojc = (config.get('astropop_pol', True) and not
                                os.path.isfile(astrojc_prod))
             process_pccd = (config.get('pccdpack', False) and not
                             os.path.isfile(pccd_prod))
         else:
             process_pccd = config.get('pccdpack', False)
-            process_astrojc = config.get('astrojc_pol', True)
+            process_astrojc = config.get('astropop_pol', True)
 
         if not process_pccd and not process_astrojc:
             return
@@ -86,14 +87,24 @@ class PolarimetryPipeline(ReducePipeline):
                   'box_size', 'detect_fwhm', 'detect_snr', 'remove_cosmics',
                   'align_images', 'solve_photometry_type',
                   'match_pairs_tolerance', 'montecarlo_iters',
-                  'montecarlo_percentage', 'identify_catalog_file',
-                  'identify_catalog_name', 'identify_limit_angle',
-                  'science_catalog', 'science_id_key', 'science_ra_key',
-                  'science_dec_key', 'astrometry_calib',
+                  'montecarlo_percentage', 'astrometry_calib',
                   'delta_x', 'delta_y', 'brightest_star_dec',
-                  'brightest_star_ra', 'image_flip', 'image_north_direction']:
+                  'brightest_star_ra', 'image_flip', 'image_north_direction',
+                  'limit_angle']:
             if i in config.keys():
                 polkwargs[i] = config[i]
+
+        if "identify_catalog_name" in config.keys():
+            ref_cat = default_catalogs[config["identify_catalog_name"]]
+            polkwargs['identify_catalog'] = ref_cat
+
+        if "science_catalog" in config.keys():
+            sci_cat = ASCIICatalogClass(config['science_catalog'],
+                                        id_key=config['science_id_key'],
+                                        ra_key=config['science_ra_key'],
+                                        dec_key=config['science_dec_key'],
+                                        format=config['science_format'])
+            polkwargs['science_catalog'] = sci_cat
 
         if process_astrojc:
             if not config.get('astrojc_cal', True):

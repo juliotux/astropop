@@ -1,6 +1,7 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
 from .photometry import *
+from .solve_photometry import *
 
 psf_available_model = None
 photometry_available_methods = ['aperture', 'psf']

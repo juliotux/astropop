@@ -16,30 +16,30 @@ def _scale_operator(measure_scale, out_scale):
         diff = np.subtract
         corr = np.add
         if measure_scale == 'linear':
-            def trans_flux(x): -2.5*np.log10(x) + 25
+            def trans_flux(x): return -2.5*np.log10(x) + 25
             # def error_func(x, x_e): 1.086*((x_e + np.sqrt(x))/x)
         elif measure_scale == 'log':
-            def trans_flux(x): -2.5*x + 25
+            def trans_flux(x): return -2.5*x + 25
         elif measure_scale == 'mag':
-            def trans_flux(x): x
+            def trans_flux(x): return x
     elif out_scale == 'log':
         diff = np.subtract
         corr = np.add
         if measure_scale == 'linear':
-            def trans_flux(x): np.log10(x)
+            def trans_flux(x): return np.log10(x)
         elif measure_scale == 'log':
-            def trans_flux(x): x
+            def trans_flux(x): return x
         elif measure_scale == 'mag':
-            def trans_flux(x): x/(-2.5) + 10
+            def trans_flux(x): return x/(-2.5) + 10
     elif out_scale == 'linear':
         diff = np.divide
         corr = np.multiply
         if measure_scale == 'linear':
-            def trans_flux(x): x
+            def trans_flux(x): return x
         elif measure_scale == 'log':
-            def trans_flux(x): 10**x
+            def trans_flux(x): return 10**x
         elif measure_scale == 'mag':
-            def trans_flux(x): 10**(-0.4*x + 10)
+            def trans_flux(x): return 10**(-0.4*x + 10)
 
     return trans_flux, diff, corr
 

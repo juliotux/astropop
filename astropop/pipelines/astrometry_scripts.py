@@ -1,7 +1,7 @@
 import numpy as np
 from astropy.wcs import WCS
 
-from .astrometrynet import solve_astrometry_xy
+from ..astrometry.astrometrynet import solve_astrometry_xy
 from ..catalogs import identify_stars
 
 

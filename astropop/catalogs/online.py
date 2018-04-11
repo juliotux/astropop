@@ -72,7 +72,7 @@ class VizierCatalogClass(_BasePhotometryCatalog):
     _valid_init_kwargs = set(['vizier_table', 'id_key', 'ra_key', 'dec_key',
                               'flux_key', 'flux_error_key', 'flux_unit',
                               'prepend_id_key', 'available_filters',
-                              'bibcode'])
+                              'bibcode', 'comment'])
 
     def __init__(self, **kwargs):
         self.vizier = Vizier()
@@ -170,9 +170,9 @@ class VizierCatalogClass(_BasePhotometryCatalog):
         self._query_vizier(center, radius, table=self.vizier_table)
 
         flux = np.array(self._last_query_table[flux_key].data)
-        if flux_error_key is not None:
+        try:
             flux_error = np.array(self._last_query_table[flux_error_key].data)
-        else:
+        except KeyError:
             flux_error = np.array([np.nan]*len(flux))
 
         return flux, flux_error
@@ -199,11 +199,11 @@ class VizierCatalogClass(_BasePhotometryCatalog):
         m_flue = np.array([c_flue[i] if i != -1 else np.nan for i in indexes])
 
         return np.array(list(zip(m_id, m_ra, m_dec, m_flux, m_flue)),
-                        dtype=np.dtype([('id', m_id.dtype,
-                                         'ra', m_ra.dtype,
-                                         'dec', m_dec.dtype,
-                                         'flux', m_flux.dtype,
-                                         'flux_error', m_flue.dtype)]))
+                        dtype=np.dtype([('id', m_id.dtype),
+                                        ('ra', m_ra.dtype),
+                                        ('dec', m_dec.dtype),
+                                        ('flux', m_flux.dtype),
+                                        ('flux_error', m_flue.dtype)]))
 
 
 def simbad_query_id(ra, dec, limit_angle, name_order=['NAME', 'HD', 'HR',
@@ -378,13 +378,13 @@ class SimbadCatalogClass(_BasePhotometryCatalog):
 
         return np.array(list(zip(m_id, m_ra, m_dec, m_flux, m_flue, m_unit,
                                  m_flub)),
-                        dtype=np.dtype([('id', m_id.dtype,
-                                         'ra', m_ra.dtype,
-                                         'dec', m_dec.dtype,
-                                         'flux', m_flux.dtype,
-                                         'flux_error', m_flue.dtype,
-                                         'flux_unit', m_unit.dtype,
-                                         'flux_bibcode', m_flub.dtype)]))
+                        dtype=np.dtype([('id', m_id.dtype),
+                                        ('ra', m_ra.dtype),
+                                        ('dec', m_dec.dtype),
+                                        ('flux', m_flux.dtype),
+                                        ('flux_error', m_flue.dtype),
+                                        ('flux_unit', m_unit.dtype),
+                                        ('flux_bibcode', m_flub.dtype)]))
 
     def match_object_ids(self, ra, dec, limit_angle='2 arcsec',
                          name_order=['NAME', 'HD', 'HR', 'HYP', 'TYC',
