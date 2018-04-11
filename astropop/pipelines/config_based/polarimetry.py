@@ -12,8 +12,7 @@ from ...fits_utils import check_hdu
 from ...py_utils import process_list, check_iterable, mkdir_p
 from ...image_processing import combine
 from ...logger import logger
-from ...polarimetry.calcite_polarimetry import process_polarimetry
-from ...polarimetry.pccdpack_wrapper import run_pccdpack
+from ..polarimetry_scripts import process_polarimetry, run_pccdpack
 
 
 phot_parameters = PhotometryPipeline().parameters

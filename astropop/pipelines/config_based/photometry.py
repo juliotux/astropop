@@ -8,10 +8,11 @@ from astropy.table import Table
 from .base import ReducePipeline
 from .image_processing import CalibPipeline
 from ..calib_scripts import calib_science
+from ..photometry_scripts import process_calib_photometry
 from ...py_utils import process_list, check_iterable, mkdir_p
 from ...image_processing import combine
 from ...astrometry.manual_wcs import _angles
-from ...photometry import (process_calib_photometry, psf_available_model,
+from ...photometry import (psf_available_model,
                            photometry_available_methods,
                            solve_photometry_available_methods)
 from ...catalogs import catalogs_available
