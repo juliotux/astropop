@@ -31,5 +31,6 @@ def plot_polarimetry_field(ax, x, y, p, theta, wcs,
     dy = p*scale*np.sin(theta)
 
     # Plot the vectors as lines in the field
-    ax.plot(zip(x+dx, x-dx), zip(y+dy, y-dy), '-', color=vector_color)
+    ax.plot(list(zip(x+dx, x-dx)), list(zip(y+dy, y-dy)), '-',
+            color=vector_color)
     return ax
