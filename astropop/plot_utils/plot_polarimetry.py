@@ -3,12 +3,23 @@ from .ds9norm import DS9Normalize
 from .skyview import get_dss_image
 
 
+def plot_vector(ax, x, y, p, theta, scale, color, alpha=1.0):
+    '''Plot a single vector centered in xy, with modulus p and angle theta.
+    scale = p/vector_size
+    '''
+    # Compute dx and dy for the vectors
+    dx = p*np.cos(np.radians(theta))/(2*scale)
+    dy = p*np.sin(np.radians(theta))/(2*scale)
+
+    ax.plot([x+dx, x-dx], [y+dy, y-dy], '-', color=color, alpha=alpha)
+
+
 def plot_polarimetry_field(ax, x, y, p, theta, wcs,
                            image_shape, survey='DSS',
-                           scale=1.0/20, ds9_clip=(0, 98),
+                           scale=1.0/0.1, ds9_clip=(0, 98),
                            ds9_stretch='linear', ds9_bias=0.5,
                            ds9_contrast=1.0, ds9_cmap='Greys',
-                           vector_color='r'):
+                           vector_color='r', vector_alpha=1.0):
     '''Plot polarimetry data for all stars of a field.
 
     Parameters:
@@ -26,11 +37,8 @@ def plot_polarimetry_field(ax, x, y, p, theta, wcs,
                         contrast=ds9_contrast)
     ax.imshow(dss, origin='lower', norm=norm, cmap=ds9_cmap)
 
-    # Compute dx and dy for the vectors
-    dx = p*scale*np.cos(theta)
-    dy = p*scale*np.sin(theta)
-
     # Plot the vectors as lines in the field
-    ax.plot(list(zip(x+dx, x-dx)), list(zip(y+dy, y-dy)), '-',
-            color=vector_color)
+    for xi, yi, pi, ti in zip(x, y, p, theta):
+        plot_vector(ax, xi, yi, pi, ti, scale=scale, color=vector_color,
+                    alpha=vector_alpha)
     return ax
