@@ -153,6 +153,9 @@ class VizierCatalogClass(_BasePhotometryCatalog):
             raise ValueError("Invalid ID key.")
         self._query_vizier(center, radius, table=self.vizier_table)
 
+        if self.id_key == -1:
+            return np.array(['']*len(self._last_query_table))
+
         id = self._last_query_table[self.id_key].data
         if self.prepend_id_key:
             if isinstance(self.prepend_id_key, six.string_types):
@@ -319,6 +322,9 @@ class SimbadCatalogClass(_BasePhotometryCatalog):
             raise ValueError("Invalid ID key.")
         self._query_simbad_region(center, radius)
 
+        if self.id_key == -1:
+            return np.array(['']*len(self._last_query_table))
+
         id = self._last_query_table[self.id_key].data
         if self.prepend_id_key:
             id = ["{id_key} {id}".format(id_key=self.id_key, id=i) for i in id]
@@ -461,7 +467,7 @@ class _GCS23Catalog(VizierCatalogClass):
     available_filters = ["U", "B", "Bj", "V", "F", "N"]
     vizier_table = "I/305/out"
     prepend_id_key = False
-    id_key = 'GSC2_3'
+    id_key = 'GSC2.3'
     ra_key = "RAJ2000"
     dec_key = "DEJ2000"
     flux_key = "{filter}mag"

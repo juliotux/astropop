@@ -47,20 +47,20 @@ class PolarimetryPipeline(ReducePipeline):
 
         check_exist = config.get('check_exist', False)
 
-        astrojc_prod = os.path.join(product_dir, "{}_polarimetry_astropop_{}"
+        astropop_prod = os.path.join(product_dir, "{}_polarimetry_astropop_{}"
                                     .format(night, name))
         pccd_prod = os.path.join(product_dir, "{}_polarimetry_pccdpack_{}"
                                  .format(night, name))
         if check_exist:
-            process_astrojc = (config.get('astropop_pol', True) and not
-                               os.path.isfile(astrojc_prod))
+            process_astropop = (config.get('astropop_pol', True) and not
+                               os.path.isfile(astropop_prod))
             process_pccd = (config.get('pccdpack', False) and not
                             os.path.isfile(pccd_prod))
         else:
             process_pccd = config.get('pccdpack', False)
-            process_astrojc = config.get('astropop_pol', True)
+            process_astropop = config.get('astropop_pol', True)
 
-        if not process_pccd and not process_astrojc:
+        if not process_pccd and not process_astropop:
             return
 
         calib_kwargs = {}
@@ -73,7 +73,7 @@ class PolarimetryPipeline(ReducePipeline):
             if i in config.keys():
                 calib_kwargs[i] = config[i]
 
-        if config.get('astrojc_cal', True) and (process_astrojc or
+        if config.get('astropop_cal', True) and (process_astropop or
                                                 process_pccd):
             ccds = calib_science(s, **calib_kwargs)
         else:
@@ -106,14 +106,14 @@ class PolarimetryPipeline(ReducePipeline):
                                         format=config['science_format'])
             polkwargs['science_catalog'] = sci_cat
 
-        if process_astrojc:
-            if not config.get('astrojc_cal', True):
+        if process_astropop:
+            if not config.get('astropop_cal', True):
                 if 'save_calib_path' in config.keys():
                     ccds = [os.path.join(config['save_calib_path'],
                                          os.path.basename(i))
                             for i in s]
                     ccds = process_list(check_hdu, ccds)
-            logger.info('Processing polarimetry with astrojc.')
+            logger.info('Processing polarimetry with astropop.')
             logger.debug('Processing {} images'.format(len(ccds)))
             t, wcs, ret = process_polarimetry(ccds, **polkwargs)
             config['retarder_positions'] = ret
@@ -149,7 +149,7 @@ class PolarimetryPipeline(ReducePipeline):
             for k in header_keys:
                 if k in config.keys():
                     v = config[k]
-                    key = 'hierarch astrojc {}'.format(k)
+                    key = 'hierarch astropop {}'.format(k)
                     if check_iterable(v):
                         hdu.header[key] = ','.join([str(m) for m in v])
                     else:
@@ -166,21 +166,21 @@ class PolarimetryPipeline(ReducePipeline):
             for k in header_keys:
                 if k in config.keys():
                     v = config[k]
-                    key = 'hierarch astrojc {}'.format(k)
+                    key = 'hierarch astropop {}'.format(k)
                     if check_iterable(v):
                         hdu.header[key] = ','.join([str(m) for m in v])
                     else:
                         hdu.header[key] = v
             hdus.append(hdu)
 
-        if process_astrojc:
+        if process_astropop:
             if wcs is not None:
                 image.header.update(wcs.to_header(relax=True))
             hdulist = fits.HDUList([image, *hdus])
-            hdulist.writeto(astrojc_prod, overwrite=True)
+            hdulist.writeto(astropop_prod, overwrite=True)
 
         if process_pccd:
-            if not config.get('astrojc_cal', True):
+            if not config.get('astropop_cal', True):
                 if 'save_calib_path' in config.keys():
                     ccds = [os.path.join(config['save_calib_path'],
                                          os.path.basename(i))
@@ -205,7 +205,7 @@ class PolarimetryPipeline(ReducePipeline):
                 for k in header_keys:
                     if k in config.keys():
                         v = config[k]
-                        key = 'hierarch astrojc {}'.format(k)
+                        key = 'hierarch astropop {}'.format(k)
                         if check_iterable(v):
                             hdu.header[key] = ','.join([str(m) for m in v])
                         else:
