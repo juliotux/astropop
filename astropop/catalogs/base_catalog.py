@@ -11,12 +11,14 @@ def match_indexes(ra, dec, cat_ra, cat_dec, limit_angle):
     limit_angle is string, float, `astropy.coordinates.Angle`, being the float
     a decimal degree and string a readable Angle.
     '''
+    # # Matching using astropy's skycoord can be slow for big catalogs
     ind, dist, _ = match_coordinates_sky(SkyCoord(ra, dec, unit=('degree',
                                                                  'degree'),
                                                   frame='icrs'),
                                          SkyCoord(cat_ra, cat_dec,
                                                   unit=('degree', 'degree'),
                                                   frame='icrs'))
+
     index = np.zeros(len(ra), dtype=np.int)
     index.fill(-1)   # a nan index
 
@@ -73,7 +75,7 @@ class _BaseCatalog():
 
     def _get_center(self, center):
         raise NotImplementedError("Resolve the center of the query is not "
-                                   "supported by this catalog.")
+                                  "supported by this catalog.")
 
     def query_object(self, center, **kwargs):
         raise NotImplementedError("This catalog does not support object mode"

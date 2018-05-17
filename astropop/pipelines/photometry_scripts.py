@@ -86,7 +86,7 @@ def process_calib_photometry(image, identify_catalog=None,
 
     photkwargs = {}
     for i in kwargs.keys():
-        if i in ['detect_fwhm', 'detect_snr', 'box_size',
+        if i in ['detect_fwhm', 'detect_snr', 'box_size', 'r_in',
                  'r_out', 'psf_model', 'psf_niters']:
             photkwargs[i] = kwargs.get(i)
     for ri in r:
@@ -98,10 +98,12 @@ def process_calib_photometry(image, identify_catalog=None,
         ph = process_photometry(image, r=ri, photometry_type=phot_type,
                                 x=sources['x'], y=sources['y'],
                                 **photkwargs)
-        ids = identify_stars(ph, wcs, filter=filter,
+        logger.debug('Identifying {} stars'.format(len(ph)))
+        ids = identify_stars(ph['x'], ph['y'], wcs, filter=filter,
                              identify_catalog=identify_catalog,
                              limit_angle=identify_limit_angle,
                              science_catalog=science_catalog)
+        ids = Table(ids)
         res = solve_photometry(ph, wcs, ids['cat_mag'],
                                montecarlo_iters=montecarlo_iters,
                                montecarlo_percentage=montecarlo_percentage,

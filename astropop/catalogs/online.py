@@ -142,9 +142,9 @@ class VizierCatalogClass(_BasePhotometryCatalog):
         dec = self._last_query_table[self.dec_key].data
 
         # Solve the most common types of coordinates
-        coords = [guess_coordinates(*c) for c in zip(ra, dec)]
-        ra = np.array([c.ra.degree for c in coords])
-        dec = np.array([c.dec.degree for c in coords])
+        coords = guess_coordinates(ra, dec)
+        ra = np.array(coords.ra.degree)
+        dec = np.array(coords.dec.degree)
 
         return ra, dec
 
@@ -311,9 +311,9 @@ class SimbadCatalogClass(_BasePhotometryCatalog):
         dec = self._last_query_table[self.dec_key].data
 
         # Solve the most common types of coordinates
-        coords = [guess_coordinates(*c) for c in zip(ra, dec)]
-        ra = np.array([c.ra.degree for c in coords])
-        dec = np.array([c.dec.degree for c in coords])
+        coords = guess_coordinates(ra, dec)
+        ra = np.array(coords.ra.degree)
+        dec = np.array(coords.dec.degree)
 
         return ra, dec
 

@@ -7,6 +7,8 @@ from astropy import units as u
 from ..astrometry.coords_utils import guess_coordinates
 from .base_catalog import _BasePhotometryCatalog, match_indexes
 
+from ..logger import logger
+
 
 class _LocalCatalog(_BasePhotometryCatalog):
     type = 'local'
@@ -25,12 +27,10 @@ class _LocalCatalog(_BasePhotometryCatalog):
     @property
     def skycoords(self):
         if self.ra_key is not None and self.dec_key is not None:
-            tabs = [guess_coordinates(self._table[self.ra_key][i],
-                                      self._table[self.dec_key][i])
-                    for i in range(len(self._table))]
-            return SkyCoord([s.ra.degree for s in tabs],
-                            [s.dec.degree for s in tabs],
-                            unit=('degree', 'degree'))
+            tabs = guess_coordinates(self._table[self.ra_key],
+                                     self._table[self.dec_key],
+                                     skycoord=False)
+            return SkyCoord(tabs[0], tabs[1], unit=('degree', 'degree'))
         else:
             return None
 
@@ -129,7 +129,6 @@ class ASCIICatalogClass(_LocalCatalog):
         """
         **reader_kwargs : kwargs to be passed to the Table.read function
         """
-        print(reader_kwargs)
         self._table = Table.read(filename, **reader_kwargs)
 
         self.id_key = id_key
