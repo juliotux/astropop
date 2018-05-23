@@ -128,7 +128,7 @@ def headers_to_table(headers, filenames=None, keywords=None, empty_value=None,
         for head in l:
             for k in head.keys():
                 if k not in keywords:
-                    keywords.append(k.lower if lower_keywords else k)
+                    keywords.append(k.lower() if lower_keywords else k)
 
     # Clean history and comment keywords
     keywords = [k for k in keywords if k.lower() not in ('history', 'comment',
@@ -140,6 +140,7 @@ def headers_to_table(headers, filenames=None, keywords=None, empty_value=None,
 
     for i in range(n):
         for key, val in l[i].items():
+            key = key.lower()
             if key in keywords:
                 headict[key][i] = val
 

@@ -86,12 +86,12 @@ class FileManager():
 
         return nfm
 
-    def filered_glob(self, pattern):
+    def filtered_glob(self, pattern):
         """Filter the current FileManager with a 'ls' or 'glob' pattern."""
         matches = [fnmatch.fnmatch(i, pattern) for i in self._files]
-        where = np.where(matches)
+        where = np.where(matches)[0]
 
-        return FileManager(files=self._files[where],
+        return FileManager(files=[self._files[i] for i in where],
                            summary=self._summary[where],
                            ext=self.ext)
 
@@ -102,10 +102,11 @@ class FileManager():
         for k, v in kwargs.items():
             k = k.lower()
             nmask = t[k] == v
-            mask &= nmask
-        where = np.where(mask)
+            mask &= np.array(nmask)
 
-        return self._files[where], self._summary[where]
+        where = np.where(mask)[0]
+
+        return [self._files[i] for i in where], self.summary[where]
 
     def _filter_fnames(self, files):
         f = []
