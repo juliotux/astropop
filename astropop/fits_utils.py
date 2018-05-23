@@ -4,21 +4,25 @@ import os
 import six
 import numpy as np
 from astropy.io import fits
+from astropy.table import Table, hstack
+from collections import OrderedDict
 import functools
 
-__all__ = ['imhdus', 'check_header_keys', 'check_hdu']
+from .py_utils import check_iterable, process_list
+
+__all__ = ['imhdus', 'check_header_keys', 'check_hdu', 'fits_yielder',
+           'headers_to_table']
 
 imhdus = (fits.ImageHDU, fits.PrimaryHDU, fits.CompImageHDU,
           fits.StreamingHDU)
 
 
 class IncompatibleHeadersError(ValueError):
-    """When 2 image header are not compatible"""
+    """When 2 image header are not compatible."""
 
 
 def check_header_keys(image1, image2, keywords=[]):
-    """Compare some header keys from 2 images and check if the have equal
-    values."""
+    """Compare header keys from 2 images to check if the have equal values."""
     image1 = check_hdu(image1)
     image2 = check_hdu(image2)
     for i in keywords:
@@ -56,7 +60,22 @@ def check_hdu(data):
 
 def fits_yielder(return_type, file_list, ext=0, append_to_name=None,
                  save_to=None, overwrite=True):
-    """Create a generator object of the file_list."""
+    """Create a generator object that iterates over file_list.
+
+    return_type : str
+        'header', 'data' or 'hdu'
+    file_list : list-like
+        list of file names to be iterated
+    ext : int or str
+        fits extension to load the data
+    append_to_name : str
+        string to be appended to the file name when saving the new object
+    save_to : str
+        path to save a copy of the files, with the modified object
+        (header, data, hdu)
+    overwrite : bool
+        If overwrite existing files.
+    """
     if save_to:
         if not os.path.exists(save_to):
             os.makedirs(save_to)
@@ -96,3 +115,40 @@ def fits_yielder(return_type, file_list, ext=0, append_to_name=None,
 
             save_fname = os.path.join(save_to, basename)
             _save(i, save_fname, obj)
+
+
+def headers_to_table(headers, filenames=None, keywords=None, empty_value=None,
+                     lower_keywords=False):
+    """Read a bunch of headers and return a table with the values."""
+    l = list(headers)
+    n =len(l)
+
+    if keywords is None or keywords == '*' or keywords == 'all':
+        keywords = []
+        for head in l:
+            for k in head.keys():
+                if k not in keywords:
+                    keywords.append(k.lower if lower_keywords else k)
+
+    # Clean history and comment keywords
+    keywords = [k for k in keywords if k.lower() not in ('history', 'comment',
+                                                         '')]
+
+    headict = OrderedDict()
+    for k in keywords:
+        headict[k] = [empty_value]*n
+
+    for i in range(n):
+        for key, val in l[i].items():
+            if key in keywords:
+                headict[key][i] = val
+
+    t = Table(headict, masked=True)
+    if check_iterable(filenames):
+        c = Table()
+        c['file'] = process_list(os.path.basename, filenames)
+        t = hstack([c, t])
+
+    for k in keywords:
+        t[k].mask = [v is empty_value for v in t[k]]
+    return t
