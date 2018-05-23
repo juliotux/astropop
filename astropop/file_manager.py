@@ -27,7 +27,7 @@ class FileManager():
         self.exclude = exclude
         self.extensions = fits_extensions
         if compression:
-            for i in ['.gz', '.bz2', '.Z', '.zip']:
+            for i in ['.gz', '.bz2', '.Z', '.zip', '.fz']:
                 self.extensions.extend([e + i for e in fits_extensions])
 
         self.path = path

@@ -9,6 +9,7 @@ from collections import OrderedDict
 import functools
 
 from .py_utils import check_iterable, process_list
+from .logger import logger
 
 __all__ = ['imhdus', 'check_header_keys', 'check_hdu', 'fits_yielder',
            'headers_to_table']
@@ -44,13 +45,13 @@ def check_header_keys(image1, image2, keywords=[]):
     return True
 
 
-def check_hdu(data):
+def check_hdu(data, ext=0):
     """Check if a data is a valid ImageHDU type and convert it."""
     if not isinstance(data, imhdus):
         if isinstance(data, fits.HDUList):
             data = data[0]
         elif isinstance(data, six.string_types):
-            data = fits.open(data)[0]
+            data = fits.open(data)[ext]
         elif isinstance(data, np.ndarray):
             data = fits.PrimaryHDU(data)
         else:
@@ -87,7 +88,7 @@ def fits_yielder(return_type, file_list, ext=0, append_to_name=None,
     elif return_type == 'data':
         func = functools.partial(fits.getdata, ext=ext)
     elif return_type == 'hdu':
-        func = functools.partial(check_hdu, default_hdu=ext)
+        func = functools.partial(check_hdu, ext=ext)
     else:
         raise ValueError('Generator not recognized.')
 
@@ -101,19 +102,32 @@ def fits_yielder(return_type, file_list, ext=0, append_to_name=None,
         elif return_type == 'hdu':
             hdul[index] = yielded
 
-        hdul.writeto(save_fname, overwrite=True)
+        hdul.writeto(save_fname, overwrite=overwrite)
 
     for i in file_list:
+
         obj = func(i)
         yield obj
 
         if save_to:
             basename = os.path.basename(i)
-            if append_to_name:
-                base, ext = os.path.splitext(basename)
-                basename = base + append_to_name + ext
+            if append_to_name is not None:
+                base, extf = os.path.splitext(basename)
+                basename = "{}{}.{}".format(base, append_to_name, extf)
+
+            base, extf = os.path.splitext(basename)
+            if extf not in ['fits', 'fts', 'fit', 'gz', 'bz2', 'fz']:
+                logger.warn('{} extension not supported for writing. '
+                            'Changing to fits'.format(extf))
+                subext = os.path.splitext(base)[1]
+                if subext in ['fits', 'fts', 'fit', 'fz']:
+                    extf = ''
+                else:
+                    extf = 'fits'
+                basename = "{}.{}".format(base, extf)
 
             save_fname = os.path.join(save_to, basename)
+
             _save(i, save_fname, obj)
 
 
