@@ -121,10 +121,10 @@ def fits_yielder(return_type, file_list, ext=0, append_to_name=None,
                             'Changing to fits'.format(extf))
                 subext = os.path.splitext(base)[1]
                 if subext in ['fits', 'fts', 'fit', 'fz']:
-                    extf = ''
+                    nextf = ''
                 else:
-                    extf = 'fits'
-                basename = "{}.{}".format(base, extf)
+                    nextf = 'fits'
+                basename = "{}.{}".format(base, nextf)
 
             save_fname = os.path.join(save_to, basename)
 
@@ -144,9 +144,9 @@ def headers_to_table(headers, filenames=None, keywords=None, empty_value=None,
                 if k not in keywords:
                     keywords.append(k.lower() if lower_keywords else k)
 
-    # Clean history and comment keywords
+    # Clean history and comment keywords. file wont be copied
     keywords = [k for k in keywords if k.lower() not in ('history', 'comment',
-                                                         '')]
+                                                         '', 'file')]
 
     headict = OrderedDict()
     for k in keywords:
@@ -165,5 +165,5 @@ def headers_to_table(headers, filenames=None, keywords=None, empty_value=None,
         t = hstack([c, t])
 
     for k in keywords:
-        t[k].mask = [v is empty_value for v in t[k]]
+        t[k].mask = [v is empty_value for v in headict[k]]
     return t
