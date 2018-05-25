@@ -37,6 +37,9 @@ def list_fits_files(directory, fits_extensions=['.fts', '.fits', '.fit', '.fz'],
 
 def gen_mask(table, **kwargs):
     """Generate a mask to be applyed in the filtering."""
+    if len(table) == 0:
+        return []
+
     t = table
 
     mask = np.ones(len(t), dtype=bool)
@@ -53,11 +56,18 @@ class FileGroup():
 
     def __init__(self, files, ext, summary):
         """Easy handle groups of fits files."""
-        if len(files) != len(summary):
-            raise ValueError('Files and summary do not have same sizes.')
         self.files = np.array(files)
+        if len(self.files) > 0:
+            self.summary = Table(summary)
+        else:
+            self.summary = Table()
+
+        if len(self.files) != len(self.summary):
+            raise ValueError('Files and summary do not have same sizes.')
         self.ext = ext
-        self.summary = Table(summary)
+
+    def __len__(self):
+        return len(self.files)
 
     def values(self, keyword, unique=False):
         """Return the values of a keyword in the summary.
@@ -131,7 +141,10 @@ class FileManager():
         """
         where = np.where(gen_mask(filegroup.summary, **kwargs))[0]
         files = np.array([filegroup.files[i] for i in where])
-        summ = Table(filegroup.summary[where])
+        if len(files) > 0:
+            summ = Table(filegroup.summary[where])
+        else:
+            summ = None
         nfg = FileGroup(files=files, summary=summ, ext=self.ext)
         return nfg
 

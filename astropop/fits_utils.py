@@ -158,7 +158,14 @@ def headers_to_table(headers, filenames=None, keywords=None, empty_value=None,
             if key in keywords:
                 headict[key][i] = val
 
-    t = Table(headict, masked=True)
+    if n == 0:
+        if len(keywords) > 0:
+            t = Table(names=keywords)
+        else:
+            t = Table()
+    else:
+        t = Table(headict, masked=True)
+
     if check_iterable(filenames):
         c = Table()
         c['file'] = process_list(os.path.basename, filenames)
