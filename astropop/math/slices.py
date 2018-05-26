@@ -1,4 +1,26 @@
-__all__ = ['slices_from_string']
+from ..py_utils import check_iterable
+
+__all__ = ['slices_from_string', 'string_from_slices']
+
+
+def string_from_slices(slices, fits_convention=False):
+    """Create a slice string from python slices.
+
+    Fits convention not suported yet.
+    """
+    # TODO: implement fits convention
+    if fits_convention:
+        raise NotImplementedError('Fits convention is not supported yet.')
+
+    if not check_iterable(slices):
+        slices = [slices]
+
+    for i in range(len(slices)):
+        slices[i] = '{}:{}'.format(i.start or '', i.stop or '')
+        slices[i] += '' if not i.step else ':{}'.format(i.step)
+
+    return ','.join(slices)
+
 
 def slices_from_string(section, fits_convention=False):
     """Generate a python slice from a string. Fits convention supported."""
