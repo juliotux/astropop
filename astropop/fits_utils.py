@@ -4,6 +4,7 @@ import os
 import six
 import numpy as np
 from astropy.io import fits
+from astropy.io.fits.hdu.base import _ValidHDU
 from astropy.table import Table, hstack
 from collections import OrderedDict
 import functools
@@ -92,6 +93,15 @@ def fits_yielder(return_type, file_list, ext=0, append_to_name=None,
     else:
         raise ValueError('Generator not recognized.')
 
+    # if the image list contain hdus, re-yield them
+    def _reyield(ver_obj):
+        if return_type == 'header':
+            return ver_obj.header
+        elif return_type == 'data':
+            return ver_obj.data
+        elif return_type == 'hdu':
+            return ver_obj
+
     def _save(old, new, yielded):
         hdul = fits.open(old)
         index = hdul.index_of(ext)
@@ -105,9 +115,11 @@ def fits_yielder(return_type, file_list, ext=0, append_to_name=None,
         hdul.writeto(save_fname, overwrite=overwrite)
 
     for i in file_list:
-
-        obj = func(i)
-        yield obj
+        if isinstance(i, _ValidHDU):
+            yield _reyield(i)
+        else:
+            obj = func(i)
+            yield obj
 
         if save_to:
             basename = os.path.basename(i)

@@ -124,6 +124,7 @@ def block_reduce(image, block_size, func=np.sum, readnoise_key=None,
         im = fits.PrimaryHDU(im.data, header=im.header)
 
     im.data = br(im.data, block_size, func)
+    summed = br(im.data, block_size, np.sum)
     im.header['hierarch block_reduced'] = block_size
 
     # Fix readnoise if readnoise_key is passed
@@ -131,6 +132,9 @@ def block_reduce(image, block_size, func=np.sum, readnoise_key=None,
         try:
             rdnoise = opd_number(im.header[readnoise_key])
             im.header[readnoise_key] = block_size * rdnoise
+            if func == np.sum:
+                # fix the readnoise by functions that are not the sum
+                im.header[readnoise_key] /=  np.sqrt(np.nanmean(summed/im.data))
             im.header['hierarch block_reduced readnoise_old'] = rdnoise
         except ValueError:
             pass
@@ -156,7 +160,7 @@ def cosmic_lacosmic(image, inplace=False, **lacosmic_kwargs):
 def process_image(image, master_bias=None, dark_frame=None, master_flat=None,
                   gain=None, gain_key=None, image_exposure=None,
                   dark_exposure=None, exposure_key=None,
-                  lacosmic=False, lacosmic_params={},
+                  lacosmic=False, lacosmic_params={}, rebin_func=np.sum,
                   rebin_size=None, readnoise_key=None, badpixmask=None,
                   inplace=False, bias_check_keys=[], flat_check_keys=[],
                   dark_check_keys=[], badpix_check_keys=[]):
@@ -175,8 +179,8 @@ def process_image(image, master_bias=None, dark_frame=None, master_flat=None,
 
     if rebin_size is not None:
         logger.info('Process rebining with block size {}'.format(rebin_size))
-        im = block_reduce(im, rebin_size, readnoise_key=readnoise_key,
-                          inplace=inplace)
+        im = block_reduce(im, rebin_size, func=rebin_func,
+                          readnoise_key=readnoise_key, inplace=inplace)
 
     if gain is not None or gain_key is not None:
         logger.info('Gain correct with gain {} and gain_key {}'

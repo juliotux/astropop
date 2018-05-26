@@ -3,8 +3,10 @@
 import os
 import fnmatch
 import numpy as np
+from collections import OrderedDict
 
-from astropy.table import Table, vstack
+from astropy.table import Table, vstack, Row
+from astropy.io import fits
 
 from .fits_utils import fits_yielder, headers_to_table
 from .py_utils import check_iterable
@@ -44,11 +46,23 @@ def gen_mask(table, **kwargs):
 
     mask = np.ones(len(t), dtype=bool)
     for k, v in kwargs.items():
+        if not check_iterable(v):
+            v = [v]
         k = k.lower()
-        nmask = t[k] == v
+        nmask = [t[k][i] in v for i in range(len(t))]
         mask &= np.array(nmask)
 
     return mask
+
+
+def row_to_header(row):
+    """Transform a table row (or dict) in a header."""
+    if isinstance(row, Row):
+        rdict = OrderedDict((i, row[i]) for i in row.colnames
+                            if str(row[i]) != '--')
+    else:
+        rdict = OrderedDict(row)
+    return fits.Header(rdict)
 
 
 class FileGroup():
@@ -79,12 +93,21 @@ class FileGroup():
         else:
             return self.summary[keyword].tolist()
 
+    def add_column(self, name, values, mask=None):
+        """Add a new column to the summary."""
+        if not check_iterable(values):
+            values = [values]*len(self.summary)
+        elif len(values) != len(self.summary):
+            values = [values]*len(self.summary)
+
+        self.summary[name] = values
+        self.summary[name].mask = mask
+
     def add_file(self, file):
         """Add a file to the current group."""
-        self.summary.add_row()
-        h = fits_yielder('header', [file], ext=self.ext)
-        nt = headers_to_table(h, lower_keywords=True)
-        self.summary = vstack([self.summary, nt])
+        h = list(fits_yielder('header', [file], ext=self.ext))
+        h.extend([row_to_header(r) for r in self.summary])
+        self.summary = headers_to_table(h, lower_keywords=True)
         self.files = np.array(list(self.files) + [file])
 
     def _intern_yielder(self, return_type, save_to=None, append_to_name=None,

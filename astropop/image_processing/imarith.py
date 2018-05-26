@@ -83,7 +83,7 @@ _comb_funcs = {'average': np.nanmean,
 def imcombine(image_list, output_file=None, method='average', weights=None,
               scale=None, mem_limit=1e8, reject=None,
               nlow=1, nhigh=1, min_clip=None, max_clip=None, sigma_clip_low=3,
-              sigma_clip_high=3, dtype=None):
+              sigma_clip_high=3, dtype=None, overwrite=False):
     """Combine a set of images like IRAF imcombine.
 
     Methods:
@@ -211,7 +211,7 @@ def imcombine(image_list, output_file=None, method='average', weights=None,
 
     if output_file is not None:
         logger.info('Combined image saved at {}'.format(output_file))
-        hdu.writeto(output_file)
+        hdu.writeto(output_file, overwrite=overwrite)
 
     return hdu
 
