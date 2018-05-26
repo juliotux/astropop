@@ -33,15 +33,17 @@ def trim_image(image, section, fits_convention=False, inplace=False):
     else:
         im = image
 
-    slices = slice_from_string(section, fits_convention=fits_convention)
+    slices = slices_from_string(section, fits_convention=fits_convention)
 
     # check boundaries
     shape = im.data.shape
     for i,m in zip(slices, shape):
-        if i.stop > m:
+        m = int(m)
+        l = [i.start or 0, i.stop or m]
+        if np.min(l) < 0 or i.stop > m:
             raise ValueError('Slice out of the limits of the image.')
 
-    ndata = np.array(im.data[slice])
+    ndata = np.array(im.data[slices])
     im.data = ndata
     im.header['trimmed'] = True
     im.header['trimmed slice'] = section

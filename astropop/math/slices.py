@@ -34,7 +34,7 @@ def slices_from_string(section, fits_convention=False):
         sec = sec.replace('-*', '::-1')  # flip dimension
         sec = sec.replace('*', ':')  # all
 
-    slices = [slice(int(i) if i else None for i in s.split(':'))
+    slices = [slice(*(int(i) if i else None for i in s.split(':')))
               for s in sec.split(',')]
 
     # Fits convention require:
@@ -45,7 +45,9 @@ def slices_from_string(section, fits_convention=False):
         slices = slices[::-1]
         for i in range(len(slices)):
             s = slices[i]
-            start = s.start - 1
+            start = s.start
+            if start is not None:
+                start = start - 1
             stop = s.stop
             step = s.step
             if start is not None and stop is not None:
