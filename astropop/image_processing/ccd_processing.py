@@ -1,17 +1,19 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 import os
+import copy
 import numpy as np
 from astroscrappy import detect_cosmics
 from astropy.io import fits
 from astropy.nddata.utils import block_reduce as br
+from astropy.nddata.utils import Cutout2D
 
 from ..fits_utils import check_hdu, check_header_keys
 from .imarith import imarith, imcombine
 from ..math.opd_utils import read_opd_header_number as opd_number
+from ..math.slices import slices_from_string
 from ..logger import logger
 
 # TODO: functions to add
-#   - trim_image(image, trim_section, inplace=False)
 #   - subtract_overscan(image, overscan, inplace=False)
 #   - block_replicate(image, block_size, conserve_sum=True, inplace=False)
 #   - wcs_project(ccd, target_wcs, target_shape=None, order='bilinear')
@@ -19,6 +21,32 @@ from ..logger import logger
 # TODO: put header checking on the functions
 
 combine = imcombine
+
+
+def trim_image(image, section, fits_convention=False, inplace=False):
+    """Trim a section from a image.
+
+    If original_section passed, it will be used as reference for trimming.
+    """
+    if not inplace:
+        im = copy.copy(image)
+    else:
+        im = image
+
+    slices = slice_from_string(section, fits_convention=fits_convention)
+
+    # check boundaries
+    shape = im.data.shape
+    for i,m in zip(slices, shape):
+        if i.stop > m:
+            raise ValueError('Slice out of the limits of the image.')
+
+    ndata = np.array(im.data[slice])
+    im.data = ndata
+    im.header['trimmed'] = True
+    im.header['trimmed slice'] = section
+    im.header['trimmed fits_convention'] = fits_convention
+    return im
 
 
 def subtract_bias(image, master_bias, check_keys=[], inplace=False):
@@ -159,7 +187,8 @@ def cosmic_lacosmic(image, inplace=False, **lacosmic_kwargs):
 
 def process_image(image, master_bias=None, dark_frame=None, master_flat=None,
                   gain=None, gain_key=None, image_exposure=None,
-                  dark_exposure=None, exposure_key=None,
+                  dark_exposure=None, exposure_key=None, trim=None,
+                  trim_fits_convention=False,
                   lacosmic=False, lacosmic_params={}, rebin_func=np.sum,
                   rebin_size=None, readnoise_key=None, badpixmask=None,
                   inplace=False, bias_check_keys=[], flat_check_keys=[],
@@ -181,6 +210,11 @@ def process_image(image, master_bias=None, dark_frame=None, master_flat=None,
         logger.info('Process rebining with block size {}'.format(rebin_size))
         im = block_reduce(im, rebin_size, func=rebin_func,
                           readnoise_key=readnoise_key, inplace=inplace)
+
+    if trim is not None:
+        logger.info('Trimming the image to: {}'.format(trim))
+        im = trim_image(im, trim, fits_convention=trim_fits_convention,
+                        inplace=inplace)
 
     if gain is not None or gain_key is not None:
         logger.info('Gain correct with gain {} and gain_key {}'
