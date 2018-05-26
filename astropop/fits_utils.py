@@ -116,10 +116,11 @@ def fits_yielder(return_type, file_list, ext=0, append_to_name=None,
 
     for i in file_list:
         if isinstance(i, _ValidHDU):
-            yield _reyield(i)
+            obj = _reyield(i)
         else:
             obj = func(i)
-            yield obj
+
+        yield obj
 
         if save_to:
             basename = os.path.basename(i)
