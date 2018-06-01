@@ -1,6 +1,5 @@
 """Utilities to easy calibrate images and create calibration frames."""
 
-import copy
 import numpy as np
 
 from .ccd_processing import process_image
@@ -9,7 +8,8 @@ from ..py_utils import process_list
 from ..fits_utils import fits_yielder
 
 
-def combine_bias(image_list, save_file=None, rebin_size=None, rebin_func=np.sum,
+def combine_bias(image_list, save_file=None, save_compress=False,
+                 rebin_size=None, rebin_func=np.sum,
                  gain=None, gain_key='GAIN', readnoise_key='RDNOISE',
                  combine_method='median', combine_sigma_clip=3,
                  remove_cosmics=False, lacosmic_params={},
@@ -27,12 +27,13 @@ def combine_bias(image_list, save_file=None, rebin_size=None, rebin_func=np.sum,
     hdus = imcombine(hdus, save_file, method=combine_method,
                      reject='sigmaclip', sigma_clip_low=combine_sigma_clip,
                      sigma_clip_high=combine_sigma_clip, mem_limit=mem_limit,
-                     overwrite=True)
+                     overwrite=True, save_compress=save_compress)
 
     return hdus
 
 
-def combine_dark(image_list, save_file=None, master_bias=None, rebin_size=None,
+def combine_dark(image_list, save_file=None, save_compress=False,
+                 master_bias=None, rebin_size=None,
                  gain=None, gain_key='GAIN', readnoise_key='RDNOISE',
                  combine_method='median', combine_sigma_clip=3,
                  remove_cosmics=False, lacosmic_params={},
@@ -60,12 +61,13 @@ def combine_dark(image_list, save_file=None, master_bias=None, rebin_size=None,
     hdus = imcombine(hdus, save_file, method=combine_method,
                      reject='sigmaclip', sigma_clip_low=combine_sigma_clip,
                      sigma_clip_high=combine_sigma_clip, mem_limit=mem_limit,
-                     overwrite=True)
+                     overwrite=True, save_compress=save_compress)
 
     return hdus
 
 
-def combine_flat(image_list, save_file=None, master_bias=None, dark_frame=None,
+def combine_flat(image_list, save_file=None, save_compress=False,
+                 master_bias=None, dark_frame=None,
                  rebin_size=None, gain=None, gain_key='GAIN', rebin_func=np.sum,
                  readnoise_key='RDNOISE', combine_method='median',
                  combine_sigma_clip=3, exposure_key='EXPTIME',
@@ -89,6 +91,7 @@ def combine_flat(image_list, save_file=None, master_bias=None, dark_frame=None,
     hdus = imcombine(hdus, save_file, method=combine_method,
                      reject='sigmaclip', sigma_clip_low=combine_sigma_clip,
                      sigma_clip_high=combine_sigma_clip, mem_limit=mem_limit,
-                     overwrite=True, scale=scaling_func)
+                     overwrite=True, scale=scaling_func,
+                     save_compress=save_compress)
 
     return hdus

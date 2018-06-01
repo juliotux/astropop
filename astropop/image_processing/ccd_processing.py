@@ -5,9 +5,8 @@ import numpy as np
 from astroscrappy import detect_cosmics
 from astropy.io import fits
 from astropy.nddata.utils import block_reduce as br
-from astropy.nddata.utils import Cutout2D
 
-from ..fits_utils import check_hdu, check_header_keys
+from ..fits_utils import check_hdu, check_header_keys, save_hdu
 from .imarith import imarith, imcombine
 from ..math.opd_utils import read_opd_header_number as opd_number
 from ..math.slices import slices_from_string
@@ -88,6 +87,7 @@ def subtract_dark(image, dark_frame, dark_exposure=None, image_exposure=None,
             i_exp = image_exposure
 
     if d_exp is not None and i_exp is not None:
+        logger.debug('{} {}'.format(i_exp, d_exp))
         scale = i_exp/d_exp
         dark = imarith(dark, scale, '*', inplace=False)
         logger.debug('dark_frame values scaled by {} to fit the image'
@@ -187,7 +187,8 @@ def cosmic_lacosmic(image, inplace=False, **lacosmic_kwargs):
     return im
 
 
-def process_image(image, master_bias=None, dark_frame=None, master_flat=None,
+def process_image(image, save_to=None, save_compressed=False,
+                  master_bias=None, dark_frame=None, master_flat=None,
                   gain=None, gain_key=None, image_exposure=None,
                   dark_exposure=None, exposure_key=None, trim=None,
                   trim_fits_convention=False,
@@ -244,5 +245,8 @@ def process_image(image, master_bias=None, dark_frame=None, master_flat=None,
         im.mask = badpixmask
     else:
         im.mask = None
+
+    if save_to:
+        save_hdu(im, save_to, save_compressed)
 
     return im

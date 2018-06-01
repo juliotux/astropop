@@ -11,13 +11,13 @@ import numpy as np
 from astropy.io import fits
 
 from ..logger import logger
-from ..fits_utils import check_hdu, imhdus
+from ..fits_utils import check_hdu, imhdus, save_hdu
 
 __all__ = ['extrema_clip', 'sigma_clip', 'minmax_clip', 'imcombine', 'imarith']
 
 
 def extrema_clip(data, nlow=1, nhigh=1, axis=None):
-    """Creates a mask clipping nlow and nhigh pixels."""
+    """Create a mask clipping nlow and nhigh pixels."""
     # TODO: Not working. Use @vectorize?
     data = np.array(data)
     mask = np.zeros(data.shape, dtype=bool)
@@ -46,7 +46,7 @@ def extrema_clip(data, nlow=1, nhigh=1, axis=None):
 
 def sigma_clip(data, sigma_clip_low=3, sigma_clip_high=3, func=np.nanmedian,
                dev_func=np.nanstd, axis=None):
-    """Creates a mask of the sigma clipped pixels."""
+    """Create a mask of the sigma clipped pixels."""
     data = np.array(data)
     mask = np.zeros(data.shape, dtype=bool)
 
@@ -62,7 +62,7 @@ def sigma_clip(data, sigma_clip_low=3, sigma_clip_high=3, func=np.nanmedian,
 
 
 def minmax_clip(data, min_clip=None, max_clip=None, axis=None):
-    """Creates a mask of pixels clipped between min_clip and max_clip vals."""
+    """Create a mask of pixels clipped between min_clip and max_clip vals."""
     data = np.array(data)
     mask = np.zeros(data.shape, dtype=bool)
 
@@ -83,7 +83,8 @@ _comb_funcs = {'average': np.nanmean,
 def imcombine(image_list, output_file=None, method='average', weights=None,
               scale=None, mem_limit=1e8, reject=None,
               nlow=1, nhigh=1, min_clip=None, max_clip=None, sigma_clip_low=3,
-              sigma_clip_high=3, dtype=None, overwrite=False):
+              sigma_clip_high=3, dtype=None, overwrite=False,
+              save_compress=False):
     """Combine a set of images like IRAF imcombine.
 
     Methods:
@@ -211,7 +212,7 @@ def imcombine(image_list, output_file=None, method='average', weights=None,
 
     if output_file is not None:
         logger.info('Combined image saved at {}'.format(output_file))
-        hdu.writeto(output_file, overwrite=overwrite)
+        save_hdu(hdu, output_file, compress=save_compress)
 
     return hdu
 

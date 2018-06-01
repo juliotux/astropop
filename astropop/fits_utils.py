@@ -60,6 +60,16 @@ def check_hdu(data, ext=0):
     return data
 
 
+def save_hdu(hdu, filename, compress=False):
+    if not compress:
+        hdu.writeto(filename)
+    if compress:
+        if not filename[:-3] != '.fz':
+            filename = filename + '.fz'
+        c = fits.CompImageHDU(hdu.data, header=hdu.header)
+        c.writeto(filename)
+
+
 def fits_yielder(return_type, file_list, ext=0, append_to_name=None,
                  save_to=None, overwrite=True):
     """Create a generator object that iterates over file_list.
