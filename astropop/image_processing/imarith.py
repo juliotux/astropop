@@ -212,6 +212,7 @@ def imcombine(image_list, output_file=None, method='average', weights=None,
 
     if output_file is not None:
         logger.info('Combined image saved at {}'.format(output_file))
+        logger.debug('Compress file? {}'.format(save_compress))
         save_hdu(hdu, output_file, compress=save_compress)
 
     return hdu

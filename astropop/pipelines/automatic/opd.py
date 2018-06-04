@@ -46,7 +46,6 @@ class ROBO40Calib(SimpleCalibPipeline):
                                 exposure_key='exptime')
     sci_process_params = dict(lacosmic=True,
                               exposure_key='exptime',
-                              mem_limit=1e8,
                               inplace=True)
     _save_sci_subfolder = '{project}/{night}'
 

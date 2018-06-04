@@ -143,14 +143,14 @@ class SimpleCalibPipeline():
                     _file = os.path.join(calib_dir, _file)
                     if type == 'bias':
                         combine_bias(raw_calib.hdus(), save_file=_file,
-                                     save_compressed=self._save_fits_compressed,
+                                     save_compress=self._save_fits_compressed,
                                      **self.calib_process_params)
                     elif type == 'dark':
                         _bias = self.tune_calib_frame('bias', selected['bias'],
                                                       raw_calib)
                         combine_dark(raw_calib.hdus(), save_file=_file,
                                      master_bias=_bias,
-                                     save_compressed=self._save_fits_compressed,
+                                     save_compress=self._save_fits_compressed,
                                      **self.calib_process_params)
                     elif type == 'flat':
                         _bias = self.tune_calib_frame('bias', selected['bias'],
@@ -159,7 +159,7 @@ class SimpleCalibPipeline():
                                                       raw_calib)
                         combine_flat(raw_calib.hdus(), save_file=_file,
                                      master_bias=_bias, dark_frame=_dark,
-                                     save_compressed=self._save_fits_compressed,
+                                     save_compress=self._save_fits_compressed,
                                      **self.calib_process_params)
                     calib_filegroup.add_file(_file)
                 else:
@@ -179,12 +179,14 @@ class SimpleCalibPipeline():
         _dark = self.tune_calib_frame('dark', dark, files)
         _flat = self.tune_calib_frame('flat', flat, files)
 
-        for hdu in files.hdus():
+        for hdu, name in zip(files.hdus(), files.files):
             if _flat is None or _bias is None:
                 raise ValueError('Bias or Flat missing!')
             logger.debug("bias: {}\nflat: {}\ndark: {}".format(bias, dark,
                                                                flat))
-            yield process_image(hdu, save_to=save_to, master_bias=_bias,
+            filename = os.path.basename(name)
+            filename = os.path.join(save_to, filename)
+            yield process_image(hdu, save_to=filename, master_bias=_bias,
                                 master_flat=_flat,
                                 dark_frame=_dark,
                                 save_compressed=self._save_fits_compressed,
@@ -216,14 +218,13 @@ class SimpleCalibPipeline():
         products = self.pre_run(raw_dir, calib_dir)
 
         for p in products:
-            sci_processed_dir = os.path.join(red_dir, 'calibed_images',
-                                             p.files)
+            sci_processed_dir = os.path.join(red_dir, 'calibed_images')
             mkdir_p(sci_processed_dir)
             processed = self._process_sci_im(p.files, p.bias, p.dark, p.flat,
                                              save_to=sci_processed_dir)
             n_tot = len(p.files)
             i = 0
-            for i in processed:
+            for hdu in processed:
                 i += 1
                 logger.info('Processed file {} from {}'.format(i, n_tot))
 
