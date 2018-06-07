@@ -62,10 +62,12 @@ def check_hdu(data, ext=0):
 
 def save_hdu(hdu, filename, compress=False):
     if not compress:
+        logger.debug('Saving fits file to: {}'.format(filename))
         hdu.writeto(filename)
     if compress:
         if not filename[:-3] != '.fz':
             filename = filename + '.fz'
+        logger.debug('Saving fits file to: {}'.format(filename))
         p = fits.PrimaryHDU()
         c = fits.CompImageHDU(hdu.data, header=hdu.header,
                               compression_type='RICE_1')

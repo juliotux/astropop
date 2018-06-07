@@ -47,7 +47,7 @@ class ROBO40Calib(SimpleCalibPipeline):
     sci_process_params = dict(lacosmic=True,
                               exposure_key='exptime',
                               inplace=True)
-    _save_sci_subfolder = '{project}/{night}'
+    _save_subfolder = '{program}/{night}'
 
     def __init__(self, product_dir=None,
                  ext=1, fits_extensions=['.fz'], compression=False):

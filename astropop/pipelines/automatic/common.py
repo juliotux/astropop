@@ -208,12 +208,11 @@ class SimpleCalibPipeline():
             k = {}
             for i in keys:
                 # Assume all have same value
+                _, i, _, _ = i
                 k[i] = fg.values(i, unique=True)[0]
             subfold = self._save_subfolder.format(**k)
             calib_dir = os.path.join(calib_dir, subfold)
             red_dir = os.path.join(red_dir, subfold)
-        mkdir_p(calib_dir)
-        mkdir_p(red_dir)
         logger.debug("calib_dir: {}   product_dir: {}".format(calib_dir,
                                                               red_dir))
         return calib_dir, red_dir
@@ -221,12 +220,13 @@ class SimpleCalibPipeline():
     def run(self, raw_dir):
         """Process the data."""
         calib_dir, red_dir = self.get_dirs()
+        mkdir_p(calib_dir)
 
         products = self.pre_run(raw_dir, calib_dir)
 
         for p in products:
             if self._save_subfolder:
-                red_dir, _ = self.get_dirs(self._save_subfolder, p.files)
+                calib_dir, red_dir = self.get_dirs(self._save_subfolder, p.files)
             sci_processed_dir = os.path.join(red_dir, 'calibed_images')
             mkdir_p(sci_processed_dir)
             processed = self._process_sci_im(p.files, p.bias, p.dark, p.flat,
