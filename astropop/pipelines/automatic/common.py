@@ -275,6 +275,12 @@ class SimpleCalibPipeline():
         # First step: select science files and groups
         sci_files = self.fm.filtered(raws, **self._science_select_rules)
 
+        if 'night' not in sci_files.summary.colnames:
+            tz = self.get_timezone(sci_files)
+            night = self.get_night(sci_files, tz, iter=False)
+            raws.add_column('night', night)
+            sci_files = self.fm.filtered(raws, **self._science_select_rules)
+
         prod_list = []
         for g in self.fm.group_by(sci_files, self._science_group_keywords):
             obj = g.values('object', unique=True)[0]
