@@ -32,7 +32,7 @@ def main(args):
     pipe = ROBO40Calib(product_dir=red_fold,
                        ext=1, fits_extensions=['.fz'], compression=True)
 
-    pipe.run(fold)
+    pipe.run(fold, stack_images=False)
 
 if __name__ == '__main__':
     logger.setLevel('DEBUG')

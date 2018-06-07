@@ -28,6 +28,7 @@ class ROBO40Calib(SimpleCalibPipeline):
                                  site='OPD',
                                  instrume='ASCOM: Apogee AltaU-16M: KAF16803',
                                  telescop='Software Bisque The Sky telescope')
+    _science_name_keywords = ['object', 'night', 'filter']
     _bias_select_keywords = ['instrume', 'telescop', 'site', 'gain']
     _bias_select_rules = dict(imagetyp=['ZERO', 'zero'], shutter='CLOSE')
     _bias_name_keywords = ['night', 'ccdsum', 'gain']

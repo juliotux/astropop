@@ -10,6 +10,9 @@ from ...py_utils import mkdir_p
 from ...image_processing.utils import (combine_bias, combine_dark,
                                              combine_flat)
 from ...image_processing.ccd_processing import process_image
+from ...image_processing.imarith import imarith
+from ...image_processing.register import hdu_shift_images
+from ...fits_utils import save_hdu
 
 
 PipeProd = namedtuple('PipeProd', ['files', 'bias', 'flat', 'dark'])
@@ -21,6 +24,7 @@ class SimpleCalibPipeline():
     sci_process_params = {}
     _science_group_keywords = []
     _science_select_rules = {}
+    _science_name_keywords = []
     _bias_select_keywords = []
     _bias_select_rules = {}
     _bias_name_keywords = []
@@ -62,6 +66,9 @@ class SimpleCalibPipeline():
         elif type == 'dark':
             name = 'dark_'
             l = self._dark_name_keywords
+        elif type == 'science':
+            name = ''
+            l = self._science_name_keywords
         else:
             raise ValueError('Type {} not supported.'.format(type))
         for i in l:
@@ -191,8 +198,11 @@ class SimpleCalibPipeline():
             logger.debug("bias: {}".format(bias))
             logger.debug("dark: {}".format(dark))
             logger.debug("flat: {}".format(flat))
-            filename = os.path.basename(name)
-            filename = os.path.join(save_to, filename)
+            if save_to is not None:
+                filename = os.path.basename(name)
+                filename = os.path.join(save_to, filename)
+            else:
+                filename = None
             yield process_image(hdu, save_to=filename, master_bias=_bias,
                                 master_flat=_flat,
                                 dark_frame=_dark,
@@ -217,7 +227,7 @@ class SimpleCalibPipeline():
                                                               red_dir))
         return calib_dir, red_dir
 
-    def run(self, raw_dir):
+    def run(self, raw_dir, stack_images=False):
         """Process the data."""
         calib_dir, red_dir = self.get_dirs()
         mkdir_p(calib_dir)
@@ -226,16 +236,32 @@ class SimpleCalibPipeline():
 
         for p in products:
             if self._save_subfolder:
-                calib_dir, red_dir = self.get_dirs(self._save_subfolder, p.files)
+                _, red_dir = self.get_dirs(self._save_subfolder, p.files)
             sci_processed_dir = os.path.join(red_dir, 'calibed_images')
             mkdir_p(sci_processed_dir)
+            if stack_images:
+                save_to = None
+            else:
+                save_to = sci_processed_dir
             processed = self._process_sci_im(p.files, p.bias, p.dark, p.flat,
-                                             save_to=sci_processed_dir)
+                                             save_to=save_to)
             n_tot = len(p.files)
             i = 0
+            if stack_images:
+                acumm = None
             for hdu in processed:
                 i += 1
                 logger.info('Processed file {} from {}'.format(i, n_tot))
+                if stack_images:
+                    if acumm == None:
+                        acumm = hdu
+                    else:
+                        hdu = hdu_shift_images([acumm, hdu], method='fft')[1]
+                        acumm = imarith(acumm, hdu, '+')
+            if stack_images:
+                name = self.get_frame_name('science', p.files)
+                name = os.path.join(sci_processed_dir, name)
+                save_hdu(acumm, name)
 
     def pre_run(self, raw_dir, calib_dir):
         """Pre processing of data. Run before `run` function."""
