@@ -116,6 +116,7 @@ class SimpleCalibPipeline():
             elif type == 'flat':
                 rules = self._flat_select_rules
                 keywords = self._flat_select_keywords
+
             _select = copy.copy(rules)
             _dict = {}
             for i in keywords:
@@ -126,6 +127,8 @@ class SimpleCalibPipeline():
                                      .format(type, i))
                 _dict[i] = val[0]
             _select.update(_dict)
+
+            logger.debug("Selecting {} with rules {}".format(type, _select))
 
             _calib = self.save_fm.filtered(calib_filegroup, **_select)
             _file = None
@@ -146,6 +149,7 @@ class SimpleCalibPipeline():
                                      save_compress=self._save_fits_compressed,
                                      **self.calib_process_params)
                     elif type == 'dark':
+                        logger.debug('bias: {}'.format(selected['bias']))
                         _bias = self.tune_calib_frame('bias', selected['bias'],
                                                       raw_calib)
                         combine_dark(raw_calib.hdus(), save_file=_file,
@@ -153,6 +157,8 @@ class SimpleCalibPipeline():
                                      save_compress=self._save_fits_compressed,
                                      **self.calib_process_params)
                     elif type == 'flat':
+                        logger.debug('bias: {}'.format(selected['bias']))
+                        logger.debug('dark: {}'.format(selected['dark']))
                         _bias = self.tune_calib_frame('bias', selected['bias'],
                                                       raw_calib)
                         _dark = self.tune_calib_frame('dark', selected['dark'],
@@ -167,11 +173,11 @@ class SimpleCalibPipeline():
                                 .format(type, type))
             selected[type] = _file
 
-        for i in ['bias', 'dark', 'flat']:
-            _selection(i)
+        for type in ['bias', 'dark', 'flat']:
+            _selection(type)
 
-        return PipeProd(sci_filegroup, selected['bias'], selected['dark'],
-                        selected['flat'])
+        return PipeProd(sci_filegroup, selected['bias'],
+                        selected['flat'], selected['dark'])
 
     def _process_sci_im(self, files, bias=None, dark=None,
                            flat=None, save_to=None):
@@ -182,8 +188,9 @@ class SimpleCalibPipeline():
         for hdu, name in zip(files.hdus(), files.files):
             if _flat is None or _bias is None:
                 raise ValueError('Bias or Flat missing!')
-            logger.debug("bias: {}\nflat: {}\ndark: {}".format(bias, dark,
-                                                               flat))
+            logger.debug("bias: {}".format(bias))
+            logger.debug("dark: {}".format(dark))
+            logger.debug("flat: {}".format(flat))
             filename = os.path.basename(name)
             filename = os.path.join(save_to, filename)
             yield process_image(hdu, save_to=filename, master_bias=_bias,
@@ -207,8 +214,8 @@ class SimpleCalibPipeline():
             red_dir = os.path.join(red_dir, subfold)
         mkdir_p(calib_dir)
         mkdir_p(red_dir)
-        logger.debug("calib_dir: {}\nproduct_dir: {}".format(calib_dir,
-                                                             red_dir))
+        logger.debug("calib_dir: {}   product_dir: {}".format(calib_dir,
+                                                              red_dir))
         return calib_dir, red_dir
 
     def run(self, raw_dir):
@@ -218,6 +225,8 @@ class SimpleCalibPipeline():
         products = self.pre_run(raw_dir, calib_dir)
 
         for p in products:
+            if self._save_subfolder:
+                red_dir, _ = self.get_dirs(self._save_subfolder, p.files)
             sci_processed_dir = os.path.join(red_dir, 'calibed_images')
             mkdir_p(sci_processed_dir)
             processed = self._process_sci_im(p.files, p.bias, p.dark, p.flat,

@@ -5,7 +5,7 @@ import fnmatch
 import numpy as np
 from collections import OrderedDict
 
-from astropy.table import Table, vstack, Row
+from astropy.table import Table, vstack, Row, Column
 from astropy.io import fits
 
 from .fits_utils import fits_yielder, headers_to_table
@@ -105,9 +105,32 @@ class FileGroup():
 
     def add_file(self, file):
         """Add a file to the current group."""
-        h = list(fits_yielder('header', [file], ext=self.ext))
-        h.extend([row_to_header(r) for r in self.summary])
-        self.summary = headers_to_table(h, lower_keywords=True)
+        h = fits.getheader(file, ext=self.ext)
+        if len(self.summary) == 0:
+            self.summary = headers_to_table([h], lower_keywords=True)
+        else:
+            nh = OrderedDict()
+            for i in h.keys():
+                nh[i.lower()] = h[i]
+            h = nh
+
+            r = OrderedDict()
+            for i in self.summary.colnames:
+                if i in h.keys():
+                    r[i] = h[i]
+                else:
+                    r[i] = None
+            vals = r.values()
+            mask = [i is None for i in vals]
+            self.summary.add_row(vals, mask=mask)
+
+            for k in h.keys():
+                if k not in self.summary.colnames:
+                    col = [None]*len(self.summary)
+                    col[-1] = h[k]
+                    self.summary.add_column(Column(col, name=k))
+                    self.summary[k].mask = [i is None for i in col]
+
         self.files = np.array(list(self.files) + [file])
 
     def _intern_yielder(self, return_type, save_to=None, append_to_name=None,
