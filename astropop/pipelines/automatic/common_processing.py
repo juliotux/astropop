@@ -305,7 +305,7 @@ class SimpleCalibPipeline():
             if stack_images:
                 name = self.get_frame_name('science', p.files)
                 name = os.path.join(sci_processed_dir, name)
-                save_hdu(acumm, name)
+                save_hdu(acumm, name, compress=self._save_fits_compressed)
                 p_files = [name]
 
             p.calibed_files = p_files
