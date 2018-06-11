@@ -54,9 +54,10 @@ class ROBO40Calib(SimpleCalibPipeline):
                               inplace=True)
     _save_subfolder = '{program}/{night}'
 
-    def __init__(self, product_dir=None,
+    def __init__(self, product_dir=None, calib_dir=None,
                  ext=1, fits_extensions=['.fz'], compression=False):
         super(ROBO40Calib, self).__init__(product_dir=product_dir,
+                                          calib_dir=calib_dir,
                                           ext=ext,
                                           fits_extensions=fits_extensions,
                                           compression=compression)

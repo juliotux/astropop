@@ -15,7 +15,15 @@ from ...image_processing.register import hdu_shift_images
 from ...fits_utils import save_hdu
 
 
-PipeProd = namedtuple('PipeProd', ['files', 'bias', 'flat', 'dark'])
+class PipeProd():
+    def __init__(self, files, bias, flat, dark=None, calibed_files=None,
+                 sci_result=None):
+        self.files = files
+        self.bias = bias
+        self.flat = flat
+        self.dark = dark
+        self.calibed_files = calibed_files
+        self.sci_result = sci_result
 
 
 class SimpleCalibPipeline():
@@ -40,7 +48,7 @@ class SimpleCalibPipeline():
     _save_fits_fmt = '.fz'
     _save_fits_compressed = True
 
-    def __init__(self, product_dir=None, ext=0,
+    def __init__(self, product_dir=None, calib_dir=None, ext=0,
                  fits_extensions=['.fits'], compression=True):
         self.fm = FileManager(ext=ext, fits_extensions=fits_extensions,
                               compression=compression)
@@ -52,8 +60,17 @@ class SimpleCalibPipeline():
             if not os.path.exists(product_dir):
                 mkdir_p(product_dir)
             elif not os.path.isdir(product_dir):
-                raise ValueError('Product dir {} not valid!'.format(product_dir))
+                raise ValueError('Product dir {} not valid!'
+                                 .format(product_dir))
         self.product_dir = product_dir or os.path.expanduser('~/astropop')
+
+        if calib_dir is not None:
+            if not os.path.exists(calib_dir):
+                mkdir_p(calib_dir)
+            elif not os.path.isdir(calib_dir):
+                raise ValueError('Calibration dir {} not valid!'
+                                 .format(calib_dir))
+        self.calib_dir = calib_dir or os.path.join(self.product_dir, 'calib')
 
     def get_frame_name(self, type, filegroup):
         """Return a convenient name for a master frame."""
@@ -195,8 +212,10 @@ class SimpleCalibPipeline():
         for type in ['bias', 'dark', 'flat']:
             _selection(type)
 
-        return PipeProd(sci_filegroup, selected['bias'],
-                        selected['flat'], selected['dark'])
+        return PipeProd(files=sci_filegroup,
+                        bias=selected['bias'],
+                        flat=selected['flat'],
+                        dark=selected['dark'])
 
     def _process_sci_im(self, files, bias=None, dark=None,
                         flat=None, save_to=None):
@@ -204,10 +223,12 @@ class SimpleCalibPipeline():
         _dark = self.tune_calib_frame('dark', dark, files)
         _flat = self.tune_calib_frame('flat', flat, files)
 
+        if _flat is None or _bias is None:
+            logger.error('Bias or Flat missing! Skipping product.')
+            return ([], [])
+
         for hdu, name, night in zip(files.hdus(), files.files,
                                     files.values('night')):
-            if _flat is None or _bias is None:
-                raise ValueError('Bias or Flat missing!')
             logger.debug("bias: {}".format(bias))
             logger.debug("dark: {}".format(dark))
             logger.debug("flat: {}".format(flat))
@@ -220,15 +241,15 @@ class SimpleCalibPipeline():
             if 'night' not in hdu.header.keys():
                 hdu.header['night'] = night
 
-            yield process_image(hdu, save_to=filename, master_bias=_bias,
-                                master_flat=_flat,
-                                dark_frame=_dark,
-                                save_compressed=self._save_fits_compressed,
-                                **self.sci_process_params)
+            yield (process_image(hdu, save_to=filename, master_bias=_bias,
+                                 master_flat=_flat,
+                                 dark_frame=_dark,
+                                 save_compressed=self._save_fits_compressed,
+                                 **self.sci_process_params), filename)
 
     def get_dirs(self, subfolder=None, fg=None):
         """Return the path to calib_dir and product_dir."""
-        calib_dir = os.path.join(self.product_dir, 'calib')
+        calib_dir = self.calib_dir
         red_dir = os.path.join(self.product_dir, 'science')
         if subfolder is not None:
             keys = Formatter().parse(self._save_subfolder)
@@ -252,9 +273,12 @@ class SimpleCalibPipeline():
         products = self.pre_run(raw_dir, calib_dir)
 
         for p in products:
+            p_files = []
             if self._save_subfolder:
-                _, red_dir = self.get_dirs(self._save_subfolder, p.files)
-            sci_processed_dir = os.path.join(red_dir, 'calibed_images')
+                # _, red_dir = self.get_dirs(self._save_subfolder, p.files)
+                _, sci_processed_dir = self.get_dirs(self._save_subfolder,
+                                                     p.files)
+            # sci_processed_dir = os.path.join(red_dir, 'calibed_images')
             mkdir_p(sci_processed_dir)
             if stack_images:
                 save_to = None
@@ -266,8 +290,9 @@ class SimpleCalibPipeline():
             i = 0
             if stack_images:
                 acumm = None
-            for hdu in processed:
+            for hdu, fname in [n for n in processed if n[0] is not None]:
                 i += 1
+                p_files.append(fname)
                 logger.info('Processed file {} from {}'.format(i, n_tot))
                 if stack_images:
                     if acumm == None:
@@ -275,10 +300,16 @@ class SimpleCalibPipeline():
                     else:
                         hdu = hdu_shift_images([acumm, hdu], method='fft')[1]
                         acumm = imarith(acumm, hdu, '+')
+
             if stack_images:
                 name = self.get_frame_name('science', p.files)
                 name = os.path.join(sci_processed_dir, name)
                 save_hdu(acumm, name)
+                p_files = [name]
+
+            p.calibed_files = p_files
+
+        return products
 
     def pre_run(self, raw_dir, calib_dir):
         """Pre processing of data. Run before `run` function."""
