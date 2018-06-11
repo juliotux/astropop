@@ -265,7 +265,7 @@ class SimpleCalibPipeline():
                                                               red_dir))
         return calib_dir, red_dir
 
-    def run(self, raw_dir, stack_images=False):
+    def run(self, raw_dir, stack_images=False, save_calibed=True):
         """Process the data."""
         calib_dir, red_dir = self.get_dirs()
         mkdir_p(calib_dir)
@@ -280,10 +280,11 @@ class SimpleCalibPipeline():
                                                      p.files)
             # sci_processed_dir = os.path.join(red_dir, 'calibed_images')
             mkdir_p(sci_processed_dir)
-            if stack_images:
+            if not save_calibed:
                 save_to = None
             else:
-                save_to = sci_processed_dir
+                save_to = os.path.join(sci_processed_dir, 'calibed_images')
+                mkdir_p(save_to)
             processed = self._process_sci_im(p.files, p.bias, p.dark, p.flat,
                                              save_to=save_to)
             n_tot = len(p.files)

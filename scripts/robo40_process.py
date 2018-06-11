@@ -23,6 +23,11 @@ def main():
     parser.add_option("-s", "--stack", action="store_true", dest="stack_images",
                       default=False,
                       help="Stack all science images in one (sum)")
+    parser.add_option("-i", "--individual", action="store_true",
+                      dest="save_calibed",
+                      default=True,
+                      help="Save individual calibed science images "
+                           "in 'calib_images' subfolder")
     parser.add_option("-d", "--dest", dest="reduced_folder",
                       default='~/astropop_reduced', metavar="FOLDER",
                       help="Reduced images (and created calib frames) will "
@@ -42,6 +47,7 @@ def main():
     raw_dirs = args
 
     stack_images = options.stack_images
+    individual = options.save_calibed
     reduced_folder = os.path.expanduser(options.reduced_folder)
     reduced_folder = os.path.abspath(reduced_folder)
     mkdir_p(reduced_folder)
@@ -58,8 +64,8 @@ def main():
                        ext=1, fits_extensions=['.fz'], compression=True)
 
     for fold in raw_dirs:
-        prods = pipe.run(fold, stack_images=stack_images)
-        print(prods)
+        prods = pipe.run(fold, stack_images=stack_images,
+                         save_calibed=individual)
 
 if __name__ == '__main__':
     logger.setLevel('DEBUG')
