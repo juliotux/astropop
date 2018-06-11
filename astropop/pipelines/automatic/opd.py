@@ -7,7 +7,7 @@ import numpy as np
 import os
 
 
-from .common import SimpleCalibPipeline
+from .common_processing import SimpleCalibPipeline
 from ...catalogs import default_catalogs
 from ...logger import logger
 from ...image_processing.ccd_processing import trim_image
@@ -29,23 +29,27 @@ class ROBO40Calib(SimpleCalibPipeline):
                                  instrume='ASCOM: Apogee AltaU-16M: KAF16803',
                                  telescop='Software Bisque The Sky telescope')
     _science_name_keywords = ['object', 'night', 'filter']
-    _bias_select_keywords = ['instrume', 'telescop', 'site', 'gain']
+    _bias_select_keywords = ['instrume', 'telescop', 'site', 'gain', 'night']
     _bias_select_rules = dict(imagetyp=['ZERO', 'zero'], shutter='CLOSE')
     _bias_name_keywords = ['night', 'ccdsum', 'gain']
     _flat_select_keywords = ['instrume', 'telescop', 'site', 'gain',
-                             'filter', 'ccdsum']
+                             'filter', 'ccdsum', 'night']
     _flat_select_rules = dict(imagetyp=['FLAT','flat'], shutter='OPEN')
     _flat_name_keywords = ['night', 'ccdsum', 'gain', 'filter']
     _dark_select_keywords = ['instrume', 'telescop', 'site', 'gain',
-                             'ccdsum']
+                             'ccdsum', 'night']
     _dark_select_rules = dict(imagetyp=['DARK', 'dark'], shutter='CLOSE')
     _dark_name_keywords = ['night', 'ccdsum', 'gain']
-    calib_process_params = dict(combine_method='median',
+    calib_process_params = dict(gain_key=None,
+                                gain=None,
+                                combine_method='median',
                                 combine_sigma_clip=3,
                                 remove_cosmics=True,
-                                mem_limit=1e8,
+                                mem_limit=1e9,
                                 exposure_key='exptime')
-    sci_process_params = dict(lacosmic=True,
+    sci_process_params = dict(gain_key=None,
+                              gain=None,
+                              lacosmic=True,
                               exposure_key='exptime',
                               inplace=True)
     _save_subfolder = '{program}/{night}'
@@ -56,6 +60,32 @@ class ROBO40Calib(SimpleCalibPipeline):
                                           ext=ext,
                                           fits_extensions=fits_extensions,
                                           compression=compression)
+
+    def get_frame_name(self, type, filegroup):
+        """Return a convenient name for a master frame."""
+        if type == 'bias':
+            name = 'bias_'
+            l = self._bias_name_keywords
+        elif type == 'flat':
+            name = 'flat_'
+            l = self._flat_name_keywords
+        elif type == 'dark':
+            name = 'dark_'
+            l = self._dark_name_keywords
+        elif type == 'science':
+            name = ''
+            l = self._science_name_keywords
+        else:
+            raise ValueError('Type {} not supported.'.format(type))
+        for i in l:
+            v = filegroup.values(i, unique=True)[0]
+            if i == 'ccdsum':
+                v = v.strip()
+                v = v.replace(' ', 'x')
+            name += '{}_'.format(v)
+        name = name.replace(' ', '-').strip('_')
+        name += self._save_fits_fmt
+        return name
 
     def _compute_night(self, dateobs, timezone):
         t = Time(dateobs, format='isot', scale='utc')

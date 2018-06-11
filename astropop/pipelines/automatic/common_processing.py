@@ -113,6 +113,15 @@ class SimpleCalibPipeline():
         """Select, group and process calib frames."""
         selected = {'bias': None, 'flat': None, 'dark': None}
 
+        # check if 'night' keyword already in headers
+        add_key = {}
+        for h in raw_filegroup.headers():
+            if 'night' not in h.keys():
+                # They should have the same values
+                add_key = {'night': sci_filegroup.values('night',
+                                                         unique=True)[0]}
+                break
+
         def _selection(type):
             if type == 'bias':
                 rules = self._bias_select_rules
@@ -154,6 +163,7 @@ class SimpleCalibPipeline():
                     if type == 'bias':
                         combine_bias(raw_calib.hdus(), save_file=_file,
                                      save_compress=self._save_fits_compressed,
+                                     add_keywords=add_key,
                                      **self.calib_process_params)
                     elif type == 'dark':
                         logger.debug('bias: {}'.format(selected['bias']))
@@ -162,6 +172,7 @@ class SimpleCalibPipeline():
                         combine_dark(raw_calib.hdus(), save_file=_file,
                                      master_bias=_bias,
                                      save_compress=self._save_fits_compressed,
+                                     add_keywords=add_key,
                                      **self.calib_process_params)
                     elif type == 'flat':
                         logger.debug('bias: {}'.format(selected['bias']))
@@ -173,6 +184,7 @@ class SimpleCalibPipeline():
                         combine_flat(raw_calib.hdus(), save_file=_file,
                                      master_bias=_bias, dark_frame=_dark,
                                      save_compress=self._save_fits_compressed,
+                                     add_keywords=add_key,
                                      **self.calib_process_params)
                     calib_filegroup.add_file(_file)
                 else:
@@ -187,12 +199,13 @@ class SimpleCalibPipeline():
                         selected['flat'], selected['dark'])
 
     def _process_sci_im(self, files, bias=None, dark=None,
-                           flat=None, save_to=None):
+                        flat=None, save_to=None):
         _bias = self.tune_calib_frame('bias', bias, files)
         _dark = self.tune_calib_frame('dark', dark, files)
         _flat = self.tune_calib_frame('flat', flat, files)
 
-        for hdu, name in zip(files.hdus(), files.files):
+        for hdu, name, night in zip(files.hdus(), files.files,
+                                    files.values('night')):
             if _flat is None or _bias is None:
                 raise ValueError('Bias or Flat missing!')
             logger.debug("bias: {}".format(bias))
@@ -203,6 +216,10 @@ class SimpleCalibPipeline():
                 filename = os.path.join(save_to, filename)
             else:
                 filename = None
+
+            if 'night' not in hdu.header.keys():
+                hdu.header['night'] = night
+
             yield process_image(hdu, save_to=filename, master_bias=_bias,
                                 master_flat=_flat,
                                 dark_frame=_dark,
