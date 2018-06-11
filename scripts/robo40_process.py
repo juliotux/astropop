@@ -1,22 +1,12 @@
-""""""
+#!/bin/env python3
 
 import sys
 import os
 from optparse import OptionParser
 
-try:
-    from astropop.pipelines.automatic.opd import ROBO40Calib
-    from astropop.py_utils import mkdir_p
-    from astropop.logger import logger
-except ModuleNotFoundError:
-    folder = os.path.dirname(__file__)
-    folder = os.path.join(folder, '..')
-    folder = os.path.abspath(folder)
-    sys.path.append(folder)
-    from astropop.pipelines.automatic.opd import ROBO40Calib
-    from astropop.py_utils import mkdir_p
-    from astropop.logger import logger
-
+from astropop.pipelines.automatic.opd import ROBO40Calib
+from astropop.py_utils import mkdir_p
+from astropop.logger import logger
 
 def main():
     parser = OptionParser("usage: %prog [options] raw_dir [raw_dir2, ...]")
@@ -28,6 +18,10 @@ def main():
                       default=True,
                       help="Save individual calibed science images "
                            "in 'calib_images' subfolder")
+    parser.add_option("-v", "--verbose", dest="verbose",
+                      action="store_true",
+                      default=False,
+                      help="Enable 'DEBUG' output in python log")
     parser.add_option("-d", "--dest", dest="reduced_folder",
                       default='~/astropop_reduced', metavar="FOLDER",
                       help="Reduced images (and created calib frames) will "
@@ -38,13 +32,17 @@ def main():
                            "If not set, reduced_folder/calib will be used"
                            " instead.")
 
-
     (options, args) = parser.parse_args()
 
     if len(args) < 1:
         raise ValueError('No raw folder passed!')
 
     raw_dirs = args
+
+    if options.verbose:
+        logger.setLevel('DEBUG')
+    else:
+        logger.setLevel('INFO')
 
     stack_images = options.stack_images
     individual = options.save_calibed
@@ -68,5 +66,4 @@ def main():
                          save_calibed=individual)
 
 if __name__ == '__main__':
-    logger.setLevel('DEBUG')
     main()
