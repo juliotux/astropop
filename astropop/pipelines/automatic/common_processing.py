@@ -302,10 +302,11 @@ class SimpleCalibPipeline():
                         hdu = hdu_shift_images([acumm, hdu], method='fft')[1]
                         acumm = imarith(acumm, hdu, '+')
 
-            if stack_images:
+            if stack_images and acumm is not None:
                 name = self.get_frame_name('science', p.files)
                 name = os.path.join(sci_processed_dir, name)
-                save_hdu(acumm, name, compress=self._save_fits_compressed)
+                save_hdu(acumm, name, compress=self._save_fits_compressed,
+                         overwrite=True)
                 p_files = [name]
 
             p.calibed_files = p_files
