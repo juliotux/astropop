@@ -305,6 +305,7 @@ class SimpleCalibPipeline():
             if stack_images and acumm is not None:
                 name = self.get_frame_name('science', p.files)
                 name = os.path.join(sci_processed_dir, name)
+                acumm.header['hierarch stacked images'] = i
                 save_hdu(acumm, name, compress=self._save_fits_compressed,
                          overwrite=True)
                 p_files = [name]
@@ -318,19 +319,24 @@ class SimpleCalibPipeline():
         if not os.path.isdir(raw_dir):
             raise ValueError('Raw dir {} not valid!'.format(raw_dir))
         raw_dir = os.path.abspath(raw_dir)
+        logger.info('Processing Raw Folder: {}'.format(raw_dir))
 
+        logger.debug('Creating file groups for RAW and Calib files.')
         calib_files = self.save_fm.create_filegroup(path=calib_dir)
         raws = self.fm.create_filegroup(path=raw_dir)
 
         # First step: select science files and groups
+        logger.debug('Creating file groups for Science files.')
         sci_files = self.fm.filtered(raws, **self._science_select_rules)
 
+        logger.debug('Computing night')
         if 'night' not in sci_files.summary.colnames:
             tz = self.get_timezone(sci_files)
             night = self.get_night(sci_files, tz, iter=False)
             raws.add_column('night', night)
             sci_files = self.fm.filtered(raws, **self._science_select_rules)
 
+        logger.debug('Grouping science files.')
         prod_list = []
         for g in self.fm.group_by(sci_files, self._science_group_keywords):
             obj = g.values('object', unique=True)[0]
@@ -339,6 +345,7 @@ class SimpleCalibPipeline():
             else:
                 prod_list.append(g)
 
+        logger.debug('Processing products.')
         products = []
         for sci_fg in prod_list:
             products.append(self.select_calib(sci_fg, calib_files, raws,

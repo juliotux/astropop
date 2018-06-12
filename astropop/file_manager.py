@@ -2,10 +2,11 @@
 
 import os
 import fnmatch
+import glob
 import numpy as np
 from collections import OrderedDict
 
-from astropy.table import Table, vstack, Row, Column
+from astropy.table import Table, Row, Column
 from astropy.io import fits
 
 from .fits_utils import fits_yielder, headers_to_table
@@ -13,18 +14,25 @@ from .py_utils import check_iterable
 
 
 def list_fits_files(directory, fits_extensions=['.fts', '.fits', '.fit', '.fz'],
-                    compression_extensions=None,
+                    compression_extensions=['.gz', '.bz2', '.Z', '.zip'],
                     exclude=None):
     """List all fist files in a directory, if compressed or not."""
-    all_files = os.listdir(directory)
+    # all_files = os.listdir(directory)
 
-    for i in ['.gz', '.bz2', '.Z', '.zip']:
-        fits_extensions.extend([e + i for e in fits_extensions])
+    if compression_extensions is not None:
+        for i in compression_extensions:
+            fits_extensions.extend([e + i for e in fits_extensions])
 
-    f = []
+    # f = []
     # Filter by filename
-    for e in fits_extensions:
-        f.extend(fnmatch.filter(all_files, '*' + e))
+    # for e in fits_extensions:
+    #     f.extend(fnmatch.filter(all_files, '*' + e))
+
+    # speedup find files with glob
+    f = []
+    for i in fits_extensions:
+        f.extend(glob.glob(os.path.join(directory, '*' + i)))
+
     # Filter excluded files
     if exclude is not None:
         if not check_iterable(exclude):
