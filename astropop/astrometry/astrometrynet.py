@@ -310,6 +310,24 @@ def solve_astrometry_image(filename, return_wcs=False, image_params={}):
                                           image_params=image_params)
 
 
+def solve_astrometry_hdu(hdu, return_wcs=False, image_params={}):
+    """
+    image_params are:
+        pltscl: plate scale (arcsec/px)
+        ra: right ascension (decimal degrees)
+        dec: declination (decimal degrees)
+        pltscl_key: header key for plate scale
+        ra_key: header key for right ascension
+        dec_key: header key for declination
+        radius: maximum search radius
+    """
+    f = NamedTemporaryFile(suffix='.fits')
+    hdu = fits.PrimaryHDU(hdu.data, header=hdu.header)
+    hdu.writeto(f.name)
+    return AstrometrySolver().solve_field(f.name, wcs=return_wcs,
+                                          image_params=image_params)
+
+
 def fit_wcs(x, y, ra, dec, image_width, image_height, sip=False,
             command=shutil.which('fit-wcs')):
     """Run astrometry.net fit-wcs command

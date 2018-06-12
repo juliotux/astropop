@@ -22,6 +22,11 @@ def main():
                       action="store_true",
                       default=False,
                       help="Enable 'DEBUG' output in python log")
+    parser.add_option("-a", "--astrometry", dest="astrometry",
+                      action="store_true",
+                      default=False,
+                      help="Enable astrometry solving of stacked images "
+                           "with astrometry.net")
     parser.add_option("-d", "--dest", dest="reduced_folder",
                       default='~/astropop_reduced', metavar="FOLDER",
                       help="Reduced images (and created calib frames) will "
@@ -46,6 +51,7 @@ def main():
 
     stack_images = options.stack_images
     individual = options.save_calibed
+    astrometry = options.astrometry
     reduced_folder = os.path.expanduser(options.reduced_folder)
     reduced_folder = os.path.abspath(reduced_folder)
     mkdir_p(reduced_folder)
@@ -63,7 +69,8 @@ def main():
 
     for fold in raw_dirs:
         prods = pipe.run(fold, stack_images=stack_images,
-                         save_calibed=individual)
+                         save_calibed=individual,
+                         astrometry=astrometry)
 
 if __name__ == '__main__':
     main()

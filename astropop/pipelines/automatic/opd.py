@@ -52,6 +52,9 @@ class ROBO40Calib(SimpleCalibPipeline):
                               lacosmic=True,
                               exposure_key='exptime',
                               inplace=True)
+    astrometry_params = dict(ra_key='RA',
+                             dec_key='DEC',
+                             pltscl=0.45)
     _save_subfolder = '{program}/{night}'
 
     def __init__(self, product_dir=None, calib_dir=None,

@@ -12,6 +12,7 @@ from ...image_processing.utils import (combine_bias, combine_dark,
 from ...image_processing.ccd_processing import process_image
 from ...image_processing.imarith import imarith
 from ...image_processing.register import hdu_shift_images
+from ...astrometry.astrometrynet import solve_astrometry_hdu
 from ...fits_utils import save_hdu
 
 
@@ -30,6 +31,7 @@ class SimpleCalibPipeline():
     template = 'LNA_robo40_photometry'
     calib_process_params = {}
     sci_process_params = {}
+    astrometry_params = {}
     _science_group_keywords = []
     _science_select_rules = {}
     _science_name_keywords = []
@@ -218,7 +220,7 @@ class SimpleCalibPipeline():
                         dark=selected['dark'])
 
     def _process_sci_im(self, files, bias=None, dark=None,
-                        flat=None, save_to=None):
+                        flat=None, save_to=None, astrometry=False):
         _bias = self.tune_calib_frame('bias', bias, files)
         _dark = self.tune_calib_frame('dark', dark, files)
         _flat = self.tune_calib_frame('flat', flat, files)
@@ -247,6 +249,37 @@ class SimpleCalibPipeline():
                                  save_compressed=self._save_fits_compressed,
                                  **self.sci_process_params), filename)
 
+    def _solve_astrometry(self, hdu):
+        try:
+            params = copy.copy(self.astrometry_params)
+            solved = solve_astrometry_hdu(hdu, return_wcs=True,
+                                            image_params=params)
+        except:
+            solved = None
+        if solved is None and 'pltscl' in self.astrometry_params.keys():
+            # try with 2 times the plate scale (2x2 binning)
+            try:
+                params = copy.copy(self.astrometry_params)
+                params['pltscl'] = 2*params['pltscl']
+                solved = solve_astrometry_hdu(hdu, return_wcs=True,
+                                              image_params=params)
+                logger.info('Image astrometry solved.')
+                hdu.header['hierarch astrometry.net solved'] = True
+            except Exception as e:
+                logger.warn('Astrometry not solved! {}'.format(e))
+                hdu.header['hierarch astrometry.net solved'] = False
+
+        if solved is not None:
+            for i in hdu.header.keys():
+                # Clean previous wcs
+                if i in ['CRPIX1', 'CRPIX2', 'CD1_1', 'CD1_2', 'CD2_1', 'CD2_2',
+                         'CRVAL1', 'CRVAL2', 'CTYPE1', 'CTYPE2', 'CUNIT1',
+                         'CUNIT2']:
+                    hdu.header.pop(i)
+            hdu.header.update(solved.to_header(relax=True))
+
+        return hdu
+
     def get_dirs(self, subfolder=None, fg=None):
         """Return the path to calib_dir and product_dir."""
         calib_dir = self.calib_dir
@@ -265,7 +298,8 @@ class SimpleCalibPipeline():
                                                               red_dir))
         return calib_dir, red_dir
 
-    def run(self, raw_dir, stack_images=False, save_calibed=True):
+    def run(self, raw_dir, stack_images=False, save_calibed=True,
+            astrometry=False):
         """Process the data."""
         calib_dir, red_dir = self.get_dirs()
         mkdir_p(calib_dir)
@@ -291,6 +325,7 @@ class SimpleCalibPipeline():
             i = 0
             if stack_images:
                 acumm = None
+                logger.info('Stacking images.')
             for hdu, fname in [n for n in processed if n[0] is not None]:
                 i += 1
                 p_files.append(fname)
@@ -305,6 +340,8 @@ class SimpleCalibPipeline():
             if stack_images and acumm is not None:
                 name = self.get_frame_name('science', p.files)
                 name = os.path.join(sci_processed_dir, name)
+                if astrometry:
+                    acumm = self._solve_astrometry(acumm)
                 acumm.header['hierarch stacked images'] = i
                 save_hdu(acumm, name, compress=self._save_fits_compressed,
                          overwrite=True)
