@@ -87,16 +87,11 @@ def estimate_normalize(o, e, positions, n_consecutive):
 
 def compute_theta(q, u):
     '''Giving q and u, compute theta'''
-    # theta = np.degrees(0.5*np.arctan(u/q)) % 180
-    # result['theta'] = {'value': theta, 'sigma': 28.65*p_err/p}
-    # Do in the pccdpack way
-    theta = np.degrees(np.arctan(u/q))
-    if q < 0:
-        theta = theta + 180
-    if u < 0 and q > 0:
-        theta = theta + 360
-    theta = theta/2
-    theta = theta % 180
+    # numpy arctan2 already looks for quadrants and is defined in [-pi, pi]
+    theta = np.degrees(0.5*np.arctan2(u, q))
+    # do not allow negative values
+    if theta < 0:
+        theta += 180
     return theta
 
 
