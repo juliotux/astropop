@@ -2,16 +2,55 @@
 
 from skimage.feature import register_translation
 from scipy.ndimage import fourier_shift
+from scipy.ndimage import shift as scipy_shift
+from scipy.signal import correlate2d
 import numpy as np
 from astropy.wcs import WCS
 
 from ..logger import logger
 
 
+def translate(image, shift, subpixel=True, cval=0):
+    """Translate an image by (dy, dx) using scipy.
+
+    Based on stsci.image.translation algorithm
+
+    cval = value to fill empty pixels after shift.
+    """
+    # for subpixel, a correlation kernel need translation
+    if subpixel:
+        rot = 0
+        dy, dx = shift
+        dx, dy = -dx, -dy
+        if dx >= 0 and dy >= 0:
+            rot = 2
+        elif dx >= 0 and dy < 0:
+            rot = 1
+        elif dx < 0 and dy >= 0:
+            rot = 3
+        elif dx <0 and dy < 0:
+            rot = 0
+        dx, dy = np.abs([dx, dy])
+        if rot % 2 != 0:
+            dx, dy = dy, dx
+
+        nim = np.rot90(image, rot)
+        nim = scipy_shift(nim, (dy, dx), mode='constant', cval=cval)
+
+        # correlation kernel to fix subpixel shifting
+        x, y = dx % 1.0, dy % 1.0
+        kernel = np.array([[x*y    , (1-x)*y    ],
+                           [(1-y)*x, (1-y)*(1-x)]])
+        nim = correlate2d(nim, kernel, mode='full', fillvalue=cval)
+        return np.rot90(nim, -rot % 4).astype(image.dtype)[:-1, :-1]
+
+    return scipy_shift(image, shift, mode='constant', cval=cval)
+
+
 def create_fft_shift_list(image_list):
     """Use fft to calculate the shifts between images in a list.
 
-    Return a set os (y,x) shift pairs.
+    Return a set os (y, x) shift pairs.
     """
     shifts = [(0.0, 0.0)]*len(image_list)
     for i in range(len(image_list)-1):
@@ -21,68 +60,63 @@ def create_fft_shift_list(image_list):
     return shifts
 
 
-def apply_shift(image, shift, method='fft'):
-    """Apply a list of (y,x) shifts to a list of images.
+def apply_shift(image, shift, method='fft', subpixel=True, footprint=False):
+    """Apply a shifts of (dy, dx) to a list of images.
 
     Parameters:
         image : ndarray_like
             The image to be shifted.
-        shift : array_like
-            (y,x) shift pais, like the ones created by create_fft_shift_list.
+        shift: array_like
+            shift to be applyed (dy, dx)
         method : string
             The method used for shift images. Can be:
             - 'fft' -> scipy fourier_shift
-            - 'wcs' -> astropy reproject_interp
+            - 'simple' -> simples translate using scipy
 
     Return the shifted images.
     """
-    # wcs method is used to avoid problems with fft transform in problematic
-    # images
-    if method == 'wcs':
-        from reproject import reproject_interp
-        cr = image.shape[0]/2
-
-        w = WCS(naxis=2)
-        w.wcs.crpix = [cr, cr]
-        w.wcs.cdelt = [1, 1]
-        w.wcs.crval = [0, 0]
-        w.wcs.ctype = ["RA---TAN", "DEC--TAN"]
-
-        w2 = WCS(naxis=2)
-        w2.wcs.crpix = [cr - shift[1], cr - shift[0]]
-        w2.wcs.cdelt = [1, 1]
-        w2.wcs.crval = [0, 0]
-        w2.wcs.ctype = ["RA---TAN", "DEC--TAN"]
-
-        return reproject_interp((image, w), w2, shape_out=image.shape)[0]
-
     # Shift with fft, much more precise and fast
-    elif method == 'fft':
+    if method == 'fft':
         nimage = fourier_shift(np.fft.fftn(image), np.array(shift))
-        return np.fft.ifftn(nimage).real.astype(image.dtype)
+        nimage = np.fft.ifftn(nimage).real.astype(image.dtype)
+        if footprint:
+            foot = np.ones(nimage.shape)
+            foot = translate(foot, shift, subpixel=True, cval=0)
+            return nimage, foot
+        else:
+            return nimage
+
+    elif method == 'simple':
+        nimage = translate(image, shift, subpixel=subpixel, cval=0)
+        if footprint:
+            foot = np.ones(nimage.shape)
+            foot = translate(foot, shift, subpixel=subpixel, cval=0)
+            return nimage, foot
+        else:
+            return nimage
 
     else:
         raise ValueError('Unrecognized shift image method.')
 
 
 def apply_shift_list(image_list, shift_list, method='fft'):
-    """Apply a list of (y,x) shifts to a list of images.
+    """Apply a list of (y, x) shifts to a list of images.
 
     Parameters:
         image_list : ndarray_like
             A list with the images to be shifted.
         shift_list : array_like
-            A list with (y,x)shift pairs, like the ones created by
+            A list with (x, y)shift pairs, like the ones created by
             create_fft_shift_list.
         method : string
             The method used for shift images. Can be:
             - 'fft' -> scipy fourier_shift
-            - 'wcs' -> astropy reproject_interp
+            - 'simple' -> simples translate using scipy
 
     Return a new image_list with the shifted images.
     """
     return [apply_shift(i, s, method=method) for i, s in zip(image_list,
-                                                             shift_list)]
+                                                              shift_list)]
 
 
 def hdu_shift_images(hdu_list, method='fft'):
