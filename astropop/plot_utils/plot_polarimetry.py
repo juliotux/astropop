@@ -19,6 +19,7 @@ def plot_polarimetry_field(ax, x, y, p, theta, wcs=None,
                            scale=1.0/0.1, ds9_clip=(0, 98),
                            ds9_stretch='linear', ds9_bias=0.5,
                            ds9_contrast=1.0, ds9_cmap='Greys',
+                           ds9_alpha=1.0,
                            vector_color='r', vector_alpha=1.0,
                            vector_width=1.0):
     '''Plot polarimetry data for all stars of a field.
@@ -38,7 +39,8 @@ def plot_polarimetry_field(ax, x, y, p, theta, wcs=None,
         norm = DS9Normalize(stretch=ds9_stretch, clip_lo=ds9_clip[0],
                             clip_hi=ds9_clip[1], bias=ds9_bias,
                             contrast=ds9_contrast)
-        ax.imshow(dss, origin='lower', norm=norm, cmap=ds9_cmap)
+        ax.imshow(dss, origin='lower', norm=norm, cmap=ds9_cmap,
+                  alpha=ds9_alpha)
 
     # Plot the vectors as lines in the field
     for xi, yi, pi, ti in zip(x, y, p, theta):
