@@ -37,7 +37,8 @@ class StackedPhotometryPipeline():
         for i in keys:
             # Assume all have same value
             _, i, _, _ = i
-            k[i] = filegroup.values(i, unique=True)[0]
+            if i is not None:
+                k[i] = filegroup.values(i, unique=True)[0]
         name = self.save_file_name.format(**k)
         return os.path.join(self.prod_dir, self.save_file_dir, name)
 
@@ -58,7 +59,8 @@ class StackedPhotometryPipeline():
         fm = FileManager(self.image_ext)
         if check_iterable(prod.calibed_files):
             if len(prod.calibed_files) > 1:
-                fg = prod.calibed_files
+                fg = fm.create_filegroup(files=prod.calibed_files,
+                                         ext=self.image_ext)
                 stacked = None
                 for i in fg.hdus():
                     if stacked is None:
@@ -68,14 +70,17 @@ class StackedPhotometryPipeline():
                         stacked = imarith(stacked, s, '+')
             elif len(prod.calibed_files) == 1:
                 stacked = prod.calibed_files[0]
-                fg = fm.create_filegroup(files=prod.calibed_files)
+                fg = fm.create_filegroup(files=prod.calibed_files,
+                                         ext=self.image_ext)
                 stacked = check_hdu(stacked, ext=self.image_ext)
             else:
                 logger.warn("Product failed: No calibrated images. raw files: {}"
                             .format(prod.files.files))
+                return
         else:
             stacked = prod.calibed_files
-            fg = fm.create_filegroup(files=prod.calibed_files)
+            fg = fm.create_filegroup(files=prod.calibed_files,
+                                     ext=self.image_ext)
             stacked = check_hdu(stacked, ext=self.image_ext)
 
         filt = self.get_filter(fg)
@@ -95,10 +100,12 @@ class StackedPhotometryPipeline():
                 selected_aperture = g['aperture'][0]
                 snr = g_snr
 
-        phot = phot[np.where(phot['aperture'] == selected_aperture)]
+        phot = phot['aperture']
+        phot = phot[phot['aperture'] == selected_aperture]
+        phot = phot.as_array()
 
         imhdu = fits.PrimaryHDU(stacked.data, header=stacked.header)
-        tbhdu = fits.TableHDU(phot, name='photometry')
+        tbhdu = fits.BinTableHDU(phot, name='photometry')
 
         filename = self.get_filename(fg)
         mkdir_p(os.path.dirname(filename))
