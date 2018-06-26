@@ -231,9 +231,9 @@ class SimpleCalibPipeline():
 
         for hdu, name, night in zip(files.hdus(), files.files,
                                     files.values('night')):
-            logger.debug("bias: {}".format(bias))
-            logger.debug("dark: {}".format(dark))
-            logger.debug("flat: {}".format(flat))
+            logger.info("bias: {}".format(bias))
+            logger.info("dark: {}".format(dark))
+            logger.info("flat: {}".format(flat))
             if save_to is not None:
                 filename = os.path.basename(name)
                 filename = os.path.join(save_to, filename)

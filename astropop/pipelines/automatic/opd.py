@@ -8,6 +8,7 @@ import os
 
 
 from .common_processing import SimpleCalibPipeline
+from .common_photometry import StackedPhotometryPipeline
 from ...catalogs import default_catalogs
 from ...logger import logger
 from ...image_processing.ccd_processing import trim_image
@@ -154,8 +155,34 @@ class ROBO40Calib(SimpleCalibPipeline):
 
         return
 
-    def post_run(self, raw_dir):
-        calib_dir, red_dir = self.get_dirs(raw_dir)
-        fm = FileManager(ext=1, fits_extensions=['.fz'])
-        sci = fm.create_filegroup(os.path.join(red_dir, 'calibed_images'))
-        groups = fm.group_by(sci, 'project')
+    # def post_run(self, raw_dir):
+    #     calib_dir, red_dir = self.get_dirs(raw_dir)
+    #     fm = FileManager(ext=1, fits_extensions=['.fz'])
+    #     sci = fm.create_filegroup(os.path.join(red_dir, 'calibed_images'))
+    #     groups = fm.group_by(sci, 'project')
+
+
+class ROBO40Photometry(StackedPhotometryPipeline):
+    photometry_parameters = dict(detect_snr=5,
+                                 detect_fwhm=4,
+                                 photometry_type='aperture',
+                                 r=np.arange(20),
+                                 r_in=25,
+                                 r_out=30,
+                                 solve_photometry_type='montecarlo',
+                                 montecarlo_iters=300,
+                                 montecarlo_percentage=0.2)
+    astrometry_parameters = dict(ra_key='RA',
+                                 dec_key='DEC',
+                                 plate_scale=0.45,
+                                 identify_limit_angle='2 arcsec')
+    combine_parameters = dict(method='sum',
+                              weights=None,
+                              scale=None,
+                              mem_limit=1e8,
+                              reject=None)
+    save_file_name = '{object}_{filter}_{night}.fits'
+    save_file_dir = 'stacked_photometry/'
+
+    def __init__(self, product_dir, image_ext=0):
+        super(ROBO40Photometry, self).__init__(product_dir, image_ext)
