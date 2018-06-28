@@ -52,9 +52,8 @@ class StackedPhotometryPipeline():
 
     def _process(self, prod, sci_catalog):
         if prod.calibed_files is None:
-            logger.warn("Product failed: No calibrated images. raw files: {}"
-                        .format(prod.files.files))
-            return
+            raise ValueError("Product failed: No calibrated images. raw files:"
+                             " {}".format(prod.files.files))
 
         fm = FileManager(self.image_ext)
         if check_iterable(prod.calibed_files):
@@ -74,8 +73,8 @@ class StackedPhotometryPipeline():
                                          ext=self.image_ext)
                 stacked = check_hdu(stacked, ext=self.image_ext)
             else:
-                logger.warn("Product failed: No calibrated images. raw files: {}"
-                            .format(prod.files.files))
+                raise ValueError("Product failed: No calibrated images."
+                                 "raw files: {}".format(prod.files.files))
                 return
         else:
             stacked = prod.calibed_files
@@ -120,6 +119,9 @@ class StackedPhotometryPipeline():
         '''Process the photometry.'''
         if not check_iterable(products):
             products = [products]
-
         for p in products:
-            result = self._process(p, science_catalog)
+            try:
+                result = self._process(p, science_catalog)
+            except Exception as e:
+                logger.error("Product not processed due: {}: {}"
+                             .format(type(e).__name__, e))
