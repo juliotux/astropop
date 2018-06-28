@@ -2,6 +2,7 @@
 
 import sys
 import os
+import datetime
 from optparse import OptionParser
 
 from astropop.pipelines.automatic.opd import ROBO40Calib, ROBO40Photometry
@@ -35,7 +36,8 @@ def main():
                            "ID, RA, DEC")
     parser.add_option("-l", "--save-log", dest="save_log",
                       default=None, metavar="FILE",
-                      help="Save log to FILE.")
+                      help="Save log to FILE. If '%date' value, automatic name"
+                           " based on date will be created.")
     parser.add_option("-d", "--dest", dest="reduced_folder",
                       default='~/astropop_reduced', metavar="FOLDER",
                       help="Reduced images (and created calib frames) will "
@@ -91,7 +93,13 @@ def main():
             pipe_phot.process_products(prods, sci_cat)
 
     if options.save_log is not None:
-        with logger.log_to_file(options.save_log):
+        name = options.save_log
+        if name == '%date':
+            d = datetime.datetime.now()
+            d = d.isoformat(timespec='YYYY-MM-DDTHH:MM:SS')
+            name = "astropop_{}.log".format(d)
+            name = os.path.join(reduced_folder, name)
+        with logger.log_to_file(name):
             _process()
     else:
         _process()
