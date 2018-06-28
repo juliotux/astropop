@@ -54,7 +54,8 @@ def solve_photometry(table, wcs=None, cat_mag=None,
     return mags
 
 
-def process_calib_photometry(image, identify_catalog=None,
+def process_calib_photometry(image, wcs=None, return_wcs=False,
+                             identify_catalog=None,
                              identify_limit_angle='2 arcsec',
                              science_catalog=None,
                              montecarlo_iters=100,
@@ -78,11 +79,14 @@ def process_calib_photometry(image, identify_catalog=None,
                                   detect_snr=kwargs['detect_snr'],
                                   detect_fwhm=kwargs['detect_fwhm'])
 
-    wcs = solve_astrometry(sources, image.header,
-                           image.data.shape,
-                           ra_key=kwargs['ra_key'],
-                           dec_key=kwargs['dec_key'],
-                           plate_scale=kwargs['plate_scale'])
+    if wcs is None:
+        logger.debug('Solving astrometry')
+        wcs = solve_astrometry(sources, image.header,
+                               image.data.shape,
+                               ra_key=kwargs['ra_key'],
+                               dec_key=kwargs['dec_key'],
+                               plate_scale=kwargs['plate_scale'])
+        logger.debug('WCS solved: {}'.format(wcs))
 
     photkwargs = {}
     for i in kwargs.keys():
@@ -119,4 +123,7 @@ def process_calib_photometry(image, identify_catalog=None,
         else:
             result[phot_type] = vstack([result[phot_type], t])
 
-    return result
+    if return_wcs:
+        return result, wcs
+    else:
+        return result

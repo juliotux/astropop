@@ -86,11 +86,12 @@ class StackedPhotometryPipeline():
         filt = self.get_filter(fg)
         cat = self.select_catalog(filt)
 
-        phot = process_calib_photometry(stacked, science_catalog=sci_catalog,
-                                        identify_catalog=cat,
-                                        filter=filt,
-                                        **self.photometry_parameters,
-                                        **self.astrometry_parameters)
+        phot, wcs = process_calib_photometry(stacked, science_catalog=sci_catalog,
+                                             identify_catalog=cat,
+                                             filter=filt,
+                                             return_wcs=True,
+                                             **self.photometry_parameters,
+                                             **self.astrometry_parameters)
 
         selected_aperture = 0
         snr = 0
@@ -104,7 +105,11 @@ class StackedPhotometryPipeline():
         phot = phot[phot['aperture'] == selected_aperture]
         phot = phot.as_array()
 
-        imhdu = fits.PrimaryHDU(stacked.data, header=stacked.header)
+        header=stacked.header
+        if wcs is not None:
+            header.update(wcs.to_header(relax=True))
+
+        imhdu = fits.PrimaryHDU(stacked.data, header=header)
         tbhdu = fits.BinTableHDU(phot, name='photometry')
 
         filename = self.get_filename(fg)

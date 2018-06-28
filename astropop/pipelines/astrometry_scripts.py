@@ -9,10 +9,10 @@ __all__ = ['identify_stars', 'solve_astrometry']
 
 
 def solve_astrometry(table, header, shape, ra_key=None, dec_key=None,
-                     plate_scale=None):
+                     plate_scale=None, use_previous_wcs=False):
     """Solves the astrometry of a field and return a valid wcs."""
     wcs = WCS(header, relax=True)
-    if not wcs.wcs.ctype[0]:
+    if not wcs.wcs.ctype[0] or not use_previous_wcs:
         im_params = {}
         if ra_key is not None and dec_key is not None:
             im_params['ra_key'] = ra_key

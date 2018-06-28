@@ -1,5 +1,4 @@
 from string import Formatter
-from collections import namedtuple
 import os
 import re
 import copy
@@ -253,7 +252,7 @@ class SimpleCalibPipeline():
         try:
             params = copy.copy(self.astrometry_params)
             solved = solve_astrometry_hdu(hdu, return_wcs=True,
-                                            image_params=params)
+                                          image_params=params)
         except:
             solved = None
         if solved is None and 'pltscl' in self.astrometry_params.keys():
@@ -270,12 +269,6 @@ class SimpleCalibPipeline():
                 hdu.header['hierarch astrometry.net solved'] = False
 
         if solved is not None:
-            for i in hdu.header.keys():
-                # Clean previous wcs
-                if i in ['CRPIX1', 'CRPIX2', 'CD1_1', 'CD1_2', 'CD2_1', 'CD2_2',
-                         'CRVAL1', 'CRVAL2', 'CTYPE1', 'CTYPE2', 'CUNIT1',
-                         'CUNIT2']:
-                    hdu.header.pop(i)
             hdu.header.update(solved.to_header(relax=True))
 
         return hdu

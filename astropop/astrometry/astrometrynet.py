@@ -37,6 +37,22 @@ class AstrometryNetUnsolvedField(subprocess.CalledProcessError):
         return "{0}: could not solve field".format(self.path)
 
 
+wcs_header_keys = ['CRPIX1', 'CRPIX2', 'CD1_1', 'CD1_2', 'CD2_1', 'CD2_2',
+                   'CRVAL1', 'CRVAL2', 'CTYPE1', 'CTYPE2', 'CUNIT1',
+                   'CUNIT2']
+
+
+def clean_previous_wcs(header):
+    """Clean any previous WCS keyowrds in header."""
+    h = fits.Header()
+    for k in header.keys():
+        if k not in wcs_header_keys:
+            indx = header.index(k)
+            card = header.cards[indx]
+            h.append(card)
+    return h
+
+
 class AstrometrySolver():
     """Use astrometry.net to solve the astrometry of images or list of stars.
     For convenience, all the auxiliary files will be deleted, except you
@@ -207,7 +223,7 @@ class AstrometrySolver():
                 args.append(str(v))
 
         try:
-            logger.info('runing: ' + str(args))
+            logger.debug('runing: ' + str(args))
             if stdout is None:
                 stdout = subprocess.PIPE
             if stderr is None:
@@ -257,9 +273,6 @@ def create_xyls(fname, x, y, flux, imagew, imageh, header=None, dtype='f8'):
         Width of the original image. `IMAGEW` header field of .xyls
     imageh : float or int
         Height of the original image. `IMAGEH` header field of .xyls
-    header : dict_like, optional
-        Header of the orginal image. If None, no header will be added to the
-        PrimaryHDU of the .xyls
     dtype : `numpy.dtype`, optional
         Data type of the fields. Default: 'f8'
     '''
@@ -287,6 +300,7 @@ def solve_astrometry_xy(x, y, flux, image_header, image_width, image_height,
         dec_key: header key for declination
         radius: maximum search radius
     '''
+    image_header = clean_previous_wcs(image_header)
     f = NamedTemporaryFile(suffix='.xyls')
     create_xyls(f.name, x, y, flux, image_width, image_height,
                 header=image_header)
@@ -321,6 +335,7 @@ def solve_astrometry_hdu(hdu, return_wcs=False, image_params={}):
         dec_key: header key for declination
         radius: maximum search radius
     """
+    hdu.header = clean_previous_wcs(hdu.header)
     f = NamedTemporaryFile(suffix='.fits')
     hdu = fits.PrimaryHDU(hdu.data, header=hdu.header)
     hdu.writeto(f.name)

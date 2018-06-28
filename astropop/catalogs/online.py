@@ -464,7 +464,7 @@ TWOMASSCatalog = VizierCatalogClass(available_filters=["I", "J", "K"],
 
 
 class _GCS23Catalog(VizierCatalogClass):
-    available_filters = ["U", "B", "Bj", "V", "F", "N"]
+    available_filters = ["U", "B", "Bj", "V", "R", "F", "N"]
     vizier_table = "I/305/out"
     prepend_id_key = False
     id_key = 'GSC2.3'
@@ -480,7 +480,7 @@ class _GCS23Catalog(VizierCatalogClass):
                        'Bj': 'j'}
 
     def _flux_keys(self, filter):
-        if filter in self.filt_conversion.keys:
+        if filter in self.filt_conversion.keys():
             filter = self.filt_conversion[filter]
         return VizierCatalogClass._flux_keys(self, filter)
 
