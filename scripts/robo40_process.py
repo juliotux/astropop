@@ -28,11 +28,14 @@ def main():
                       default=False,
                       help="Enable astrometry solving of stacked images "
                            "with astrometry.net")
-    parser.add_option("-l", "--science-catalog", dest="science_catalog",
+    parser.add_option("-n", "--science-catalog", dest="science_catalog",
                       default=None, metavar="FILE",
                       help="ASCII catalog to identify science stars. "
                            "Has to be astropy's table readable with columns "
                            "ID, RA, DEC")
+    parser.add_option("-l", "--save-log", dest="save_log",
+                      default=None, metavar="FILE",
+                      help="Save log to FILE.")
     parser.add_option("-d", "--dest", dest="reduced_folder",
                       default='~/astropop_reduced', metavar="FOLDER",
                       help="Reduced images (and created calib frames) will "
@@ -80,11 +83,18 @@ def main():
     pipe_phot = ROBO40Photometry(product_dir=reduced_folder,
                                  image_ext=1)
 
-    for fold in raw_dirs:
-        prods = pipe.run(fold, stack_images=stack_images,
-                         save_calibed=individual,
-                         astrometry=astrometry)
-        pipe_phot.process_products(prods, sci_cat)
+    def _process():
+        for fold in raw_dirs:
+            prods = pipe.run(fold, stack_images=stack_images,
+                            save_calibed=individual,
+                            astrometry=astrometry)
+            pipe_phot.process_products(prods, sci_cat)
+
+    if options.save_log is not None:
+        with logger.log_to_file(options.save_log):
+            _process()
+    else:
+        _process()
 
 if __name__ == '__main__':
     main()
