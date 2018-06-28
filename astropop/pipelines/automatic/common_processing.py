@@ -246,6 +246,7 @@ class SimpleCalibPipeline():
                                  master_flat=_flat,
                                  dark_frame=_dark,
                                  save_compressed=self._save_fits_compressed,
+                                 overwrite=True,
                                  **self.sci_process_params), filename)
 
     def _solve_astrometry(self, hdu):

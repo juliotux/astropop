@@ -96,7 +96,7 @@ def main():
         name = options.save_log
         if name == '%date':
             d = datetime.datetime.now()
-            d = d.isoformat(timespec='YYYY-MM-DDTHH:MM:SS')
+            d = d.isoformat(timespec='seconds')
             name = "astropop_{}.log".format(d)
             name = os.path.join(reduced_folder, name)
         with logger.log_to_file(name):
