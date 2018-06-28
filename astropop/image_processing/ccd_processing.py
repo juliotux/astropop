@@ -187,7 +187,7 @@ def cosmic_lacosmic(image, inplace=False, **lacosmic_kwargs):
     return im
 
 
-def process_image(image, save_to=None, save_compressed=False,
+def process_image(image, save_to=None, save_compressed=False, overwrite=True,
                   master_bias=None, dark_frame=None, master_flat=None,
                   gain=None, gain_key=None, image_exposure=None,
                   dark_exposure=None, exposure_key=None, trim=None,
@@ -247,6 +247,6 @@ def process_image(image, save_to=None, save_compressed=False,
         im.mask = None
 
     if save_to:
-        save_hdu(im, save_to, save_compressed)
+        save_hdu(im, save_to, save_compressed, overwrite=overwrite)
 
     return im
