@@ -88,7 +88,7 @@ def main():
             prods = pipe.run(fold, stack_images=stack_images,
                              save_calibed=individual,
                              astrometry=astrometry)
-            pipe_lc.process_products(prods)
+            #pipe_lc.process_products(prods)
 
     if options.save_log is not None:
         name = options.save_log
