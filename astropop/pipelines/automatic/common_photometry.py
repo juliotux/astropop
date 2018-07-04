@@ -4,6 +4,7 @@ from astropy.io import fits
 from string import Formatter
 
 from ...catalogs import default_catalogs
+from ...photometry.lightcurve import process_lightcurve
 from ...image_processing.register import hdu_shift_images
 from ...image_processing.imarith import imarith
 from ...file_manager import FileManager
@@ -121,7 +122,76 @@ class StackedPhotometryPipeline():
             products = [products]
         for p in products:
             try:
-                result = self._process(p, science_catalog)
+                self._process(p, science_catalog)
+            except Exception as e:
+                logger.error("Product not processed due: {}: {}"
+                             .format(type(e).__name__, e))
+
+
+class LightCurvePipeline():
+    photometry_parameters = {}
+    astrometry_parameters = {}
+    combine_parameters = {}
+    save_file_name = '{object}_{filter}.fits'
+    save_file_dir = 'light_curve/'
+    filter_key = 'filter'
+    standard_catalogs = {'U': 'Simbad',
+                         'B': 'APASS',
+                         'V': 'APASS',
+                         'R': 'GSC2.3',
+                         'I': 'DENIS'}
+
+    def __init__(self, product_dir, image_ext=0):
+        self.prod_dir = product_dir
+        self.image_ext = image_ext
+
+    def get_filename(self, filegroup):
+        keys = Formatter().parse(self.save_file_name)
+        k = {}
+        for i in keys:
+            # Assume all have same value
+            _, i, _, _ = i
+            if i is not None:
+                k[i] = filegroup.values(i, unique=True)[0]
+        name = self.save_file_name.format(**k)
+        return os.path.join(self.prod_dir, self.save_file_dir, name)
+
+    def get_filter(self, filegroup):
+        return filegroup.values(self.filter_key, unique=True)[0]
+
+    def select_catalog(self, filter):
+        if filter not in self.standard_catalogs.keys():
+            raise ValueError('Filter {} not supported.'.format(filter))
+        return default_catalogs[self.standard_catalogs[filter]]
+
+    def _process(self, prod):
+        # TODO: need a better design to select science and ref stars
+        if prod.calibed_files is None:
+            raise ValueError("Product failed: No calibrated images. raw files:"
+                             " {}".format(prod.files.files))
+
+        fm = FileManager(ext=self.image_ext)
+        if check_iterable(prod.calibed_files):
+            if len(prod.calibed_files) < 2:
+                raise ValueError('Not enought images to generate lightcurve.')
+
+        fg = fm.create_filegroup(files=prod.calibed_files,
+                                 ext=self.image_ext)
+
+        phot = process_lightcurve(fg.files, ext=self.image_ext,
+                                  **self.photometry_parameters)
+
+        raise NotImplementedError("Finish light curve pipeline")
+
+
+
+    def process_products(self, products):
+        '''Process the photometry.'''
+        if not check_iterable(products):
+            products = [products]
+        for p in products:
+            try:
+                result = self._process(p)
             except Exception as e:
                 logger.error("Product not processed due: {}: {}"
                              .format(type(e).__name__, e))

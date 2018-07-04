@@ -10,13 +10,13 @@ from .photometry import process_photometry, aperture_photometry
 from ..logging import log as logger
 
 
-def temporal_photometry(image_list, x=None, y=None, photometry_type='aperture',
+def temporal_photometry(image_list, x=None, y=None, ext=0,
+                        photometry_type='aperture',
                         r=5, r_in=50, r_out=60, snr_detect=5,
                         fwhm_detect=3, psf_model='gaussian', psf_niters=1,
                         time_key='DATE-OBS', time_format='isot',
-                        align_images=True):
-    """Perform photometry on a set of images, being optimized for large number
-    too.
+                        align_images=True, nstars_thresh=None):
+    """Perform photometry on a set of images, optimized for large datasets.
 
     Arguments:
     ----------
@@ -60,7 +60,7 @@ def temporal_photometry(image_list, x=None, y=None, photometry_type='aperture',
 
     if x is None or y is None:
         # use the first image to calculate the positions of the stars
-        sources = aperture_photometry(check_hdu(image_list[0]).data,
+        sources = aperture_photometry(check_hdu(image_list[0], ext=ext).data,
                                       fwhm_detect=fwhm_detect,
                                       r=5, detect_snr=snr_detect)
     else:
@@ -72,7 +72,7 @@ def temporal_photometry(image_list, x=None, y=None, photometry_type='aperture',
     shifts = np.zeros(n_imgs, dtype=np.dtype([('x', 'f8'), ('y', 'f8')]))
     if align_images:
         logger.info('Processing image shifts for {} images.'.format(n_imgs))
-        im0 = check_hdu(image_list[0])
+        im0 = check_hdu(image_list[0], ext=ext)
         for i in range(1, n_imgs):
             im = check_hdu(image_list[i])
             s = register_translation(im0.data, im.data)[0]
@@ -82,11 +82,20 @@ def temporal_photometry(image_list, x=None, y=None, photometry_type='aperture',
     # use these coordinates to perform the photometry in all data series
     phot_table = None
     for i in range(n_imgs):
+        if nstars_thresh is not None:
+            ns = aperture_photometry(check_hdu(image_list[i], ext=ext).data,
+                                     fwhm_detect=fwhm_detect,
+                                     r=5, detect_snr=snr_detect)
+            if ns < nstars_thresh:
+                logger.warn('Image {} have less stars then the threshold: '
+                            '{} stars'.format(image_list[i], ns))
+                continue
         imname = os.path.basename(image_list[i])
         logger.info("Processing photometry of {} image.".format(imname))
-        jd = Time(fits.getval(image_list[i], time_key), format=time_format)
+        jd = Time(fits.getval(image_list[i], time_key, ext=ext),
+                  format=time_format)
         jd = jd.jd
-        p = process_photometry(check_hdu(image_list[i]),
+        p = process_photometry(check_hdu(image_list[i], ext=ext),
                                photometry_type=photometry_type,
                                r=r, r_in=r_in, r_out=r_out,
                                psf_model=psf_model, psf_niters=psf_niters,

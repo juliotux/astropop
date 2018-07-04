@@ -4,7 +4,7 @@ import os
 import datetime
 from optparse import OptionParser
 
-from astropop.pipelines.automatic.opd import ROBO40Calib, ROBO40Photometry
+from astropop.pipelines.automatic.impactom import ImpactonCalib
 from astropop.catalogs import ASCIICatalogClass
 from astropop.py_utils import mkdir_p
 from astropop.logger import logger
@@ -78,18 +78,15 @@ def main():
                                     dec_key='DEC')
 
     mkdir_p(reduced_folder)
-    pipe = ROBO40Calib(product_dir=reduced_folder,
-                       calib_dir=calib_folder,
-                       ext=1, fits_extensions=['.fz'], compression=True)
-    pipe_phot = ROBO40Photometry(product_dir=reduced_folder,
-                                 image_ext=1)
+    pipe = ImpactonCalib(product_dir=reduced_folder,
+                         calib_dir=calib_folder,
+                         ext=0, fits_extensions=['.fit'], compression=True)
 
     def _process():
         for fold in raw_dirs:
             prods = pipe.run(fold, stack_images=stack_images,
                             save_calibed=individual,
                             astrometry=astrometry)
-            pipe_phot.process_products(prods, sci_cat)
 
     if options.save_log is not None:
         name = options.save_log

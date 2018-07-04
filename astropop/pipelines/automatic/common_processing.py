@@ -27,7 +27,7 @@ class PipeProd():
 
 
 class SimpleCalibPipeline():
-    template = 'LNA_robo40_photometry'
+    template = 'calib_base'
     calib_process_params = {}
     sci_process_params = {}
     astrometry_params = {}
