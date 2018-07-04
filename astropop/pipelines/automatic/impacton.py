@@ -5,7 +5,7 @@ import numpy as np
 
 
 from .common_processing import SimpleCalibPipeline
-from .common_photometry import StackedPhotometryPipeline
+from .common_photometry import StackedPhotometryPipeline, LightCurvePipeline
 from ...catalogs import default_catalogs
 from ...fits_utils import check_hdu
 from ...logger import logger
@@ -29,11 +29,12 @@ class ImpactonCalib(SimpleCalibPipeline):
     _bias_select_keywords = ['instrume', 'telescop', 'xbinning',
                              'ybinning', 'night']
     _bias_select_rules = dict(imagetyp=['BIAS'])
-    _bias_name_keywords = ['night', 'ccdsum', 'gain', 'xbinning', 'ybinning']
+    _dark_select_rules = dict(imagetyp=['DARK'])
+    _bias_name_keywords = ['night', 'xbinning', 'ybinning']
     _flat_select_keywords = ['instrume', 'telescop', 'filter', 'xbinning',
                              'ybinning', 'night']
     _flat_select_rules = dict(imagetyp=['FLAT'])
-    _flat_name_keywords = ['night', 'ccdsum', 'gain', 'filter' 'xbinning',
+    _flat_name_keywords = ['night', 'filter', 'xbinning',
                            'ybinning']
     calib_process_params = dict(gain_key=None,
                                 gain=None,
@@ -148,3 +149,26 @@ class ImpactonStackedPhotometry(StackedPhotometryPipeline):
 
     def __init__(self, product_dir, image_ext=0):
         super(ImpactonStackedPhotometry, self).__init__(product_dir, image_ext)
+
+
+class ImpactonLightCurve(LightCurvePipeline):
+    photometry_parameters = dict(detect_snr=5,
+                                 detect_fwhm=4,
+                                 photometry_type='aperture',
+                                 r=np.arange(20),
+                                 r_in=25,
+                                 r_out=30,
+                                 solve_photometry_type='montecarlo',
+                                 montecarlo_iters=300,
+                                 montecarlo_percentage=0.2)
+    astrometry_parameters = dict(ra_key='OBJCTRA',
+                                 dec_key='OBJCTDEC',
+                                 identify_limit_angle='2 arcsec')
+    combine_parameters = dict(method='sum',
+                              weights=None,
+                              scale=None,
+                              mem_limit=1e8,
+                              reject=None)
+
+    def __init__(self, product_dir, image_ext=0):
+        super(ImpactonLightCurve, self).__init__(product_dir, image_ext)

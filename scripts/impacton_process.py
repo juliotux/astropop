@@ -4,7 +4,7 @@ import os
 import datetime
 from optparse import OptionParser
 
-from astropop.pipelines.automatic.impactom import ImpactonCalib
+from astropop.pipelines.automatic.impacton import ImpactonCalib, ImpactonLightCurve
 from astropop.catalogs import ASCIICatalogClass
 from astropop.py_utils import mkdir_p
 from astropop.logger import logger
@@ -81,12 +81,14 @@ def main():
     pipe = ImpactonCalib(product_dir=reduced_folder,
                          calib_dir=calib_folder,
                          ext=0, fits_extensions=['.fit'], compression=True)
+    pipe_lc = ImpactonLightCurve(product_dir=reduced_folder, image_ext=0)
 
     def _process():
         for fold in raw_dirs:
             prods = pipe.run(fold, stack_images=stack_images,
-                            save_calibed=individual,
-                            astrometry=astrometry)
+                             save_calibed=individual,
+                             astrometry=astrometry)
+            pipe_lc.process_products(prods)
 
     if options.save_log is not None:
         name = options.save_log

@@ -57,7 +57,10 @@ def gen_mask(table, **kwargs):
         if not check_iterable(v):
             v = [v]
         k = k.lower()
-        nmask = [t[k][i] in v for i in range(len(t))]
+        if k in t.colnames:
+            nmask = [t[k][i] in v for i in range(len(t))]
+        else:
+            nmask = [False]*len(t)
         mask &= np.array(nmask)
 
     return mask

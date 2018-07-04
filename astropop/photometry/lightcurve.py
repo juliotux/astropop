@@ -4,10 +4,10 @@ from astropy.io import fits
 from astropy.table import Table, hstack, vstack
 from astropy.time import Time
 
-from .image_shifts import register_translation
-from ..math.imarith import check_hdu
+from ..image_processing.register import register_translation
+from ..image_processing.imarith import check_hdu
 from .photometry import process_photometry, aperture_photometry
-from ..logging import log as logger
+from ..logger import logger
 
 
 def temporal_photometry(image_list, x=None, y=None, ext=0,

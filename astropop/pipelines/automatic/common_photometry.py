@@ -132,7 +132,7 @@ class LightCurvePipeline():
     photometry_parameters = {}
     astrometry_parameters = {}
     combine_parameters = {}
-    save_file_name = '{object}_{filter}.fits'
+    save_file_name = '{object}_{filter}.tsv'
     save_file_dir = 'light_curve/'
     filter_key = 'filter'
     standard_catalogs = {'U': 'Simbad',
@@ -180,8 +180,10 @@ class LightCurvePipeline():
 
         phot = process_lightcurve(fg.files, ext=self.image_ext,
                                   **self.photometry_parameters)
-
-        raise NotImplementedError("Finish light curve pipeline")
+        filename = self.get_filename(fg)
+        mkdir_p(os.path.dirname(filename))
+        phot.write(filename, format='ascii')
+        # raise NotImplementedError("Finish light curve pipeline")
 
 
 
