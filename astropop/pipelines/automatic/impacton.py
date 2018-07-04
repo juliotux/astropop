@@ -29,7 +29,10 @@ class ImpactonCalib(SimpleCalibPipeline):
     _bias_select_keywords = ['instrume', 'telescop', 'xbinning',
                              'ybinning', 'night']
     _bias_select_rules = dict(imagetyp=['BIAS'])
+    _dark_select_keywords = ['instrume', 'telescop', 'xbinning',
+                             'ybinning', 'night']
     _dark_select_rules = dict(imagetyp=['DARK'])
+    _dark_name_keywords = ['night', 'xbinning', 'ybinning']
     _bias_name_keywords = ['night', 'xbinning', 'ybinning']
     _flat_select_keywords = ['instrume', 'telescop', 'filter', 'xbinning',
                              'ybinning', 'night']
@@ -71,6 +74,9 @@ class ImpactonCalib(SimpleCalibPipeline):
         elif type == 'flat':
             name = 'flat_'
             l = self._flat_name_keywords
+        elif type == 'dark':
+            name = 'dark_'
+            l = self._dark_name_keywords
         elif type == 'science':
             name = ''
             l = self._science_name_keywords
