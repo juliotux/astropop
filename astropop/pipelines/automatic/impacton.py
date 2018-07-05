@@ -141,9 +141,8 @@ class ImpactonStackedPhotometry(StackedPhotometryPipeline):
                                  solve_photometry_type='montecarlo',
                                  montecarlo_iters=300,
                                  montecarlo_percentage=0.2)
-    astrometry_parameters = dict(ra_key='RA',
-                                 dec_key='DEC',
-                                 plate_scale=0.45,
+    astrometry_parameters = dict(ra_key='OBJCTRA',
+                                 dec_key='OBJCTDEC',
                                  identify_limit_angle='2 arcsec')
     combine_parameters = dict(method='sum',
                               weights=None,
@@ -161,20 +160,12 @@ class ImpactonLightCurve(LightCurvePipeline):
     photometry_parameters = dict(detect_snr=5,
                                  detect_fwhm=4,
                                  photometry_type='aperture',
-                                 r=np.arange(20),
+                                 r=5,
                                  r_in=25,
-                                 r_out=30,
-                                 solve_photometry_type='montecarlo',
-                                 montecarlo_iters=300,
-                                 montecarlo_percentage=0.2)
+                                 r_out=30)
     astrometry_parameters = dict(ra_key='OBJCTRA',
                                  dec_key='OBJCTDEC',
                                  identify_limit_angle='2 arcsec')
-    combine_parameters = dict(method='sum',
-                              weights=None,
-                              scale=None,
-                              mem_limit=1e8,
-                              reject=None)
 
     def __init__(self, product_dir, image_ext=0):
         super(ImpactonLightCurve, self).__init__(product_dir, image_ext)

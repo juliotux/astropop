@@ -4,7 +4,7 @@ from astropy.io import fits
 from string import Formatter
 
 from ...catalogs import default_catalogs
-from ...photometry.lightcurve import process_lightcurve
+from ...photometry.lightcurve import temporal_photometry
 from ...image_processing.register import hdu_shift_images
 from ...image_processing.imarith import imarith
 from ...file_manager import FileManager
@@ -178,14 +178,12 @@ class LightCurvePipeline():
         fg = fm.create_filegroup(files=prod.calibed_files,
                                  ext=self.image_ext)
 
-        phot = process_lightcurve(fg.files, ext=self.image_ext,
-                                  **self.photometry_parameters)
+        phot = temporal_photometry(fg.files, ext=self.image_ext,
+                                   **self.photometry_parameters)
         filename = self.get_filename(fg)
         mkdir_p(os.path.dirname(filename))
         phot.write(filename, format='ascii')
-        # raise NotImplementedError("Finish light curve pipeline")
-
-
+        prod.sci_result = filename
 
     def process_products(self, products):
         '''Process the photometry.'''
@@ -193,7 +191,7 @@ class LightCurvePipeline():
             products = [products]
         for p in products:
             try:
-                result = self._process(p)
+                self._process(p)
             except Exception as e:
                 logger.error("Product not processed due: {}: {}"
                              .format(type(e).__name__, e))

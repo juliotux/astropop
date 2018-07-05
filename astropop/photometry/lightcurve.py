@@ -12,8 +12,8 @@ from ..logger import logger
 
 def temporal_photometry(image_list, x=None, y=None, ext=0,
                         photometry_type='aperture',
-                        r=5, r_in=50, r_out=60, snr_detect=5,
-                        fwhm_detect=3, psf_model='gaussian', psf_niters=1,
+                        r=5, r_in=50, r_out=60, detect_snr=5,
+                        detect_fwhm=3, psf_model='gaussian', psf_niters=1,
                         time_key='DATE-OBS', time_format='isot',
                         align_images=True, nstars_thresh=None):
     """Perform photometry on a set of images, optimized for large datasets.
@@ -39,9 +39,9 @@ def temporal_photometry(image_list, x=None, y=None, ext=0,
         r_out : float
             The outer radius of the sky subtraction annulus to be used
             if aperture photometry will be performed.
-        snr_detect : float
+        detect_snr : float
             The minimum signal to noise ratio to detect sources.
-        fwhm_detect : float
+        detect_fwhm : float
             The fwhm to detect sources.
         psf_model : `gaussian` or `moffat`
             Model of the psf to fit to the sources.
@@ -61,8 +61,8 @@ def temporal_photometry(image_list, x=None, y=None, ext=0,
     if x is None or y is None:
         # use the first image to calculate the positions of the stars
         sources = aperture_photometry(check_hdu(image_list[0], ext=ext).data,
-                                      fwhm_detect=fwhm_detect,
-                                      r=5, detect_snr=snr_detect)
+                                      detect_fwhm=detect_fwhm,
+                                      r=5, detect_snr=detect_snr)
     else:
         sources = np.array(list(zip(x, y)),
                            dtype=np.dtype([('x', 'f8'), ('y', 'f8')]))
@@ -84,8 +84,8 @@ def temporal_photometry(image_list, x=None, y=None, ext=0,
     for i in range(n_imgs):
         if nstars_thresh is not None:
             ns = aperture_photometry(check_hdu(image_list[i], ext=ext).data,
-                                     fwhm_detect=fwhm_detect,
-                                     r=5, detect_snr=snr_detect)
+                                     detect_fwhm=detect_fwhm,
+                                     r=5, detect_snr=detect_snr)
             if ns < nstars_thresh:
                 logger.warn('Image {} have less stars then the threshold: '
                             '{} stars'.format(image_list[i], ns))
@@ -121,8 +121,8 @@ def temporal_photometry(image_list, x=None, y=None, ext=0,
 
 
 def process_lightcurve(image_list, x=None, y=None, photometry_type='aperture',
-                       r=5, r_in=50, r_out=60, snr_detect=5,
-                       fwhm_detect=3, psf_model='gaussian', psf_niters=1,
+                       r=5, r_in=50, r_out=60, detect_snr=5,
+                       detect_fwhm=3, psf_model='gaussian', psf_niters=1,
                        time_key='DATE-OBS', time_format='isot',
                        align_images=True, check_dist=True):
     '''Generates a light curve using a list of images.
@@ -142,8 +142,8 @@ def process_lightcurve(image_list, x=None, y=None, photometry_type='aperture',
     tmp_phot = temporal_photometry(image_list, x=x, y=y,
                                    photometry_type=photometry_type,
                                    r=r, r_in=r_in, r_out=r_out,
-                                   snr_detect=snr_detect,
-                                   fwhm_detect=fwhm_detect,
+                                   detect_snr=detect_snr,
+                                   detect_fwhm=detect_fwhm,
                                    psf_niters=psf_niters,
                                    psf_model=psf_model,
                                    time_key=time_key, time_format=time_format,
