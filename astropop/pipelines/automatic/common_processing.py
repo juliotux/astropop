@@ -249,6 +249,10 @@ class SimpleCalibPipeline():
                                  overwrite=True,
                                  **self.sci_process_params), filename)
 
+            if 'file' in hdu.fileinfo():
+                hdu.fileinfo()['file'].close()
+
+
     def _solve_astrometry(self, hdu):
         try:
             params = copy.copy(self.astrometry_params)
