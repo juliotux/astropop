@@ -243,6 +243,8 @@ def process_polarimetry(image_set, align_images=True, retarder_type=None,
         if 'sci_id' in ids.colnames:
             if not np.array(ids['sci_id'] != '').any():
                 logger.warn('No science stars found')
+    else:
+        ids = Table()
 
     ids['x0'] = res_tmp['xo']
     ids['y0'] = res_tmp['yo']
