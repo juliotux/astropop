@@ -95,7 +95,7 @@ def compute_theta(q, u):
     return theta
 
 
-def _calculate_polarimetry_parameters(z, psi, retarder='half', z_err=None):
+def _polarimetry_by_fit(z, psi, retarder='half', z_err=None):
     """Calculate the polarimetry directly using z.
     psi in degrees
     """
@@ -145,9 +145,40 @@ def _calculate_polarimetry_parameters(z, psi, retarder='half', z_err=None):
     return result
 
 
+def _polarimetry_by_sum(z, psi, retarder='half', z_err=None):
+    """Implement the polarimetry calculation method described by
+    Magalhaes et al 1984 (ads string: 1984PASP...96..383M)
+    """
+    result = {}
+    if retarder == 'half':
+        # q = 2/n sum_{i=1}^n z_i*cos(4psi_i)
+        # u = 2/n sum_{i=1}^n z_i*sin(4psi_i)
+        # p_err = sqrt(2/(n*(n-2)) * sum_{i=1}^n z_i^2 - q^2 - u^2)
+        assert(len(z) == len(psi))
+        n = len(z)
+        q = (2.0/n) * np.sum(z*np.cos(4*np.radians(psi)))
+        u = (2.0/n) * np.sum(z*np.sin(4*np.radians(psi)))
+
+        a = 2.0/n
+        b = 1.0/(n-2)
+        p = np.sqrt(q**2 + u**2)
+        err = np.sqrt(b * (a*np.sum(z**2) - p**2))
+
+        result['p'] = {'value': p, 'sigma': err}
+        result['q'] = {'value': q, 'sigma': err}
+        result['u'] = {'value': u, 'sigma': err}
+
+        theta = compute_theta(q, u)
+        result['theta'] = {'value': theta, 'sigma': 28.65*err/p}
+    else:
+        raise ValueError('Retarder {} not supported'.format(retarder))
+
+    return result
+
+
 def calculate_polarimetry(o, e, psi, retarder='half', o_err=None, e_err=None,
                           normalize=True, positions=None, min_snr=None,
-                          filter_negative=True):
+                          filter_negative=True, mode='sum'):
     """Calculate the polarimetry."""
 
     if retarder == 'half':
@@ -211,10 +242,17 @@ def calculate_polarimetry(o, e, psi, retarder='half', o_err=None, e_err=None,
             return _return_empty()
 
     try:
-        result = _calculate_polarimetry_parameters(z, psi, retarder=retarder,
-                                                   z_err=z_erro)
+        if mode == 'sum':
+            result = _polarimetry_by_sum(z, psi, retarder=retarder,
+                                         z_err=z_erro)
+        elif mode == 'fit':
+            result = _polarimetry_by_fit(z, psi, retarder=retarder,
+                                         z_err=z_erro)
+        else:
+            return _return_empty()
     except Exception as e:
         return _return_empty()
+
     result['flux'] = {'value': flux,
                       'sigma': flux_err}
 

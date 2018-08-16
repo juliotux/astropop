@@ -125,7 +125,8 @@ def find_pairs(x, y, match_pairs_tolerance=2, delta_x=None, delta_y=None):
     return tmp, pairs
 
 
-def _do_polarimetry(phot_table, psi, retarder_type, pairs, positions=None):
+def _do_polarimetry(phot_table, psi, retarder_type, pairs, positions=None,
+                    calculate_mode='sum'):
     """Calculate the polarimetry of a given photometry table.
 
     phot_tables is a list of tables containing ['flux', 'flux_error']
@@ -148,7 +149,7 @@ def _do_polarimetry(phot_table, psi, retarder_type, pairs, positions=None):
         ee = np.array([ph[j][fe][pairs[idx]['e']] for j in range(len(ph))])
         res = calculate_polarimetry(o, e, psi, retarder=retarder_type,
                                     o_err=oe, e_err=ee, positions=positions,
-                                    filter_negative=True)
+                                    filter_negative=True, mode=calculate_mode)
         for k in res.keys():
             dt = 'f4'
             if k not in tmp.colnames:
@@ -177,7 +178,7 @@ def _do_polarimetry(phot_table, psi, retarder_type, pairs, positions=None):
 def process_polarimetry(image_set, align_images=True, retarder_type=None,
                         retarder_key=None, match_pairs_tolerance=1.0,
                         retarder_rotation=22.5, retarder_direction=None,
-                        wcs=None, **kwargs):
+                        wcs=None, caulculate_mode='sum', **kwargs):
     """Process the photometry and polarimetry of a set of images.
 
     kwargs are the arguments for the following functions:
