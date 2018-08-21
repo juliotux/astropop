@@ -10,6 +10,9 @@ from .photometry import process_photometry, aperture_photometry
 from ..logger import logger
 
 
+# TODO: Need refactor
+
+
 def temporal_photometry(image_list, x=None, y=None, ext=0,
                         photometry_type='aperture',
                         r=5, r_in=50, r_out=60, detect_snr=5,

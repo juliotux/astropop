@@ -11,7 +11,8 @@ from astropy.table import Table, Column, vstack
 from .photometry_scripts import solve_photometry
 from .astrometry_scripts import solve_astrometry, identify_stars
 from ..fits_utils import check_hdu
-from ..photometry import aperture_photometry, process_photometry
+from ..photometry import (aperture_photometry, starfind, background, calc_fwhm,
+                          process_photometry)
 from ..astrometry import wcs_from_coords
 from ..logger import logger
 from ..polarimetry import pccdpack_wrapper as pccd
@@ -64,7 +65,7 @@ def run_pccdpack(image_set, retarder_type=None, retarder_key=None,
 
     x, y = out_table['x0'], out_table['x0']
     data = check_hdu(files[0])
-    ft = aperture_photometry(data.data, x=x, y=y, r=5)
+    ft = aperture_photometry(data.data, x=x, y=y, r='auto')
 
     if wcs is None:
         try:
@@ -187,9 +188,13 @@ def process_polarimetry(image_set, align_images=True, retarder_type=None,
     s = process_list(check_hdu, image_set)
     result = {'aperture': None, 'psf': None}
 
-    sources = aperture_photometry(s[0].data, r=5,
-                                  detect_fwhm=kwargs['detect_fwhm'],
-                                  detect_snr=kwargs['detect_snr'])
+    bkg, rms = background(s[0].data, box_size=32, filter_size=3,
+                          global_bkg=False)
+    # bigger limits to handle worst data
+    sources = starfind(s[0].data, kwargs['detect_snr'], bkg, rms, fwhm=5,
+                       round_limit=(-2.0, 2.0), sharp_limit=(0.1, 2.0))
+    sources = aperture_photometry(s[0].data, sources['x'], sources['y'],
+                                  r='auto')
 
     logger.info('Identified {} sources'.format(len(sources)))
 
@@ -277,8 +282,8 @@ def process_polarimetry(image_set, align_images=True, retarder_type=None,
         kwargs['r'] = [kwargs['r']]
     apkwargs = {}
     phot_type = kwargs['photometry_type']
-    for i in ['detect_fwhm', 'detect_snr', 'box_size',
-              'r_in', 'r_out', 'r_find_best', 'psf_model', 'psf_niters']:
+    for i in ['box_size', 'r_in', 'r_out', 'r_find_best', 'psf_model',
+              'psf_niters']:
         if i in kwargs.keys():
             apkwargs[i] = kwargs.get(i)
     for i in ['aperture', 'psf']:
