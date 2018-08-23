@@ -338,7 +338,8 @@ def starfind(data, snr, background, noise, fwhm, mask=None, box_size=35,
                       fwhm=fwhm)
     # We compute the median FWHM and perform a optimum daofind extraction
     fwhm = calc_fwhm(data, sources['x'], sources['y'], box_size=box_size,
-                     model='gaussian')
+                     model='gaussian') or fwhm
+
     sources = daofind(data, snr, background, noise, fwhm, mask=mask,
                       sharp_limit=sharp_limit, round_limit=round_limit)
     sources.meta['fwhm'] = fwhm

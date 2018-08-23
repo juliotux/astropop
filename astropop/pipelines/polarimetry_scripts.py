@@ -202,7 +202,7 @@ def process_polarimetry(image_set, align_images=True, retarder_type=None,
     fwhm = sources.meta['fwhm']
     logger.info('Identified {} sources'.format(len(sources)))
     sources = aperture_photometry(s[0].data, sources['x'], sources['y'],
-                                  r='auto')
+                                  r='auto', r_ann=None)
 
     _tolerance = match_pairs_tolerance
     res_tmp, pairs = find_pairs(sources['x'], sources['y'],
@@ -299,10 +299,10 @@ def process_polarimetry(image_set, align_images=True, retarder_type=None,
     else:
         apkwargs['r'] = r
 
-    if 'rdnoise_key' in kwargs.keys():
-        rdnoise = kwargs.get('rdnoise_key')
-        if rdnoise in s[0].header.keys():
-            apkwargs['readnoise'] = s[0].header[rdnoise]
+    # if 'rdnoise_key' in kwargs.keys():
+    #     rdnoise = kwargs.get('rdnoise_key')
+    #     if rdnoise in s[0].header.keys():
+    #         apkwargs['readnoise'] = float(s[0].header[rdnoise])
 
     phot = process_list(process_photometry, s, x=sources['x'],
                         y=sources['y'], photometry_type=photometry_type,
@@ -322,7 +322,7 @@ def process_polarimetry(image_set, align_images=True, retarder_type=None,
                                    **solvekwargs)
             pol['mag'] = tmp['mag']
             pol['mag_err'] = tmp['mag_err']
-        pol = hstack([ids, pol])
+        pol = hstack([ids, Table([ft[0]['aperture']]), pol])
         rtable = vstack([rtable, pol])
 
     return rtable, wcs, ret

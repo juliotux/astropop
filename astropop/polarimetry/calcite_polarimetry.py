@@ -255,5 +255,6 @@ def calculate_polarimetry(o, e, psi, retarder='half', o_err=None, e_err=None,
 
     result['flux'] = {'value': flux,
                       'sigma': flux_err}
+    result['z'] = {'value': z, 'sigma': z_erro}
 
     return result
