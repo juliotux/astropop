@@ -7,6 +7,14 @@ __all__ = ['moffat_r', 'moffat_1d', 'moffat_2d', 'PSFMoffat2D',
            'PSFMoffat1D', 'MoffatRadial']
 
 
+def moffat_bounding_box(alpha, beta, threshold=10**-3):
+    """Calculate the radius where the distribution reaches a given threshold.
+
+    Threshold relative to maximum.
+    """
+    return int(np.sqrt((threshold**(-1/beta) - 1)*alpha))
+
+
 def moffat_normalize(width, power):
     # From Yoonsoo Bach notebook
     # http://nbviewer.jupyter.org/github/ysbach/AO_2017/blob/master/04_Ground_Based_Concept.ipynb
@@ -17,7 +25,7 @@ def moffat_normalize(width, power):
 
 
 def moffat_fwhm(alpha, beta):
-    return 2*alpha*np.sqrt(2**(1/beta) - 1)
+    return np.abs(2*alpha*np.sqrt(2**(1/beta) - 1))
 
 
 def moffat_r(r, alpha, beta, flux, sky):
@@ -26,14 +34,14 @@ def moffat_r(r, alpha, beta, flux, sky):
 
 
 def moffat_1d(x, x0, alpha, beta, flux, sky):
-    sf = flux*moffat_normalize(alpha, beta)
-    return sky + sf*(1 + ((x - x0)**2)/alpha**2)**(-beta)
+    r = x-x0
+    return moffat_r(r, alpha, beta, flux, sky)
 
 
 def moffat_2d(x, y, x0, y0, alpha, beta, flux, sky):
     # TODO: make this function assymetrical
-    sf = flux*moffat_normalize(alpha, beta)
-    return sky + sf*(1 + ((x - x0)**2 + (y - y0)**2)/alpha**2)**(-beta)
+    r = np.hypot(x-x0, y-y0)
+    return moffat_r(r, alpha, beta, flux, sky)
 
 
 class PSFMoffat2D(Fittable2DModel):

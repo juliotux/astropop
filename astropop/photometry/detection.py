@@ -79,10 +79,9 @@ def sexfind(data, snr, background, noise, recenter=False,
 
     if sep_kwargs.get('segmentation_map', False):
         sources, smap = sources
+        return Table(sources), smap
     else:
-        smap = None
-
-    return Table(sources), smap
+        return Table(sources)
 
 
 def daofind(data, snr, background, noise, fwhm, mask=None,
@@ -340,16 +339,16 @@ def starfind(data, snr, background, noise, fwhm, mask=None, box_size=35,
     # We compute the median FWHM and perform a optimum daofind extraction
     fwhm = calc_fwhm(data, sources['x'], sources['y'], box_size=box_size,
                      model='gaussian')
-    # bigger daofind limits to handle bad conditions
     sources = daofind(data, snr, background, noise, fwhm, mask=mask,
                       sharp_limit=sharp_limit, round_limit=round_limit)
+    sources.meta['fwhm'] = fwhm
     return sources
 
 
 def sources_mask(shape, x, y, a, b, theta, mask=None, scale=1.0):
     """Create a mask to cover all sources."""
     image = np.zeros(shape, dtype=bool)
-    image = sep.mask_ellipse(image, x, y, a, b, theta, r=scale)
+    sep.mask_ellipse(image, x, y, a, b, theta, r=scale)
     if mask is not None:
         image |= np.array(mask)
     return image

@@ -6,7 +6,7 @@ import copy
 from tempfile import mkdtemp
 import numpy as np
 
-from astropy.table import Table, Column, vstack
+from astropy.table import Table, Column, vstack, hstack
 
 from .photometry_scripts import solve_photometry
 from .astrometry_scripts import solve_astrometry, identify_stars
@@ -19,6 +19,7 @@ from ..polarimetry import pccdpack_wrapper as pccd
 from ..polarimetry.calcite_polarimetry import (calculate_polarimetry,
                                                estimate_dxdy,
                                                match_pairs)
+from ..image_processing.imarith import imcombine
 from ..py_utils import process_list, check_iterable
 
 
@@ -144,13 +145,15 @@ def _do_polarimetry(phot_table, psi, retarder_type, pairs, positions=None,
     def _process(idx):
         f = 'flux'
         fe = 'flux_error'
-        o = np.array([ph[j][f][pairs[idx]['o']] for j in range(len(ph))])
-        e = np.array([ph[j][f][pairs[idx]['e']] for j in range(len(ph))])
-        oe = np.array([ph[j][fe][pairs[idx]['o']] for j in range(len(ph))])
-        ee = np.array([ph[j][fe][pairs[idx]['e']] for j in range(len(ph))])
+        io = pairs[idx]['o']
+        ie = pairs[idx]['e']
+        o = np.array([ph[j][f][io] for j in range(len(ph))])
+        e = np.array([ph[j][f][ie] for j in range(len(ph))])
+        oe = np.array([ph[j][fe][io] for j in range(len(ph))])
+        ee = np.array([ph[j][fe][ie] for j in range(len(ph))])
         res = calculate_polarimetry(o, e, psi, retarder=retarder_type,
                                     o_err=oe, e_err=ee, positions=positions,
-                                    filter_negative=True, mode=calculate_mode)
+                                    filter_negative=False, mode=calculate_mode)
         for k in res.keys():
             dt = 'f4'
             if k not in tmp.colnames:
@@ -179,30 +182,33 @@ def _do_polarimetry(phot_table, psi, retarder_type, pairs, positions=None,
 def process_polarimetry(image_set, align_images=True, retarder_type=None,
                         retarder_key=None, match_pairs_tolerance=1.0,
                         retarder_rotation=22.5, retarder_direction=None,
-                        wcs=None, caulculate_mode='sum', **kwargs):
+                        wcs=None, calculate_mode='sum', detect_snr=5.0,
+                        photometry_type='aperture', **kwargs):
     """Process the photometry and polarimetry of a set of images.
 
     kwargs are the arguments for the following functions:
     process_photometry, _solve_photometry
     """
     s = process_list(check_hdu, image_set)
-    result = {'aperture': None, 'psf': None}
 
-    bkg, rms = background(s[0].data, box_size=32, filter_size=3,
+    # identify sources in the summed image to avoid miss a beam
+    ss = imcombine(s, method='average')
+    bkg, rms = background(ss.data, box_size=32, filter_size=3,
                           global_bkg=False)
     # bigger limits to handle worst data
-    sources = starfind(s[0].data, kwargs['detect_snr'], bkg, rms, fwhm=5,
+    # as we are using the summed image, the detect_snr needs to go up by sqrt(n)
+    sources = starfind(s[0].data, detect_snr*np.sqrt(len(s)), bkg, rms, fwhm=5,
                        round_limit=(-2.0, 2.0), sharp_limit=(0.1, 2.0))
+    fwhm = sources.meta['fwhm']
+    logger.info('Identified {} sources'.format(len(sources)))
     sources = aperture_photometry(s[0].data, sources['x'], sources['y'],
                                   r='auto')
-
-    logger.info('Identified {} sources'.format(len(sources)))
 
     _tolerance = match_pairs_tolerance
     res_tmp, pairs = find_pairs(sources['x'], sources['y'],
                                 match_pairs_tolerance=_tolerance)
     if len(pairs) == 0:
-        if kwargs.get('delta_x') and kwargs.get('delta_y'):
+        if 'delta_x' in kwargs.keys() and 'delta_y' in kwargs.keys():
             dx = kwargs.get('delta_x')
             dy = kwargs.get('delta_y')
             logger.info('Not pairs found in automatic routine. Using given '
@@ -228,7 +234,6 @@ def process_polarimetry(image_set, align_images=True, retarder_type=None,
                       'image_north_direction']:
                 if i not in kwargs.keys():
                     raise e
-            # bright = sources[pairs['o']].sort('flux')[-1]
             bright = sources[pairs['o']]
             bright.sort('flux')
             wcs = wcs_from_coords(bright[-1]['x'], bright[-1]['y'],
@@ -239,11 +244,10 @@ def process_polarimetry(image_set, align_images=True, retarder_type=None,
                                   kwargs['image_flip'])
 
     if wcs is not None:
-        idkwargs = {}
-        for i in ['identify_catalog', 'filter',
-                  'limit_angle', 'science_catalog']:
-            if i in kwargs.keys():
-                idkwargs[i] = kwargs[i]
+        idkwargs = {'identify_catalog': kwargs.get('identify_catalog'),
+                    'filter': kwargs.get('filter'),
+                    'limit_angle': kwargs.get('limit_angle'),
+                    'science_catalog': kwargs.get('science_catalog')}
         ids = identify_stars(res_tmp['xo'], res_tmp['yo'], wcs, **idkwargs)
         ids = Table(ids)
         if 'sci_id' in ids.colnames:
@@ -257,11 +261,16 @@ def process_polarimetry(image_set, align_images=True, retarder_type=None,
     ids['x1'] = res_tmp['xe']
     ids['y1'] = res_tmp['ye']
 
-    solvekwargs = {}
-    for i in ['montecarlo_iters', 'montecarlo_percentage',
-              'solve_photometry_type']:
-        if i in kwargs.keys():
-            solvekwargs[i] = kwargs.get(i)
+    t = Table()
+    t['star_index'] = np.arange(len(pairs))
+    ids = hstack([t, ids])
+    del t
+
+    solvekwargs = {'montecarlo_iters': kwargs.get('montecarlo_iters', 200),
+                   'montecarlo_percentage': kwargs.get('montecarlo_percentage',
+                                                       0.1),
+                   'solve_photometry_type': kwargs.get('solve_photometry_type',
+                                                       'montecarlo')}
 
     try:
         ret = [int(i.header[retarder_key]) for i in s]
@@ -276,73 +285,44 @@ def process_polarimetry(image_set, align_images=True, retarder_type=None,
 
     psi = np.array(ret)*retarder_rotation*retarder_direction
 
-    solve_to_result = {'aperture': False, 'psf': False}
-    solves = {}
-    if not check_iterable(kwargs['r']):
-        kwargs['r'] = [kwargs['r']]
-    apkwargs = {}
-    phot_type = kwargs['photometry_type']
-    for i in ['box_size', 'r_in', 'r_out', 'r_find_best', 'psf_model',
-              'psf_niters']:
-        if i in kwargs.keys():
-            apkwargs[i] = kwargs.get(i)
-    for i in ['aperture', 'psf']:
-        if i == phot_type or phot_type == 'both':
-            do = True
+    apkwargs = {'box_size': kwargs.get('box_size', 25),
+                'psf_model': kwargs.get('psf_model', 'moffat'),
+                'psf_niters': kwargs.get('psf_niters', 5)}
+    if 'r_in' in kwargs and 'r_out' in kwargs:
+        apkwargs['r_ann'] = (kwargs['r_in'], kwargs['r_out'])
+    r = kwargs.get('r')
+    if not check_iterable(r):
+        if r is None or r=='auto':
+            apkwargs['r'] = max(round(0.6371*fwhm, 0), 1)
         else:
-            do = False
+            apkwargs['r'] = r
+    else:
+        apkwargs['r'] = r
 
-        if i == 'psf':
-            rl = ['psf']
-        else:
-            rl = kwargs['r']
+    if 'rdnoise_key' in kwargs.keys():
+        rdnoise = kwargs.get('rdnoise_key')
+        if rdnoise in s[0].header.keys():
+            apkwargs['readnoise'] = s[0].header[rdnoise]
 
-        if do:
-            for ri in rl:
-                logger.info('Processing polarimetry for aper:{}'.format(ri))
-                napkwargs = copy.copy(apkwargs)
-                napkwargs['photometry_type'] = i
-                ph = process_list(process_photometry, s, x=sources['x'],
-                                  y=sources['y'],
-                                  r=ri, **napkwargs)
-                ph = [Table([j['flux'], j['flux_error']]) for j in ph]
-                solve_to_result[i] = True
-                ap = _do_polarimetry(ph, psi,
-                                     retarder_type=retarder_type,
-                                     pairs=pairs,
-                                     positions=ret)
-                if wcs is not None:
-                    cat_unit = kwargs['identify_catalog'].flux_unit
-                    tmp = solve_photometry(ap, cat_mag=ids['cat_mag'],
-                                           cat_scale=cat_unit,
-                                           **solvekwargs)
-                    ap['mag'] = tmp['mag']
-                    ap['mag_err'] = tmp['mag_err']
+    phot = process_list(process_photometry, s, x=sources['x'],
+                        y=sources['y'], photometry_type=photometry_type,
+                        **apkwargs)
+    r_used = list(set(phot[0]['aperture']))
 
-                solves[ri] = ap
+    rtable = Table()
+    for i in r_used:
+        ft = [p[p['aperture'] == i] for p in phot]
+        pol = _do_polarimetry(ft, psi, retarder_type=retarder_type,
+                              pairs=pairs, positions=ret,
+                              calculate_mode=calculate_mode)
+        if wcs is not None:
+            cat_unit = kwargs['identify_catalog'].flux_unit
+            tmp = solve_photometry(pol, cat_mag=ids['cat_mag'],
+                                   cat_scale=cat_unit,
+                                   **solvekwargs)
+            pol['mag'] = tmp['mag']
+            pol['mag_err'] = tmp['mag_err']
+        pol = hstack([ids, pol])
+        rtable = vstack([rtable, pol])
 
-    for ri in solves.keys():
-        t = solves[ri]
-        if ri == 'psf':
-            ri = np.nan
-            i = 'psf'
-        else:
-            i = 'aperture'
-
-        nt = Table()
-        nt.add_column(Column(data=np.arange(len(t)),
-                             name='star_index', dtype='i4'))
-        nt.add_column(Column(data=np.array([ri]*len(t)),
-                             name='aperture', dtype='f4'))
-        if ids is not None:
-            for c in ids.itercols():
-                nt.add_column(c)
-        for c in t.itercols():
-            nt.add_column(c)
-
-        if result[i] is None:
-            result[i] = nt
-        else:
-            result[i] = vstack([result[i], nt])
-
-    return result, wcs, ret
+    return rtable, wcs, ret

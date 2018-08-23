@@ -33,18 +33,18 @@ def gaussian_1d(x, x0, sigma, flux, sky):
 
 
 def gaussian_2d(x, y, x0, y0, sigma_x, sigma_y, theta, flux, sky):
-    cost2 = np.cos(theta)**2
-    sint2 = np.sin(theta)**2
-    sin2t = np.sin(2*theta)
-    sigx2 = 2*sigma_x**2
-    sigy2 = 2*sigma_y**2
-    a = (cost2/sigx2) + (sint2/sigy2)
-    b = -(sin2t/(2*sigx2)) + (sin2t/(2*sigy2))
-    c = (sint2/sigx2) + (cost2/sigy2)
+    cost2 = np.cos(np.radians(theta))**2
+    sint2 = np.sin(np.radians(theta))**2
+    sin2t = np.sin(2*np.radians(theta))
+    xstd2 = sigma_x**2
+    ystd2 = sigma_y**2
+    a = (cost2/xstd2) + (sint2/ystd2)
+    b = (sin2t/xstd2) - (sin2t/ystd2)
+    c = (sint2/xstd2) + (cost2/ystd2)
     xi = x - x0
     yi = y - y0
-    a = flux*gaussian_normalize(sigma_x, sigma_y)
-    return sky + a*np.exp(-(a*xi**2 + 2*b*xi*yi + c*yi**2))
+    amp = flux*gaussian_normalize(sigma_x, sigma_y)
+    return amp*np.exp(-0.5*((a*xi**2) + (b*xi*yi) + (c*yi**2)))
 
 
 class PSFGaussian2D(Fittable2DModel):

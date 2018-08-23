@@ -250,7 +250,7 @@ def calculate_polarimetry(o, e, psi, retarder='half', o_err=None, e_err=None,
                                          z_err=z_erro)
         else:
             return _return_empty()
-    except Exception as e:
+    except Exception:
         return _return_empty()
 
     result['flux'] = {'value': flux,

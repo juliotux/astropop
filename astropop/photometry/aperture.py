@@ -62,8 +62,6 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto', gain=None,
         res_ap.meta['fwhm'] = fwhm
         logger.debug('FWHM:{} r:{}'.format(fwhm, r))
 
-    res_ap.meta['r'] = r
-
     flux, flux_error, flags = sep.sum_circle(data, x, y, r, mask=mask,
                                              **kwargs)
 
@@ -78,20 +76,16 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto', gain=None,
         ri, ro = r_ann
         res_ap.meta['r_in'] = ri
         res_ap.meta['r_out'] = ro
-        if bkg_mask is not None:
-            bkg_mask |= mask
-        else:
-            bkg_mask = mask
-        flua, erroa, flaga = sep.sum_circann(data, x, y, ri, ro, mask=bkg_mask,
-                                            **kwargs)
+        # TODO: follow daophot aperture mode and calculate it using sigmaclip
+        # or mmm background
+        flua, erroa, flaga = sep.sum_circann(data, x, y, ri, ro, mask=mask,
+                                             **kwargs)
 
         # SEP do not expose aperture area, so we calculate
         nkwargs = kwargs.copy()
         nkwargs['gain'] = 1.0 # ensure gain not change the area
         ones = _sep_fix_byte_order(np.ones(data.shape, dtype='<f8'))
-        area, _, _ = sep.sum_circle(ones, x, y, r, mask=mask, **kwargs)
-        area1, _, _ = sep.sum_circann(ones, x, y, ri, ro, mask=bkg_mask,
-                                      **kwargs)
+        area, _, _ = sep.sum_circle(ones, x, y, r, mask=mask, **nkwargs)
 
         # recompute flux, flux_error and flags
         flux -= flua*(area/area1)
