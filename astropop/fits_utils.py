@@ -28,21 +28,19 @@ def check_header_keys(image1, image2, keywords=[]):
     image1 = check_hdu(image1)
     image2 = check_hdu(image2)
     for i in keywords:
-        if i in image1.header.keys():
-            if i in image2.header.keys():
-                v1 = image1.header[i]
-                v2 = image2.header[i]
-                if v1 != v2:
-                    raise IncompatibleHeadersError('Keyword {} have different '
-                                                   'values for images 1 and 2:'
-                                                   '\n{}\n{}'.format(i,
-                                                                     v1, v2))
-            else:
-                raise IncompatibleHeadersError('Image 2 do not have Keyword {}'
-                                               .format(i))
+        if i in image1.header.keys() and i in image2.header.keys():
+            v1 = image1.header[i]
+            v2 = image2.header[i]
+            if v1 != v2:
+                raise IncompatibleHeadersError('Keyword {} have different '
+                                               'values for images 1 and 2:'
+                                               '\n{}\n{}'.format(i,
+                                                                 v1, v2))
+        elif i in image1.header.keys() or i in image2.header.keys():
+            raise IncompatibleHeadersError("Headers have inconsisten presence "
+                                           "of {} Keyword".format(i))
         else:
-            raise IncompatibleHeadersError('Image 1 do not have Keyword {}'
-                                           .format(i))
+            logger.debug("The images do not have the {} keyword".format(i))
     return True
 
 
@@ -57,6 +55,23 @@ def check_hdu(data, ext=0):
             data = fits.PrimaryHDU(data)
         else:
             raise ValueError('The given data is not a valid CCDData type.')
+
+
+    # handle nested data
+    shape = data.data.shape
+    if len(shape) < 2 or len(shape) >  3 or \
+       (len(shape) == 3 and 1 not in shape):
+        raise ValueError('Only 2D images are supported.')
+    elif len(shape) == 3 and 1 in shape:
+        # Flatten the images hen need
+        rm_index = list(shape).index(1)
+        logger.debug("unnest data nested at index {}".format(rm_index))
+        if rm_index == 0:
+            data.data = data.data[0]
+        elif rm_index == 1:
+            data.data = data.data[:, 0]
+        elif rm_index == 2:
+            data.data = data.data[:, :, 0]
     return data
 
 
