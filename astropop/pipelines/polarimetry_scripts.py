@@ -2,23 +2,24 @@ import os
 import shutil
 import six
 import time
-import copy
 from tempfile import mkdtemp
 import numpy as np
 
 from astropy.table import Table, Column, vstack, hstack
+from astropy.stats import sigma_clip
 
 from .photometry_scripts import solve_photometry
 from .astrometry_scripts import solve_astrometry, identify_stars
 from ..fits_utils import check_hdu
-from ..photometry import (aperture_photometry, starfind, background, calc_fwhm,
+from ..photometry import (aperture_photometry, starfind, background,
                           process_photometry)
 from ..astrometry import wcs_from_coords
 from ..logger import logger
 from ..polarimetry import pccdpack_wrapper as pccd
 from ..polarimetry.calcite_polarimetry import (calculate_polarimetry,
                                                estimate_dxdy,
-                                               match_pairs)
+                                               match_pairs,
+                                               estimate_normalize)
 from ..image_processing.register import hdu_shift_images
 from ..image_processing.imarith import imcombine
 from ..py_utils import process_list, check_iterable
@@ -143,7 +144,7 @@ def _do_polarimetry(phot_table, psi, retarder_type, pairs, positions=None,
 
     tmp = Table()
 
-    def _process(idx):
+    def _get_fluxes(idx):
         f = 'flux'
         fe = 'flux_error'
         io = pairs[idx]['o']
@@ -152,20 +153,46 @@ def _do_polarimetry(phot_table, psi, retarder_type, pairs, positions=None,
         e = np.array([ph[j][f][ie] for j in range(len(ph))])
         oe = np.array([ph[j][fe][io] for j in range(len(ph))])
         ee = np.array([ph[j][fe][ie] for j in range(len(ph))])
+        return o, e, oe, ee
+
+    # process a global normalization based on bright stars (mainly), and sigma
+    # clipped.
+    ks = np.zeros(len(pairs))
+    tf = np.zeros(len(pairs))
+    ks.fill(np.nan)
+    for i in range(len(pairs)):
+        o, e, oe, ee = _get_fluxes(i)
+        if retarder_type == 'half':
+            npos = 4
+        elif retarder_type == 'quarter':
+            npos = 8
+        else:
+            npos = 4
+        ks[i] = estimate_normalize(o, e, positions, npos)
+        tf[i] = (np.sum(o + e))/np.sum(oe + ee)
+        if not np.isfinite(ks[i]):
+            tf[i] = 0
+    sclip = sigma_clip(ks)
+    mask = ~sclip.mask & (tf[i] != 0)
+    k = np.average(ks[np.where(mask)], weights=tf[np.where(mask)])
+
+    def _process(idx, k):
+        o, e, oe, ee = _get_fluxes(idx)
         res = calculate_polarimetry(o, e, psi, retarder=retarder_type,
                                     o_err=oe, e_err=ee, positions=positions,
-                                    filter_negative=False, mode=calculate_mode)
+                                    filter_negative=False, mode=calculate_mode,
+                                    global_k=k)
         for k in res.keys():
             dt = 'f4'
             if k not in tmp.colnames:
                 shape = (1) if k != 'z' else (len(psi))
                 tmp.add_column(Column(name=k, dtype=dt, shape=shape,
                                       length=len(pairs)))
-                if k not in ['sigma_theor', 'reduced_chi2']:
+                if k not in ['sigma_theor', 'reduced_chi2', 'k']:
                     tmp.add_column(Column(name='{}_error'.format(k),
                                           dtype=dt, shape=shape,
                                           length=len(pairs)))
-            if k in ['sigma_theor', 'reduced_chi2']:
+            if k in ['sigma_theor', 'reduced_chi2', 'k']:
                 tmp[k][idx] = res[k]
             elif k == 'z':
                 tmp[k][idx] = res[k]['value']
@@ -175,7 +202,7 @@ def _do_polarimetry(phot_table, psi, retarder_type, pairs, positions=None,
                 tmp['{}_error'.format(k)][idx] = res[k]['sigma']
 
     for i in range(len(pairs)):
-        _process(idx=i)
+        _process(i, k)
 
     return tmp
 

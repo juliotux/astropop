@@ -90,7 +90,7 @@ class PolarimetryPipeline(ReducePipeline):
                   'montecarlo_percentage', 'astrometry_calib',
                   'delta_x', 'delta_y', 'brightest_star_dec',
                   'brightest_star_ra', 'image_flip', 'image_north_direction',
-                  'limit_angle']:
+                  'limit_angle', 'calculate_mode']:
             if i in config.keys():
                 polkwargs[i] = config[i]
 

@@ -150,19 +150,20 @@ def _polarimetry_by_sum(z, psi, retarder='half', z_err=None):
     Magalhaes et al 1984 (ads string: 1984PASP...96..383M)
     """
     result = {}
+    psi = np.radians(psi)
+
     if retarder == 'half':
-        # q = 2/n sum_{i=1}^n z_i*cos(4psi_i)
-        # u = 2/n sum_{i=1}^n z_i*sin(4psi_i)
-        # p_err = sqrt(2/(n*(n-2)) * sum_{i=1}^n z_i^2 - q^2 - u^2)
         assert(len(z) == len(psi))
         n = len(z)
-        q = (2.0/n) * np.sum(z*np.cos(4*np.radians(psi)))
-        u = (2.0/n) * np.sum(z*np.sin(4*np.radians(psi)))
+        q = (2.0/n) * np.sum(z*np.cos(4*psi))
+        u = (2.0/n) * np.sum(z*np.sin(4*psi))
+        p = np.sqrt(q**2 + u**2)
 
         a = 2.0/n
-        b = 1.0/(n-2)
-        p = np.sqrt(q**2 + u**2)
-        err = np.sqrt(b * (a*np.sum(z**2) - p**2))
+        b = np.sqrt(1.0/(n-2))
+        err = a*np.sum(z**2)
+        err = err - p**2
+        err = b*np.sqrt(err)
 
         result['p'] = {'value': p, 'sigma': err}
         result['q'] = {'value': q, 'sigma': err}
@@ -176,9 +177,27 @@ def _polarimetry_by_sum(z, psi, retarder='half', z_err=None):
     return result
 
 
+def reduced_chi2(psi, z, z_err, q, u, v=None, retarder='half'):
+    """Compute the reduced chi-square for a given model."""
+    if retarder == 'quarter' and v is None:
+        raise ValueError('missing value `v` of circular polarimetry.')
+
+    if retarder == 'half':
+        model = HalfWaveModel(q=q, u=u)
+        npar = 2
+    elif retarder == 'quarter':
+        model = QuarterWaveModel(q=q, u=u, v=v)
+        npar = 3
+
+    z_m = model(psi)
+    nu = len(z_m) - npar
+
+    return np.sum(np.square((z-z_m)/z_err))/nu
+
+
 def calculate_polarimetry(o, e, psi, retarder='half', o_err=None, e_err=None,
                           normalize=True, positions=None, min_snr=None,
-                          filter_negative=True, mode='sum'):
+                          filter_negative=True, mode='sum', global_k=None):
     """Calculate the polarimetry."""
 
     if retarder == 'half':
@@ -193,19 +212,25 @@ def calculate_polarimetry(o, e, psi, retarder='half', o_err=None, e_err=None,
 
     # clean problematic sources (bad sky subtraction, low snr)
     if filter_negative and (np.array(o <= 0).any() or np.array(e <= 0).any()):
-        o_neg = np.where(o < 0)
-        e_neg = np.where(e < 0)
-        o[o_neg] = np.nan
-        e[e_neg] = np.nan
+        filt = (o < 0) | (e < 0)
+        w = np.where(filt)
+        o = o[w]
+        e = e[w]
+        psi = psi[w]
+        if o_err is not None:
+            o_err = o_err[w]
+        if e_err is not None:
+            e_err = e_err[w]
 
     if normalize and positions is not None:
-        k = estimate_normalize(o, e, positions, ncons)
+        if global_k is not None:
+            k = global_k
+            logger.debug('Using global K value: {}'.format(k))
+        else:
+            k = estimate_normalize(o, e, positions, ncons)
         z = (o-(e*k))/(o+(e*k))
     else:
         z = (o-e)/(o+e)
-
-    # To fit pccdpack, we had to invert z
-    z = -z
 
     if o_err is None or e_err is None:
         z_erro = None
@@ -251,10 +276,18 @@ def calculate_polarimetry(o, e, psi, retarder='half', o_err=None, e_err=None,
         else:
             return _return_empty()
     except Exception:
+        raise
         return _return_empty()
 
     result['flux'] = {'value': flux,
                       'sigma': flux_err}
     result['z'] = {'value': z, 'sigma': z_erro}
+    result['k'] = k or 1.0
+    v = result.get('v', {'value': None})
+    result['reduced_chi2'] = reduced_chi2(psi, z, z_erro,
+                                          result['q']['value'],
+                                          result['u']['value'],
+                                          v=v['value'],
+                                          retarder=retarder)
 
     return result

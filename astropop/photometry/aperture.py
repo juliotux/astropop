@@ -150,8 +150,7 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto', gain=1.0,
         r_in = int(round(4*r, 0))
         r_out = int(max(r_in+10, round(6*r, 0)))  # Ensure a dannulus geq 10
         r_ann = (r_in, r_out)
-
-    logger.debug('r_ann:{}'.format(r_ann))
+        logger.debug('r_ann:{}'.format(r_ann))
 
     # from .daophot.aper import aper
     # if r_ann is None:
@@ -191,7 +190,7 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto', gain=1.0,
         # TODO: check these calculations
         # recompute flux, flux_error and flags
         flux -= sky*area
-        bkgerr = np.sqrt((error + sky/gain)*area)
+        bkgerr = np.sqrt((error + np.absolute(sky)/gain)*area)
         flux_error = np.hypot(flux_error, bkgerr)
 
     res_ap['flux'] = flux
