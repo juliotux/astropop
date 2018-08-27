@@ -6,7 +6,8 @@ from astropy.time import Time
 
 from ..image_processing.register import register_translation
 from ..image_processing.imarith import check_hdu
-from .photometry import process_photometry, aperture_photometry
+from ._phot import process_photometry
+from .aperture import aperture_photometry
 from ..logger import logger
 
 

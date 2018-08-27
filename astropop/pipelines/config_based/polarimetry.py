@@ -98,6 +98,11 @@ class PolarimetryPipeline(ReducePipeline):
             ref_cat = default_catalogs[config["identify_catalog_name"]]
             polkwargs['identify_catalog'] = ref_cat
 
+        mkdir_p(product_dir)
+
+        image = combine(ccds, method='sum', mem_limit=config.get('mem_limit',
+                                                                 1e9))
+
         if "science_catalog" in config.keys():
             sci_cat = ASCIICatalogClass(config['science_catalog'],
                                         id_key=config['science_id_key'],
@@ -117,26 +122,15 @@ class PolarimetryPipeline(ReducePipeline):
             logger.debug('Processing {} images'.format(len(ccds)))
             t, wcs, ret = process_polarimetry(ccds, **polkwargs)
             config['retarder_positions'] = ret
-        else:
-            wcs = None
-            t = {}
 
-        mkdir_p(product_dir)
-
-        image = combine(ccds, method='sum', mem_limit=config.get('mem_limit',
-                                                                 1e9))
-
-        hdus = []
-        for i in [i for i in t.keys() if t[i] is not None]:
+            hdus = []
             header_keys = ['retarder_type', 'retarder_rotation',
                            'retarder_direction', 'retarder_positions',
                            'align_images', 'solve_photometry_type',
                            'plate_scale', 'filter', 'night']
-            if i == 'aperture':
-                header_keys += ['r', 'r_in', 'r_out', 'detect_fwhm',
-                                'detect_snr']
-            elif i == 'psf':
-                header_keys += ['psf_model', 'box_size', 'psf_niters']
+            header_keys += ['r', 'r_in', 'r_out', 'detect_fwhm',
+                            'detect_snr']
+            header_keys += ['psf_model', 'box_size', 'psf_niters']
 
             if config.get('solve_photometry_type', None) == 'montecarlo':
                 header_keys += ['montecarlo_iters', 'montecarlo_percentage']
@@ -145,7 +139,12 @@ class PolarimetryPipeline(ReducePipeline):
                 header_keys += ['identify_catalog_name',
                                 'identify_limit_angle']
 
-            hdu = fits.BinTableHDU(t[i], name="{}_log".format(i))
+            analyzer_key = config.get('analyzer_key')
+            if analyzer_key:
+                config['analyzer'] = image.header.get(analyzer_key)
+                header_keys += ['analyzer']
+
+            hdu = fits.BinTableHDU(t, name="log_table".format(i))
             for k in header_keys:
                 if k in config.keys():
                     v = config[k]
@@ -156,13 +155,13 @@ class PolarimetryPipeline(ReducePipeline):
                         hdu.header[key] = v
             hdus.append(hdu)
 
-            out = Table(dtype=t[i].dtype)
-            for group in t[i].group_by('star_index').groups:
+            out = Table(dtype=t.dtype)
+            for group in t.group_by('star_index').groups:
                 m = np.argmax(group['p']/group['p_error'])
                 out.add_row(group[m])
             out['snr'] = out['p']/out['p_error']
 
-            hdu = fits.BinTableHDU(out, name="{}_out".format(i))
+            hdu = fits.BinTableHDU(out, name="out_table")
             for k in header_keys:
                 if k in config.keys():
                     v = config[k]
@@ -173,7 +172,6 @@ class PolarimetryPipeline(ReducePipeline):
                         hdu.header[key] = v
             hdus.append(hdu)
 
-        if process_astropop:
             if wcs is not None:
                 image.header.update(wcs.to_header(relax=True))
             hdulist = fits.HDUList([image, *hdus])
@@ -201,7 +199,13 @@ class PolarimetryPipeline(ReducePipeline):
             if config.get('identify_catalog_name', None) is not None:
                 header_keys += ['identify_catalog_name',
                                 'identify_limit_angle']
-            for i in hdus:
+
+            analyzer_key = config.get('analyzer_key')
+            if analyzer_key:
+                config['analyzer'] = image.header.get(analyzer_key)
+                header_keys += ['analyzer']
+
+            for hdu in hdus:
                 for k in header_keys:
                     if k in config.keys():
                         v = config[k]

@@ -131,18 +131,19 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto', gain=1.0,
     kwargs = {'gain': gain,
               'err': readnoise,
               'subpix': 0}
-    logger.debug('kwargs: {}'.format(kwargs))
 
     res_ap['x'] = x
     res_ap['y'] = y
-    res_ap['aperture'] = [r]*len(x)
 
     if r == 'auto':
         logger.debug('Aperture r set as `auto`. Calculating from FWHM.')
         fwhm = calc_fwhm(data, x, y, box_size=25, model='gaussian')
         r = 0.6371*fwhm
         res_ap.meta['fwhm'] = fwhm
+        res_ap.meta['r_auto'] = True
         logger.debug('FWHM:{} r:{}'.format(fwhm, r))
+
+    res_ap['aperture'] = [r]*len(x)
 
     if r_ann == 'auto':
         logger.debug('Aperture r_ann set as `auto`. Calculating from r.')
@@ -199,7 +200,5 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto', gain=1.0,
 
     if sky is not None:
         res_ap['sky'] = sky
-
-    print(res_ap)
 
     return res_ap

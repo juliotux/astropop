@@ -19,6 +19,7 @@ from ..polarimetry import pccdpack_wrapper as pccd
 from ..polarimetry.calcite_polarimetry import (calculate_polarimetry,
                                                estimate_dxdy,
                                                match_pairs)
+from ..image_processing.register import hdu_shift_images
 from ..image_processing.imarith import imcombine
 from ..py_utils import process_list, check_iterable
 
@@ -191,14 +192,21 @@ def process_polarimetry(image_set, align_images=True, retarder_type=None,
     """
     s = process_list(check_hdu, image_set)
 
+    if align_images:
+        s = hdu_shift_images(s)
+
+    if 'rdnoise_key' in kwargs:
+        err = s[0].header.get(kwargs['rdnoise_key'], None)
+
     # identify sources in the summed image to avoid miss a beam
     ss = imcombine(s, method='average')
     bkg, rms = background(ss.data, box_size=32, filter_size=3,
                           global_bkg=False)
+    rms = err or rms
     # bigger limits to handle worst data
     # as we are using the summed image, the detect_snr needs to go up by sqrt(n)
-    sources = starfind(s[0].data, detect_snr*np.sqrt(len(s)), bkg, rms, fwhm=5,
-                       round_limit=(-2.0, 2.0), sharp_limit=(0.1, 2.0))
+    sources = starfind(ss.data, detect_snr*np.sqrt(len(s)), bkg, rms, fwhm=5,
+                       round_limit=(-2.0, 2.0), sharp_limit=(0.2, 1.0))
     fwhm = sources.meta['fwhm']
     logger.info('Identified {} sources'.format(len(sources)))
     sources = aperture_photometry(s[0].data, sources['x'], sources['y'],
@@ -299,10 +307,10 @@ def process_polarimetry(image_set, align_images=True, retarder_type=None,
     else:
         apkwargs['r'] = r
 
-    # if 'rdnoise_key' in kwargs.keys():
-    #     rdnoise = kwargs.get('rdnoise_key')
-    #     if rdnoise in s[0].header.keys():
-    #         apkwargs['readnoise'] = float(s[0].header[rdnoise])
+    if 'rdnoise_key' in kwargs.keys():
+        rdnoise = kwargs.get('rdnoise_key')
+        if rdnoise in s[0].header.keys():
+            apkwargs['readnoise'] = float(s[0].header[rdnoise])
 
     phot = process_list(process_photometry, s, x=sources['x'],
                         y=sources['y'], photometry_type=photometry_type,
@@ -325,4 +333,6 @@ def process_polarimetry(image_set, align_images=True, retarder_type=None,
         pol = hstack([ids, Table([ft[0]['aperture']]), pol])
         rtable = vstack([rtable, pol])
 
+    # remove masked rows
+    rtable = rtable[~rtable['star_index'].mask]
     return rtable, wcs, ret

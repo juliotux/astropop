@@ -20,10 +20,11 @@ def process_photometry(image, photometry_type, detect_fwhm=None,
     bkg, rms = background(data, box_size=64,
                           filter_size=3, mask=mask,
                           global_bkg=False)
-    if readnoise is not None:
-        rms = readnoise
-    else:
-        rms = np.median(rms)
+    # if readnoise is not None:
+    #     rms = readnoise
+    # else:
+    #     rms = np.median(rms)
+    rms = np.median(rms)
 
     if x is None or y is None:
         # First, we find the sources with sep, compute the FWHM and after

@@ -77,6 +77,7 @@ class VizierCatalogClass(_BasePhotometryCatalog):
     def __init__(self, **kwargs):
         self.vizier = Vizier()
         self.vizier.ROW_LIMIT = -1
+        # self.vizier.VIZIER_SERVER = 'vizier.cfa.harvard.edu'
 
         for i, v in kwargs.items():
             if i in self._valid_init_kwargs:

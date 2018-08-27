@@ -338,7 +338,7 @@ def starfind(data, snr, background, noise, fwhm, mask=None, box_size=35,
                       fwhm=fwhm)
     # We compute the median FWHM and perform a optimum daofind extraction
     fwhm = calc_fwhm(data, sources['x'], sources['y'], box_size=box_size,
-                     model='gaussian') or fwhm
+                     model='gaussian', min_fwhm=fwhm) or fwhm
 
     sources = daofind(data, snr, background, noise, fwhm, mask=mask,
                       sharp_limit=sharp_limit, round_limit=round_limit)
@@ -376,15 +376,18 @@ def _fwhm_loop(model, data, x, y, xc, yc):
         return np.nan
 
 
-def calc_fwhm(data, x, y, box_size=25, model='gaussian'):
+def calc_fwhm(data, x, y, box_size=25, model='gaussian', min_fwhm=3.0):
     """Calculate the median FWHM of the image with Gaussian or Moffat fit."""
     indices = np.indices(data.shape)
     rects = [trim_array(data, box_size, (xi, yi), indices=indices)
              for xi, yi in zip(x, y)]
     fwhm = [_fwhm_loop(model, d[0], d[1], d[2], xi, yi)
             for d, xi, yi in zip(rects, x, y)]
+    fwhm = np.nanmedian(fwhm)
+    if fwhm < min_fwhm or ~np.isfinite(fwhm):
+        fwhm = min_fwhm
 
-    return np.nanmedian(fwhm)
+    return fwhm
 
 
 def _recenter_loop(fitter, model, data, x, y, xc, yc):

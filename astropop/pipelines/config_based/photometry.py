@@ -12,7 +12,7 @@ from ..photometry_scripts import process_calib_photometry
 from ...py_utils import process_list, check_iterable, mkdir_p
 from ...image_processing import combine
 from ...astrometry.manual_wcs import _angles
-from ...photometry import (psf_available_model,
+from ...photometry import (psf_available_models,
                            photometry_available_methods,
                            solve_photometry_available_methods)
 from ...catalogs import catalogs_available
@@ -35,7 +35,7 @@ class PhotometryPipeline(ReducePipeline):
             detect_snr="Minimum signal to noise to detect sources in image",
             detect_fwhm="Approximate FWHM of the sources in the image. "
                         "If None, the code will compute it.",
-            psf_model="PSF model to use: {}".format(psf_available_model),
+            psf_model="PSF model to use: {}".format(psf_available_models),
             psf_niters="Number of iterations in subtracted psf photometry",
             box_size="Box size to fit each star in psf photometry",
             r="Aperture radius in aperture photometry. Can be a list of "
