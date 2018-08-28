@@ -77,7 +77,7 @@ def main():
     sci_cat = options.science_catalog
     if sci_cat is not None:
         sci_cat = ASCIICatalogClass(sci_cat, id_key='ID', ra_key='RA',
-                                    dec_key='DEC')
+                                    dec_key='DEC', format='ascii')
 
     mkdir_p(reduced_folder)
     pipe = ImpactonCalib(product_dir=reduced_folder,

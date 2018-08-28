@@ -176,11 +176,18 @@ def fits_yielder(return_type, file_list, ext=0, append_to_name=None,
 def headers_to_table(headers, filenames=None, keywords=None, empty_value=None,
                      lower_keywords=False):
     """Read a bunch of headers and return a table with the values."""
-    l = list(headers)
+    l = []
+    actual = 0
+    for head in headers:
+        l.append(head)
+        actual += 1
+        logger.debug("Reading header {}".format(actual))
+
     n =len(l)
 
     if keywords is None or keywords == '*' or keywords == 'all':
         keywords = []
+        logger.debug('Reading keywords.')
         for head in l:
             for k in head.keys():
                 if k not in keywords:
@@ -195,6 +202,7 @@ def headers_to_table(headers, filenames=None, keywords=None, empty_value=None,
         headict[k] = [empty_value]*n
 
     for i in range(n):
+        logger.debug("Processing header {} from {}".format(i, n))
         for key, val in l[i].items():
             key = key.lower()
             if key in keywords:
