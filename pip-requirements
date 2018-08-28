@@ -1,0 +1,10 @@
+-r pip-requirements-doc
+astropy
+sep
+numpy
+scipy
+scikit-image
+matplotlib
+cython
+astroquery
+fortranformat
