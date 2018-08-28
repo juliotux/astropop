@@ -2,6 +2,7 @@ name: astropop
 
 channels:
     - astropy
+    - openastronomy
 
 dependencies:
     - astropy
