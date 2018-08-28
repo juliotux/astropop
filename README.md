@@ -35,4 +35,4 @@ A paper with the science verification results and the full methodology is in pre
 
 [![Documentation Status](https://readthedocs.org/projects/astropop/badge/?version=latest)](https://astropop.readthedocs.io/en/latest/?badge=latest)
 
-Documentation (not complete yet) can be found at [astropop.readthedocs.io](astropop.readthedocs.io)
+Documentation (not complete yet) can be found at [astropop.readthedocs.io](https://astropop.readthedocs.io)
