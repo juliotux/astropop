@@ -20,7 +20,7 @@ class BSMStackedPhotometry(StackedPhotometryPipeline):
                                  montecarlo_percentage=0.2)
     astrometry_parameters = dict(ra_key='RA',
                                  dec_key='DEC',
-                                 plate_scale=5.0,
+                                 plate_scale=0.46,
                                  identify_limit_angle='2 arcsec')
     combine_parameters = dict(method='sum',
                               weights=None,
