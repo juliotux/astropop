@@ -5,7 +5,7 @@ import numpy as np
 from multiprocessing.pool import Pool
 from astroquery.simbad import Simbad
 from astroquery.vizier import Vizier
-from astropy.coordinates import SkyCoord, Angle
+from astropy.coordinates import SkyCoord
 from astropy import units as u
 
 from .base_catalog import _BasePhotometryCatalog, match_indexes
@@ -17,7 +17,7 @@ from ..py_utils import string_fix
 MAX_PARALLEL_QUERY = 30
 MAX_RETRIES_TIMEOUT = 10
 
-__all__ = ['VizierCatalogClass', 'SimbadCatalogClass',
+__all__ = ['VizierCatalogClass', 'SimbadCatalogClass', 'UCAC5Catalog',
            'SimbadCatalog', 'UCAC4Catalog', 'GSC23Catalog', 'APASSCalatolg',
            'DENISCatalog', 'TWOMASSCatalog', 'default_catalogs']
 
@@ -336,7 +336,7 @@ class SimbadCatalogClass(_BasePhotometryCatalog):
     def query_flux(self, center, radius, filter, return_bibcode=False):
         self.check_filter(filter)
         flux_key, error_key, unit_key, bibcode_key = self._flux_keys(filter)
-        self._query_simbad_region(center, radius)
+        self._simbad_query_region(center, radius)
 
         flux = np.array(self._last_query_table[flux_key].data)
         if error_key is not None:
@@ -424,6 +424,18 @@ UCAC4Catalog = VizierCatalogClass(available_filters=["B", "V", "g", "r", "i"],
                                   comment="Magnitudes from APASS")
 
 
+UCAC5Catalog = VizierCatalogClass(available_filters=["Gaia", "R", "f."],
+                                  vizier_table="I/340",
+                                  prepend_id_key=True,
+                                  id_key='SrcIDgaia',
+                                  ra_key="RAJ2000",
+                                  dec_key="DEJ2000",
+                                  flux_key="{filter}mag",
+                                  flux_error_key="e_{filter}mag",
+                                  flux_unit="mag",
+                                  bibcode="2017yCat.1340....0Z",
+                                  comment="Rmag from NOMAD")
+
 APASSCalatolg = VizierCatalogClass(available_filters=["B", "V", "g'",
                                                       "r'", "i'"],
                                    vizier_table="II/336/apass9",
@@ -490,6 +502,7 @@ GSC23Catalog = _GCS23Catalog()
 
 default_catalogs = {'Simbad': SimbadCatalog,
                     'UCAC4': UCAC4Catalog,
+                    'UCAC5': UCAC5Catalog,
                     'APASS': APASSCalatolg,
                     'DENIS': DENISCatalog,
                     '2MASS': TWOMASSCatalog,

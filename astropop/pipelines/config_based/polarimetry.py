@@ -95,8 +95,13 @@ class PolarimetryPipeline(ReducePipeline):
                 polkwargs[i] = config[i]
 
         if "identify_catalog_name" in config.keys():
-            ref_cat = default_catalogs[config["identify_catalog_name"]]
-            polkwargs['identify_catalog'] = ref_cat
+            try:
+                ref_cat = default_catalogs[config["identify_catalog_name"]]
+                polkwargs['identify_catalog'] = ref_cat
+            except KeyError:
+                raise ValueError("Catalog {} not available. Available catalogs:"
+                                 " {}".format(config["identify_catalog_name"],
+                                              default_catalogs))
 
         mkdir_p(product_dir)
 

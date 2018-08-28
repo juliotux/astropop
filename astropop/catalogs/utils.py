@@ -14,7 +14,7 @@ def identify_stars(x, y, wcs, identify_catalog,
     pertinent parameters from the catalogs."""
     cat = identify_catalog
     ra, dec = wcs_xy2radec(x, y, wcs)
-    
+
     cat_res = cat.match_objects(ra, dec, filter, limit_angle=limit_angle)
     name = cat_res['id']
     mag = cat_res['flux']

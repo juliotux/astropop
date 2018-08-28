@@ -5,7 +5,8 @@ from ..fits_utils import check_hdu
 from ..photometry import (aperture_photometry, process_photometry,
                           solve_photometry_montecarlo,
                           solve_photometry_median,
-                          solve_photometry_average)
+                          solve_photometry_average,
+                          starfind, background)
 from .astrometry_scripts import solve_astrometry, identify_stars
 from ..py_utils import check_iterable
 from ..logger import logger
@@ -60,11 +61,12 @@ def process_calib_photometry(image, wcs=None, return_wcs=False,
                              science_catalog=None,
                              montecarlo_iters=100,
                              montecarlo_percentage=0.2, filter=None,
+                             detect_snr=5, detect_fwhm=3,
                              solve_photometry_type=None, **kwargs):
     """Process photometry with magnitude calibration using catalogs."""
     image = check_hdu(image)
 
-    result = {'aperture': None, 'psf': None}
+    result = Table()
 
     r = []
     if kwargs.get('photometry_type') in ['aperture', 'both']:
@@ -75,9 +77,10 @@ def process_calib_photometry(image, wcs=None, return_wcs=False,
     if kwargs.get('photometry_type') in ['psf', 'both']:
         r += ['psf']
 
-    sources = aperture_photometry(image.data, r=5,
-                                  detect_snr=kwargs['detect_snr'],
-                                  detect_fwhm=kwargs['detect_fwhm'])
+    bkg, rms = background(image.data, 32, 3, global_bkg=False)
+    sources = starfind(image.data, detect_snr, bkg, rms, fwhm=detect_fwhm)
+    sources = aperture_photometry(image.data, sources['x'], sources['y'],
+                                  r='auto', r_ann='auto')
 
     if wcs is None:
         logger.debug('Solving astrometry')
@@ -90,8 +93,8 @@ def process_calib_photometry(image, wcs=None, return_wcs=False,
 
     photkwargs = {}
     for i in kwargs.keys():
-        if i in ['detect_fwhm', 'detect_snr', 'box_size', 'r_in',
-                 'r_out', 'psf_model', 'psf_niters']:
+        if i in ['detect_fwhm', 'detect_snr', 'box_size', 'r_ann',
+                 'psf_model', 'psf_niters']:
             photkwargs[i] = kwargs.get(i)
     for ri in r:
         if ri == 'psf':
@@ -113,15 +116,9 @@ def process_calib_photometry(image, wcs=None, return_wcs=False,
                                montecarlo_percentage=montecarlo_percentage,
                                solve_photometry_type=solve_photometry_type)
 
-        t = Table()
-        t['star_index'] = np.arange(0, len(sources), 1)
-        t['aperture'] = [ri if ri != 'psf' else np.nan]*len(sources)
-        t = hstack([t, ids, ph, res])
+        t = hstack([ids, ph, res])
 
-        if result[phot_type] is None:
-            result[phot_type] = t
-        else:
-            result[phot_type] = vstack([result[phot_type], t])
+        result = vstack([result, t])
 
     if return_wcs:
         return result, wcs

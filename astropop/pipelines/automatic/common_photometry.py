@@ -1,6 +1,7 @@
 import os
 import numpy as np
 from astropy.io import fits
+from astropy.wcs import WCS
 from string import Formatter
 
 from ...catalogs import default_catalogs
@@ -25,7 +26,7 @@ class StackedPhotometryPipeline():
     standard_catalogs = {'U': 'Simbad',
                          'B': 'APASS',
                          'V': 'APASS',
-                         'R': 'GSC2.3',
+                         'R': 'UCAC5',
                          'I': 'DENIS'}
 
     def __init__(self, product_dir, image_ext=0):
@@ -51,7 +52,7 @@ class StackedPhotometryPipeline():
             raise ValueError('Filter {} not supported.'.format(filter))
         return default_catalogs[self.standard_catalogs[filter]]
 
-    def _process(self, prod, sci_catalog):
+    def _process(self, prod, sci_catalog, astrometry=True):
         if prod.calibed_files is None:
             raise ValueError("Product failed: No calibrated images. raw files:"
                              " {}".format(prod.files.files))
@@ -86,24 +87,29 @@ class StackedPhotometryPipeline():
         filt = self.get_filter(fg)
         cat = self.select_catalog(filt)
 
+        wcs = WCS(stacked.header, relax=True)
+        if '' in wcs.wcs.ctype or astrometry:
+            wcs = None
+
         phot, wcs = process_calib_photometry(stacked, science_catalog=sci_catalog,
                                              identify_catalog=cat,
-                                             filter=filt,
+                                             filter=filt, wcs=wcs,
                                              return_wcs=True,
                                              **self.photometry_parameters,
                                              **self.astrometry_parameters)
 
-        selected_aperture = 0
-        snr = 0
-        for g in phot['aperture'].group_by('aperture').groups:
-            g_snr = np.sum(g['flux']/g['flux_error'])
-            if g_snr > snr:
-                selected_aperture = g['aperture'][0]
-                snr = g_snr
+        apertures = np.unique(phot['aperture'])
+        if len(apertures) > 1:
+            selected_aperture = 0
+            snr = 0
+            for g in phot.group_by('aperture').groups:
+                g_snr = np.sum(g['flux']/g['flux_error'])
+                if g_snr > snr:
+                    selected_aperture = g['aperture'][0]
+                    snr = g_snr
 
-        phot = phot['aperture']
-        phot = phot[phot['aperture'] == selected_aperture]
-        phot = phot.as_array()
+            phot = phot[phot['aperture'] == selected_aperture]
+            phot = phot.as_array()
 
         header=stacked.header
         if wcs is not None:
@@ -112,20 +118,26 @@ class StackedPhotometryPipeline():
         imhdu = fits.PrimaryHDU(stacked.data, header=header)
         tbhdu = fits.BinTableHDU(phot, name='photometry')
 
-        filename = self.get_filename(fg)
+        if prod.sci_result is None:
+            filename = self.get_filename(fg)
+        else:
+            filename = prod.sci_result
+
         mkdir_p(os.path.dirname(filename))
         fits.HDUList([imhdu, tbhdu]).writeto(filename)
 
-    def process_products(self, products, science_catalog=None):
+    def process_products(self, products, science_catalog=None,
+                         astrometry=True):
         '''Process the photometry.'''
         if not check_iterable(products):
             products = [products]
         for p in products:
             try:
-                self._process(p, science_catalog)
+                self._process(p, science_catalog, astrometry)
             except Exception as e:
-                logger.error("Product not processed due: {}: {}"
-                             .format(type(e).__name__, e))
+                raise e
+                # logger.error("Product not processed due: {}: {}"
+                #              .format(type(e).__name__, e))
 
 
 class LightCurvePipeline():
@@ -180,7 +192,10 @@ class LightCurvePipeline():
 
         phot = temporal_photometry(fg.files, ext=self.image_ext,
                                    **self.photometry_parameters)
-        filename = self.get_filename(fg)
+        if prod.sci_result is None:
+            filename = self.get_filename(fg)
+        else:
+            filename = prod.sci_result
         mkdir_p(os.path.dirname(filename))
         phot.write(filename, format='ascii')
         prod.sci_result = filename
@@ -193,5 +208,6 @@ class LightCurvePipeline():
             try:
                 self._process(p)
             except Exception as e:
+                # raise e
                 logger.error("Product not processed due: {}: {}"
                              .format(type(e).__name__, e))

@@ -135,9 +135,8 @@ class ImpactonStackedPhotometry(StackedPhotometryPipeline):
     photometry_parameters = dict(detect_snr=5,
                                  detect_fwhm=4,
                                  photometry_type='aperture',
-                                 r=np.arange(20),
-                                 r_in=25,
-                                 r_out=30,
+                                 r='auto',
+                                 r_ann='auto',
                                  solve_photometry_type='montecarlo',
                                  montecarlo_iters=300,
                                  montecarlo_percentage=0.2)
@@ -161,8 +160,7 @@ class ImpactonLightCurve(LightCurvePipeline):
                                  detect_fwhm=4,
                                  photometry_type='aperture',
                                  r=5,
-                                 r_in=25,
-                                 r_out=30)
+                                 r_ann=(20,30))
     astrometry_parameters = dict(ra_key='OBJCTRA',
                                  dec_key='OBJCTDEC',
                                  identify_limit_angle='2 arcsec')

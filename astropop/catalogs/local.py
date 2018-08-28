@@ -129,7 +129,7 @@ class ASCIICatalogClass(_LocalCatalog):
         """
         **reader_kwargs : kwargs to be passed to the Table.read function
         """
-        self._table = Table.read(filename, **reader_kwargs)
+        self._table = Table.read(filename, format='ascii', **reader_kwargs)
 
         self.id_key = id_key
         self.ra_key = ra_key
