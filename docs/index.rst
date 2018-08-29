@@ -9,3 +9,12 @@ Installing
 ==========
 
 This code, for now, can be installed only from the Github repository.
+
+
+API Reference
+=============
+
+.. toctree::
+   :maxdepth:
+
+   references
