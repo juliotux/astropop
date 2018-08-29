@@ -1,8 +1,6 @@
 *************************
-packagename Documentation
+Astropop Documentation
 *************************
-
-This is the documentation for packagename.
 
 Reference/API
 =============
