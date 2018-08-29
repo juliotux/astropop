@@ -61,7 +61,8 @@ def process_calib_photometry(image, wcs=None, return_wcs=False,
                              science_catalog=None,
                              montecarlo_iters=100,
                              montecarlo_percentage=0.2, filter=None,
-                             detect_snr=5, detect_fwhm=3,
+                             detect_snr=5, detect_fwhm=3, round_lim=(-1.0, 1.0),
+                             sharp_lim=(0.2, 2.0),
                              solve_photometry_type=None, **kwargs):
     """Process photometry with magnitude calibration using catalogs."""
     image = check_hdu(image)
@@ -78,7 +79,8 @@ def process_calib_photometry(image, wcs=None, return_wcs=False,
         r += ['psf']
 
     bkg, rms = background(image.data, 32, 3, global_bkg=False)
-    sources = starfind(image.data, detect_snr, bkg, rms, fwhm=detect_fwhm)
+    sources = starfind(image.data, detect_snr, bkg, rms, fwhm=detect_fwhm,
+                       round_limit=round_lim, sharp_limit=sharp_lim)
     sources = aperture_photometry(image.data, sources['x'], sources['y'],
                                   r='auto', r_ann='auto')
 

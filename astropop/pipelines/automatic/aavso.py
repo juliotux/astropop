@@ -17,7 +17,9 @@ class BSMStackedPhotometry(StackedPhotometryPipeline):
                                  r_ann='auto',
                                  solve_photometry_type='montecarlo',
                                  montecarlo_iters=300,
-                                 montecarlo_percentage=0.2)
+                                 montecarlo_percentage=0.2,
+                                 round_lim=(-2.0, 2.0),
+                                 sharp_lim=(0.1, 2.0))
     astrometry_parameters = dict(ra_key='RA',
                                  dec_key='DEC',
                                  plate_scale=0.46,
