@@ -229,11 +229,10 @@ def process_polarimetry(image_set, align_images=True, retarder_type=None,
     ss = imcombine(s, method='average')
     bkg, rms = background(ss.data, box_size=32, filter_size=3,
                           global_bkg=False)
-    rms = err or rms
     # bigger limits to handle worst data
     # as we are using the summed image, the detect_snr needs to go up by sqrt(n)
     sources = starfind(ss.data, detect_snr*np.sqrt(len(s)), bkg, rms, fwhm=5,
-                       round_limit=(-2.0, 2.0), sharp_limit=(0.2, 1.0))
+                       round_limit=(-2.0, 2.0), sharp_limit=(0.1, 1.0))
     fwhm = sources.meta['fwhm']
     logger.info('Identified {} sources'.format(len(sources)))
     sources = aperture_photometry(s[0].data, sources['x'], sources['y'],
