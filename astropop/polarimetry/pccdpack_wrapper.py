@@ -162,7 +162,7 @@ def read_log(log_file, return_table=False):
         lin = f[i].strip('\n').strip(' ')
         if re.match('No. of waveplate positions :\s+\d+', lin):
             wave_n_pos = int(re.findall('\d+', lin)[0])
-        if re.match('Waveplate pos. : [\s+\d+]+ = \d+', lin):
+        if re.match('Waveplate pos. : [\s+\d+]+ =\s+\d+', lin):
             wave_pos = [int(v) for v in re.findall('\d+', lin)[:-1]]
         if re.match('No. of apertures observed:\s+\d+', lin):
             n_apertures = int(re.findall('\d+', lin)[0])

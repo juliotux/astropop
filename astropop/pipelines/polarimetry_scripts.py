@@ -115,6 +115,8 @@ def find_pairs(x, y, match_pairs_tolerance=2, delta_x=None, delta_y=None):
         dx, dy = delta_x, delta_y
     else:
         dx, dy = estimate_dxdy(x, y)
+
+    logger.info("Finding pairs with dx,dy = ({}, {})".format(dx, dy))
     pairs = match_pairs(x, y, dx, dy, tolerance=match_pairs_tolerance)
 
     o_idx = pairs['o']

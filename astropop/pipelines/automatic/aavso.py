@@ -22,8 +22,8 @@ class BSMStackedPhotometry(StackedPhotometryPipeline):
                                  sharp_lim=(0.0, 4.0))
     astrometry_parameters = dict(ra_key='RA',
                                  dec_key='DEC',
-                                 plate_scale=0.46,
-                                 identify_limit_angle='2 arcsec')
+                                 plate_scale=4.6,
+                                 identify_limit_angle='3 arcsec')
     combine_parameters = dict(method='sum',
                               weights=None,
                               scale=None,

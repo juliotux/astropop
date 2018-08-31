@@ -9,7 +9,7 @@ from .polarimetry_models import HalfWaveModel, QuarterWaveModel
 from ..logger import logger
 
 
-def estimate_dxdy(x, y, steps=[100, 30, 5, 3], bins=30):
+def estimate_dxdy(x, y, steps=[100, 30, 5, 3], bins=30, dist_limit=100):
     def _find_max(d):
         dx = 0
         for lim in (np.max(d), *steps):
@@ -20,39 +20,61 @@ def estimate_dxdy(x, y, steps=[100, 30, 5, 3], bins=30):
             dx = (histx[1][mx]+histx[1][mx+1])/2
         return dx
 
-    dya = []
-    dxa = []
+    # take all combinations
+    comb = np.array(np.meshgrid(np.arange(len(x)),
+                                np.arange(len(x)))).T.reshape(-1, 2)
+    # filter only y[j] > y[i]
+    filt = y[comb[:, 1]] > y[comb[:, 0]]
+    comb = comb[np.where(filt)]
 
-    for i in range(len(x)):
-        for j in range(len(x)):
-            if y[i] < y[j]:
-                dya.append(y[i] - y[j])
-                dxa.append(x[i] - x[j])
+    # compute the distances
+    dx = x[comb[:, 0]] - x[comb[:, 1]]
+    dy = y[comb[:, 0]] - y[comb[:, 1]]
 
-    return (_find_max(dxa), _find_max(dya))
+    # filter by distance
+    filt = (np.abs(dx) <= dist_limit) & (np.abs(dy) <= dist_limit)
+    dx = dx[np.where(filt)]
+    dy = dy[np.where(filt)]
+
+    logger.debug("Determining the best dx,dy with {} combinations."
+                 .format(len(dx)))
+
+    # dya = np.zeros(len(x)**2, dtype='f4')
+    # dxa = np.zeros(len(x)**2, dtype='f4')
+    #
+    # ndist = 0
+    # for i in range(len(x)):
+    #     for j in range(len(x)):
+    #         if y[i] < y[j]:
+    #             dx = x[i] - x[j]
+    #             dy = y[i] - y[j]
+    #             if np.abs(dx) <= dist_limit and np.abs(dy) <= dist_limit:
+    #                 dya[ndist] = y[i] - y[j]
+    #                 dxa[ndist] = x[i] - x[j]
+    #                 ndist = ndist + 1
+    # dxa = dxa[:ndist]
+    # dya = dya[:ndist]
+
+    return (_find_max(dx), _find_max(dy))
 
 
 def match_pairs(x, y, dx, dy, tolerance=1.0):
     """Match the pairs of ordinary/extraordinary points (x, y)."""
-    dt = np.dtype([('o', int), ('e', int)])
-    results = np.zeros(len(x), dtype=dt)
-    npairs = 0
+    kd = cKDTree(list(zip(x, y)))
 
-    p = list(zip(x, y))
-    kd = cKDTree(p)
+    px = np.array(x-dx)
+    py = np.array(y-dy)
 
-    for i in range(len(p)):
-        px = p[i][0]-dx
-        py = p[i][1]-dy
-        d, j = kd.query((px, py), k=1, eps=tolerance,
-                        distance_upper_bound=tolerance, n_jobs=-1)
-        if d <= tolerance:
-            results[npairs]['o'] = i
-            results[npairs]['e'] = j
-            npairs = npairs+1
-            kd = cKDTree(p)
+    d, ind = kd.query(list(zip(px, py)), k=1, distance_upper_bound=tolerance,
+                      n_jobs=-1)
 
-    return results[:npairs]
+    o = np.arange(len(x))[np.where(d <= tolerance)]
+    e = np.array(ind[np.where(d <= tolerance)])
+    result = Table()
+    result['o'] = o
+    result['e'] = e
+
+    return result.as_array()
 
 
 def estimate_normalize(o, e, positions, n_consecutive):
