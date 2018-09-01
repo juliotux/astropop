@@ -103,7 +103,6 @@ def estimate_normalize(o, e, positions, n_consecutive):
 
     # Now, assuming the k will multiply e
     k = np.sum(data_o)/np.sum(data_e)
-    logger.debug('Polarimetry normalization estimated as k={}'.format(k))
     return k
 
 
@@ -247,7 +246,6 @@ def calculate_polarimetry(o, e, psi, retarder='half', o_err=None, e_err=None,
     if normalize and positions is not None:
         if global_k is not None:
             k = global_k
-            logger.debug('Using global K value: {}'.format(k))
         else:
             k = estimate_normalize(o, e, positions, ncons)
         z = (o-(e*k))/(o+(e*k))
