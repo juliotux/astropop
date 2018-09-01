@@ -116,6 +116,7 @@ class PolarimetryPipeline(ReducePipeline):
                                         format=config['science_format'])
             polkwargs['science_catalog'] = sci_cat
 
+        wcs = None  # Ensure wcs exists when needed
         if process_astropop:
             if not config.get('astropop_cal', True):
                 if 'save_calib_path' in config.keys():

@@ -209,10 +209,13 @@ def read_log(log_file, return_table=False):
                 zread = ff.FortranRecordReader('(1x,4(f10.6))')
                 try:
                     zlin = zread.read(f[z_index])
-                except Exception as e:
+                except Exception:
                     zlin = [np.nan]*4
                 for k in zlin:
-                    z.append(float(k))
+                    try:
+                        z.append(float(k))
+                    except:
+                        z.append(np.nan)
                 z_index += 1
                 del zlin
             z = np.array(z)

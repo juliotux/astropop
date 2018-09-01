@@ -69,6 +69,7 @@ def run_pccdpack(image_set, retarder_type=None, retarder_key=None,
     x, y = out_table['x0'], out_table['x0']
     data = check_hdu(files[0])
     ft = aperture_photometry(data.data, x=x, y=y, r='auto')
+    ft = hstack([ft, out_table])
 
     if wcs is None:
         try:
@@ -77,7 +78,7 @@ def run_pccdpack(image_set, retarder_type=None, retarder_key=None,
                 for i in ['ra_key', 'dec_key', 'plate_scale']:
                     if i in kwargs.keys():
                         astkwargs[i] = kwargs[i]
-                wcs = solve_astrometry(data.header, ft, data.data.shape,
+                wcs = solve_astrometry(ft, data.header, data.data.shape,
                                        **astkwargs)
         except Exception as e:
             for i in ['brightest_star_ra', 'brightest_star_dec', 'plate_scale',
@@ -85,8 +86,9 @@ def run_pccdpack(image_set, retarder_type=None, retarder_key=None,
                 if i not in kwargs.keys():
                     raise e
             logger.info('Guessing wcs from brightest star coordinates.')
-            bright = ft.sort('flux')[-1]
-            wcs = wcs_from_coords(bright['xo'][0], bright['yo'][0],
+            bright = ft.copy()
+            bright.sort('flux')
+            wcs = wcs_from_coords(bright['x'][-1], bright['y'][-1],
                                   kwargs['brightest_star_ra'],
                                   kwargs['brightest_star_dec'],
                                   kwargs['plate_scale'],
@@ -218,6 +220,10 @@ def process_polarimetry(image_set, align_images=True, retarder_type=None,
 
     kwargs are the arguments for the following functions:
     process_photometry, _solve_photometry
+
+    In old_mode, the retarder positions are assumed to be in consecutive
+    filenames. Except, the `retarder_key` will give informations about the
+    retarder position.
     """
     s = process_list(check_hdu, image_set)
 
@@ -308,11 +314,21 @@ def process_polarimetry(image_set, align_images=True, retarder_type=None,
                    'solve_photometry_type': kwargs.get('solve_photometry_type',
                                                        'montecarlo')}
 
-    try:
-        ret = [int(i.header[retarder_key]) for i in s]
-    except ValueError:
-        # Some positions may be in hexa
-        ret = [int(i.header[retarder_key], 16) for i in s]
+    ret = None
+    if retarder_key is not None:
+        try:
+            ret = [int(i.header[retarder_key]) for i in s]
+        except ValueError:
+            # Some positions may be in hexa
+            ret = [int(i.header[retarder_key], 16) for i in s]
+        except KeyError:
+            pass
+
+    if ret is None:
+        # If retarder_key not present, assume images are ordered, just
+        # like pccdpack
+        logger.warn('retarder_key not found. Assuming images are ordered.')
+        ret = np.arange(len(s))
 
     if retarder_direction == 'cw':
         retarder_direction = -1

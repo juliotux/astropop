@@ -3,8 +3,11 @@
 import six
 import numpy as np
 from astropy.wcs import WCS
+import numpy as np
 
 from .coords_utils import guess_coordinates
+from ..py_utils import check_iterable
+from ..logger import logger
 
 __all__ = ['wcs_from_coords']
 
@@ -46,6 +49,9 @@ def wcs_from_coords(x, y, ra, dec, plate_scale, north, flip=None):
             raise ValueError('invalid value for north: {}'.format(north))
 
     # convert arcsec/pix to degree/pix
+    if check_iterable(plate_scale):
+        logger.warn("A list of plate scales given, using mean.")
+        plate_scale = np.nanmean(plate_scale)
     plate_scale /= 3600
 
     # following the standard astrometry.net, all the delta informations

@@ -295,6 +295,16 @@ def calculate_polarimetry(o, e, psi, retarder='half', o_err=None, e_err=None,
         elif mode == 'fit':
             result = _polarimetry_by_fit(z, psi, retarder=retarder,
                                          z_err=z_erro)
+        elif mode == 'both':
+            res_sum =  _polarimetry_by_sum(z, psi, retarder=retarder,
+                                           z_err=z_erro)
+            res_fit =  _polarimetry_by_fit(z, psi, retarder=retarder,
+                                           z_err=z_erro)
+            result = {}
+            for key in res_sum.keys():
+                result["fit_{}".format(key)] = res_fit[key]
+                result["sum_{}".format(key)] = res_sum[key]
+                result[key] = res_fit[key]
         else:
             return _return_empty()
     except Exception:
@@ -311,5 +321,4 @@ def calculate_polarimetry(o, e, psi, retarder='half', o_err=None, e_err=None,
                                           result['u']['value'],
                                           v=v['value'],
                                           retarder=retarder)
-
     return result

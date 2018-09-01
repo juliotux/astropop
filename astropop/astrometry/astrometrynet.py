@@ -22,6 +22,7 @@ from astropy.wcs import WCS
 from .coords_utils import guess_coordinates
 from ..logger import logger
 from ..math.opd_utils import solve_decimal
+from ..py_utils import check_iterable
 
 
 __all__ = ['AstrometrySolver', 'solve_astrometry_xy', 'solve_astrometry_image',
@@ -102,7 +103,7 @@ class AstrometrySolver():
                                                  image_params.get('dec_key'))
                 options['ra'] = coords.ra.degree
                 options['dec'] = coords.dec.degree
-            except KeyError as e:
+            except KeyError:
                 logger.warn("Cannot understand coordinates in FITS header")
         else:
             logger.warn("Astrometry.net will try to solve without the field"
@@ -110,7 +111,13 @@ class AstrometrySolver():
 
         if 'pltscl' in keys:
             try:
-                pltscl = float(image_params.get('pltscl'))
+                pltscl = image_params.get('pltscl')
+                if check_iterable(pltscl):
+                    pltscl = [float(i) for i in pltscl]
+                else:
+                    pltscl = float(image_params.get('pltscl'))
+                    pltscl = [0.8*pltscl, 1.2*pltscl]
+                pltscl = np.array(sorted(pltscl))
                 logger.info("Usign given plate scale: {}".format(pltscl))
             except ValueError:
                 logger.warn('Plate scale value not recognized.'
@@ -123,8 +130,8 @@ class AstrometrySolver():
             except KeyError:
                 logger.warn("Cannot understand plate scale in FITS header")
         try:
-            options['scale-high'] = 1.1*pltscl
-            options['scale-low'] = 0.9*pltscl
+            options['scale-high'] = pltscl[1]
+            options['scale-low'] = pltscl[0]
             options['scale-units'] = 'arcsecperpix'
         except NameError:
             logger.warn('Astrometry.net will be run without plate scale.')

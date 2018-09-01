@@ -19,7 +19,7 @@ def solve_astrometry(table, header, shape, ra_key=None, dec_key=None,
             im_params['dec_key'] = dec_key
         if plate_scale is not None:
             im_params['pltscl'] = plate_scale
-            im_params['radius'] = 5*plate_scale*np.max(shape)/3600
+            im_params['radius'] = 5*np.max(plate_scale)*np.max(shape)/3600
         imw, imh = shape
         x, y = table['x'], table['y']
         flux = table['flux']
