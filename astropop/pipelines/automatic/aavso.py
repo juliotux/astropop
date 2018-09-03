@@ -10,7 +10,7 @@ from ...logger import logger
 
 
 class BSMStackedPhotometry(StackedPhotometryPipeline):
-    photometry_parameters = dict(detect_snr=5,
+    photometry_parameters = dict(detect_snr=3,
                                  detect_fwhm=1.5,
                                  photometry_type='aperture',
                                  r='auto',
@@ -22,8 +22,8 @@ class BSMStackedPhotometry(StackedPhotometryPipeline):
                                  sharp_lim=(0.0, 4.0))
     astrometry_parameters = dict(ra_key='RA',
                                  dec_key='DEC',
-                                 plate_scale=4.6,
-                                 identify_limit_angle='3 arcsec')
+                                 plate_scale=[1,  10],
+                                 identify_limit_angle='5 arcsec')
     combine_parameters = dict(method='sum',
                               weights=None,
                               scale=None,

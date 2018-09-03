@@ -17,6 +17,7 @@ from astropy.io import fits
 from astropy.table import Table, Column
 
 from ..logger import logger
+from ..py_utils import check_iterable
 
 
 def read_qphot_mag(filename):
@@ -316,6 +317,8 @@ def create_script(result_dir, image_list, star_name,
     # f = NamedTemporaryFile(prefix='pccdpack', suffix='.txt')
     # with open(f.name, 'w') as tmp:
     #     [tmp.write(i + '\n') for i in imlist]
+    if not check_iterable(apertures):
+        apertures = [apertures]
 
     kwargs = {'object': star_name,
               # 'lista': '@' + f.name,

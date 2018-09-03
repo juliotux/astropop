@@ -39,22 +39,6 @@ def estimate_dxdy(x, y, steps=[100, 30, 5, 3], bins=30, dist_limit=100):
     logger.debug("Determining the best dx,dy with {} combinations."
                  .format(len(dx)))
 
-    # dya = np.zeros(len(x)**2, dtype='f4')
-    # dxa = np.zeros(len(x)**2, dtype='f4')
-    #
-    # ndist = 0
-    # for i in range(len(x)):
-    #     for j in range(len(x)):
-    #         if y[i] < y[j]:
-    #             dx = x[i] - x[j]
-    #             dy = y[i] - y[j]
-    #             if np.abs(dx) <= dist_limit and np.abs(dy) <= dist_limit:
-    #                 dya[ndist] = y[i] - y[j]
-    #                 dxa[ndist] = x[i] - x[j]
-    #                 ndist = ndist + 1
-    # dxa = dxa[:ndist]
-    # dya = dya[:ndist]
-
     return (_find_max(dx), _find_max(dy))
 
 
@@ -176,13 +160,13 @@ def _polarimetry_by_sum(z, psi, retarder='half', z_err=None):
     if retarder == 'half':
         assert(len(z) == len(psi))
         n = len(z)
-        q = (2.0/n) * np.sum(z*np.cos(4*psi))
-        u = (2.0/n) * np.sum(z*np.sin(4*psi))
+        q = (2.0/n) * np.nansum(z*np.cos(4*psi))
+        u = (2.0/n) * np.nansum(z*np.sin(4*psi))
         p = np.sqrt(q**2 + u**2)
 
         a = 2.0/n
         b = np.sqrt(1.0/(n-2))
-        err = a*np.sum(z**2)
+        err = a*np.nansum(z**2)
         err = err - p**2
         err = b*np.sqrt(err)
 
@@ -234,14 +218,9 @@ def calculate_polarimetry(o, e, psi, retarder='half', o_err=None, e_err=None,
     # clean problematic sources (bad sky subtraction, low snr)
     if filter_negative and (np.array(o <= 0).any() or np.array(e <= 0).any()):
         filt = (o < 0) | (e < 0)
-        w = np.where(filt)
-        o = o[w]
-        e = e[w]
-        psi = psi[w]
-        if o_err is not None:
-            o_err = o_err[w]
-        if e_err is not None:
-            e_err = e_err[w]
+        w = np.where(~filt)
+        o[w] = np.nan
+        e[w] = np.nan
 
     if normalize and positions is not None:
         if global_k is not None:
@@ -306,7 +285,6 @@ def calculate_polarimetry(o, e, psi, retarder='half', o_err=None, e_err=None,
         else:
             return _return_empty()
     except Exception:
-        raise
         return _return_empty()
 
     result['flux'] = {'value': flux,

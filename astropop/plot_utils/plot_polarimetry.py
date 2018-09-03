@@ -14,14 +14,23 @@ def plot_vector(ax, x, y, p, theta, scale, **kwargs):
     ax.plot([x+dx, x-dx], [y+dy, y-dy], '-', **kwargs)
 
 
+_default_map_params = {'clip_lo': 0,
+                       'clip_hi': 98,
+                       'stretch': 'linear',
+                       'bias': 0.5,
+                       'contrast': 1.0,
+                       'alpha': 1.0,
+                       'cmap': 'Greys'}
+
+_default_vec_params = {'color': 'r',
+                       'alpha': 1.0,
+                       'lw': 1.0}
+
+
 def plot_polarimetry_field(ax, x, y, p, theta, wcs=None,
                            image_shape=None, survey=None,
-                           scale=1.0/0.1, ds9_clip=(0, 98),
-                           ds9_stretch='linear', ds9_bias=0.5,
-                           ds9_contrast=1.0, ds9_cmap='Greys',
-                           ds9_alpha=1.0,
-                           vector_color='r', vector_alpha=1.0,
-                           vector_width=1.0):
+                           scale=1.0/0.1, map_params={},
+                           vector_params={}):
     '''Plot polarimetry data for all stars of a field.
 
     Parameters:
@@ -33,17 +42,22 @@ def plot_polarimetry_field(ax, x, y, p, theta, wcs=None,
         survey : any astroquey's SkyView compatible survey. If None, no image
                  will be plot.
         scale : scale of the polarimetry vectors. In P%/pixel.
+        map_params : parameters to be passed to DS9Normalize and imshow.
+        vector_params : parameters to be passed to ax.plot for vetors
     '''
     if survey is not None:
         dss = get_dss_image(image_shape, wcs, survey=survey)
-        norm = DS9Normalize(stretch=ds9_stretch, clip_lo=ds9_clip[0],
-                            clip_hi=ds9_clip[1], bias=ds9_bias,
-                            contrast=ds9_contrast)
-        ax.imshow(dss, origin='lower', norm=norm, cmap=ds9_cmap,
-                  alpha=ds9_alpha)
+        ds9kwargs = {}
+        for i in ['stretch', 'clip_lo', 'clip_hi', 'bias', 'contrast']:
+            ds9kwargs[i] = map_params.pop(i, _default_map_params[i])
+        norm = DS9Normalize(**ds9kwargs)
+        ax.imshow(dss, origin='lower', norm=norm,
+                  cmap=map_params.pop('cmap', _default_map_params['cmap']),
+                  alpha=map_params.pop('alpha', _default_map_params['alpha']))
 
     # Plot the vectors as lines in the field
     for xi, yi, pi, ti in zip(x, y, p, theta):
-        plot_vector(ax, xi, yi, pi, ti, scale=scale, color=vector_color,
-                    alpha=vector_alpha, lw=vector_width)
+        vecpars = _default_vec_params.copy()
+        vecpars.update(vector_params)
+        plot_vector(ax, xi, yi, pi, ti, scale=scale, **vecpars)
     return ax

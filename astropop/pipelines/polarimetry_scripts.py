@@ -28,25 +28,32 @@ from ..py_utils import process_list, check_iterable
 def run_pccdpack(image_set, retarder_type=None, retarder_key=None,
                  retarder_rotation=22.5, retarder_direction=None,
                  save_calib_path=None, r=np.arange(1, 21, 1),
-                 r_in=60, r_out=70, gain_key=None, rdnoise_key=None,
+                 r_ann=(50, 60), gain_key=None, rdnoise_key=None,
                  wcs=None, **kwargs):
     files = []
     dtmp = mkdtemp(prefix='pccdpack')
+    if r == 'auto':
+        d = check_hdu(image_set[0]).data
+        bkg, rms = background(d, box_size=32, filter_size=3,
+                              global_bkg=False)
+
+        s = starfind(d, 5, bkg, rms, 4)
+        p = aperture_photometry(d, s['x'], s['y'], r='auto', r_ann=None)
+        fwhm = p.meta['fwhm']
+        r = 0.8*fwhm
+        r_in = int(round(4*r, 0))
+        r_out = int(max(r_in+10, round(6*r, 0)))  # Ensure a dannulus geq 10
+        r_ann = (r_in, r_out)
+        logger.debug("using auto radius for polarimetry: r={}, r_ann={}"
+                     .format(r, r_ann))
+    r_in, r_out = sorted(r_ann)
 
     for i in range(len(image_set)):
-        if isinstance(image_set[i], six.string_types):
-            files.append(os.path.join(dtmp,
-                                      os.path.basename(image_set[i])))
-            try:
-                shutil.copy(image_set[i], files[-1])
-            except Exception:
-                pass
-        else:
-            name = os.path.join(dtmp, "image{:02d}.fits".format(i))
-            im = check_hdu(image_set[i])
-            im.writeto(name)
-            logger.debug("image {} saved to {}".format(i, name))
-            files.append(name)
+        name = os.path.join(dtmp, "image{:02d}.fits".format(i))
+        im = check_hdu(image_set[i])
+        im.writeto(name)
+        logger.debug("image {} saved to {}".format(i, name))
+        files.append(name)
 
     script = pccd.create_script(result_dir=dtmp, image_list=files,
                                 star_name='object', apertures=r, r_ann=r_in,
@@ -66,20 +73,20 @@ def run_pccdpack(image_set, retarder_type=None, retarder_key=None,
     log_table = pccd.read_log(os.path.join(dtmp, 'object.log'),
                               return_table=True)
 
-    x, y = out_table['x0'], out_table['x0']
+    # fix iraf-python convention
+    x, y = out_table['x0']-1, out_table['y0']-1
     data = check_hdu(files[0])
     ft = aperture_photometry(data.data, x=x, y=y, r='auto')
     ft = hstack([ft, out_table])
 
-    if wcs is None:
+    if wcs is None and kwargs.get('astrometry_calib', True):
         try:
-            if kwargs.get('astrometry_calib', True):
-                astkwargs = {}
-                for i in ['ra_key', 'dec_key', 'plate_scale']:
-                    if i in kwargs.keys():
-                        astkwargs[i] = kwargs[i]
-                wcs = solve_astrometry(ft, data.header, data.data.shape,
-                                       **astkwargs)
+            astkwargs = {}
+            for i in ['ra_key', 'dec_key', 'plate_scale']:
+                if i in kwargs.keys():
+                    astkwargs[i] = kwargs[i]
+            wcs = solve_astrometry(ft, data.header, data.data.shape,
+                                   **astkwargs)
         except Exception as e:
             for i in ['brightest_star_ra', 'brightest_star_dec', 'plate_scale',
                       'image_north_direction']:
@@ -161,31 +168,30 @@ def _do_polarimetry(phot_table, psi, retarder_type, pairs, positions=None,
 
     # process a global normalization based on bright stars (mainly), and sigma
     # clipped.
-    ks = np.zeros(len(pairs))
-    tf = np.zeros(len(pairs))
-    ks.fill(np.nan)
-    for i in range(len(pairs)):
-        o, e, oe, ee = _get_fluxes(i)
-        if retarder_type == 'half':
-            npos = 4
-        elif retarder_type == 'quarter':
-            npos = 8
-        else:
-            npos = 4
-        ks[i] = estimate_normalize(o, e, positions, npos)
-        tf[i] = (np.sum(o + e))/np.sum(oe + ee)
-        if not np.isfinite(ks[i]):
-            tf[i] = 0
-    sclip = sigma_clip(ks)
-    mask = ~sclip.mask & (tf[i] != 0)
-    k = np.average(ks[np.where(mask)], weights=tf[np.where(mask)])
+    # ks = np.zeros(len(pairs))
+    # tf = np.zeros(len(pairs))
+    # ks.fill(np.nan)
+    # for i in range(len(pairs)):
+    #     o, e, oe, ee = _get_fluxes(i)
+    #     if retarder_type == 'half':
+    #         npos = 4
+    #     elif retarder_type == 'quarter':
+    #         npos = 8
+    #     else:
+    #         npos = 4
+    #     ks[i] = estimate_normalize(o, e, positions, npos)
+    #     tf[i] = (np.sum(o + e))/np.sum(oe + ee)
+    #     if not np.isfinite(ks[i]):
+    #         tf[i] = 0
+    # sclip = sigma_clip(ks)
+    # mask = ~sclip.mask & (tf[i] != 0)
+    # k = np.average(ks[np.where(mask)], weights=tf[np.where(mask)])
 
-    def _process(idx, k):
+    def _process(idx):
         o, e, oe, ee = _get_fluxes(idx)
         res = calculate_polarimetry(o, e, psi, retarder=retarder_type,
                                     o_err=oe, e_err=ee, positions=positions,
-                                    filter_negative=False, mode=calculate_mode,
-                                    global_k=k)
+                                    filter_negative=True, mode=calculate_mode)
         for k in res.keys():
             dt = 'f4'
             if k not in tmp.colnames:
@@ -206,7 +212,7 @@ def _do_polarimetry(phot_table, psi, retarder_type, pairs, positions=None,
                 tmp['{}_error'.format(k)][idx] = res[k]['sigma']
 
     for i in range(len(pairs)):
-        _process(i, k)
+        _process(i)
 
     return tmp
 
@@ -242,6 +248,15 @@ def process_polarimetry(image_set, align_images=True, retarder_type=None,
     sources = starfind(ss.data, detect_snr*np.sqrt(len(s)), bkg, rms, fwhm=5,
                        round_limit=(-2.0, 2.0), sharp_limit=(0.1, 1.0))
     fwhm = sources.meta['fwhm']
+    if kwargs.get('r', 'auto') == 'auto':
+        r = 0.8*fwhm
+        kwargs['r'] = r
+        r_in = int(round(4*r, 0))
+        r_out = int(max(r_in+10, round(6*r, 0)))  # Ensure a dannulus geq 10
+        r_ann = (r_in, r_out)
+        kwargs['r_ann'] = r_ann
+        logger.debug("using auto radius for polarimetry: r={}, r_ann={}"
+                     .format(r, r_ann))
     logger.info('Identified {} sources'.format(len(sources)))
     sources = aperture_photometry(s[0].data, sources['x'], sources['y'],
                                   r='auto', r_ann=None)
@@ -263,14 +278,13 @@ def process_polarimetry(image_set, align_images=True, retarder_type=None,
     else:
         raise RuntimeError('No pairs of stars found on this set.')
 
-    if wcs is None:
+    if wcs is None and kwargs.get('astrometry_calib', True):
         try:
-            if kwargs.get('astrometry_calib', True):
-                wcs = solve_astrometry(sources[pairs['o']], s[0].header,
-                                       s[0].data.shape,
-                                       ra_key=kwargs['ra_key'],
-                                       dec_key=kwargs['dec_key'],
-                                       plate_scale=kwargs['plate_scale'])
+            wcs = solve_astrometry(sources[pairs['o']], s[0].header,
+                                   s[0].data.shape,
+                                   ra_key=kwargs['ra_key'],
+                                   dec_key=kwargs['dec_key'],
+                                   plate_scale=kwargs['plate_scale'])
         except Exception as e:
             for i in ['brightest_star_ra', 'brightest_star_dec', 'plate_scale',
                       'image_north_direction']:

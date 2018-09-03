@@ -59,6 +59,8 @@ def sky_annulus(data, x, y, r_ann, algorithm='mmm', mask=None):
         # Filter only values inside the annulus
         # To think: this do not perform subpixel, just check the pixel center
         filt = (r >= r_ann[0]) & (r <= r_ann[1])
+        # mask nans here to go faster
+        filt = filt & ~np.isnan(f)
         if mask is not None:
             filt = filt & ~m
         f = f[np.where(filt)]
@@ -68,8 +70,8 @@ def sky_annulus(data, x, y, r_ann, algorithm='mmm', mask=None):
             sky[i] = 0
             sky_error[i] = 0
         else:
-            for fi in range(5):
-                f, _, _ = sigmaclip(f, 3, 3)
+            for _ in range(3):
+                f, _, _ = sigmaclip(f)
             mean = np.nanmean(f)
             median = np.nanmedian(f)
             sky_error[i] = np.nanstd(f)
