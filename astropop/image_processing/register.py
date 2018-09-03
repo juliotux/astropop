@@ -6,6 +6,10 @@ from scipy.ndimage import shift as scipy_shift
 from scipy.signal import correlate2d
 import numpy as np
 from astropy.wcs import WCS
+try:
+    import astroalign
+except Exception:
+    astroalign = None
 
 from ..logger import logger
 
@@ -123,10 +127,24 @@ def hdu_shift_images(hdu_list, method='fft'):
     """Calculate and apply shifts in a set of ccddata images.
 
     The function process the list inplace. Original data altered.
+
+    methods:
+        - "asterism" : align images using asterism matching (astroalign)
+        - "fft" : align images using fourier transform correlation (skimage)
     """
-    shifts = create_fft_shift_list([ccd.data for ccd in hdu_list])
-    logger.info("Aligning CCDData with shifts: {}".format(shifts))
-    for ccd, shift in zip(hdu_list, shifts):
-        ccd.data = apply_shift(ccd.data, shift, method=method)
+    if method == "asterism":
+        logger.info("Registering images with astroalign.")
+        if astroalign is None:
+            raise RuntimeError("astroaling module not available.")
+        im0 = hdu_list[0].data
+        for i in hdu_list[1:]:
+            i.data = astroalign.register(i.data, im0)
+            i.header['hierarch astropop astroalign'] = True
+    else:
+        shifts = create_fft_shift_list([ccd.data for ccd in hdu_list])
+        logger.info("Aligning CCDData with shifts: {}".format(shifts))
+        for ccd, shift in zip(hdu_list, shifts):
+            ccd.data = apply_shift(ccd.data, shift, method=method)
+            ccd.header['hierarch astropop registered'] = True
 
     return hdu_list

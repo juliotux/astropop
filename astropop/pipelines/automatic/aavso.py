@@ -10,8 +10,8 @@ from ...logger import logger
 
 
 class BSMStackedPhotometry(StackedPhotometryPipeline):
-    photometry_parameters = dict(detect_snr=3,
-                                 detect_fwhm=1.5,
+    photometry_parameters = dict(detect_snr=5,
+                                 detect_fwhm=3,
                                  photometry_type='aperture',
                                  r='auto',
                                  r_ann='auto',

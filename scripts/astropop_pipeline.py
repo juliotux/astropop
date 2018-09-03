@@ -46,11 +46,9 @@ def main():
 
     files = args
 
-    if options.verbose == 0:
-        logger.setLevel('ERROR')
-    elif options.verbose == 1:
+    if options.verbose is None:
         logger.setLevel('WARN')
-    elif options.verbose == 2:
+    elif options.verbose == 1:
         logger.setLevel('INFO')
     else:
         logger.setLevel('DEBUG')
