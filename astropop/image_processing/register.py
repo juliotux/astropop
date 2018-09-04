@@ -5,7 +5,6 @@ from scipy.ndimage import fourier_shift
 from scipy.ndimage import shift as scipy_shift
 from scipy.signal import correlate2d
 import numpy as np
-from astropy.wcs import WCS
 try:
     import astroalign
 except Exception:

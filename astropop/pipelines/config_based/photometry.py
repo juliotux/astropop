@@ -15,7 +15,7 @@ from ...astrometry.manual_wcs import _angles
 from ...photometry import (psf_available_models,
                            photometry_available_methods,
                            solve_photometry_available_methods)
-from ...catalogs import catalogs_available
+from ...catalogs import default_catalogs, ASCIICatalogClass
 
 
 calib_parameters = CalibPipeline().parameters
@@ -40,16 +40,15 @@ class PhotometryPipeline(ReducePipeline):
             box_size="Box size to fit each star in psf photometry",
             r="Aperture radius in aperture photometry. Can be a list of "
               "apertures",
-            r_in="Inner annulus radius for sky subtraction",
-            r_out="Outer annulus radius for sky subtraction",
+            r_ann="Annulus radius for sky subtraction (r_intern, r_extern)",
             solve_photometry_type="Calibrated photometry solving type: {}"
                                   .format(solve_photometry_available_methods),
             montecarlo_niters="Number of iterations in montecarlo photometry "
                               "solving method",
             montecarlo_percentage="Percentage of the field in each montecarlo "
                                   "photometry solving iteration",
-            identify_catalog="Catalog name to identify the stars. Available: "
-                             "{}".format(list(catalogs_available)),
+            identify_catalog_name="Catalog name to identify the stars. Available: "
+                                   "{}".format(list(default_catalogs)),
             science_catalog="Table with ID, RA and Dec to identify science "
                             "stars",
             science_id_key="Column of the star name in the science catalog",
@@ -73,6 +72,10 @@ class PhotometryPipeline(ReducePipeline):
                                  "{}_photometry_{}".format(night, name))
         s = [os.path.join(config['raw_dir'], i) for i in config['sources']]
 
+        check_exist = config.get('check_exist', False)
+        if check_exist and os.path.isfile(phot_prod):
+            return
+
         if config.get('astrojc_cal', True):
             calib_kwargs = {}
             for i in ('master_bias', 'master_flat', 'dark_frame', 'badpixmask',
@@ -94,61 +97,74 @@ class PhotometryPipeline(ReducePipeline):
         photkwargs = {}
         for i in ['ra_key', 'dec_key', 'gain_key', 'rdnoise_key',
                   'filter', 'plate_scale', 'photometry_type',
-                  'psf_model', 'r', 'r_in', 'r_out', 'psf_niters',
+                  'psf_model', 'r', 'r_ann', 'psf_niters',
                   'box_size', 'detect_fwhm', 'detect_snr', 'remove_cosmics',
                   'align_images', 'solve_photometry_type',
                   'montecarlo_iters', 'montecarlo_percentage',
-                  'identify_catalog_file', 'identify_catalog_name',
                   'identify_limit_angle', 'science_catalog', 'science_id_key',
                   'science_ra_key', 'science_dec_key']:
             if i in config.keys():
                 photkwargs[i] = config[i]
 
+        if "identify_catalog_name" in config.keys():
+            try:
+                ref_cat = default_catalogs[config["identify_catalog_name"]]
+                photkwargs['identify_catalog'] = ref_cat
+            except KeyError:
+                raise ValueError("Catalog {} not available. Available catalogs:"
+                                 " {}".format(config["identify_catalog_name"],
+                                              default_catalogs))
+
+        if "science_catalog" in config.keys():
+            sci_cat = ASCIICatalogClass(config['science_catalog'],
+                                        id_key=config['science_id_key'],
+                                        ra_key=config['science_ra_key'],
+                                        dec_key=config['science_dec_key'],
+                                        format=config['science_format'])
+            photkwargs['science_catalog'] = sci_cat
+
         t = process_calib_photometry(ccd, **photkwargs)
 
         hdus = []
-        for i in [i for i in t.keys() if t[i] is not None]:
-            header_keys = ['solve_photometry_type', 'plate_scale', 'filter']
-            if i == 'aperture':
-                header_keys += ['r', 'r_in', 'r_out', 'detect_fwhm',
+        header_keys = ['solve_photometry_type', 'plate_scale', 'filter']
+        header_keys += ['r', 'r_ann', 'detect_fwhm',
                                 'detect_snr']
-            elif i == 'psf':
-                header_keys += ['psf_model', 'box_size', 'psf_niters']
+        header_keys += ['psf_model', 'box_size', 'psf_niters']
 
-            if config.get('solve_photometry_type', None) == 'montecarlo':
-                header_keys += ['montecarlo_iters', 'montecarlo_percentage']
+        if config.get('solve_photometry_type', None) == 'montecarlo':
+            header_keys += ['montecarlo_iters', 'montecarlo_percentage']
 
-            if config.get('identify_catalog_name', None) is not None:
-                header_keys += ['identify_catalog_name',
-                                'identify_limit_angle']
+        if config.get('identify_catalog_name', None) is not None:
+            header_keys += ['identify_catalog_name',
+                            'identify_limit_angle']
 
-            hdu = fits.BinTableHDU(t[i], name="{}_photometry".format(i))
-            for k in header_keys:
-                if k in config.keys():
-                    v = config[k]
-                    key = 'hierarch astrojc {}'.format(k)
-                    if check_iterable(v):
-                        hdu.header[key] = ','.join([str(m) for m in v])
-                    else:
-                        hdu.header[key] = v
-            hdus.append(hdu)
+        hdu = fits.BinTableHDU(t, name="photometry")
+        for k in header_keys:
+            if k in config.keys():
+                v = config[k]
+                key = 'hierarch astrojc {}'.format(k)
+                if check_iterable(v):
+                    hdu.header[key] = ','.join([str(m) for m in v])
+                else:
+                    hdu.header[key] = v
+        hdus.append(hdu)
 
-            best = Table(dtype=t[i].dtype)
-            for group in t[i].group_by('star_index').groups:
-                b = np.argmax(group['flux']/group['flux_error'])
-                best.add_row(group[b])
-            best['snr'] = best['flux']/best['flux_error']
+        best = Table(dtype=t.dtype)
+        for group in t.group_by('star_index').groups:
+            b = np.argmax(group['flux']/group['flux_error'])
+            best.add_row(group[b])
+        best['snr'] = best['flux']/best['flux_error']
 
-            hdu = fits.BinTableHDU(best, name="{}_best_snr".format(i))
-            for k in header_keys:
-                if k in config.keys():
-                    v = config[k]
-                    key = 'hierarch astrojc {}'.format(k)
-                    if check_iterable(v):
-                        hdu.header[key] = ','.join([str(m) for m in v])
-                    else:
-                        hdu.header[key] = v
-            hdus.append(hdu)
+        hdu = fits.BinTableHDU(best, name="best_snr".format(i))
+        for k in header_keys:
+            if k in config.keys():
+                v = config[k]
+                key = 'hierarch astrojc {}'.format(k)
+                if check_iterable(v):
+                    hdu.header[key] = ','.join([str(m) for m in v])
+                else:
+                    hdu.header[key] = v
+        hdus.append(hdu)
 
         mkdir_p(product_dir)
         hdulist = fits.HDUList([ccd, *hdus])

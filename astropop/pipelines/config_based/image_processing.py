@@ -58,6 +58,16 @@ class CalibPipeline(ReducePipeline):
             batch_key_replace(config, k)
         s = [os.path.join(config['raw_dir'], i) for i in config['sources']]
 
+        if 'result_file' not in config.keys():
+            outname = name
+        else:
+            outname = config['result_file']
+
+        check_exist = config.get('check_exist', False)
+        outf = os.path.join(config['calib_dir'], outname)
+        if check_exist and os.path.isfile(outf):
+            return
+
         calib_kwargs = {}
         for i in ['calib_type', 'master_bias', 'master_flat', 'dark_frame',
                   'badpixmask', 'prebin', 'gain_key', 'rdnoise_key', 'gain',
@@ -66,11 +76,6 @@ class CalibPipeline(ReducePipeline):
                   'bias_check_keys', 'flat_check_keys', 'dark_check_keys']:
             if i in config.keys():
                 calib_kwargs[i] = config[i]
-
-        if 'result_file' not in config.keys():
-            outname = name
-        else:
-            outname = config['result_file']
 
         mkdir_p(config['calib_dir'])
         return create_calib(s, outname, **calib_kwargs)
