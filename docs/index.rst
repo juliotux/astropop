@@ -13,23 +13,14 @@ This code is developed for Python>=3.5, so it will no run on previous versions.
 To manual buil de code, you have to install all the code depencencies::
 
    astropy
-   
    sep
-   
    numpy
-   
    scipy
-   
    scikit-image
-   
    matplotlib
-   
    cython
-   
    astroquery
-   
    fortranformat
-   
    astroscrappy
    
 
