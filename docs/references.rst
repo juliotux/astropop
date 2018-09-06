@@ -5,6 +5,8 @@ Astropop Documentation
 Reference/API
 =============
 
+Currently, the API is in stage of documentation. Basic function documentation is provided, but soon the full documentation will be available.
+
 General
 -------
 
