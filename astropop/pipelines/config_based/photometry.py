@@ -126,7 +126,8 @@ class PhotometryPipeline(ReducePipeline):
         t = process_calib_photometry(ccd, **photkwargs)
 
         hdus = []
-        header_keys = ['solve_photometry_type', 'plate_scale', 'filter']
+        header_keys = ['solve_photometry_type', 'plate_scale', 'filter',
+                       'night', 'pipeline']
         header_keys += ['r', 'r_ann', 'detect_fwhm',
                                 'detect_snr']
         header_keys += ['psf_model', 'box_size', 'psf_niters']
@@ -142,7 +143,7 @@ class PhotometryPipeline(ReducePipeline):
         for k in header_keys:
             if k in config.keys():
                 v = config[k]
-                key = 'hierarch astrojc {}'.format(k)
+                key = 'hierarch astropop {}'.format(k)
                 if check_iterable(v):
                     hdu.header[key] = ','.join([str(m) for m in v])
                 else:
@@ -159,7 +160,7 @@ class PhotometryPipeline(ReducePipeline):
         for k in header_keys:
             if k in config.keys():
                 v = config[k]
-                key = 'hierarch astrojc {}'.format(k)
+                key = 'hierarch astropop {}'.format(k)
                 if check_iterable(v):
                     hdu.header[key] = ','.join([str(m) for m in v])
                 else:

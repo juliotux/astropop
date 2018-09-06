@@ -24,8 +24,8 @@ class StackedPhotometryPipeline():
     save_file_dir = 'stacked_photometry/'
     filter_key = 'filter'
     standard_catalogs = {'U': 'Simbad',
-                         'B': 'APASS',
-                         'V': 'APASS',
+                         'B': 'UCAC4',
+                         'V': 'UCAC4',
                          'R': 'UCAC5',
                          'I': 'DENIS'}
 
@@ -91,7 +91,8 @@ class StackedPhotometryPipeline():
         if '' in wcs.wcs.ctype or astrometry:
             wcs = None
 
-        phot, wcs = process_calib_photometry(stacked, science_catalog=sci_catalog,
+        phot, wcs = process_calib_photometry(stacked,
+                                             science_catalog=sci_catalog,
                                              identify_catalog=cat,
                                              filter=filt, wcs=wcs,
                                              return_wcs=True,
@@ -110,6 +111,15 @@ class StackedPhotometryPipeline():
 
             phot = phot[phot['aperture'] == selected_aperture]
             phot = phot.as_array()
+
+        phot.meta['astropop n_images'] = len(prod.calibed_files)
+        phot.meta['astropop night'] = prod.files.values('night',
+                                                        unique=True)[0]
+        phot.meta['astropop filter'] = filt
+        stacked.header['astropop n_images'] = len(prod.calibed_files)
+        stacked.header['astropop night'] = prod.files.values('night',
+                                                             unique=True)[0]
+        stacked.header['astropop filter'] = filt
 
         header=stacked.header
         if wcs is not None:

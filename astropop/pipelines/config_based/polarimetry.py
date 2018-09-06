@@ -133,7 +133,7 @@ class PolarimetryPipeline(ReducePipeline):
             header_keys = ['retarder_type', 'retarder_rotation',
                            'retarder_direction', 'retarder_positions',
                            'align_images', 'solve_photometry_type',
-                           'plate_scale', 'filter', 'night']
+                           'plate_scale', 'filter', 'night', 'pipeline']
             header_keys += ['r', 'r_in', 'r_out', 'detect_fwhm',
                             'detect_snr']
             header_keys += ['psf_model', 'box_size', 'psf_niters']

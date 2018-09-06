@@ -210,8 +210,8 @@ class VizierCatalogClass(_BasePhotometryCatalog):
                                         ('flux_error', m_flue.dtype)]))
 
 
-def simbad_query_id(ra, dec, limit_angle, name_order=['NAME', 'HD', 'HR',
-                                                      'HYP', 'TYC', 'AAVSO'],
+def simbad_query_id(ra, dec, limit_angle,
+                    name_order=['NAME', 'HD', 'HR', 'HYP', 'TYC', 'AAVSO'],
                     tried=0):
     '''Query a single id from Simbad'''
     s = Simbad()
@@ -307,7 +307,7 @@ class SimbadCatalogClass(_BasePhotometryCatalog):
     def query_ra_dec(self, center, radius):
         if self.ra_key is None or self.dec_key is None:
             raise ValueError("Invalid RA or Dec keys.")
-        self._query_simbad_region(center, radius)
+        self._simbad_query_region(center, radius)
         ra = self._last_query_table[self.ra_key].data
         dec = self._last_query_table[self.dec_key].data
 
@@ -321,7 +321,7 @@ class SimbadCatalogClass(_BasePhotometryCatalog):
     def query_id(self, center, radius):
         if self.id_key is None:
             raise ValueError("Invalid ID key.")
-        self._query_simbad_region(center, radius)
+        self._simbad_query_region(center, radius)
 
         if self.id_key == -1:
             return np.array(['']*len(self._last_query_table))
