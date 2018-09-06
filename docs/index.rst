@@ -10,7 +10,7 @@ Installing
 
 This code is developed for Python>=3.5, so it will no run on previous versions.
 
-To manual buil de code, you have to install all the code depencencies::
+To manual build the code, you have to install all the code depencencies::
 
    astropy
    sep
@@ -23,7 +23,14 @@ To manual buil de code, you have to install all the code depencencies::
    fortranformat
    astroscrappy
    
+Checkout the code in your computer::
 
+   git clone https://github.com/juliotux/astropop.git ~/astropop
+   
+Build and install using Python setup tools::
+   
+   cd ~/astropop
+   python setup.py install
 
 Using pip:
 ----------
@@ -32,11 +39,11 @@ This code, for now, can be installed only from the Github repository. Soon, it w
 
 You can install it using `pip` directly on the github repo, with::
 
-   pip install -U git+https://github.com/juliotux/astropop.git
+   pip install git+https://github.com/juliotux/astropop.git
    
 Or by using the lastest version .zip download in github::
 
-   pip install -U https://github.com/juliotux/astropop/archive/master.zip
+   pip install https://github.com/juliotux/astropop/archive/master.zip
 
 Tutorials
 =========
