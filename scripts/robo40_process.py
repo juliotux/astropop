@@ -20,8 +20,7 @@ def main():
                       help="Save individual calibed science images "
                            "in 'calib_images' subfolder")
     parser.add_option("-v", "--verbose", dest="verbose",
-                      action="store_true",
-                      default=False,
+                      action="count",
                       help="Enable 'DEBUG' output in python log")
     parser.add_option("-a", "--astrometry", dest="astrometry",
                       action="store_true",
@@ -54,10 +53,12 @@ def main():
 
     raw_dirs = args
 
-    if options.verbose:
-        logger.setLevel('DEBUG')
-    else:
+    if options.verbose is None:
+        logger.setLevel('WARN')
+    elif options.verbose == 1:
         logger.setLevel('INFO')
+    else:
+        logger.setLevel('DEBUG')
 
     stack_images = options.stack_images
     individual = options.save_calibed
@@ -78,18 +79,21 @@ def main():
                                     dec_key='DEC', format='ascii')
 
     mkdir_p(reduced_folder)
-    pipe = ROBO40Calib(product_dir=reduced_folder,
-                       calib_dir=calib_folder,
-                       ext=1, fits_extensions=['.fz'], compression=True)
-    pipe_phot = ROBO40Photometry(product_dir=reduced_folder,
-                                 image_ext=1)
 
     def _process():
         for fold in raw_dirs:
+            pipe = ROBO40Calib(product_dir=reduced_folder,
+                               calib_dir=calib_folder,
+                               ext=1, fits_extensions=['.fz'],
+                               compression=True)
+            pipe_phot = ROBO40Photometry(product_dir=reduced_folder,
+                                         image_ext=1)
             prods = pipe.run(fold, stack_images=stack_images,
                             save_calibed=individual,
                             astrometry=astrometry)
             pipe_phot.process_products(prods, sci_cat)
+            del pipe
+            del pipe_phot
 
     if options.save_log is not None:
         name = options.save_log

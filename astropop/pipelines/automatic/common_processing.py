@@ -2,6 +2,7 @@ from string import Formatter
 import os
 import re
 import copy
+import numpy as np
 
 from ...file_manager import FileManager
 from ...logger import logger
@@ -48,6 +49,8 @@ class SimpleCalibPipeline():
     _save_fits_ext = 1
     _save_fits_fmt = '.fz'
     _save_fits_compressed = True
+    _align_method = 'chi2'
+    plate_scale = None
 
     def __init__(self, product_dir=None, calib_dir=None, ext=0,
                  fits_extensions=['.fits'], compression=True):
@@ -94,6 +97,12 @@ class SimpleCalibPipeline():
         name = name.replace(' ', '-').strip('_')
         name += self._save_fits_fmt
         return name
+
+    def get_platescale(self, file):
+        if self.plate_scale is None and \
+           'pltsccl' in self.astrometry_parameters:
+            self.plate_scale = self.astrometry_parameters.pop('pltscl', None)
+        return self.plate_scale
 
     def tune_calib_frame(self, type, file, to_calib_filegroup):
         """Reprocess things in calib frames in order to be usable.
@@ -254,8 +263,10 @@ class SimpleCalibPipeline():
 
 
     def _solve_astrometry(self, hdu):
+        plate_scale = self.get_platescale(hdu)
         try:
             params = copy.copy(self.astrometry_params)
+            params['pltscl'] = plate_scale
             solved = solve_astrometry_hdu(hdu, return_wcs=True,
                                           image_params=params)
         except:
@@ -264,6 +275,7 @@ class SimpleCalibPipeline():
             # try with 2 times the plate scale (2x2 binning)
             try:
                 params = copy.copy(self.astrometry_params)
+                params['pltscl'] = plate_scale
                 params['pltscl'] = 2*params['pltscl']
                 solved = solve_astrometry_hdu(hdu, return_wcs=True,
                                               image_params=params)
@@ -323,6 +335,7 @@ class SimpleCalibPipeline():
             i = 0
             if stack_images:
                 acumm = None
+                footp = None
                 logger.info('Stacking images.')
             for hdu, fname in [n for n in processed if n[0] is not None]:
                 i += 1
@@ -331,15 +344,20 @@ class SimpleCalibPipeline():
                 if stack_images:
                     if acumm == None:
                         acumm = hdu
+                        footp = np.ones_like(hdu.data)
                     else:
-                        hdu = hdu_shift_images([acumm, hdu], method='fft')[1]
+                        hdu = hdu_shift_images([acumm, hdu],
+                                               method=self._align_method,
+                                               footprint=True)[1]
                         acumm = imarith(acumm, hdu, '+')
+                        footp += hdu.footprint
 
             if stack_images and acumm is not None:
                 name = self.get_frame_name('science', p.files)
                 name = os.path.join(sci_processed_dir, name)
                 if astrometry:
                     acumm = self._solve_astrometry(acumm)
+                acumm = imarith(acumm, footp/i, '/')  # normalize borders
                 acumm.header['hierarch stacked images'] = i
                 save_hdu(acumm, name, compress=self._save_fits_compressed,
                          overwrite=True)

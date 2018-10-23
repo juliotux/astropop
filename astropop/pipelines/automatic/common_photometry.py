@@ -28,10 +28,17 @@ class StackedPhotometryPipeline():
                          'V': 'UCAC4',
                          'R': 'UCAC5',
                          'I': 'DENIS'}
+    plate_scale = None
 
     def __init__(self, product_dir, image_ext=0):
         self.prod_dir = product_dir
         self.image_ext = image_ext
+
+    def get_platescale(self, file):
+        if self.plate_scale is None and \
+           'pltsccl' in self.astrometry_parameters:
+            self.plate_scale = self.astrometry_parameters.pop('pltscl', None)
+        return self.plate_scale
 
     def get_filename(self, filegroup):
         keys = Formatter().parse(self.save_file_name)
@@ -91,11 +98,13 @@ class StackedPhotometryPipeline():
         if '' in wcs.wcs.ctype or astrometry:
             wcs = None
 
+        plate_scale = self.get_platescale(stacked)
         phot, wcs = process_calib_photometry(stacked,
                                              science_catalog=sci_catalog,
                                              identify_catalog=cat,
                                              filter=filt, wcs=wcs,
                                              return_wcs=True,
+                                             plate_scale=plate_scale,
                                              **self.photometry_parameters,
                                              **self.astrometry_parameters)
 

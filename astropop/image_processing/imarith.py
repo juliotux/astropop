@@ -220,7 +220,7 @@ def imcombine(image_list, output_file=None, method='average', weights=None,
 
 _arith_funcs = {'+': np.add,
                 '-': np.subtract,
-                '/': np.divide,
+                '/': np.true_divide,
                 '*': np.multiply,
                 '%': np.remainder,
                 '**': np.power}

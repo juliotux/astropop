@@ -14,6 +14,8 @@ import numpy as np
 
 from astropy.time import Time
 
+from ..py_utils import check_iterable
+
 
 __all__ = ['opd2jd', 'solve_decimal', 'read_opd_header_number']
 
@@ -36,7 +38,7 @@ def opd2jd(opd_dates):
             else:
                 return False
 
-    if isinstance(opd_dates, (list, tuple, np.ndarray, np.array)):
+    if check_iterable(opd_dates):
         for i in opd_dates:
             if not _match_opddate(i):
                 raise ValueError('Invalid OPD date to convert: {}'.format(i))

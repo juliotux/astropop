@@ -63,6 +63,23 @@ def create_fft_shift_list(image_list):
     return shifts
 
 
+def create_chi2_shift_list(image_list):
+    """Calculate the shift between images using chi2 minimization.
+
+    Uses image_registration.chi2_shift module.
+    """
+    from image_registration import chi2_shift
+
+    shifts = [(0.0, 0.0)]*len(image_list)
+    for i in range(len(image_list)-1):
+        im = image_list[i+1]
+        err = np.nanstd(im)
+        dx, dy, ex, ey = chi2_shift(image_list[0], im, err)
+        shifts[i+1] = (-dy, -dx)
+
+    return shifts
+
+
 def apply_shift(image, shift, method='fft', subpixel=True, footprint=False):
     """Apply a shifts of (dy, dx) to a list of images.
 
@@ -122,13 +139,15 @@ def apply_shift_list(image_list, shift_list, method='fft'):
                                                               shift_list)]
 
 
-def hdu_shift_images(hdu_list, method='fft'):
+def hdu_shift_images(hdu_list, method='fft', register_method='asterism',
+                     footprint=False):
     """Calculate and apply shifts in a set of ccddata images.
 
     The function process the list inplace. Original data altered.
 
     methods:
         - "asterism" : align images using asterism matching (astroalign)
+        - "chi2" : align images using chi2 minimization (image_registration)
         - "fft" : align images using fourier transform correlation (skimage)
     """
     if method == "asterism":
@@ -137,13 +156,32 @@ def hdu_shift_images(hdu_list, method='fft'):
             raise RuntimeError("astroaling module not available.")
         im0 = hdu_list[0].data
         for i in hdu_list[1:]:
-            i.data = astroalign.register(i.data, im0)
-            i.header['hierarch astropop astroalign'] = True
+            transf, (s_list, t_list) = astroalign.find_transform(i.data, im0)
+            i.data = astroalign.apply_transform(transf, i.data, im0)
+            if footprint:
+                i.footprint = astroalign.apply(transf,
+                                               np.ones_like(i.data, dtype=bool),
+                                               im0)
+            s_method ='similarity_transform'
     else:
-        shifts = create_fft_shift_list([ccd.data for ccd in hdu_list])
+        if method == 'chi2':
+            shifts = create_chi2_shift_list([ccd.data for ccd in hdu_list])
+        else:
+            shifts = create_fft_shift_list([ccd.data for ccd in hdu_list])
         logger.info("Aligning CCDData with shifts: {}".format(shifts))
         for ccd, shift in zip(hdu_list, shifts):
-            ccd.data = apply_shift(ccd.data, shift, method=method)
-            ccd.header['hierarch astropop registered'] = True
+            if method == 'fft':
+                s_method = method
+            else:
+                s_method = 'simple'
+            ccd.data = apply_shift(ccd.data, shift, method=s_method)
+            ccd.header['hierarch astropop register_shift'] = shift[::-1]
+            if footprint:
+                ccd.footprint = apply_shift(np.ones_like(ccd.data, dtype=bool),
+                                            shift, method='simple')
+    for i in hdu_list:
+        i.header['hierarch astropop registered'] = True
+        i.header['hierarch astropop register_method'] = method
+        i.header['hierarch astropop transform_method'] = s_method
 
     return hdu_list

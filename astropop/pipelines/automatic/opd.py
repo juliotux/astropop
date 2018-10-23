@@ -4,15 +4,12 @@ from astropy.nddata.utils import block_replicate
 from astropy import units
 from astropy.io import fits
 import numpy as np
-import os
-
 
 from .common_processing import SimpleCalibPipeline
 from .common_photometry import StackedPhotometryPipeline
 from ...catalogs import default_catalogs
 from ...logger import logger
 from ...image_processing.ccd_processing import trim_image
-from ...file_manager import FileManager
 
 
 cat_list = {'B': default_catalogs['APASS'],
@@ -30,11 +27,12 @@ class ROBO40Calib(SimpleCalibPipeline):
                                  instrume='ASCOM: Apogee AltaU-16M: KAF16803',
                                  telescop='Software Bisque The Sky telescope')
     _science_name_keywords = ['object', 'night', 'filter']
-    _bias_select_keywords = ['instrume', 'telescop', 'site', 'gain', 'night']
+    _bias_select_keywords = ['instrume', 'telescop', 'site', 'gain', 'night',
+                             'ccdsum']
     _bias_select_rules = dict(imagetyp=['ZERO', 'zero'], shutter='CLOSE')
     _bias_name_keywords = ['night', 'ccdsum', 'gain']
     _flat_select_keywords = ['instrume', 'telescop', 'site', 'gain',
-                             'filter', 'ccdsum', 'night']
+                             'filter', 'ccdsum', 'night', 'ccdsum']
     _flat_select_rules = dict(imagetyp=['FLAT','flat'], shutter='OPEN')
     _flat_name_keywords = ['night', 'ccdsum', 'gain', 'filter']
     _dark_select_keywords = ['instrume', 'telescop', 'site', 'gain',
@@ -57,6 +55,8 @@ class ROBO40Calib(SimpleCalibPipeline):
                              dec_key='DEC',
                              pltscl=0.45)
     _save_subfolder = '{program}/{night}'
+    plate_scale = 0.45
+    _align_method = 'chi2'
 
     def __init__(self, product_dir=None, calib_dir=None,
                  ext=1, fits_extensions=['.fz'], compression=False):
@@ -91,6 +91,10 @@ class ROBO40Calib(SimpleCalibPipeline):
         name = name.replace(' ', '-').strip('_')
         name += self._save_fits_fmt
         return name
+
+    def get_platescale(self, file):
+        binning = int(file.header['ccdsum'].split()[0])
+        return self.plate_scale*binning
 
     def _compute_night(self, dateobs, timezone):
         t = Time(dateobs, format='isot', scale='utc')
@@ -132,19 +136,21 @@ class ROBO40Calib(SimpleCalibPipeline):
         like trimming, binning, etc.
         """
         if file is not None:
-            tocalib = to_calib_filegroup.values('ccdsum', unique=True)[0].split()
-            frame = fits.getval(file, 'ccdsum', ext=self._save_fits_ext).split()
-            rebin = np.array([int(frame[0])/int(tocalib[0]),
-                              int(frame[1])/int(tocalib[1])], dtype=int)
-
-            if type == 'bias':
-                conserve_sum = False
-            else:
-                conserve_sum = True
+            # # Now, with the new observing program, only trimming is needed
+            # tocalib = to_calib_filegroup.values('ccdsum',
+            #                                     unique=True)[0].split()
+            # frame = fits.getval(file, 'ccdsum', ext=self._save_fits_ext).split()
+            # rebin = np.array([int(frame[0])/int(tocalib[0]),
+            #                   int(frame[1])/int(tocalib[1])], dtype=int)
+            #
+            # if type == 'bias':
+            #     conserve_sum = False
+            # else:
+            #     conserve_sum = True
 
             hdu = fits.open(file)[self._save_fits_ext]
-            hdu.data = block_replicate(hdu.data, rebin,
-                                       conserve_sum=conserve_sum)
+            # hdu.data = block_replicate(hdu.data, rebin,
+            #                            conserve_sum=conserve_sum)
 
             if 'detsec' in to_calib_filegroup.summary.colnames:
                 slic = to_calib_filegroup.values('detsec', unique=True)[0]
@@ -173,7 +179,6 @@ class ROBO40Photometry(StackedPhotometryPipeline):
                                  montecarlo_percentage=0.2)
     astrometry_parameters = dict(ra_key='RA',
                                  dec_key='DEC',
-                                 plate_scale=0.45,
                                  identify_limit_angle='2 arcsec')
     combine_parameters = dict(method='sum',
                               weights=None,
@@ -182,6 +187,11 @@ class ROBO40Photometry(StackedPhotometryPipeline):
                               reject=None)
     save_file_name = '{object}_{filter}_{night}.fits'
     save_file_dir = 'stacked_photometry/'
+    plate_scale = 0.45
 
     def __init__(self, product_dir, image_ext=0):
         super(ROBO40Photometry, self).__init__(product_dir, image_ext)
+
+    def get_platescale(self, file):
+        binning = int(file.header['ccdsum'].split()[0])
+        return self.plate_scale*binning
