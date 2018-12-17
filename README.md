@@ -2,10 +2,6 @@
 
 The (non) famous ASTROnomical POlarimetry and Photometry pipeline. Developed for work with IAGPOL polarimeter at Observatório Pico dos Dias (Brazil), but suitable to be used in other image polarimeters around the world.
 
-# Important
-
-Now, I'm transporting it from my personal python package [astrojc](https://github.com/juliotux/astrojc) and soon I will get a full functional version here.
-
 # Features:
 
 This software is intended to provide a full pipeline to reduce raw polarimetry and photometry data taken with common CCD telescope cameras. It can do:
