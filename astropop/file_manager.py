@@ -50,17 +50,16 @@ def gen_mask(table, **kwargs):
     if len(table) == 0:
         return []
 
-    t = table
+    t = Table(table)
 
     mask = np.ones(len(t), dtype=bool)
     for k, v in kwargs.items():
         if not check_iterable(v):
             v = [v]
         k = k.lower()
-        if k in t.colnames:
-            nmask = [t[k][i] in v for i in range(len(t))]
-        else:
-            nmask = [False]*len(t)
+        if k not in t.colnames:
+            t[k] = [None]*len(t)
+        nmask = [t[k][i] in v for i in range(len(t))]
         mask &= np.array(nmask)
 
     return mask
@@ -99,6 +98,12 @@ class FileGroup():
 
         If unique, only unique values returned.
         """
+        if keyword not in self.summary.colnames:
+            if unique:
+                n = 1
+            else:
+                n = len(self.summary)
+            return [None]*n
         if unique:
             return list(set(self.summary[keyword].tolist()))
         else:
@@ -174,7 +179,8 @@ class FileManager():
 
     def group_by(self, filegroup, keywords):
         """Group the files by a list of keywords in multiple FileManagers."""
-        keywords = [k.lower() for k in keywords]
+        keywords = [k.lower() for k in keywords
+                    if k.lower() in filegroup.summary.colnames]
         groups = filegroup.summary.group_by(keywords)
         keys = groups.groups.keys
 

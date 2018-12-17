@@ -22,7 +22,6 @@ class BSMStackedPhotometry(StackedPhotometryPipeline):
                                  sharp_lim=(0.0, 4.0))
     astrometry_parameters = dict(ra_key='RA',
                                  dec_key='DEC',
-                                 plate_scale=[1,  10],
                                  identify_limit_angle='10 arcsec')
     combine_parameters = dict(method='sum',
                               weights=None,
@@ -32,6 +31,8 @@ class BSMStackedPhotometry(StackedPhotometryPipeline):
     group_keys = ['object', 'filter', 'observat', 'night']
     save_file_name = '{object}_{filter}_{night}_{observat}.fits'
     save_file_dir = 'stacked_photometry/'
+    plate_scale = [1, 10]
+
     def __init__(self, product_dir, image_ext=0):
         super(BSMStackedPhotometry, self).__init__(product_dir, image_ext)
         self.fm = FileManager(image_ext, compression=True)

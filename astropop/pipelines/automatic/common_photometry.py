@@ -29,6 +29,7 @@ class StackedPhotometryPipeline():
                          'R': 'UCAC5',
                          'I': 'DENIS'}
     plate_scale = None
+    _align_method = 'chi2'
 
     def __init__(self, product_dir, image_ext=0):
         self.prod_dir = product_dir
@@ -36,7 +37,7 @@ class StackedPhotometryPipeline():
 
     def get_platescale(self, file):
         if self.plate_scale is None and \
-           'pltsccl' in self.astrometry_parameters:
+           'pltscl' in self.astrometry_parameters:
             self.plate_scale = self.astrometry_parameters.pop('pltscl', None)
         return self.plate_scale
 
@@ -74,7 +75,8 @@ class StackedPhotometryPipeline():
                     if stacked is None:
                         stacked = i
                     else:
-                        s = hdu_shift_images([stacked, i], method='fft')[1]
+                        s = hdu_shift_images([stacked, i],
+                                             method=self._align_method)[1]
                         stacked = imarith(stacked, s, '+')
             elif len(prod.calibed_files) == 1:
                 stacked = prod.calibed_files[0]

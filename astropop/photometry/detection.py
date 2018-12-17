@@ -342,7 +342,7 @@ def starfind(data, snr, background, noise, fwhm, mask=None, box_size=35,
 
     sources = daofind(data, snr, background, noise, fwhm, mask=mask,
                       sharp_limit=sharp_limit, round_limit=round_limit)
-    sources.meta['fwhm'] = fwhm
+    sources.meta['astropop fwhm'] = fwhm
     return sources
 
 

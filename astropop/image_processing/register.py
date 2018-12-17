@@ -175,7 +175,8 @@ def hdu_shift_images(hdu_list, method='fft', register_method='asterism',
             else:
                 s_method = 'simple'
             ccd.data = apply_shift(ccd.data, shift, method=s_method)
-            ccd.header['hierarch astropop register_shift'] = shift[::-1]
+            sh = [str(i) for i in shift[::-1]]
+            ccd.header['hierarch astropop register_shift'] = ",".join(sh)
             if footprint:
                 ccd.footprint = apply_shift(np.ones_like(ccd.data, dtype=bool),
                                             shift, method='simple')

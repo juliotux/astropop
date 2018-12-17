@@ -140,8 +140,8 @@ def find_pairs(x, y, match_pairs_tolerance=2, delta_x=None, delta_y=None):
     return tmp, pairs
 
 
-def _do_polarimetry(phot_table, psi, retarder_type, pairs, positions=None,
-                    calculate_mode='sum'):
+def _dual_beam_polarimetry(phot_table, psi, retarder_type, pairs,
+                           positions=None, calculate_mode='sum'):
     """Calculate the polarimetry of a given photometry table.
 
     phot_tables is a list of tables containing ['flux', 'flux_error']
@@ -247,14 +247,14 @@ def process_polarimetry(image_set, align_images=True, retarder_type=None,
     # as we are using the summed image, the detect_snr needs to go up by sqrt(n)
     sources = starfind(ss.data, detect_snr*np.sqrt(len(s)), bkg, rms, fwhm=5,
                        round_limit=(-2.0, 2.0), sharp_limit=(0.1, 1.0))
-    fwhm = sources.meta['fwhm']
+    fwhm = sources.meta['astropop fwhm']
     if kwargs.get('r', 'auto') == 'auto':
         r = 0.8*fwhm
-        kwargs['r'] = r
+        kwargs['astropop r'] = r
         r_in = int(round(4*r, 0))
         r_out = int(max(r_in+10, round(6*r, 0)))  # Ensure a dannulus geq 10
         r_ann = (r_in, r_out)
-        kwargs['r_ann'] = r_ann
+        kwargs['astropop r_ann'] = r_ann
         logger.debug("using auto radius for polarimetry: r={}, r_ann={}"
                      .format(r, r_ann))
     logger.info('Identified {} sources'.format(len(sources)))
@@ -378,9 +378,9 @@ def process_polarimetry(image_set, align_images=True, retarder_type=None,
     rtable = Table()
     for i in r_used:
         ft = [p[p['aperture'] == i] for p in phot]
-        pol = _do_polarimetry(ft, psi, retarder_type=retarder_type,
-                              pairs=pairs, positions=ret,
-                              calculate_mode=calculate_mode)
+        pol = _dual_beam_polarimetry(ft, psi, retarder_type=retarder_type,
+                                     pairs=pairs, positions=ret,
+                                     calculate_mode=calculate_mode)
         if wcs is not None:
             cat_unit = kwargs['identify_catalog'].flux_unit
             tmp = solve_photometry(pol, cat_mag=ids['cat_mag'],
@@ -394,3 +394,160 @@ def process_polarimetry(image_set, align_images=True, retarder_type=None,
     # remove masked rows
     rtable = rtable[~rtable['star_index'].mask]
     return rtable, wcs, ret
+
+
+def dualbeam_polarimetry(image_set, psi, positions=None, retarder=None,
+                         analyzer=None, align_images=True,
+                         match_pairs_tolerance=1.0,
+                         wcs=None, calculate_mode='sum', detect_snr=5.0,
+                         photometry_type='aperture', pairs_distance=None,
+                         **kwargs):
+    """Dual beam polarimetry calculation."""
+    s = process_list(check_hdu, image_set)
+
+    if align_images:
+        s = hdu_shift_images(s)
+
+    # identify sources in the summed image to avoid miss a beam
+    ss = imcombine(s, method='average')
+    bkg, rms = background(ss.data, box_size=32, filter_size=3,
+                          global_bkg=False)
+    # bigger limits to handle worst data
+    # as we are using the summed image, the detect_snr needs to go up by sqrt(n)
+    sources = starfind(ss.data, detect_snr*np.sqrt(len(s)), bkg, rms, fwhm=5,
+                       round_limit=(-2.0, 2.0), sharp_limit=(0.1, 1.0))
+    fwhm = sources.meta['astropop fwhm']
+    if kwargs.get('r', 'auto') == 'auto':
+        r = 0.8*fwhm
+        kwargs['astropop r'] = r
+        r_in = int(round(4*r, 0))
+        r_out = int(max(r_in+10, round(6*r, 0)))  # Ensure a dannulus geq 10
+        r_ann = (r_in, r_out)
+        kwargs['astropop r_ann'] = r_ann
+        logger.debug("using auto radius for polarimetry: r={}, r_ann={}"
+                     .format(r, r_ann))
+
+    logger.info('Identified {} sources'.format(len(sources)))
+    sources = aperture_photometry(s[0].data, sources['x'], sources['y'],
+                                  r='auto', r_ann=None)
+
+    _tolerance = match_pairs_tolerance
+    res_tmp, pairs = find_pairs(sources['x'], sources['y'],
+                                match_pairs_tolerance=_tolerance)
+    if len(pairs) == 0:
+        if pairs_distance is not None:
+            dx, dy = pairs_distance
+            logger.info('Not pairs found in automatic routine. Using given '
+                        'delta_x={} delta_y={}'.format(dx, dy))
+            res_tmp, pairs = find_pairs(sources['x'], sources['y'],
+                                        match_pairs_tolerance=_tolerance,
+                                        delta_x=dx, delta_y=dy)
+    if len(pairs) > 0:
+        logger.info('Matched {} pairs of sources'.format(len(pairs)))
+    else:
+        raise RuntimeError('No pairs of stars found on this set.')
+
+    if wcs is None and kwargs.get('astrometry_calib', True):
+        try:
+            wcs = solve_astrometry(sources[pairs['o']], s[0].header,
+                                   s[0].data.shape,
+                                   ra_key=kwargs['ra_key'],
+                                   dec_key=kwargs['dec_key'],
+                                   plate_scale=kwargs['plate_scale'])
+        except Exception as e:
+            for i in ['brightest_star_ra', 'brightest_star_dec', 'plate_scale',
+                      'image_north_direction']:
+                if i not in kwargs.keys():
+                    raise e
+            bright = sources[pairs['o']]
+            bright.sort('flux')
+            wcs = wcs_from_coords(bright[-1]['x'], bright[-1]['y'],
+                                  kwargs['brightest_star_ra'],
+                                  kwargs['brightest_star_dec'],
+                                  kwargs['plate_scale'],
+                                  kwargs['image_north_direction'],
+                                  kwargs['image_flip'])
+
+    if wcs is not None and kwargs.get('identify_catalog') is not None:
+        idkwargs = {'identify_catalog': kwargs.get('identify_catalog'),
+                    'filter': kwargs.get('filter'),
+                    'limit_angle': kwargs.get('identify_limit_angle'),
+                    'science_catalog': kwargs.get('science_catalog')}
+        ids = identify_stars(res_tmp['xo'], res_tmp['yo'], wcs, **idkwargs)
+        ids = Table(ids)
+        if 'sci_id' in ids.colnames:
+            if not np.array(ids['sci_id'] != '').any():
+                logger.warn('No science stars found')
+    else:
+        ids = Table()
+
+    ids['x0'] = res_tmp['xo']
+    ids['y0'] = res_tmp['yo']
+    ids['x1'] = res_tmp['xe']
+    ids['y1'] = res_tmp['ye']
+
+    t = Table()
+    t['star_index'] = np.arange(len(pairs))
+    ids = hstack([t, ids])
+    del t
+
+    solvekwargs = {'montecarlo_iters': kwargs.get('montecarlo_iters', 200),
+                   'montecarlo_percentage': kwargs.get('montecarlo_percentage',
+                                                       0.1),
+                   'solve_photometry_type': kwargs.get('solve_photometry_type',
+                                                       'montecarlo')}
+
+    apkwargs = {'box_size': kwargs.get('box_size', 25),
+                'psf_model': kwargs.get('psf_model', 'moffat'),
+                'psf_niters': kwargs.get('psf_niters', 5)}
+    if 'r_in' in kwargs and 'r_out' in kwargs:
+        apkwargs['r_ann'] = (kwargs['r_in'], kwargs['r_out'])
+    r = kwargs.get('r')
+    if not check_iterable(r):
+        if r is None or r=='auto':
+            apkwargs['r'] = max(round(0.6371*fwhm, 0), 1)
+        else:
+            apkwargs['r'] = r
+    else:
+        apkwargs['r'] = r
+
+    if 'r_in' in kwargs and 'r_out' in kwargs:
+        apkwargs['r_ann'] = (kwargs['r_in'], kwargs['r_out'])
+    r = kwargs.get('r')
+    if not check_iterable(r):
+        if r is None or r=='auto':
+            apkwargs['r'] = max(round(0.6371*fwhm, 0), 1)
+        else:
+            apkwargs['r'] = r
+    else:
+        apkwargs['r'] = r
+
+    if 'rdnoise_key' in kwargs.keys():
+        rdnoise = kwargs.get('rdnoise_key')
+        if rdnoise in s[0].header.keys():
+            apkwargs['readnoise'] = float(s[0].header[rdnoise])
+
+    phot = process_list(process_photometry, s, x=sources['x'],
+                        y=sources['y'], photometry_type=photometry_type,
+                        **apkwargs)
+    r_used = list(set(phot[0]['aperture']))
+
+    rtable = Table()
+    for i in r_used:
+        ft = [p[p['aperture'] == i] for p in phot]
+        pol = _dual_beam_polarimetry(ft, psi, retarder_type=retarder,
+                                     pairs=pairs, positions=positions,
+                                     calculate_mode=calculate_mode)
+        if wcs is not None:
+            cat_unit = kwargs['identify_catalog'].flux_unit
+            tmp = solve_photometry(pol, cat_mag=ids['cat_mag'],
+                                   cat_scale=cat_unit,
+                                   **solvekwargs)
+            pol['mag'] = tmp['mag']
+            pol['mag_err'] = tmp['mag_err']
+        pol = hstack([ids, Table([ft[0]['aperture']]), pol])
+        rtable = vstack([rtable, pol])
+
+    # remove masked rows
+    rtable = rtable[~rtable['star_index'].mask]
+    return ss, rtable, wcs

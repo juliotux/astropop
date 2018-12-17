@@ -1,0 +1,37 @@
+#!/bin/env python3
+
+import os
+import datetime
+from optparse import OptionParser
+
+from astropop.logger import logger
+from astropy.io import fits
+
+def main():
+    parser = OptionParser("usage: %prog key value image1.fits [image2 ...]")
+    parser.add_option("-v", "--verbose", dest="verbose",
+                      action="count",
+                      help="Enable 'DEBUG' output in python log")
+    parser.add_option("-e", "--ext", dest="hdu",
+                      default=0, metavar="HDU",
+                      help="HDU where key will be setted.")
+
+    (options, args) = parser.parse_args()
+
+    if options.verbose is None:
+        logger.setLevel('WARN')
+    elif options.verbose == 1:
+        logger.setLevel('INFO')
+    else:
+        logger.setLevel('DEBUG')
+
+    key = args[0]
+    value = args[1]
+    files = args[2:]
+
+    for i in files:
+        logger.debug("setting key:{} with value:{} on {}".format(key, value, i))
+        fits.setval(i, key, value=value, ext=options.hdu)
+
+if __name__ == '__main__':
+    main()
