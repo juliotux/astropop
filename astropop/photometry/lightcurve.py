@@ -8,6 +8,8 @@ from ..image_processing.register import register_translation
 from ..image_processing.imarith import check_hdu
 from ._phot import process_photometry
 from .aperture import aperture_photometry
+from .detection import (background, starfind, sexfind, calc_fwhm,
+                        sources_mask)
 from ..logger import logger
 
 
@@ -16,10 +18,10 @@ from ..logger import logger
 
 def temporal_photometry(image_list, x=None, y=None, ext=0,
                         photometry_type='aperture',
-                        r=5, r_in=50, r_out=60, detect_snr=5,
+                        r=5, r_ann=(20,30), detect_snr=5, box_size=35,
                         detect_fwhm=3, psf_model='gaussian', psf_niters=1,
                         time_key='DATE-OBS', time_format='isot',
-                        align_images=True, nstars_thresh=None):
+                        align_images=True, nstars_thresh=None, mask=None):
     """Perform photometry on a set of images, optimized for large datasets.
 
     Arguments:
@@ -37,11 +39,8 @@ def temporal_photometry(image_list, x=None, y=None, ext=0,
         r : float
             The aperture radius to be used if aperture photometry will be
             performed.
-        r_in : float
-            The inner radius of the sky subtraction annulus to be used
-            if aperture photometry will be performed.
-        r_out : float
-            The outer radius of the sky subtraction annulus to be used
+        r_ann : (float, float)
+            The (inner, outer) radius of the sky subtraction annulus to be used
             if aperture photometry will be performed.
         detect_snr : float
             The minimum signal to noise ratio to detect sources.
@@ -64,9 +63,17 @@ def temporal_photometry(image_list, x=None, y=None, ext=0,
 
     if x is None or y is None:
         # use the first image to calculate the positions of the stars
-        sources = aperture_photometry(check_hdu(image_list[0], ext=ext).data,
-                                      detect_fwhm=detect_fwhm,
-                                      r=5, detect_snr=detect_snr)
+        data = check_hdu(image_list[0], ext=ext).data
+        bkg, rms = background(data, box_size=64,
+                              filter_size=3, mask=mask,
+                              global_bkg=False)
+        rms = np.median(rms)
+        sources = sexfind(data, detect_snr, bkg, rms, mask=mask,
+                           fwhm=detect_fwhm, segmentation_map=False)
+        # make a better identification
+        sources = starfind(data, detect_snr, bkg, rms, mask=mask,
+                           fwhm=detect_fwhm, box_size=box_size,
+                           sharp_limit=(0.1, 2.0), round_limit=(-2.0, 2.0))
     else:
         sources = np.array(list(zip(x, y)),
                            dtype=np.dtype([('x', 'f8'), ('y', 'f8')]))
@@ -101,7 +108,7 @@ def temporal_photometry(image_list, x=None, y=None, ext=0,
         jd = jd.jd
         p = process_photometry(check_hdu(image_list[i], ext=ext),
                                photometry_type=photometry_type,
-                               r=r, r_in=r_in, r_out=r_out,
+                               r=r, r_ann=r_ann,
                                psf_model=psf_model, psf_niters=psf_niters,
                                x=sources['x'] - shifts[i]['x'],
                                y=sources['y'] - shifts[i]['y'])
@@ -125,7 +132,7 @@ def temporal_photometry(image_list, x=None, y=None, ext=0,
 
 
 def process_lightcurve(image_list, x=None, y=None, photometry_type='aperture',
-                       r=5, r_in=50, r_out=60, detect_snr=5,
+                       r=5, r_ann=(20, 30), detect_snr=5,
                        detect_fwhm=3, psf_model='gaussian', psf_niters=1,
                        time_key='DATE-OBS', time_format='isot',
                        align_images=True, check_dist=True):
@@ -145,7 +152,7 @@ def process_lightcurve(image_list, x=None, y=None, photometry_type='aperture',
 
     tmp_phot = temporal_photometry(image_list, x=x, y=y,
                                    photometry_type=photometry_type,
-                                   r=r, r_in=r_in, r_out=r_out,
+                                   r=r, r_ann=r_ann,
                                    detect_snr=detect_snr,
                                    detect_fwhm=detect_fwhm,
                                    psf_niters=psf_niters,

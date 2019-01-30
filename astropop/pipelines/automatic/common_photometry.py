@@ -229,6 +229,6 @@ class LightCurvePipeline():
             try:
                 self._process(p)
             except Exception as e:
-                # raise e
+                raise e
                 logger.error("Product not processed due: {}: {}"
                              .format(type(e).__name__, e))
