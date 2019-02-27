@@ -8,12 +8,14 @@ The basic design is:
     - Processor has a lot of Stages, that get a Config, a Instrument and
       a Product and process it;
     - Stages modify one product per time;
-    - Stage can have Stage children, Config can have Config children. In the
-      same logic;
     - All these things are objects that can be frozen for run.
 """
 
+import yaml
+
+
 # TODO: implement logging
+# __str__, print and to_header functions for all classes
 
 
 __all__ = ['Product', 'ProductManager', 'Config', 'Stage', 'Instrument',
@@ -25,41 +27,70 @@ class Config:
     frozen = False
     def __init__(self, **kwargs):
         for name, value in kwargs.items():
-            self.__dict__[name] = value
+            self[name] = value
 
-    def __getattribute__(self, name):
+    def __getattr__(self, name):
+        return self[name]
+
+    def __getitem__(self, name):
         if name in self.__dict__.keys():
-            return object.__getattribute__(self, name)
+            return self.__dict__[name]
         else:
             # TODO: think if it is better to return None or raise error
             return None
 
     def __setattr__(self, name, value):
+        self[name] = value
+
+    def __setitem__(self, name, value):
         if not self.frozen:
+            if isinstance(value, dict):
+                value = Config(value)
             self.__dict__[name] = value
+
+    def update(self, config):
+        for k, v in config.items():
+            self.__setitem__(k, v)
+
+    def items(self):
+        return self.__dict__.items()
+
+    def keys(self):
+        return self.__dict__.keys()
 
 
 class Product:
     """Store all informations and data of a product."""
-    # TODO: inherite Config?
-    def __init__(self, product_manager, raw_files=[], ccddata=None, **kwargs):
-        self.product_manager = product_manager
-        self.raw_files = []
-        self.ccddata = ccddata
-
+    product_manager = None
+    def __init__(self, **kwargs):
         for name, value in kwargs.items():
-            self.__dict__[name] = value
+            self[name] = value
 
-    def __getattribute__(self, name):
+    def __getattr__(self, name):
+        return self[name]
+
+    def __getitem__(self, name):
         if name in self.__dict__.keys():
-            return object.__getattribute__(self, name)
+            return self.__dict__[name]
         else:
             # TODO: think if it is better to return None or raise error
             return None
 
     def __setattr__(self, name, value):
-        # Products have to be changed, so, don't freeze
+        self[name] = value
+
+    def __setitem__(self, name, value):
         self.__dict__[name] = value
+
+    def update(self, config):
+        for k, v in config.items():
+            self.__setitem__(k, v)
+
+    def items(self):
+        return self.__dict__.items()
+
+    def keys(self):
+        return self.__dict__.keys()
 
 
 class Instrument:
@@ -71,16 +102,22 @@ class Instrument:
         for name, value in kwargs.items():
             self.__dict__[name] = value
 
-    def __getattribute__(self, name):
-        if name in self.__dict__.keys():
-            return object.__getattribute__(self, name)
-        else:
-            # TODO: think if it is better to return None or raise error
-            return None
+    def __getitem__(self, name):
+        self.__getattribute__(name)
 
     def __setattr__(self, name, value):
         if not self.frozen:
             self.__dict__[name] = value
+
+    def __setitem__(self, name, value):
+        self.__setattr__(name, value)
+
+    def update(self, config):
+        for k, v in config.items():
+            self.__setitem__(k, v)
+
+    def items(self):
+        return self.__dict__.items()
 
 
 class ProductManager:
@@ -104,12 +141,20 @@ class ProductManager:
                                     'g not allowed.')
             elif index is not None:
                 self.products.insert(index, product)
+                product.product_manager = self
             else:
                 self.products.append(product)
+                product.product_manager = self
 
     def del_product(self, product):
         """Delete a product from the manager."""
         self.products.remove(product)
+
+    def create_product(self, **kwargs):
+        """Create a product using kwargs."""
+        prod = Product(**kwargs)
+        self.add_product(prod)
+        return prod
 
     def iterate_products(self):
         """Iterate over all products."""
@@ -156,31 +201,26 @@ class Stage:
         """Run the stage"""
         raise NotImplementedError('Stage not implemented.')
 
-    def _run_children(self, product, config=None, instrument=None):
-        for i in self._children:
-            conf = config.get(i.name, None)
-            i(product, conf, instrument)
-
-    def __call__(self, product, config=None, instrument=None):
-        self.run(product, config, instrument)
-        self._run_children(product, config, instrument)
-
 
 class Processor:
     """Master class of a pipeline"""
-    def __init__(self, config_file=None):
-        self.prod_manager = ProductManager(self)
-        self.instrument = None
-        self.config_dict = {}
+    def __init__(self, config_file=None, instrument=None, product_manager=None):
+        self.product_manager = product_manager or ProductManager(self)
+        self.instrument = instrument
+        self.config = Config()
         self._stages = []
         self._processing_stage = None
         self.running = False
+
+        if config_file is not None:
+            with open(config_file, 'r') as stream:
+                self.config.update(yaml.load(stream))
 
     @property
     def number_of_stages(self):
         return len(self._stages)
 
-    def setup(self):
+    def setup(self, **kwargs):
         """Set a special stage that populate the ProductManager.
 
         This function also can handle other things before properly run the
@@ -202,22 +242,28 @@ class Processor:
 
     def add_stage(self, name, stage, index=None):
         """Add a stage to the pipeline."""
-        if name in self._stages[:][0]:
-            raise ValueError('Stage {} already in the pipeline.'.format(name))
-        elif self.running:
+        if self.number_of_stages != 0:
+            if name in self._stages[:][0]:
+                raise ValueError('Stage {} already in the pipeline.'
+                                 .format(name))
+        if self.running:
             raise RuntimeError('Pipeline running, cannot add stages.')
-        elif not isinstance(stage, Stage):
+        if not isinstance(stage, Stage):
             raise ValueError('Not a valid Stage.')
-        elif index is not None:
+
+        if index is not None:
             self._stages.insert(index, (name, stage))
+            stage.processor = self
         else:
             self._stages.append((name, stage))
+            stage.processor = self
 
     def remove_stage(self, name):
         """Remove a stage from the pipeline."""
         if self.running:
             raise RuntimeError('Pipeline running, cannot remove stages.')
         index = self.get_index(name)
+        self._stages[index].processor = None
         self._stages.pop(index)
 
     def get_index(self, name):
@@ -229,15 +275,19 @@ class Processor:
 
     def run(self, **runargs):
         """Run the pipeline."""
+
+        self.setup(**runargs)
+
         if self.number_of_stages == 0:
             raise ValueError('This pipeline has no stages.')
-        if self.prod_manager.number_of_products == 0:
+        if self.product_manager.number_of_products == 0:
             raise ValueError('This pipeline has no products.')
 
         self.running = True
-        for prod in self.prod_manager.products:
+        for prod in self.product_manager.products:
             self._processing_stage = 0
-            # Allow stages to set the current processing stage, like for iterating
+            # Allow stages to set the current processing stage,
+            # like for iterating
             while self._processing_stage < self.number_of_stages:
                 stage_name, stage = self._stages[self._processing_stage]
                 self._processing_stage += 1
@@ -245,6 +295,6 @@ class Processor:
                     config = self.config[stage_name]
                 else:
                     config = None
-                stage(prod, config, instrument=self.instrument)
+                stage.run(prod, config, instrument=self.instrument)
         self.running = False
         self._processing_stage = None
