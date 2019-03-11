@@ -65,6 +65,8 @@ class AstrometrySolver():
         self._command = astrometry_command
         self._defaults = defaults
         self._keep = keep_files
+        if self._command is None or not os.path.exists(self._command):
+            raise ValueError('solve-field not found!')
 
     def _guess_coordinates(self, header, ra_key, dec_key):
         '''

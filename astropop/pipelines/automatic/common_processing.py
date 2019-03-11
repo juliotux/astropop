@@ -251,12 +251,15 @@ class SimpleCalibPipeline():
             if 'night' not in hdu.header.keys():
                 hdu.header['night'] = night
 
-            yield (process_image(hdu, save_to=filename, master_bias=_bias,
-                                 master_flat=_flat,
-                                 dark_frame=_dark,
-                                 save_compressed=self._save_fits_compressed,
-                                 overwrite=True,
-                                 **self.sci_process_params), filename)
+            try:
+                yield (process_image(hdu, save_to=filename, master_bias=_bias,
+                                     master_flat=_flat,
+                                     dark_frame=_dark,
+                                     save_compressed=self._save_fits_compressed,
+                                     overwrite=True,
+                                     **self.sci_process_params), filename)
+            except Exception as e:
+                logger.error('Image not process due to: {}'.format(e))
 
             if 'file' in hdu.fileinfo():
                 hdu.fileinfo()['file'].close()
