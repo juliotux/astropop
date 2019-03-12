@@ -10,6 +10,7 @@ from .common_polarimetry import PolarimetryPileline
 from ...logger import logger
 from ...image_processing.ccd_processing import trim_image
 from ..polarimetry_scripts import dualbeam_polarimetry
+from ..photometry_scripts import process_calib_photometry
 
 
 class ROBO40Calib(SimpleCalibPipeline):
@@ -197,7 +198,8 @@ class BCCalib(SimpleCalibPipeline):
                                'serno', 'camgain', 'filter', 'gain', 'hbin',
                                'vbin', 'outptamp', 'telescop', 'analyzer']
     _science_select_rules = dict(imagetyp=['OBJECT', 'object'])
-    _science_name_keywords = ['object', 'night', 'filter', 'outptamp']
+    _science_name_keywords = ['object', 'night', 'filter', 'outptamp',
+                              'analyzer']
     _bias_select_keywords = ['acqmode', 'imgrect', 'night',
                              'subrect', 'readtime', 'emrealgn', 'preamp',
                              'serno', 'camgain', 'gain', 'hbin',
@@ -209,7 +211,8 @@ class BCCalib(SimpleCalibPipeline):
                              'serno', 'camgain', 'gain', 'hbin',
                              'vbin', 'outptamp', 'telescop', 'night']
     _flat_select_rules = dict(imagetyp=['FLAT','flat'])
-    _flat_name_keywords = ['night', 'hbin', 'vbin', 'gain', 'filter', 'outptamp']
+    _flat_name_keywords = ['night', 'hbin', 'vbin', 'gain', 'filter',
+                           'analyzer', 'outptamp']
     _dark_select_keywords = ['acqmode', 'imgrect', 'night',
                              'subrect', 'readtime', 'emrealgn', 'preamp',
                              'serno', 'camgain', 'gain', 'hbin',
@@ -234,12 +237,13 @@ class BCCalib(SimpleCalibPipeline):
     _save_subfolder = 'BC/{night}'
     plate_scale = 0.32
     _align_method = 'chi2'
-    # _save_fits_compressed = False
-    # _save_fits_ext = 0
-    # _save_fits_fmt = '.fits'
+    _save_fits_compressed = False
+    _save_fits_ext = 0
+    _save_fits_fmt = '.fits.gz'
 
     def __init__(self, product_dir=None, calib_dir=None,
-                 ext=1, fits_extensions=['.fz'], compression=False):
+                 ext=0, fits_extensions=['.fits', '.fits.gz'],
+                 compression=False):
         super(BCCalib, self).__init__(product_dir=product_dir,
                                       calib_dir=calib_dir,
                                       ext=ext,
@@ -360,16 +364,20 @@ class IAGPOLPipeline(PolarimetryPileline):
 
     def get_filter(self, filegroup):
         filt = filegroup.values(self.filter_key, unique=True)[0]
+        if filt is None:
+            filt = filegroup.values('filter', unique=True)[0]
         try:
             filt = 'UBVRI'[int(filt)]
-        except ValueError:
+        except Exception as e:
             pass
+        logger.debug('Filter: {}'.format(filt))
         return filt
 
     def validate_data(self, filegroup):
         """Validate if it's everything ok with the data."""
         if len(filegroup.summary) < 4:
-            raise ValueError('Not enough calibed images to process.')
+            raise ValueError('Not enough calibed images to process. {} images'
+                             ' found'.format(len(filegroup.summary)))
         return True
 
     def calculate_polarimetry(self, fg, analyzer, retarder, psi, catalog,
@@ -389,5 +397,59 @@ class IAGPOLPipeline(PolarimetryPileline):
                                            **self.astrometry_parameters,
                                            **self.photometry_parameters,
                                            **kwargs)
+        elif analyzer in [None, 'A3']:
+            stacked = None
+            for i in fg.hdus():
+                if stacked is None:
+                    stacked = i
+                else:
+                    s = hdu_shift_images([stacked, i],
+                                         method=self._align_method)[1]
+                    stacked = imarith(stacked, s, '+')
+
+            filt = self.get_filter(fg)
+            cat = self.select_catalog(filt)
+
+            wcs = WCS(stacked.header, relax=True)
+            if '' in wcs.wcs.ctype or astrometry:
+                wcs = None
+
+            plate_scale = self.get_platescale(stacked)
+            phot, wcs = process_calib_photometry(stacked,
+                                                 science_catalog=science_catalog,
+                                                 identify_catalog=identify_catalog,
+                                                 filter=filt, wcs=wcs,
+                                                 return_wcs=True,
+                                                 plate_scale=plate_scale,
+                                                 **self.photometry_parameters,
+                                                 **self.astrometry_parameters)
+
+            apertures = np.unique(phot['aperture'])
+            if len(apertures) > 1:
+                selected_aperture = 0
+                snr = 0
+                for g in phot.group_by('aperture').groups:
+                    g_snr = np.sum(g['flux']/g['flux_error'])
+                    if g_snr > snr:
+                        selected_aperture = g['aperture'][0]
+                        snr = g_snr
+
+                phot = phot[phot['aperture'] == selected_aperture]
+                phot = phot.as_array()
+
+            phot.meta['astropop n_images'] = len(prod.calibed_files)
+            phot.meta['astropop night'] = prod.files.values('night',
+                                                            unique=True)[0]
+            phot.meta['astropop filter'] = filt
+            stacked.header['astropop n_images'] = len(prod.calibed_files)
+            stacked.header['astropop night'] = prod.files.values('night',
+                                                                 unique=True)[0]
+            stacked.header['astropop filter'] = filt
+
+            header=stacked.header
+            if wcs is not None:
+                header.update(wcs.to_header(relax=True))
+
+            result = (stacked, phot, wcs)
 
         return results

@@ -152,6 +152,6 @@ class PolarimetryPileline():
             try:
                 self._process(p, science_catalog, astrometry)
             except Exception as e:
-                raise e
-                # logger.error("Product not processed due: {}: {}"
-                #              .format(type(e).__name__, e))
+                # raise e
+                logger.error("Product not processed due: {}: {}"
+                             .format(type(e).__name__, e))

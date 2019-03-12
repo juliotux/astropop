@@ -213,6 +213,8 @@ class SimpleCalibPipeline():
                                      save_compress=self._save_fits_compressed,
                                      add_keywords=add_key,
                                      **self.calib_process_params)
+                    logger.debug('adding file {} to calibed_filegroup'
+                                 .format(_file))
                     calib_filegroup.add_file(_file)
                 else:
                     logger.warn('No raw {} images found. Skipping {} calib.'
