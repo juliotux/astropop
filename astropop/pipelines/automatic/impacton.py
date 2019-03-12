@@ -20,10 +20,7 @@ cat_list = {'B': default_catalogs['APASS'],
 
 class ImpactonCalib(SimpleCalibPipeline):
     template = 'IMPACTON_calib'
-    _science_group_keywords = ['object
-
-import sys
-print(sys.executable)', 'xbinning', 'ybinning', 'filter']
+    _science_group_keywords = ['object', 'xbinning', 'ybinning', 'filter']
     _science_select_rules = dict(imagetyp=['LIGHT'],
                                  instrume='Apogee USB/Net',
                                  telescop='AstroOptik 1m')

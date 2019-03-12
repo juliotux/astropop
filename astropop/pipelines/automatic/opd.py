@@ -204,7 +204,7 @@ class BCCalib(SimpleCalibPipeline):
                              'subrect', 'readtime', 'emrealgn', 'preamp',
                              'serno', 'camgain', 'gain', 'hbin',
                              'vbin', 'outptamp', 'telescop']
-    _bias_select_rules = dict(imagetyp=['ZERO', 'zero'])
+    _bias_select_rules = dict(imagetyp=['ZERO', 'zero', 'BIAS', 'bias'])
     _bias_name_keywords = ['night', 'hbin', 'vbin', 'gain', 'outptamp']
     _flat_select_keywords = ['acqmode', 'imgrect', 'filter', 'analyzer',
                              'subrect', 'readtime', 'emrealgn', 'preamp',
