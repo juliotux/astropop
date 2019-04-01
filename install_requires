@@ -1,5 +1,6 @@
-astropy
-sep
+python>3.5
+astropy>3
+sep>1.0.3
 numpy
 scipy
 scikit-image

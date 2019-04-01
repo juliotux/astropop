@@ -17,3 +17,6 @@ sep
 astroquery
 fortranformat
 astroscrappy
+reproject
+astroalign
+image_registration
