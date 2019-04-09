@@ -12,6 +12,9 @@ The basic design is:
 """
 
 import yaml
+from functools import partial
+
+from ..logger import logger, log_to_list
 
 
 # TODO: implement logging
@@ -61,10 +64,57 @@ class Config:
 
 class Product:
     """Store all informations and data of a product."""
-    product_manager = None
-    def __init__(self, **kwargs):
+    _product_manager = None
+    _capabilities = []
+    _destruct_callbacks = []
+    _log_list = []
+
+    def __init__(self, product_manager=None, **kwargs):
+        if product_manager is None:
+            raise ValueError("A product has to be created with a"
+                             " product_manager.")
+        if not isinstance(product_manager, ProductManager):
+            raise ValueError("product_manager is not a valid ProductManager "
+                             "instance.")
+        self._product_manager = product_manager
+
+        # Setup the logger conveniently
+        self._logger = self._product_manager.logger.getLogger()
+        log_to_list(self._logger, self._log_list)
+
         for name, value in kwargs.items():
             self[name] = value
+
+    @property
+    def logger(self):
+        return self.logger
+
+    @property
+    def product_manager(self):
+        return self._product_manager
+
+    @property
+    def capabilities(self):
+        return self._capabilities
+
+    def add_capability(self, capability):
+        if capability not in self._capabilities:
+            self._capabilities.append(capability)
+
+    def del_capability(self, capability):
+        if capability in self._capabilities:
+            self._capability.remove(capability)
+
+    def add_destruct_callback(self, callback, *args, **kwargs):
+        """Add a destruction callback. First argument must be a class slot,
+        like self."""
+        func = partial(callback, self, *args, **kwargs)
+        self._destruct_callbacks.append(func)
+
+    def destruct(self):
+        """Execute the destruction callbacks sequentially."""
+        for i, func in enumerate(self._destruct_callbacks):
+
 
     def __getattr__(self, name):
         return self[name]
@@ -122,28 +172,44 @@ class Instrument:
 
 class ProductManager:
     """Manage a bunch of products."""
+    _log_list = []
+    _products = []
+    _iterating = False
+
     def __init__(self, processor):
+        if not isinstance(processor, Processor):
+            raise ValueError("porcessor has to be a Processor instance.")
         self.processor = processor
-        self.products = []
-        self.iterating = False
+
+        # Setup the logger conveniently
+        self._logger = self.processor.logger.getLogger()
+        log_to_list(self._logger, self._log_list)
 
     @property
     def number_of_products(self):
         return len(self.products)
 
+    @property
+    def iterating(self):
+        return self._iterating
+
+    @property
+    def products(self):
+        return self._products
+
     def add_product(self, product, index=None):
         """Add a product to the manager."""
-        if product in self.products:
+        if product in self._products:
             raise ValueError('Product already in the manager.')
         else:
             if self.iterating:
                 raise RuntimeError('Insert product in index while iteratin'
                                     'g not allowed.')
             elif index is not None:
-                self.products.insert(index, product)
+                self._products.insert(index, product)
                 product.product_manager = self
             else:
-                self.products.append(product)
+                self._products.append(product)
                 product.product_manager = self
 
     def del_product(self, product):
@@ -162,12 +228,12 @@ class ProductManager:
             raise ValueError('No products available in this product manager.')
 
         i = 0
-        self.iterating = True
+        self._iterating = True
         while i < self.number_of_products:
             yield self.products[i]
             i += 1
 
-        self.iterating = False
+        self._iterating = False
 
     def product(self, index):
         """Get one specific product."""

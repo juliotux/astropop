@@ -148,6 +148,7 @@ class AstrometrySolver():
                     image_params={},
                     solve_params={}, scamp_basename=None,
                     show_process=False):
+        # TODO: put some of these arguments in a config file
         """Try to solve an image using the astrometry.net.
 
         The image params can be:
