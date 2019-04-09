@@ -13,6 +13,7 @@ The basic design is:
 
 import yaml
 from functools import partial
+from collections import OrderedDict
 
 from ..logger import logger, log_to_list
 
@@ -68,6 +69,7 @@ class Product:
     _capabilities = []
     _destruct_callbacks = []
     _log_list = []
+    _infos = OrderedDict()
 
     def __init__(self, product_manager=None, **kwargs):
         if product_manager is None:
@@ -97,6 +99,39 @@ class Product:
     def capabilities(self):
         return self._capabilities
 
+    @property
+    def info(self):
+        """Print general informations about the product, in a yaml format."""
+        info_dict = self._infos.copy()
+
+        info_dict['capabilities'] = self._capabilities
+
+        dest = OrderedDict()
+        dest['number'] = len(self._destruct_callbacks)
+        dest['functions'] = [i.__name__ for i in self._destruct_callbacks]
+        info_dict['destruction_callbacks'] = dest
+
+        dest['history'] = self._log_list
+
+        return yaml.dump(info_dict)
+
+    @property
+    def log(self):
+        """Print the log of the product."""
+        return "\n".join(_log_list)
+
+    def add_info(self, session, info_dict):
+        """Custom add information dictionaries to the product. (to info prop)"""
+        if session in self._infos.keys():
+            self.logger.warn('Session {} already exists in this product infos.'
+                             ' Overwriting it.'
+                             .format(session))
+        if session in ['history', 'capabilities', 'destruction_callbacks']:
+            self.logger.warn('{} is a protected name of session. Skipping.'
+                             .format(session))
+            return
+        self._infos[session] = info_dict
+
     def add_capability(self, capability):
         if capability not in self._capabilities:
             self._capabilities.append(capability)
@@ -114,7 +149,11 @@ class Product:
     def destruct(self):
         """Execute the destruction callbacks sequentially."""
         for i, func in enumerate(self._destruct_callbacks):
-
+            try:
+                func()
+            except Exception as e:
+                logger.debug("Destruction callback {} problem. Error: {}"
+                             .format(i, e))
 
     def __getattr__(self, name):
         return self[name]
@@ -145,29 +184,51 @@ class Product:
 
 class Instrument:
     """Store all the informations and needed functions of a instrument."""
-    frozen = False
+    _frozen = False
+    _prop_dict = {}
     # TODO: I know it is almost equal Config, think if it is better to
     # inherite Config or keep separated
     def __init__(self, **kwargs):
         for name, value in kwargs.items():
-            self.__dict__[name] = value
+            self._prop_dict[name] = value
+
+    def __getattr__(self, name):
+        if name == '_prop_dict':
+            return self.__dict__['_prop_dict']
+        elif name == '_frozen':
+            return self.__dict__['_frozen']
+        else:
+            return self._prop_dict[name]
 
     def __getitem__(self, name):
-        self.__getattribute__(name)
+        return self.__getattr__(name)
 
     def __setattr__(self, name, value):
-        if not self.frozen:
-            self.__dict__[name] = value
+        if name == '_frozen':
+            self._frozen = value
+        elif name == '_prop_dict':
+        elif not self._frozen:
+            self._prop_dict[name] = value
 
     def __setitem__(self, name, value):
         self.__setattr__(name, value)
+
+    def freeze(self):
+        self._frozen = True
+
+    def unfreeze(self):
+        self._frozen = False
+
+    @property
+    def frozen(self):
+        return self._frozen
 
     def update(self, config):
         for k, v in config.items():
             self.__setitem__(k, v)
 
     def items(self):
-        return self.__dict__.items()
+        return self.prop_dict.items()
 
 
 class ProductManager:
@@ -247,9 +308,20 @@ class Stage:
     processor = None
     parent = None
     name = None
+    self._enabled = True
 
-    def processor(self, processor):
+    def __init__(self, processor):
         self.processor = processor
+
+    @property
+    def enabled(self):
+        return self._enabled
+
+    def enable(self):
+        self._enabled = True
+
+    def disable(self):
+        self._enabled = True
 
     def add_children(self, name, stage):
         """Add a children stage to this stage."""
