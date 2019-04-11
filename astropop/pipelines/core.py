@@ -49,7 +49,7 @@ class Config:
     def __setitem__(self, name, value):
         if not self.frozen:
             if isinstance(value, dict):
-                value = Config(value)
+                value = Config(**value)
             self.__dict__[name] = value
 
     def update(self, config):
@@ -118,7 +118,7 @@ class Product:
     @property
     def log(self):
         """Print the log of the product."""
-        return "\n".join(_log_list)
+        return "\n".join(self._log_list)
 
     def add_info(self, session, info_dict):
         """Custom add information dictionaries to the product. (to info prop)"""
@@ -207,6 +207,7 @@ class Instrument:
         if name == '_frozen':
             self._frozen = value
         elif name == '_prop_dict':
+            raise ValueError('_prop_dict is a protected name')
         elif not self._frozen:
             self._prop_dict[name] = value
 
@@ -308,7 +309,7 @@ class Stage:
     processor = None
     parent = None
     name = None
-    self._enabled = True
+    _enabled = True
 
     def __init__(self, processor):
         self.processor = processor
