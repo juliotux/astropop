@@ -26,10 +26,18 @@ __all__ = ['Product', 'ProductManager', 'Config', 'Stage', 'Instrument',
            'Processor']
 
 
+def info_dumper(infos):
+    """Dump a dictionary information to a formated string.
+    
+    Now, it's just a wrapper to yaml.dump, put here to customize if needed.
+    """
+    return yaml.dump(infos)
+
+
 class _GenericConfigClass:
-    """Class for generic sotring configs."""
+    """Class for generic sotring configs. Like a powered dict."""
     _frozen = False
-    _prop_dict = {}
+    _prop_dict = OrderedDict()
     _mutable_vars = ['_frozen', 'logger']
     logger = logger
     def __init__(self, **kwargs):
@@ -43,7 +51,11 @@ class _GenericConfigClass:
             return super().__getattribute__(name)
 
     def __getitem__(self, name):
-        return self._prop_dict[name]
+        if name in self._prop_dict:
+            return self._prop_dict[name]
+        else:
+            # TODO: think is it is better to return None or raise error
+            return None
 
     def __setattr__(self, name, value):
         if self._frozen:
@@ -69,9 +81,9 @@ class _GenericConfigClass:
             super().__delattr__(name)
     
     def __repr__(self):
-        # TODO: Include a full list of parameters, like Product's info
-        # TODO: Include functions names, from __class__.__dict__ for Instrument
-        return self.__class__.__name__
+        info = self.__class__.__name__ + "\n\n"
+        info += info_dumper({'Properties': self.properties})
+        return info
 
     def freeze(self):
         self._frozen = True
@@ -106,18 +118,45 @@ class Instrument(_GenericConfigClass):
     _frozen = False
     _prop_dict = {}
     _mutable_vars = ['_frozen']
+    _identifier = 'dummy_instrument'
+
     def __init__(self, *args, **kwargs):
         super(Instrument, self).__init__(*args, **kwargs)
+
+    def list_functions(self):
+        """List the class functions."""
+        # Pass any callable object that do not start with '_' may cause problems.
+        # This may pass unwanted functions. Commented out.
+        # l = [i.__name__ for i in self.__class__.__dict__.values()
+        #      if callable(i) and i.__name__[0] != '_']
+
+        l = [i.__name__ for i in self.__class__.__dict__.values()
+             if type(i) == ['function', 'builtin_function_or_method']
+             and i.__name__[0] != '_']
+
+        # If needed to remove another class function, put here. 
+        for i in ['list_functions']:
+            if i in l:
+                l.remove(i)
+        return l
+
+    def __repr__(self):
+        info = "{} ({})\n\n".format(self.__class__.__name__, self._identifier)
+        info += info_dumper({'Properties': self.properties,
+                             'Functions': self.list_functions()})
+        return info
+
 
 
 class Product():
     """Store all informations and data of a product."""
-    _product_manager = None
-    _capabilities = []
-    _destruct_callbacks = []
-    _log_list = []
-    _infos = OrderedDict()
-    _mutable_vars = ['_product_manager']
+    _product_manager = None  # Parent product manager
+    _capabilities = []  # The product capabilities
+    _destruct_callbacks = []  # List of destruction callbacks
+    _log_list = []  # Store the logs
+    _infos = OrderedDict()  # Custom product informations
+    _mutable_vars = ['_product_manager']  # Variables that can be changed
+    _instrument = None  # Product instrument
 
     # Product do not subclass _GenericConfigClass to keep variables acessing more customized.
     def __init__(self, product_manager=None, **kwargs):
@@ -155,6 +194,12 @@ class Product():
 
         info_dict['capabilities'] = self._capabilities
 
+        inst = OrderedDict()
+        inst['class'] = self._instrument.__class__.__name__
+        inst['id'] = self._instrument._identifier
+        inst['properties'] = self._instrument.properties
+        info_dict['instrument'] = inst
+
         dest = OrderedDict()
         dest['number'] = len(self._destruct_callbacks)
         dest['functions'] = [i.__name__ for i in self._destruct_callbacks]
@@ -162,7 +207,7 @@ class Product():
 
         dest['history'] = self._log_list
 
-        return yaml.dump(info_dict)
+        return info_dumper(info_dict)
 
     @property
     def log(self):
@@ -246,9 +291,9 @@ class Product():
 
 class ProductManager:
     """Manage a bunch of products."""
-    _log_list = []
-    _products = []
-    _iterating = False
+    _log_list = []  # Store the logs
+    _products = []  # Store the products
+    _iterating = False  # Is iterating?
 
     def __init__(self, processor):
         if not isinstance(processor, Processor):
@@ -316,12 +361,12 @@ class ProductManager:
 
 class Stage:
     """Stage process (sub-part) of a pipeline."""
-    config = Config()
-    _children = []
-    processor = None
-    parent = None
-    name = None
-    _enabled = True
+    config = Config()  # stage default config
+    processor = None  # processor
+    name = None  # stage name
+    _enabled = True  # stage enabled
+    _requested_functions = []  # Instrument needed functions
+    _requested_capabilities = []  # Product needed capabilities
 
     def __init__(self, processor):
         self.processor = processor
@@ -336,28 +381,18 @@ class Stage:
     def disable(self):
         self._enabled = True
 
-    def add_children(self, name, stage):
-        """Add a children stage to this stage."""
-        if stage not in self._children:
-            self._children.append(stage)
-            stage.parent = self
-            stage.name = name
-
-    def remove_children(self, stage):
-        """Remove a children stage from this stage."""
-        self._children.remove(stage)
-        stage.parent = None
-
-    def run(self, product, config=None, instrument=None):
+    def run(self, product, config=None):
         """Run the stage"""
         raise NotImplementedError('Stage not implemented.')
+
+    def __call__(self, product, config=None):
+        return self.run(product, config)
 
 
 class Processor:
     """Master class of a pipeline"""
-    def __init__(self, config_file=None, instrument=None, product_manager=None):
+    def __init__(self, config_file=None, product_manager=None):
         self.product_manager = product_manager or ProductManager(self)
-        self.instrument = instrument
         self.config = Config()
         self._stages = []
         self._processing_stage = None
@@ -446,6 +481,6 @@ class Processor:
                     config = self.config[stage_name]
                 else:
                     config = None
-                stage.run(prod, config, instrument=self.instrument)
+                stage.run(prod, config)
         self.running = False
         self._processing_stage = None
