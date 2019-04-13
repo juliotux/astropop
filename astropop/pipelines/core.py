@@ -26,44 +26,91 @@ __all__ = ['Product', 'ProductManager', 'Config', 'Stage', 'Instrument',
            'Processor']
 
 
-class Config:
-    """Store the config of a stage."""
-    frozen = False
+class _GenericConfigClass:
+    """Class for generic sotring configs."""
+    _frozen = False
+    _prop_dict = {}
+    _mutable_vars = ['_frozen', 'logger']
+    logger = logger
     def __init__(self, **kwargs):
         for name, value in kwargs.items():
-            self[name] = value
+            self.__setitem__(name, value)
 
     def __getattr__(self, name):
-        return self[name]
+        if name in self._prop_dict.keys():
+            return self.__getitem__(name)
+        else:
+            return super().__getattribute__(name)
 
     def __getitem__(self, name):
-        if name in self.__dict__.keys():
-            return self.__dict__[name]
-        else:
-            # TODO: think if it is better to return None or raise error
-            return None
+        return self._prop_dict[name]
 
     def __setattr__(self, name, value):
-        self[name] = value
+        if self._frozen:
+            self.logger.warn('Tried to change `{}` with value `{}` while {} is frozen. '
+                             'Skipping.'
+                             .format(name, value, self.__class__.__name__))
+            return
+        if name not in self.__class__.__dict__.keys():
+            self.__setitem__(name, value)
+        elif name in self._mutable_vars:
+            # mutable vars
+            super().__setattr__(name, value)
+        else:
+            raise KeyError('{} is a protected variable.'.format(name))
 
     def __setitem__(self, name, value):
-        if not self.frozen:
-            if isinstance(value, dict):
-                value = Config(**value)
-            self.__dict__[name] = value
+        self._prop_dict[name] = value
+
+    def __delattr__(self, name):
+        if name in self._prop_dict.keys():
+            del self._prop_dict[name]
+        else:
+            super().__delattr__(name)
+    
+    def __repr__(self):
+        # TODO: Include a full list of parameters, like Product's info
+        # TODO: Include functions names, from __class__.__dict__ for Instrument
+        return self.__class__.__name__
+
+    def freeze(self):
+        self._frozen = True
+
+    def unfreeze(self):
+        self._frozen = False
+
+    @property
+    def properties(self):
+        return self._prop_dict.copy()
+
+    @property
+    def frozen(self):
+        return self._frozen
 
     def update(self, config):
         for k, v in config.items():
             self.__setitem__(k, v)
 
     def items(self):
-        return self.__dict__.items()
-
-    def keys(self):
-        return self.__dict__.keys()
+        return self._prop_dict.items()
 
 
-class Product:
+class Config(_GenericConfigClass):
+    """Store the config of a stage."""
+    def __init__(self, *args, **kwargs):
+        super(Config, self).__init__(*args, **kwargs)
+
+
+class Instrument(_GenericConfigClass):
+    """Store all the informations and needed functions of a instrument."""
+    _frozen = False
+    _prop_dict = {}
+    _mutable_vars = ['_frozen']
+    def __init__(self, *args, **kwargs):
+        super(Instrument, self).__init__(*args, **kwargs)
+
+
+class Product():
     """Store all informations and data of a product."""
     _product_manager = None
     _capabilities = []
@@ -71,6 +118,7 @@ class Product:
     _log_list = []
     _infos = OrderedDict()
 
+    # Product do not subclass _GenericConfigClass to keep variables acessing more customized.
     def __init__(self, product_manager=None, **kwargs):
         if product_manager is None:
             raise ValueError("A product has to be created with a"
@@ -85,7 +133,7 @@ class Product:
         log_to_list(self._logger, self._log_list)
 
         for name, value in kwargs.items():
-            self[name] = value
+            self.__setattr__(name, value)
 
     @property
     def logger(self):
@@ -138,7 +186,7 @@ class Product:
 
     def del_capability(self, capability):
         if capability in self._capabilities:
-            self._capability.remove(capability)
+            self._capabilities.remove(capability)
 
     def add_destruct_callback(self, callback, *args, **kwargs):
         """Add a destruction callback. First argument must be a class slot,
@@ -155,22 +203,6 @@ class Product:
                 logger.debug("Destruction callback {} problem. Error: {}"
                              .format(i, e))
 
-    def __getattr__(self, name):
-        return self[name]
-
-    def __getitem__(self, name):
-        if name in self.__dict__.keys():
-            return self.__dict__[name]
-        else:
-            # TODO: think if it is better to return None or raise error
-            return None
-
-    def __setattr__(self, name, value):
-        self[name] = value
-
-    def __setitem__(self, name, value):
-        self.__dict__[name] = value
-
     def update(self, config):
         for k, v in config.items():
             self.__setitem__(k, v)
@@ -180,56 +212,6 @@ class Product:
 
     def keys(self):
         return self.__dict__.keys()
-
-
-class Instrument:
-    """Store all the informations and needed functions of a instrument."""
-    _frozen = False
-    _prop_dict = {}
-    # TODO: I know it is almost equal Config, think if it is better to
-    # inherite Config or keep separated
-    def __init__(self, **kwargs):
-        for name, value in kwargs.items():
-            self._prop_dict[name] = value
-
-    def __getattr__(self, name):
-        if name == '_prop_dict':
-            return self.__dict__['_prop_dict']
-        elif name == '_frozen':
-            return self.__dict__['_frozen']
-        else:
-            return self._prop_dict[name]
-
-    def __getitem__(self, name):
-        return self.__getattr__(name)
-
-    def __setattr__(self, name, value):
-        if name == '_frozen':
-            self._frozen = value
-        elif name == '_prop_dict':
-            raise ValueError('_prop_dict is a protected name')
-        elif not self._frozen:
-            self._prop_dict[name] = value
-
-    def __setitem__(self, name, value):
-        self.__setattr__(name, value)
-
-    def freeze(self):
-        self._frozen = True
-
-    def unfreeze(self):
-        self._frozen = False
-
-    @property
-    def frozen(self):
-        return self._frozen
-
-    def update(self, config):
-        for k, v in config.items():
-            self.__setitem__(k, v)
-
-    def items(self):
-        return self.prop_dict.items()
 
 
 class ProductManager:

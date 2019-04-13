@@ -7,7 +7,7 @@ from astropy import log  # for now, use the more complete logger from astropy
 __all__ = ['logger', 'ListHandler', 'log_to_list']
 
 
-logger = log.getLogger('astropop')
+logger = log
 
 
 class ListHandler(logging.Handler):
