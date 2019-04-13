@@ -169,7 +169,7 @@ class Product():
         self._product_manager = product_manager
 
         # Setup the logger conveniently
-        self._logger = self._product_manager.logger.getLogger()
+        self._logger = self._product_manager.logger.getChild()
         log_to_list(self._logger, self._log_list)
 
         for name, value in kwargs.items():
@@ -301,7 +301,7 @@ class ProductManager:
         self.processor = processor
 
         # Setup the logger conveniently
-        self._logger = self.processor.logger.getLogger()
+        self._logger = self.processor.logger.getChild()
         log_to_list(self._logger, self._log_list)
 
     @property
@@ -390,13 +390,17 @@ class Stage:
 
 
 class Processor:
+    _default_file_config = None
+    config = Config()
+    _stages = []
+    _processing_stage = None
+    running = False
+    logger = logger.getChild()
+    product_manager = None
+
     """Master class of a pipeline"""
     def __init__(self, config_file=None, product_manager=None):
         self.product_manager = product_manager or ProductManager(self)
-        self.config = Config()
-        self._stages = []
-        self._processing_stage = None
-        self.running = False
 
         if config_file is not None:
             with open(config_file, 'r') as stream:
@@ -480,7 +484,7 @@ class Processor:
                 if stage_name in self.config.keys():
                     config = self.config[stage_name]
                 else:
-                    config = None
+                    config = Config()
                 stage.run(prod, config)
         self.running = False
         self._processing_stage = None
