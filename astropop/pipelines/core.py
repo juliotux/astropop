@@ -117,6 +117,7 @@ class Product():
     _destruct_callbacks = []
     _log_list = []
     _infos = OrderedDict()
+    _mutable_vars = ['_product_manager']
 
     # Product do not subclass _GenericConfigClass to keep variables acessing more customized.
     def __init__(self, product_manager=None, **kwargs):
@@ -212,6 +213,35 @@ class Product():
 
     def keys(self):
         return self.__dict__.keys()
+
+    def __getitem__(self, name):
+        return self.__dict__.__getitem__(name)
+
+    def __getattr__(self, name):
+        if name in self.__dict__.keys():
+            return self.__getitem__(name)
+        else:
+            super().__getattribute__(name)
+    
+    def __setitem__(self, name, value):
+        self.__dict__.__setattr__(name, value)
+    
+    def __setattr__(self, name, value):
+        if name not in self.__class__.__dict__.keys():
+            self.__setitem__(name, value)
+        elif name not in self._mutable_vars:
+            super().__setattr__(name, value)
+        else:
+            raise KeyError('{} is a protected variable.'.format(name))
+
+    def __delattr__(self, name):
+        if name in self.__dict__.keys():
+            del self.__dict__[name]
+        else:
+            super().__delattr__(name)
+    
+    def __repr__(self):
+        return "Product: {}\n{}".format(self.__class__.__name__, self.info)
 
 
 class ProductManager:
