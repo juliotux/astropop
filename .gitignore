@@ -1,4 +1,5 @@
 examples
+.vscode
 
 # Compiled files
 *.py[cod]
