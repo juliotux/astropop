@@ -84,7 +84,7 @@ def imcombine(image_list, output_file=None, method='average', weights=None,
               scale=None, mem_limit=1e8, reject=None,
               nlow=1, nhigh=1, min_clip=None, max_clip=None, sigma_clip_low=3,
               sigma_clip_high=3, dtype=None, overwrite=False,
-              save_compress=False):
+              save_compress=False, logger=logger):
     """Combine a set of images like IRAF imcombine.
 
     Methods:
@@ -226,7 +226,7 @@ _arith_funcs = {'+': np.add,
                 '**': np.power}
 
 
-def imarith(operand1, operand2, operation, inplace=False):
+def imarith(operand1, operand2, operation, inplace=False, logger=logger):
     """Simple arithmetic operations using fits hdus.
 
     Supported operations: '+', '-', '*', '/', '%', '**'

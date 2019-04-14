@@ -1,3 +1,5 @@
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
+
 import numpy as np
 from astropy.table import vstack, Table, hstack
 
@@ -13,7 +15,7 @@ def process_photometry(image, photometry_type, detect_fwhm=None,
                        detect_snr=None, box_size=30,
                        r='auto', r_ann='auto', psf_model='gaussian',
                        psf_niters=3, x=None, y=None, mask=None,
-                       gain=None, readnoise=None):
+                       gain=None, readnoise=None, logger=logger):
     """Process standart photometry in one image, without calibrations."""
     image = check_hdu(image)
     data = image.data

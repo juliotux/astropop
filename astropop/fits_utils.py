@@ -23,7 +23,7 @@ class IncompatibleHeadersError(ValueError):
     """When 2 image header are not compatible."""
 
 
-def check_header_keys(image1, image2, keywords=[]):
+def check_header_keys(image1, image2, keywords=[], logger=logger):
     """Compare header keys from 2 images to check if the have equal values."""
     image1 = check_hdu(image1)
     image2 = check_hdu(image2)
@@ -44,7 +44,7 @@ def check_header_keys(image1, image2, keywords=[]):
     return True
 
 
-def check_hdu(data, ext=0):
+def check_hdu(data, ext=0, logger=logger):
     """Check if a data is a valid ImageHDU type and convert it."""
     if not isinstance(data, imhdus):
         if isinstance(data, fits.HDUList):
@@ -75,7 +75,11 @@ def check_hdu(data, ext=0):
     return data
 
 
-def save_hdu(hdu, filename, compress=False, overwrite=False):
+def save_hdu(hdu, filename, compress=False, overwrite=False, logger=logger):
+    # TODO: auto handle compression according extension
+    # .fz -> fits compressed
+    # .fits -> not compress
+    # .fits.gz, .fits.bz2 -> gzip, bzip2 compressed
     if not compress:
         logger.debug('Saving fits file to: {}'.format(filename))
         hdu.writeto(filename, overwrite=overwrite)
@@ -90,7 +94,7 @@ def save_hdu(hdu, filename, compress=False, overwrite=False):
 
 
 def fits_yielder(return_type, file_list, ext=0, append_to_name=None,
-                 save_to=None, overwrite=True):
+                 save_to=None, overwrite=True, logger=logger):
     """Create a generator object that iterates over file_list.
 
     return_type : str
@@ -174,7 +178,7 @@ def fits_yielder(return_type, file_list, ext=0, append_to_name=None,
 
 
 def headers_to_table(headers, filenames=None, keywords=None, empty_value=None,
-                     lower_keywords=False):
+                     lower_keywords=False, logger=logger):
     """Read a bunch of headers and return a table with the values."""
     l = []
     actual = 0

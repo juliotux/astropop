@@ -11,6 +11,7 @@ from astropy.io import fits
 
 from .fits_utils import fits_yielder, headers_to_table
 from .py_utils import check_iterable
+from .logger import logger
 
 __all__ = ['list_fits_files', 'filter_fg', 'group_fg', 'FileManager',
            'FileGroup']
@@ -18,7 +19,7 @@ __all__ = ['list_fits_files', 'filter_fg', 'group_fg', 'FileManager',
 
 def list_fits_files(directory, fits_extensions=['.fts', '.fits', '.fit', '.fz'],
                     compression_extensions=['.gz', '.bz2', '.Z', '.zip'],
-                    exclude=None):
+                    exclude=None, logger=logger):
     """List all fist files in a directory, if compressed or not."""
     # all_files = os.listdir(directory)
 
@@ -117,7 +118,7 @@ def group_fg(filegroup, keywords):
 class FileGroup():
     """Easy handle groups of fits files."""
 
-    def __init__(self, files, ext, summary):
+    def __init__(self, files, ext, summary, logger=logger):
         """Easy handle groups of fits files."""
         self.files = np.array(files)
         if len(self.files) > 0:
@@ -128,6 +129,8 @@ class FileGroup():
         if len(self.files) != len(self.summary):
             raise ValueError('Files and summary do not have same sizes.')
         self.ext = ext
+
+        self.logger = logger
 
     def __len__(self):
         return len(self.files)
@@ -216,7 +219,7 @@ class FileManager():
     """Handle and organize fits files in a simple way."""
 
     def __init__(self, ext=0, fits_extensions=['.fits', '.fts', '.fit', '.fz'],
-                 compression=True):
+                 compression=True, logger=logger):
         """Handle and organize fits files in a simple way.
         """
         self.ext = ext
@@ -225,6 +228,8 @@ class FileManager():
             self.compression = ['.gz', '.bz2', '.Z', '.zip']
         else:
             self.compression = []
+
+        self.logger = logger
 
     def group_by(self, filegroup, keywords):
         """Group the files by a list of keywords in multiple FileGroups."""

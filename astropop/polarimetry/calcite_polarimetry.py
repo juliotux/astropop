@@ -9,7 +9,8 @@ from .polarimetry_models import HalfWaveModel, QuarterWaveModel
 from ..logger import logger
 
 
-def estimate_dxdy(x, y, steps=[100, 30, 5, 3], bins=30, dist_limit=100):
+def estimate_dxdy(x, y, steps=[100, 30, 5, 3], bins=30, dist_limit=100,
+                  logger=logger):
     def _find_max(d):
         dx = 0
         for lim in (np.max(d), *steps):
@@ -42,7 +43,7 @@ def estimate_dxdy(x, y, steps=[100, 30, 5, 3], bins=30, dist_limit=100):
     return (_find_max(dx), _find_max(dy))
 
 
-def match_pairs(x, y, dx, dy, tolerance=1.0):
+def match_pairs(x, y, dx, dy, tolerance=1.0, logger=logger):
     """Match the pairs of ordinary/extraordinary points (x, y)."""
     kd = cKDTree(list(zip(x, y)))
 
@@ -61,7 +62,7 @@ def match_pairs(x, y, dx, dy, tolerance=1.0):
     return result.as_array()
 
 
-def estimate_normalize(o, e, positions, n_consecutive):
+def estimate_normalize(o, e, positions, n_consecutive, logger=logger):
     """Estimate the normalization of a given set of data.
     """
     data_o = [[]]*n_consecutive
@@ -100,7 +101,7 @@ def compute_theta(q, u):
     return theta
 
 
-def _polarimetry_by_fit(z, psi, retarder='half', z_err=None):
+def _polarimetry_by_fit(z, psi, retarder='half', z_err=None, logger=logger):
     """Calculate the polarimetry directly using z.
     psi in degrees
     """
@@ -150,7 +151,8 @@ def _polarimetry_by_fit(z, psi, retarder='half', z_err=None):
     return result
 
 
-def _polarimetry_by_sum(z, psi, retarder='half', z_err=None):
+def _polarimetry_by_sum(z, psi, retarder='half', z_err=None,
+                        logger=logger):
     """Implement the polarimetry calculation method described by
     Magalhaes et al 1984 (ads string: 1984PASP...96..383M)
     """
@@ -182,7 +184,7 @@ def _polarimetry_by_sum(z, psi, retarder='half', z_err=None):
     return result
 
 
-def reduced_chi2(psi, z, z_err, q, u, v=None, retarder='half'):
+def reduced_chi2(psi, z, z_err, q, u, v=None, retarder='half', logger=logger):
     """Compute the reduced chi-square for a given model."""
     if retarder == 'quarter' and v is None:
         raise ValueError('missing value `v` of circular polarimetry.')
@@ -202,7 +204,8 @@ def reduced_chi2(psi, z, z_err, q, u, v=None, retarder='half'):
 
 def calculate_polarimetry(o, e, psi, retarder='half', o_err=None, e_err=None,
                           normalize=True, positions=None, min_snr=None,
-                          filter_negative=True, mode='sum', global_k=None):
+                          filter_negative=True, mode='sum', global_k=None,
+                          logger=logger):
     """Calculate the polarimetry."""
 
     if retarder == 'half':

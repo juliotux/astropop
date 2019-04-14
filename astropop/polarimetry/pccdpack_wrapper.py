@@ -20,7 +20,7 @@ from ..logger import logger
 from ..py_utils import check_iterable
 
 
-def read_qphot_mag(filename):
+def read_qphot_mag(filename, logger=logger):
     """Read the .mag.1 file created by qphot and return it to a Table."""
     # TODO: perform reads with fortranformat
     f = open(filename, 'r').readlines()
@@ -134,7 +134,7 @@ def read_qphot_mag(filename):
     return t
 
 
-def read_log(log_file, return_table=False):
+def read_log(log_file, return_table=False, logger=logger):
     """Read the .log file from pccdpack and return a dict with the results"""
 
     f = open(log_file, 'r')
@@ -257,7 +257,7 @@ def read_log(log_file, return_table=False):
     return result
 
 
-def read_out(file_out, file_ord=None):
+def read_out(file_out, file_ord=None, logger=logger):
     """Read the out file, with optionally the ord file for x,y coords."""
     def _read_line(l, n):
         if n == 8:
@@ -302,7 +302,7 @@ def create_script(result_dir, image_list, star_name,
                   r_ann=60.0, r_dann=10.0, n_retarder_positions=16,
                   gain_key='GAIN', readnoise_key='RDNOISE',
                   auto_pol=False, normalize=True, retarder='half',
-                  move=True):
+                  move=True, logger=logger):
     """Creates a script to easy execute pccdpack for a set of images."""
     wd = result_dir
     try:

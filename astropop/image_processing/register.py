@@ -80,7 +80,8 @@ def create_chi2_shift_list(image_list):
     return shifts
 
 
-def apply_shift(image, shift, method='fft', subpixel=True, footprint=False):
+def apply_shift(image, shift, method='fft', subpixel=True, footprint=False,
+                logger=logger):
     """Apply a shifts of (dy, dx) to a list of images.
 
     Parameters:
@@ -119,7 +120,8 @@ def apply_shift(image, shift, method='fft', subpixel=True, footprint=False):
         raise ValueError('Unrecognized shift image method.')
 
 
-def apply_shift_list(image_list, shift_list, method='fft'):
+def apply_shift_list(image_list, shift_list, method='fft',
+                     logger=logger):
     """Apply a list of (y, x) shifts to a list of images.
 
     Parameters:
@@ -135,12 +137,12 @@ def apply_shift_list(image_list, shift_list, method='fft'):
 
     Return a new image_list with the shifted images.
     """
-    return [apply_shift(i, s, method=method) for i, s in zip(image_list,
-                                                              shift_list)]
+    return [apply_shift(i, s, method=method, logger=logger)
+            for i, s in zip(image_list, shift_list)]
 
 
 def hdu_shift_images(hdu_list, method='fft', register_method='asterism',
-                     footprint=False):
+                     footprint=False, logger=logger):
     """Calculate and apply shifts in a set of ccddata images.
 
     The function process the list inplace. Original data altered.
@@ -156,7 +158,7 @@ def hdu_shift_images(hdu_list, method='fft', register_method='asterism',
             raise RuntimeError("astroaling module not available.")
         im0 = hdu_list[0].data
         for i in hdu_list[1:]:
-            transf, (s_list, t_list) = astroalign.find_transform(i.data, im0)
+            transf, _ = astroalign.find_transform(i.data, im0)
             i.data = astroalign.apply_transform(transf, i.data, im0)
             if footprint:
                 i.footprint = astroalign.apply(transf,
@@ -174,12 +176,14 @@ def hdu_shift_images(hdu_list, method='fft', register_method='asterism',
                 s_method = method
             else:
                 s_method = 'simple'
-            ccd.data = apply_shift(ccd.data, shift, method=s_method)
+            ccd.data = apply_shift(ccd.data, shift, method=s_method,
+                                   logger=logger)
             sh = [str(i) for i in shift[::-1]]
             ccd.header['hierarch astropop register_shift'] = ",".join(sh)
             if footprint:
                 ccd.footprint = apply_shift(np.ones_like(ccd.data, dtype=bool),
-                                            shift, method='simple')
+                                            shift, method='simple',
+                                            logger=logger)
     for i in hdu_list:
         i.header['hierarch astropop registered'] = True
         i.header['hierarch astropop register_method'] = method

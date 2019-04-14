@@ -22,7 +22,8 @@ from ..logger import logger
 combine = imcombine
 
 
-def trim_image(image, section, fits_convention=False, inplace=False):
+def trim_image(image, section, fits_convention=False, inplace=False,
+               logger=logger):
     """Trim a section from a image.
 
     If original_section passed, it will be used as reference for trimming.
@@ -50,7 +51,8 @@ def trim_image(image, section, fits_convention=False, inplace=False):
     return im
 
 
-def subtract_bias(image, master_bias, check_keys=[], inplace=False):
+def subtract_bias(image, master_bias, check_keys=[], inplace=False,
+                  logger=logger):
     """Subtract a master_bias frame from an image."""
     if len(check_keys) > 0:
         check_header_keys(image, master_bias, check_keys)
@@ -66,7 +68,8 @@ def subtract_bias(image, master_bias, check_keys=[], inplace=False):
 
 
 def subtract_dark(image, dark_frame, dark_exposure=None, image_exposure=None,
-                  exposure_key=None, check_keys=[], inplace=False):
+                  exposure_key=None, check_keys=[], inplace=False,
+                  logger=logger):
     """Subtract dark frame from an image, scaling by exposure."""
     if len(check_keys) > 0:
         check_header_keys(image, dark_frame, check_keys)
@@ -109,7 +112,8 @@ def subtract_dark(image, dark_frame, dark_exposure=None, image_exposure=None,
     return nim
 
 
-def divide_flat(image, master_flat, check_keys=[], inplace=False):
+def divide_flat(image, master_flat, check_keys=[], inplace=False,
+                logger=logger):
     """Divide a image by a master flat field frame."""
     if len(check_keys) > 0:
         check_header_keys(image, master_flat, check_keys)
@@ -124,7 +128,8 @@ def divide_flat(image, master_flat, check_keys=[], inplace=False):
     return nim
 
 
-def gain_correct(image, gain=None, gain_key=None, inplace=False):
+def gain_correct(image, gain=None, gain_key=None, inplace=False,
+                 logger=logger):
     """Process the gain correction of an image."""
     im = check_hdu(image)
     if gain_key is not None:
@@ -147,7 +152,7 @@ def gain_correct(image, gain=None, gain_key=None, inplace=False):
 
 
 def block_reduce(image, block_size, func=np.sum, readnoise_key=None,
-                 inplace=False):
+                 inplace=False, logger=logger):
     """Process rebinnig in one image. Like block_reduce."""
     im = check_hdu(image)
     if not inplace:
@@ -175,7 +180,7 @@ def block_reduce(image, block_size, func=np.sum, readnoise_key=None,
 block_reduce.__doc__ += br.__doc__
 
 
-def cosmic_lacosmic(image, inplace=False, **lacosmic_kwargs):
+def cosmic_lacosmic(image, inplace=False, **lacosmic_kwargs, logger=logger):
     """Remove cosmic rays with LAcosmic. From astroscrappy package."""
     im = check_hdu(image)
     if not inplace:
@@ -187,7 +192,7 @@ def cosmic_lacosmic(image, inplace=False, **lacosmic_kwargs):
     return im
 
 
-def process_image(image, save_to=None, save_compressed=False, overwrite=True,
+def process_image(image, save_to=None, overwrite=True,
                   master_bias=None, dark_frame=None, master_flat=None,
                   gain=None, gain_key=None, image_exposure=None,
                   dark_exposure=None, exposure_key=None, trim=None,
@@ -195,9 +200,10 @@ def process_image(image, save_to=None, save_compressed=False, overwrite=True,
                   lacosmic=False, lacosmic_params={}, rebin_func=np.sum,
                   rebin_size=None, readnoise_key=None, badpixmask=None,
                   inplace=False, bias_check_keys=[], flat_check_keys=[],
-                  dark_check_keys=[], badpix_check_keys=[]):
+                  dark_check_keys=[], badpix_check_keys=[],
+                  logger=logger):
     """Full process of an image."""
-    im = check_hdu(image)
+    im = check_hdu(image, logger=logger)
     if im.fileinfo() is not None:
         logger.info('Processing image {}'.format(im.fileinfo()['file'].name))
 
@@ -207,39 +213,43 @@ def process_image(image, save_to=None, save_compressed=False, overwrite=True,
     # Process order: lacosmic, block_reduce, gain, bias, dark, flat
     if lacosmic:
         logger.info('Processing lacosmic.')
-        im = cosmic_lacosmic(image, inplace=inplace, **lacosmic_params)
+        im = cosmic_lacosmic(image, inplace=inplace, **lacosmic_params,
+                             logger=logger)
 
     if rebin_size is not None:
         logger.info('Process rebining with block size {}'.format(rebin_size))
         im = block_reduce(im, rebin_size, func=rebin_func,
-                          readnoise_key=readnoise_key, inplace=inplace)
+                          readnoise_key=readnoise_key, inplace=inplace,
+                          logger=logger)
 
     if trim is not None:
         logger.info('Trimming the image to: {}'.format(trim))
         im = trim_image(im, trim, fits_convention=trim_fits_convention,
-                        inplace=inplace)
+                        inplace=inplace, logger=logger)
 
     if gain is not None or gain_key is not None:
         logger.info('Gain correct with gain {} and gain_key {}'
                     .format(gain, gain_key))
-        im = gain_correct(im, gain=gain, gain_key=gain_key, inplace=inplace)
+        im = gain_correct(im, gain=gain, gain_key=gain_key, inplace=inplace,
+                          logger=logger)
 
     if master_bias is not None:
         logger.info('Bias correction {}'.format(master_bias))
         im = subtract_bias(im, master_bias, check_keys=bias_check_keys,
-                           inplace=inplace)
+                           inplace=inplace, logger=logger)
 
     if dark_frame is not None:
         logger.info('Dark correction {}'.format(dark_frame))
         im = subtract_dark(im, dark_frame, dark_exposure=dark_exposure,
                            image_exposure=image_exposure,
                            check_keys=dark_check_keys,
-                           exposure_key=exposure_key, inplace=inplace)
+                           exposure_key=exposure_key, inplace=inplace,
+                           logger=logger)
 
     if master_flat is not None:
         logger.info('flat correction {}'.format(master_flat))
         im = divide_flat(im, master_flat, check_keys=flat_check_keys,
-                         inplace=inplace)
+                         inplace=inplace, logger=logger)
 
     if badpixmask is not None:
         im.mask = badpixmask
@@ -247,6 +257,7 @@ def process_image(image, save_to=None, save_compressed=False, overwrite=True,
         im.mask = None
 
     if save_to:
-        save_hdu(im, save_to, save_compressed, overwrite=overwrite)
+        save_hdu(im, save_to, overwrite=overwrite,
+                 logger=logger)
 
     return im

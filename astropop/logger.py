@@ -13,14 +13,19 @@ logger = log
 class ListHandler(logging.Handler):
     """Logging handler to save messages in a list. No thread safe!"""
     def __init__(self, log_list):
-            logging.Handler.__init__(self)
-            self.log_list = log_list
+        logging.Handler.__init__(self)
+        self.log_list = log_list
 
     def emit(self, record):
-            self.log_list.append(record.msg)
+        self.log_list.append(record.msg)
 
 
 def log_to_list(logger, log_list):
     """Add a ListHandler and a log_list to a Logger."""
     lh = ListHandler(log_list)
     logger.addHandler(lh)
+
+
+def handle_stdout(cls):
+    """Make a logger handle stdout and stderr from a process output"""
+    cls.write = cls.emit
