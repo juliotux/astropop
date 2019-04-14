@@ -56,10 +56,9 @@ def check_hdu(data, ext=0, logger=logger):
         else:
             raise ValueError('The given data is not a valid CCDData type.')
 
-
     # handle nested data
     shape = data.data.shape
-    if len(shape) < 2 or len(shape) >  3 or \
+    if len(shape) < 2 or len(shape) > 3 or \
        (len(shape) == 3 and 1 not in shape):
         raise ValueError('Only 2D images are supported.')
     elif len(shape) == 3 and 1 in shape:
@@ -187,7 +186,7 @@ def headers_to_table(headers, filenames=None, keywords=None, empty_value=None,
         actual += 1
         logger.debug("Reading header {}".format(actual))
 
-    n =len(l)
+    n = len(l)
 
     if keywords is None or keywords == '*' or keywords == 'all':
         keywords = []

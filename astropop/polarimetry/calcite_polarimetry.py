@@ -276,10 +276,10 @@ def calculate_polarimetry(o, e, psi, retarder='half', o_err=None, e_err=None,
             result = _polarimetry_by_fit(z, psi, retarder=retarder,
                                          z_err=z_erro)
         elif mode == 'both':
-            res_sum =  _polarimetry_by_sum(z, psi, retarder=retarder,
-                                           z_err=z_erro)
-            res_fit =  _polarimetry_by_fit(z, psi, retarder=retarder,
-                                           z_err=z_erro)
+            res_sum = _polarimetry_by_sum(z, psi, retarder=retarder,
+                                          z_err=z_erro)
+            res_fit = _polarimetry_by_fit(z, psi, retarder=retarder,
+                                          z_err=z_erro)
             result = {}
             for key in res_sum.keys():
                 result["fit_{}".format(key)] = res_fit[key]

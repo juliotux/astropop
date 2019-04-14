@@ -18,13 +18,11 @@ from collections import OrderedDict
 from ..logger import logger, log_to_list
 
 
-# TODO: implement logging
 # TODO: __str__, __repr__, print functions for all classes
 
 
 __all__ = ['Product', 'ProductManager', 'Config', 'Stage', 'Instrument',
            'Processor']
-
 
 
 class IncompatibilityError(RuntimeError):
@@ -33,7 +31,7 @@ class IncompatibilityError(RuntimeError):
 
 def info_dumper(infos):
     """Dump a dictionary information to a formated string.
-    
+
     Now, it's just a wrapper to yaml.dump, put here to customize if needed.
     """
     return yaml.dump(infos)
@@ -45,6 +43,7 @@ class _GenericConfigClass:
     _prop_dict = OrderedDict()
     _mutable_vars = ['_frozen', 'logger']
     logger = logger
+
     def __init__(self, **kwargs):
         for name, value in kwargs.items():
             self.__setitem__(name, value)
@@ -64,8 +63,8 @@ class _GenericConfigClass:
 
     def __setattr__(self, name, value):
         if self._frozen:
-            self.logger.warn('Tried to change `{}` with value `{}` while {} is frozen. '
-                             'Skipping.'
+            self.logger.warn('Tried to change `{}` with value `{}` while'
+                             ' {} is frozen. Skipping.'
                              .format(name, value, self.__class__.__name__))
             return
         if name not in self.__class__.__dict__.keys():
@@ -84,7 +83,7 @@ class _GenericConfigClass:
             del self._prop_dict[name]
         else:
             super().__delattr__(name)
-    
+
     def __repr__(self):
         info = self.__class__.__name__ + "\n\n"
         info += info_dumper({'Properties': self.properties})
@@ -130,27 +129,26 @@ class Instrument(_GenericConfigClass):
 
     def list_functions(self):
         """List the class functions."""
-        # Pass any callable object that do not start with '_' may cause problems.
+        # Pass any callable object that do not start with '_' may cause problem
         # This may pass unwanted functions. Commented out.
         # l = [i.__name__ for i in self.__class__.__dict__.values()
         #      if callable(i) and i.__name__[0] != '_']
 
-        l = [i.__name__ for i in self.__class__.__dict__.values()
-             if type(i) == ['function', 'builtin_function_or_method']
-             and i.__name__[0] != '_']
+        funcs = [i.__name__ for i in self.__class__.__dict__.values()
+                 if type(i) == ['function', 'builtin_function_or_method']
+                 and i.__name__[0] != '_']
 
-        # If needed to remove another class function, put here. 
+        # If needed to remove another class function, put here
         for i in ['list_functions']:
-            if i in l:
-                l.remove(i)
-        return l
+            if i in funcs:
+                funcs.remove(i)
+        return funcs
 
     def __repr__(self):
         info = "{} ({})\n\n".format(self.__class__.__name__, self._identifier)
         info += info_dumper({'Properties': self.properties,
                              'Functions': self.list_functions()})
         return info
-
 
 
 class Product():
@@ -163,7 +161,8 @@ class Product():
     _mutable_vars = ['_product_manager']  # Variables that can be changed
     _instrument = None  # Product instrument
 
-    # Product do not subclass _GenericConfigClass to keep variables acessing more customized.
+    # Product do not subclass _GenericConfigClass to keep variables
+    # acessing more customized.
     def __init__(self, product_manager=None, instrument=None, **kwargs):
         if product_manager is None:
             raise ValueError("A product has to be created with a"
@@ -225,7 +224,7 @@ class Product():
         return "\n".join(self._log_list)
 
     def add_info(self, session, info_dict):
-        """Custom add information dictionaries to the product. (to info prop)"""
+        """Custom add information dictionaries to the product."""
         if session in self._infos.keys():
             self.logger.warn('Session {} already exists in this product infos.'
                              ' Overwriting it.'
@@ -277,10 +276,10 @@ class Product():
             return self.__getitem__(name)
         else:
             super().__getattribute__(name)
-    
+
     def __setitem__(self, name, value):
         self.__dict__.__setattr__(name, value)
-    
+
     def __setattr__(self, name, value):
         if name not in self.__class__.__dict__.keys():
             self.__setitem__(name, value)
@@ -294,7 +293,7 @@ class Product():
             del self.__dict__[name]
         else:
             super().__delattr__(name)
-    
+
     def __repr__(self):
         return "Product: {}\n{}".format(self.__class__.__name__, self.info)
 
@@ -333,7 +332,7 @@ class ProductManager:
         else:
             if self.iterating:
                 raise RuntimeError('Insert product in index while iteratin'
-                                    'g not allowed.')
+                                   'g not allowed.')
             elif index is not None:
                 self._products.insert(index, product)
                 product.product_manager = self
@@ -403,10 +402,10 @@ class Stage:
         inst_func = product.instrument.list_functions()
         for i in self._requested_functions:
             if i not in inst_func:
-                raise IncompatibilityError('{} do not have {} requested function. '
-                                           'Aborting product.'
+                raise IncompatibilityError('{} do not have {} requested '
+                                           'function. Aborting product.'
                                            .format(product.instrument.name, i))
-        
+
         return self.run(product, config)
 
 
@@ -438,8 +437,8 @@ class Processor:
         This function also can handle other things before properly run the
         pipeline.
         """
-        raise NotImplementedError('setup is not implementated to this pipeline.'
-                                  ' Required.')
+        raise NotImplementedError('Setup is not implementated to this pipeline'
+                                  'and is required.')
 
     @property
     def processing_index(self):
@@ -513,7 +512,9 @@ class Processor:
                 if raise_error:
                     raise e
                 else:
-                    self.logger("Product {} not processed in stage {} due to: {}"
-                                .format(self.product_manager.index(prod), self._processing_stage-1, e))
+                    self.logger("Product {} not processed in stage {} due to:"
+                                " {}"
+                                .format(self.product_manager.index(prod),
+                                        self._processing_stage-1, e))
         self.running = False
         self._processing_stage = None

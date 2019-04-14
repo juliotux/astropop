@@ -200,7 +200,7 @@ class FileGroup():
         self.files = np.array(list(self.files) + [file])
 
     def _intern_yielder(self, return_type, save_to=None, append_to_name=None,
-                       overwrite=False):
+                        overwrite=False):
         return fits_yielder(return_type, self.files, self.ext,
                             append_to_name=append_to_name,
                             save_to=save_to, overwrite=overwrite)
