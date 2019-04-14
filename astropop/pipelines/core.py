@@ -19,11 +19,16 @@ from ..logger import logger, log_to_list
 
 
 # TODO: implement logging
-# __str__, print and to_header functions for all classes
+# TODO: __str__, __repr__, print functions for all classes
 
 
 __all__ = ['Product', 'ProductManager', 'Config', 'Stage', 'Instrument',
            'Processor']
+
+
+
+class IncompatibilityError(RuntimeError):
+    """Error to be raised for come incompatibility."""
 
 
 def info_dumper(infos):
@@ -159,7 +164,7 @@ class Product():
     _instrument = None  # Product instrument
 
     # Product do not subclass _GenericConfigClass to keep variables acessing more customized.
-    def __init__(self, product_manager=None, **kwargs):
+    def __init__(self, product_manager=None, instrument=None, **kwargs):
         if product_manager is None:
             raise ValueError("A product has to be created with a"
                              " product_manager.")
@@ -167,6 +172,7 @@ class Product():
             raise ValueError("product_manager is not a valid ProductManager "
                              "instance.")
         self._product_manager = product_manager
+        self._instrument = instrument
 
         # Setup the logger conveniently
         self._logger = self._product_manager.logger.getChild()
@@ -186,6 +192,10 @@ class Product():
     @property
     def capabilities(self):
         return self._capabilities
+
+    @property
+    def instrument(self):
+        return self._instrument
 
     @property
     def info(self):
@@ -354,6 +364,10 @@ class ProductManager:
 
         self._iterating = False
 
+    def index(self, product):
+        """Return the index of a product."""
+        self._products.index(product)
+
     def product(self, index):
         """Get one specific product."""
         return self.products[index]
@@ -386,6 +400,13 @@ class Stage:
         raise NotImplementedError('Stage not implemented.')
 
     def __call__(self, product, config=None):
+        inst_func = product.instrument.list_functions()
+        for i in self._requested_functions:
+            if i not in inst_func:
+                raise IncompatibilityError('{} do not have {} requested function. '
+                                           'Aborting product.'
+                                           .format(product.instrument.name, i))
+        
         return self.run(product, config)
 
 
@@ -397,6 +418,7 @@ class Processor:
     running = False
     logger = logger.getChild()
     product_manager = None
+    version = "0"
 
     """Master class of a pipeline"""
     def __init__(self, config_file=None, product_manager=None):
@@ -463,7 +485,7 @@ class Processor:
                 return i
         return None
 
-    def run(self, **runargs):
+    def run(self, raise_error=False, **runargs):
         """Run the pipeline."""
 
         self.setup(**runargs)
@@ -475,16 +497,23 @@ class Processor:
 
         self.running = True
         for prod in self.product_manager.products:
-            self._processing_stage = 0
-            # Allow stages to set the current processing stage,
-            # like for iterating
-            while self._processing_stage < self.number_of_stages:
-                stage_name, stage = self._stages[self._processing_stage]
-                self._processing_stage += 1
-                if stage_name in self.config.keys():
-                    config = self.config[stage_name]
+            try:
+                self._processing_stage = 0
+                # Allow stages to set the current processing stage,
+                # like for iterating
+                while self._processing_stage < self.number_of_stages:
+                    stage_name, stage = self._stages[self._processing_stage]
+                    self._processing_stage += 1
+                    if stage_name in self.config.keys():
+                        config = self.config[stage_name]
+                    else:
+                        config = Config()
+                    stage.run(prod, config)
+            except Exception as e:
+                if raise_error:
+                    raise e
                 else:
-                    config = Config()
-                stage.run(prod, config)
+                    self.logger("Product {} not processed in stage {} due to: {}"
+                                .format(self.product_manager.index(prod), self._processing_stage-1, e))
         self.running = False
         self._processing_stage = None
