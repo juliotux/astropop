@@ -24,8 +24,3 @@ def log_to_list(logger, log_list):
     """Add a ListHandler and a log_list to a Logger."""
     lh = ListHandler(log_list)
     logger.addHandler(lh)
-
-
-def handle_stdout(cls):
-    """Make a logger handle stdout and stderr from a process output"""
-    cls.write = cls.emit

@@ -1,3 +1,7 @@
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
+
+import subprocess
+import shlex
 import six
 from os import path, makedirs
 import errno
@@ -48,7 +52,7 @@ def check_iterable(value):
             return True
         else:
             return False
-    except Exception as e:
+    except TypeError:
         pass
 
     return False
@@ -78,3 +82,23 @@ def batch_key_replace(dictionary, key=None):
                     dictionary[key][j] = v.format(**{i: dictionary[i]})
     else:
         return
+
+
+def run_command(args, logger=logger):
+    """Wrapper to run a command in command line with logging."""
+    if isinstance(args, six.string_types):
+        args = shlex.shlex(args)
+
+    logger.debug('runing: ' + " ".join(args))
+
+    process = subprocess.Popen(args, stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
+
+    for line in process.stdout:
+        line = line.decode('utf-8').strip('\n')
+        if line != "":
+            logger.debug(line)
+
+    process.wait()
+
+    return process.returncode

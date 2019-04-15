@@ -20,9 +20,9 @@ from astropy.io import fits
 from astropy.wcs import WCS
 
 from .coords_utils import guess_coordinates
-from ..logger import logger, handle_stdout
+from ..logger import logger
 from ..math.opd_utils import solve_decimal
-from ..py_utils import check_iterable
+from ..py_utils import check_iterable, run_command
 
 
 __all__ = ['AstrometrySolver', 'solve_astrometry_xy', 'solve_astrometry_image',
@@ -66,7 +66,6 @@ class AstrometrySolver():
         self._defaults = defaults
         self._keep = keep_files
         self.logger = logger
-        handle_stdout(self.logger)
 
     def _guess_coordinates(self, header, ra_key, dec_key):
         '''
@@ -199,21 +198,14 @@ class AstrometrySolver():
             field_params = {}
         options.update(field_params)
 
-        if show_process:
-            fd = self.logger
-        else:
-            fd = open(os.devnull, 'wb')
-
-        solved_header = self._run_solver(filename, stdout=fd, stderr=fd,
-                                         params=options)
+        solved_header = self._run_solver(filename, params=options)
 
         if not wcs:
             return solved_header
         else:
             return WCS(solved_header, relax=True)
 
-    def _run_solver(self, filename, params, output_dir=None,
-                    stdout=None, stderr=None):
+    def _run_solver(self, filename, params, output_dir=None):
         """Run the astrometry.net localy using the given params.
 
         STDOUT and STDERR can be stored in variables for better check after.
@@ -236,12 +228,11 @@ class AstrometrySolver():
                 args.append(str(v))
 
         try:
-            self.logger.debug('runing: ' + str(args))
-            if stdout is None:
-                stdout = subprocess.PIPE
-            if stderr is None:
-                stderr = subprocess.PIPE
-            subprocess.check_call(args, stdout=stdout, stderr=stderr)
+            errcode = run_command(args, self.logger)
+
+            if errcode != 0:
+                raise RuntimeError("astrometry.net exited with non-zero code"
+                                   " {}".format(errcode))
 
             # .solved file must exist and contain a binary one
             with open(solved_file, 'rb') as fd:
