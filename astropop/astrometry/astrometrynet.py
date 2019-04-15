@@ -231,8 +231,7 @@ class AstrometrySolver():
             errcode = run_command(args, self.logger)
 
             if errcode != 0:
-                raise RuntimeError("astrometry.net exited with non-zero code"
-                                   " {}".format(errcode))
+                raise subprocess.CalledProcessError(errcode, self._command)
 
             # .solved file must exist and contain a binary one
             with open(solved_file, 'rb') as fd:
@@ -252,6 +251,7 @@ class AstrometrySolver():
             if not self._keep and tmp_dir:
                 shutil.rmtree(output_dir)
             raise e
+
         # If .solved file doesn't exist or contain one
         except (IOError, AstrometryNetUnsolvedField):
             if not self._keep and tmp_dir:
