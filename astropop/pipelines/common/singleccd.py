@@ -4,7 +4,7 @@ from ..core import Instrument
 
 
 class SingleCCDCamera(Instrument):
-    """Base class to handle single ccd câmeras (single HDU images)"""
+    """Base implementation to handle single ccd câmeras (single HDU images)."""
     _base_image_hdu = 0
     _badpixmask_ext = "badpixmask"
     _identifier = "dummy_singleccdcamera"
