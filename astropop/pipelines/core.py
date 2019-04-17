@@ -144,7 +144,7 @@ class Instrument(_GenericConfigClass):
                 funcs.remove(i)
         return funcs
 
-    def __repr__(self):
+    def __str__(self):
         info = "{} ({})\n\n".format(self.__class__.__name__, self._identifier)
         info += info_dumper({'Properties': self.properties,
                              'Functions': self.list_functions()})
@@ -294,7 +294,7 @@ class Product():
         else:
             super().__delattr__(name)
 
-    def __repr__(self):
+    def __str__(self):
         return "Product: {}\n{}".format(self.__class__.__name__, self.info)
 
 
