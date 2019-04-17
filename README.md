@@ -1,5 +1,8 @@
 # AstroPoP
 
+[![Coverage Status](https://coveralls.io/repos/github/juliotux/astropop/badge.svg?branch=master)](https://coveralls.io/github/juliotux/astropop?branch=master)
+[![Documentation Status](https://readthedocs.org/projects/astropop/badge/?version=latest)](https://astropop.readthedocs.io/en/latest/?badge=latest)
+
 The (non) famous ASTROnomical POlarimetry and Photometry pipeline. Developed for work with IAGPOL polarimeter at Observatório Pico dos Dias (Brazil), but suitable to be used in other image polarimeters around the world.
 
 # Features:
@@ -28,7 +31,5 @@ A paper with the science verification results and the full methodology is in pre
 - [scikit-image](http://scikit-image.org/)
 
 # Documentation
-
-[![Documentation Status](https://readthedocs.org/projects/astropop/badge/?version=latest)](https://astropop.readthedocs.io/en/latest/?badge=latest)
 
 Documentation (not complete yet) can be found at [astropop.readthedocs.io](https://astropop.readthedocs.io)
