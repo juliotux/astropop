@@ -17,8 +17,9 @@ __all__ = ['list_fits_files', 'filter_fg', 'group_fg', 'FileManager',
            'FileGroup']
 
 
-def list_fits_files(directory, fits_extensions=['.fts', '.fits', '.fit', '.fz'],
-                    compression_extensions=['.gz', '.bz2', '.Z', '.zip'],
+def list_fits_files(directory, fits_extensions=['.fts', '.fits', '.fit'],
+                    compression_extensions=['.gz', '.bz2', '.Z', '.zip',
+                                            '.fz'],
                     exclude=None, logger=logger):
     """List all fist files in a directory, if compressed or not."""
     # all_files = os.listdir(directory)

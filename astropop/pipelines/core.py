@@ -135,8 +135,8 @@ class Instrument(_GenericConfigClass):
         #      if callable(i) and i.__name__[0] != '_']
 
         funcs = [i.__name__ for i in self.__class__.__dict__.values()
-                 if type(i) == ['function', 'builtin_function_or_method']
-                 and i.__name__[0] != '_']
+                 if type(i) in ['function', 'builtin_function_or_method'] and
+                 i.__name__[0] != '_']
 
         # If needed to remove another class function, put here
         for i in ['list_functions']:
@@ -149,6 +149,9 @@ class Instrument(_GenericConfigClass):
         info += info_dumper({'Properties': self.properties,
                              'Functions': self.list_functions()})
         return info
+
+    def __repr__(self):
+        return "{} ({})".format(self.__class__.__name__, self._identifier)
 
 
 class Product():
@@ -405,6 +408,12 @@ class Stage:
                 raise IncompatibilityError('{} do not have {} requested '
                                            'function. Aborting product.'
                                            .format(product.instrument.name, i))
+
+        for cap in self._requested_capabilities:
+            if cap not in product.capabilities:
+                raise IncompatibilityError('Product do not have {} requested '
+                                           'capability. Aborting.'
+                                           .format(cap))
 
         return self.run(product, config)
 
