@@ -1,8 +1,14 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
+import abc
+
 from ..core import Instrument
 
 
+__all__ = ["SingleCCDCamera"]
+
+
+@abc.ABC
 class SingleCCDCamera(Instrument):
     """Base implementation to handle single ccd câmeras (single HDU images)."""
     _base_image_hdu = 0
@@ -12,46 +18,47 @@ class SingleCCDCamera(Instrument):
     def __init__(self, *args, **kwargs):
         super(SingleCCDCamera, self).__init__(*args, **kwargs)
 
+    @abc.abstractmethod
     def read_raw_file(self, filename):
         """Read a telescope colected file (no badpixmask)."""
         raise NotImplementedError()
 
-    def read_processed_file(self, filename):
-        """Read a processed image file."""
-        raise NotImplementedError()
-
-    def save_image(self, filename, image):
-        """Save one image to filename."""
-        raise NotImplementedError()
-
-    def get_image_rect(self, image):
+    @abc.abstractmethod
+    def get_image_rect(self, ccddata):
         """Get the rect (b, t, l, r) of the image."""
         raise NotImplementedError()
 
-    def trim_image(self, image, bottom, top, left, right):
+    @abc.abstractmethod
+    def trim_image(self, ccddata, bottom, top, left, right):
         """Trim the image to the rect."""
         raise NotImplementedError()
 
-    def get_bin_size(self, image):
+    @abc.abstractmethod
+    def get_bin_size(self, ccddata):
         """Get the bin size of an image."""
         raise NotImplementedError()
 
-    def bin_image(self, image, bin_size):
+    @abc.abstractmethod
+    def bin_image(self, ccddata, bin_size):
         """Bin the image to a new bin_size."""
         raise NotImplementedError()
 
-    def get_gain(self, image):
+    @abc.abstractmethod
+    def get_gain(self, ccddata):
         """Get the gain value of an image."""
         raise NotImplementedError()
 
-    def get_readnoise(self, image):
+    @abc.abstractmethod
+    def get_readnoise(self, ccddata):
         """Get the read noise of an image."""
         raise NotImplementedError()
 
-    def get_platescale(self, image):
+    @abc.abstractmethod
+    def get_platescale(self, ccddata):
         """Get the plate scale of an image."""
         raise NotImplementedError()
 
-    def get_filter(self, image):
+    @abc.abstractmethod
+    def get_filter(self, ccddata):
         """Get the filter name of an image."""
         raise NotImplementedError()

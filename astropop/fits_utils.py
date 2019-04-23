@@ -18,6 +18,11 @@ __all__ = ['imhdus', 'check_header_keys', 'check_hdu', 'fits_yielder',
 imhdus = (fits.ImageHDU, fits.PrimaryHDU, fits.CompImageHDU,
           fits.StreamingHDU)
 
+_supported_formats = [".fts", ".fit", ".fz", ".fits"]
+_compresses = [".gz", ".bz2", ".zip"]
+for k in _compresses:
+    _supported_formats.extend([i+k for i in _supported_formats])
+
 
 class IncompatibleHeadersError(ValueError):
     """When 2 image header are not compatible."""
@@ -25,8 +30,8 @@ class IncompatibleHeadersError(ValueError):
 
 def check_header_keys(image1, image2, keywords=[], logger=logger):
     """Compare header keys from 2 images to check if the have equal values."""
-    image1 = check_hdu(image1)
-    image2 = check_hdu(image2)
+    image1 = check_image_hdu(image1)
+    image2 = check_image_hdu(image2)
     for i in keywords:
         if i in image1.header.keys() and i in image2.header.keys():
             v1 = image1.header[i]
@@ -44,11 +49,12 @@ def check_header_keys(image1, image2, keywords=[], logger=logger):
     return True
 
 
-def check_hdu(data, ext=0, logger=logger):
+def check_image_hdu(data, ext=0, logger=logger):
     """Check if a data is a valid ImageHDU type and convert it."""
     if not isinstance(data, imhdus):
         if isinstance(data, fits.HDUList):
-            data = data[0]
+            logger.debug("Extracting HDU from ext {} of HDUList".format(ext))
+            data = data[ext]
         elif isinstance(data, six.string_types):
             data = fits.open(data)[ext]
         elif isinstance(data, np.ndarray):
@@ -74,22 +80,35 @@ def check_hdu(data, ext=0, logger=logger):
     return data
 
 
-def save_hdu(hdu, filename, compress=False, overwrite=False, logger=logger):
+def save_image_hdu(hdu, filename, overwrite=False, logger=logger):
     # TODO: auto handle compression according extension
     # .fz -> fits compressed
     # .fits -> not compress
     # .fits.gz, .fits.bz2 -> gzip, bzip2 compressed
-    if not compress:
-        logger.debug('Saving fits file to: {}'.format(filename))
-        hdu.writeto(filename, overwrite=overwrite)
-    if compress:
-        if not filename[:-3] != '.fz':
-            filename = filename + '.fz'
+    base, ext = os.path.splitext(filename)
+    if ext in _compresses:
+        ext2 = ext
+        base, ext = os.path.splitext(base)
+    elif ext not in _supported_formats:
+        # TODO: think its better to save fits or raise error.
+        ext = ".fits"
+    else:
+        ext2 = None
+
+    if ext2 is not None:
+        ext += ext2
+
+    filename = base + ext
+    logger.debug('Saving fits file to: {}'.format(filename))
+
+    if ext == '.fz':
         logger.debug('Saving fits file to: {}'.format(filename))
         p = fits.PrimaryHDU()
         c = fits.CompImageHDU(hdu.data, header=hdu.header,
                               compression_type='RICE_1')
         fits.HDUList([p, c]).writeto(filename, overwrite=overwrite)
+    else:
+        hdu.writeto(filename, overwrite=overwrite)
 
 
 def fits_yielder(return_type, file_list, ext=0, append_to_name=None,
@@ -179,19 +198,20 @@ def fits_yielder(return_type, file_list, ext=0, append_to_name=None,
 def headers_to_table(headers, filenames=None, keywords=None, empty_value=None,
                      lower_keywords=False, logger=logger):
     """Read a bunch of headers and return a table with the values."""
-    l = []
+    # TODO: Refactor to better performance
+    hlist = []
     actual = 0
     for head in headers:
-        l.append(head)
+        hlist.append(head)
         actual += 1
         logger.debug("Reading header {}".format(actual))
 
-    n = len(l)
+    n = len(hlist)
 
     if keywords is None or keywords == '*' or keywords == 'all':
         keywords = []
         logger.debug('Reading keywords.')
-        for head in l:
+        for head in hlist:
             for k in head.keys():
                 if k not in keywords:
                     keywords.append(k.lower() if lower_keywords else k)
@@ -206,7 +226,7 @@ def headers_to_table(headers, filenames=None, keywords=None, empty_value=None,
 
     for i in range(n):
         logger.debug("Processing header {} from {}".format(i, n))
-        for key, val in l[i].items():
+        for key, val in hlist[i].items():
             key = key.lower()
             if key in keywords:
                 headict[key][i] = val
