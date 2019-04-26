@@ -11,6 +11,7 @@ The basic design is:
     - All these things are objects that can be frozen for run.
 """
 
+import abc
 import yaml
 from functools import partial
 from collections import OrderedDict
@@ -37,7 +38,7 @@ def info_dumper(infos):
     return yaml.dump(infos)
 
 
-class _GenericConfigClass:
+class _GenericConfigClass(abc.ABC):
     """Class for generic sotring configs. Like a powered dict."""
     _frozen = False
     _prop_dict = OrderedDict()
@@ -375,7 +376,7 @@ class ProductManager:
         return self.products[index]
 
 
-class Stage:
+class Stage(abc.ABC):
     """Stage process (sub-part) of a pipeline."""
     config = Config()  # stage default config
     processor = None  # processor
@@ -383,6 +384,7 @@ class Stage:
     _enabled = True  # stage enabled
     _requested_functions = []  # Instrument needed functions
     _requested_capabilities = []  # Product needed capabilities
+    logger = logger
 
     def __init__(self, processor):
         self.processor = processor
@@ -402,6 +404,8 @@ class Stage:
         raise NotImplementedError('Stage not implemented.')
 
     def __call__(self, product, config=None):
+        self.logger = product.logger
+
         inst_func = product.instrument.list_functions()
         for i in self._requested_functions:
             if i not in inst_func:

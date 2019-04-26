@@ -8,7 +8,6 @@ from ..core import Instrument
 __all__ = ["SingleCCDCamera"]
 
 
-@abc.ABC
 class SingleCCDCamera(Instrument):
     """Base implementation to handle single ccd câmeras (single HDU images)."""
     _base_image_hdu = 0
@@ -62,3 +61,7 @@ class SingleCCDCamera(Instrument):
     def get_filter(self, ccddata):
         """Get the filter name of an image."""
         raise NotImplementedError()
+
+    @abc.abstractmethod
+    def get_unit(self, ccddata):
+        """Get the unit of the image data."""
