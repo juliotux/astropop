@@ -7,19 +7,20 @@ import numpy as np
 from astropy.nddata.ccddata import CCDData as AsCCDData
 from tempfile import mkdtemp, mkstemp
 
+from .py_utils import mkdir_p
+
 
 __all__ = ['CCDData']
 
 
 class CCDData(AsCCDData):
     """Modified astropy's CCDData to handle streaming data from disk."""
-    def __init__(self, stream=False, chace_folder=None,
-                 *args, **kwargs):
+    def __init__(self, *args, **kwargs):
+        self._cache = kwargs.pop('chace_folder', None)
+        stream = kwargs.pop('stream', None)
         super().__init__(*args, **kwargs)
-        self._streaming = stream
-        self._cache = chace_folder
 
-        if self.streaming:
+        if stream:
             self.enable_stream()
 
     @property
@@ -37,7 +38,7 @@ class CCDData(AsCCDData):
         data = np.array(stream[:])
         name = stream.filename
         del stream
-        shutil.rmtree(name)
+        os.remove(name)
         return data
 
     def enable_stream(self, filename=None, cache_folder=None):
@@ -48,6 +49,7 @@ class CCDData(AsCCDData):
         # If is not streaming already, create stream
         cache_folder = cache_folder or self._cache
         cache_folder = cache_folder or mkdtemp(prefix='astropop')
+        mkdir_p(cache_folder)
         if filename is None:
             f = mkstemp(prefix='ccddata', suffix='.npy',
                         dir=cache_folder)
@@ -78,3 +80,11 @@ class CCDData(AsCCDData):
                 self._data[:] = value[:]
         else:
             self._data = value
+
+    def __del__(self):
+        if self.streaming:
+            dirname = os.path.dirname(self._data.filename)
+            self._delete_stream(self._data)
+
+            if len(os.listdir(dirname)) == 0:
+                shutil.rmtree(dirname)
