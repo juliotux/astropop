@@ -3,6 +3,7 @@
 import abc
 
 from ..core import Instrument
+from ...fits_utils import check_ccddata
 
 
 __all__ = ["SingleCCDCamera"]
@@ -11,16 +12,24 @@ __all__ = ["SingleCCDCamera"]
 class SingleCCDCamera(Instrument):
     """Base implementation to handle single ccd câmeras (single HDU images)."""
     _base_image_hdu = 0
-    _badpixmask_ext = "badpixmask"
+    _raw_unit = 'adu'
     _identifier = "dummy_singleccdcamera"
 
     def __init__(self, *args, **kwargs):
         super(SingleCCDCamera, self).__init__(*args, **kwargs)
 
-    @abc.abstractmethod
     def read_raw_file(self, filename):
         """Read a telescope colected file (no badpixmask)."""
-        raise NotImplementedError()
+        check_ccddata(filename, ext=self._base_image_hdu,
+                      utype=self._raw_unit)
+
+    def save_fits(self, ccddata, filename):
+        """Save a CCDData (w badpix and uncert) to a fits file."""
+        ccddata.write(filename)
+
+    def read_fits(self, filename):
+        """Read a fits file to a CCDData, recommended for processed files."""
+        return check_ccddata(filename)
 
     @abc.abstractmethod
     def get_image_rect(self, ccddata):
@@ -61,7 +70,3 @@ class SingleCCDCamera(Instrument):
     def get_filter(self, ccddata):
         """Get the filter name of an image."""
         raise NotImplementedError()
-
-    @abc.abstractmethod
-    def get_unit(self, ccddata):
-        """Get the unit of the image data."""

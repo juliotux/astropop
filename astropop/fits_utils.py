@@ -5,15 +5,17 @@ import six
 import numpy as np
 from astropy.io import fits
 from astropy.io.fits.hdu.base import _ValidHDU
+from astropy import units as u
 from astropy.table import Table, hstack
 from collections import OrderedDict
 import functools
 
 from .py_utils import check_iterable, process_list
+from .ccddata import CCDData
 from .logger import logger
 
-__all__ = ['imhdus', 'check_header_keys', 'check_hdu', 'fits_yielder',
-           'headers_to_table']
+__all__ = ['imhdus', 'check_header_keys', 'check_image_hdu', 'fits_yielder',
+           'headers_to_table', 'check_ccddata']
 
 imhdus = (fits.ImageHDU, fits.PrimaryHDU, fits.CompImageHDU,
           fits.StreamingHDU)
@@ -30,17 +32,27 @@ class IncompatibleHeadersError(ValueError):
 
 def check_header_keys(image1, image2, keywords=[], logger=logger):
     """Compare header keys from 2 images to check if the have equal values."""
-    image1 = check_image_hdu(image1)
-    image2 = check_image_hdu(image2)
+    # Compatibility with fits HDU and CCDData
+    if hasattr(image1, 'header'):
+        hk1 = 'header'
+    elif hasattr(image1, 'meta'):
+        hk1 = 'meta'
+    if hasattr(image2, 'header'):
+        hk2 = 'header'
+    elif hasattr(image2, 'meta'):
+        hk2 = 'meta'
+
+    image1 = check_image_hdu(image1)[hk1]
+    image2 = check_image_hdu(image2)[hk2]
     for i in keywords:
-        if i in image1.header.keys() and i in image2.header.keys():
-            v1 = image1.header[i]
-            v2 = image2.header[i]
+        if i in image1.keys() and i in image2.keys():
+            v1 = image1[i]
+            v2 = image2[i]
             if v1 != v2:
                 raise IncompatibleHeadersError('Keyword {} have different '
                                                'values for images 1 and 2:'
-                                               '\n{}\n{}'.format(i,
-                                                                 v1, v2))
+                                               '\n{}\n{}'
+                                               .format(i, v1, v2))
         elif i in image1.header.keys() or i in image2.header.keys():
             raise IncompatibleHeadersError("Headers have inconsisten presence "
                                            "of {} Keyword".format(i))
@@ -49,8 +61,66 @@ def check_header_keys(image1, image2, keywords=[], logger=logger):
     return True
 
 
+def hdu2ccddata(hdu, key_utype='UTYPE', utype='adu'):
+    """Convert HDU to CCDData"""
+    if key_utype in hdu.header:
+        unit = u.Unit(hdu.header[key_utype])
+    else:
+        unit = u.Unit(utype)
+
+    return CCDData(hdu.data, meta=hdu.header, unit=unit)
+
+
+def hdulist2ccddata(hdulist, ext=0, ext_mask='MASK', ext_uncert='UNCERT',
+                    key_utype='UTYPE', utype='adu'):
+    """Convert a fits.HDUList (single image) to a CCDData."""
+    ccddata = hdu2ccddata(hdulist[ext], key_utype, utype)
+
+    if ext_mask in hdulist:
+        mask = hdulist[ext_mask].data
+    else:
+        mask = None
+
+    if ext_uncert in hdulist:
+        uncert = hdulist[ext_uncert]
+    else:
+        uncert = None
+
+    ccddata.mask = mask
+    ccddata.uncertainty = uncert
+
+    return ccddata
+
+
+def check_ccddata(data, ext=0, ext_mask='MASK', ext_uncert='UNCERT',
+                  key_utype='UTYPE', utype='adu'):
+    """Check if a data is a valid CCDData or convert it."""
+    if isinstance(data, CCDData):
+        return data
+    else:
+        if isinstance(data, fits.HDUList):
+            logger.debug("Extracting CCDData from ext {} of HDUList"
+                         .format(ext))
+            return hdulist2ccddata(data, ext, ext_mask, ext_uncert, key_utype,
+                                   utype)
+        elif isinstance(data, six.string_types):
+            logger.debug("Loading CCDData from {} file".format(data))
+            try:
+                return CCDData.read(data, hdu=ext)
+            except ValueError:
+                data = data = fits.open(data)
+                return hdulist2ccddata(data, ext, ext_mask, ext_uncert,
+                                       key_utype, utype)
+        elif isinstance(data, imhdus):
+            logger.debug("Loading CCDData from {} HDU".format(data))
+            hdu2ccddata(data, key_utype, utype)
+        else:
+            raise ValueError('The given data is not a valid CCDData type.')
+    return data
+
+
 def check_image_hdu(data, ext=0, logger=logger):
-    """Check if a data is a valid ImageHDU type and convert it."""
+    """Check if a data is a valid ImageHDU type or convert it."""
     if not isinstance(data, imhdus):
         if isinstance(data, fits.HDUList):
             logger.debug("Extracting HDU from ext {} of HDUList".format(ext))
@@ -61,30 +131,11 @@ def check_image_hdu(data, ext=0, logger=logger):
             data = fits.PrimaryHDU(data)
         else:
             raise ValueError('The given data is not a valid CCDData type.')
-
-    # handle nested data
-    shape = data.data.shape
-    if len(shape) < 2 or len(shape) > 3 or \
-       (len(shape) == 3 and 1 not in shape):
-        raise ValueError('Only 2D images are supported.')
-    elif len(shape) == 3 and 1 in shape:
-        # Flatten the images hen need
-        rm_index = list(shape).index(1)
-        logger.debug("unnest data nested at index {}".format(rm_index))
-        if rm_index == 0:
-            data.data = data.data[0]
-        elif rm_index == 1:
-            data.data = data.data[:, 0]
-        elif rm_index == 2:
-            data.data = data.data[:, :, 0]
     return data
 
 
 def save_image_hdu(hdu, filename, overwrite=False, logger=logger):
-    # TODO: auto handle compression according extension
-    # .fz -> fits compressed
-    # .fits -> not compress
-    # .fits.gz, .fits.bz2 -> gzip, bzip2 compressed
+    """Save simple HDU to a fits file."""
     base, ext = os.path.splitext(filename)
     if ext in _compresses:
         ext2 = ext
@@ -102,7 +153,6 @@ def save_image_hdu(hdu, filename, overwrite=False, logger=logger):
     logger.debug('Saving fits file to: {}'.format(filename))
 
     if ext == '.fz':
-        logger.debug('Saving fits file to: {}'.format(filename))
         p = fits.PrimaryHDU()
         c = fits.CompImageHDU(hdu.data, header=hdu.header,
                               compression_type='RICE_1')
@@ -140,7 +190,7 @@ def fits_yielder(return_type, file_list, ext=0, append_to_name=None,
     elif return_type == 'data':
         func = functools.partial(fits.getdata, ext=ext)
     elif return_type == 'hdu':
-        func = functools.partial(check_hdu, ext=ext)
+        func = functools.partial(check_image_hdu, ext=ext)
     else:
         raise ValueError('Generator not recognized.')
 
