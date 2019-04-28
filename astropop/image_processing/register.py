@@ -161,10 +161,11 @@ def hdu_shift_images(hdu_list, method='fft', register_method='asterism',
             transf, _ = astroalign.find_transform(i.data, im0)
             i.data = astroalign.apply_transform(transf, i.data, im0)
             if footprint:
-                i.footprint = astroalign.apply(transf,
-                                               np.ones_like(i.data, dtype=bool),
-                                               im0)
-            s_method ='similarity_transform'
+                i.footprint = astroalign.apply_transform(transf,
+                                                         np.ones(i.data.shape,
+                                                                 dtype=bool),
+                                                         im0)
+            s_method = 'similarity_transform'
     else:
         if method == 'chi2':
             shifts = create_chi2_shift_list([ccd.data for ccd in hdu_list])

@@ -180,7 +180,7 @@ def block_reduce(image, block_size, func=np.sum, readnoise_key=None,
 block_reduce.__doc__ += br.__doc__
 
 
-def cosmic_lacosmic(image, inplace=False, **lacosmic_kwargs, logger=logger):
+def cosmic_lacosmic(image, inplace=False, logger=logger, **lacosmic_kwargs):
     """Remove cosmic rays with LAcosmic. From astroscrappy package."""
     im = check_hdu(image)
     if not inplace:
@@ -213,7 +213,7 @@ def process_image(image, save_to=None, overwrite=True,
     # Process order: lacosmic, block_reduce, gain, bias, dark, flat
     if lacosmic:
         logger.info('Processing lacosmic.')
-        im = cosmic_lacosmic(image, inplace=inplace, **lacosmic_params,
+        im = cosmic_lacosmic(im, inplace=inplace, **lacosmic_params,
                              logger=logger)
 
     if rebin_size is not None:
