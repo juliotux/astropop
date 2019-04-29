@@ -10,7 +10,25 @@ from tempfile import mkdtemp, mkstemp
 from .py_utils import mkdir_p
 
 
-__all__ = ['CCDData']
+__all__ = ['CCDData', 'memmapped_arrays']
+
+
+def create_array_memmap(filename, data):
+    """Create a memory map to an array data."""
+    dtype = data.dtype
+    shape = data.shape
+    memmap = np.memmap(filename, mode='w+', dtype=dtype, shape=shape)
+    memmap[:] = data[:]
+    return memmap
+
+
+def delete_array_memmap(memmap):
+    """Delete a memmap and read the data to a np.ndarray"""
+    data = np.array(memmap[:])
+    name = memmap.filename
+    del memmap
+    os.remove(name)
+    return data
 
 
 class CCDData(AsCCDData):
@@ -27,22 +45,8 @@ class CCDData(AsCCDData):
     def memmapping(self):
         return isinstance(self._data, np.memmap)
 
-    def _create_memmap(self, filename, data):
-        dtype = data.dtype
-        shape = data.shape
-        memmap = np.memmap(filename, mode='w+', dtype=dtype, shape=shape)
-        memmap[:] = data[:]
-        return memmap
-
-    def _delete_memmap(self, memmap):
-        data = np.array(memmap[:])
-        name = memmap.filename
-        del memmap
-        os.remove(name)
-        return data
-
     def enable_memmap(self, filename=None, cache_folder=None):
-        """Enable CCDData file memmapping."""
+        """Enable array file memmapping."""
         if isinstance(self._data, np.memmap):
             return
 
@@ -58,12 +62,12 @@ class CCDData(AsCCDData):
             filename = os.path.join(cache_folder,
                                     os.path.basename(filename))
 
-        self._data = self._create_memmap(filename, self._data)
+        self._data = create_array_memmap(filename, self._data)
 
     def disable_memmap(self):
         """Disable CCDData file memmapping (load to memory)."""
         if isinstance(self._data, np.memmap):
-            self._data = self._delete_memmap(self._data)
+            self._data = delete_array_memmap(self._data)
 
     @property
     def data(self):
@@ -75,8 +79,8 @@ class CCDData(AsCCDData):
             if self._data.shape != value.shape or \
                self._data.dtype != value.dtype:
                 name = self._data.filename
-                self._delete_memmap(self._data)
-                self._create_memmap(name, value)
+                delete_array_memmap(self._data)
+                create_array_memmap(name, value)
             else:
                 self._data[:] = value[:]
         else:
@@ -84,8 +88,11 @@ class CCDData(AsCCDData):
 
     def __del__(self):
         if self.memmapping:
-            dirname = os.path.dirname(self._data.filename)
-            self._delete_memmap(self._data)
+            name = self._data.filename
+            dirname = os.path.dirname(name)
+            del self._data
+            os.remove(name)
 
             if len(os.listdir(dirname)) == 0:
                 shutil.rmtree(dirname)
+        super().__del__()
