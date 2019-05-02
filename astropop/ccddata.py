@@ -33,7 +33,6 @@ def delete_array_memmap(memmap, read=True):
     name = memmap.filename
     del memmap
     os.remove(name)
-
     return data
 
 
@@ -71,6 +70,8 @@ class CCDData(AsCCDData):
         memmap = kwargs.pop('use_memmap_backend', None)
         super().__init__(*args, **kwargs)
 
+        self._memmapping = False
+
         if memmap:
             self.enable_memmap()
 
@@ -78,6 +79,7 @@ class CCDData(AsCCDData):
         """Enable array file memmapping."""
         # If is not memmapping already, create memmap
         filename = setup_filename(self, cache_folder, filename)
+        self._memmapping = True
 
         if not isinstance(self._data, np.memmap):
             self._data = create_array_memmap(filename + '.data', self._data)
@@ -98,16 +100,17 @@ class CCDData(AsCCDData):
 
     @mask.setter
     def mask(self, value):
-        if self._mask is None:
-            name = setup_filename(self) + '.mask'
-            self._mask = create_array_memmap(name, value, dtype=bool)
-        elif isinstance(self._mask, np.memmap):
-            if self._mask.shape != value.shape:
-                name = self._mask.filename
-                delete_array_memmap(self._mask)
+        if self._memmapping:
+            if self._mask is None:
+                name = setup_filename(self) + '.mask'
                 self._mask = create_array_memmap(name, value, dtype=bool)
-            else:
-                self._mask[:] = value[:]
+            elif isinstance(self._mask, np.memmap):
+                if self._mask.shape != value.shape:
+                    name = self._mask.filename
+                    delete_array_memmap(self._mask)
+                    self._mask = create_array_memmap(name, value, dtype=bool)
+                else:
+                    self._mask[:] = value[:]
         else:
             self._mask = value
 
@@ -122,7 +125,7 @@ class CCDData(AsCCDData):
 
     @data.setter
     def data(self, value):
-        if isinstance(self._data, np.memmap):
+        if self._memmapping:
             if self._data.shape != value.shape or \
                self._data.dtype != value.dtype:
                 name = self._data.filename

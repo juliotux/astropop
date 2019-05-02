@@ -5,32 +5,35 @@ import os
 import shutil
 import numpy as np
 from astropy.nddata.ccddata import CCDData
+from astropy.nddata.nduncertainty import NDUncertainty
 from tempfile import mkdtemp, mkstemp
 
 from .py_utils import mkdir_p
 
 
-__all__ = ['enable_data_memmap',
-           'disable_data_memmap']
+__all__ = ['enable_data_memmap', 'disable_data_memmap',
+           'enable_mask_memmap', 'disable_mask_memmap',
+           'enable_uncertainty_memmap', 'disable_uncertainty_memmap',
+           'create_array_memmap', 'delete_array_memmap']
 
 
-def create_array_memmap(filename, data):
+def create_array_memmap(filename, data, dtype=None):
     """Create a memory map to an array data."""
-    if isinstance(data, np.memmap):
-        if filename == data.filename:
-            return data
-
-    dtype = data.dtype
+    if data is None:
+        return
+    dtype = dtype or data.dtype
     shape = data.shape
     memmap = np.memmap(filename, mode='w+', dtype=dtype, shape=shape)
-    if data.ndim > 0:
-        memmap[:] = data[:]
+    memmap[:] = data[:]
     return memmap
 
 
-def delete_array_memmap(memmap):
+def delete_array_memmap(memmap, read=True):
     """Delete a memmap and read the data to a np.ndarray"""
-    data = np.array(memmap[:])
+    if read:
+        data = np.array(memmap[:])
+    else:
+        data = None
     name = memmap.filename
     del memmap
     os.remove(name)
@@ -39,18 +42,30 @@ def delete_array_memmap(memmap):
 
 def setup_filename(ccddata, cache_folder=None, filename=None):
     """Setup filename and cache folder to a CCDData"""
-    if not hasattr(ccddata, 'cache_folder'):
-        cache_folder_ccd = None
-    else:
+    if hasattr(ccddata, 'cache_folder'):
         cache_folder_ccd = ccddata.cache_folder
+    elif hasattr(ccddata, 'parent_nddata'):
+        # NDUncertainty
+        if hasattr(ccddata.parent_nddata, 'cache_folder'):
+            cache_folder_ccd = ccddata.parent_nddata.cache_folder
+        else:
+            cache_folder_ccd = None
+    else:
+        cache_folder_ccd = None
 
     cache_folder = cache_folder_ccd or cache_folder
     cache_folder = cache_folder or mkdtemp(prefix='astropop')
 
-    if not hasattr(ccddata, 'cache_filename'):
-        filename_ccd = None
-    else:
+    if hasattr(ccddata, 'cache_filename'):
         filename_ccd = ccddata.cache_filename
+    elif hasattr(ccddata, 'parent_nddata'):
+        # NDUncertainty
+        if hasattr(ccddata.parent_nddata, 'cache_filename'):
+            filename_ccd = ccddata.parent_nddata.cache_filename
+        else:
+            filename_ccd = None
+    else:
+        filename_ccd = None
 
     filename = filename_ccd or filename
     filename = filename or mkstemp(suffix='.npy')[1]
@@ -63,10 +78,16 @@ def setup_filename(ccddata, cache_folder=None, filename=None):
     return os.path.join(cache_folder, filename)
 
 
+def _del_func(cls):
+    # Ensure cleaning up
+    del cls.data
+    del cls.maks
+    del cls.uncertainty
+
+
 def enable_data_memmap(ccddata, dtype=None, cache_folder=None, filename=None):
     """Enable memmap caching for CCDData data property."""
     cache_file = setup_filename(ccddata, cache_folder, filename)
-
     ccddata._data = create_array_memmap(cache_file + '.data', ccddata._data)
 
     def _setter(self, value):
@@ -111,18 +132,103 @@ def disable_data_memmap(ccddata):
 
 def enable_mask_memmap(ccddata, dtype=bool, cache_folder=None, filename=None):
     """Enable memmap caching for CCDData mask property."""
+    cache_file = setup_filename(ccddata, cache_folder, filename)
+    ccddata._mask = create_array_memmap(cache_file + '.mask', ccddata._mask)
+
+    def _setter(self, value):
+        if self._mask is None:
+            name = setup_filename(self, cache_folder, filename) + '.mask'
+            self._mask = create_array_memmap(name, value, dtype=bool)
+        elif isinstance(self._mask, np.memmap):
+            if self._mask.shape != value.shape:
+                name = self._mask.filename
+                delete_array_memmap(self._mask)
+                self._mask = create_array_memmap(name, value, dtype=bool)
+            else:
+                self._mask[:] = value[:]
+        else:
+            delete_array_memmap(self._mask, read=False)
+            self._mask = value
+
+    def _deleter(self):
+        if isinstance(self._mask, np.memmap):
+            name = self._mask.filename
+            dirname = os.path.dirname(name)
+            del self._mask
+            os.remove(name)
+
+            if len(os.listdir(dirname)) == 0:
+                shutil.rmtree(dirname)
+        else:
+            del self._mask
+
+    def _getter(self):
+        return self._mask
+
+    setattr(ccddata.__class__, 'mask',
+            property(fget=_getter, fset=_setter,
+                     fdel=_deleter))
 
 
 def disable_mask_memmap(ccddata):
     """Disable memmap caching for CCDData mask property."""
+    if isinstance(ccddata._mask, np.memmap):
+        ccddata._mask = delete_array_memmap(ccddata._mask)
+
+    setattr(ccddata.__class__, 'mask', CCDData.mask)
 
 
 def enable_uncertainty_memmap(ccddata, dtype=None, cache_folder=None,
                               filename=None):
     """Enable memmap caching for CCDData uncertainty property."""
-    raise NotImplementedError()
+    cache_file = setup_filename(ccddata, cache_folder, filename)
+    if ccddata.uncertainty is not None:
+        cached = create_array_memmap(cache_file + '.uncert',
+                                     ccddata._uncertainty._array)
+        ccddata._uncertainty._array = cached
+
+    def _getter(self):
+        return self._array
+
+    def _setter(self, value):
+        if self._array is None:
+            fname = setup_filename(self, cache_folder, filename)
+            self._array = create_array_memmap(fname, value)
+        elif value is None:
+            self._array = value
+        elif isinstance(self._array, np.memmap):
+            if self._array.shape != value.shape or \
+               self._array.dtype != value.dtype:
+                fname = self._array.filename
+                delete_array_memmap(self._array)
+                self._array = create_array_memmap(fname, value)
+            else:
+                self._array[:] = value[:]
+        else:
+            self._array = value
+
+    def _deleter(self):
+        if isinstance(self._array, np.memmap):
+            name = self._array.filename
+            dirname = os.path.dirname(name)
+            del self._array
+            os.remove(name)
+
+            if len(os.listdir(dirname)) == 0:
+                shutil.rmtree(dirname)
+        else:
+            del self._array
+
+    setattr(ccddata.__class__, 'array',
+            property(fget=_getter, fset=_setter,
+                     fdel=_deleter))
 
 
 def disable_uncertainty_memmap(ccddata):
     """Disable memmap caching for CCDData uncertainty property."""
-    raise NotImplementedError()
+    if isinstance(ccddata._uncertainty._array, np.memmap):
+        cached = delete_array_memmap(ccddata._uncertainty._array)
+        ccddata._uncertainty._array = cached
+
+    setattr(ccddata.uncertainty.__class__, 'array',
+            NDUncertainty.array)
