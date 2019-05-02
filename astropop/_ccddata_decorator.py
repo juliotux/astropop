@@ -4,13 +4,14 @@
 import os
 import shutil
 import numpy as np
-from astropy.nddata.ccddata import CCDData as AsCCDData
+from astropy.nddata.ccddata import CCDData
 from tempfile import mkdtemp, mkstemp
 
 from .py_utils import mkdir_p
 
 
-__all__ = ['CCDData', 'memmapped_arrays']
+__all__ = ['enable_data_memmap',
+           'disable_data_memmap']
 
 
 def create_array_memmap(filename, data):
@@ -36,138 +37,92 @@ def delete_array_memmap(memmap):
     return data
 
 
-def _cache_folder(obj, cache_folder):
-    cache_folder = cache_folder or obj._cache
+def setup_filename(ccddata, cache_folder=None, filename=None):
+    """Setup filename and cache folder to a CCDData"""
+    if not hasattr(ccddata, 'cache_folder'):
+        cache_folder_ccd = None
+    else:
+        cache_folder_ccd = ccddata.cache_folder
+
+    cache_folder = cache_folder_ccd or cache_folder
     cache_folder = cache_folder or mkdtemp(prefix='astropop')
-    obj._cache = cache_folder
+
+    if not hasattr(ccddata, 'cache_filename'):
+        filename_ccd = None
+    else:
+        filename_ccd = ccddata.cache_filename
+
+    filename = filename_ccd or filename
+    filename = filename or mkstemp(suffix='.npy')[1]
+    filename = os.path.basename(filename)
+
+    ccddata.cache_folder = cache_folder
+    ccddata.cache_filename = filename
+
     mkdir_p(cache_folder)
-    return cache_folder
+    return os.path.join(cache_folder, filename)
 
 
-def _filename(obj, filename, cache_folder):
-    filename = filename or obj._basename
-    if filename is None:
-        f = mkstemp(prefix='ccddata', suffix='.npy',
-                    dir=cache_folder)
-        filename = f[1]
-        os.remove(filename)
-        obj._basename = filename
-    else:
-        filename = os.path.join(cache_folder,
-                                os.path.basename(filename))
-    return filename
+def enable_data_memmap(ccddata, dtype=None, cache_folder=None, filename=None):
+    """Enable memmap caching for CCDData data property."""
+    cache_file = setup_filename(ccddata, cache_folder, filename)
 
+    ccddata._data = create_array_memmap(cache_file + '.data', ccddata._data)
 
-def _check_memmap(obj, filename=None, cache_folder=None):
-    """Check if all mappable objects are mapped"""
-
-    # If is not memmapping already, create memmap
-    cache_folder = _cache_folder(obj, cache_folder)
-    filename = _filename(obj, filename, cache_folder)
-
-    if obj.mapping:
-        for name in obj._mapped_props:
-            pname = '_{}'.format(name)
-            dt = obj._fixed_dtype.get(name, None)
-            _prop = getattr(obj, pname)
-            if isinstance(_prop, np.memmap):
-                continue
-            if _prop is None:
-                continue
-            fname = filename + '.{}'.format(name)
-            if dt is not None:
-                dt = _prop.dtype
-            data = _prop.astype(dt)
-            setattr(obj, pname, create_array_memmap(fname, data))
-    else:
-        obj._disable_memmap()
-
-
-def _enable_memmap(obj, filename=None, cache_folder=None):
-    """Enable array file memmapping."""
-    obj.mapping = True
-    obj._check_memmap(filename, cache_folder)
-
-
-
-def _disable_memmap(obj):
-    """Disable array file memmapping (load to memory)."""
-    obj.mapping = False
-    for name in obj._mapped_props:
-        pname = '_{}'.format(name)
-        if isinstance(getattr(obj, pname), np.memmap):
-            setattr(obj, pname, delete_array_memmap(getattr(obj, pname)))
-
-
-def _init(obj, *args, **kwargs):
-    obj._cache = kwargs.pop('cache_folder', None)
-    obj._basename = kwargs.pop('basename', None)
-    memmap = kwargs.pop('memmap', False)
-    super(obj.__class__, obj).__init__(*args, **kwargs)
-
-    if memmap:
-        obj.enable_memmap()
-
-
-def memmapped_arrays(cls, names, fixed_dtype={}):
-    """Decorator to easely enable and disable memmapping for arrays."""
-    cls.enable_memmap = _enable_memmap
-    cls.disable_memmap = _disable_memmap
-    cls._check_memmap = _check_memmap
-    cls.__init__ = _init
-    cls._mapped_props = names
-    cls.memmaping = False
-    cls._fixed_dtype = fixed_dtype
-
-    # for each property, create getter, setter and deleter
-    for name in names:
-        _name = '_{}'.format(name)
-        f_dtype = cls._fixed_dtype.get(name, None)
-        setattr(cls, _name, None)
-
-        def setter(obj, value):
-            # Simply assign if not mapping
-            if not obj.memmaping:
-                setattr(obj, _name, value)
-            elif value is None:
-                delete_array_memmap(getattr(obj, _name))
-                setattr(obj, _name, value)
-            # Mapping
+    def _setter(self, value):
+        if isinstance(self._data, np.memmap):
+            if self._data.shape != value.shape or \
+               self._data.dtype != value.dtype:
+                name = self._data.filename
+                delete_array_memmap(self._data)
+                self._data = create_array_memmap(name, value)
             else:
-                existing = getattr(obj, _name)
-                fname = getattr(obj, '_basename')+name
-                dtype = f_dtype or value.dtype
-                if existing is None:
-                    nmap = create_array_memmap(fname, value.astype(dtype))
-                    setattr(obj, _name, nmap)
-                elif existing.shape != value.shape or existing.dtype != dtype:
-                    delete_array_memmap(getattr(obj, _name))
-                    nmap = create_array_memmap(fname, value.astype(dtype))
-                    setattr(obj, _name, nmap)
-                else:
-                    getattr(obj, _name)[:] = value[:]
-            obj._check_memmap()
+                self._data[:] = value[:]
+        else:
+            self._data = value
 
-        def getter(obj):
-            return getattr(obj, _name)
+    def _deleter(self):
+        if isinstance(self._data, np.memmap):
+            name = self._data.filename
+            dirname = os.path.dirname(name)
+            del self._data
+            os.remove(name)
 
-        def deleter(obj):
-            pp = getattr(obj, _name)
-            if isinstance(pp, np.memmap):
-                n = pp.filename
-                dn = os.path.dirname(n)
-                del pp
-                os.remove(n)
+            if len(os.listdir(dirname)) == 0:
+                shutil.rmtree(dirname)
+        else:
+            del self._data
 
-                if len(os.listdir(dn)) == 0:
-                    shutil.rmtree(dn)
+    def _getter(self):
+        return self._data
 
-        # Set the property to the class
-        setattr(cls.__class__, name,
-                property(fget=getter, fset=setter, fdel=deleter))
-
-    return cls
+    setattr(ccddata.__class__, 'data',
+            property(fget=_getter, fset=_setter,
+                     fdel=_deleter))
 
 
-CCDData = memmapped_arrays(AsCCDData, ['data', 'mask'],
-                           fixed_dtype={'mask': bool})
+def disable_data_memmap(ccddata):
+    """Disable memmap caching for CCDData data property."""
+    if isinstance(ccddata._data, np.memmap):
+        ccddata._data = delete_array_memmap(ccddata._data)
+
+    setattr(ccddata.__class__, 'data', CCDData.data)
+
+
+def enable_mask_memmap(ccddata, dtype=bool, cache_folder=None, filename=None):
+    """Enable memmap caching for CCDData mask property."""
+
+
+def disable_mask_memmap(ccddata):
+    """Disable memmap caching for CCDData mask property."""
+
+
+def enable_uncertainty_memmap(ccddata, dtype=None, cache_folder=None,
+                              filename=None):
+    """Enable memmap caching for CCDData uncertainty property."""
+    raise NotImplementedError()
+
+
+def disable_uncertainty_memmap(ccddata):
+    """Disable memmap caching for CCDData uncertainty property."""
+    raise NotImplementedError()
