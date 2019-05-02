@@ -15,6 +15,8 @@ __all__ = ['CCDData']
 
 def create_array_memmap(filename, data, dtype=None):
     """Create a memory map to an array data."""
+    if data is None:
+        return
     dtype = dtype or data.dtype
     shape = data.shape
     memmap = np.memmap(filename, mode='w+', dtype=dtype, shape=shape)
@@ -66,7 +68,7 @@ class CCDData(AsCCDData):
     def __init__(self, *args, **kwargs):
         self.cache_folder = kwargs.pop('cache_folder', None)
         self.cache_filename = kwargs.pop('cache_filename', None)
-        memmap = kwargs.pop('memmap', None)
+        memmap = kwargs.pop('use_memmap_backend', None)
         super().__init__(*args, **kwargs)
 
         if memmap:
@@ -74,13 +76,11 @@ class CCDData(AsCCDData):
 
     def enable_memmap(self, filename=None, cache_folder=None):
         """Enable array file memmapping."""
-        if isinstance(self._data, np.memmap):
-            return
-
         # If is not memmapping already, create memmap
         filename = setup_filename(self, cache_folder, filename)
 
-        self._data = create_array_memmap(filename + '.data', self._data)
+        if not isinstance(self._data, np.memmap):
+            self._data = create_array_memmap(filename + '.data', self._data)
         if not isinstance(self._mask, np.memmap):
             self._mask = create_array_memmap(filename + '.mask', self._mask,
                                              dtype=bool)
@@ -98,8 +98,10 @@ class CCDData(AsCCDData):
 
     @mask.setter
     def mask(self, value):
-        if isinstance(self._mask, np.memmap) or \
-           (self._mask is None and isinstance(value, np.ndarray)):
+        if self._mask is None:
+            name = setup_filename(self) + '.mask'
+            self._mask = create_array_memmap(name, value, dtype=bool)
+        elif isinstance(self._mask, np.memmap):
             if self._mask.shape != value.shape:
                 name = self._mask.filename
                 delete_array_memmap(self._mask)
@@ -143,6 +145,6 @@ class CCDData(AsCCDData):
 
     def __del__(self):
         # Ensure data cleaning
-        for i in [self.data, self.mask]:
-            del i
+        del self.data
+        del self.mask
         self._clear_cache_folder()
