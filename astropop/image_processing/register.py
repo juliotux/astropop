@@ -13,6 +13,9 @@ except Exception:
 from ..logger import logger
 
 
+# TODO: wrapping up with CCDPROC transform_image for translating
+
+
 def translate(image, shift, subpixel=True, cval=0):
     """Translate an image by (dy, dx) using scipy.
 
@@ -31,7 +34,7 @@ def translate(image, shift, subpixel=True, cval=0):
             rot = 1
         elif dx < 0 and dy >= 0:
             rot = 3
-        elif dx <0 and dy < 0:
+        elif dx < 0 and dy < 0:
             rot = 0
         dx, dy = np.abs([dx, dy])
         if rot % 2 != 0:
@@ -42,7 +45,7 @@ def translate(image, shift, subpixel=True, cval=0):
 
         # correlation kernel to fix subpixel shifting
         x, y = dx % 1.0, dy % 1.0
-        kernel = np.array([[x*y    , (1-x)*y    ],
+        kernel = np.array([[x*y, (1-x)*y],
                            [(1-y)*x, (1-y)*(1-x)]])
         nim = correlate2d(nim, kernel, mode='full', fillvalue=cval)
         return np.rot90(nim, -rot % 4).astype(image.dtype)[:-1, :-1]

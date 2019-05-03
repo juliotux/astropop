@@ -2,6 +2,7 @@ astropy
 sep
 numpy
 scipy
+ccdproc
 scikit-image
 matplotlib
 cython

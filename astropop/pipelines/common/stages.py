@@ -1,6 +1,9 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
+import os
+
 from ..core import Stage
+from ...image_processing.ccd_processing import cosmic_lacosmic
 
 # TODO: Continue de design
 
@@ -26,6 +29,39 @@ class ImageProcessing(Stage):
         super().__init__(*args, **kwargs)
 
     def run(self, product, config):
+        product.add_capability('calibed_ccddata')
+        product.calibed_ccddata = []
+        instrument = product.instrument
+        logger = product.logger
+
+        cache_folder = config.get('cache_folder',
+                                  os.path.expanduser('~/astropop_cache'))
+
+        for i in product.raw_filenames:
+            # Read and cache the files
+            ccd = instrument.read_raw_file(i)
+            name = os.path.basename(i)
+            ccd.enable_memmap(cache_folder=cache_folder, filename=name)
+
+            lacosmic = config.get('lacosmic', True)
+            if lacosmic:
+                lacosmic_kwargs = config.get('lacosmic_args', {})
+                cosmic_lacosmic(ccd, logger=logger, **lacosmic_kwargs)
+
+            # Now, do the calibrations
+            if 'bias' in product.calib_filenames:
+                print('do bias')
+
+            if 'dark' in product.calib_filenames:
+                print('do dark')
+
+            if 'flat' in product.calib_filenames:
+                print('do flat')
+
+            if 'badpix' in product.calib_filenames:
+                print('apply badpix mask')
+            # TODO: Continue here
+            product.calibed_ccddata.append(ccd)
         return
 
 

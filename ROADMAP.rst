@@ -3,9 +3,9 @@ ROADMAP
 
 Image Processing
 ================
-    [ ] Study the use of ccdproc or builtin functions
+    [-] Study the use of ccdproc or builtin functions
         [ ] Base image container: astropy.nddata.ccddata
-    [ ] Refactor the image processing to use Astropy's cdproc (if above)
+    [ ] Refactor the image processing to use Astropy's cddproc (if above)
         [ ] Wrap cdproc to use better logging
         [ ] Refactor IO, instrument specific
         [ ] Refactor processing, registering and combining

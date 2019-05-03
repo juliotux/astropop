@@ -90,6 +90,9 @@ class _GenericConfigClass(abc.ABC):
         info += info_dumper({'Properties': self.properties})
         return info
 
+    def get(self, key, value):
+        return self._prop_dict.get(key, value)
+
     def freeze(self):
         self._frozen = True
 

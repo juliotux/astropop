@@ -5,6 +5,7 @@ import six
 import numpy as np
 from astropy.io import fits
 from astropy.io.fits.hdu.base import _ValidHDU
+from astropy.nddata import NDData
 from astropy import units as u
 from astropy.table import Table, hstack
 from collections import OrderedDict
@@ -67,8 +68,11 @@ def hdu2ccddata(hdu, key_utype='UTYPE', utype='adu'):
         unit = u.Unit(hdu.header[key_utype])
     else:
         unit = u.Unit(utype)
-
-    return CCDData(hdu.data, meta=hdu.header, unit=unit)
+    ccd = CCDData(hdu.data, meta=hdu.header, unit=unit)
+    info = hdu.fileinfo()
+    if info is not None:
+        ccd.filename = info['file'].name
+    return ccd
 
 
 def hdulist2ccddata(hdulist, ext=0, ext_mask='MASK', ext_uncert='UNCERT',
@@ -97,6 +101,11 @@ def check_ccddata(data, ext=0, ext_mask='MASK', ext_uncert='UNCERT',
     """Check if a data is a valid CCDData or convert it."""
     if isinstance(data, CCDData):
         return data
+    elif isinstance(data, NDData):
+        ccd = CCDData(data.data, mask=data.mask, uncertainty=data.uncertainty,
+                      meta=data.meta, unit=data.unit or u.Unit(utype))
+        ccd.filename = None
+        return ccd
     else:
         if isinstance(data, fits.HDUList):
             logger.debug("Extracting CCDData from ext {} of HDUList"
@@ -106,9 +115,11 @@ def check_ccddata(data, ext=0, ext_mask='MASK', ext_uncert='UNCERT',
         elif isinstance(data, six.string_types):
             logger.debug("Loading CCDData from {} file".format(data))
             try:
-                return CCDData.read(data, hdu=ext)
+                ccd = CCDData.read(data, hdu=ext)
+                ccd.filename = data
+                return ccd
             except ValueError:
-                data = data = fits.open(data)
+                data = fits.open(data)
                 return hdulist2ccddata(data, ext, ext_mask, ext_uncert,
                                        key_utype, utype)
         elif isinstance(data, imhdus):
