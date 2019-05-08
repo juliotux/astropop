@@ -62,12 +62,12 @@ def check_header_keys(image1, image2, keywords=[], logger=logger):
     return True
 
 
-def hdu2ccddata(hdu, key_utype='UTYPE', utype='adu'):
+def hdu2ccddata(hdu, unit=u.dimensionless_unscaled):
     """Convert HDU to CCDData"""
-    if key_utype in hdu.header:
-        unit = u.Unit(hdu.header[key_utype])
-    else:
-        unit = u.Unit(utype)
+    # if key_utype in hdu.header:
+    #     unit = u.Unit(hdu.header[key_utype])
+    # else:
+    unit = u.Unit(unit)
     ccd = CCDData(hdu.data, meta=hdu.header, unit=unit)
     info = hdu.fileinfo()
     if info is not None:
@@ -76,9 +76,9 @@ def hdu2ccddata(hdu, key_utype='UTYPE', utype='adu'):
 
 
 def hdulist2ccddata(hdulist, ext=0, ext_mask='MASK', ext_uncert='UNCERT',
-                    key_utype='UTYPE', utype='adu'):
+                    unit=u.dimensionless_unscaled):
     """Convert a fits.HDUList (single image) to a CCDData."""
-    ccddata = hdu2ccddata(hdulist[ext], key_utype, utype)
+    ccddata = hdu2ccddata(hdulist[ext], unit)
 
     if ext_mask in hdulist:
         mask = hdulist[ext_mask].data
@@ -97,21 +97,20 @@ def hdulist2ccddata(hdulist, ext=0, ext_mask='MASK', ext_uncert='UNCERT',
 
 
 def check_ccddata(data, ext=0, ext_mask='MASK', ext_uncert='UNCERT',
-                  key_utype='UTYPE', utype='adu'):
+                  unit=u.dimensionless_unscaled):
     """Check if a data is a valid CCDData or convert it."""
     if isinstance(data, CCDData):
         return data
     elif isinstance(data, NDData):
         ccd = CCDData(data.data, mask=data.mask, uncertainty=data.uncertainty,
-                      meta=data.meta, unit=data.unit or u.Unit(utype))
+                      meta=data.meta, unit=data.unit or u.Unit(unit))
         ccd.filename = None
         return ccd
     else:
         if isinstance(data, fits.HDUList):
             logger.debug("Extracting CCDData from ext {} of HDUList"
                          .format(ext))
-            return hdulist2ccddata(data, ext, ext_mask, ext_uncert, key_utype,
-                                   utype)
+            return hdulist2ccddata(data, ext, ext_mask, ext_uncert, unit)
         elif isinstance(data, six.string_types):
             logger.debug("Loading CCDData from {} file".format(data))
             try:
