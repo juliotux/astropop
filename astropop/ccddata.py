@@ -249,6 +249,8 @@ def disable_uncertainty_memmap(ccddata):
 
 class CCDData(AsCCDData):
     """Modified astropy's CCDData to handle memmapping data from disk."""
+    # TODO: Memmap disabled for uncertainty until fix
+    # FIXME: better handle memmap for uncertainty (specially if None)
     def __init__(self, *args, **kwargs):
         self.cache_folder = kwargs.pop('cache_folder', None)
         self.cache_filename = kwargs.pop('cache_filename', None)
@@ -269,14 +271,14 @@ class CCDData(AsCCDData):
 
         enable_data_memmap(self, cache_folder=cache_folder, filename=filename)
         enable_mask_memmap(self, cache_folder=cache_folder, filename=filename)
-        enable_uncertainty_memmap(self, cache_folder=cache_folder,
-                                  filename=filename)
+        # enable_uncertainty_memmap(self, cache_folder=cache_folder,
+        #                           filename=filename)
 
     def disable_memmap(self):
         """Disable CCDData file memmapping (load to memory)."""
         disable_data_memmap(self)
         disable_mask_memmap(self)
-        disable_uncertainty_memmap(self)
+        # disable_uncertainty_memmap(self)
         self._memmapping = False
 
     def __del__(self):

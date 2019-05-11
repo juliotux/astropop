@@ -20,23 +20,23 @@ def gen_filter_kernel(size):
     """Generate sextractor like filter kernels."""
     # TODO: better implement
     if size == 3:
-        return np.array([[0,1,0],
-                         [1,4,1],
-                         [0,1,0]])
+        return np.array([[0, 1, 0],
+                         [1, 4, 1],
+                         [0, 1, 0]])
     elif size == 5:
-        return np.array([[1,2,3,2,1],
-                         [2,4,6,4,2],
-                         [3,6,9,6,3],
-                         [2,4,6,4,2],
-                         [1,2,3,2,1]])
+        return np.array([[1, 2, 3, 2, 1],
+                         [2, 4, 6, 4, 2],
+                         [3, 6, 9, 6, 3],
+                         [2, 4, 6, 4, 2],
+                         [1, 2, 3, 2, 1]])
     elif size == 7:
-        return np.array([[ 1, 2, 3, 4, 3, 2, 1],
-                         [ 2, 4, 6, 8, 6, 4, 2],
-                         [ 3, 6, 9,12, 9, 6, 3],
-                         [ 4, 8,12,16,12, 8, 4],
-                         [ 3, 6, 9,12, 9, 6, 3],
-                         [ 2, 4, 6, 8, 6, 4, 2],
-                         [ 1, 2, 3, 4, 3, 2, 1]])
+        return np.array([[1, 2, 3, 4, 3, 2, 1],
+                         [2, 4, 6, 8, 6, 4, 2],
+                         [3, 6, 9,12, 9, 6, 3],
+                         [4, 8,12,16,12, 8, 4],
+                         [3, 6, 9,12, 9, 6, 3],
+                         [2, 4, 6, 8, 6, 4, 2],
+                         [1, 2, 3, 4, 3, 2, 1]])
 
 
 def background(data, box_size, filter_size, mask=None, global_bkg=True,

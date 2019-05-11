@@ -1,9 +1,8 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
 import os
-from functools import partial
 import numpy as np
-import ccdproc
+import astroscrappy
 
 from ..logger import logger
 from .imarith import imarith
@@ -14,31 +13,42 @@ __all__ = ['cosmics_lacosmic']
 
 
 # TODO: replace ccdproc functions by built-in, skiping units
+# block_reduce = ccdproc.block_reduce
+# block_replicate = ccdproc.block_replicate
+# trim_image = ccdproc.trim_image
+# subtract_overscan = partial(ccdproc.subtract_overscan,
+#                             add_keyword='hierarch astropop'
+#                             ' overscan_subtracted')
 
 
-block_reduce = ccdproc.block_reduce
-block_replicate = ccdproc.block_replicate
-trim_image = ccdproc.trim_image
-subtract_overscan = partial(ccdproc.subtract_overscan,
-                            add_keyword='hierarch astropop'
-                            ' overscan_subtracted')
+###############################################################################
+# DONE
+###############################################################################
 
 
-def cosmics_lacosmic(ccddata, logger=logger, **lacosmic_kwargs):
+def cosmics_lacosmic(ccddata, inplace=False, logger=logger, **lacosmic_kwargs):
     """Remove cosmic rays with LAcosmic. From astroscrappy package."""
     # As lacosmic removes and replace the cosmics pixels, no need to
     # update the mask
-    nccd = ccdproc.cosmicray_lacosmic(ccddata, **lacosmic_kwargs)
-    ccddata.data = nccd.data
-    ccddata.mask = nccd.mask
-    ccddata.header['hierarch astropop lacosmic'] = True
-    return ccddata
+    _, dat = astroscrappy.detect_cosmics(ccddata.data, **lacosmic_kwargs)
+
+    if inplace:
+        ccd = ccddata
+    else:
+        ccd = ccddata.copy()
+
+    ccd.data = dat
+    # Do not update mask, astroscrappy replace the pixels
+    # ccd.mask &= mask
+    ccd.header['hierarch astropop lacosmic'] = True
+    return ccd
 
 
 def gain_correct(image, gain, gain_unit=None, inplace=False,
                  logger=logger):
     """Process the gain correction of an image."""
-    nim = ccdproc.gain_correct(image, gain, gain_unit)
+    # TODO: handle units
+    nim = imarith(image, gain, '*', inplace=False, logger=logger)
     nim.header['hierarch astropop gain_corrected'] = True
     nim.header['hierarch astropop gain_corrected_value'] = gain
     nim.header['hierarch astropop gain_corrected_unit'] = str(gain_unit)
@@ -56,7 +66,7 @@ def subtract_bias(image, master_bias, inplace=False,
                   logger=logger):
     """Subtract a master_bias frame from a CCDData."""
     master_bias = check_ccddata(master_bias)
-    nim = ccdproc.subtract_bias(image, master_bias)
+    nim = imarith(image, master_bias, '-', inplace=False, logger=logger)
 
     nim.header['hierarch astropop bias_corrected'] = True
     name = master_bias.filename
@@ -70,29 +80,6 @@ def subtract_bias(image, master_bias, inplace=False,
         nim = check_ccddata(nim)
 
     return nim
-
-
-def process_ccd(ccddata, master_bias=None, master_dark=None, master_flat=None,
-                gain=None, image_exposure=None, dark_exposure=None, trim=None,
-                lacosmic=False, lacosmic_params={}, rebin_func=np.sum,
-                rebin_size=None, readnoise=None, badpixmask=None,
-                overscan=None,
-                logger=logger):
-    """Process all the default steps of CCD calibration."""
-
-    # TODO: implement here
-    return ccdproc.ccd_process(ccddata, oscan=overscan, trim=trim, error=False,
-                               master_bias=master_bias, dark_frame=master_dark,
-                               master_flat=master_flat,
-                               bad_pixel_mask=badpixmask,
-                               gain=gain, readnoise=readnoise,
-                               data_exposure=image_exposure,
-                               dark_exposure=dark_exposure)
-
-
-###############################################################################
-# DONE
-###############################################################################
 
 
 def subtract_dark(image, master_dark, dark_exposure, image_exposure,
@@ -145,3 +132,14 @@ def flat_correct(image, master_flat, min_value=None, norm_value=None,
         nim.header['hierarch astropop flat_corrected_file'] = name
 
     return nim
+
+
+def process_ccd(ccddata, master_bias=None, master_dark=None, master_flat=None,
+                gain=None, image_exposure=None, dark_exposure=None, trim=None,
+                lacosmic=False, rebin_func=np.sum,
+                rebin_size=None, readnoise=None, badpixmask=None,
+                overscan=None,
+                logger=logger):
+    """Process all the default steps of CCD calibration."""
+
+    raise NotImplementedError
