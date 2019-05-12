@@ -29,25 +29,46 @@ class SingleCCDCamera(Instrument):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def read_raw_file(self, filename):
+    @classmethod
+    def _get_keyword(self, key, header):
+        keys = list(header.keys())
+        hkey = self._base_raw_keyword.format(key)
+        if hkey[:8] == 'hierarch' or hkey[:8] == 'HIERARCH':
+            hkey = hkey[9:]
+        if key.replace('hierarch', 'HIERARCH') in keys:
+            return header[key]
+        elif hkey in keys:
+            return header[hkey]
+        else:
+            print(key)
+            print(hkey)
+            print(keys)
+            raise KeyError('Key {} not in header.'.format(key))
+
+    @classmethod
+    def read_raw_file(self, filename, **kwargs):
         """Read a telescope colected file (no badpixmask)."""
         ccd = check_ccddata(filename, ext=self._base_image_hdu,
-                            utype=self._raw_unit)
+                            bunit=self._raw_unit)
 
         header = Header()
         for key, value in ccd.meta.items():
-            if key in self._protected_keywords:
+            if key in self._protected_keywords or \
+               key.lower() in self._protected_keywords or \
+               key.upper() in self._protected_keywords:
                 header[key] = value
             else:
                 header[self._base_raw_keyword.format(key)] = value
         ccd.meta = header
         return ccd
 
-    def save_fits(self, ccddata, filename):
+    @classmethod
+    def save_fits(self, ccddata, filename, **kwargs):
         """Save a CCDData (w badpix and uncert) to a fits file."""
-        ccddata.write(filename)
+        ccddata.write(filename, **kwargs)
 
-    def read_fits(self, filename):
+    @classmethod
+    def read_fits(self, filename, **kwargs):
         """Read a fits file to a CCDData, recommended for processed files."""
         return check_ccddata(filename)
 
@@ -117,6 +138,11 @@ class SingleCCDCamera(Instrument):
                           logger=self.logger)
 
         return calib
+
+    @abc.abstractmethod
+    def get_coordinates(self, ccddata):
+        """Read the pointing coordinates of the image."""
+        raise NotImplementedError()
 
     @abc.abstractmethod
     def get_image_rect(self, ccddata):

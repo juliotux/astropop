@@ -170,7 +170,8 @@ class Product():
 
     # Product do not subclass _GenericConfigClass to keep variables
     # acessing more customized.
-    def __init__(self, product_manager=None, instrument=None, **kwargs):
+    def __init__(self, product_manager=None, instrument=None, index=None,
+                 **kwargs):
         if product_manager is None:
             raise ValueError("A product has to be created with a"
                              " product_manager.")
@@ -179,9 +180,10 @@ class Product():
                              "instance.")
         self._product_manager = product_manager
         self._instrument = instrument
+        self.index = index
 
         # Setup the logger conveniently
-        self._logger = self._product_manager.logger.getChild()
+        self._logger = self._product_manager.logger.getChild('product')
         log_to_list(self._logger, self._log_list)
 
         for name, value in kwargs.items():
@@ -430,8 +432,8 @@ class Processor:
     config = Config()
     _stages = []
     _processing_stage = None
+    logger = logger.getChild('processor')
     running = False
-    logger = logger.getChild()
     product_manager = None
     version = "0"
 

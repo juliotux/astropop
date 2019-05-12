@@ -7,14 +7,14 @@ import numpy as np
 
 from astropy.nddata.ccddata import CCDData as AsCCDData
 from astropy.nddata.nduncertainty import NDUncertainty
-from astropy.nddata import ccddata
 from tempfile import mkdtemp, mkstemp
 
 from .py_utils import mkdir_p
 
 
 # disable unit requirements
-ccddata._config_ccd_requires_unit = False
+# from astropy.nddata import ccddata
+# ccddata._config_ccd_requires_unit = False
 
 
 # TODO: may be better a clean implementation independent from astropy

@@ -3,7 +3,7 @@
 import os
 
 from ..core import Stage
-from ...image_processing.ccd_processing import cosmic_lacosmic
+from ...image_processing import ccdproc
 
 # TODO: Continue de design
 
@@ -45,8 +45,12 @@ class ImageProcessing(Stage):
 
             lacosmic = config.get('lacosmic', True)
             if lacosmic:
+                # Remove cosmics and restore the mask after
+                logger.info('Removing cosmics with lacosmic')
+                mask = ccd.mask.copy()
                 lacosmic_kwargs = config.get('lacosmic_args', {})
-                cosmic_lacosmic(ccd, logger=logger, **lacosmic_kwargs)
+                ccdproc.cosmicray_lacosmic(ccd, **lacosmic_kwargs)
+                ccd.mask = mask
 
             # Now, do the calibrations
             if 'bias' in product.calib_filenames:
