@@ -51,8 +51,9 @@ class ImpactonCalib(SimpleCalibPipeline):
                               lacosmic=True,
                               exposure_key='exptime',
                               inplace=True)
-    astrometry_params = dict(ra_key='OBJCTRA',
-                             dec_key='OBJCTDEC')
+    astrometry_parameters = dict(ra_key='OBJCTRA',
+                                 dec_key='OBJCTDEC',
+                                 identify_limit_angle='2 arcsec')
     _save_subfolder = '{object}/{night}'
     _save_fits_ext = 0
     _save_fits_fmt = '.fit'
