@@ -40,9 +40,6 @@ class SingleCCDCamera(Instrument):
         elif hkey in keys:
             return header[hkey]
         else:
-            print(key)
-            print(hkey)
-            print(keys)
             raise KeyError('Key {} not in header.'.format(key))
 
     @classmethod
