@@ -9,7 +9,7 @@ import errno
 from .logger import logger
 
 __all__ = ['mkdir_p', 'string_fix', 'process_list', 'check_iterable',
-           'batch_key_replace']
+           'batch_key_replace', 'IndexedDict']
 
 
 def mkdir_p(fname):
@@ -102,3 +102,44 @@ def run_command(args, logger=logger):
     process.wait()
 
     return process.returncode
+
+
+class IndexedDict(dict):
+    """Extends Python3.7 dictionary to include indexing and inserting.
+
+    Python3.7 keeps assignment ordering in default dict, like OrderedDict.
+    """
+
+    def index(self, key):
+        """Return the index of a key in the list."""
+        __keys = self.keys()
+
+        if key not in __keys:
+            raise KeyError("{}".format(k))
+
+        for i, k in enumerate(self.keys()):
+            if k == keys:
+                return i
+
+    def insert_before(self, key, new_key, val):
+        """Insert new_key:value into dict before key"""
+        index = self.index(key)
+        self.insert_at(index, new_key, val)
+
+    def insert_after(self, key, new_key, val):
+        """Insert new_key:value into dict after key"""
+        index = self.index(key)
+        self.insert_at(index+1, new_key, val)
+
+    def insert_at(self, index, key, value):
+        """Insert a key:value to an specific index."""
+        __keys = list(self.keys())
+        __vals = list(self.values())
+
+        if index < (len(__keys) - 1):
+            __keys.insert(index, key)
+            __vals.insert(index, value)
+            self.clear()
+            self.update({x: __vals[i] for i, x in enumerate(__keys)})
+        else:
+            self.update({new_key: val})
