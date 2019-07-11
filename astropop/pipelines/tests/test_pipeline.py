@@ -1,5 +1,8 @@
 from astropop.pipelines._base import Manager, Config, Instrument, Stage, Product
 
+from astropop.logger import logger
+logger.setLevel('DEBUG')
+
 
 class DummyInstrument(Instrument):
     a = 'a+b='
@@ -26,7 +29,7 @@ class SumStage(Stage):
     _requested_functions = ['sum_numbers', 'multiply_numbers']
     _provided = ['dummy_sum', 'a_c_number', 'dummy_mult']
 
-    def callback(instrument, variables, config):
+    def callback(self, instrument, variables, config):
         a = config.get('a')
         b = config.get('b')
         c = config.get('c')
@@ -47,11 +50,11 @@ class StringStage(Stage):
     _requested_functions = ['gen_string']
     _provided = ['string_c', 'string_abbd']
 
-    def callback(instrument, variables, config):
+    def callback(self, instrument, variables, config):
         c_str = config.get('c_str')
         c = variables.get('a_c_number')
         s = variables.get('dummy_sum')
-        m = variablees.get('dummy_mult')
+        m = variables.get('dummy_mult')
 
         string_c = "{}{}".format(c_str, c)
         string_abbd = instrument.gen_string(s, m)
@@ -59,40 +62,38 @@ class StringStage(Stage):
         return {'string_c': string_c,
                 'string_abbd': string_abbd}
 
-cstring = ''
-astring = ''
-
 
 class GlobalStage(Stage):
     _default_config = dict()
     _required_variables = ['string_c', 'string_abbd']
 
-    def callback(instrument, variables, config):
+    def callback(self, instrument, variables, config):
         cs = variables.get('string_c')
         ad = variables.get('string_abbd')
 
-        global cstring
-        global astring
-
-        cstring = cs
-        astring = ad
+        print(cs)
+        print(ad)
 
         return {}
 
 
 class TestManager(Manager):
+    config = Config(stages={'sum': {'a': 1, 'b': 2}})
     def setup_pipeline(self):
         self.register_stage('sum', SumStage(self.factory))
         self.register_stage('string', StringStage(self.factory))
-        self.register_stage('global', GlobalStage(self.factory))
+        self.register_stage('globalvars', GlobalStage(self.factory))
 
-    def setup_products(self, a, b, c, d):
+    def setup_products(self, name, c, d):
         i = DummyInstrument()
         p = Product(manager=self, instrument=i)
-        self.factory.set_value(self, 'd', d)
-        self.add_product('first_product', p)
+        self.add_product(name, p)
+        p.add_target('globalvars')
+        self.set_value(p, 'd', d)
 
 m = TestManager()
 m.setup_pipeline()
-m.setup_products(1, 2, 3, 4)
+m.setup_products('first_product', 3, 4)
+m.setup_products('secon_product', 7, 8)
+m.show_products()
 m.run()

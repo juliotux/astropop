@@ -1,13 +1,14 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
 import logging
-from astropy import log  # for now, use the more complete logger from astropy
 
 
 __all__ = ['logger', 'ListHandler', 'log_to_list']
 
-
-logger = log
+        
+logging.basicConfig(format='%(asctime)-15s %(name)s - %(levelname)s - %(message)s  [%(module)s]')
+logger = logging.getLogger('astropop')
+logger.setLevel('INFO')
 
 
 class ListHandler(logging.Handler):
