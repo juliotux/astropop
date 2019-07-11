@@ -10,6 +10,7 @@ from ..py_utils import IndexedDict
 
 
 # TODO: __str__, __repr__, print functions for all classes
+# TODO: More logging and debuging
 
 
 __all__ = ['Config', 'Product', 'Instrument', 'Manager', 'Factory']
@@ -159,9 +160,6 @@ class Product():
         if manager is None:
             raise ValueError("A product has to be created with a"
                              " manager.")
-        # if not isinstance(product_manager, ProductManager):
-        #     raise ValueError("product_manager is not a valid ProductManager "
-        #                      "instance.")
         self._manager = manager
         self._instrument = instrument
         self._targets = targets
@@ -258,7 +256,6 @@ class Product():
 class Stage(abc.ABC):
     """Stage process (sub-part) of a pipeline."""
     _default_config = Config()  # stage default config
-    _enabled = True  # stage enabled
     _requested_functions = []  # Instrument needed functions
     _required_variables = []  # Product needed variables
     _optional_variables = []  # Optional variables for product ruunning
@@ -266,6 +263,7 @@ class Stage(abc.ABC):
     _logger = logger
     _status = 'idle'
     _raise_error = False
+    # TODO: Implement instrument compatibility checking
 
     def __init__(self, factory):
         self._factory = factory
@@ -286,12 +284,21 @@ class Stage(abc.ABC):
     def factory(self):
         return self._factory
 
+    @property
+    def defaults(self):
+        return Config(**self._default_config)
+
     @status.setter
     def status(self, status):
         if status not in ['idle', 'running', 'done', 'error']:
-            raise ValueError('Status {} not allowed.'.
+            raise ValueError('Status {} not allowed.'
                              .format(status))
         self._status = status
+
+    def wait(self):
+        """Wait process to finish."""
+        raise RuntimeError('No processing running in parallel now. '
+                           'This should not be possible!')
 
     def get_variables(self):
         """Return a dict of all needed and optional variables."""
@@ -314,22 +321,26 @@ class Stage(abc.ABC):
     @abc.abstractstaticmethod
     def callback(instrument, variables, config=None):
         """Run the stage. Return a dict of processed variables."""
+        # Avoiding access to class stuff make possible parallelizing
 
-    def __call__(self, config=None):
-        self.logger = manager.logger
-
-        # Ensure get all variables before running
-        variables = self.get_variables()
-        result = {i: None, for i in self.factory.owned_variables(self)}
-
-        self.status = 'running'
+    def __call__(self, config={}):
         try:
+            self.logger = manager.logger
+
+            # Ensure get all variables before running
+            variables = self.get_variables()
+            result = {i: None for i in self.factory.owned_variables(self)}
+            conf = copy.deepcopy(self.defaults)
+            conf.update(conf)
+
+            self.status = 'running'
             instrument = self.get_instrument()
             # TODO: Async apply this method?
             result.update(self.callback(instrument, variables, config))
             self.status = 'done'
             for i, v in result.items():
-                self.factory.set_value(self, i, v)
+                if i in self.factory.owned_variables(self):
+                    self.factory.set_value(self, i, v)
         except Exception as e:
             if self._raise_error:
                 raise e
@@ -364,6 +375,9 @@ class Factory():
         # Check the status of registered stage for this variable
         var_stage = self._register[variable]
 
+        if var_stage is None:
+            return copy.deepcopy(self._active_prod.get_value(variable))
+
         if var_stage.status == 'idle':
             # If not started yet, run it
             self.run_stage(var_stage)
@@ -384,6 +398,11 @@ class Factory():
 
     def set_value(self, stage, variable, value):
         """Set a variable value to product."""
+        if isinstance(stage, Manager):
+            self._active_prod.set_value(variable, copy.deepcopy(value))
+            self._register[variable] = None
+            return
+
         if variable not in self._register.keys():
             raise ValueError('Variable {} not registered.'.format(variable))
 
@@ -392,7 +411,7 @@ class Factory():
             stage = stage.name
 
         if stage != self._register[variable]:
-            raise ValueError('Stage {} not own {} variable.'.
+            raise ValueError('Stage {} not own {} variable.'
                              .format(stage, variable))
 
         var_stage = self._stages(stage)
@@ -401,18 +420,40 @@ class Factory():
                                'Current {} stage status: {}'
                                .format(var_stage.name, var_stage.status))
 
-        self._active_prod.set_value(variable, value)
+        self._active_prod.set_value(variable, copy.deepcopy(value))
 
     def get_instrument(self):
         """Get the product instrument."""
         # Return a copy, so it cannot be changed
         return copy.deepcopy(self._active_prod.instrument)
 
-    def register_stage(self, name, stage, disable_variables):
-        """Register a stage"""
+    def register_stage(self, name, stage, disable_variables=[]):
+        """Register a stage."""
+        if stage in self._stages.values():
+            raise ValueError('Stage already registered.')
 
-    def unregister_stage(self, name):
+        if name in self._stages.keys():
+            raise ValueError('Stage name {} already in use.'.format(name))
+
+        var = [i for i in stage._provided if i not in disable_variables]
+        for i in var:
+            self._register[i] = name
+
+    def unregister_stage(self, stage):
         """Remove a stage from the registers."""
+        if isinstance(stage, Stage):
+            # If a stage instance is passed, get its name for checking
+            stage = stage.name
+
+        for i, v in self._register.items():
+            if v == stage:
+                self._register.popitem(v)
+
+        self._stages.popitem(stage)
+
+    def owned_variables(self, name):
+        """Return the variables owned by a stage."""
+        return [k for k, v in self._register if v == name]
 
 
 class Manager(abc.ABC):
@@ -420,15 +461,24 @@ class Manager(abc.ABC):
     _products = IndexedDict()
     _factory = None
 
+    # TODO: handle configs
+    # TODO: Run!
     """Class to handle the general pipeline management."""
-    def __init__(self, config_file=None):
-        if config_file is not None:
-            with open(config_file, 'r') as stream:
-                self._config.update(yaml.load(stream))
-
+    def __init__(self):
         self._factory = Factory(self)
 
-    @abs.abstractmethod
+    @property
+    def factory(self):
+        return self._factory
+
+    @abc.abstractmethod
+    def setup_pipeline(self, *args, **kwargs):
+        """Setup the pipeline, register stages, etc.
+        
+        Can be used to read a config.
+        """
+
+    @abc.abstractmethod
     def setup_products(self, *args, **kwargs):
         """Setup products based on specified parameters.
 
@@ -452,11 +502,11 @@ class Manager(abc.ABC):
                 List of products to be processed first.
         """
         index1 = None
-        try:
-            inds = [self._products.index(r)
-                    for r in requires]
-            if len(inds) > 0:
-                index1 = max(inds)
+
+        inds = [self._products.index(r)
+                for r in requires]
+        if len(inds) > 0:
+            index1 = max(inds)
 
         if index1 is not None and index is not None:
             if index1 < index:
@@ -467,7 +517,7 @@ class Manager(abc.ABC):
         if index is None:
             # If indexes are not set, just append
             self._products[name] = product
-        else index is not None:
+        else:
             self._products.insert_at(index, name, product)
 
     def get_product_index(self, name):
@@ -497,8 +547,8 @@ class Manager(abc.ABC):
 
     def register_stage(self, name, stage, disable_variables=[]):
         """Register a stage"""
-        self._factory.register_stage(name, stage, disable_variables)
+        self.factory.register_stage(name, stage, disable_variables)
 
     def unregister_stage(self, name):
         """Remove a stage from the registers."""
-        self._factory.unregister_stage(name)
+        self.factory.unregister_stage(name)
