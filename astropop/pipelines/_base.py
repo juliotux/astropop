@@ -25,7 +25,7 @@ def info_dumper(infos):
     return yaml.dump(infos)
 
 
-class _GenericConfigClass(dict):
+class Config(dict):
     """Class for generic sotring configs. Like a powered dict."""
     _mutable_vars = ['_frozen', 'logger']
 
@@ -75,14 +75,14 @@ class _GenericConfigClass(dict):
     def freeze(self):
         self._frozen = True
         for v in self.values():
-            if isinstance(v, _GenericConfigClass):
+            if isinstance(v, Config):
                 v.freeze()
         return self
 
     def unfreeze(self):
         self._frozen = False
         for v in self.values():
-            if isinstance(v, _GenericConfigClass):
+            if isinstance(v, Config):
                 v.unfreeze()
         return self
 
@@ -91,19 +91,24 @@ class _GenericConfigClass(dict):
         return self._frozen
 
 
-class Config(_GenericConfigClass):
-    """Store the config of a stage."""
-    def __init__(self, *args, **kwargs):
-        super(Config, self).__init__(*args, **kwargs)
-
-
-class Instrument(_GenericConfigClass):
+class Instrument():
     """Store all the informations and needed functions of a instrument."""
     _frozen = False
+    _mutable = ['_frozen']
     _identifier = ''
 
     def __init__(self, *args, **kwargs):
         super(Instrument, self).__init__(*args, **kwargs)
+
+    def __setattr__(self, name, value):
+        if self._frozen and name not in self._mutable:
+            raise ValueError('Trying to change an attr while frozen.')
+        return super().__setattr__(name, value)
+
+    def __delattr__(self, name):
+        if self._frozen:
+            raise ValueError('Trying to delete an attr while frozen.')
+        return super().__delattr__(name)
 
     def list_functions(self):
         """List the class functions."""
@@ -121,6 +126,18 @@ class Instrument(_GenericConfigClass):
             if i in funcs:
                 funcs.remove(i)
         return funcs
+
+    def freeze(self):
+        self._frozen = True
+        return self
+
+    def unfreeze(self):
+        self._frozen = False
+        return self
+
+    @property
+    def frozen(self):
+        return self._frozen
 
 
 class Product():
