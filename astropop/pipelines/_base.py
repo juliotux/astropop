@@ -3,6 +3,7 @@
 import abc
 import yaml
 from functools import partial
+from collections.abc import Mapping
 import copy
 
 from ..logger import logger, log_to_list
@@ -30,40 +31,59 @@ class _GenericConfigClass(dict):
 
     def __init__(self, *args, **kwargs):
         self._frozen = False
-        self._hash = False
         super().__init__()
 
-        # TODO: Handle Config(dict()) here!
+        if len(args) > 1:
+            raise ValueError('Just one positional argument supported.')
+        elif len(args) == 1:
+            up = args[0]
+            if isinstance(up, Mapping):
+                self.update(up)
+            elif check_iterable(up):
+                for i, v in up:
+                    self.__setitem__(i, v)
+            else:
+                raise TypeError('Argument not supported for dict'
+                                ' initialization.')
+
+        for i, v in kwargs:
+            self.__setitem__(i, v)
 
     def __setitem__(self, name, value):
         if self._frozen:
-            self.logger.warn('Tried to change `{}` with value `{}` while'
-                             ' {} is frozen. Skipping.'
+            raise ValueError('Tried to change `{}` with value `{}` while'
+                             ' {} is frozen.'
                              .format(name, value, self.__class__.__name__))
-            return
 
-        if isinstance(value, dict):
-            value = Config(value)
+        if isinstance(value, Mapping):
+            # Convert to this class if not
+            value = self.__class__(value)
+
         super().__setitem__(name, value)
 
     def __delitem__(self, name):
         if self._frozen:
-            self.logger.warn('Tried to delete `{}` while'
-                             ' {} is frozen. Skipping.'
+            raise ValueError('Tried to delete `{}` while'
+                             ' {} is frozen.'
                              .format(name, self.__class__.__name__))
-            return
         return super().__delitem__(name)
+
+    def update(self, dictlike):
+        for k, v in dictlike.items():
+            self.__setitem__(k, v)
 
     def freeze(self):
         self._frozen = True
-        self._hash = 0
-        for i, v in self.items():
-            self._hash ^= hash((i, v))
+        for v in self.values():
+            if isinstance(v, _GenericConfigClass):
+                v.freeze()
         return self
 
     def unfreeze(self):
         self._frozen = False
-        self._hash = None
+        for v in self.values():
+            if isinstance(v, _GenericConfigClass):
+                v.unfreeze()
         return self
 
     @property
@@ -80,9 +100,7 @@ class Config(_GenericConfigClass):
 class Instrument(_GenericConfigClass):
     """Store all the informations and needed functions of a instrument."""
     _frozen = False
-    _prop_dict = {}
-    _mutable_vars = ['_frozen']
-    _identifier = 'dummy_instrument'
+    _identifier = ''
 
     def __init__(self, *args, **kwargs):
         super(Instrument, self).__init__(*args, **kwargs)
@@ -111,7 +129,6 @@ class Product():
     _log_list = []  # Store the logs
     _variables = {}
     _infos = IndexedDict()
-    _mutable_vars = ['_logger']  # Variables that can be assigned
     _instrument = None  # Product instrument
     _logger = None
     _targets = []
@@ -430,7 +447,7 @@ class Factory():
         var = [i for i in stage._provided if i not in disable_variables]
         for i in var:
             self._register[i] = name
-        
+
         self._stages[name] = stage
 
     def unregister_stage(self, stage):
@@ -482,7 +499,7 @@ class Factory():
         conf = {}
         for i, v in self._stages:
             conf[i] = dict(v.config)
-        
+
         return yaml.dump(conf)
 
     def run_stage(self, stage):
@@ -519,7 +536,7 @@ class Factory():
         for i in targets:
             self.run_stage(i)
 
-        self._active_config = {}   
+        self._active_config = {}
 
 
 class Manager(abc.ABC):
@@ -537,7 +554,7 @@ class Manager(abc.ABC):
     @property
     def factory(self):
         return self._factory
-    
+
     @property
     def logger(self):
         if self._logger is None:
@@ -552,7 +569,7 @@ class Manager(abc.ABC):
     @abc.abstractmethod
     def setup_pipeline(self, *args, **kwargs):
         """Setup the pipeline, register stages, etc.
-        
+
         Can be used to read a config.
         """
 
@@ -636,7 +653,7 @@ class Manager(abc.ABC):
     def unregister_stage(self, name):
         """Remove a stage from the registers."""
         self.factory.unregister_stage(name)
-    
+
     def set_value(self, product, variable, value):
         """Set a default value to a variable not owned by a stage."""
         self.factory.set_value(product, variable, value)
