@@ -36,8 +36,8 @@ env:
         - SETUP_CMD='test'
         - EVENT_TYPE='pull_request push'
         - CONDA_DEPENDENCIES='cython astroalign scipy ccdproc scikit-image matplotlib astroquery astroscrappy pyyaml fortranformat'
-        - CONDA_DEPENDENCIES_DOC='sphinx_rtd_theme'
-        - PIP_DEPENDENCIES=''
+        - CONDA_DEPENDENCIES_DOC='sphinx_rtd_theme sphinx-astropy'
+        - PIP_DEPENDENCIES='sep'
         - CONDA_CHANNELS='astropy juliotux'
 
         # If there are matplotlib or other GUI tests, uncomment the following
