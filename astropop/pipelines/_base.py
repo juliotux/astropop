@@ -47,7 +47,7 @@ class Config(dict):
                 raise TypeError('Argument not supported for dict'
                                 ' initialization.')
 
-        for i, v in kwargs:
+        for i, v in kwargs.items():
             self.__setitem__(i, v)
 
     def __setitem__(self, name, value):
@@ -306,7 +306,7 @@ class Stage(abc.ABC):
 
     @property
     def defaults(self):
-        return Config(**self._default_config)
+        return copy.deepcopy(Config(**self._default_config))
 
     @status.setter
     def status(self, status):
@@ -338,8 +338,8 @@ class Stage(abc.ABC):
         """Get the instrument class of active product."""
         return self.factory.get_instrument()
 
-    @abc.abstractmethod
-    def callback(self, instrument, variables, config):
+    @abc.abstractstaticmethod
+    def callback(instrument, variables, config, logger):
         """Run the stage. Return a dict of processed variables."""
         # Avoiding access to class stuff make possible parallelizing
 
@@ -348,17 +348,26 @@ class Stage(abc.ABC):
 
             # Ensure get all variables before running
             variables = self.get_variables()
-            result = {i: None for i in self.factory.owned_variables(self)}
-            conf = copy.deepcopy(self.defaults)
-            conf.update(conf)
+            owned = self.factory.owned_variables(self)
+            result = {i: None for i in owned}
+            conf = self.defaults
+            conf.unfreeze()
+            conf.update(config)
+            conf.freeze()
 
             self.status = 'running'
             instrument = self.get_instrument()
-            # TODO: Async apply this method?
-            result.update(self.callback(instrument, variables, config))
+            self.logger.info('Executing {} stage.'.format(self.name))
+            self.logger.debug('Stage {} variables: {}'.format(self.name,
+                                                              variables))
+            self.logger.debug('Stage {} config: {}'.format(self.name, conf))
+            result.update(self.callback(instrument, variables, conf,
+                                        self.logger))
             self.status = 'done'
+            self.logger.debug('Stage {} results: {}'.format(self.name,
+                                                            result))
             for i, v in result.items():
-                if i in self.factory.owned_variables(self):
+                if i in owned:
                     self.factory.set_value(self, i, v)
         except Exception as e:
             if self._raise_error:
@@ -385,6 +394,7 @@ class Factory():
         if self._logger is None:
             self._logger = self._manager.logger.getChild('factory')
             self._logger.setLevel(self._manager.logger.getEffectiveLevel())
+            self._factory_logger = self._logger
         return self._logger
 
     def get_value(self, stage, variable):
@@ -407,6 +417,9 @@ class Factory():
 
         if var_stage.status == 'idle':
             # If not started yet, run it
+            self.logger.debug('Variable {} not executed. '
+                              'Opening {} stage to do it.'
+                              .format(variable, var_stage.name))
             self.run_stage(var_stage.name)
 
         if var_stage.status == 'running':
@@ -426,6 +439,8 @@ class Factory():
     def set_value(self, stage, variable, value):
         """Set a variable value to product."""
         if isinstance(stage, Product):
+            self.logger.debug('Setting {} variable manually for {} product.'
+                              .format(variable, stage.name))
             stage.set_value(variable, copy.deepcopy(value))
             self._register[variable] = None
             return
@@ -441,12 +456,14 @@ class Factory():
             raise ValueError('Stage {} not own {} variable.'
                              .format(stage, variable))
 
-        var_stage = self._stages(stage)
-        if var_stage != 'done':
+        var_stage = self._stages[stage]
+        if var_stage.status != 'done':
             raise RuntimeError('Only done stages can set variables. '
                                'Current {} stage status: {}'
                                .format(var_stage.name, var_stage.status))
 
+        self.logger.debug('Setting {} variable with value {} from {} stage.'
+                          .format(variable, value, var_stage.name))
         self._active_prod.set_value(variable, copy.deepcopy(value))
 
     def get_instrument(self):
@@ -463,6 +480,8 @@ class Factory():
             raise ValueError('Stage name {} already in use.'.format(name))
 
         var = [i for i in stage._provided if i not in disable_variables]
+        self.logger.debug('Registering stage {} with {} variables.'
+                          .format(stage.name, var))
         for i in var:
             self._register[i] = name
 
@@ -473,6 +492,9 @@ class Factory():
         if isinstance(stage, Stage):
             # If a stage instance is passed, get its name for checking
             stage = stage.name
+
+        self.logger.debug('Unregistering stage {} with {} variables.'
+                          .format(stage, self.owned_variables(stage)))
 
         for i, v in self._register.items():
             if v == stage:
@@ -493,15 +515,22 @@ class Factory():
             if v == instance:
                 return i
 
-    def owned_variables(self, name):
+    def owned_variables(self, stage):
         """Return the variables owned by a stage."""
-        return [k for k, v in self._register.items() if v == name]
+        if isinstance(stage, Stage):
+            stage = stage.name
+
+        owned = [k for k, v in self._register.items() if v == stage]
+        self.logger.debug('Stage {} owns variables: {}'.format(stage, owned))
+        return owned
 
     def activate_product(self, product):
         """Activate a product to this factory."""
         self.reset()
         self.logger.info('Actiavting {} product.'.format(product.name))
         self._active_prod = product
+        self._factory_logger = self._logger
+        self._logger = product.logger
 
     def reset(self):
         """Cleanup all needed informations from this factory."""
@@ -510,7 +539,7 @@ class Factory():
         self._active_config = Config()
         for v in self._stages.values():
             v.status = 'idle'
-        self._logger = self._manager.logger.getChild('factory')
+        self._logger = self._factory_logger
 
     def dump_defaults(self):
         """Dump the default configurations in yaml format."""
@@ -525,7 +554,7 @@ class Factory():
         if self._active_prod is None:
             raise ValueError("No product has been activated!")
 
-        self.logger.info('Executing {} stage for {} product.'
+        self.logger.info('Opening job for {} stage for {} product.'
                          .format(self._stages[stage].name,
                                  self._active_prod.name))
 
@@ -533,14 +562,14 @@ class Factory():
         stage_conf = Config(stage_conf)
         instrument = self._active_prod.instrument
 
-        logger.debug('Freezing instrument and config.')
+        self.logger.debug('Freezing instrument and config.')
         stage_conf.freeze()
         instrument.freeze()
 
         # Execute!
         self._stages[stage]._call_pipeline(instrument, stage_conf)
 
-        logger.debug('Unfreezing instrument and config')
+        self.logger.debug('Unfreezing instrument and config')
         stage_conf.unfreeze()
         instrument.unfreeze()
 

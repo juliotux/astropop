@@ -1,4 +1,5 @@
-from astropop.pipelines._base import Manager, Config, Instrument, Stage, Product
+from astropop.pipelines._base import Manager, Config, Instrument, Stage, \
+                                     Product
 
 from astropop.logger import logger
 logger.setLevel('DEBUG')
@@ -29,11 +30,14 @@ class SumStage(Stage):
     _requested_functions = ['sum_numbers', 'multiply_numbers']
     _provided = ['dummy_sum', 'a_c_number', 'dummy_mult']
 
-    def callback(self, instrument, variables, config):
+    @staticmethod
+    def callback(instrument, variables, config, logger):
         a = config.get('a')
         b = config.get('b')
         c = config.get('c')
         d = variables.get('d')
+
+        logger.warn('Testing Warnings')
 
         s = instrument.sum_numbers(a, b)
         m = instrument.multiply_numbers(b, d)
@@ -50,7 +54,9 @@ class StringStage(Stage):
     _requested_functions = ['gen_string']
     _provided = ['string_c', 'string_abbd']
 
-    def callback(self, instrument, variables, config):
+    @staticmethod
+    def callback(instrument, variables, config, logger):
+        logger.debug(config)
         c_str = config.get('c_str')
         c = variables.get('a_c_number')
         s = variables.get('dummy_sum')
@@ -67,7 +73,8 @@ class GlobalStage(Stage):
     _default_config = dict()
     _required_variables = ['string_c', 'string_abbd']
 
-    def callback(self, instrument, variables, config):
+    @staticmethod
+    def callback(instrument, variables, config, logger):
         cs = variables.get('string_c')
         ad = variables.get('string_abbd')
 
@@ -78,13 +85,14 @@ class GlobalStage(Stage):
 
 
 class TestManager(Manager):
-    config = Config(stages={'sum': {'a': 1, 'b': 2}})
+    config = Config(stages={'sum': {'a': 1, 'b': 2, 'c': 3}})
+
     def setup_pipeline(self):
         self.register_stage('sum', SumStage(self.factory))
         self.register_stage('string', StringStage(self.factory))
         self.register_stage('globalvars', GlobalStage(self.factory))
 
-    def setup_products(self, name, c, d):
+    def setup_products(self, name, d):
         i = DummyInstrument()
         p = Product(manager=self, instrument=i)
         self.add_product(name, p)
@@ -93,7 +101,7 @@ class TestManager(Manager):
 
 m = TestManager()
 m.setup_pipeline()
-m.setup_products('first_product', 3, 4)
-m.setup_products('secon_product', 7, 8)
+m.setup_products('first_product', 4)
+m.setup_products('secon_product', 8)
 m.show_products()
 m.run()
