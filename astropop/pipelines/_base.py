@@ -92,7 +92,7 @@ class Config(dict):
         return self._frozen
 
 
-class Instrument():
+class Instrument(abc.ABC):
     """Store all the informations and needed functions of a instrument."""
     _frozen = False
     _mutable = ['_frozen']
