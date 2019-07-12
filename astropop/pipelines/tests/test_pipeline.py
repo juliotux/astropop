@@ -5,6 +5,10 @@ from astropop.logger import logger
 logger.setLevel('DEBUG')
 
 
+# TODO: implement unittest https://docs.python.org/3/library/unittest.html
+# TODO: set values to global variables and assert them
+
+
 class DummyInstrument(Instrument):
     a = 'a+b='
     b = 'b*d='
@@ -29,6 +33,7 @@ class SumStage(Stage):
     _required_variables = ['d']
     _requested_functions = ['sum_numbers', 'multiply_numbers']
     _provided = ['dummy_sum', 'a_c_number', 'dummy_mult']
+    _raise_error = True
 
     @staticmethod
     def callback(instrument, variables, config, logger):
@@ -53,6 +58,7 @@ class StringStage(Stage):
     _optional_variables = ['dummy_mult']
     _requested_functions = ['gen_string']
     _provided = ['string_c', 'string_abbd']
+    _raise_error = True
 
     @staticmethod
     def callback(instrument, variables, config, logger):
@@ -72,6 +78,7 @@ class StringStage(Stage):
 class GlobalStage(Stage):
     _default_config = dict()
     _required_variables = ['string_c', 'string_abbd']
+    _raise_error = True
 
     @staticmethod
     def callback(instrument, variables, config, logger):
@@ -105,3 +112,4 @@ m.setup_products('first_product', 4)
 m.setup_products('secon_product', 8)
 m.show_products()
 m.run()
+m.run(index=0, target='sum')

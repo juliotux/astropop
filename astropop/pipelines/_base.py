@@ -278,7 +278,7 @@ class Stage(abc.ABC):
     _optional_variables = []  # Optional variables for product ruunning
     _provided = []  # Product variables provided by stage
     _status = 'idle'
-    _raise_error = True
+    _raise_error = False
     # TODO: Implement instrument compatibility checking
 
     def __init__(self, factory):
@@ -569,21 +569,29 @@ class Factory():
         # Execute!
         self._stages[stage]._call_pipeline(instrument, stage_conf)
 
+        if self._stages[stage].status == 'error':
+            self.logger.error('Stage {} failed.'.format(stage))
+        elif self._stages[stage].status == 'done':
+            self.logger.info('Stage {} done without problems.'.format(stage))
+
         self.logger.debug('Unfreezing instrument and config')
         stage_conf.unfreeze()
         instrument.unfreeze()
+        self.logger.info('Closing job for {} stage.'.format(stage))
 
-    def run(self, config):
+    def run(self, config, target=None):
         """Run te factory to the product."""
 
         self._active_config = Config(config)
-        targets = self._active_prod.targets
+        targets = target or self._active_prod.targets
+        if not check_iterable(targets):
+            targets = [targets]
         self.logger.info('Executing pipeline with {} targets.'
                          .format(targets))
         for i in targets:
             self.run_stage(i)
-
-        self._active_config = {}
+        self.logger.info('Pipeline executed.')
+        self.reset()
 
 
 class Manager(abc.ABC):
@@ -717,7 +725,7 @@ class Manager(abc.ABC):
             for i, n in enumerate(self._products.keys()):
                 print("{}\t{}".format(i, n))
 
-    def run(self, index=None):
+    def run(self, index=None, target=None):
         if index is not None:
             if not check_iterable(index):
                 index = [index]
@@ -731,4 +739,4 @@ class Manager(abc.ABC):
             self.logger.info("Processing product {} from {}".format(i+1, n))
             name = list(self._products.keys())[i]
             self.factory.activate_product(self._products[name])
-            self.factory.run(self.config['stages'])
+            self.factory.run(self.config['stages'], target=target)
