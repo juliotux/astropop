@@ -1,8 +1,7 @@
-from astropop.pipelines._base import Manager, Config, Instrument, Stage, \
-                                     Product
+from astropop.pipelines import Manager, Config, Instrument, Stage, Product
 
-from astropop.logger import logger
-logger.setLevel('DEBUG')
+# from astropop.logger import logger
+# logger.setLevel('DEBUG')
 
 
 # TODO: implement unittest https://docs.python.org/3/library/unittest.html
@@ -106,10 +105,19 @@ class TestManager(Manager):
         p.add_target('globalvars')
         self.set_value(p, 'd', d)
 
-m = TestManager()
-m.setup_pipeline()
-m.setup_products('first_product', 4)
-m.setup_products('secon_product', 8)
-m.show_products()
-m.run()
-m.run(index=0, target='sum')
+
+def test_pipeline():
+    m = TestManager()
+    m.setup_pipeline()
+    m.setup_products('first_product', 4)
+    m.setup_products('secon_product', 8)
+    m.show_products()
+    m.run()
+    m.run(index=0, target='sum')
+
+    # TODO: Include the tests here
+    assert 1 == 1
+
+
+if __name__ == '__main__':
+    test_pipeline()
