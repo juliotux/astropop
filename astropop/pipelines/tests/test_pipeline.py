@@ -7,6 +7,7 @@ from astropop.pipelines import Manager, Config, Instrument, Stage, Product
 # TODO: implement unittest https://docs.python.org/3/library/unittest.html
 # TODO: set values to global variables and assert them
 
+string_store = []
 
 class DummyInstrument(Instrument):
     a = 'a+b='
@@ -84,8 +85,8 @@ class GlobalStage(Stage):
         cs = variables.get('string_c')
         ad = variables.get('string_abbd')
 
-        print(cs)
-        print(ad)
+        global string_store
+        string_store.append((cs, ad))
 
         return {}
 
@@ -116,7 +117,7 @@ def test_pipeline():
     m.run(index=0, target='sum')
 
     # TODO: Include the tests here
-    assert 1 == 1
+    assert string_store == [('c=3', 'a+b=3 b*d=16'), ('c=3', 'a+b=3 b*d=16')]
 
 
 if __name__ == '__main__':

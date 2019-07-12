@@ -24,3 +24,4 @@ dependencies:
     - photutils
     - pip:
         - sep
+        - sphinx-rtd-theme
