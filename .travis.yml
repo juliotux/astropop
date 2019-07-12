@@ -38,7 +38,7 @@ env:
         # For this package-template, we include examples of Cython modules,
         # so Cython is required for testing. If your package does not include
         # Cython code, you can set CONDA_DEPENDENCIES=''
-        - CONDA_DEPENDENCIES='cython astroalign scipy ccdproc scikit-image matplotlib astroquery astroscrappy'
+        - CONDA_DEPENDENCIES='cython astroalign scipy ccdproc scikit-image matplotlib astroquery astroscrappy pyyaml'
         
         # List other runtime dependencies for the package that are available as
         # pip packages here.
