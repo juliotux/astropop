@@ -6,70 +6,94 @@ language: c
 os:
     - linux
 
-sudo: false
-
 addons:
     apt:
         packages:
             - graphviz
-            - texlive-latex-extra
-            - dvipng
+
+
+stage: Comprehensive tests
+
+stages:
+   # Do the style check and a single test job, don't proceed if it fails
+   - name: Initial tests
+   # Test docs, astropy dev, and without optional dependencies
+   - name: Comprehensive tests
+   # These will only run when cron is opted in
+   - name: Cron tests
+     if: type = cron
+
 
 env:
     global:
+        # The following versions are the 'default' for tests, unless
+        # overridden underneath. They are defined here in order to save having
+        # to repeat them for all configurations.
         - PYTHON_VERSION=3.7
-        - NUMPY_VERSION=1.16
-        - ASTROPY_VERSION=3.2.1
+        - NUMPY_VERSION=stable
+        - ASTROPY_VERSION=stable
         - MAIN_CMD='python setup.py'
         - SETUP_CMD='test'
         - EVENT_TYPE='pull_request push'
         - CONDA_DEPENDENCIES='cython astroalign scipy ccdproc scikit-image matplotlib astroquery astroscrappy pyyaml fortranformat'
-        - PIP_DEPENDENCIES='sep'
-        - CONDA_CHANNELS='astropy-ci-extras astropy juliotux'
+        - CONDA_DEPENDENCIES_DOC='sphinx-astropy'
+        - PIP_DEPENDENCIES=''
+        - CONDA_CHANNELS='astropy juliotux'
 
         # If there are matplotlib or other GUI tests, uncomment the following
         # line to use the X virtual framebuffer.
         # - SETUP_XVFB=True
 
-    matrix:
-        # Make sure that egg_info works without dependencies
-        - PYTHON_VERSION=3.7 SETUP_CMD='egg_info'
+        # If you want to ignore certain flake8 errors, you can list them
+        # in FLAKE8_OPT, for example:
+        # - FLAKE8_OPT='--ignore=E501'
+        - FLAKE8_OPT=''
 
 matrix:
-
-    # Don't wait for allowed failures
     fast_finish: true
 
     include:
-        # Try MacOS X
-        - os: osx
-          env: SETUP_CMD='test'
+        - stage: Initial tests
+          env: PYTHON_VERSION=3.7 SETUP_CMD='egg_info'
 
-        # Do a coverage test.
+        # Try MacOS X, usually enough only to run from cron as hardly there are
+        # issues that are not picked up by a linux worker
+        - os: osx
+          stage: Cron tests
+          env: SETUP_CMD='test' EVENT_TYPE='cron'
+
         - os: linux
+          stage: Initial tests
           env: SETUP_CMD='test --coverage'
 
-        # Check for sphinx doc build warnings
         - os: linux
           env: SETUP_CMD='build_docs -w'
-  
+               CONDA_DEPENDENCIES=$CONDA_DEPENDENCIES_DOC
+
+        - os: linux
+          env: ASTROPY_VERSION=development
+               EVENT_TYPE='pull_request push cron'
+        - os: linux
+          env: PYTHON_VERSION=3.6 ASTROPY_VERSION=lts NUMPY_VERSION=1.13
+
+        - os: linux
+          stage: Cron tests
+          env: ASTROPY_VERSION=development NUMPY_VERSION=development
+               EVENT_TYPE='cron'
+
         - os: linux
           env: PYTHON_VERSION=3.6 NUMPY_VERSION=1.14
-
-        # Try numpy pre-release
         - os: linux
-          env: NUMPY_VERSION=prerelease
-               EVENT_TYPE='pull_request push cron'
+          env: NUMPY_VERSION=1.15
 
-        # Do a PEP8 test with pycodestyle
         - os: linux
-          env: MAIN_CMD='pycodestyle astropop --count' SETUP_CMD=''
+          stage: Initial tests
+          env: MAIN_CMD='flake8 astropop --count --show-source --statistics $FLAKE8_OPT' SETUP_CMD=''
 
     allow_failures:
-        # Do a PEP8 test with pycodestyle
-        # (allow to fail unless your code completely compliant)
-        - os: linux
-          env: MAIN_CMD='pycodestyle astropop --count' SETUP_CMD=''
+         - os: linux
+           stage: Initial tests
+           env: MAIN_CMD='flake8 astropop --count --show-source --statistics $FLAKE8_OPT' SETUP_CMD=''
 
 install:
     - git clone --depth 1 git://github.com/astropy/ci-helpers.git
@@ -79,6 +103,4 @@ script:
    - $MAIN_CMD $SETUP_CMD
 
 after_success:
-    # If coveralls.io is set up for this package, uncomment the line below.
-    # The coveragerc file may be customized as needed for your package.
     - if [[ $SETUP_CMD == *coverage* ]]; then coveralls --rcfile='astropop/tests/coveragerc'; fi
