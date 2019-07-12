@@ -14,7 +14,8 @@ from ..py_utils import IndexedDict, check_iterable
 # TODO: More logging and debuging
 
 
-__all__ = ['Config', 'Product', 'Instrument', 'Manager', 'Factory']
+__all__ = ['Config', 'Product', 'Instrument', 'Manager', 'Factory',
+           'Stage']
 
 
 def info_dumper(infos):
