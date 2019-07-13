@@ -3,7 +3,6 @@
 import six
 import numpy as np
 from astropy.wcs import WCS
-import numpy as np
 
 from .coords_utils import guess_coordinates
 from ..py_utils import check_iterable
@@ -19,7 +18,8 @@ _angles = {
 }
 
 
-def wcs_from_coords(x, y, ra, dec, plate_scale, north, flip=None):
+def wcs_from_coords(x, y, ra, dec, plate_scale, north, flip=None,
+                    logger=logger):
     """Giving coordinates and plate scale, creates a WCS.
     x, y: float, pixel coordinates in image
     ra, dec: float, sky coordinates

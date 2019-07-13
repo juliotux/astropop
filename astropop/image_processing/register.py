@@ -13,6 +13,9 @@ except Exception:
 from ..logger import logger
 
 
+# TODO: wrapping up with CCDPROC transform_image for translating
+
+
 def translate(image, shift, subpixel=True, cval=0):
     """Translate an image by (dy, dx) using scipy.
 
@@ -31,7 +34,7 @@ def translate(image, shift, subpixel=True, cval=0):
             rot = 1
         elif dx < 0 and dy >= 0:
             rot = 3
-        elif dx <0 and dy < 0:
+        elif dx < 0 and dy < 0:
             rot = 0
         dx, dy = np.abs([dx, dy])
         if rot % 2 != 0:
@@ -42,7 +45,7 @@ def translate(image, shift, subpixel=True, cval=0):
 
         # correlation kernel to fix subpixel shifting
         x, y = dx % 1.0, dy % 1.0
-        kernel = np.array([[x*y    , (1-x)*y    ],
+        kernel = np.array([[x*y, (1-x)*y],
                            [(1-y)*x, (1-y)*(1-x)]])
         nim = correlate2d(nim, kernel, mode='full', fillvalue=cval)
         return np.rot90(nim, -rot % 4).astype(image.dtype)[:-1, :-1]
@@ -80,7 +83,8 @@ def create_chi2_shift_list(image_list):
     return shifts
 
 
-def apply_shift(image, shift, method='fft', subpixel=True, footprint=False):
+def apply_shift(image, shift, method='fft', subpixel=True, footprint=False,
+                logger=logger):
     """Apply a shifts of (dy, dx) to a list of images.
 
     Parameters:
@@ -119,7 +123,8 @@ def apply_shift(image, shift, method='fft', subpixel=True, footprint=False):
         raise ValueError('Unrecognized shift image method.')
 
 
-def apply_shift_list(image_list, shift_list, method='fft'):
+def apply_shift_list(image_list, shift_list, method='fft',
+                     logger=logger):
     """Apply a list of (y, x) shifts to a list of images.
 
     Parameters:
@@ -135,12 +140,12 @@ def apply_shift_list(image_list, shift_list, method='fft'):
 
     Return a new image_list with the shifted images.
     """
-    return [apply_shift(i, s, method=method) for i, s in zip(image_list,
-                                                              shift_list)]
+    return [apply_shift(i, s, method=method, logger=logger)
+            for i, s in zip(image_list, shift_list)]
 
 
 def hdu_shift_images(hdu_list, method='fft', register_method='asterism',
-                     footprint=False):
+                     footprint=False, logger=logger):
     """Calculate and apply shifts in a set of ccddata images.
 
     The function process the list inplace. Original data altered.
@@ -156,13 +161,14 @@ def hdu_shift_images(hdu_list, method='fft', register_method='asterism',
             raise RuntimeError("astroaling module not available.")
         im0 = hdu_list[0].data
         for i in hdu_list[1:]:
-            transf, (s_list, t_list) = astroalign.find_transform(i.data, im0)
+            transf, _ = astroalign.find_transform(i.data, im0)
             i.data = astroalign.apply_transform(transf, i.data, im0)
             if footprint:
-                i.footprint = astroalign.apply(transf,
-                                               np.ones_like(i.data, dtype=bool),
-                                               im0)
-            s_method ='similarity_transform'
+                i.footprint = astroalign.apply_transform(transf,
+                                                         np.ones(i.data.shape,
+                                                                 dtype=bool),
+                                                         im0)
+            s_method = 'similarity_transform'
     else:
         if method == 'chi2':
             shifts = create_chi2_shift_list([ccd.data for ccd in hdu_list])
@@ -174,12 +180,14 @@ def hdu_shift_images(hdu_list, method='fft', register_method='asterism',
                 s_method = method
             else:
                 s_method = 'simple'
-            ccd.data = apply_shift(ccd.data, shift, method=s_method)
+            ccd.data = apply_shift(ccd.data, shift, method=s_method,
+                                   logger=logger)
             sh = [str(i) for i in shift[::-1]]
             ccd.header['hierarch astropop register_shift'] = ",".join(sh)
             if footprint:
                 ccd.footprint = apply_shift(np.ones_like(ccd.data, dtype=bool),
-                                            shift, method='simple')
+                                            shift, method='simple',
+                                            logger=logger)
     for i in hdu_list:
         i.header['hierarch astropop registered'] = True
         i.header['hierarch astropop register_method'] = method

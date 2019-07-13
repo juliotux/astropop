@@ -1,4 +1,6 @@
 examples
+.vscode
+.pytest_cache
 
 # Compiled files
 *.py[cod]

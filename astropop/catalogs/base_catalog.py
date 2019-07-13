@@ -3,6 +3,8 @@ import six
 import numpy as np
 from astropy.coordinates import Angle, SkyCoord, match_coordinates_sky
 
+from ..logger import logger
+
 
 def match_indexes(ra, dec, cat_ra, cat_dec, limit_angle):
     '''Matches ra and dec lists coordinates with cat_ra and cat_dec coordinates
@@ -36,6 +38,7 @@ class _BaseCatalog():
     _last_query_info = None
     _last_query_table = None
     comment = None
+    logger = logger
 
     def __evaluate__(self, center, radius=None, **kwargs):
         '''Query the results in the catalog.

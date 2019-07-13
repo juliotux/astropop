@@ -20,26 +20,27 @@ def gen_filter_kernel(size):
     """Generate sextractor like filter kernels."""
     # TODO: better implement
     if size == 3:
-        return np.array([[0,1,0],
-                         [1,4,1],
-                         [0,1,0]])
+        return np.array([[0, 1, 0],
+                         [1, 4, 1],
+                         [0, 1, 0]])
     elif size == 5:
-        return np.array([[1,2,3,2,1],
-                         [2,4,6,4,2],
-                         [3,6,9,6,3],
-                         [2,4,6,4,2],
-                         [1,2,3,2,1]])
+        return np.array([[1, 2, 3, 2, 1],
+                         [2, 4, 6, 4, 2],
+                         [3, 6, 9, 6, 3],
+                         [2, 4, 6, 4, 2],
+                         [1, 2, 3, 2, 1]])
     elif size == 7:
-        return np.array([[ 1, 2, 3, 4, 3, 2, 1],
-                         [ 2, 4, 6, 8, 6, 4, 2],
-                         [ 3, 6, 9,12, 9, 6, 3],
-                         [ 4, 8,12,16,12, 8, 4],
-                         [ 3, 6, 9,12, 9, 6, 3],
-                         [ 2, 4, 6, 8, 6, 4, 2],
-                         [ 1, 2, 3, 4, 3, 2, 1]])
+        return np.array([[1, 2, 3, 4, 3, 2, 1],
+                         [2, 4, 6, 8, 6, 4, 2],
+                         [3, 6, 9,12, 9, 6, 3],
+                         [4, 8,12,16,12, 8, 4],
+                         [3, 6, 9,12, 9, 6, 3],
+                         [2, 4, 6, 8, 6, 4, 2],
+                         [1, 2, 3, 4, 3, 2, 1]])
 
 
-def background(data, box_size, filter_size, mask=None, global_bkg=True):
+def background(data, box_size, filter_size, mask=None, global_bkg=True,
+               logger=logger):
     """Estimate the image background using SExtractor algorithm.
 
     If global_bkg, return a single value for background and rms, else, a 2D
@@ -57,7 +58,8 @@ def background(data, box_size, filter_size, mask=None, global_bkg=True):
 
 
 def sexfind(data, snr, background, noise, recenter=False,
-            mask=None, fwhm=None, filter_kernel=3, **sep_kwargs):
+            mask=None, fwhm=None, filter_kernel=3, logger=logger,
+            **sep_kwargs):
     """Find sources using SExtractor segmentation algorithm.
 
     sep_kwargs can be any kwargs to be passed to sep.extract function.
@@ -86,7 +88,8 @@ def sexfind(data, snr, background, noise, recenter=False,
 
 def daofind(data, snr, background, noise, fwhm, mask=None,
             sharp_limit=(0.2, 1.0),
-            round_limit=(-1.0, 1.0)):
+            round_limit=(-1.0, 1.0),
+            logger=logger):
     """Find sources using DAOfind algorithm.
 
     Translated from IDL Astro package by D. Jones. Original function available
@@ -331,7 +334,8 @@ def daofind(data, snr, background, noise, fwhm, mask=None,
 
 
 def starfind(data, snr, background, noise, fwhm, mask=None, box_size=35,
-            sharp_limit=(0.2, 1.0), round_limit=(-1.0, 1.0)):
+            sharp_limit=(0.2, 1.0), round_limit=(-1.0, 1.0),
+            logger=logger):
     """Find stars using daofind AND sexfind."""
     # First, we identify the sources with sexfind (fwhm independent)
     sources = sexfind(data, snr, background, noise, mask=mask,
@@ -346,7 +350,8 @@ def starfind(data, snr, background, noise, fwhm, mask=None, box_size=35,
     return sources
 
 
-def sources_mask(shape, x, y, a, b, theta, mask=None, scale=1.0):
+def sources_mask(shape, x, y, a, b, theta, mask=None, scale=1.0,
+                 logger=logger):
     """Create a mask to cover all sources."""
     image = np.zeros(shape, dtype=bool)
     sep.mask_ellipse(image, x, y, a, b, theta, r=scale)
@@ -370,13 +375,14 @@ def _fwhm_loop(model, data, x, y, xc, yc):
     r, f = xy2r(x, y, data, xc, yc)
     args = np.argsort(r)
     try:
-        popt, pcov = curve_fit(model, r[args], f[args], p0=p0)
+        popt, _ = curve_fit(model, r[args], f[args], p0=p0)
         return mfwhm(*popt[:-2])
     except:
         return np.nan
 
 
-def calc_fwhm(data, x, y, box_size=25, model='gaussian', min_fwhm=3.0):
+def calc_fwhm(data, x, y, box_size=25, model='gaussian', min_fwhm=3.0,
+              logger=logger):
     """Calculate the median FWHM of the image with Gaussian or Moffat fit."""
     indices = np.indices(data.shape)
     rects = [trim_array(data, box_size, (xi, yi), indices=indices)
@@ -401,7 +407,8 @@ def _recenter_loop(fitter, model, data, x, y, xc, yc):
     return m_fit.x_0.value, m_fit.y_0.value
 
 
-def recenter_sources(data, x, y, box_size=25, model='gaussian'):
+def recenter_sources(data, x, y, box_size=25, model='gaussian',
+                     logger=logger):
     """Recenter teh sources using a PSF model."""
     indices = np.indices(data.shape)
     rects = [trim_array(data, box_size, (xi, yi), indices=indices)

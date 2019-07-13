@@ -1,5 +1,8 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
+
 import numpy as np
+
+from ..logger import logger
 
 __all__ = ['solve_photometry_montecarlo', 'solve_photometry_median',
            'solve_photometry_average']
@@ -53,7 +56,8 @@ def _scale_operator(measure_scale, out_scale):
 
 
 def solve_photometry_median(fluxes, flux_error, references, limits=(5, 18),
-                            flux_scale='linear', ref_scale='mag'):
+                            flux_scale='linear', ref_scale='mag',
+                            logger=logger):
     """Solve the photometry by the median comparison of field stars."""
     trans_func, diff_func, corr_func, error_func = _scale_operator(flux_scale,
                                                                    ref_scale)
@@ -73,7 +77,8 @@ def solve_photometry_median(fluxes, flux_error, references, limits=(5, 18),
 
 
 def solve_photometry_average(fluxes, flux_error, references, limits=(5, 18),
-                             flux_scale='linear', ref_scale='mag'):
+                             flux_scale='linear', ref_scale='mag',
+                             logger=logger):
     trans_func, diff_func, corr_func, error_func = _scale_operator(flux_scale,
                                                                    ref_scale)
     mags = trans_func(fluxes)
@@ -107,7 +112,8 @@ def _montecarlo_loop(args):
 
 def solve_photometry_montecarlo(fluxes, flux_error, ref_mags, limits=(5, 18),
                                 n_iter=100, n_stars=0.5,
-                                flux_scale='linear', ref_scale='mag'):
+                                flux_scale='linear', ref_scale='mag',
+                                logger=logger):
     trans_func, diff_func, corr_func, error_func = _scale_operator(flux_scale,
                                                                    ref_scale)
     mags = trans_func(fluxes)

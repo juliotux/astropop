@@ -8,7 +8,7 @@ improvements.
 
 
 import os
-import sys
+# import sys
 import shutil
 import subprocess
 import copy
@@ -22,7 +22,7 @@ from astropy.wcs import WCS
 from .coords_utils import guess_coordinates
 from ..logger import logger
 from ..math.opd_utils import solve_decimal
-from ..py_utils import check_iterable
+from ..py_utils import check_iterable, run_command
 
 
 __all__ = ['AstrometrySolver', 'solve_astrometry_xy', 'solve_astrometry_image',
@@ -61,12 +61,11 @@ class AstrometrySolver():
     """
     def __init__(self, astrometry_command=shutil.which('solve-field'),
                  defaults={'no-plot': None, 'overwrite': None},
-                 keep_files=False):
+                 keep_files=False, logger=logger):
         self._command = astrometry_command
         self._defaults = defaults
         self._keep = keep_files
-        if self._command is None or not os.path.exists(self._command):
-            raise ValueError('solve-field not found!')
+        self.logger = logger
 
     def _guess_coordinates(self, header, ra_key, dec_key):
         '''
@@ -90,13 +89,14 @@ class AstrometrySolver():
             try:
                 ra = float(image_params.get('ra'))
                 dec = float(image_params.get('dec'))
-                logger.info("Usign given field coordinates: {} {}".format(ra,
-                                                                          dec))
+                self.logger.info("Usign given field coordinates: {} {}"
+                                 .format(ra, dec))
                 options['ra'] = ra
                 options['dec'] = dec
             except ValueError:
-                logger.warn('Could not convert field coordinates to decimal'
-                            ' degrees. Ignoring it: {}{}'.format(ra, dec))
+                self.logger.warn('Could not convert field coordinates to'
+                                 ' decimal degrees. Ignoring it: {}{}'
+                                 .format(ra, dec))
         elif 'ra_key' in keys and 'dec_key' in keys:
             logger.info("Figuring out field center coordinates")
             try:
@@ -106,10 +106,11 @@ class AstrometrySolver():
                 options['ra'] = coords.ra.degree
                 options['dec'] = coords.dec.degree
             except KeyError:
-                logger.warn("Cannot understand coordinates in FITS header")
+                self.logger.warn("Cannot understand coordinates in"
+                                 " FITS header")
         else:
-            logger.warn("Astrometry.net will try to solve without the field"
-                        " center")
+            self.logger.warn("Astrometry.net will try to solve without the"
+                             " field center")
 
         if 'pltscl' in keys:
             try:
@@ -120,23 +121,24 @@ class AstrometrySolver():
                     pltscl = float(image_params.get('pltscl'))
                     pltscl = [0.8*pltscl, 1.2*pltscl]
                 pltscl = np.array(sorted(pltscl))
-                logger.info("Usign given plate scale: {}".format(pltscl))
+                self.logger.info("Usign given plate scale: {}".format(pltscl))
             except ValueError:
-                logger.warn('Plate scale value not recognized.'
-                            ' Ignoring it. {}'.format(pltscl))
+                self.logger.warn('Plate scale value not recognized.'
+                                 ' Ignoring it. {}'.format(pltscl))
         elif 'pltscl_key' in keys:
-            logger.info("Figuring out the plate scale from FITS header")
+            self.logger.info("Figuring out the plate scale from FITS header")
             try:
                 pltscl = header[image_params.get('pltscl_key')]
                 pltscl = float(solve_decimal(pltscl))
             except KeyError:
-                logger.warn("Cannot understand plate scale in FITS header")
+                self.logger.warn("Cannot understand plate scale in FITS"
+                                 " header")
         try:
             options['scale-high'] = pltscl[1]
             options['scale-low'] = pltscl[0]
             options['scale-units'] = 'arcsecperpix'
         except NameError:
-            logger.warn('Astrometry.net will be run without plate scale.')
+            self.logger.warn('Astrometry.net will be run without plate scale.')
 
         if 'ra' in options.keys():
             if 'radius' in keys:
@@ -149,7 +151,8 @@ class AstrometrySolver():
     def solve_field(self, filename, output_file=None, wcs=False,
                     image_params={},
                     solve_params={}, scamp_basename=None,
-                    show_process=False):
+                    show_process=True):
+        # TODO: put some of these arguments in a config file
         """Try to solve an image using the astrometry.net.
 
         The image params can be:
@@ -190,26 +193,19 @@ class AstrometrySolver():
             field_params = self._guess_field_params(fits.getheader(filename),
                                                     image_params=image_params)
         except (OSError, IOError):
-            logger.warn('Could not guess field center and plate scale. '
-                        'Running in slow mode.')
+            self.logger.warn('Could not guess field center and plate scale. '
+                             'Running in slow mode.')
             field_params = {}
         options.update(field_params)
 
-        if show_process:
-            fd = sys.stdout
-        else:
-            fd = open(os.devnull, 'wb')
-
-        solved_header = self._run_solver(filename, stdout=fd, stderr=fd,
-                                         params=options)
+        solved_header = self._run_solver(filename, params=options)
 
         if not wcs:
             return solved_header
         else:
             return WCS(solved_header, relax=True)
 
-    def _run_solver(self, filename, params, output_dir=None,
-                    stdout=None, stderr=None):
+    def _run_solver(self, filename, params, output_dir=None):
         """Run the astrometry.net localy using the given params.
 
         STDOUT and STDERR can be stored in variables for better check after.
@@ -232,12 +228,10 @@ class AstrometrySolver():
                 args.append(str(v))
 
         try:
-            logger.debug('runing: ' + str(args))
-            if stdout is None:
-                stdout = subprocess.PIPE
-            if stderr is None:
-                stderr = subprocess.PIPE
-            subprocess.check_call(args, stdout=stdout, stderr=stderr)
+            errcode = run_command(args, self.logger)
+
+            if errcode != 0:
+                raise subprocess.CalledProcessError(errcode, self._command)
 
             # .solved file must exist and contain a binary one
             with open(solved_file, 'rb') as fd:
@@ -257,6 +251,7 @@ class AstrometrySolver():
             if not self._keep and tmp_dir:
                 shutil.rmtree(output_dir)
             raise e
+
         # If .solved file doesn't exist or contain one
         except (IOError, AstrometryNetUnsolvedField):
             if not self._keep and tmp_dir:

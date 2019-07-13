@@ -21,7 +21,8 @@ def temporal_photometry(image_list, x=None, y=None, ext=0,
                         r=5, r_ann=(20,30), detect_snr=5, box_size=35,
                         detect_fwhm=3, psf_model='gaussian', psf_niters=1,
                         time_key='DATE-OBS', time_format='isot',
-                        align_images=True, nstars_thresh=None, mask=None):
+                        align_images=True, nstars_thresh=None, mask=None,
+                        logger=logger):
     """Perform photometry on a set of images, optimized for large datasets.
 
     Arguments:
@@ -135,7 +136,8 @@ def process_lightcurve(image_list, x=None, y=None, photometry_type='aperture',
                        r=5, r_ann=(20, 30), detect_snr=5,
                        detect_fwhm=3, psf_model='gaussian', psf_niters=1,
                        time_key='DATE-OBS', time_format='isot',
-                       align_images=True, check_dist=True):
+                       align_images=True, check_dist=True,
+                       logger=logger):
     '''Generates a light curve using a list of images.
     See function above for parameters description.
 

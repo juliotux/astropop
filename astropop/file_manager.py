@@ -11,11 +11,16 @@ from astropy.io import fits
 
 from .fits_utils import fits_yielder, headers_to_table
 from .py_utils import check_iterable
+from .logger import logger
+
+__all__ = ['list_fits_files', 'filter_fg', 'group_fg', 'FileManager',
+           'FileGroup']
 
 
-def list_fits_files(directory, fits_extensions=['.fts', '.fits', '.fit', '.fz'],
-                    compression_extensions=['.gz', '.bz2', '.Z', '.zip'],
-                    exclude=None):
+def list_fits_files(directory, fits_extensions=['.fts', '.fits', '.fit'],
+                    compression_extensions=['.gz', '.bz2', '.Z', '.zip',
+                                            '.fz'],
+                    exclude=None, logger=logger):
     """List all fist files in a directory, if compressed or not."""
     # all_files = os.listdir(directory)
 
@@ -75,10 +80,46 @@ def row_to_header(row):
     return fits.Header(rdict)
 
 
+def filter_fg(filegroup, **kwargs):
+    """Filter a FileGroup with fits keywords.
+
+    Arguments:
+        **kwargs :
+            keywords to filter from fits header. Keywords with spaces,
+            dashes or other things not allowed in python arguments
+            can be put in a dict and be unpacked in the function.
+            Ex:
+            filtered(observer='Nobody', **{'space key' : 1.0})
+
+    Return:
+        A new FileGroup instance with only filtered files.
+    """
+    where = np.where(gen_mask(filegroup.summary, **kwargs))[0]
+    files = np.array([filegroup.files[i] for i in where])
+    if len(files) > 0:
+        summ = Table(filegroup.summary[where])
+    else:
+        summ = None
+    nfg = FileGroup(files=files, summary=summ, ext=filegroup.ext)
+    return nfg
+
+
+def group_fg(filegroup, keywords):
+    """Group the files by a list of keywords in multiple FileGroups."""
+    keywords = [k.lower() for k in keywords
+                if k.lower() in filegroup.summary.colnames]
+    groups = filegroup.summary.group_by(keywords)
+    keys = groups.groups.keys
+
+    for i in range(len(keys)):
+        fk = dict((k, keys[i][k]) for k in keys.colnames)
+        yield filter_fg(filegroup, **fk)
+
+
 class FileGroup():
     """Easy handle groups of fits files."""
 
-    def __init__(self, files, ext, summary):
+    def __init__(self, files, ext, summary, logger=logger):
         """Easy handle groups of fits files."""
         self.files = np.array(files)
         if len(self.files) > 0:
@@ -90,8 +131,18 @@ class FileGroup():
             raise ValueError('Files and summary do not have same sizes.')
         self.ext = ext
 
+        self.logger = logger
+
     def __len__(self):
         return len(self.files)
+
+    def filterd(self, **kwargs):
+        """Create a new FileGroup with only filtered files."""
+        return filter_fg(self, **kwargs)
+
+    def group_by(self, keywords):
+        """Group the files into multiple file groups, according keywords."""
+        return group_fg(self, keywords)
 
     def values(self, keyword, unique=False):
         """Return the values of a keyword in the summary.
@@ -150,7 +201,7 @@ class FileGroup():
         self.files = np.array(list(self.files) + [file])
 
     def _intern_yielder(self, return_type, save_to=None, append_to_name=None,
-                       overwrite=False):
+                        overwrite=False):
         return fits_yielder(return_type, self.files, self.ext,
                             append_to_name=append_to_name,
                             save_to=save_to, overwrite=overwrite)
@@ -164,12 +215,14 @@ class FileGroup():
     def data(self, **kwargs):
         return self._intern_yielder(return_type='data', **kwargs)
 
+
 class FileManager():
     """Handle and organize fits files in a simple way."""
 
     def __init__(self, ext=0, fits_extensions=['.fits', '.fts', '.fit', '.fz'],
-                 compression=True, summary=None):
-        """Handle and organize fits files in a simple way."""
+                 compression=True, logger=logger):
+        """Handle and organize fits files in a simple way.
+        """
         self.ext = ext
         self.extensions = fits_extensions
         if compression:
@@ -177,39 +230,15 @@ class FileManager():
         else:
             self.compression = []
 
-    def group_by(self, filegroup, keywords):
-        """Group the files by a list of keywords in multiple FileManagers."""
-        keywords = [k.lower() for k in keywords
-                    if k.lower() in filegroup.summary.colnames]
-        groups = filegroup.summary.group_by(keywords)
-        keys = groups.groups.keys
+        self.logger = logger
 
-        for i in range(len(keys)):
-            fk = dict((k, keys[i][k]) for k in keys.colnames)
-            yield self.filtered(filegroup, **fk)
+    def group_by(self, filegroup, keywords):
+        """Group the files by a list of keywords in multiple FileGroups."""
+        group_fg(filegroup, keywords)
 
     def filtered(self, filegroup, **kwargs):
-        """Filter the current FileManager with fits keywords.
-
-        Arguments:
-            **kwargs :
-                keywords to filter from fits header. Keywords with spaces,
-                dashes or other things not allowed in python arguments
-                can be put in a dict and be unpacked in the function.
-                Ex:
-                filtered(observer='Nobody', **{'space key' : 1.0})
-
-        Return:
-            A new FileManager instance with only filtered files.
-        """
-        where = np.where(gen_mask(filegroup.summary, **kwargs))[0]
-        files = np.array([filegroup.files[i] for i in where])
-        if len(files) > 0:
-            summ = Table(filegroup.summary[where])
-        else:
-            summ = None
-        nfg = FileGroup(files=files, summary=summ, ext=self.ext)
-        return nfg
+        """Filter only files that match specific keywords."""
+        return filter_fg(filegroup, **kwargs)
 
     def create_filegroup(self, path=None, files=None, ext=None, exclude=None):
         """Create a file group from a directory or specified files."""

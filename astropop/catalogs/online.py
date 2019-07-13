@@ -109,8 +109,8 @@ class VizierCatalogClass(_BasePhotometryCatalog):
         if table is None:
             raise ValueError("No Vizier table was defined.")
 
-        logger.info("Performing Vizier query with: center:{} radius:{}"
-                    " vizier_table:{}".format(center, radius, table))
+        self.logger.info("Performing Vizier query with: center:{} radius:{}"
+                         " vizier_table:{}".format(center, radius, table))
 
         self.flush()
         self._last_query_info = query_info
@@ -216,7 +216,8 @@ def simbad_query_id(ra, dec, limit_angle,
     '''Query a single id from Simbad'''
     s = Simbad()
     q = _timeout_retry(s.query_region, center=SkyCoord(ra, dec,
-                                                       unit=(u.deg, u.deg)),
+                                                       unit=(u.deg,
+                                                             u.deg)),
                        radius=limit_angle)
 
     if q is not None:
@@ -278,8 +279,8 @@ class SimbadCatalogClass(_BasePhotometryCatalog):
             logger.debug("Loading cached query.")
             return copy.copy(self._last_query_table)
 
-        logger.info("Performing Simbad query with: center:{} radius:{}"
-                    " filter:{}".format(center, radius, filter))
+        self.logger.info("Performing Simbad query with: center:{} radius:{}"
+                         " filter:{}".format(center, radius, filter))
 
         self.flush()
         self._last_query_info = query_info

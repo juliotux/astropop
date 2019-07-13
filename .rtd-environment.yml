@@ -1,0 +1,27 @@
+name: astropop
+
+channels:
+    - astropy
+    - juliotux
+
+dependencies:
+    - python>=3.7
+    - astropy
+    - cython
+    - matplotlib
+    - numpy>=1.16
+    - sphinx-astropy
+    - pytz
+    - pyyaml
+    - scikit-image
+    - matplotlib
+    - scipy
+    - astroquery
+    - fortranformat
+    - astroscrappy
+    - astroalign
+    - ccdproc
+    - photutils
+    - pip:
+        - sep
+        - sphinx-rtd-theme
