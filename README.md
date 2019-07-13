@@ -3,6 +3,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/juliotux/astropop/badge.svg?branch=master)](https://coveralls.io/github/juliotux/astropop?branch=master)
 [![Build Status](https://travis-ci.org/juliotux/astropop.svg?branch=master)](https://travis-ci.org/juliotux/astropop)
 [![Documentation Status](https://readthedocs.org/projects/astropop/badge/?version=latest)](https://astropop.readthedocs.io/en/latest/?badge=latest)
+[![astropy](http://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat)](http://www.astropy.org/)
 
 The (non) famous ASTROnomical POlarimetry and Photometry pipeline. Developed for work with IAGPOL polarimeter at Observatório Pico dos Dias (Brazil), but suitable to be used in other image polarimeters around the world.
 
