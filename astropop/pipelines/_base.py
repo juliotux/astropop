@@ -15,7 +15,7 @@ from ..py_utils import IndexedDict, check_iterable
 
 
 __all__ = ['Config', 'Product', 'Instrument', 'Manager', 'Factory',
-           'Stage']
+           'Stage', 'FrozenError']
 
 
 def info_dumper(infos):
@@ -26,9 +26,14 @@ def info_dumper(infos):
     return yaml.dump(infos)
 
 
+class FrozenError(RuntimeError):
+    pass
+
+
 class Config(dict):
     """Class for generic sotring configs. Like a powered dict."""
-    _mutable_vars = ['_frozen', 'logger']
+    _mutable = ['_frozen', 'logger']
+    _frozen = False
 
     def __init__(self, *args, **kwargs):
         self._frozen = False
@@ -52,9 +57,8 @@ class Config(dict):
 
     def __setitem__(self, name, value):
         if self._frozen:
-            raise ValueError('Tried to change `{}` with value `{}` while'
-                             ' {} is frozen.'
-                             .format(name, value, self.__class__.__name__))
+            raise FrozenError(f'Tried to change `{name}` with value `{value}` while'
+                              ' {self.__class__.__name__} is frozen.')
 
         if isinstance(value, Mapping):
             # Convert to this class if not
@@ -64,10 +68,19 @@ class Config(dict):
 
     def __delitem__(self, name):
         if self._frozen:
-            raise ValueError('Tried to delete `{}` while'
-                             ' {} is frozen.'
-                             .format(name, self.__class__.__name__))
+            raise FrozenError(f'Tried to delete `{name}` while'
+                              ' {self.__class__.__name__} is frozen.')
         return super().__delitem__(name)
+
+    def __setattr__(self, name, value):
+        if self._frozen and name not in self._mutable:
+            raise FrozenError('Trying to change an attr while frozen.')
+        return super().__setattr__(name, value)
+
+    def __delattr__(self, name):
+        if self._frozen:
+            raise FrozenError('Trying to delete an attr while frozen.')
+        return super().__delattr__(name)
 
     def update(self, dictlike):
         for k, v in dictlike.items():
@@ -103,12 +116,12 @@ class Instrument(abc.ABC):
 
     def __setattr__(self, name, value):
         if self._frozen and name not in self._mutable:
-            raise ValueError('Trying to change an attr while frozen.')
+            raise FrozenError('Trying to change an attr while frozen.')
         return super().__setattr__(name, value)
 
     def __delattr__(self, name):
         if self._frozen:
-            raise ValueError('Trying to delete an attr while frozen.')
+            raise FrozenError('Trying to delete an attr while frozen.')
         return super().__delattr__(name)
 
     def list_functions(self):

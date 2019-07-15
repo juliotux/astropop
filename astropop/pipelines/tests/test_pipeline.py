@@ -1,11 +1,9 @@
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
+
+import pytest
+
 from astropop.pipelines import Manager, Config, Instrument, Stage, Product
-
-# from astropop.logger import logger
-# logger.setLevel('DEBUG')
-
-
-# TODO: implement unittest https://docs.python.org/3/library/unittest.html
-# TODO: set values to global variables and assert them
+from astropop.pipelines import FrozenError
 
 string_store = []
 
@@ -107,7 +105,9 @@ class TestManager(Manager):
         self.set_value(p, 'd', d)
 
 
-def test_pipeline():
+def test_pipeline_complete_flow():
+    global string_store
+    string_store = []
     m = TestManager()
     m.setup_pipeline()
     m.setup_products('first_product', 4)
@@ -115,10 +115,55 @@ def test_pipeline():
     m.show_products()
     m.run()
     m.run(index=0, target='sum')
-
-    # TODO: Include the tests here
     assert string_store == [('c=3', 'a+b=3 b*d=16'), ('c=3', 'a+b=3 b*d=16')]
 
 
+def test_config_item_freezing():
+    with pytest.raises(FrozenError):
+        c = Config()
+        c.freeze()
+        c['testing_value'] = 1
+
+
+def test_config_item_del_freezing():
+    with pytest.raises(FrozenError):
+        c = Config()
+        c['test'] = 1
+        c.freeze()
+        del c['test']
+
+
+def test_config_attr_freezing():
+    with pytest.raises(FrozenError):
+        c = Config()
+        c.freeze()
+        c.test = 1
+
+
+def test_config_attr_del_freezing():
+    with pytest.raises(FrozenError):
+        c = Config()
+        c.test = 1
+        c.freeze()
+        del c.test
+
+
+def test_instrument_attr_freezing():
+    with pytest.raises(FrozenError):
+        c = DummyInstrument()
+        c.freeze()
+        c.test = 1
+
+
+def test_instrument_attr_del_freezing():
+    with pytest.raises(FrozenError):
+        c = DummyInstrument()
+        c.test = 1
+        c.freeze()
+        del c.test
+
+
 if __name__ == '__main__':
-    test_pipeline()
+    from astropop.logger import logger
+    logger.setLevel('DEBUG')
+    test_pipeline_complete_flow()
