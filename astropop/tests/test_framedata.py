@@ -37,6 +37,10 @@ def test_create_and_delete_memmap(tmpdir):
     assert not os.path.exists(f)
     assert not os.path.exists(g)
 
+    # None should not raise errors
+    create_array_memmap('dummy', None)
+    delete_array_memmap('dummy', None)
+
 
 def test_ensure_bool_mask(tmpdir):
     # Bool array
@@ -100,5 +104,3 @@ def test_setup_filename(tmpdir):
     assert dirname == test_obj.cache_folder
     assert filename == test_obj.cache_filename
     assert os.path.exists(dirname)
-
-    
