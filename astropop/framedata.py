@@ -180,6 +180,8 @@ class FrameData:
                 raise ValueError('Data with unit defined and manual unit specified.'
                                  ' Incompatible behavior.')
             self.unit = unit
+        elif kwargs.get('unit', None) is not None:
+            self.unit = kwargs.pop('unit', None)
         else:
             # Mimic astropys CCDData behavior?
             raise TypeError('Unit cannot be None. If unit not wanted, set \'\'')

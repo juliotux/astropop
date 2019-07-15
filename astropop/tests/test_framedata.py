@@ -39,7 +39,7 @@ def test_create_and_delete_memmap(tmpdir):
 
     # None should not raise errors
     create_array_memmap('dummy', None)
-    delete_array_memmap('dummy', None)
+    delete_array_memmap(None)
 
 
 def test_ensure_bool_mask(tmpdir):
@@ -63,7 +63,7 @@ def test_ensure_bool_mask(tmpdir):
 
     # Memmap
     filename = tmpdir.join('memmap.npy')
-    m_array = np.memmap(filename.open(), shape=2, dtype='i4', mode='w+')
+    m_array = np.memmap(filename.open('w+'), shape=2, dtype='i4', mode='w+')
     mask = ensure_bool_mask(m_array)
     assert np.dtype(mask.dtype) is np.dtype(bool)
     npt.assert_array_almost_equal(mask, m_array)
