@@ -12,14 +12,12 @@ from collections import OrderedDict
 import functools
 
 from .py_utils import check_iterable, process_list
-from .ccddata import CCDData
+from .framedata import FrameData, imhdus
 from .logger import logger
 
 __all__ = ['imhdus', 'check_header_keys', 'check_image_hdu', 'fits_yielder',
            'headers_to_table', 'check_ccddata']
 
-imhdus = (fits.ImageHDU, fits.PrimaryHDU, fits.CompImageHDU,
-          fits.StreamingHDU)
 
 _supported_formats = [".fts", ".fit", ".fz", ".fits"]
 _compresses = [".gz", ".bz2", ".zip"]
