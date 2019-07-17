@@ -1,7 +1,7 @@
 AstroPoP
 ========
 
-|Travis Status| |Coverall Status| |RTD Status|  |Powered by Astropy|
+|Travis Status| |Coverall Status| |RTD Status|  |CODACY|  |Powered by Astropy|  
 
 The (non) famous ASTROnomical POlarimetry and Photometry pipeline. Developed for work with IAGPOL polarimeter at Observatório Pico dos Dias (Brazil), but suitable to be used in other image polarimeters around the world.
 
@@ -91,3 +91,6 @@ Documentation (not complete yet) can be found at [astropop.readthedocs.io](https
 .. |ASCL|  image:: https://img.shields.io/badge/ascl-1805.024-blue.svg?colorB=262255
     :target: http://ascl.net/1805.024
     :alt: ASCL register
+
+.. |CODACY|  image:: https://api.codacy.com/project/badge/Grade/ef195a81b3194304af55109d76f48531
+    :target: https://www.codacy.com/app/juliotux/astropop
