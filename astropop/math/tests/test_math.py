@@ -5,7 +5,7 @@ import hashlib
 from astropop.math.hasher import hasher
 from astropop.math.opd_utils import opd2jd, solve_decimal, \
                                     read_opd_header_number
-from astropop.math.models import gaussian, moffat
+from astropop.math import gaussian, moffat
 import numpy as np
 
 
