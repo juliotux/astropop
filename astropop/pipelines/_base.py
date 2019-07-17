@@ -301,6 +301,13 @@ class Stage(abc.ABC):
     def status(self):
         return self._status
 
+    @status.setter
+    def status(self, status):
+        if status not in ['idle', 'running', 'done', 'error']:
+            raise ValueError('Status {} not allowed.'
+                             .format(status))
+        self._status = status
+
     @property
     def name(self):
         return self.factory.get_stage_name(self)
@@ -320,13 +327,6 @@ class Stage(abc.ABC):
     @property
     def defaults(self):
         return copy.deepcopy(Config(**self._default_config))
-
-    @status.setter
-    def status(self, status):
-        if status not in ['idle', 'running', 'done', 'error']:
-            raise ValueError('Status {} not allowed.'
-                             .format(status))
-        self._status = status
 
     def wait(self):
         """Wait process to finish."""

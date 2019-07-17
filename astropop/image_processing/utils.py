@@ -1,3 +1,4 @@
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
 """Utilities to easy calibrate images and create calibration frames."""
 
 import numpy as np

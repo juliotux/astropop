@@ -5,6 +5,7 @@ import hashlib
 from astropop.math.hasher import hasher
 from astropop.math.opd_utils import opd2jd, solve_decimal, \
                                     read_opd_header_number
+from astropop.math.models import gaussian, moffat
 import numpy as np
 
 
@@ -44,3 +45,6 @@ def test_read_opd_header_number_invalid(val):
     with pytest.raises(ValueError) as exc:
         read_opd_header_number(val)
         assert 'Could not read the number:' in str(exc.value)
+
+
+

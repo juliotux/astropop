@@ -1,4 +1,6 @@
-# Skyview Helper
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
+"""Skyview helper for default plots"""
+
 import numpy as np
 from astropy.wcs.utils import proj_plane_pixel_scales
 from astroquery.skyview import SkyView

@@ -1,3 +1,5 @@
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
+"""Gaussian models and utilities."""
 import numpy as np
 from astropy.modeling import Fittable1DModel, Fittable2DModel, Parameter
 from astropy.stats import gaussian_sigma_to_fwhm
