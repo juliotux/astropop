@@ -172,3 +172,15 @@ def test_indexeddict_last():
     a = IndexedDict(a=1, b=2, c=3, d=4)
     a.insert_after('d', 'e', 5)
     assert a == {'a': 1, 'b': 2, 'c': 3, 'd': 4, 'e': 5}
+
+
+@pytest.mark.parametrize('val, res', [('a', 0), ('b', 1), ('c', 2), ('d', 3)])
+def test_indexeddict_index(val, res):
+    a = IndexedDict(a=1, b=2, c=3, d=4)
+    assert a.index(val) == res
+
+
+def test_indexeddict_invalid_key():
+    a = IndexedDict(a=1, b=2, c=3, d=4)
+    with pytest.raises(KeyError) as exc:
+        a.index('e')
