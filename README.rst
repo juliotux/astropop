@@ -1,6 +1,10 @@
 AstroPoP
 ========
 
+.. image:: https://api.codacy.com/project/badge/Grade/677db15a53a441c496579820c9264894
+   :alt: Codacy Badge
+   :target: https://app.codacy.com/app/juliotux/astropop?utm_source=github.com&utm_medium=referral&utm_content=juliotux/astropop&utm_campaign=Badge_Grade_Dashboard
+
 |Travis Status| |Coverall Status| |RTD Status|  |Powered by Astropy|
 
 The (non) famous ASTROnomical POlarimetry and Photometry pipeline. Developed for work with IAGPOL polarimeter at Observatório Pico dos Dias (Brazil), but suitable to be used in other image polarimeters around the world.
