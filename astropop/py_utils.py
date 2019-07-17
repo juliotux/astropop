@@ -114,7 +114,7 @@ class IndexedDict(dict):
         __keys = self.keys()
 
         if key not in __keys:
-            raise KeyError("{}".format(k))
+            raise KeyError(f"{key}")
 
         for i, k in enumerate(self.keys()):
             if k == key:
