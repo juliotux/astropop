@@ -11,8 +11,7 @@ import numpy as np
 def test_hasher():
     s = 'asdf1234 &*()[]'
     h = hasher(s, 10)
-    assert h == hashlib.sha256(s.encode()).hexdigest()[:10]
-
+    assert h == '4b37febb5e'
 
 @pytest.mark.parametrize('val, res', [('17jun19', 2457923.5),
                                       (['05ago04', '97jan01'],

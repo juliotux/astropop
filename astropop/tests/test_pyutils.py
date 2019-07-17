@@ -1,5 +1,6 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
+import sys
 import os
 import pytest
 from astropop.py_utils import mkdir_p, string_fix, process_list, \
@@ -7,13 +8,29 @@ from astropop.py_utils import mkdir_p, string_fix, process_list, \
                               run_command, IndexedDict
 import numpy as np
 
-
 def test_mkdir(tmpdir):
     p = tmpdir.join('level1/level2').strpath
     mkdir_p(p)
     assert os.path.isdir(p)
     # mkdir a existent dir should not raise error
     mkdir_p(p)
+
+
+def test_mkdir_oserror(tmpdir):
+    p = '/invalid_dir'
+    with pytest.raises(OSError):
+        mkdir_p(p)
+
+
+def test_run_command():
+    com = ["python", "-c", "print(__import__('sys').version)"]
+    stdout = []
+    stderr = []
+    res, out, err = run_command(com, stdout=stdout, stderr=stderr,
+                                stdout_loglevel='WARN')
+    assert out is stdout
+    assert err is stderr
+    assert '\n'.join(stdout) == sys.version
 
 
 def test_process_list():
@@ -73,6 +90,12 @@ def test_batch_key_replace():
     dic1 = {'a': '{b} value', 'b': '6{c}', 'c': 2}
     res = batch_key_replace(dic1)
     assert dic1['a'] == '62 value'
+
+
+def test_batch_key_replace_list():
+    dic1 = {'a': '{b} value', 'b': ['6{c}', '4{d}'], 'c': 1, 'd': 2}
+    res = batch_key_replace(dic1)
+    assert dic1['a'] == "['61', '42'] value"
 
 
 @pytest.mark.parametrize("inp, enc, res", [("a!^1ö~[😀", None, "a!^1ö~[😀"),

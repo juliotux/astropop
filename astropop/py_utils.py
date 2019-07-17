@@ -1,12 +1,13 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
 import subprocess
+import select
 import shlex
 import six
-from os import path, makedirs
 import errno
+from os import path, makedirs
 
-from .logger import logger
+from .logger import logger, resolve_level_string
 
 __all__ = ['mkdir_p', 'string_fix', 'process_list', 'check_iterable',
            'batch_key_replace', 'IndexedDict']
@@ -81,26 +82,47 @@ def batch_key_replace(dictionary, key=None):
         return
 
 
-def run_command(args, logger=logger):
+def run_command(args, stdout=None, stderr=None, stdout_loglevel='DEBUG',
+                stderr_loglevel='ERROR', logger=logger, **kwargs):
     """Wrapper to run a command in command line with logging."""
-    # TODO: better handle stderr
-    # TODO: create a proper test for this
     if isinstance(args, six.string_types):
         args = shlex.shlex(args)
+    
+    stdout_loglevel = resolve_level_string(stdout_loglevel)
+    stderr_loglevel = resolve_level_string(stderr_loglevel)
 
-    logger.debug('runing: ' + " ".join(args))
+    logger.log(stdout_loglevel, 'Runing: ' + " ".join(args))
 
     process = subprocess.Popen(args, stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE)
+                               stderr=subprocess.PIPE, **kwargs)
 
-    for line in process.stdout:
-        line = line.decode('utf-8').strip('\n')
-        if line != "":
-            logger.debug(line)
+    log_level = {process.stdout: stdout_loglevel,
+                 process.stderr: stderr_loglevel}
+
+    store = {process.stdout: stdout,
+             process.stderr: stderr}
+    
+    def check_io():
+        ready_to_read = select.select([process.stdout,
+                                       process.stderr],
+                                       [], [], 1000)[0]
+        for io in ready_to_read:
+            line = str(io.readline().decode()).strip('\n')
+            if line is not "":
+                if store[io] is not None:  # only stores the desired io
+                    store[io].append(line)
+                logger.log(log_level[io], line[:-1])
+
+    # keep checking stdout/stderr until the process exits
+    while process.poll() is None:
+        check_io()
+
+    check_io()  # check again to catch anything after the process exits
+
+    logger.log(stdout_loglevel, "Done with process: " + " ".join(args))
 
     process.wait()
-
-    return process.returncode
+    return process, stdout, stderr
 
 
 class IndexedDict(dict):

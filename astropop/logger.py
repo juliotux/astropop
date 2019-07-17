@@ -3,7 +3,7 @@
 import logging
 
 
-__all__ = ['logger', 'ListHandler', 'log_to_list']
+__all__ = ['logger', 'ListHandler', 'log_to_list', 'resolve_level_string']
 
         
 logging.basicConfig(format='%(asctime)-15s %(name)s - %(levelname)s -'
@@ -26,3 +26,13 @@ def log_to_list(logger, log_list):
     """Add a ListHandler and a log_list to a Logger."""
     lh = ListHandler(log_list)
     logger.addHandler(lh)
+
+
+def resolve_level_string(value):
+    """Resolve the log level of a string."""
+    try:
+        # Handle already int values
+        value = int(value)
+        return value
+    except ValueError:
+        return getattr(logging, value)
