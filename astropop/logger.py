@@ -6,7 +6,8 @@ import logging
 __all__ = ['logger', 'ListHandler', 'log_to_list']
 
         
-logging.basicConfig(format='%(asctime)-15s %(name)s - %(levelname)s - %(message)s  [%(module)s]')
+logging.basicConfig(format='%(asctime)-15s %(name)s - %(levelname)s -'
+                           ' %(message)s  [%(module)s]')
 logger = logging.getLogger('astropop')
 logger.setLevel('INFO')
 

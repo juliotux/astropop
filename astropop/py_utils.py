@@ -25,17 +25,14 @@ def mkdir_p(fname):
             raise exc
 
 
-def string_fix(string):
-    """Fix the byte<-> string problem in python 3"""
-    if not isinstance(string, six.string_types):
-        if six.PY3:
-            try:
-                string = str(string, 'utf-8')
-            except Exception:
-                try:
-                    string = str(string, 'latin-1')
-                except Exception:
-                    string = string
+def string_fix(string, encode='utf-8'):
+    """Fix the byte<->string problem in python 3"""
+    if isinstance(string, bytes):
+        string = string.decode('utf-8')
+    elif isinstance(string, str):
+        string = string
+    else:
+        string = str(string)
     return string
 
 
@@ -86,6 +83,8 @@ def batch_key_replace(dictionary, key=None):
 
 def run_command(args, logger=logger):
     """Wrapper to run a command in command line with logging."""
+    # TODO: better handle stderr
+    # TODO: create a proper test for this
     if isinstance(args, six.string_types):
         args = shlex.shlex(args)
 
@@ -118,7 +117,7 @@ class IndexedDict(dict):
             raise KeyError("{}".format(k))
 
         for i, k in enumerate(self.keys()):
-            if k == keys:
+            if k == key:
                 return i
 
     def insert_before(self, key, new_key, val):
@@ -136,10 +135,18 @@ class IndexedDict(dict):
         __keys = list(self.keys())
         __vals = list(self.values())
 
+        # Romeve existing keys
+        if key in __keys:
+            ind = __keys.index(key)
+            __keys.pop(ind)
+            __vals.pop(ind)
+            if index > ind:
+                index = index-1
+
         if index < (len(__keys) - 1):
             __keys.insert(index, key)
             __vals.insert(index, value)
             self.clear()
             self.update({x: __vals[i] for i, x in enumerate(__keys)})
         else:
-            self.update({new_key: val})
+            self.update({key: value})

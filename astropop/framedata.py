@@ -145,6 +145,7 @@ class FrameData:
     # TODO: Math operations (__add__, __subtract__, etc...)
     # TODO: handle masked arrays
     # TODO: check data and uncertianty if they are numbers during set
+    # TODO: Initializer for HDUList and HDU
     _memmapping = False
     _data = None
     _data_unit = None

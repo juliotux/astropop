@@ -3,6 +3,9 @@
 import hashlib
 
 
+__all__ = ['hasher']
+
+
 def hasher(string, size=8):
     """Simple function to generate a SHA1 hash of a string.
 
@@ -16,5 +19,6 @@ def hasher(string, size=8):
         - h : string
             Hash string trunked to size.
     """
-    h = hashlib(str(string, "utf-8").encode()).hexdigest()
+    string = str(string)
+    h = hashlib.sha256(string.encode()).hexdigest()
     return h[:size]

@@ -38,15 +38,19 @@ def opd2jd(opd_dates):
             else:
                 return False
 
+    matched = True
     if check_iterable(opd_dates):
         for i in opd_dates:
             if not _match_opddate(i):
-                raise ValueError('Invalid OPD date to convert: {}'.format(i))
+                matched = False
     elif isinstance(opd_dates, six.string_types):
         if not _match_opddate(opd_dates):
-            raise ValueError('Invalid OPD date to convert: {}'
-                             .format(opd_dates))
+            matched = False
         opd_dates = [opd_dates]
+    else:
+        matched = False
+    if not matched:
+        raise ValueError(f'Invalid OPD date to convert: {opd_dates}')
 
     res_arr = []
     opd_dates = np.array(opd_dates)
