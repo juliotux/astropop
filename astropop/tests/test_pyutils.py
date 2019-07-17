@@ -155,7 +155,7 @@ def test_indexeddict_after():
     assert a == {'a': 1, 'b': 2, 'e': 5, 'c': 3, 'd': 4}
 
 
-def test_indexeddict_after():
+def test_indexeddict_before():
     a = IndexedDict(a=1, b=2, c=3, d=4)
     a.insert_before('b', 'e', 5)
     assert a == {'a': 1, 'e': 5, 'b': 2, 'c': 3, 'd': 4}
