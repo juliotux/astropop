@@ -58,7 +58,7 @@ Also, for latex citation, you can use the following BibTex:
 Documentation
 ^^^^^^^^^^^^^
 
-Documentation (not complete yet) can be found at `astropop.readthedocs.io<https://astropop.readthedocs.io>`_
+Documentation (not complete yet) can be found at `astropop.readthedocs.io <https://astropop.readthedocs.io>`_
 
 .. |Travis Status| image:: https://travis-ci.org/juliotux/astropop.svg?branch=master
     :target: https://travis-ci.org/juliotux/astropop
