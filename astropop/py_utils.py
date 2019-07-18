@@ -86,8 +86,9 @@ def run_command(args, stdout=None, stderr=None, stdout_loglevel='DEBUG',
                 stderr_loglevel='ERROR', logger=logger, **kwargs):
     """Wrapper to run a command in command line with logging."""
     if isinstance(args, six.string_types):
-        args = shlex.shlex(args)
-    
+        logger.debug('Converting string using shlex')
+        args = shlex.split(args)
+
     stdout_loglevel = resolve_level_string(stdout_loglevel)
     stderr_loglevel = resolve_level_string(stderr_loglevel)
 
@@ -101,11 +102,11 @@ def run_command(args, stdout=None, stderr=None, stdout_loglevel='DEBUG',
 
     store = {process.stdout: stdout,
              process.stderr: stderr}
-    
+
     def check_io():
         ready_to_read = select.select([process.stdout,
                                        process.stderr],
-                                       [], [], 1000)[0]
+                                      [], [], 1000)[0]
         for io in ready_to_read:
             line = str(io.readline().decode()).strip('\n')
             if line is not "":

@@ -40,3 +40,13 @@ def test_logger_list_debug():
                                       (50, 50)])
 def test_resolve_string(val, res):
     assert resolve_level_string(val) == res
+
+
+def test_invalid_levels_invalid_string():
+    with pytest.raises(AttributeError):
+        resolve_level_string('NOT_A_LOGLEVEL')
+
+
+def test_invalid_levels_none():
+    with pytest.raises(TypeError):
+        resolve_level_string(None)

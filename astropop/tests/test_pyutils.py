@@ -8,6 +8,7 @@ from astropop.py_utils import mkdir_p, string_fix, process_list, \
                               run_command, IndexedDict
 import numpy as np
 
+
 def test_mkdir(tmpdir):
     p = tmpdir.join('level1/level2').strpath
     mkdir_p(p)
@@ -17,13 +18,24 @@ def test_mkdir(tmpdir):
 
 
 def test_mkdir_oserror(tmpdir):
-    p = '/invalid_dir'
+    p = '/bin/bash'
     with pytest.raises(OSError):
         mkdir_p(p)
 
 
 def test_run_command():
     com = ["python", "-c", "print(__import__('sys').version)"]
+    stdout = []
+    stderr = []
+    res, out, err = run_command(com, stdout=stdout, stderr=stderr,
+                                stdout_loglevel='WARN')
+    assert out is stdout
+    assert err is stderr
+    assert '\n'.join(stdout) == sys.version
+
+
+def test_run_command_string():
+    com = "python -c \"print(__import__('sys').version)\""
     stdout = []
     stderr = []
     res, out, err = run_command(com, stdout=stdout, stderr=stderr,
