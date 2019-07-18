@@ -12,7 +12,7 @@ Matplotlib
 
 
 Astropy's WCS/Photutils/Cotout2D/etc
-----------------------------------
+------------------------------------
 
 .. todo:: Check this informations carefully 
 

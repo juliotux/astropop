@@ -3,11 +3,14 @@ Astropop Documentation
 *************************
 
 .. warning::
+    Documentation outdated. Do not use it. We are rewriting it!
 
-Documentation outdated. Do not use it. We are rewriting it!
 
+***************
+Developer Docs
+***************
 
 .. toctree::
-   :maxdepth: 2
+    :maxdepth: 1
 
-    pixel_convention
+    dev/pixel_convention
