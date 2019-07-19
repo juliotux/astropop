@@ -236,10 +236,32 @@ def test_guess_coords_skycord_float():
     assert sk.dec.degree == dec
 
 
-def test_guess_coords_skycord_hexa():
-    ra = "1:00:00"
-    dec = "00:00:00"
-    sk = guess_coordinates(ra, dec, skycoord=True)
+def test_guess_coords_list_hexa():
+    ra = ["1:00:00", "2:30:00"]
+    dec = ["00:00:00", "1:00:00"]
+    sra, sdec = guess_coordinates(ra, dec)
     assert isinstance(sk, SkyCoord)
-    assert (sk.ra.degree - 15.0 < 1e-8)
-    assert (sk.dec.degree - 0.0 < 1e-8)
+    assert_array_almost_equal(sra, [15, 30.5])
+    assert_array_almost_equal(sdec, [0, 1])
+
+
+def test_guess_coords_list_float():
+    ra = [10.0, 15, 20]
+    dec = [0.0, 1.0, -1.0]
+    sra, sdec = guess_coordinates(ra, dec)
+    assert_array_equal(sra, ra)
+    assert_array_equal(sdec, dec)
+
+
+def test_guess_coords_list_diff():
+    ra = np.arange(10)
+    dec = np.arange(15)
+    with pytest.raises(ValueError):
+        guess_coordinates(ra, dec)
+
+
+def test_guess_coords_list_nolist():
+    ra = np.arange(10)
+    dec = 1
+    with pytest.raises(ValueError):
+        guess_coordinates(ra, dec)
