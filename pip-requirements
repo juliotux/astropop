@@ -7,7 +7,6 @@ scikit-image
 matplotlib
 cython
 astroquery
-fortranformat
 astroscrappy
 reproject
 astroalign

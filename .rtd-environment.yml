@@ -17,7 +17,6 @@ dependencies:
     - matplotlib
     - scipy
     - astroquery
-    - fortranformat
     - astroscrappy
     - astroalign
     - ccdproc

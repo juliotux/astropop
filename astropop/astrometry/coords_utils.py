@@ -11,6 +11,7 @@ __all__ = ['guess_coordinates']
 
 def guess_coordinates(ra, dec, skycoord=True):
     """Try to guess the format or ra and dec passed."""
+    # TODO: this needs a refactor!
     # process as lists of coordinates
     if check_iterable(ra) and check_iterable(dec):
         if len(ra) != len(dec):
@@ -23,6 +24,7 @@ def guess_coordinates(ra, dec, skycoord=True):
             s = SkyCoord(ra, dec, unit=(units.hourangle, units.deg))
     elif check_iterable(ra) or check_iterable(dec):
         raise ValueError('RA and Dec do not match in dimensions.')
+
     # process as single coordinates
     else:
         try:

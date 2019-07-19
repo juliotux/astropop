@@ -38,6 +38,10 @@ def wcs_from_coords(x, y, ra, dec, plate_scale, north, flip=None,
     This algorith is not good for coordinates far from crpix. But is useful
     when you cannot solve with other algorithms. (Like just one star in field).
     """
+    # TODO: check conventions carefully with
+    # http://tdc-www.harvard.edu/wcstools/wcstools.wcs.html
+    # http://adsabs.harvard.edu/abs/2002A%26A...395.1061G
+    # http://adsabs.harvard.edu/abs/2002A%26A...395.1077C
     # FIXME: not flipping?
     sk = guess_coordinates(ra, dec)
     ra, dec = sk.ra.degree, sk.dec.degree
@@ -49,9 +53,7 @@ def wcs_from_coords(x, y, ra, dec, plate_scale, north, flip=None,
             raise ValueError('invalid value for north: {}'.format(north))
 
     # convert arcsec/pix to degree/pix
-    if check_iterable(plate_scale):
-        logger.warn("A list of plate scales given, using mean.")
-        plate_scale = np.nanmean(plate_scale)
+    plate_scale = float(plate_scale)  # ensure scalar
     plate_scale /= 3600
 
     # following the standard astrometry.net, all the delta informations
@@ -62,7 +64,8 @@ def wcs_from_coords(x, y, ra, dec, plate_scale, north, flip=None,
     rot = [[np.sin(np.radians(north)), -np.cos(np.radians(north))],
            [np.cos(np.radians(north)), np.sin(np.radians(north))]]
 
-    pc = np.multiply(rot, [[deltra]*2, [deltde]*2])
+    pc = np.multiply(rot, [[deltra, deltra],
+                           [deltde, deltde]])
 
     # and finally, we can construct the wcs
     w = WCS(naxis=2)

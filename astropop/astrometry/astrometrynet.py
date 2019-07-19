@@ -8,7 +8,6 @@ improvements.
 
 
 import os
-# import sys
 import shutil
 import subprocess
 import copy
@@ -27,6 +26,10 @@ from ..py_utils import check_iterable, run_command
 
 __all__ = ['AstrometrySolver', 'solve_astrometry_xy', 'solve_astrometry_image',
            'create_xyls', 'AstrometryNetUnsolvedField']
+
+
+_fit_wcs = shutil.which('fit-wcs')
+_solve_field = shutil.which('solve-field')
 
 
 class AstrometryNetUnsolvedField(subprocess.CalledProcessError):
@@ -59,21 +62,26 @@ class AstrometrySolver():
     For convenience, all the auxiliary files will be deleted, except you
     specify to keep it with 'keep_files'.
     """
-    def __init__(self, astrometry_command=shutil.which('solve-field'),
-                 defaults={'no-plot': None, 'overwrite': None},
-                 keep_files=False, logger=logger):
+    _defaults = None
+
+    def __init__(self, astrometry_command=_solve_field,
+                 defaults=None, keep_files=False, logger=logger):
+        # declare the defaults here to be safer
+        self._defaults = {'no-plot': None, 'overwrite': None}
+        if defaults is None:
+            defaults = {}
+        self._defaults.update(defaults)
+
         self._command = astrometry_command
-        self._defaults = defaults
         self._keep = keep_files
         self.logger = logger
 
-    def _guess_coordinates(self, header, ra_key, dec_key):
+    def _guess_coordinates(self, header, ra_key='RA', dec_key='DEC'):
         '''
         Guess the center coordinates of field based in header keys.
         '''
-        ra = solve_decimal(str(header[ra_key]))
-        dec = solve_decimal(str(header[dec_key]))
-
+        ra = header.get(ra_key)
+        dec = header.get(dec_key)
         return guess_coordinates(ra, dec)
 
     def _guess_field_params(self, header, image_params):
@@ -98,7 +106,7 @@ class AstrometrySolver():
                                  ' decimal degrees. Ignoring it: {}{}'
                                  .format(ra, dec))
         elif 'ra_key' in keys and 'dec_key' in keys:
-            logger.info("Figuring out field center coordinates")
+            self.logger.info("Figuring out field center coordinates")
             try:
                 coords = self._guess_coordinates(header,
                                                  image_params.get('ra_key'),
@@ -149,9 +157,8 @@ class AstrometrySolver():
         return options
 
     def solve_field(self, filename, output_file=None, wcs=False,
-                    image_params={},
-                    solve_params={}, scamp_basename=None,
-                    show_process=True):
+                    image_params=None, solve_params=None, scamp_basename=None,
+                    **kwargs):
         # TODO: put some of these arguments in a config file
         """Try to solve an image using the astrometry.net.
 
@@ -178,6 +185,11 @@ class AstrometrySolver():
             information from astrometry.net. If return_wcs=True, a WCS
             object will be returned.
         """
+        if image_params is None:
+            image_params = {}
+        if solve_params is None:
+            solve_params = {}
+
         options = copy.copy(self._defaults)
         options.update(solve_params)
 
@@ -198,14 +210,14 @@ class AstrometrySolver():
             field_params = {}
         options.update(field_params)
 
-        solved_header = self._run_solver(filename, params=options)
+        solved_header = self._run_solver(filename, params=options, **kwargs)
 
         if not wcs:
             return solved_header
         else:
             return WCS(solved_header, relax=True)
 
-    def _run_solver(self, filename, params, output_dir=None):
+    def _run_solver(self, filename, params, output_dir=None, **kwargs):
         """Run the astrometry.net localy using the given params.
 
         STDOUT and STDERR can be stored in variables for better check after.
@@ -228,7 +240,8 @@ class AstrometrySolver():
                 args.append(str(v))
 
         try:
-            errcode = run_command(args, self.logger)
+            errcode, stdout, stderr = run_command(args, logger=self.logger,
+                                                  **kwargs)
 
             if errcode != 0:
                 raise subprocess.CalledProcessError(errcode, self._command)
@@ -238,7 +251,7 @@ class AstrometrySolver():
                 if ord(fd.read()) != 1:
                     raise AstrometryNetUnsolvedField(filename)
             solved_wcs_file = os.path.join(output_dir, root + '.wcs')
-            logger.info('Loading solved header from %s' % solved_wcs_file)
+            self.logger.info('Loading solved header from %s' % solved_wcs_file)
             solved_header = fits.getheader(solved_wcs_file, 0)
 
             # remove the tree if the file is temporary and not set to keep
@@ -259,7 +272,8 @@ class AstrometrySolver():
             raise AstrometryNetUnsolvedField(filename)
 
 
-def create_xyls(fname, x, y, flux, imagew, imageh, header=None, dtype='f8'):
+def create_xyls(fname, x, y, flux, imagew, imageh, header=None, dtype='f8',
+                logger=logger):
     '''
     Create and save the xyls file to run in astrometry.net
 
@@ -293,7 +307,8 @@ def create_xyls(fname, x, y, flux, imagew, imageh, header=None, dtype='f8'):
 
 
 def solve_astrometry_xy(x, y, flux, image_header, image_width, image_height,
-                        return_wcs=False, image_params={}):
+                        return_wcs=False, logger=logger, image_params=None,
+                        **kwargs):
     '''
     image_params are:
         pltscl: plate scale (arcsec/px)
@@ -304,16 +319,19 @@ def solve_astrometry_xy(x, y, flux, image_header, image_width, image_height,
         dec_key: header key for declination
         radius: maximum search radius
     '''
+    if image_params is None:
+        image_params = {}
     image_header = clean_previous_wcs(image_header)
     f = NamedTemporaryFile(suffix='.xyls')
     create_xyls(f.name, x, y, flux, image_width, image_height,
                 header=image_header)
-    solved_header = AstrometrySolver().solve_field(f.name, wcs=return_wcs,
-                                                   image_params=image_params)
-    return solved_header
+    solver = AstrometrySolver(logger=logger)
+    return solver.solve_field(f.name, wcs=return_wcs,
+                              image_params=image_params, **kwargs)
 
 
-def solve_astrometry_image(filename, return_wcs=False, image_params={}):
+def solve_astrometry_image(filename, return_wcs=False, image_params=None,
+                           logger=logger, **kwargs):
     """
     image_params are:
         pltscl: plate scale (arcsec/px)
@@ -324,11 +342,15 @@ def solve_astrometry_image(filename, return_wcs=False, image_params={}):
         dec_key: header key for declination
         radius: maximum search radius
     """
-    return AstrometrySolver().solve_field(filename, wcs=return_wcs,
-                                          image_params=image_params)
+    if image_params is None:
+        image_params = {}
+    solver = AstrometrySolver(logger=logger)
+    return solver.solve_field(filename, wcs=return_wcs,
+                              image_params=image_params, **kwargs)
 
 
-def solve_astrometry_hdu(hdu, return_wcs=False, image_params={}):
+def solve_astrometry_hdu(hdu, return_wcs=False, image_params=None,
+                         logger=logger, **kwargs):
     """
     image_params are:
         pltscl: plate scale (arcsec/px)
@@ -339,16 +361,19 @@ def solve_astrometry_hdu(hdu, return_wcs=False, image_params={}):
         dec_key: header key for declination
         radius: maximum search radius
     """
+    if image_params is None:
+        image_params = {}
     hdu.header = clean_previous_wcs(hdu.header)
     f = NamedTemporaryFile(suffix='.fits')
     hdu = fits.PrimaryHDU(hdu.data, header=hdu.header)
     hdu.writeto(f.name)
-    return AstrometrySolver().solve_field(f.name, wcs=return_wcs,
-                                          image_params=image_params)
+    solver = AstrometrySolver(logger=logger)
+    return solver.solve_field(f.name, wcs=return_wcs,
+                              image_params=image_params, **kwargs)
 
 
 def fit_wcs(x, y, ra, dec, image_width, image_height, sip=False,
-            command=shutil.which('fit-wcs')):
+            command=_fit_wcs, logger=logger, **kwargs):
     """Run astrometry.net fit-wcs command
 
     sip is sip order, int
@@ -372,7 +397,9 @@ def fit_wcs(x, y, ra, dec, image_width, image_height, sip=False,
     args += ['-o', solved_wcs_file.name]
 
     try:
-        subprocess.check_call(args)
+        errcode, _, _ = run_command(args, logger=logger, **kwargs)
+        if errcode != 0:
+            raise subprocess.CalledProcessError(errcode, self._command)
         logger.info('Loading solved header from {}'
                     .format(solved_wcs_file.name))
         solved_header = fits.getheader(solved_wcs_file.name, 0)
