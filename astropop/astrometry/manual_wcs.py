@@ -21,6 +21,7 @@ _angles = {
 def wcs_from_coords(x, y, ra, dec, plate_scale, north, flip=None,
                     logger=logger):
     """Giving coordinates and plate scale, creates a WCS.
+
     x, y: float, pixel coordinates in image
     ra, dec: float, sky coordinates
 
@@ -34,15 +35,12 @@ def wcs_from_coords(x, y, ra, dec, plate_scale, north, flip=None,
     The standard coordinates are ra and dec in the following order, ccw:
     W - N - E - S
 
+    Coordinate values grow to E and N.
+
     Problems:
     This algorith is not good for coordinates far from crpix. But is useful
     when you cannot solve with other algorithms. (Like just one star in field).
     """
-    # TODO: check conventions carefully with
-    # http://tdc-www.harvard.edu/wcstools/wcstools.wcs.html
-    # http://adsabs.harvard.edu/abs/2002A%26A...395.1061G
-    # http://adsabs.harvard.edu/abs/2002A%26A...395.1077C
-    # FIXME: not flipping?
     sk = guess_coordinates(ra, dec)
     ra, dec = sk.ra.degree, sk.dec.degree
 
@@ -50,7 +48,7 @@ def wcs_from_coords(x, y, ra, dec, plate_scale, north, flip=None,
         if north in _angles.keys():
             north = _angles[north]
         else:
-            raise ValueError('invalid value for north: {}'.format(north))
+            raise ValueError(f'invalid value for north: {north}')
 
     # convert arcsec/pix to degree/pix
     plate_scale = float(plate_scale)  # ensure scalar
@@ -58,8 +56,10 @@ def wcs_from_coords(x, y, ra, dec, plate_scale, north, flip=None,
 
     # following the standard astrometry.net, all the delta informations
     # will be located inside the rotation/scale matrix pc
-    deltra = -plate_scale if flip in ['ra', 'all'] else plate_scale
-    deltde = -plate_scale if flip in ['dec', 'all'] else plate_scale
+    deltra = plate_scale if flip == 'ra' else -plate_scale
+    deltde = -plate_scale if flip == 'dec' else plate_scale
+    if flip == 'all':
+        north += 180
 
     rot = [[np.sin(np.radians(north)), -np.cos(np.radians(north))],
            [np.cos(np.radians(north)), np.sin(np.radians(north))]]
