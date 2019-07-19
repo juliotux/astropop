@@ -39,7 +39,7 @@ env:
         - MAIN_CMD='python setup.py'
         - SETUP_CMD='test'
         - EVENT_TYPE='pull_request push'
-        - CONDA_DEPENDENCIES='cython astroalign scipy ccdproc scikit-image matplotlib astroquery astroscrappy pyyaml
+        - CONDA_DEPENDENCIES='cython astroalign scipy ccdproc scikit-image matplotlib astroquery astroscrappy pyyaml'
         - CONDA_DEPENDENCIES_DOC='sphinx_rtd_theme sphinx-astropy'
         - PIP_DEPENDENCIES='sep pytest-remotedata pytest-openfiles'
         - CONDA_CHANNELS='astropy juliotux'
