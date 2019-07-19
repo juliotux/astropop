@@ -9,7 +9,7 @@ improvements.
 
 import os
 import shutil
-import subprocess
+from subprocess import CalledProcessError
 import copy
 from tempfile import NamedTemporaryFile, mkdtemp
 
@@ -32,7 +32,7 @@ _fit_wcs = shutil.which('fit-wcs')
 _solve_field = shutil.which('solve-field')
 
 
-class AstrometryNetUnsolvedField(subprocess.CalledProcessError):
+class AstrometryNetUnsolvedField(CalledProcessError):
     """ Raised if Astrometry.net could not solve the field """
     def __init__(self, path):
         self.path = path
@@ -244,7 +244,7 @@ class AstrometrySolver():
                                                   **kwargs)
 
             if errcode != 0:
-                raise subprocess.CalledProcessError(errcode, self._command)
+                raise CalledProcessError(errcode, self._command)
 
             # .solved file must exist and contain a binary one
             with open(solved_file, 'rb') as fd:
@@ -260,7 +260,7 @@ class AstrometrySolver():
 
             return solved_header
 
-        except subprocess.CalledProcessError as e:
+        except CalledProcessError as e:
             if not self._keep and tmp_dir:
                 shutil.rmtree(output_dir)
             raise e
@@ -391,6 +391,7 @@ def fit_wcs(x, y, ra, dec, image_width, image_height, sip=False,
 
     args = [command]
     args += ['-c', tmp_table.name]
+
     if sip:
         args += ['-s', str(sip), '-W', str(image_width), '-H',
                  str(image_height)]
@@ -399,7 +400,7 @@ def fit_wcs(x, y, ra, dec, image_width, image_height, sip=False,
     try:
         errcode, _, _ = run_command(args, logger=logger, **kwargs)
         if errcode != 0:
-            raise subprocess.CalledProcessError(errcode, self._command)
+            raise CalledProcessError(errcode, args)
         logger.info('Loading solved header from {}'
                     .format(solved_wcs_file.name))
         solved_header = fits.getheader(solved_wcs_file.name, 0)
