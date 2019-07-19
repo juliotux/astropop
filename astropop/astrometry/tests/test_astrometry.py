@@ -236,6 +236,15 @@ def test_guess_coords_skycord_float():
     assert sk.dec.degree == dec
 
 
+def test_guess_coords_skycord_hexa():
+    ra = "1:00:00"
+    dec = "00:00:00"
+    sk = guess_coordinates(ra, dec, skycoord=True)
+    assert isinstance(sk, SkyCoord)
+    assert (sk.ra.degree - 15 < 1e-8)
+    assert (sk.dec.degree - 0 < 1e-8)
+
+
 def test_guess_coords_list_hexa():
     ra = ["1:00:00", "2:30:00"]
     dec = ["00:00:00", "1:00:00"]
