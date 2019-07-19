@@ -240,7 +240,6 @@ def test_guess_coords_list_hexa():
     ra = ["1:00:00", "2:30:00"]
     dec = ["00:00:00", "1:00:00"]
     sra, sdec = guess_coordinates(ra, dec)
-    assert isinstance(sk, SkyCoord)
     assert_array_almost_equal(sra, [15, 30.5])
     assert_array_almost_equal(sdec, [0, 1])
 
