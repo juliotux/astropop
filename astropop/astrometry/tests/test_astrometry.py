@@ -239,15 +239,15 @@ def test_guess_coords_skycord_float():
 def test_guess_coords_list_hexa():
     ra = ["1:00:00", "2:30:00"]
     dec = ["00:00:00", "1:00:00"]
-    sra, sdec = guess_coordinates(ra, dec)
-    assert_array_almost_equal(sra, [15, 30.5])
+    sra, sdec = guess_coordinates(ra, dec, skycoord=False)
+    assert_array_almost_equal(sra, [15, 37.5])
     assert_array_almost_equal(sdec, [0, 1])
 
 
 def test_guess_coords_list_float():
     ra = [10.0, 15, 20]
     dec = [0.0, 1.0, -1.0]
-    sra, sdec = guess_coordinates(ra, dec)
+    sra, sdec = guess_coordinates(ra, dec, skycoord=False)
     assert_array_equal(sra, ra)
     assert_array_equal(sdec, dec)
 
