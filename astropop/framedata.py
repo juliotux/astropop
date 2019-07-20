@@ -274,7 +274,7 @@ class FrameData:
         return self._wcs
 
     @wcs.setter
-    def wcs_setter(self, value):
+    def wcs(self, value):
         self.header, wcs = _generate_wcs_and_update_header(value)
         self._wcs = wcs
 
@@ -283,7 +283,7 @@ class FrameData:
         return self._meta
 
     @meta.setter
-    def meta_setter(self, value):
+    def meta(self, value):
         self.header = value
 
     @property
@@ -291,7 +291,7 @@ class FrameData:
         return self._meta
 
     @header.setter
-    def header_setter(self, value):
+    def header(self, value):
         self._meta = dict(value)
 
     @property
@@ -299,7 +299,7 @@ class FrameData:
         return self._data_unit
 
     @unit.setter
-    def unit_setter(self, value):
+    def unit(self, value):
         value = u.Unit(value)
         self._data_unit = value
 
@@ -310,7 +310,7 @@ class FrameData:
         return self._unct_unit
 
     @uncert_unit.setter
-    def uncert_unit_setter(self, value):
+    def uncert_unit(self, value):
         print(f'unct_unit {value}')
         if value is None:
             self._unct_unit = value
@@ -323,7 +323,7 @@ class FrameData:
         return self._data
 
     @data.setter
-    def data_setter(self, value):
+    def data(self, value):
         if isinstance(value, u.Quantity):
             self.unit = value.unit
             value = value.value
@@ -348,7 +348,7 @@ class FrameData:
             self._data = value
 
     @data.deleter
-    def data_deleter(self):
+    def data(self):
         if self._memmapping:
             name = self._data.filename
             dirname = os.path.dirname(name)
@@ -365,7 +365,7 @@ class FrameData:
         return self._unct
 
     @uncertainty.setter
-    def uncertainty_setter(self, value):
+    def uncertainty(self, value):
         if isinstance(value, NDUncertainty):
             if isinstance(value, StdDevUncertainty):
                 self.uncert_unit = value.unit
@@ -408,7 +408,7 @@ class FrameData:
             self._unct = value
 
     @uncertainty.deleter
-    def uncertainty_deleter(self):
+    def uncertainty(self):
         if isinstance(self._unct, np.memmap):
             name = self._uncertainty.filename
             dirname = os.path.dirname(name)
@@ -425,7 +425,7 @@ class FrameData:
         return self._mask
 
     @mask.setter
-    def mask_setter(self, value):
+    def mask(self, value):
         if value is not None:
             value = np.array(value)
             if value.shape == ():
@@ -452,7 +452,7 @@ class FrameData:
             self._mask = value
 
     @mask.deleter
-    def mask_deleter(self):
+    def mask(self):
         if isinstance(self._mask, np.memmap):
             name = self._mask.filename
             dirname = os.path.dirname(name)

@@ -1,7 +1,7 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
 from .aperture import aperture_photometry
-from .detection import (background, sexfind, daofind, calc_fwhm,
+from .detection import (background, sepfind, daofind, calc_fwhm,
                         recenter_sources, starfind)
 from .solve_photometry import (solve_photometry_median,
                                solve_photometry_average,

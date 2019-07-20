@@ -10,8 +10,8 @@ from scipy.optimize import curve_fit
 from scipy.ndimage.filters import convolve
 
 from ._utils import _sep_fix_byte_order
-from ..math.models.moffat import moffat_r, moffat_fwhm, PSFMoffat2D
-from ..math.models.gaussian import gaussian_r, gaussian_fwhm, PSFGaussian2D
+from ..math.moffat import moffat_r, moffat_fwhm, PSFMoffat2D
+from ..math.gaussian import gaussian_r, gaussian_fwhm, PSFGaussian2D
 from ..math.array import trim_array, xy2r
 from ..logger import logger
 
@@ -57,7 +57,7 @@ def background(data, box_size, filter_size, mask=None, global_bkg=True,
         return bkg.back(), bkg.rms()
 
 
-def sexfind(data, snr, background, noise, recenter=False,
+def sepfind(data, snr, background, noise, recenter=False,
             mask=None, fwhm=None, filter_kernel=3, logger=logger,
             **sep_kwargs):
     """Find sources using SExtractor segmentation algorithm.
@@ -105,8 +105,8 @@ def daofind(data, snr, background, noise, fwhm, mask=None,
     # Get information about the input image
     type = np.shape(image)
     if len(type) != 2:
-        raise ValueError ('data array must be 2 dimensional')
-    n_x  = type[1]
+        raise ValueError('data array must be 2 dimensional')
+    n_x = type[1]
     n_y = type[0]
     logger.debug('Input Image Size is {}x{}'.format(n_x, n_y))
 
@@ -334,11 +334,11 @@ def daofind(data, snr, background, noise, fwhm, mask=None,
 
 
 def starfind(data, snr, background, noise, fwhm, mask=None, box_size=35,
-            sharp_limit=(0.2, 1.0), round_limit=(-1.0, 1.0),
-            logger=logger):
+             sharp_limit=(0.2, 1.0), round_limit=(-1.0, 1.0),
+             logger=logger):
     """Find stars using daofind AND sexfind."""
-    # First, we identify the sources with sexfind (fwhm independent)
-    sources = sexfind(data, snr, background, noise, mask=mask,
+    # First, we identify the sources with sepfind (fwhm independent)
+    sources = sepfind(data, snr, background, noise, mask=mask,
                       fwhm=fwhm)
     # We compute the median FWHM and perform a optimum daofind extraction
     fwhm = calc_fwhm(data, sources['x'], sources['y'], box_size=box_size,

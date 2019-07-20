@@ -240,10 +240,9 @@ class AstrometrySolver():
                 args.append(str(v))
 
         try:
-            errcode, _, _ = run_command(args, logger=self.logger, **kwargs)
-
-            if errcode != 0:
-                raise CalledProcessError(errcode, self._command)
+            process, _, _ = run_command(args, logger=self.logger, **kwargs)
+            if process.returncode != 0:
+                raise CalledProcessError(process.returncode, self._command)
 
             # .solved file must exist and contain a binary one
             with open(solved_file, 'rb') as fd:
@@ -397,9 +396,9 @@ def fit_wcs(x, y, ra, dec, image_width, image_height, sip=False,
     args += ['-o', solved_wcs_file.name]
 
     try:
-        errcode, _, _ = run_command(args, logger=logger, **kwargs)
-        if errcode != 0:
-            raise CalledProcessError(errcode, args)
+        process, _, _ = run_command(args, logger=logger, **kwargs)
+        if process.returncode != 0:
+            raise CalledProcessError(process.returncode, self._command)
         logger.info('Loading solved header from {}'
                     .format(solved_wcs_file.name))
         solved_header = fits.getheader(solved_wcs_file.name, 0)

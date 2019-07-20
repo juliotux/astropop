@@ -301,7 +301,7 @@ class Stage(abc.ABC):
         return self._status
 
     @status.setter
-    def status_setter(self, stat):
+    def status(self, stat):
         if stat not in ['idle', 'running', 'done', 'error']:
             raise ValueError('Status {} not allowed.'
                              .format(stat))

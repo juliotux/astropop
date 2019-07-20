@@ -3,7 +3,7 @@
 import pytest
 import hashlib
 from astropop.math.hasher import hasher
-from astropop.math.array import xy2r, iraf_indices
+from astropop.math.array import xy2r, iraf_indices, trim_array
 from astropop.math.opd_utils import opd2jd, solve_decimal, \
                                     read_opd_header_number
 from astropop.math import gaussian, moffat
@@ -62,3 +62,105 @@ def test_iraf_indices():
     x, y = iraf_indices(f)
     assert np.array_equal(x, [[0, 1], [0, 1]])
     assert np.array_equal(y, [[0, 0], [1, 1]])
+
+
+def test_trim_array_centered():
+    y, x = np.indices((100, 100))
+    a = x*y
+    ta, tx, ty = trim_array(a, 21, (50, 50), (y, x))
+    assert np.array_equal(ta, a[39:61, 39:61])
+    assert np.array_equal(tx, x[39:61, 39:61])
+    assert np.array_equal(ty, y[39:61, 39:61])
+    assert np.min(tx) == 39
+    assert np.max(tx) == 60
+    assert np.min(ty) == 39
+    assert np.max(ty) == 60
+    assert np.min(ta) == 39*39
+    assert np.max(ta) == 60*60
+
+
+def test_trim_array_right():
+    y, x = np.indices((100, 100))
+    a = x*y
+    ta, tx, ty = trim_array(a, 21, (95, 50), (y, x))
+    assert np.array_equal(ta, a[39:61, 84:])
+    assert np.array_equal(tx, x[39:61, 84:])
+    assert np.array_equal(ty, y[39:61, 84:])
+    assert np.min(tx) == 84
+    assert np.max(tx) == 99
+    assert np.min(ty) == 39
+    assert np.max(ty) == 60
+    assert np.min(ta) == 84*39
+    assert np.max(ta) == 99*60
+
+
+def test_trim_array_left():
+    y, x = np.indices((100, 100))
+    a = x*y
+    ta, tx, ty = trim_array(a, 21, (5, 50), (y, x))
+    assert np.array_equal(ta, a[39:61, :16])
+    assert np.array_equal(tx, x[39:61, :16])
+    assert np.array_equal(ty, y[39:61, :16])
+    assert np.min(tx) == 0
+    assert np.max(tx) == 15
+    assert np.min(ty) == 39
+    assert np.max(ty) == 60
+    assert np.min(ta) == 0*39
+    assert np.max(ta) == 15*60
+
+
+def test_trim_array_bottom():
+    y, x = np.indices((100, 100))
+    a = x*y
+    ta, tx, ty = trim_array(a, 21, (50, 5), (y, x))
+    assert np.array_equal(ta, a[:16, 39:61])
+    assert np.array_equal(tx, x[:16, 39:61])
+    assert np.array_equal(ty, y[:16, 39:61])
+    assert np.min(ty) == 0
+    assert np.max(ty) == 15
+    assert np.min(tx) == 39
+    assert np.max(tx) == 60
+    assert np.min(ta) == 0*39
+    assert np.max(ta) == 15*60
+
+
+def test_trim_array_top():
+    y, x = np.indices((100, 100))
+    a = x*y
+    ta, tx, ty = trim_array(a, 21, (50, 95), (y, x))
+    assert np.array_equal(ta, a[84:, 39:61])
+    assert np.array_equal(tx, x[84:, 39:61])
+    assert np.array_equal(ty, y[84:, 39:61])
+    assert np.min(ty) == 0
+    assert np.max(ty) == 15
+    assert np.min(tx) == 39
+    assert np.max(tx) == 60
+    assert np.min(ta) == 0*39
+    assert np.max(ta) == 15*60
+
+
+def test_trim_array_no_indices():
+    y, x = np.indices((100, 100))
+    a = x*y
+    ta, tx, ty = trim_array(a, 21, (50, 95))
+    assert np.array_equal(ta, a[84:, 39:61])
+    assert tx == 11
+    assert ty == 11
+
+
+def test_trim_array_one_origin():
+    y, x = np.indices((100, 100))
+    a = x*y
+    ta, tx, ty = trim_array(a, 21, (50, 95), origin=1)
+    assert np.array_equal(ta, a[85:, 40:62])
+    assert tx == 11
+    assert ty == 11
+
+
+def test_trim_array_even():
+    y, x = np.indices((100, 100))
+    a = x*y
+    ta, tx, ty = trim_array(a, 20, (50, 95))
+    assert np.array_equal(ta, a[85:, 40:61])
+    assert tx == 10
+    assert ty == 10

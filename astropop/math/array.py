@@ -15,9 +15,13 @@ def xy2r(x, y, data, xc, yc):
     return np.ravel(r), np.ravel(data)
 
 
-def trim_array(data, box_size, position, indices=None):
+def trim_array(data, box_size, position, indices=None, origin=0):
     """Trim a numpy array around a position."""
     x, y = position
+    # Correct for 1-based indexing
+    x += origin
+    y += origin
+
     dx = dy = float(box_size)/2
 
     x_min = max(int(x-dx), 0)
