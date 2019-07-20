@@ -5,18 +5,15 @@ imarith
 
 Handle the IRAF's imarith and imcombine functions.
 '''
+# TODO: reimplement imcombine
+# TODO: create the decorator @framedata_func to check_framedata
 
 import numpy as np
-from ccdproc.combiner import combine
 
-from ..fits_utils import check_ccddata
+from ..framedata import FrameData, check_framedata
 from ..logger import logger
 
-__all__ = ['imarith', 'imcombine']
-
-
-# TODO: Rework combine with self implementation
-imcombine = combine
+__all__ = ['imarith']
 
 
 _arith_funcs = {'+': np.add,
@@ -50,25 +47,23 @@ def imarith(operand1, operand2, operation, inplace=False, logger=logger):
     # TODO: manage caching for results
     # TODO: handle units
 
-    logger.debug('Operation {} between {} and {}'.format(operation, operand1,
-                                                         operand2))
+    logger.debug(f'Operation {operation} between {operand1} and {operand2}')
 
-    operand1 = check_ccddata(operand1)
+    operand1 = check_framedata(operand1)
     if hasattr(operand2, 'data'):
-        operand2 = check_ccddata(operand2)
+        operand2 = check_framedata(operand2)
         data2 = operand2.data
     else:
         data2 = operand2
 
     if operation not in _arith_funcs.keys():
-        raise ValueError("Operation {} not supported.".format(operation))
+        raise ValueError(f"Operation {operation} not supported.")
 
     try:
         ndata = _arith_funcs[operation](operand1.data, data2)
     except Exception as e:
-        raise ValueError('Could not process the operation {} between {} and {}'
-                         'Error: {}'
-                         .format(operation, operand1, operand2, e))
+        raise ValueError(f'Could not process the operation {operation} between'
+                         '{operand1} and {operand2}. Error: {e}')
 
     # Join masks
     if hasattr(operand2, 'mask'):
@@ -109,8 +104,7 @@ def imarith(operand1, operand2, operation, inplace=False, logger=logger):
         ccd.uncertainty = nuncert
         ccd.mask = nmask
     else:
-        ccd = check_ccddata(ndata)
-        ccd.meta = operand1.meta.copy()
+        ccd = FrameData(ndata, operand1.unit, meta=operand1.meta.copy())
         ccd.uncertainty = nuncert
         ccd.mask = nmask
 

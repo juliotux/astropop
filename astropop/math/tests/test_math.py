@@ -131,8 +131,8 @@ def test_trim_array_top():
     assert np.array_equal(ta, a[84:, 39:61])
     assert np.array_equal(tx, x[84:, 39:61])
     assert np.array_equal(ty, y[84:, 39:61])
-    assert np.min(ty) == 0
-    assert np.max(ty) == 15
+    assert np.min(ty) == 84
+    assert np.max(ty) == 99
     assert np.min(tx) == 39
     assert np.max(tx) == 60
     assert np.min(ta) == 0*39

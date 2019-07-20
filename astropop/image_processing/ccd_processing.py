@@ -6,7 +6,7 @@ import astroscrappy
 
 from ..logger import logger
 from .imarith import imarith
-from ..fits_utils import check_ccddata
+from ..framedata import check_framedata
 
 
 __all__ = ['cosmics_lacosmic']
@@ -57,7 +57,7 @@ def gain_correct(image, gain, gain_unit=None, inplace=False,
         image.data = nim.data
         nim = image
     else:
-        nim = check_ccddata(nim)
+        nim = check_framedata(nim)
 
     return nim
 
@@ -65,7 +65,7 @@ def gain_correct(image, gain, gain_unit=None, inplace=False,
 def subtract_bias(image, master_bias, inplace=False,
                   logger=logger):
     """Subtract a master_bias frame from a CCDData."""
-    master_bias = check_ccddata(master_bias)
+    master_bias = check_framedata(master_bias)
     nim = imarith(image, master_bias, '-', inplace=False, logger=logger)
 
     nim.header['hierarch astropop bias_corrected'] = True
@@ -77,7 +77,7 @@ def subtract_bias(image, master_bias, inplace=False,
         image.data = nim.data
         nim = image
     else:
-        nim = check_ccddata(nim)
+        nim = check_framedata(nim)
 
     return nim
 
@@ -85,8 +85,8 @@ def subtract_bias(image, master_bias, inplace=False,
 def subtract_dark(image, master_dark, dark_exposure, image_exposure,
                   inplace=False, logger=logger):
     """Subtract master_dark frame from a CCDData."""
-    image = check_ccddata(image)
-    master_dark = check_ccddata(master_dark)
+    image = check_framedata(image)
+    master_dark = check_framedata(master_dark)
     scale = image_exposure/dark_exposure
     if scale != 1:
         logger.debug('Scaling dark by {} factor to match image exposure.'
@@ -109,8 +109,8 @@ def subtract_dark(image, master_dark, dark_exposure, image_exposure,
 def flat_correct(image, master_flat, min_value=None, norm_value=None,
                  inplace=False, logger=logger):
     """Divide the image by a flat field frame."""
-    master_flat = check_ccddata(master_flat)
-    image = check_ccddata(image)
+    master_flat = check_framedata(master_flat)
+    image = check_framedata(image)
 
     if min_value is not None:
         logger.debug('Set lower flat value to {}'.format(min_value))

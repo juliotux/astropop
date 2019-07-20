@@ -12,15 +12,17 @@ import copy
 from tempfile import mkdtemp, mkstemp
 from astropy import units as u
 from astropy.io import fits
-from astropy.nddata import StdDevUncertainty, NDUncertainty, CCDData
+from astropy.nddata import StdDevUncertainty, NDUncertainty, CCDData, NDData
 from astropy.nddata.ccddata import _generate_wcs_and_update_header
 
 from .py_utils import mkdir_p
+from .logger import logger
 
 
 __all__ = ['FrameData', 'create_array_memmap', 'delete_array_memmap',
            'ensure_bool_mask', 'setup_filename', 'framedata_read_fits',
-           'framedata_to_hdu']
+           'framedata_to_hdu', 'hdu2framedata', 'hdulist2framedata',
+           'check_framedata']
 
 
 _unsupport_fits_open_keywords = {
@@ -52,6 +54,76 @@ def ensure_bool_mask(value):
         value = create_array_memmap(filename.open('w'), value)
 
     return value
+
+
+def hdu2framedata(hdu, bunit=None):
+    """Convert HDU to FrameData"""
+    # if key_utype in hdu.header:
+    #     unit = u.Unit(hdu.header[key_utype])
+    # else:
+    ccd = FrameData(hdu.data, meta=hdu.header, unit=bunit)
+    info = hdu.fileinfo()
+    if info is not None:
+        ccd.filename = info['file'].name
+    return ccd
+
+
+def hdulist2framedata(hdulist, ext=0, ext_mask='MASK', ext_uncert='UNCERT',
+                      bunit=u.dimensionless_unscaled,
+                      uunit=u.dimensionless_unscaled):
+    """Convert a fits.HDUList (single image) to a FrameData."""
+    framedata = hdu2framedata(hdulist[ext], bunit)
+
+    if ext_mask in hdulist:
+        mask = hdulist[ext_mask].data
+    else:
+        mask = None
+
+    framedata.mask = mask
+
+    if ext_uncert in hdulist:
+        uncert = hdulist[ext_uncert]
+        framedata.uncertainty = StdDevUncertainty(uncert, unit=uunit)
+    else:
+        framedata.uncertainty = None
+
+    return framedata
+
+
+def check_framedata(data, ext=0, ext_mask='MASK', ext_uncert='UNCERT',
+                    bunit='BUNIT', uunit=None, logger=logger):
+    """Check if a data is a valid CCDData or convert it."""
+    if isinstance(data, (FrameData, CCDData)):
+        return FrameData(data)
+    elif isinstance(data, NDData):
+        ccd = FrameData(data.data, mask=data.mask,
+                        uncertainty=data.uncertainty,
+                        meta=data.meta, unit=data.unit or u.Unit(bunit))
+        ccd.filename = None
+        return ccd
+    else:
+        if isinstance(data, fits.HDUList):
+            logger.debug("Extracting FrameData from ext {} of HDUList"
+                         .format(ext))
+            return hdulist2framedata(data, ext, ext_mask, ext_uncert,
+                                     bunit=bunit, uunit=uunit)
+        elif isinstance(data, six.string_types):
+            logger.debug("Loading FrameData from {} file".format(data))
+            try:
+                ccd = FrameData.read(data, hdu=ext)
+                ccd.filename = data
+                return ccd
+            except ValueError:
+                data = fits.open(data)
+                return hdulist2framedata(data, ext, ext_mask, ext_uncert,
+                                         bunit=bunit, uunit=uunit)
+        elif isinstance(data, imhdus):
+            logger.debug("Loading FrameData from {} HDU".format(data))
+            hdu2framedata(data, bunit=bunit)
+        else:
+            raise ValueError(f'{data.__class__.__name__}'
+                             ' is not a valid FrameData data type.')
+    return data
 
 
 def create_array_memmap(filename, data, dtype=None):
@@ -311,7 +383,6 @@ class FrameData:
 
     @uncert_unit.setter
     def uncert_unit(self, value):
-        print(f'unct_unit {value}')
         if value is None:
             self._unct_unit = value
         else:

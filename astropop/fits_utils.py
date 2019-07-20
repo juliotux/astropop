@@ -16,7 +16,7 @@ from .framedata import FrameData, imhdus
 from .logger import logger
 
 __all__ = ['imhdus', 'check_header_keys', 'check_image_hdu', 'fits_yielder',
-           'headers_to_table', 'check_ccddata']
+           'headers_to_table']
 
 
 _supported_formats = [".fts", ".fit", ".fz", ".fits"]
@@ -57,74 +57,6 @@ def check_header_keys(image1, image2, keywords=[], logger=logger):
         else:
             logger.debug("The images do not have the {} keyword".format(i))
     return True
-
-
-def hdu2framedata(hdu, bunit=None):
-    """Convert HDU to CCDData"""
-    # if key_utype in hdu.header:
-    #     unit = u.Unit(hdu.header[key_utype])
-    # else:
-    ccd = FrameData(hdu.data, meta=hdu.header, unit=bunit)
-    info = hdu.fileinfo()
-    if info is not None:
-        ccd.filename = info['file'].name
-    return ccd
-
-
-def hdulist2framedata(hdulist, ext=0, ext_mask='MASK', ext_uncert='UNCERT',
-                      bunit=u.dimensionless_unscaled,
-                      uunit=u.dimensionless_unscaled):
-    """Convert a fits.HDUList (single image) to a CCDData."""
-    ccddata = hdu2framedata(hdulist[ext], bunit)
-
-    if ext_mask in hdulist:
-        mask = hdulist[ext_mask].data
-    else:
-        mask = None
-
-    ccddata.mask = mask
-
-    if ext_uncert in hdulist:
-        uncert = hdulist[ext_uncert]
-        ccddata.uncertainty = StdDevUncertainty(uncert, unit=uunit)
-    else:
-        ccddata.uncertainty = None
-
-    return ccddata
-
-
-def check_framedata(data, ext=0, ext_mask='MASK', ext_uncert='UNCERT',
-                  bunit='BUNIT', uunit=None):
-    """Check if a data is a valid CCDData or convert it."""
-    if isinstance(data, (FrameData, CCDData)):
-        return FrameData(data)
-    elif isinstance(data, NDData):
-        ccd = FrameData(data.data, mask=data.mask, uncertainty=data.uncertainty,
-                        meta=data.meta, unit=data.unit or u.Unit(bunit))
-        ccd.filename = None
-        return ccd
-    else:
-        if isinstance(data, fits.HDUList):
-            logger.debug("Extracting CCDData from ext {} of HDUList"
-                         .format(ext))
-            return hdulist2framedata(data, ext, ext_mask, ext_uncert,
-                                   bunit=bunit, uunit=uunit)
-        elif isinstance(data, six.string_types):
-            logger.debug("Loading CCDData from {} file".format(data))
-            try:
-                ccd = FrameData.read(data, hdu=ext)
-                ccd.filename = data
-                return ccd
-            except ValueError:
-                data = fits.open(data)
-                return hdulist2framedata(data, ext, ext_mask, ext_uncert,
-                                       bunit=bunit, uunit=uunit)
-        elif isinstance(data, imhdus):
-            logger.debug("Loading FrameData from {} HDU".format(data))
-            hdu2framedata(data, bunit=bunit)
-        else:
-            raise ValueError('The given data is not a valid FrameData type.')
-    return data
 
 
 def check_image_hdu(data, ext=0, logger=logger):
