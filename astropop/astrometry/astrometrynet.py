@@ -223,7 +223,7 @@ class AstrometrySolver():
         STDOUT and STDERR can be stored in variables for better check after.
         """
         basename = os.path.basename(filename)
-        root, ext = os.path.splitext(basename)
+        root, _ = os.path.splitext(basename)
         if output_dir is None:
             output_dir = mkdtemp(prefix=root + '_', suffix='_astrometry.net')
             tmp_dir = True
@@ -240,8 +240,7 @@ class AstrometrySolver():
                 args.append(str(v))
 
         try:
-            errcode, stdout, stderr = run_command(args, logger=self.logger,
-                                                  **kwargs)
+            errcode, _, _ = run_command(args, logger=self.logger, **kwargs)
 
             if errcode != 0:
                 raise CalledProcessError(errcode, self._command)

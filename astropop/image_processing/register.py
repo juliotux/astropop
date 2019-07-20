@@ -60,8 +60,8 @@ def create_fft_shift_list(image_list):
     """
     shifts = [(0.0, 0.0)]*len(image_list)
     for i in range(len(image_list)-1):
-        shifts[i+1], err, diff = register_translation(image_list[0].data,
-                                                      image_list[i+1].data)
+        shifts[i+1], _, _ = register_translation(image_list[0].data,
+                                                 image_list[i+1].data)
 
     return shifts
 
@@ -77,7 +77,7 @@ def create_chi2_shift_list(image_list):
     for i in range(len(image_list)-1):
         im = image_list[i+1]
         err = np.nanstd(im)
-        dx, dy, ex, ey = chi2_shift(image_list[0], im, err)
+        dx, dy, _, _ = chi2_shift(image_list[0], im, err)
         shifts[i+1] = (-dy, -dx)
 
     return shifts

@@ -301,11 +301,11 @@ class Stage(abc.ABC):
         return self._status
 
     @status.setter
-    def status(self, status):
-        if status not in ['idle', 'running', 'done', 'error']:
+    def status_setter(self, stat):
+        if stat not in ['idle', 'running', 'done', 'error']:
             raise ValueError('Status {} not allowed.'
-                             .format(status))
-        self._status = status
+                             .format(stat))
+        self._status = stat
 
     @property
     def name(self):
@@ -510,7 +510,7 @@ class Factory():
 
         for i, v in self._register.items():
             if v == stage:
-                self._register.popitem(v)
+                self._register.pop(i)
 
         self._stages.popitem(stage)
 
