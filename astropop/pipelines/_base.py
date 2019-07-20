@@ -128,12 +128,12 @@ class Config(dict, _Frozable):
 
 class Instrument(abc.ABC, _Frozable):
     """Store all the informations and needed functions of a instrument."""
-    _frozen = False
     _mutable = ['_frozen']
     _identifier = ''
 
     def __init__(self, *args, **kwargs):
-        super(Instrument, self).__init__(*args, **kwargs)
+        self._frozen = False
+        super().__init__(*args, **kwargs)
 
     def list_functions(self):
         """List the class functions."""
