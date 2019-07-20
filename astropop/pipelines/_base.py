@@ -30,10 +30,44 @@ class FrozenError(RuntimeError):
     pass
 
 
-class Config(dict):
+class _Frozable():
+    _frozen = False
+
+    def __init__(self):
+        self._frozen = False
+
+    def __setattr__(self, name, value):
+        if self._frozen and name not in self._mutable:
+            raise FrozenError('Trying to change an attr while frozen.')
+        return super().__setattr__(name, value)
+
+    def __delattr__(self, name):
+        if self._frozen:
+            raise FrozenError('Trying to delete an attr while frozen.')
+        return super().__delattr__(name)
+
+    def freeze(self):
+        self._frozen = True
+        for v in self.__dict__.values():
+            if isinstance(v, _Frozable):
+                v.freeze()
+        return self
+
+    def unfreeze(self):
+        self._frozen = False
+        for v in self.__dict__.values():
+            if isinstance(v, _Frozable):
+                v.unfreeze()
+        return self
+
+    @property
+    def frozen(self):
+        return self._frozen
+
+
+class Config(dict, _Frozable):
     """Class for generic sotring configs. Like a powered dict."""
     _mutable = ['_frozen', 'logger']
-    _frozen = False
 
     def __init__(self, *args, **kwargs):
         self._frozen = False
@@ -57,7 +91,8 @@ class Config(dict):
 
     def __setitem__(self, name, value):
         if self._frozen:
-            raise FrozenError(f'Tried to change `{name}` with value `{value}` while'
+            raise FrozenError(f'Tried to change `{name}` with value '
+                              '`{value}` while'
                               ' {self.__class__.__name__} is frozen.')
 
         if isinstance(value, Mapping):
@@ -72,40 +107,26 @@ class Config(dict):
                               ' {self.__class__.__name__} is frozen.')
         return super().__delitem__(name)
 
-    def __setattr__(self, name, value):
-        if self._frozen and name not in self._mutable:
-            raise FrozenError('Trying to change an attr while frozen.')
-        return super().__setattr__(name, value)
-
-    def __delattr__(self, name):
-        if self._frozen:
-            raise FrozenError('Trying to delete an attr while frozen.')
-        return super().__delattr__(name)
-
     def update(self, dictlike):
         for k, v in dictlike.items():
             self.__setitem__(k, v)
 
     def freeze(self):
-        self._frozen = True
+        super().freeze()
         for v in self.values():
-            if isinstance(v, Config):
+            if isinstance(v, _Frozable):
                 v.freeze()
         return self
 
     def unfreeze(self):
-        self._frozen = False
+        super().unfreeze()
         for v in self.values():
-            if isinstance(v, Config):
+            if isinstance(v, _Frozable):
                 v.unfreeze()
         return self
 
-    @property
-    def frozen(self):
-        return self._frozen
 
-
-class Instrument(abc.ABC):
+class Instrument(abc.ABC, _Frozable):
     """Store all the informations and needed functions of a instrument."""
     _frozen = False
     _mutable = ['_frozen']
@@ -113,16 +134,6 @@ class Instrument(abc.ABC):
 
     def __init__(self, *args, **kwargs):
         super(Instrument, self).__init__(*args, **kwargs)
-
-    def __setattr__(self, name, value):
-        if self._frozen and name not in self._mutable:
-            raise FrozenError('Trying to change an attr while frozen.')
-        return super().__setattr__(name, value)
-
-    def __delattr__(self, name):
-        if self._frozen:
-            raise FrozenError('Trying to delete an attr while frozen.')
-        return super().__delattr__(name)
 
     def list_functions(self):
         """List the class functions."""
@@ -140,18 +151,6 @@ class Instrument(abc.ABC):
             if i in funcs:
                 funcs.remove(i)
         return funcs
-
-    def freeze(self):
-        self._frozen = True
-        return self
-
-    def unfreeze(self):
-        self._frozen = False
-        return self
-
-    @property
-    def frozen(self):
-        return self._frozen
 
 
 class Product():

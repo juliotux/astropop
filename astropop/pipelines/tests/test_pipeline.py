@@ -7,6 +7,7 @@ from astropop.pipelines import FrozenError
 
 string_store = []
 
+
 class DummyInstrument(Instrument):
     a = 'a+b='
     b = 'b*d='
@@ -161,9 +162,3 @@ def test_instrument_attr_del_freezing():
         c.test = 1
         c.freeze()
         del c.test
-
-
-if __name__ == '__main__':
-    from astropop.logger import logger
-    logger.setLevel('DEBUG')
-    test_pipeline_complete_flow()
