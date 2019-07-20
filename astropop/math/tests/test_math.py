@@ -135,8 +135,8 @@ def test_trim_array_top():
     assert np.max(ty) == 99
     assert np.min(tx) == 39
     assert np.max(tx) == 60
-    assert np.min(ta) == 0*39
-    assert np.max(ta) == 15*60
+    assert np.min(ta) == 84*39
+    assert np.max(ta) == 99*60
 
 
 def test_trim_array_no_indices():
