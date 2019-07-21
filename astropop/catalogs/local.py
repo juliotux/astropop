@@ -11,7 +11,7 @@ from ..astrometry.coords_utils import guess_coordinates
 from .base_catalog import _BasePhotometryCatalog, match_indexes
 
 
-__all__ = ['TableCatalogClass', 'ASCIICatalog', 'FITSCatalog']
+__all__ = ['TableCatalog', 'ASCIICatalog', 'FITSCatalog']
 
 
 class _LocalCatalog(_BasePhotometryCatalog, abc.ABC):
