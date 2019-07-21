@@ -1,4 +1,6 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
+"""Module to handle online catalog queries"""
+
 import six
 import copy
 import numpy as np
