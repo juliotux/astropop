@@ -11,7 +11,7 @@ from ..astrometry.coords_utils import guess_coordinates
 from .base_catalog import _BasePhotometryCatalog, match_indexes
 
 
-__all__ = ['TableCatalogClass', '']
+__all__ = ['TableCatalogClass', 'ASCIICatalog', 'FITSCatalog']
 
 
 class _LocalCatalog(_BasePhotometryCatalog, abc.ABC):
@@ -124,10 +124,10 @@ class _LocalCatalog(_BasePhotometryCatalog, abc.ABC):
 
 
 class TableCatalog(_LocalCatalog):
-    type = 'local'
-
     """Local catalog loaded from anything that can be converted directly to
     an ``astropy.table.Table``."""
+    type = 'local'
+
     def __init__(self, table, id_key=None, ra_key=None, dec_key=None,
                  flux_key=None, flux_error_key=None, flux_unit=None,
                  available_filters=None, prepend_id_key=False, bibcode=None):
