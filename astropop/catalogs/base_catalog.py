@@ -8,7 +8,7 @@ from astropy.coordinates import Angle, SkyCoord, match_coordinates_sky
 from ..logger import logger
 
 
-def match_indexes(ra, dec, cat_ra, cat_dec, limit_angle):
+def match_indexes(ra, dec, cat_ra, cat_dec, limit_angle, logger=logger):
     '''Matches ra and dec lists coordinates with cat_ra and cat_dec coordinates
     from a catalog, within a limit angle.
     ra, dec, cat_ra, cat_dec are lists of decimal degrees floats
@@ -115,14 +115,14 @@ class _BasePhotometryCatalog(_BaseCatalog, abc.ABC):
     available_filters = []
     bibcode = None
 
-    def check_filter(self, filter, raise_error=True):
+    def check_filter(self, band, raise_error=True):
         '''Check if a filter is available for this catalog.'''
         if not raise_error:
-            return filter in self.available_filters
-        elif filter not in self.available_filters:
+            return band in self.available_filters
+        elif band not in self.available_filters:
             raise ValueError('This catalog does not support {} filter. '
                              'The available formats are: {}'
-                             .format(filter, self.available_filters))
+                             .format(band, self.available_filters))
 
     @abc.abstractmethod
     def query_ra_dec(self, center, radius, logger=logger, **kwargs):

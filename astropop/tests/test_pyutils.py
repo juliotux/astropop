@@ -113,6 +113,7 @@ def test_batch_key_replace_list():
 @pytest.mark.parametrize("inp, enc, res", [("a!^1ö~[😀", None, "a!^1ö~[😀"),
                                            ("a!^1ö~[😀", "utf-8", "a!^1ö~[😀"),
                                            ("a!1[", 'latin-1', "a!1["),
+                                           (b'bytes', None, 'bytes'),
                                            (42, None, "42")])
 def test_string_fix(inp, enc, res):
     if enc is not None:

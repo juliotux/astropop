@@ -398,7 +398,7 @@ def fit_wcs(x, y, ra, dec, image_width, image_height, sip=False,
     try:
         process, _, _ = run_command(args, logger=logger, **kwargs)
         if process.returncode != 0:
-            raise CalledProcessError(process.returncode, self._command)
+            raise CalledProcessError(process.returncode, args)
         logger.info('Loading solved header from {}'
                     .format(solved_wcs_file.name))
         solved_header = fits.getheader(solved_wcs_file.name, 0)
