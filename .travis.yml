@@ -42,7 +42,7 @@ env:
         - CONDA_DEPENDENCIES='cython astroalign scipy ccdproc scikit-image matplotlib astroquery astroscrappy pyyaml astrometry sep'
         - CONDA_DEPENDENCIES_DOC='sphinx_rtd_theme sphinx-astropy'
         - MINICONDA_VERSION=4.7.10
-        - PIP_DEPENDENCIES='pytest-remotedata pytest-openfiles'
+        - PIP_DEPENDENCIES='pytest-remotedata pytest-openfiles pytest-doctestplus'
         - CONDA_CHANNELS='astropy juliotux conda-forge'
 
         # If there are matplotlib or other GUI tests, uncomment the following
