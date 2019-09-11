@@ -21,6 +21,7 @@ from astropop.astrometry.manual_wcs import wcs_from_coords
 from astropop.astrometry.coords_utils import guess_coordinates
 from astropop.photometry.aperture import aperture_photometry
 from astropop.photometry.detection import starfind
+from astropop.py_utils import mkdir_p
 
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
@@ -30,6 +31,7 @@ def get_image_index():
     ast_data = os.path.dirname(_solve_field)
     ast_data = os.path.dirname(ast_data)
     ast_data = os.path.join(ast_data, 'data')
+    mkdir_p(ast_data)
     index = 'index-4107.fits'  # index-4202-28.fits'
     d = 'http://broiler.astrometry.net/~dstn/4100/' + index
     f = os.path.join(ast_data, index)
