@@ -6,6 +6,7 @@ cache:
     directories:
         - $HOME/.astropy/cache
         - $XDG_CACHE_HOME/astropy
+        - /astropy
 
 os:
     - linux
