@@ -1,7 +1,6 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
-from ..online import *
-import pytest
+from astropop.catalogs.online import SimbadCatalog
 import numpy.testing as npt
 
 
@@ -42,7 +41,6 @@ def test_simbad_catalog_query_region():
     npt.assert_approx_equal(obj[0]['FLUX_V'], -1.46)
     assert obj[0]['FLUX_SYSTEM_V'] == b'Vega'
     assert obj[0]['FLUX_BIBCODE_V'] == b'2002yCat.2237....0D'
-    assert len(obj) == 61
 
 
 def test_simbad_catalog_query_region_no_band():
@@ -58,4 +56,3 @@ def test_simbad_catalog_query_region_no_band():
         if 'FLUX_' in i:
             raise ValueError('Simbad is getting flux data when requested to'
                              ' not.')
-    assert len(obj) == 61
