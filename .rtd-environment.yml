@@ -24,3 +24,4 @@ dependencies:
     - pip:
         - sep
         - sphinx-rtd-theme
+        - sphinxcontrib-apidoc
