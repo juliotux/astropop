@@ -3,6 +3,7 @@ name: astropop
 channels:
     - astropy
     - juliotux
+    - conda-forge
 
 dependencies:
     - python>=3.7
