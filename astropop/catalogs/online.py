@@ -236,8 +236,8 @@ def simbad_query_id(ra, dec, limit_angle, logger=logger,
     '''Query a single id from Simbad'''
     s = Simbad()
     q = _timeout_retry(s.query_region, center=SkyCoord(ra, dec,
-                                                       unit=(u.deg,
-                                                             u.deg)),
+                                                       unit=(u.degree,
+                                                             u.degree)),
                        radius=limit_angle)
 
     if q is not None:
@@ -311,7 +311,7 @@ class SimbadCatalogClass(_BasePhotometryCatalog):
             return copy.copy(self._last_query_table)
 
         logger.info(f"Performing Simbad query with: center:{center} "
-                         "radius:{radius} band:{band}")
+                    "radius:{radius} band:{band}")
 
         self._last_query_info = query_info
         self._last_query_table = None

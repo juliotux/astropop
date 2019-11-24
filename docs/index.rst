@@ -14,3 +14,20 @@ Developer Docs
     :maxdepth: 1
 
     dev/pixel_convention
+
+***************
+API
+***************
+
+.. toctree::
+    :maxdepth: 3
+
+    api/modules
+
+***************
+Index
+***************
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`

@@ -19,6 +19,9 @@ from .py_utils import mkdir_p
 from .logger import logger
 
 
+# TODO: implelement our own array container (subclass numpy array?) with dynamic caching
+
+
 __all__ = ['FrameData', 'create_array_memmap', 'delete_array_memmap',
            'ensure_bool_mask', 'setup_filename', 'framedata_read_fits',
            'framedata_to_hdu', 'hdu2framedata', 'hdulist2framedata',
