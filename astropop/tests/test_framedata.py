@@ -7,8 +7,7 @@ import tempfile
 import os
 import numpy as np
 import numpy.testing as npt
-from astropop.framedata import FrameData, create_array_memmap, \
-                               delete_array_memmap, ensure_bool_mask, \
+from astropop.framedata import FrameData, ensure_bool_mask, \
                                setup_filename, framedata_read_fits, \
                                framedata_to_hdu
 from astropy.io import fits
@@ -36,38 +35,6 @@ def create_framedata():
     frame = FrameData(data, unit=u.adu)
     frame.header = fake_meta
     return frame
-
-
-def test_create_and_delete_memmap(tmpdir):
-    # Creation
-    f = os.path.join(tmpdir, 'testarray.npy')
-    g = os.path.join(tmpdir, 'test2array.npy')
-    a = np.ones((30, 30), dtype='f8')
-    b = create_array_memmap(f, a)
-    c = create_array_memmap(g, a, dtype=bool)
-    assert isinstance(b, np.memmap)
-    assert isinstance(c, np.memmap)
-    npt.assert_array_equal(a, b)
-    npt.assert_allclose(a, c)
-    assert os.path.exists(f)
-    assert os.path.exists(g)
-
-    # Deletion
-    # Since for the uses the object is overwritten, we do it here too
-    b = delete_array_memmap(b)
-    c = delete_array_memmap(c)
-    assert not isinstance(b, np.memmap)
-    assert not isinstance(b, np.memmap)
-    assert isinstance(b, np.ndarray)
-    assert isinstance(c, np.ndarray)
-    npt.assert_array_equal(a, b)
-    npt.assert_allclose(a, c)
-    assert not os.path.exists(f)
-    assert not os.path.exists(g)
-
-    # None should not raise errors
-    create_array_memmap('dummy', None)
-    delete_array_memmap(None)
 
 
 def test_ensure_bool_mask_bool(tmpdir):
