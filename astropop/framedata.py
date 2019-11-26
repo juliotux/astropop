@@ -4,6 +4,7 @@
 # Important: We reimplemented and renamed astropy's frame to better
 # handle disk memmap and an easier unit/uncertainty workflow
 
+import six
 from pathlib import Path
 import os
 import shutil
@@ -19,10 +20,7 @@ from .py_utils import mkdir_p
 from .logger import logger
 
 
-# TODO: implelement our own array container (subclass numpy array?) with dynamic caching
-
-
-__all__ = ['FrameData', 'create_array_memmap', 'delete_array_memmap',
+__all__ = ['FrameData',
            'ensure_bool_mask', 'setup_filename', 'framedata_read_fits',
            'framedata_to_hdu', 'hdu2framedata', 'hdulist2framedata',
            'check_framedata']
@@ -113,7 +111,7 @@ def check_framedata(data, ext=0, ext_mask='MASK', ext_uncert='UNCERT',
         elif isinstance(data, six.string_types):
             logger.debug("Loading FrameData from {} file".format(data))
             try:
-                ccd = FrameData.read(data, hdu=ext)
+                ccd = FrameData.read_fits(data, hdu=ext)
                 ccd.filename = data
                 return ccd
             except ValueError:
@@ -157,6 +155,9 @@ def delete_array_memmap(memmap, read=True):
     del memmap
     os.remove(name)
     return data
+
+
+
 
 
 def setup_filename(frame, cache_folder=None, filename=None):
@@ -249,11 +250,11 @@ class FrameData:
             wcs = copy.copy(data.wcs)
             data = copy.copy(data.data)
         elif isinstance(data, CCDData):
-            meta = copy.copy(CCDData.meta)
-            uncertainty = copy.copy(CCDData.uncertainty)
+            meta = copy.copy(data.meta)
+            uncertainty = copy.copy(data.uncertainty)
             uncert_unit = uncertainty.unit
-            unit = copy.copy(CCDData.unit)
-            mask = copy.copy(CCDData.mask)
+            unit = copy.copy(data.unit)
+            mask = copy.copy(data.mask)
             data = data.data.copy()
             wcs = copy.copy(data.wcs)
         elif isinstance(data, u.Quantity):
@@ -484,15 +485,15 @@ class FrameData:
     @uncertainty.deleter
     def uncertainty(self):
         if isinstance(self._unct, np.memmap):
-            name = self._uncertainty.filename
+            name = self._unct.filename
             dirname = os.path.dirname(name)
-            delete_array_memmap(self._uncertainty, read=False)
+            delete_array_memmap(self._unct, read=False)
             os.remove(name)
 
             if len(os.listdir(dirname)) == 0:
                 shutil.rmtree(dirname)
         else:
-            del self._uncertainty
+            del self._unct
 
     @property
     def mask(self):
