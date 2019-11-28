@@ -62,18 +62,11 @@ matrix:
         - stage: Initial tests
           env: PYTHON_VERSION=3.7 SETUP_CMD='egg_info'
 
-        # Try MacOS X, usually enough only to run from cron as hardly there are
-        # issues that are not picked up by a linux worker
-        - os: osx
-          stage: Cron tests
-          env: SETUP_CMD='test' EVENT_TYPE='cron'
-
         - os: linux
           stage: Initial tests
           env: SETUP_CMD='test --coverage'
 
         - os: linux
-          stage: Initial tests
           env: NUMPY_VERSION=1.16 SETUP_CMD='test'
 
         - os: linux
@@ -81,19 +74,24 @@ matrix:
                CONDA_DEPENDENCIES=$CONDA_DEPENDENCIES_DOC
 
         - os: linux
-          env: ASTROPY_VERSION=development
-               EVENT_TYPE='pull_request push cron'
-
-        - os: linux
           stage: Cron tests
           env: ASTROPY_VERSION=development NUMPY_VERSION=development
                EVENT_TYPE='cron'
 
         - os: linux
-          env: PYTHON_VERSION=3.7 NUMPY_VERSION=1.14 SETUP_CMD='test'
+          env: NUMPY_VERSION=1.14 SETUP_CMD='test'
 
         - os: linux
           env: NUMPY_VERSION=1.15 SETUP_CMD='test'
+
+        - os: linux
+          env: NUMPY_VERSION=1.16 SETUP_CMD='test'
+        
+        - os: linux
+          env: NUMPY_VERSION=1.17 SETUP_CMD='test'
+        
+        - os: linux
+          env: PYTHON_VERSION=3.8 NUMPY_VERSION=1.17 SETUP_CMD='test'
 
     allow_failures:
          - os: linux
