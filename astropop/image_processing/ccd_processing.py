@@ -6,7 +6,7 @@ import astroscrappy
 
 from ..logger import logger
 from .imarith import imarith
-from ..framedata import check_framedata
+# from ..framedata import check_framedata
 
 
 __all__ = ['cosmics_lacosmic']
