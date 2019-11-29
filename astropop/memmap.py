@@ -114,7 +114,7 @@ class MemMapArray:
     @property  # read unly
     def memmap(self):
         """True if memmap is enabled."""
-        return isinstance(self._contained, np.memmap) 
+        return self._memmap
 
     def set_filename(self, value):
         """Set the memmap filename.
@@ -128,7 +128,7 @@ class MemMapArray:
         """
         if not self._file_lock:
             self._filename = value
-        else:
+        elif value != self._filename:
             raise ValueError('Filename locked.')
 
         if self.memmap:
@@ -168,6 +168,7 @@ class MemMapArray:
             self.set_filename(filename)
 
         self._contained = create_array_memmap(self._filename, self._contained)
+        self._memmap = True
 
     def disable_memmap(self, remove=False):
         """Disable data file memmapping (read to memory).
@@ -181,6 +182,7 @@ class MemMapArray:
             return
         
         self._contained = delete_array_memmap(self._contained, read=True, remove=remove)
+        self._memmap = False
 
     def flush(self):
         """Write changes to disk if memmapping."""
@@ -216,6 +218,7 @@ class MemMapArray:
     def __getitem__(self, item):
         if self.empty:
             raise KeyError('Empty data contaier')
+
         result = self._contained[item]
         if isinstance(result, np.ndarray):
             result = MemMapArray(result, self._dtype or result.dtype)

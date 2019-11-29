@@ -70,10 +70,3 @@ todo_include_todos = True
 extensions += ['sphinx_automodapi.automodapi',
                'sphinx_automodapi.smart_resolver']
 numpydoc_show_class_members = False
-
-extensions += ['sphinxcontrib.apidoc']
-apidoc_module_dir = '../astropop'
-apidoc_output_dir = 'api'
-apidoc_excluded_paths = ['tests', 'build']
-apidoc_separate_modules = True
-autodoc_tree_index_modules = True
