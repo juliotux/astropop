@@ -114,7 +114,7 @@ def shape_consistency(data=None, uncertainty=None, mask=None):
             mshape = np.array(mask).shape
 
         if mshape == ():
-            mask = np.zeros(dshape) | mask
+            mask = np.logical_or(np.zeros(dshape), mask)
             mshape = mask.shape
         
         if mask.shape != dshape:
@@ -260,7 +260,7 @@ class FrameData:
         if hasattr(data, 'mask'):
             dmask = data.mask
             if mask is not None:
-                mask = dmask | mask
+                mask = np.logical_or(dmask, mask)
             else:
                 mask = dmask
 
