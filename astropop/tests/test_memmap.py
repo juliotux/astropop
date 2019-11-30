@@ -56,7 +56,7 @@ def test_create_empty_memmap(tmpdir, memmap):
     assert a.memmap == memmap
     assert a.empty
     assert not os.path.exists(f)
-    assert a.unit is None
+    assert a.unit is u.dimensionless_unscaled
     with pytest.raises(KeyError):
         # dtype whould rise
         a.dtype

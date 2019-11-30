@@ -52,7 +52,7 @@ def shape_consistency(data=None, uncertainty=None, mask=None):
         dshape = np.array(data).shape
 
     if uncertainty is not None:
-        if hasattr(uncertainty.shape):
+        if hasattr(uncertainty, 'shape'):
             ushape = uncertainty.shape
         else:
             ushape = np.array(uncertainty).shape
@@ -66,7 +66,7 @@ def shape_consistency(data=None, uncertainty=None, mask=None):
                              f' Data shape {dshape}.')
     
     if mask is not None:
-        if hasattr(mask.shape):
+        if hasattr(mask, 'shape'):
             mshape = mask.shape
         else:
             mshape = np.array(mask).shape
