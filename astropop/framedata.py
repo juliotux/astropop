@@ -22,7 +22,7 @@ from .logger import logger
 
 
 __all__ = ['FrameData', 'shape_consistency', 'unit_consistency',
-           'ensure_bool_mask', 'setup_filename', 'framedata_read_fits',
+           'check_framedata', 'setup_filename', 'framedata_read_fits',
            'framedata_to_hdu', 'extract_units']
 
 
@@ -160,20 +160,6 @@ def unit_consistency(data_unit=None, uncertainty_unit=None):
     elif u.Unit(data_unit) is not u.Unit(uncertainty_unit):
         raise ValueError(f'Units {data_unit} and {uncertainty_unit} '
                          'are incompatible')
-
-
-def ensure_bool_mask(value):
-    """Ensure a mask value is bool"""
-    if hasattr(value, 'dtype'):
-        # If bool, just return
-        if np.dtype(value.dtype) is np.dtype(np.bool):
-            return value
-        else:
-            return value.astype('bool')
-    elif value is None:
-        return value
-    else:
-        return np.array(value, dtype='bool')
 
 
 def setup_filename(frame, cache_folder=None, filename=None):
