@@ -64,7 +64,7 @@ matrix:
 
         - os: linux
         - stage: Initial tests
-          env: NUMPY_VERSION=1.16 SETUP_CMD='test'
+          env: NUMPY_VERSION=1.17 SETUP_CMD='test'
 
         - os: linux
           env: PYTHON_VERSION=3.7 NUMPY_VERSION=1.16 SETUP_CMD='test --coverage'
