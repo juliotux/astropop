@@ -10,7 +10,7 @@ Handle the IRAF's imarith and imcombine functions.
 
 import numpy as np
 
-from ..framedata import FrameData  # , check_framedata
+from ..framedata import FrameData, check_framedata
 from ..logger import logger
 
 __all__ = ['imarith']
