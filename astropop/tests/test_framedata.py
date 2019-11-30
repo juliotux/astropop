@@ -8,8 +8,9 @@ import os
 import numpy as np
 import numpy.testing as npt
 from astropop.framedata import FrameData, ensure_bool_mask, \
+                               shape_consistency, unit_consistency, \
                                setup_filename, framedata_read_fits, \
-                               framedata_to_hdu
+                               framedata_to_hdu, extract_units
 from astropy.io import fits
 from astropy.utils import NumpyRNGContext
 from astropy import units as u
@@ -37,40 +38,24 @@ def create_framedata():
     return frame
 
 
-def test_ensure_bool_mask_bool(tmpdir):
-    # Bool array
-    b_array = np.zeros(2, dtype=bool)
-    mask = ensure_bool_mask(b_array)
-    assert np.dtype(mask.dtype) is np.dtype(bool)
-    npt.assert_array_equal(mask, b_array)
-
-
-def test_ensure_bool_mask_integer(tmpdir):
-    # Integer array
-    i_array = np.zeros(2, dtype='i4')
-    mask = ensure_bool_mask(i_array)
-    assert np.dtype(mask.dtype) is np.dtype(bool)
-    npt.assert_array_almost_equal(mask, i_array)
-
-
-def test_ensure_bool_mask_float(tmpdir):
-    # Float array
-    f_array = np.zeros(2, dtype='f8')
-    mask = ensure_bool_mask(f_array)
-    assert np.dtype(mask.dtype) is np.dtype(bool)
-    npt.assert_array_almost_equal(mask, f_array)
-
-
-@pytest.mark.skip("Bug in numpy. Fixed in 1.17.0")
-def test_ensure_bool_mask_memmap(tmpdir):
-    mmap = tmpdir.join('memmap.npy')
-    filename = str(mmap)
-    m_array = create_array_memmap(filename, np.zeros((10, 10)))
-    mask = ensure_bool_mask(m_array)
-    assert np.dtype(mask.dtype) is np.dtype(bool)
-    npt.assert_array_almost_equal(mask, m_array)
-    del m_array
-    os.remove(filename)
+@pytest.mark.parametrize("dunit,unit,expected",
+                         [('adu', None, 'adu'),
+                          ('adu', 'adu', 'adu'),
+                          (None, 'adu', 'adu'),
+                          ('adu', 'm', 'raise'),
+                          (None, None, None)])
+def test_extract_units(dunit, unit, expected):
+    d = np.array([0,1,2,3,4])
+    if dunit is not None:
+        d = d*u.Unit(dunit)
+    if expected == 'raise':
+        with pytest.raises(ValueError):
+            extract_units(d, unit)
+    else:
+        eunit = extract_units(d, unit)
+        if expected is not None:
+            expected = u.Unit(expected)
+        assert eunit is expected
 
 
 def test_setup_filename(tmpdir):
@@ -122,17 +107,6 @@ def test_framedata_cration_array():
 def test_framedata_empty():
     with pytest.raises(TypeError):
         FrameData()  # empty initializer should fail
-
-
-def test_framedata_must_have_unit():
-    with pytest.raises(ValueError):
-        FrameData(np.zeros([2, 2]))
-
-
-def test_framedata_unit_cannot_be_set_to_none():
-    frame = create_framedata()
-    with pytest.raises(TypeError):
-        frame.unit = None
 
 
 def test_framedata_meta_header_conflict():

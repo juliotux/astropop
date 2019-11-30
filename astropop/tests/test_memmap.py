@@ -3,11 +3,9 @@ import os
 import pytest
 import tempfile
 from astropop.memmap import MemMapArray, array_bi, array_attr, create_array_memmap, delete_array_memmap
+from astropy import units as u
 import numpy as np
 import numpy.testing as npt
-
-
-# TODO: Tests needed
 
 
 def test_create_and_delete_memmap(tmpdir):
@@ -48,3 +46,88 @@ def test_create_and_delete_memmap(tmpdir):
     create_array_memmap('dummy', None)
     delete_array_memmap(None)
 
+
+@pytest.mark.parametrize('memmap', [True, False])
+def test_create_empty_memmap(tmpdir, memmap):
+    f = os.path.join(tmpdir, 'empty.npy')
+    a = MemMapArray(None, filename=f, dtype=None, unit=None, memmap=memmap)
+    assert a.filename == f
+    assert a._contained is None
+    assert a.memmap == memmap
+    assert a.empty
+    assert not os.path.exists(f)
+    assert a.unit is None
+    with pytest.raises(KeyError):
+        # dtype whould rise
+        a.dtype
+    with pytest.raises(KeyError):
+        # shape whould rise
+        a.shape
+    with pytest.raises(KeyError):
+        # item whould rise
+        a[0]
+    with pytest.raises(KeyError):
+        # set item whould rise
+        a[0] = 1
+
+
+@pytest.mark.parametrize('memmap', [True, False])
+def test_create_memmap(tmpdir, memmap):
+    f = os.path.join(tmpdir, 'npn_empty.npy')
+    arr = [[0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5]]
+    a = MemMapArray(arr, filename=f, dtype=None, unit=None, memmap=memmap)
+    assert a.filename == f
+    npt.assert_array_equal(a, arr)
+    assert not a.empty
+    assert a.memmap == memmap
+    assert os.path.exists(f) == memmap
+    assert a.unit == u.dimensionless_unscaled
+    assert a.dtype == np.int64
+
+    a[0][0] = 10
+    assert a[0][0] == 10
+
+    a[0][:] = 20
+    npt.assert_array_equal(a[0], [20, 20, 20, 20, 20, 20])
+
+
+def test_enable_disable_memmap(tmpdir):
+    f = os.path.join(tmpdir, 'npn_empty.npy')
+    arr = [[0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5]]
+    a = MemMapArray(arr, filename=f, dtype=None, unit=None, memmap=False)
+    assert not a.memmap
+    assert not os.path.exists(f)
+
+    a.enable_memmap()
+    assert a.memmap
+    assert os.path.exists(f)
+    assert isinstance(a._contained, np.memmap)
+
+    # First keep the file
+    a.disable_memmap(remove=False)
+    assert not a.memmap
+    assert os.path.exists(f)
+    assert not isinstance(a._contained, np.memmap)
+
+    a.enable_memmap()
+    assert a.memmap
+    assert os.path.exists(f)
+    assert isinstance(a._contained, np.memmap)
+    
+    # Remove the file
+    a.disable_memmap(remove=True)
+    assert not a.memmap
+    assert not os.path.exists(f)
+    assert not isinstance(a._contained, np.memmap)
+
+    with pytest.raises(ValueError):
+        # raises error if name is locked
+        a.enable_memmap('not_the_same_name.npy')
+
+
+# TODO: Math operations tests
+# TODO: Numpy functions
+# TODO: units
+# TODO: flush
+# TODO: reset_data
+# TODO: repr

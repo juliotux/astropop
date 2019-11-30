@@ -21,9 +21,9 @@ from .memmap import MemMapArray
 from .logger import logger
 
 
-__all__ = ['FrameData',
+__all__ = ['FrameData', 'shape_consistency', 'unit_consistency',
            'ensure_bool_mask', 'setup_filename', 'framedata_read_fits',
-           'framedata_to_hdu']
+           'framedata_to_hdu', 'extract_units']
 
 
 # TODO: FrameData initializers for CCDData and HDUList with functions
@@ -37,6 +37,87 @@ _unsupport_fits_open_keywords = {
 
 imhdus = (fits.ImageHDU, fits.PrimaryHDU, fits.CompImageHDU,
           fits.StreamingHDU)
+
+
+def shape_consistency(data=None, uncertainty=None, mask=None):
+    """Check shape consistency across data, uncertaitny and mask"""
+    if data is None and uncertainty is not None:
+        raise ValueError('Uncertainty set for an empty data.')
+    if data is None and mask is not None:
+        raise ValueError('Mask set for an empty data.')
+
+    if hasattr(data, 'shape'):
+        dshape = data.shape
+    else:
+        dshape = np.array(data).shape
+
+    if uncertainty is not None:
+        if hasattr(uncertainty.shape):
+            ushape = uncertainty.shape
+        else:
+            ushape = np.array(uncertainty).shape
+
+        if ushape == (1,):
+            uncertainty = np.zeros(dshape)*uncertainty
+            ushape = uncertainty.shape
+        
+        if ushape != dshape:
+            raise ValueError(f'Uncertainty shape {ushape} don\'t match'
+                             f' Data shape {dshape}.')
+    
+    if mask is not None:
+        if hasattr(mask.shape):
+            mshape = mask.shape
+        else:
+            mshape = np.array(mask).shape
+
+        if mshape == (1,):
+            mask = np.zeros(dshape) | mask
+            mshape = mask.shape
+        
+        if mask.shape != dshape:
+            raise ValueError(f'Mask shape {mshape} don\'t match'
+                             f' Data shape {dshape}.')
+
+    return data, uncertainty, mask
+
+
+def extract_units(data, unit):
+    """Extract and compare units if they are consistent."""
+    if hasattr(data, 'unit'):
+        dunit = u.Unit(data.unit)
+    else:
+        dunit = None
+    if unit is not None:
+        unit = u.Unit(unit)
+    else:
+        unit = None
+
+    if dunit is not None and unit is not None:
+        if not dunit is unit:
+            raise ValueError(f"Unit {unit} cannot be set for a data with"
+                            f" unit {dunit}")
+        else:
+            return dunit
+    elif dunit is not None:
+        return dunit
+    elif unit is not None:
+        return unit
+    else:
+        return None
+
+
+def unit_consistency(data_unit=None, uncertainty_unit=None):
+    '''Check physical unit consistency between data and uncertanty.'''
+    if uncertainty_unit is None:
+        # Uncertainty unit None is always compatible
+        return
+    elif data_unit is None:
+        raise ValueError(f'Uncertainty with unit {uncertainty_unit} '
+                         'incompatible with dimensionless data.')
+    elif u.Unit(data_unit) is not u.Unit(uncertainty_unit):
+        raise ValueError(f'Units {data_unit} and {uncertainty_unit} '
+                         'are incompatible')
 
 
 def ensure_bool_mask(value):
@@ -94,14 +175,25 @@ class FrameData:
         The main data values. If `Quantity`, unit will be set automatically.
     - unit : `astropy.units.Unit` or string (optional)
         The data unit. Must be `astropy.units.Unit` compilant.
+    - dtype : string or `numpy.dtype` (optional)
+        Mandatory dtype of the data.
     - uncertainty : array_like or `astropy.nddata.Uncertanty` or None \
-                    optional
+                    (optional)
         Uncertainty of the data.
-    - uncertainty_unit : `astropy.units.Unit` or string (optional)
+    - u_unit : `astropy.units.Unit` or string (optional)
         Unit of uncertainty of the data. If None, will be the same of the
         data.
+    - u_dtype : string or `numpy.dtype` (optional)
+        Mandatory dtype of uncertainty.
     - mask : array_like or None (optional)
         Frame mask.
+    - m_dtype : string or `numpy.dtype` (optional)
+        Mandatory dtype of mask. Default `bool`
+    - wcs : dict, `astropy.fits.Header` or `astropy.wcs.WCS` (optional)
+        World Coordinate System of the image.
+    - meta or header: dict or `astropy.fits.Header` (optional)
+        Metadata (header) of the frame. If both set, they will be merged.
+        `header` priority.
     - cache_folder : string, `pathlib.Path` or None (optional)
         Place to store the cached FrameData
     - cache_filename : string, `pathlib.Path` or None (optional)
@@ -110,19 +202,21 @@ class FrameData:
         True if enable memmap in constructor.
     """
     # TODO: Math operations (__add__, __subtract__, etc...)
-    # TODO: handle masked arrays
-    # TODO: check data and uncertianty if they are numbers during set
     # TODO: Complete reimplement the initializer
     _memmapping = False
     _data = None
     _mask = None
     _unct = None
     _wcs = None
-    _meta = dict()
+    _meta = None
 
-    def __init__(self, data, *args, **kwargs):
-        self.cache_folder = kwargs.pop('cache_folder', None)
-        self.cache_filename = kwargs.pop('cache_filename', None)
+    def __init__(self, data, unit=None, dtype=None,
+                 uncertainty=None, u_unit=None, u_dtype=None,
+                 mask=None, m_dtype=bool,
+                 wcs=None, meta=None, header=None,
+                 cache_folder=None, cache_filename=None, use_memmap_backend=False):
+        self.cache_folder = cache_folder
+        self.cache_filename = cache_folder
 
         # Setup MemMapArray instances
         cache_file = setup_filename(self, self.cache_folder, self.cache_filename)
@@ -132,11 +226,41 @@ class FrameData:
 
         # Check for memmapping.
         self._memmapping = False
-        memmap = kwargs.pop('use_memmap_backend', False)
-        if memmap:
+        if use_memmap_backend:
             self.enable_memmap()
-
         
+        if hasattr(data, 'mask'):
+            dmask = data.mask
+            if mask is not None:
+                mask = dmask | mask
+            else:
+                mask = dmask
+
+        # raise errors if incompatible shapes
+        data, uncertainty, mask = shape_consistency(data, uncertainty, mask)
+        # raise errors if incompatible units
+        dunit = extract_units(data, unit)
+        uunit = extract_units(data, u_unit)
+        unit_consistency(dunit, uunit)
+
+        self._data.reset_data(data, dunit, dtype)
+        self._unct.reset_data(uncertainty, uunit, u_dtype)
+        # Masks can also be flags (uint8)
+        self._mask.reset_data(mask, None, m_dtype)
+
+        # TODO: Handle wcs creation
+
+        if meta is not None and header is not None:
+            header = dict(header)
+            meta = dict(meta)
+            self._meta = header
+            self._meta.update(meta)
+        elif meta is not None:
+            self._meta = dict(meta)
+        elif header is not None:
+            self._meta = dict(meta)
+        else:
+            self._meta = dict()
 
     @property
     def shape(self):
@@ -181,11 +305,7 @@ class FrameData:
 
     @data.setter
     def data(self, value):
-        raise NotImplementedError
-
-    @data.deleter
-    def data(self):
-        raise NotImplementedError
+        self._data.reset_data(value)
 
     @property
     def uncertainty(self):
@@ -193,11 +313,9 @@ class FrameData:
 
     @uncertainty.setter
     def uncertainty(self, value):
-        raise NotImplementedError
-
-    @uncertainty.deleter
-    def uncertainty(self):
-        raise NotImplementedError
+        _, value, _ = shape_consistency(self.data, value, None)
+        unit_consistency(self.data, value)
+        self._unct.reset_data(value)
 
     @property
     def mask(self):
@@ -205,11 +323,7 @@ class FrameData:
 
     @mask.setter
     def mask(self, value):
-        raise NotImplementedError
-
-    @mask.deleter
-    def mask(self):
-        raise NotImplementedError
+        self._mask.reset_data(value)
 
     def enable_memmap(self, filename=None, cache_folder=None):
         """Enable array file memmapping."""
@@ -407,7 +521,7 @@ def framedata_read_fits(filename=None, hdu=0, unit='BUNIT',
     # WCS
     wcs = _generate_wcs_and_update_header(header)
     frame = FrameData(data_hdu.data, unit=dunit, wcs=wcs, meta=header,
-                      uncertainty=uncertainty, uncertainty_unit=uunit,
+                      uncertainty=uncertainty, u_unit=uunit,
                       mask=mask, use_memmap_backend=use_memmap_backend)
     hdul.close()
 

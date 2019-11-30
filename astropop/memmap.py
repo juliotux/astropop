@@ -3,6 +3,7 @@
 
 import os
 import numpy as np
+from astropy import units as u
 
 from .py_utils import check_iterable
 
@@ -42,6 +43,9 @@ def create_array_memmap(filename, data, dtype=None):
     if data is None:
         return
 
+    if filename is None:
+        raise ValueError('Could not create a memmap file with None filename.')
+
     dtype = dtype or data.dtype
     shape = data.shape
     if data.ndim > 0:
@@ -72,7 +76,7 @@ def to_memmap_attr(func):
     def wrapper(*args, **kwargs):
         result = func(*args, **kwargs)
         if isinstance(result, np.ndarray):
-            return MemMapArray(result)
+            return MemMapArray(result, memmap=False)
         return result
     return wrapper
 
@@ -82,8 +86,10 @@ class MemMapArray:
     _filename = None  # filename of memmap
     _file_lock = False  # lock filename
     _contained = None  # Data contained: numpy ndarray or memmap
+    _memmap = False
+    _unit = u.dimensionless_unscaled
 
-    def __init__(self, data, filename=None, dtype=None, unit=None):
+    def __init__(self, data, filename=None, dtype=None, unit=None, memmap=True):
         # None data should generate a empty container
         if data is None:
             self._contained = None
@@ -96,6 +102,10 @@ class MemMapArray:
             self._contained = np.array(data, dtype=dtype or 'float64')  # Default dtype
         self.set_filename(filename)
         self.set_unit(unit)
+        self._file_lock = True
+
+        if memmap:
+            self.enable_memmap()
 
     @property  # read only
     def empty(self):
@@ -107,7 +117,7 @@ class MemMapArray:
 
     @property  # read only
     def filename(self):
-        if self.memmap:
+        if self.memmap and self._contained is not None:
             return self._contained.filename
         return self._filename
 
@@ -201,27 +211,47 @@ class MemMapArray:
             dtype : string or `numpy.dtype` (optional)
                 Imposed data type.
         """
-        if data is None and self.memmap:
-            mm = self._contained
-            self._contained = None
-            delete_array_memmap(mm, read=False, remove=True)
-        elif data is None:
-            self._contained = None
-        elif self.memmap:
-            name = self.filename
-            mm = self._contained
-            self._contained = create_array_memmap(name, data, dtype)
-            delete_array_memmap(mm, read=False, remove=True)
+        if data is None:
+            if self.memmap:
+                # Need to delete memmap
+                mm = self._contained
+                self._contained = None
+                delete_array_memmap(mm, read=False, remove=True)
+            else:
+                # don't need to delete memmap
+                self._contained = None
+            self.set_unit(None)
+
+        # Not None data
         else:
-            self._contained = np.array(data, dtype=dtype)
+            if self.memmap:
+                name = self.filename
+                mm = self._contained
+                self._contained = create_array_memmap(name, data, dtype)
+                delete_array_memmap(mm, read=False, remove=True)
+            else:
+                self._contained = np.array(data, dtype=dtype)
+
+            # Unit handling
+            if hasattr(data, 'unit'):
+                dunit = u.Unit(data.unit)
+                if unit is not None:
+                    unit = u.Unit(unit) 
+                    if unit is not dunit:
+                        raise ValueError(f'unit={unit} set for a Quantity data '
+                                         f'with {dunit} unit.')
+                self.set_unit(dunit)
+            else:
+                if unit is not None:
+                    self.set_unit(unit)
+                # if None, keep the old unit
 
     def __getitem__(self, item):
         if self.empty:
             raise KeyError('Empty data contaier')
 
+        # This cannot create a new MemMapArray to don't break a[x][y] = z
         result = self._contained[item]
-        if isinstance(result, np.ndarray):
-            result = MemMapArray(result, self._dtype or result.dtype)
         return result
 
     def __setitem__(self, item, value):
@@ -235,7 +265,7 @@ class MemMapArray:
             if callable(attr):
                 attr = to_memmap_attr(attr)
             elif isinstance(attr, np.ndarray):
-                attr = MemMapArray(attr)
+                attr = MemMapArray(attr, memmap=False)
             return attr
         elif item in redirects and self.empty:
             raise KeyError('Empty data container')
@@ -243,7 +273,7 @@ class MemMapArray:
         return object.__getattribute__(self, item)
     
     def __repr__(self):
-        return 'MemMapArray:\n' + repr(self._contained)
+        return 'MemMapArray:\n' + repr(self._contained) + f'\nfile: {self.filename}'
 
     def __array__(self):
         if self.empty:
