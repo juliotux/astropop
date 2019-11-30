@@ -37,8 +37,11 @@ def sky_annulus(data, x, y, r_ann, algorithm='mmm', mask=None, logger=logger):
             The error of sky value, computed as the sigma cliped stddev.
     """
     # TODO: this code needs optimization for faster work
-    assert(len(x) == len(y))
-    assert(len(r_ann) == 2)
+    if len(x) != len(y):
+        raise ValueError('x and y variables don\'t have the same lenght.')
+    
+    if len(r_ann) != 2:
+        raise ValueError('r_ann must have two components (r_in, r_out)')
 
     sky = np.zeros_like(x, dtype='f8')
     sky.fill(np.nan)

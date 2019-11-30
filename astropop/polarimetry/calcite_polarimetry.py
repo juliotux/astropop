@@ -160,7 +160,8 @@ def _polarimetry_by_sum(z, psi, retarder='half', z_err=None,
     psi = np.radians(psi)
 
     if retarder == 'half':
-        assert(len(z) == len(psi))
+        if len(z) != len(psi):
+            raise ValueError('z and psi have different lengths.')
         n = len(z)
         q = (2.0/n) * np.nansum(z*np.cos(4*psi))
         u = (2.0/n) * np.nansum(z*np.sin(4*psi))
