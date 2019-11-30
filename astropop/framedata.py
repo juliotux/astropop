@@ -39,6 +39,48 @@ imhdus = (fits.ImageHDU, fits.PrimaryHDU, fits.CompImageHDU,
           fits.StreamingHDU)
 
 
+def check_framedata(data, ext=0, ext_mask='MASK', ext_uncert='UNCERT',
+                    bunit='BUNIT', uunit=None, logger=logger):
+    """Check if a data is a valid CCDData or convert it."""
+    if isinstance(data, (FrameData, CCDData)):
+        return FrameData(data)
+    elif isinstance(data, NDData):
+        ccd = FrameData(data.data, mask=data.mask,
+                        uncertainty=data.uncertainty,
+                        meta=data.meta, unit=data.unit or u.Unit(bunit))
+        ccd.filename = None
+        return ccd
+    else:
+        if isinstance(data, fits.HDUList):
+            logger.debug("Extracting FrameData from ext {} of HDUList"
+                         .format(ext))
+            # TODO: Implement this
+            raise NotImplementedError
+            # return hdulist2framedata(data, ext, ext_mask, ext_uncert,
+            #                          bunit=bunit, uunit=uunit)
+        elif isinstance(data, six.string_types):
+            logger.debug("Loading FrameData from {} file".format(data))
+            try:
+                ccd = FrameData.read_fits(data, hdu=ext)
+                ccd.filename = data
+                return ccd
+            except ValueError:
+                raise NotImplementedError
+                # TODO: implement this
+                # data = fits.open(data)
+                # return hdulist2framedata(data, ext, ext_mask, ext_uncert,
+                #                          bunit=bunit, uunit=uunit)
+        elif isinstance(data, imhdus):
+            logger.debug("Loading FrameData from {} HDU".format(data))
+            raise NotImplementedError
+            # TODO: implement this
+            # hdu2framedata(data, bunit=bunit)
+        else:
+            raise ValueError(f'{data.__class__.__name__}'
+                             ' is not a valid FrameData data type.')
+    return data
+
+
 def shape_consistency(data=None, uncertainty=None, mask=None):
     """Check shape consistency across data, uncertaitny and mask"""
     if data is None and uncertainty is not None:
@@ -216,7 +258,7 @@ class FrameData:
                  wcs=None, meta=None, header=None,
                  cache_folder=None, cache_filename=None, use_memmap_backend=False):
         self.cache_folder = cache_folder
-        self.cache_filename = cache_folder
+        self.cache_filename = cache_filename
 
         # Setup MemMapArray instances
         cache_file = setup_filename(self, self.cache_folder, self.cache_filename)

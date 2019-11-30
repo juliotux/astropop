@@ -70,15 +70,15 @@ def test_setup_filename(tmpdir):
     # Manual set filename
     ntemp = tempfile.mkstemp(suffix='.npy')[1]
     # with obj and manual filename, keep object
-    assert setup_filename(test_obj, filename=ntemp) == os.path.join(temp, fname)  # noqa
+    assert setup_filename(test_obj, filename=ntemp) == os.path.join(temp, fname)
     test_obj.cache_filename = None
-    assert setup_filename(test_obj, filename=ntemp) == os.path.join(temp, os.path.basename(ntemp))  # noqa
+    assert setup_filename(test_obj, filename=ntemp) == os.path.join(temp, os.path.basename(ntemp))
     # same for cache folder
     test_obj.cache_filename = fname
-    assert setup_filename(test_obj, filename=ntemp) == os.path.join(temp, fname)  # noqa
+    assert setup_filename(test_obj, filename=ntemp) == os.path.join(temp, fname)
     test_obj.cache_folder = None
     cache = os.path.join(tmpdir, 'astropop_testing')
-    assert setup_filename(test_obj, cache_folder=cache) == os.path.join(cache, fname)  # noqa
+    assert setup_filename(test_obj, cache_folder=cache) == os.path.join(cache, fname)
     assert os.path.isdir(cache)
     os.removedirs(cache)
 
