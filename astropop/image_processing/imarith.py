@@ -63,7 +63,7 @@ def imarith(operand1, operand2, operation, inplace=False, logger=logger):
         ndata = _arith_funcs[operation](operand1.data, data2)
     except Exception as e:
         raise ValueError(f'Could not process the operation {operation} between'
-                         '{operand1} and {operand2}. Error: {e}')
+                         f'{operand1} and {operand2}. Error: {e}')
 
     # Join masks
     if hasattr(operand2, 'mask'):

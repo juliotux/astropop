@@ -7,8 +7,7 @@ import tempfile
 import os
 import numpy as np
 import numpy.testing as npt
-from astropop.framedata import FrameData, ensure_bool_mask, \
-                               shape_consistency, unit_consistency, \
+from astropop.framedata import FrameData, shape_consistency, unit_consistency, \
                                setup_filename, framedata_read_fits, \
                                framedata_to_hdu, extract_units
 from astropy.io import fits
