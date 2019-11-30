@@ -221,8 +221,8 @@ class FrameData:
         # Setup MemMapArray instances
         cache_file = setup_filename(self, self.cache_folder, self.cache_filename)
         self._data = MemMapArray(None, cache_file + '.data')
-        self._data = MemMapArray(None, cache_file + '.unct')
-        self._data = MemMapArray(None, cache_file + '.mask')
+        self._unct = MemMapArray(None, cache_file + '.unct')
+        self._mask = MemMapArray(None, cache_file + '.mask')
 
         # Check for memmapping.
         self._memmapping = False
