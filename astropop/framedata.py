@@ -57,7 +57,7 @@ def shape_consistency(data=None, uncertainty=None, mask=None):
         else:
             ushape = np.array(uncertainty).shape
 
-        if ushape == (1,):
+        if ushape == ():
             uncertainty = np.zeros(dshape)*uncertainty
             ushape = uncertainty.shape
         
@@ -71,7 +71,7 @@ def shape_consistency(data=None, uncertainty=None, mask=None):
         else:
             mshape = np.array(mask).shape
 
-        if mshape == (1,):
+        if mshape == ():
             mask = np.zeros(dshape) | mask
             mshape = mask.shape
         
