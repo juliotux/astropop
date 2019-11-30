@@ -33,7 +33,7 @@ def create_framedata():
     """
     data = _random_array.copy()
     fake_meta = DEFAULT_HEADER.copy()
-    frame = FrameData(data, unit=u.adu)
+    frame = FrameData(data, unit=u.Unit('adu'))
     frame.header = fake_meta
     return frame
 
@@ -77,7 +77,7 @@ def test_setup_filename(tmpdir):
     test_obj.cache_filename = fname
     assert setup_filename(test_obj, filename=ntemp) == os.path.join(temp, fname)  # noqa
     test_obj.cache_folder = None
-    cache = '/tmp/astropop_testing'
+    cache = os.path.join(tmpdir, 'astropop_testing')
     assert setup_filename(test_obj, cache_folder=cache) == os.path.join(cache, fname)  # noqa
     assert os.path.isdir(cache)
     os.removedirs(cache)
