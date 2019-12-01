@@ -42,8 +42,11 @@ imhdus = (fits.ImageHDU, fits.PrimaryHDU, fits.CompImageHDU,
 def check_framedata(data, ext=0, ext_mask='MASK', ext_uncert='UNCERT',
                     bunit='BUNIT', uunit=None, logger=logger):
     """Check if a data is a valid CCDData or convert it."""
-    if isinstance(data, (FrameData, CCDData)):
-        return FrameData(data)
+    if isinstance(data, FrameData):
+        return data
+    elif isinstance(data, CCDData):
+        # TODO: implement this
+        raise NotImplementedError
     elif isinstance(data, NDData):
         ccd = FrameData(data.data, mask=data.mask,
                         uncertainty=data.uncertainty,
@@ -263,6 +266,8 @@ class FrameData:
                 mask = np.logical_or(dmask, mask)
             else:
                 mask = dmask
+        if mask is None:  # Default do not mask anything
+            mask = False
 
         # raise errors if incompatible shapes
         data, uncertainty, mask = shape_consistency(data, uncertainty, mask)

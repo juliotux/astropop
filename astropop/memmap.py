@@ -12,11 +12,7 @@ __all__ = ['MemMapArray', 'create_array_memmap', 'delete_array_memmap']
 
 
 array_bi = [f'__{i}__' for i in
-             ['lt', 'le', 'gt', 'ge', 'eq', 'ne', 'bool',
-              'neg', 'pos', 'abs', 'invert', 'matmul',
-              'add', 'sub', 'mul', 'truediv', 'floordiv',
-              'mod', 'divmod', 'pow', 'lshift', 'rshift',
-              'and', 'or', 'xor',
+             ['bool',
               'iadd', 'isub', 'imul', 'itruediv', 'ifloordiv',
               'imod', 'ipow', 'ilshift', 'irshift',
               'iand', 'ior', 'ixor',
@@ -70,6 +66,18 @@ def delete_array_memmap(memmap, read=True, remove=False):
         del memmap
         os.remove(name)
     return data
+
+
+def to_memmap_operator(item):
+    def wrapper(self, *args, **kwargs):
+        if not self.empty:
+            func = self._contained.__getattribute__(item)
+            func = to_memmap_attr(func)
+            return func(*args, **kwargs)
+        else:
+            # TODO: Think if this is the best behavior
+            return None
+    return wrapper
 
 
 def to_memmap_attr(func):
@@ -282,3 +290,27 @@ class MemMapArray:
             return self._contained
         else:
             return np.array(self._contained)
+
+    __lt__ = to_memmap_operator('__lt__')
+    __le__ = to_memmap_operator('__le__')
+    __gt__ = to_memmap_operator('__gt__')
+    __ge__ = to_memmap_operator('__ge__')
+    __eq__ = to_memmap_operator('__eq__')
+    __ne__ = to_memmap_operator('__ne__')
+    __add__ = to_memmap_operator('__add__')
+    __sub__ = to_memmap_operator('__sub__')
+    __mul__ = to_memmap_operator('__mul__')
+    __pow__ = to_memmap_operator('__pow__')
+    __truediv__ = to_memmap_operator('__truediv__')
+    __floordiv__ = to_memmap_operator('__floordiv__')
+    __mod__ = to_memmap_operator('__mod__')
+    __lshift__ = to_memmap_operator('__lshift__')
+    __rshift__ = to_memmap_operator('__rshift__')
+    __and__ = to_memmap_operator('__and__')
+    __or__ = to_memmap_operator('__or__')
+    __xor__ = to_memmap_operator('__xor__')
+    __neg__ = to_memmap_operator('__neg__')
+    __pos__ = to_memmap_operator('__pos__')
+    __abs__ = to_memmap_operator('__abs__')
+    __invert__ = to_memmap_operator('__invert__')
+    __matmul__ = to_memmap_operator('__matmul__')

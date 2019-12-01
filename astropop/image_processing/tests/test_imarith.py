@@ -26,7 +26,6 @@ def test_invalid_shapes():
         imarith(frame1, frame2, '+')
 
 
-@pytest.mark.skip('Skipping waiting more FrameData tests')
 def test_imarith_add():
     frame1 = FrameData(np.ones((10, 10)), unit='adu')
     frame2 = FrameData(np.ones((10, 10)), unit='adu')

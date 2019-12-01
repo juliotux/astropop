@@ -124,10 +124,346 @@ def test_enable_disable_memmap(tmpdir):
         # raises error if name is locked
         a.enable_memmap('not_the_same_name.npy')
 
-
-# TODO: Math operations tests
 # TODO: Numpy functions
 # TODO: units
 # TODO: flush
 # TODO: reset_data
 # TODO: repr
+
+################################################################################
+# For math tests we supose that numpy's math is correct
+################################################################################
+
+@pytest.mark.parametrize('memmap, value', [(True, 2), (False, 2),
+                                           (True, 3.5), (False, 3.5),
+                                           (True, 0), (False, 0),
+                                           (True, 20), (False, 20),
+                                           (True, -10), (False, -10)])
+def test_memmap_lt(tmpdir, memmap, value):
+    if memmap:
+        f = os.path.join(tmpdir, 'lt.npy')
+    else:
+        f = None
+    arr = np.arange(0, 10, 1)
+    a = MemMapArray(arr, filename=f, memmap=memmap)
+    npt.assert_array_equal(a < value, arr < value)
+
+
+@pytest.mark.parametrize('memmap, value', [(True, 2), (False, 2),
+                                           (True, 3.5), (False, 3.5),
+                                           (True, 0), (False, 0),
+                                           (True, 20), (False, 20),
+                                           (True, -10), (False, -10)])
+def test_memmap_le(tmpdir, memmap, value):
+    if memmap:
+        f = os.path.join(tmpdir, 'le.npy')
+    else:
+        f = None
+    arr = np.arange(0, 10, 1)
+    a = MemMapArray(arr, filename=f, memmap=memmap)
+    npt.assert_array_equal(a <= value, arr <= value)
+
+
+@pytest.mark.parametrize('memmap, value', [(True, 2), (False, 2),
+                                           (True, 3.5), (False, 3.5),
+                                           (True, 0), (False, 0),
+                                           (True, 20), (False, 20),
+                                           (True, -10), (False, -10)])
+def test_memmap_gt(tmpdir, memmap, value):
+    if memmap:
+        f = os.path.join(tmpdir, 'gt.npy')
+    else:
+        f = None
+    arr = np.arange(0, 10, 1)
+    a = MemMapArray(arr, filename=f, memmap=memmap)
+    npt.assert_array_equal(a > value, arr > value)
+
+
+@pytest.mark.parametrize('memmap, value', [(True, 2), (False, 2),
+                                           (True, 3.5), (False, 3.5),
+                                           (True, 0), (False, 0),
+                                           (True, 20), (False, 20),
+                                           (True, -10), (False, -10)])
+def test_memmap_ge(tmpdir, memmap, value):
+    if memmap:
+        f = os.path.join(tmpdir, 'ge.npy')
+    else:
+        f = None
+    arr = np.arange(0, 10, 1)
+    a = MemMapArray(arr, filename=f, memmap=memmap)
+    npt.assert_array_equal(a >= value, arr >= value)
+
+
+@pytest.mark.parametrize('memmap, value', [(True, 2), (False, 2),
+                                           (True, 3.5), (False, 3.5),
+                                           (True, 0), (False, 0),
+                                           (True, 20), (False, 20),
+                                           (True, -10), (False, -10)])
+def test_memmap_eq(tmpdir, memmap, value):
+    if memmap:
+        f = os.path.join(tmpdir, 'eq.npy')
+    else:
+        f = None
+    arr = np.arange(0, 10, 1)
+    a = MemMapArray(arr, filename=f, memmap=memmap)
+    npt.assert_array_equal(a == value, arr == value)
+
+
+@pytest.mark.parametrize('memmap, value', [(True, 2), (False, 2),
+                                           (True, 3.5), (False, 3.5),
+                                           (True, 0), (False, 0),
+                                           (True, 20), (False, 20),
+                                           (True, -10), (False, -10)])
+def test_memmap_ne(tmpdir, memmap, value):
+    if memmap:
+        f = os.path.join(tmpdir, 'ne.npy')
+    else:
+        f = None
+    arr = np.arange(0, 10, 1)
+    a = MemMapArray(arr, filename=f, memmap=memmap)
+    npt.assert_array_equal(a != value, arr != value)
+
+
+@pytest.mark.parametrize('memmap,value,other', [(True, 10, 3), (False, 10, 3),
+                                                (True, 10.5, 3), (False, 10.5, 3),
+                                                (True, 20, 3.5), (False, 20, 3.5),
+                                                (True, 20, 3), (False, 20, 3),
+                                                (True, 20, -3), (False, 20, -3)])
+def test_math_add_number(tmpdir, memmap, value, other):
+    if memmap:
+        f = os.path.join(tmpdir, 'add.npy')
+    else:
+        f = None
+    arr = np.arange(0, 10, 1) * value
+    a = MemMapArray(arr, filename=f, memmap=memmap)
+    npt.assert_array_equal(a+other, arr+other)   
+
+
+@pytest.mark.parametrize('memmap,value,other', [(True, 10, 3), (False, 10, 3),
+                                                (True, 10.5, 3), (False, 10.5, 3),
+                                                (True, 20, 3.5), (False, 20, 3.5),
+                                                (True, 20, 3), (False, 20, 3),
+                                                (True, 20, -3), (False, 20, -3)])
+def test_math_sub_number(tmpdir, memmap, value, other):
+    if memmap:
+        f = os.path.join(tmpdir, 'sun.npy')
+    else:
+        f = None
+    arr = np.arange(0, 10, 1) * value
+    a = MemMapArray(arr, filename=f, memmap=memmap)
+    npt.assert_array_equal(a-other, arr-other)
+
+
+@pytest.mark.parametrize('memmap,value,other', [(True, 10, 3), (False, 10, 3),
+                                                (True, 10.5, 3), (False, 10.5, 3),
+                                                (True, 20, 3.5), (False, 20, 3.5),
+                                                (True, 20, 3), (False, 20, 3),
+                                                (True, 20, -3), (False, 20, -3)])
+def test_math_pow_number(tmpdir, memmap, value, other):
+    if memmap:
+        f = os.path.join(tmpdir, 'pow.npy')
+    else:
+        f = None
+    arr = np.arange(0, 10, 1) * value
+    a = MemMapArray(arr, filename=f, memmap=memmap)
+    npt.assert_array_equal(a**other, arr**other)   
+
+
+@pytest.mark.parametrize('memmap,value,other', [(True, 10, 3), (False, 10, 3),
+                                                (True, 10.5, 3), (False, 10.5, 3),
+                                                (True, 20, 3.5), (False, 20, 3.5),
+                                                (True, 20, 3), (False, 20, 3),
+                                                (True, 20, -3), (False, 20, -3)])
+def test_math_truediv_number(tmpdir, memmap, value, other):
+    if memmap:
+        f = os.path.join(tmpdir, 'div.npy')
+    else:
+        f = None
+    arr = np.arange(0, 10, 1) * value
+    a = MemMapArray(arr, filename=f, memmap=memmap)
+    npt.assert_array_equal(a/other, arr/other)
+
+
+@pytest.mark.parametrize('memmap,value,other', [(True, 10, 3), (False, 10, 3),
+                                                (True, 10.5, 3), (False, 10.5, 3),
+                                                (True, 20, 3.5), (False, 20, 3.5),
+                                                (True, 20, 3), (False, 20, 3),
+                                                (True, 20, -3), (False, 20, -3)])
+def test_math_floordiv_number(tmpdir, memmap, value, other):
+    if memmap:
+        f = os.path.join(tmpdir, 'floordiv.npy')
+    else:
+        f = None
+    arr = np.arange(0, 10, 1) * value
+    a = MemMapArray(arr, filename=f, memmap=memmap)
+    npt.assert_array_equal(a//other, arr//other)   
+
+
+@pytest.mark.parametrize('memmap,value,other', [(True, 10, 3), (False, 10, 3),
+                                                (True, 10.5, 3), (False, 10.5, 3),
+                                                (True, 20, 3.5), (False, 20, 3.5),
+                                                (True, 20, 3), (False, 20, 3),
+                                                (True, 20, -3), (False, 20, -3)])
+def test_math_mul_number(tmpdir, memmap, value, other):
+    if memmap:
+        f = os.path.join(tmpdir, 'mul.npy')
+    else:
+        f = None
+    arr = np.arange(0, 10, 1) * value
+    a = MemMapArray(arr, filename=f, memmap=memmap)
+    npt.assert_array_equal(a*other, arr*other)
+
+
+@pytest.mark.parametrize('memmap,value,other', [(True, 10, 3), (False, 10, 3),
+                                                (True, 10.5, 3), (False, 10.5, 3),
+                                                (True, 20, 3.5), (False, 20, 3.5),
+                                                (True, 20, 3), (False, 20, 3),
+                                                (True, 20, -3), (False, 20, -3)])
+def test_math_mod_number(tmpdir, memmap, value, other):
+    if memmap:
+        f = os.path.join(tmpdir, 'mod.npy')
+    else:
+        f = None
+    arr = np.arange(0, 10, 1) * value
+    a = MemMapArray(arr, filename=f, memmap=memmap)
+    npt.assert_array_equal(a%other, arr%other)
+
+
+@pytest.mark.parametrize('memmap,value,other,raises', [(True, 3, 1, False), (False, 3, 1, False),
+                                                       (True, 2, 3, False), (False, 2, 3, False)])
+def test_math_lshift_number(tmpdir, memmap, value, other, raises):
+    # TODO: Implement raises
+    if memmap:
+        f = os.path.join(tmpdir, 'lshift.npy')
+    else:
+        f = None
+    arr = np.arange(0, 10, 1) * value
+    a = MemMapArray(arr, filename=f, memmap=memmap)
+    npt.assert_array_equal(arr<<other, a<<other)
+    # FIXME: why do this simply don't work like in numpy array???
+    # npt.assert_array_equal(other<<arr, other<<a)
+
+
+@pytest.mark.parametrize('memmap,value,other,raises', [(True, 3, 1, False), (False, 3, 1, False),
+                                                       (True, 2, 3, False), (False, 2, 3, False)])
+def test_math_rshift_number(tmpdir, memmap, value, other, raises):
+    # TODO: Implement raises
+    if memmap:
+        f = os.path.join(tmpdir, 'rshift.npy')
+    else:
+        f = None
+    arr = np.arange(0, 10, 1) * value
+    a = MemMapArray(arr, filename=f, memmap=memmap)
+    npt.assert_array_equal(arr>>other, a>>other)
+    # FIXME: why do this simply don't work like in numpy array???
+    # npt.assert_array_equal(other>>arr, other>>a)
+
+
+@pytest.mark.parametrize('memmap,value,other', [(True, 1, 1), (False, 1, 1),
+                                                (True, 2, 3), (False, 2, 3),
+                                                (True, 1, [[1, 0, 1, 1], [0, 1, 0, 0]]),
+                                                (False, 1,  [[1, 0, 1, 1], [0, 1, 0, 0]])])
+def test_math_and_number(tmpdir, memmap, value, other):
+    if memmap:
+        f = os.path.join(tmpdir, 'and.npy')
+    else:
+        f = None
+    arr = np.array([[0, 1, 0, 1], [1, 0, 1, 0]]) * value
+    a = MemMapArray(arr, filename=f, memmap=memmap)
+    npt.assert_array_equal(arr & other, a & other)
+    # FIXME: why do this simply don't work like in numpy array???
+    # npt.assert_array_equal(other & arr, other & a)
+
+
+@pytest.mark.parametrize('memmap,value,other', [(True, 1, 1), (False, 1, 1),
+                                                (True, 2, 3), (False, 2, 3),
+                                                (True, 1, [[1, 0, 1, 1], [0, 1, 0, 0]]),
+                                                (False, 1,  [[1, 0, 1, 1], [0, 1, 0, 0]])])
+def test_math_or_number(tmpdir, memmap, value, other):
+    if memmap:
+        f = os.path.join(tmpdir, 'xor.npy')
+    else:
+        f = None
+    arr = np.array([[0, 1, 0, 1], [1, 0, 1, 0]]) * value
+    a = MemMapArray(arr, filename=f, memmap=memmap)
+    npt.assert_array_equal(arr | other, a | other)
+    # FIXME: why do this simply don't work like in numpy array???
+    # npt.assert_array_equal(other | arr, other | a)
+
+
+@pytest.mark.parametrize('memmap,value,other', [(True, 1, 1), (False, 1, 1),
+                                                (True, 2, 3), (False, 2, 3),
+                                                (True, 1, [[1, 0, 1, 1], [0, 1, 0, 0]]),
+                                                (False, 1,  [[1, 0, 1, 1], [0, 1, 0, 0]])])
+def test_math_xor_number(tmpdir, memmap, value, other):
+    if memmap:
+        f = os.path.join(tmpdir, 'xor.npy')
+    else:
+        f = None
+    arr = np.array([[0, 1, 0, 1], [1, 0, 1, 0]]) * value
+    a = MemMapArray(arr, filename=f, memmap=memmap)
+    npt.assert_array_equal(arr ^ other, a ^ other)
+    # FIXME: why do this simply don't work like in numpy array???
+    # npt.assert_array_equal(other | arr, other | a)
+
+
+@pytest.mark.parametrize('memmap,value', [(True, 1), (False, 1),
+                                          (True, 2.5), (False, 2.5),
+                                          (True, -1), (False, -1),
+                                          (True, -2.5), (False, -2.5)])
+def test_math_neg_number(tmpdir, memmap, value):
+    if memmap:
+        f = os.path.join(tmpdir, 'neg.npy')
+    else:
+        f = None
+    arr = np.array([[0, 1, 0, -1], [1, 0, -1, 0]]) * value
+    a = MemMapArray(arr, filename=f, memmap=memmap)
+    npt.assert_array_equal(-arr, -a)
+
+
+@pytest.mark.parametrize('memmap,value', [(True, 1), (False, 1),
+                                          (True, 2.5), (False, 2.5),
+                                          (True, -1), (False, -1),
+                                          (True, -2.5), (False, -2.5)])
+def test_math_pos_number(tmpdir, memmap, value):
+    if memmap:
+        f = os.path.join(tmpdir, 'pos.npy')
+    else:
+        f = None
+    arr = np.array([[0, 1, 0, -1], [1, 0, -1, 0]]) * value
+    a = MemMapArray(arr, filename=f, memmap=memmap)
+    npt.assert_array_equal(+arr, +a)
+
+
+
+@pytest.mark.parametrize('memmap,value', [(True, 1), (False, 1),
+                                          (True, 2.5), (False, 2.5),
+                                          (True, -1), (False, -1),
+                                          (True, -2.5), (False, -2.5)])
+def test_math_abs_number(tmpdir, memmap, value):
+    if memmap:
+        f = os.path.join(tmpdir, 'abs.npy')
+    else:
+        f = None
+    arr = np.array([[0, 1, 0, -1], [1, 0, -1, 0]]) * value
+    a = MemMapArray(arr, filename=f, memmap=memmap)
+    npt.assert_array_equal(arr.__abs__(), a.__abs__())
+
+
+@pytest.mark.parametrize('memmap,value', [(True, 1), (False, 1),
+                                          (True, -1), (False, -1)])
+def test_math_invert_number(tmpdir, memmap, value):
+    if memmap:
+        f = os.path.join(tmpdir, 'invert.npy')
+    else:
+        f = None
+    arr = np.array([[0, 1, 0, -1], [1, 0, -1, 0]]) * value
+    a = MemMapArray(arr, filename=f, memmap=memmap)
+    npt.assert_array_equal(~arr, ~a)
+
+
+# TODO: matmul
+# TODO: bool
+# TODO: i<add, sub, ...>
+# TODO: len, contains, int, float, complex
+# TODO: array_attr
