@@ -52,7 +52,10 @@ def compare_wcs(wcs, nwcs):
         assert np.array(res1 - res2 < 1e-3).all()
 
 
-@pytest.mark.skipif('_solve_field is None')
+skip_astrometry = pytest.mark.skipif("_solve_field is None or os.getenv('SKIP_TEST_ASTROMETRY', False)")
+
+
+@skip_astrometry
 def test_solve_astrometry_hdu(tmpdir):
     data, index = get_image_index()
     hdu = fits.open(data)[0]
@@ -64,7 +67,7 @@ def test_solve_astrometry_hdu(tmpdir):
     compare_wcs(wcs, nwcs)
 
 
-@pytest.mark.skipif('_solve_field is None')
+@skip_astrometry
 def test_solve_astrometry_xyl(tmpdir):
     data, index = get_image_index()
     hdu = fits.open(data)[0]
@@ -81,7 +84,7 @@ def test_solve_astrometry_xyl(tmpdir):
     compare_wcs(wcs, nwcs)
 
 
-@pytest.mark.skipif('_solve_field is None')
+@skip_astrometry
 def test_solve_astrometry_image(tmpdir):
     data, index = get_image_index()
     hdu = fits.open(data)[0]
@@ -95,7 +98,7 @@ def test_solve_astrometry_image(tmpdir):
     compare_wcs(wcs, nwcs)
 
 
-@pytest.mark.skipif('_fit_wcs is None')
+@skip_astrometry
 def test_fit_wcs(tmpdir):
     data, index = get_image_index()
     hdu = fits.open(data)[0]

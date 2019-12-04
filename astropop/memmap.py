@@ -11,27 +11,17 @@ from .py_utils import check_iterable
 __all__ = ['MemMapArray', 'create_array_memmap', 'delete_array_memmap']
 
 
-array_bi = [f'__{i}__' for i in
-             ['bool',
-              'iadd', 'isub', 'imul', 'itruediv', 'ifloordiv',
-              'imod', 'ipow', 'ilshift', 'irshift',
-              'iand', 'ior', 'ixor',
-              'len', 'contains',  # 'array',
-              'int', 'float', 'complex']]
-
-array_attr = ['flags', 'shape', 'strides', 'ndim', 'data', 'size',
-              'itemsize', 'nbytes', 'base', 'dtype', 'T', 'real',
-              'imag', 'flat', 'ctypes', 'item', 'tolist', 'itemset',
-              'tostring', 'tobytes', 'tofile', 'dump', 'dumps', 'astype',
-              'byteswap', 'copy', 'view', 'getfield', 'setflags',
-              'reshape', 'resize', 'transpose', 'swapaxes', 'flatten',
-              'ravel', 'squeeze', 'take', 'put', 'repeat', 'choose', 'sort',
-              'argsort', 'partition', 'argpartition', 'searchsorted', 'nonzero',
-              'compress', 'diagonal', 'max', 'argmax', 'min', 'argmin', 'ptp',
-              'conj', 'round', 'trace', 'sum', 'cumsum', 'mean', 'var', 'std',
-              'prod', 'cumprod', 'all', 'any']
-
-redirects = array_attr + array_bi
+redirects = ['flags', 'shape', 'strides', 'ndim', 'data', 'size',
+             'itemsize', 'nbytes', 'base', 'dtype', 'T', 'real',
+             'imag', 'flat', 'ctypes', 'item', 'tolist', 'itemset',
+             'tostring', 'tobytes', 'tofile', 'dump', 'dumps', 'astype',
+             'byteswap', 'copy', 'view', 'getfield', 'setflags',
+             'reshape', 'resize', 'transpose', 'swapaxes', 'flatten',
+             'ravel', 'squeeze', 'take', 'put', 'repeat', 'choose', 'sort',
+             'argsort', 'partition', 'argpartition', 'searchsorted', 'nonzero',
+             'compress', 'diagonal', 'max', 'argmax', 'min', 'argmin', 'ptp',
+             'conj', 'round', 'trace', 'sum', 'cumsum', 'mean', 'var', 'std',
+             'prod', 'cumprod', 'all', 'any']
 
 
 def create_array_memmap(filename, data, dtype=None):
@@ -314,3 +304,21 @@ class MemMapArray:
     __abs__ = to_memmap_operator('__abs__')
     __invert__ = to_memmap_operator('__invert__')
     __matmul__ = to_memmap_operator('__matmul__')
+    __bool__ = to_memmap_operator('__bool__')
+    __float__ = to_memmap_operator('__float__')
+    __complex__ = to_memmap_operator('__complex__')
+    __int__ = to_memmap_operator('__int__')
+    __iadd__ = to_memmap_operator('__iadd__')
+    __isub__ = to_memmap_operator('__isub__')
+    __ipow__ = to_memmap_operator('__ipow__')
+    __imul__ = to_memmap_operator('__imul__')
+    __itruediv__ = to_memmap_operator('__itruediv__')
+    __ifloordiv__ = to_memmap_operator('__ifloordiv__')
+    __imod__ = to_memmap_operator('__imod__')
+    __ilshift__ = to_memmap_operator('__ilshift__')
+    __irshift__ = to_memmap_operator('__irshift__')
+    __iand__ = to_memmap_operator('__iand__')
+    __ior__ = to_memmap_operator('__ior__')
+    __ixor__ = to_memmap_operator('__ixor__')
+    __len__ = to_memmap_operator('__len__')
+    __contains__ = to_memmap_operator('__contains__')

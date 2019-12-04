@@ -45,6 +45,7 @@ def imarith(operand1, operand2, operation, inplace=False, logger=logger):
     Keeps the header of the first image.
     """
     # TODO: manage caching for results
+    # TODO: handle uncertainties
     # TODO: handle units
 
     logger.debug(f'Operation {operation} between {operand1} and {operand2}')
@@ -79,33 +80,33 @@ def imarith(operand1, operand2, operation, inplace=False, logger=logger):
         nmask = None
 
     # propagate errors, assuming they are stddev uncertainties
-    if hasattr(operand2, 'uncertainty'):
-        uncertainty2 = operand2.uncertainty
-    else:
-        uncertainty2 = 0.0
-    uncertainty2 = uncertainty2 or 0.0
-    if operand1.uncertainty is not None:
-        logger.debug('Propagating error in math operation')
-        f = _error_propagation[operation]
-        if operation in ('+', '-'):
-            nuncert = f(operand1.uncertainty, uncertainty2)
-        elif operation in ('*', '//', '/'):
-            nuncert = f(ndata, operand1.data, data2, operand1.uncertainty,
-                        uncertainty2)
-        elif operation in ('**'):
-            nuncert = f(ndata, operand1.data, data2, operand1.uncertainty)
-        else:
-            logger.warn('Operation {} does not support error propagation.'
-                        .format(operation))
+    # if hasattr(operand2, 'uncertainty'):
+    #     uncertainty2 = operand2.uncertainty
+    # else:
+    #     uncertainty2 = 0.0
+    # uncertainty2 = uncertainty2 or 0.0
+    # if operand1.uncertainty is not None:
+    #     logger.debug('Propagating error in math operation')
+    #     f = _error_propagation[operation]
+    #     if operation in ('+', '-'):
+    #         nuncert = f(operand1.uncertainty, uncertainty2)
+    #     elif operation in ('*', '//', '/'):
+    #         nuncert = f(ndata, operand1.data, data2, operand1.uncertainty,
+    #                     uncertainty2)
+    #     elif operation in ('**'):
+    #         nuncert = f(ndata, operand1.data, data2, operand1.uncertainty)
+    #     else:
+    #         logger.warn('Operation {} does not support error propagation.'
+    #                     .format(operation))
 
     if inplace:
         ccd = operand1
         ccd.data = ndata
-        ccd.uncertainty = nuncert
+        # ccd.uncertainty = nuncert
         ccd.mask = nmask
     else:
-        ccd = FrameData(ndata, operand1.unit, meta=operand1.meta.copy())
-        ccd.uncertainty = nuncert
+        ccd = FrameData(ndata, operand1.data.unit, meta=operand1.meta.copy())
+        # ccd.uncertainty = nuncert
         ccd.mask = nmask
 
     return ccd
