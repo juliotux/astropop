@@ -67,7 +67,7 @@ matrix:
           env: NUMPY_VERSION=1.17 SETUP_CMD='test'
 
         - os: linux
-          env: PYTHON_VERSION=3.7 NUMPY_VERSION=1.16 SETUP_CMD='test --coverage'
+          env: PYTHON_VERSION=3.7 NUMPY_VERSION=1.17 SETUP_CMD='test --coverage'
 
         - os: linux
           env: SETUP_CMD='build_docs -w'
@@ -83,9 +83,6 @@ matrix:
 
         - os: linux
           env: PYTHON_VERSION=3.6 NUMPY_VERSION=1.15 SETUP_CMD='test'
-
-        - os: linux
-          env: PYTHON_VERSION=3.7 NUMPY_VERSION=1.16 SETUP_CMD='test'
         
         - os: linux
           env: PYTHON_VERSION=3.7 NUMPY_VERSION=1.17 SETUP_CMD='test'
