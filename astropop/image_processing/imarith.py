@@ -73,7 +73,7 @@ def imarith(operand1, operand2, operation, inplace=False, logger=logger):
         mask2 = None
     if operand1.mask is not None and mask2 is not None:
         logger.debug('Updating mask in math operation.')
-        nmask = np.logical_and(operand1.mask, mask2)
+        nmask = np.logical_or(operand1.mask, mask2)
     elif operand1.mask is not None:
         nmask = operand1.mask
     else:
