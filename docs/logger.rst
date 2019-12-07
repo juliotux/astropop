@@ -30,7 +30,7 @@ To use the logger, just import it and set a log level::
 
 You are now read to print simple logging::
 
-    >>> logger.error('Matrix error. Agents needeed.')
+    >>> logger.error('Matrix error. Agents needeed.')   # doctest: +SKIP
     ERROR: Matrix error. Agents needeed. [unknown]
 
 The general behavior of Astropop logger is the same of Python default logger, very well documentated in `Python Log docs <https://docs.python.org/3/library/logging.html>`_.

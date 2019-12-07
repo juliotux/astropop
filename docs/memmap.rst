@@ -10,11 +10,11 @@ The class also supports physical units assignment, using ``astropy.units.Unit`` 
 Creating an MemMapArray
 -----------------------
 
-``MemMapArray`` are very simple to create, just like a ``numpy.array``. For example::
+``MemMapArray`` are very simple to create, just like a ``numpy.array``. For example:
 
     >>> from astropop.memmap import MemMapArray
     >>> m = MemMapArray([[0, 1], [2, 3]], filename='./mymemmaparray.npy', dtype='float32', unit='adu', memmap=True)
-    >>> print(m)
+    >>> print(m) # doctest: +SKIP
     MemMapArray:
     memmap([[0., 1.],
             [2., 3.]], dtype=float32)
@@ -38,7 +38,7 @@ However, this data is not in memory, but is cached in disk, in file ``./mymemmap
 ``MemMapArray`` also can create empty data instances, and handle it. You can just pass ``None`` data to it and it's ok.
 
     >>> m_empty = MemMapArray(None)
-    >>> print(m)
+    >>> print(m_empty)
     MemMapArray:
     None
     file: None
