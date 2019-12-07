@@ -70,8 +70,7 @@ matrix:
           env: PYTHON_VERSION=3.7 NUMPY_VERSION=1.17 SETUP_CMD='test --coverage'
 
         - os: linux
-          env: SETUP_CMD='build_docs'  # SETUP_CMD='build_docs -w' For now, allow warnings
-               CONDA_DEPENDENCIES="$CONDA_DEPENDENCIES_DOC $CONDA_DEPENDENCIES"
+          env: SETUP_CMD='build_docs' CONDA_DEPENDENCIES="$CONDA_DEPENDENCIES_DOC $CONDA_DEPENDENCIES"
 
         - os: linux
           stage: Cron tests
