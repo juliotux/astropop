@@ -5,8 +5,6 @@ import os
 import numpy as np
 from astropy import units as u
 
-from .py_utils import check_iterable
-
 
 __all__ = ['MemMapArray', 'create_array_memmap', 'delete_array_memmap']
 
@@ -87,7 +85,8 @@ class MemMapArray:
     _memmap = False
     _unit = u.dimensionless_unscaled
 
-    def __init__(self, data, filename=None, dtype=None, unit=None, memmap=True):
+    def __init__(self, data, filename=None, dtype=None, unit=None,
+                 memmap=True):
         # None data should generate a empty container
         if data is None:
             self._contained = None
@@ -97,7 +96,9 @@ class MemMapArray:
             else:
                 data = np.array(data)
                 dtype = dtype or data.dtype
-            self._contained = np.array(data, dtype=dtype or 'float64')  # Default dtype
+            # Default dtype
+            dtype = dtype or 'float64'
+            self._contained = np.array(data, dtype=dtype)
         self.set_filename(filename)
         self.set_unit(unit)
         self._file_lock = True
@@ -108,7 +109,7 @@ class MemMapArray:
     @property  # read only
     def empty(self):
         return self._contained is None
-    
+
     @property  # read only
     def unit(self):
         return self._unit
@@ -126,8 +127,9 @@ class MemMapArray:
 
     def set_filename(self, value):
         """Set the memmap filename.
-        
-        If the instance is already memmapping, memmap will be moved to the new file.
+
+        If the instance is already memmapping, memmap will be moved to the new
+        file.
 
         Parameters:
         -----------
@@ -147,7 +149,7 @@ class MemMapArray:
 
     def set_unit(self, value=None):
         """Set the data physical unit.
-        
+
         Parameters:
         -----------
             value = string or `astropy.units.Unit`
@@ -158,20 +160,20 @@ class MemMapArray:
         if value is None:
             self._unit = u.dimensionless_unscaled
         else:
-            self._unit = u.Unit(value) 
+            self._unit = u.Unit(value)
 
     def enable_memmap(self, filename=None):
         """Enable data file memmapping (write data to disk).
-        
+
         Parameters:
         -----------
             filename : string or None (optional)
-                File name of new memmapping. If `None`, the class default value will
-                be used.  
+                File name of new memmapping. If `None`, the class default
+                value will be used.
         """
         if self.memmap:
             return
-        
+
         if filename is not None:
             self.set_filename(filename)
 
@@ -180,7 +182,7 @@ class MemMapArray:
 
     def disable_memmap(self, remove=False):
         """Disable data file memmapping (read to memory).
-        
+
         Parameters:
         -----------
             remove : bool
@@ -188,18 +190,19 @@ class MemMapArray:
         """
         if not self.memmap:
             return
-        
-        self._contained = delete_array_memmap(self._contained, read=True, remove=remove)
+
+        self._contained = delete_array_memmap(self._contained, read=True,
+                                              remove=remove)
         self._memmap = False
 
     def flush(self):
         """Write changes to disk if memmapping."""
         if self.memmap:
             self._contained.flush()
-    
+
     def reset_data(self, data=None, unit=None, dtype=None):
         """Set new data.
-        
+
         Parameters:
         -----------
             data : np.ndarray or None (optional)
@@ -234,10 +237,10 @@ class MemMapArray:
             if hasattr(data, 'unit'):
                 dunit = u.Unit(data.unit)
                 if unit is not None:
-                    unit = u.Unit(unit) 
+                    unit = u.Unit(unit)
                     if unit is not dunit:
-                        raise ValueError(f'unit={unit} set for a Quantity data '
-                                         f'with {dunit} unit.')
+                        raise ValueError(f'unit={unit} set for a Quantity data'
+                                         f' with {dunit} unit.')
                 self.set_unit(dunit)
             else:
                 if unit is not None:
@@ -267,11 +270,12 @@ class MemMapArray:
             return attr
         elif item in redirects and self.empty:
             raise KeyError('Empty data container')
-    
+
         return object.__getattribute__(self, item)
-    
+
     def __repr__(self):
-        return 'MemMapArray:\n' + repr(self._contained) + f'\nfile: {self.filename}'
+        return 'MemMapArray:\n' + repr(self._contained) + \
+               f'\nfile: {self.filename}'
 
     def __array__(self):
         if self.empty:

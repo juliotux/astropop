@@ -5,15 +5,12 @@
 # handle disk memmap and an easier unit/uncertainty workflow
 
 import six
-from pathlib import Path
 import os
-import shutil
 import numpy as np
-import copy
 from tempfile import mkdtemp, mkstemp
 from astropy import units as u
 from astropy.io import fits
-from astropy.nddata import StdDevUncertainty, NDUncertainty, CCDData, NDData
+from astropy.nddata import CCDData, NDData
 from astropy.nddata.ccddata import _generate_wcs_and_update_header
 
 from .py_utils import mkdir_p
@@ -105,11 +102,11 @@ def shape_consistency(data=None, uncertainty=None, mask=None):
         if ushape == ():
             uncertainty = np.zeros(dshape)*uncertainty
             ushape = uncertainty.shape
-        
+
         if ushape != dshape:
             raise ValueError(f'Uncertainty shape {ushape} don\'t match'
                              f' Data shape {dshape}.')
-    
+
     if mask is not None:
         if hasattr(mask, 'shape'):
             mshape = mask.shape
@@ -119,7 +116,7 @@ def shape_consistency(data=None, uncertainty=None, mask=None):
         if mshape == ():
             mask = np.logical_or(np.zeros(dshape), mask)
             mshape = mask.shape
-        
+
         if mask.shape != dshape:
             raise ValueError(f'Mask shape {mshape} don\'t match'
                              f' Data shape {dshape}.')
@@ -139,9 +136,9 @@ def extract_units(data, unit):
         unit = None
 
     if dunit is not None and unit is not None:
-        if not dunit is unit:
+        if dunit is not unit:
             raise ValueError(f"Unit {unit} cannot be set for a data with"
-                            f" unit {dunit}")
+                             f" unit {dunit}")
         else:
             return dunit
     elif dunit is not None:
@@ -232,7 +229,6 @@ class FrameData:
     - use_memmap_backend : bool (optional)
         True if enable memmap in constructor.
     """
-    # TODO: Math operations (__add__, __subtract__, etc...)
     # TODO: Complete reimplement the initializer
     _memmapping = False
     _data = None
@@ -245,21 +241,23 @@ class FrameData:
                  uncertainty=None, u_unit=None, u_dtype=None,
                  mask=None, m_dtype=bool,
                  wcs=None, meta=None, header=None,
-                 cache_folder=None, cache_filename=None, use_memmap_backend=False):
+                 cache_folder=None, cache_filename=None,
+                 use_memmap_backend=False):
         self.cache_folder = cache_folder
         self.cache_filename = cache_filename
 
         # Setup MemMapArray instances
-        cache_file = setup_filename(self, self.cache_folder, self.cache_filename)
-        self._data = MemMapArray(None, cache_file + '.data')
-        self._unct = MemMapArray(None, cache_file + '.unct')
-        self._mask = MemMapArray(None, cache_file + '.mask')
+        cache_file = setup_filename(self, self.cache_folder,
+                                    self.cache_filename)
+        self._data = MemMapArray(None, filename=cache_file + '.data')
+        self._unct = MemMapArray(None, filename=cache_file + '.unct')
+        self._mask = MemMapArray(None, filename=cache_file + '.mask')
 
         # Check for memmapping.
         self._memmapping = False
         if use_memmap_backend:
             self.enable_memmap()
-        
+
         if hasattr(data, 'mask'):
             dmask = data.mask
             if mask is not None:
