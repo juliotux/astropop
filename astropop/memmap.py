@@ -86,7 +86,9 @@ class MemMapArray:
     _unit = u.dimensionless_unscaled
 
     def __init__(self, data, filename=None, dtype=None, unit=None,
-                 memmap=True):
+                 memmap=False):
+        if isinstance(data, u.Quantity):
+            raise TypeError('astropy Quantity not supported yet.')
         # None data should generate a empty container
         if data is None:
             self._contained = None
@@ -108,14 +110,17 @@ class MemMapArray:
 
     @property  # read only
     def empty(self):
+        """True if contained data is empty (None)."""
         return self._contained is None
 
     @property  # read only
     def unit(self):
+        """Physical data unit."""
         return self._unit
 
     @property  # read only
     def filename(self):
+        """Name of the file where data is cached, if memmap enabled."""
         if self.memmap and self._contained is not None:
             return self._contained.filename
         return self._filename
@@ -216,8 +221,8 @@ class MemMapArray:
             if self.memmap:
                 # Need to delete memmap
                 mm = self._contained
+                delete_array_memmap(mm, read=False, remove=False)
                 self._contained = None
-                delete_array_memmap(mm, read=False, remove=True)
             else:
                 # don't need to delete memmap
                 self._contained = None

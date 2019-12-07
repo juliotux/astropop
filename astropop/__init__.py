@@ -11,9 +11,11 @@ from ._astropy_init import *   # noqa
 import sys
 from distutils.version import LooseVersion
 
+from .logger import logger
+
 __minimum_python_version__ = "3.7"
 
-__all__ = []
+__all__ = ['logger']
 
 
 class UnsupportedPythonError(Exception):

@@ -2,8 +2,8 @@
 import os
 import mmap
 import pytest
-import tempfile
-from astropop.memmap import MemMapArray, redirects, create_array_memmap, delete_array_memmap
+from astropop.memmap import MemMapArray, create_array_memmap, \
+                            delete_array_memmap
 from astropy import units as u
 import numpy as np
 import numpy.testing as npt
@@ -114,7 +114,7 @@ def test_enable_disable_memmap(tmpdir):
     assert a.memmap
     assert os.path.exists(f)
     assert isinstance(a._contained, np.memmap)
-    
+
     # Remove the file
     a.disable_memmap(remove=True)
     assert not a.memmap
@@ -125,25 +125,98 @@ def test_enable_disable_memmap(tmpdir):
         # raises error if name is locked
         a.enable_memmap('not_the_same_name.npy')
 
-# TODO: units
+
+def test_units_on_creation(tmpdir):
+    m = MemMapArray(None, os.path.join(tmpdir, 'unit.npy'), unit='adu')
+    assert m.unit is u.adu
+
+
+def test_unit_assign(tmpdir):
+    m = MemMapArray(None, os.path.join(tmpdir, 'unit.npy'), unit=None)
+    m.set_unit('adu')
+    assert m.unit is u.adu
+
+    with pytest.raises(AttributeError):
+        # no direct assignment
+        m.unit = 'adu'
+
+
+def test_invalid_unit(tmpdir):
+    with pytest.raises(ValueError):
+        m = MemMapArray(None, unit='Invalid')
+
+    m = MemMapArray(None)
+    with pytest.raises(ValueError):
+        m.set_unit('invalid')
+    with pytest.raises(AttributeError):
+        m.unit = 'invalid'
+
+
+def test_unit_change(tmpdir):
+    m = MemMapArray(None, unit='m')
+    assert m.unit is u.m
+    m.set_unit('adu')
+    assert m.unit is u.adu
+
+
+def test_reset_data(tmpdir):
+    d1 = np.array([[1, 2], [3, 4]]).astype('float32')
+    m = MemMapArray(d1, os.path.join(tmpdir, 'reset.npy'),
+                    dtype='float64', unit='adu', memmap=True)
+    assert np.issubdtype(m.dtype, np.float64)
+    npt.assert_array_equal(m, d1)
+    assert not m.empty
+    assert m.memmap
+
+    m.reset_data(d1)
+    assert np.issubdtype(m.dtype, np.float32)
+    npt.assert_array_equal(m, d1)
+    assert not m.empty
+    assert m.memmap
+
+    m.reset_data(d1.astype('int16'))
+    assert np.issubdtype(m.dtype, np.int16)
+    npt.assert_array_equal(m, d1)
+    assert not m.empty
+    assert m.memmap
+
+    m.reset_data(None)
+    assert m.empty
+    assert m._contained is None
+    assert m.memmap
+    m.disable_memmap()
+
+    m.reset_data(np.ones((10, 10)), unit='m', dtype='float32')
+    assert np.issubdtype(m.dtype, np.float32)
+    npt.assert_array_equal(m, np.ones((10, 10)))
+    assert not m.empty
+    assert not m.memmap
+
+
 # TODO: flush
-# TODO: reset_data
 # TODO: repr
 
-################################################################################
+###############################################################################
 # For math tests we supose that numpy's math is correct
-################################################################################
+###############################################################################
 
 parametrize_matrice = pytest.mark.parametrize('memmap, value, other',
                                               [(True, 3, 2), (False, 3, 2),
-                                               (True, 1.5, 3.5), (False, 1.5, 3.5),
+                                               (True, 1.5, 3.5),
+                                               (False, 1.5, 3.5),
                                                (True, 4, 0), (False, 4, 0),
                                                (True, 0, 4), (False, 0, 4),
-                                               (True, 1.5, -2), (False, 1.5, -2),
-                                               (True, -10, 3.5), (False, -10, 3.5),
-                                               (True, 10, 3.5), (False, 10, 3.5),
-                                               (True, 1, np.nan), (False, 1, np.nan),
-                                               (True, 1, np.inf), (False, 1, np.inf)])
+                                               (True, 1.5, -2),
+                                               (False, 1.5, -2),
+                                               (True, -10, 3.5),
+                                               (False, -10, 3.5),
+                                               (True, 10, 3.5),
+                                               (False, 10, 3.5),
+                                               (True, 1, np.nan),
+                                               (False, 1, np.nan),
+                                               (True, 1, np.inf),
+                                               (False, 1, np.inf)])
+
 
 @parametrize_matrice
 def test_memmap_lt(tmpdir, memmap, value, other):
@@ -248,7 +321,7 @@ def test_math_add(tmpdir, memmap, value, other):
     else:
         ap_v = a+other
         npt.assert_array_equal(ap_v, np_v)
-    
+
     try:
         arr += other
     except Exception as e:
@@ -272,7 +345,7 @@ def test_math_sub(tmpdir, memmap, value, other):
     else:
         ap_v = a-other
         npt.assert_array_equal(ap_v, np_v)
-    
+
     try:
         arr -= other
     except Exception as e:
@@ -296,7 +369,7 @@ def test_math_pow(tmpdir, memmap, value, other):
     else:
         ap_v = a**other
         npt.assert_array_equal(ap_v, np_v)
-    
+
     try:
         arr **= other
     except Exception as e:
@@ -385,12 +458,12 @@ def test_math_mod(tmpdir, memmap, value, other):
     arr = np.arange(0, 10, 1) * value
     a = MemMapArray(arr, filename=f, memmap=memmap)
     try:
-        np_v = arr%other
+        np_v = arr % other
     except Exception as e:
         with pytest.raises(e.__class__):
-            ap_v = a%other
+            ap_v = a % other
     else:
-        ap_v = a%other
+        ap_v = a % other
         npt.assert_array_equal(ap_v, np_v)
 
     try:
@@ -409,12 +482,12 @@ def test_math_lshift(tmpdir, memmap, value, other):
     arr = np.arange(0, 10, 1) * value
     a = MemMapArray(arr, filename=f, memmap=memmap)
     try:
-        np_v = arr<<other
+        np_v = arr << other
     except Exception as e:
         with pytest.raises(e.__class__):
-            ap_v = a<<other
+            ap_v = a << other
     else:
-        ap_v = a<<other
+        ap_v = a << other
         npt.assert_array_equal(ap_v, np_v)
 
     try:
@@ -435,13 +508,13 @@ def test_math_rshift(tmpdir, memmap, value, other):
     arr = np.arange(0, 10, 1) * value
     a = MemMapArray(arr, filename=f, memmap=memmap)
     try:
-        np_v = arr>>other
+        np_v = arr >> other
     except Exception as e:
         with pytest.raises(e.__class__):
-            ap_v = a>>other
+            ap_v = a >> other
     else:
-        ap_v = a>>other
-        npt.assert_array_equal(ap_v, np_v)  
+        ap_v = a >> other
+        npt.assert_array_equal(ap_v, np_v)
 
     try:
         arr >>= other
@@ -461,12 +534,12 @@ def test_math_and(tmpdir, memmap, value, other):
     arr = np.array([[0, 1, 0, 1], [1, 0, 1, 0]]) * value
     a = MemMapArray(arr, filename=f, memmap=memmap)
     try:
-        np_v = arr&other
+        np_v = arr & other
     except Exception as e:
         with pytest.raises(e.__class__):
-            ap_v = a&other
+            ap_v = a & other
     else:
-        ap_v = a&other
+        ap_v = a & other
         npt.assert_array_equal(ap_v, np_v)
 
     try:
@@ -487,12 +560,12 @@ def test_math_or(tmpdir, memmap, value, other):
     arr = np.array([[0, 1, 0, 1], [1, 0, 1, 0]]) * value
     a = MemMapArray(arr, filename=f, memmap=memmap)
     try:
-        np_v = arr|other
+        np_v = arr | other
     except Exception as e:
         with pytest.raises(e.__class__):
-            ap_v = a|other
+            ap_v = a | other
     else:
-        ap_v = a|other
+        ap_v = a | other
         npt.assert_array_equal(ap_v, np_v)
 
     try:
@@ -513,12 +586,12 @@ def test_math_xor(tmpdir, memmap, value, other):
     arr = np.array([[0, 1, 0, 1], [1, 0, 1, 0]]) * value
     a = MemMapArray(arr, filename=f, memmap=memmap)
     try:
-        np_v = arr^other
+        np_v = arr ^ other
     except Exception as e:
         with pytest.raises(e.__class__):
-            ap_v = a^other
+            ap_v = a ^ other
     else:
-        ap_v = a^other
+        ap_v = a ^ other
         npt.assert_array_equal(ap_v, np_v)
 
     try:
@@ -560,8 +633,7 @@ def test_math_pos(tmpdir, memmap, value, other):
             ap_v = +a
     else:
         ap_v = +a
-        npt.assert_array_equal(ap_v, np_v)  
-
+        npt.assert_array_equal(ap_v, np_v)
 
 
 @parametrize_matrice
@@ -576,7 +648,7 @@ def test_math_abs(tmpdir, memmap, value, other):
             ap_v = a.__abs__()
     else:
         ap_v = a.__abs__()
-        npt.assert_array_equal(ap_v, np_v)  
+        npt.assert_array_equal(ap_v, np_v)
 
 
 @parametrize_matrice
@@ -591,7 +663,7 @@ def test_math_invert(tmpdir, memmap, value, other):
             ap_v = ~a
     else:
         ap_v = ~a
-        npt.assert_array_equal(ap_v, np_v)  
+        npt.assert_array_equal(ap_v, np_v)
 
 
 @parametrize_matrice
@@ -638,7 +710,7 @@ def test_math_float(tmpdir, memmap, value, other):
     a = MemMapArray(arr, filename=f, memmap=memmap)
     with pytest.raises(TypeError):
         float(a)
-    
+
     a = MemMapArray([value], filename=f, memmap=memmap)
     assert float(value) == float(a)
 
@@ -650,7 +722,7 @@ def test_math_int(tmpdir, memmap, value, other):
     a = MemMapArray(arr, filename=f, memmap=memmap)
     with pytest.raises(TypeError):
         int(a)
-    
+
     a = MemMapArray([value], filename=f, memmap=memmap)
     assert int(value) == int(a)
 
@@ -662,7 +734,7 @@ def test_math_complex(tmpdir, memmap, value, other):
     a = MemMapArray(arr, filename=f, memmap=memmap)
     with pytest.raises(TypeError):
         complex(a)
-    
+
     a = MemMapArray([value], filename=f, memmap=memmap)
     try:
         complex(np.array([value]), other)
@@ -702,12 +774,13 @@ def test_math_len(tmpdir, memmap):
 @pytest.mark.parametrize('memmap', [True, False])
 def test_math_redirects(tmpdir, memmap):
     f = os.path.join(tmpdir, 'redirects.npy')
+
     def check_arr(arr, a):
         arr_flags = arr.flags
         a_flags = a.flags
         for i in ['C_CONTIGUOUS', 'F_CONTIGUOUS', 'WRITEABLE', 'ALIGNED',
-                'WRITEBACKIFCOPY', 'UPDATEIFCOPY', 'FNC', 'FORC',
-                'BEHAVED', 'CARRAY', 'FARRAY']:
+                  'WRITEBACKIFCOPY', 'UPDATEIFCOPY', 'FNC', 'FORC',
+                  'BEHAVED', 'CARRAY', 'FARRAY']:
             assert arr_flags[i] == a_flags[i]
         for i in ['OWNDATA']:
             if memmap:
@@ -782,7 +855,7 @@ def test_math_redirects(tmpdir, memmap):
 
         assert arr.all() == a.all()
         assert arr.any() == a.any()
-        
+
         # FIXME: assert arr.ctypes == a.ctypes
 
         # TODO: itemset
