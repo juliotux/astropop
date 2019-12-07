@@ -71,7 +71,7 @@ matrix:
 
         - os: linux
           env: SETUP_CMD='build_docs -w'
-               CONDA_DEPENDENCIES=$CONDA_DEPENDENCIES_DOC
+               CONDA_DEPENDENCIES="$CONDA_DEPENDENCIES_DOC $CONDA_DEPENDENCIES"
 
         - os: linux
           stage: Cron tests

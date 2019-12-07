@@ -6,7 +6,6 @@ imarith
 Handle the IRAF's imarith and imcombine functions.
 '''
 # TODO: reimplement imcombine
-# TODO: create the decorator @framedata_func to check_framedata
 
 import numpy as np
 
@@ -26,6 +25,9 @@ _arith_funcs = {'+': np.add,
 
 
 # only deal with uncorrelated errors
+# f : result value
+# a, b : values of operands
+# sa, sb : uncertainties of operands
 _error_propagation = {'+': lambda sa, sb: np.sqrt(sa**2 + sb**2),
                       '-': lambda sa, sb: np.sqrt(sa**2 + sb**2),
                       '/': lambda f, a, b, sa, sb: f*np.sqrt((sa/a)**2 +
@@ -44,7 +46,6 @@ def imarith(operand1, operand2, operation, inplace=False, logger=logger):
 
     Keeps the header of the first image.
     """
-    # TODO: manage caching for results
     # TODO: handle uncertainties
     # TODO: handle units
 
@@ -79,34 +80,12 @@ def imarith(operand1, operand2, operation, inplace=False, logger=logger):
     else:
         nmask = None
 
-    # propagate errors, assuming they are stddev uncertainties
-    # if hasattr(operand2, 'uncertainty'):
-    #     uncertainty2 = operand2.uncertainty
-    # else:
-    #     uncertainty2 = 0.0
-    # uncertainty2 = uncertainty2 or 0.0
-    # if operand1.uncertainty is not None:
-    #     logger.debug('Propagating error in math operation')
-    #     f = _error_propagation[operation]
-    #     if operation in ('+', '-'):
-    #         nuncert = f(operand1.uncertainty, uncertainty2)
-    #     elif operation in ('*', '//', '/'):
-    #         nuncert = f(ndata, operand1.data, data2, operand1.uncertainty,
-    #                     uncertainty2)
-    #     elif operation in ('**'):
-    #         nuncert = f(ndata, operand1.data, data2, operand1.uncertainty)
-    #     else:
-    #         logger.warn('Operation {} does not support error propagation.'
-    #                     .format(operation))
-
     if inplace:
         ccd = operand1
         ccd.data = ndata
-        # ccd.uncertainty = nuncert
         ccd.mask = nmask
     else:
         ccd = FrameData(ndata, operand1.data.unit, meta=operand1.meta.copy())
-        # ccd.uncertainty = nuncert
         ccd.mask = nmask
 
     return ccd
