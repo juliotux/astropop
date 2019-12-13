@@ -22,6 +22,7 @@ dependencies:
     - astroalign
     - ccdproc
     - photutils
+    - astropy_helpers
     - pip:
         - sep
         - sphinx-rtd-theme
