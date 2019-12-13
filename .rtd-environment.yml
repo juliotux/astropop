@@ -26,4 +26,3 @@ dependencies:
         - sep
         - sphinx-rtd-theme
         - sphinxcontrib-apidoc
-        - astropy-helpers
