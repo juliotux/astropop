@@ -231,6 +231,7 @@ class FrameData:
     """
     # TODO: Complete reimplement the initializer
     # TODO: History storing?
+    # TODO: __copy__
     _memmapping = False
     _data = None
     _mask = None
@@ -238,6 +239,7 @@ class FrameData:
     _wcs = None
     _meta = None
     _origin = None
+    _history = None
 
     def __init__(self, data, unit=None, dtype=None,
                  uncertainty=None, u_unit=None, u_dtype=None,
@@ -299,6 +301,12 @@ class FrameData:
             self._meta = dict(meta)
         else:
             self._meta = dict()
+
+        self._history = []
+
+    @property
+    def history(self):
+        return self._history
 
     @property
     def origin_filename(self):
