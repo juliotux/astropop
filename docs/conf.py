@@ -66,7 +66,6 @@ github_issues_url = ('https://github.com/{0}/issues/'
 extensions += ['sphinx.ext.todo']
 todo_include_todos = True
 
-
+extensions += ['sphinx.ext.autodoc', 'sphinx.ext.coverage', 'numpydoc']
 extensions += ['sphinx_automodapi.automodapi',
                'sphinx_automodapi.smart_resolver']
-numpydoc_show_class_members = False

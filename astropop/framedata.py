@@ -230,21 +230,28 @@ class FrameData:
         True if enable memmap in constructor.
     """
     # TODO: Complete reimplement the initializer
+    # TODO: History storing?
     _memmapping = False
     _data = None
     _mask = None
     _unct = None
     _wcs = None
     _meta = None
+    _origin = None
 
     def __init__(self, data, unit=None, dtype=None,
                  uncertainty=None, u_unit=None, u_dtype=None,
                  mask=None, m_dtype=bool,
                  wcs=None, meta=None, header=None,
                  cache_folder=None, cache_filename=None,
-                 use_memmap_backend=False):
+                 use_memmap_backend=False, origin_filename=None):
+
+        if isinstance(data, u.Quantity):
+            raise TypeError('astropy Quantity not supported yet.')
+
         self.cache_folder = cache_folder
         self.cache_filename = cache_filename
+        self._origin = origin_filename
 
         # Setup MemMapArray instances
         cache_file = setup_filename(self, self.cache_folder,
@@ -284,8 +291,8 @@ class FrameData:
         if meta is not None and header is not None:
             header = dict(header)
             meta = dict(meta)
-            self._meta = header
-            self._meta.update(meta)
+            self._meta = meta
+            self._meta.update(header)
         elif meta is not None:
             self._meta = dict(meta)
         elif header is not None:
@@ -294,19 +301,28 @@ class FrameData:
             self._meta = dict()
 
     @property
+    def origin_filename(self):
+        """Original filename of the data."""
+        return self._origin
+
+    @property
     def shape(self):
+        """Data shape following numpy standards. Same as `FrameData.data.shape`"""
         return self._data.shape
 
     @property
     def dtype(self):
+        """Data type of the data. Same as `FrameData.data.dtype`"""
         return self._data.dtype
 
     @property
     def size(self):
+        """Size of the data. Same as `FrameData.data.size`"""
         return self._data.size
 
     @property
     def wcs(self):
+        """Data World Coordinate System."""
         return self._wcs
 
     @wcs.setter
@@ -316,6 +332,7 @@ class FrameData:
 
     @property
     def meta(self):
+        """Metadata (header) of the frame."""
         return self._meta
 
     @meta.setter
@@ -324,6 +341,7 @@ class FrameData:
 
     @property
     def header(self):
+        """Header (metadata) of the frame."""
         return self._meta
 
     @header.setter
@@ -332,6 +350,7 @@ class FrameData:
 
     @property
     def data(self):
+        """Main data array."""
         return self._data
 
     @data.setter
@@ -339,7 +358,13 @@ class FrameData:
         self._data.reset_data(value)
 
     @property
+    def unit(self):
+        """Physical unit of the data. Same as `FrameData.data.unit`."""
+        return self._data.unit
+
+    @property
     def uncertainty(self):
+        """Data uncertainty."""
         return self._unct
 
     @uncertainty.setter
@@ -350,14 +375,24 @@ class FrameData:
 
     @property
     def mask(self):
+        """Data mask."""
         return self._mask
 
     @mask.setter
     def mask(self, value):
+        _, value, _ = shape_consistency(self.data, None, value)
         self._mask.reset_data(value)
 
     def enable_memmap(self, filename=None, cache_folder=None):
-        """Enable array file memmapping."""
+        """Enable array file memmapping.
+        
+        Parameters
+        ----------
+        filename : str, optional
+            Custom memmap file name.
+        cache_folder : str, optional
+            Custom folder to cache data.
+        """
         if filename is None and cache_folder is None:
             self._data.enable_memmap()
             self._unct.enable_memmap()
