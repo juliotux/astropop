@@ -85,7 +85,7 @@ def shape_consistency(data=None, uncertainty=None, mask=None):
     """Check shape consistency across data, uncertaitny and mask"""
     if data is None and uncertainty is not None:
         raise ValueError('Uncertainty set for an empty data.')
-    if data is None and mask is not None:
+    if data is None and mask not in (None, False):
         raise ValueError('Mask set for an empty data.')
 
     if hasattr(data, 'shape'):

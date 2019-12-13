@@ -144,7 +144,7 @@ def imarith(operand1, operand2, operation, inplace=False, logger=logger):
     if inplace:
         ccd = operand1
     else:
-        ccd = FrameData()
+        ccd = FrameData(None)
 
     lh = log_to_list(logger, ccd.history, full_record=True)
     # TODO: rewrite debug for better infos
