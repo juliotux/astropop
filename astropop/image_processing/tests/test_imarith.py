@@ -9,6 +9,8 @@ from astropop.framedata import FrameData
 
 
 # TODO: Continue the tests
+# TODO: Test with None FrameData
+# TODO: Test with None scalar values
 
 
 def test_invalid_op():
@@ -26,12 +28,66 @@ def test_invalid_shapes():
         imarith(frame1, frame2, '+')
 
 
-def test_imarith_add():
+@pytest.mark.parametrize('inplace', [True, False])
+def test_imarith_add(inplace):
     frame1 = FrameData(np.ones((10, 10)), unit='adu')
     frame2 = FrameData(np.ones((10, 10)), unit='adu')
     frame2.data[:] = 10
     frame1.data[:] = 30
     exp_res = np.ones((10, 10))
     exp_res[:] = 40
-    res = imarith(frame1, frame2, '+')
+    res = imarith(frame1, frame2, '+', propagate_errors=False,
+                  handle_mask=False, inplace=inplace)
     npt.assert_array_equal(res.data, exp_res)
+    if inplace:
+        assert res is frame1
+    else:
+        assert res is not frame1
+
+
+@pytest.mark.parametrize('inplace', [True, False])
+def test_imarith_add_uncertainty(inplace):
+    frame1 = FrameData(np.ones((10, 10)), unit='adu',
+                       uncertainty=3.0, u_unit='adu')
+    frame2 = FrameData(np.ones((10, 10)), unit='adu',
+                       uncertainty=4.0, u_unit='adu')
+    frame2.data[:] = 10
+    frame1.data[:] = 30
+    exp_res = np.ones((10, 10))
+    exp_res[:] = 40
+    res = imarith(frame1, frame2, '+', propagate_errors=True,
+                  handle_mask=False, inplace=inplace)
+    npt.assert_array_equal(res.data, exp_res)
+    npt.assert_array_almost_equal(res.uncertainty,
+                                  np.ones_like(frame2.data)*5.0)
+    if inplace:
+        assert res is frame1
+    else:
+        assert res is not frame1
+
+
+@pytest.mark.parametrize('inplace', [True, False])
+def test_imarith_add_mask(inplace):
+    mask1 = np.zeros((10, 10))
+    mask2 = np.zeros((10, 10))
+    mask1[5, 5] = 1
+    mask2[3, 3] = 1
+    expect = np.zeros((10, 10))
+    expect[5, 5] = 1
+    expect[3, 3] = 1
+    frame1 = FrameData(np.ones((10, 10)), unit='adu',
+                       mask=mask1)
+    frame2 = FrameData(np.ones((10, 10)), unit='adu',
+                       mask=mask2)
+    frame2.data[:] = 10
+    frame1.data[:] = 30
+    exp_res = np.ones((10, 10))
+    exp_res[:] = 40
+    res = imarith(frame1, frame2, '+', propagate_errors=False,
+                  handle_mask=True, inplace=inplace)
+    npt.assert_array_equal(res.data, exp_res)
+    npt.assert_array_almost_equal(res.mask, expect)
+    if inplace:
+        assert res is frame1
+    else:
+        assert res is not frame1

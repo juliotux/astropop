@@ -106,7 +106,7 @@ def test_framedata_cration_array():
     assert np.issubdtype(f.dtype, np.float64)
     assert f.meta['observer'] == meta['observer']
     assert f.meta['very long key'] == meta['very long key']
-    
+
 
 def test_framedata_cration_array_uncertainty():
     a = _random_array.copy()
@@ -243,6 +243,7 @@ def test_setting_uncertainty_with_array():
     fake_uncertainty = np.sqrt(np.abs(ccd_data.data))
     ccd_data.uncertainty = fake_uncertainty.copy()
     np.testing.assert_array_equal(ccd_data.uncertainty, fake_uncertainty)
+    assert ccd_data.uncertainty.unit is u.adu
 
 
 def test_setting_uncertainty_with_scalar():
@@ -253,17 +254,18 @@ def test_setting_uncertainty_with_scalar():
     fake_uncertainty = np.zeros_like(ccd_data.data)
     fake_uncertainty[:] = uncertainty
     np.testing.assert_array_equal(ccd_data.uncertainty, fake_uncertainty)
+    assert ccd_data.uncertainty.unit is u.adu
 
 
 def test_setting_uncertainty_with_quantity():
-    uncertainty = 10*u.electron
+    uncertainty = 10*u.adu
     ccd_data = create_framedata()
     ccd_data.uncertainty = None
     ccd_data.uncertainty = uncertainty
     fake_uncertainty = np.zeros_like(ccd_data.data)
     fake_uncertainty[:] = uncertainty.value
     np.testing.assert_array_equal(ccd_data.uncertainty, fake_uncertainty)
-    assert ccd_data.uncert_unit is u.electron
+    assert ccd_data.uncertainty.unit is u.adu
 
 
 def test_setting_uncertainty_wrong_shape_raises_error():

@@ -9,6 +9,7 @@ Handle the IRAF's imarith and imcombine functions.
 # TODO: WCS align
 
 import numpy as np
+from astropy import units as u
 
 from ..framedata import FrameData, check_framedata
 from ..logger import logger, log_to_list
@@ -27,14 +28,17 @@ _arith_funcs = {'+': np.add,
 
 def _arith_data(operand1, operand2, operation, logger):
     """Handle the arithmatics of the data."""
-    # TODO: handle units
-    data1 = operand1.data
+    def _extract(operand):
+        # This should be fine for numbers, nparrays, HDUs or CCDData
+        # Transform to quantity auto handles units
+        if hasattr(operand, 'data'):
+            d = u.Quantity(operand.data)
+        else:
+            d = u.Quantity(operand)
+        return d
 
-    # This should be fine for numbers, nparrays, HDUs or CCDData
-    if hasattr(operand2, 'data'):
-        data2 = operand2.data
-    else:
-        data2 = operand2
+    data1 = _extract(operand1)
+    data2 = _extract(operand2)
 
     try:
         return _arith_funcs[operation](data1, data2)
@@ -45,6 +49,24 @@ def _arith_data(operand1, operand2, operation, logger):
 
 def _arith_unct(result, operand1, operand2, operation, logger):
     """Handle the arithmatics of the uncertainties."""
+    def _extract(operand):
+        # This should be fine for numbers, nparrays, HDUs or CCDData
+        # Transform to quantity auto handles units
+        if hasattr(operand, 'data'):
+            d = u.Quantity(operand.data)
+        else:
+            d = u.Quantity(operand)
+
+        if hasattr(operand, 'uncertainty'):
+            du = operand.uncertainty
+            try:
+                du = u.Quantity(du)
+            except TypeError:
+                du = 0.0*d.unit
+        else:
+            du = 0.0*d.unit
+        return d, du
+
     def _error_propagation(f, a, b, sa, sb):
         # only deal with uncorrelated errors
         if operation in {'+', '-'}:
@@ -54,46 +76,34 @@ def _arith_unct(result, operand1, operand2, operation, logger):
         elif operation == '**':
             return f*b*sa/a
 
-    # TODO: handle units
-    unct1 = operand1.uncertainty
-    data1 = operand1.data
-
-    if hasattr(operand2, 'uncertainty'):
-        unct2 = operand2.uncertainty
-    else:
-        unct2 = 0.0
-
-    if hasattr(operand2, 'data'):
-        data2 = operand2.data
-    else:
-        data2 = operand2
+    data1, unct1 = _extract(operand1)
+    data2, unct2 = _extract(operand2)
 
     # Only propagate if operand1 has no empty uncertainty
-    if not unct1.empty:
-        nunct = _error_propagation(result.data, data1, data2, unct1, unct2)
-    else:
-        nunct = None
+    nunct = _error_propagation(result.data, data1, data2, unct1, unct2)
     return nunct
 
 
 def _arith_mask(operand1, operand2, operation, logger):
     """Handle the arithmatics of the masks."""
-    mask1 = operand1.mask
-    # Join masks
-    if hasattr(operand2, 'mask'):
-        mask2 = operand2.mask
-    else:
-        mask2 = None
+    def _extract(operand):
+        # This should be fine for numbers, nparrays, HDUs or CCDData
+        # Transform to quantity auto handles units
+        if hasattr(operand, 'mask'):
+            d = operand.mask
+        else:
+            d = None
+        return d
 
-    if mask2 is not None:
-        old_n = np.count_nonzero(mask1)
-        nmask = np.logical_or(mask1, mask2)
-        new_n = np.count_nonzero(nmask)
-        logger.debug(f'Updating mask in math operation. '
-                     f'From {old_n} to {new_n} masked elements.')
-        return nmask
-    else:
-        return mask1
+    mask1 = _extract(operand1)
+    mask2 = _extract(operand2)
+
+    old_n = np.count_nonzero(mask1)
+    nmask = np.logical_or(mask1, mask2)
+    new_n = np.count_nonzero(nmask)
+    logger.debug(f'Updating mask in math operation. '
+                 f'From {old_n} to {new_n} masked elements.')
+    return nmask
 
 
 def _join_headers(operand1, operand2, operation, logger):
@@ -102,7 +112,8 @@ def _join_headers(operand1, operand2, operation, logger):
     return operand1.header.copy()
 
 
-def imarith(operand1, operand2, operation, inplace=False, logger=logger):
+def imarith(operand1, operand2, operation, inplace=False,
+            propagate_errors=False, handle_mask=False, logger=logger):
     """Simple arithmetic operations using CCDData.
 
     Notes
@@ -123,26 +134,31 @@ def imarith(operand1, operand2, operation, inplace=False, logger=logger):
 
     Parameters
     ----------
-    operand1 : `FrameData` compatible
-    operand2 : `FrameData` compatible, float or `astropy.units.Quantity`
+    operand1, operand2 : `FrameData` compatible, float or `astropy.units.Quantity`
+        Values to perform the operation.
     operation : {`+`, `-`, `*`, `/`, `**`, `%`, `//`}
+        Math operation.
     inplace : bool, optional
         If True, the operations will be performed inplace in the operand 1.
+    propagate_errors : bool, optional
+        Propagate the uncertainties during the math process.
+    handle_mask : bool, optional
+        Join masks in the end of the operation.
     logger : `logging.Logger`
         Python logger to log the actions.
 
     Returns
     -------
-        `Framedata` : new `FrameData` instance if not `inplace`, else the
+        `FrameData` : new `FrameData` instance if not `inplace`, else the
         `operand1` `FrameData` instance.
     """
     if operation not in _arith_funcs.keys():
         raise ValueError(f"Operation {operation} not supported.")
 
-    operand1 = check_framedata(operand1)
-
-    if inplace:
+    if inplace and isinstance(operand1, FrameData):
         ccd = operand1
+    elif inplace:
+        ccd = FrameData(operand1)
     else:
         ccd = FrameData(None)
 
@@ -152,9 +168,18 @@ def imarith(operand1, operand2, operation, inplace=False, logger=logger):
 
     # Perform data, mask and uncertainty operations
     ccd.data = _arith_data(operand1, operand2, operation, logger)
-    ccd.mask = _arith_mask(operand1, operand2, operation, logger)
-    ccd.uncertainty = _arith_unct(ccd, operand1, operand2, operation, logger)
+    if handle_mask:
+        ccd.mask = _arith_mask(operand1, operand2, operation, logger)
+    else:
+        ccd.mask = False
+
+    if propagate_errors:
+        ccd.uncertainty = _arith_unct(ccd, operand1, operand2, operation, logger)
+    else:
+        ccd.uncertainty = None
+
     ccd.meta = _join_headers(operand1, operand2, operation, logger)
+    # TODO: handle WCS
 
     logger.removeHandler(lh)
     return ccd

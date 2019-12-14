@@ -100,7 +100,7 @@ def shape_consistency(data=None, uncertainty=None, mask=None):
             ushape = np.array(uncertainty).shape
 
         if ushape == ():
-            uncertainty = np.zeros(dshape)*uncertainty
+            uncertainty = np.ones(dshape)*uncertainty
             ushape = uncertainty.shape
 
         if ushape != dshape:
@@ -157,7 +157,8 @@ def unit_consistency(data_unit=None, uncertainty_unit=None):
     elif data_unit is None:
         raise ValueError(f'Uncertainty with unit {uncertainty_unit} '
                          'incompatible with dimensionless data.')
-    elif u.Unit(data_unit) is not u.Unit(uncertainty_unit):
+    # Trick to make it run
+    elif 1*u.Unit(data_unit) != 1*u.Unit(uncertainty_unit):
         raise ValueError(f'Units {data_unit} and {uncertainty_unit} '
                          'are incompatible')
 
@@ -377,9 +378,17 @@ class FrameData:
 
     @uncertainty.setter
     def uncertainty(self, value):
-        _, value, _ = shape_consistency(self.data, value, None)
-        unit_consistency(self.data, value)
-        self._unct.reset_data(value)
+        if value is None:
+            self._unct.reset_data(value)
+        else:
+            _, value, _ = shape_consistency(self.data, value, None)
+            if hasattr(value, 'unit'):
+                v_unit = value.unit
+            else:
+                # FIXME: Assume scalar value has the same unit of data?
+                v_unit = self.data.unit
+            unit_consistency(self.data.unit, v_unit)
+            self._unct.reset_data(value, unit=v_unit)
 
     @property
     def mask(self):
@@ -388,12 +397,12 @@ class FrameData:
 
     @mask.setter
     def mask(self, value):
-        _, value, _ = shape_consistency(self.data, None, value)
+        _, _, value = shape_consistency(self.data, None, value)
         self._mask.reset_data(value)
 
     def enable_memmap(self, filename=None, cache_folder=None):
         """Enable array file memmapping.
-        
+
         Parameters
         ----------
         filename : str, optional
