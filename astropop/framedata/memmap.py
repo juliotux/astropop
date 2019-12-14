@@ -231,13 +231,16 @@ class MemMapArray:
 
         # Not None data
         else:
+            adata = data
+            if isinstance(data, MemMapArray):
+                adata = MemMapArray._contained
             if self.memmap:
                 name = self.filename
                 mm = self._contained
-                self._contained = create_array_memmap(name, data, dtype)
+                self._contained = create_array_memmap(name, adata, dtype)
                 delete_array_memmap(mm, read=False, remove=True)
             else:
-                self._contained = np.array(data, dtype=dtype)
+                self._contained = np.array(adata, dtype=dtype)
 
             # Unit handling
             if hasattr(data, 'unit'):
@@ -286,10 +289,8 @@ class MemMapArray:
     def __array__(self, dtype=None):
         if self.empty:
             return np.array(None)
-        elif self.memmap:
-            # for memmap, ignore dtype
-            return self._contained
         else:
+            # Ignore memmapping
             return np.array(self._contained, dtype=dtype)
 
     __lt__ = to_memmap_operator('__lt__')
