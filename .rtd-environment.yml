@@ -6,11 +6,10 @@ channels:
     - conda-forge
 
 dependencies:
-    - python>=3.7
     - astropy
     - cython
     - matplotlib
-    - numpy>=1.16
+    - numpy
     - sphinx-astropy
     - pytz
     - pyyaml
@@ -26,3 +25,4 @@ dependencies:
         - sep
         - sphinx-rtd-theme
         - sphinxcontrib-apidoc
+        - astropy-helpers==3.2.2

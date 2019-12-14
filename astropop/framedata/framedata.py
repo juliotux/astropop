@@ -13,9 +13,10 @@ from astropy.io import fits
 from astropy.nddata import CCDData, NDData
 from astropy.nddata.ccddata import _generate_wcs_and_update_header
 
-from .py_utils import mkdir_p
+from ..py_utils import mkdir_p
+from .compat import imhdus, _unsupport_fits_open_keywords
 from .memmap import MemMapArray
-from .logger import logger
+from ..logger import logger
 
 
 __all__ = ['FrameData', 'shape_consistency', 'unit_consistency',
@@ -24,61 +25,6 @@ __all__ = ['FrameData', 'shape_consistency', 'unit_consistency',
 
 
 # TODO: FrameData initializers for CCDData and HDUList with functions
-
-
-_unsupport_fits_open_keywords = {
-    'do_not_scale_image_data': 'Image data must be scaled.',
-    'scale_back': 'Scale information is not preserved.'
-}
-
-
-imhdus = (fits.ImageHDU, fits.PrimaryHDU, fits.CompImageHDU,
-          fits.StreamingHDU)
-
-
-def check_framedata(data, ext=0, ext_mask='MASK', ext_uncert='UNCERT',
-                    bunit='BUNIT', uunit=None, logger=logger):
-    """Check if a data is a valid CCDData or convert it."""
-    if isinstance(data, FrameData):
-        return data
-    elif isinstance(data, CCDData):
-        # TODO: implement this
-        raise NotImplementedError
-    elif isinstance(data, NDData):
-        ccd = FrameData(data.data, mask=data.mask,
-                        uncertainty=data.uncertainty,
-                        meta=data.meta, unit=data.unit or u.Unit(bunit))
-        ccd.filename = None
-        return ccd
-    else:
-        if isinstance(data, fits.HDUList):
-            logger.debug("Extracting FrameData from ext {} of HDUList"
-                         .format(ext))
-            # TODO: Implement this
-            raise NotImplementedError
-            # return hdulist2framedata(data, ext, ext_mask, ext_uncert,
-            #                          bunit=bunit, uunit=uunit)
-        elif isinstance(data, six.string_types):
-            logger.debug("Loading FrameData from {} file".format(data))
-            try:
-                ccd = FrameData.read_fits(data, hdu=ext)
-                ccd.filename = data
-                return ccd
-            except ValueError:
-                raise NotImplementedError
-                # TODO: implement this
-                # data = fits.open(data)
-                # return hdulist2framedata(data, ext, ext_mask, ext_uncert,
-                #                          bunit=bunit, uunit=uunit)
-        elif isinstance(data, imhdus):
-            logger.debug("Loading FrameData from {} HDU".format(data))
-            raise NotImplementedError
-            # TODO: implement this
-            # hdu2framedata(data, bunit=bunit)
-        else:
-            raise ValueError(f'{data.__class__.__name__}'
-                             ' is not a valid FrameData data type.')
-    return data
 
 
 def shape_consistency(data=None, uncertainty=None, mask=None):
@@ -374,6 +320,8 @@ class FrameData:
     @property
     def uncertainty(self):
         """Data uncertainty."""
+        if self._unct.empty:
+            return 0.0*self._data.unit
         return self._unct
 
     @uncertainty.setter

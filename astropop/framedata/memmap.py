@@ -5,6 +5,8 @@ import os
 import numpy as np
 from astropy import units as u
 
+from .compat import EmptyDataError
+
 
 __all__ = ['MemMapArray', 'create_array_memmap', 'delete_array_memmap']
 
@@ -63,8 +65,7 @@ def to_memmap_operator(item):
             func = to_memmap_attr(func)
             return func(*args, **kwargs)
         else:
-            # TODO: Think if this is the best behavior
-            return None
+            raise EmptyDataError('Empty data container.')
     return wrapper
 
 
@@ -254,7 +255,7 @@ class MemMapArray:
 
     def __getitem__(self, item):
         if self.empty:
-            raise KeyError('Empty data contaier')
+            raise EmptyDataError('Empty data contaier')
 
         # This cannot create a new MemMapArray to don't break a[x][y] = z
         result = self._contained[item]
@@ -262,7 +263,7 @@ class MemMapArray:
 
     def __setitem__(self, item, value):
         if self.empty:
-            raise KeyError('Empty data container')
+            raise EmptyDataError('Empty data container')
         self._contained[item] = value
 
     def __getattribute__(self, item):
@@ -274,7 +275,7 @@ class MemMapArray:
                 attr = MemMapArray(attr, memmap=False)
             return attr
         elif item in redirects and self.empty:
-            raise KeyError('Empty data container')
+            raise EmptyDataError('Empty data container')
 
         return object.__getattribute__(self, item)
 

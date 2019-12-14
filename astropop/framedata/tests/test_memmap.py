@@ -2,8 +2,8 @@
 import os
 import mmap
 import pytest
-from astropop.memmap import MemMapArray, create_array_memmap, \
-                            delete_array_memmap
+from astropop.framedata import MemMapArray, create_array_memmap, \
+                               delete_array_memmap, EmptyDataError
 from astropy import units as u
 import numpy as np
 import numpy.testing as npt
@@ -58,16 +58,16 @@ def test_create_empty_memmap(tmpdir, memmap):
     assert a.empty
     assert not os.path.exists(f)
     assert a.unit is u.dimensionless_unscaled
-    with pytest.raises(KeyError):
+    with pytest.raises(EmptyDataError):
         # dtype whould rise
         a.dtype
-    with pytest.raises(KeyError):
+    with pytest.raises(EmptyDataError):
         # shape whould rise
         a.shape
-    with pytest.raises(KeyError):
+    with pytest.raises(EmptyDataError):
         # item whould rise
         a[0]
-    with pytest.raises(KeyError):
+    with pytest.raises(EmptyDataError):
         # set item whould rise
         a[0] = 1
 

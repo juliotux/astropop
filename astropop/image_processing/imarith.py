@@ -11,7 +11,7 @@ Handle the IRAF's imarith and imcombine functions.
 import numpy as np
 from astropy import units as u
 
-from ..framedata import FrameData, check_framedata
+from ..framedata import FrameData, check_framedata, EmptyDataError
 from ..logger import logger, log_to_list
 
 __all__ = ['imarith']
@@ -29,12 +29,9 @@ _arith_funcs = {'+': np.add,
 def _arith_data(operand1, operand2, operation, logger):
     """Handle the arithmatics of the data."""
     def _extract(operand):
-        # This should be fine for numbers, nparrays, HDUs or CCDData
+        # Supose data is FrameData always
         # Transform to quantity auto handles units
-        if hasattr(operand, 'data'):
-            d = u.Quantity(operand.data)
-        else:
-            d = u.Quantity(operand)
+        d = u.Quantity(operand.data)
         return d
 
     data1 = _extract(operand1)
@@ -50,20 +47,13 @@ def _arith_data(operand1, operand2, operation, logger):
 def _arith_unct(result, operand1, operand2, operation, logger):
     """Handle the arithmatics of the uncertainties."""
     def _extract(operand):
-        # This should be fine for numbers, nparrays, HDUs or CCDData
+        # Supose data is FrameData always
         # Transform to quantity auto handles units
-        if hasattr(operand, 'data'):
-            d = u.Quantity(operand.data)
-        else:
-            d = u.Quantity(operand)
-
-        if hasattr(operand, 'uncertainty'):
-            du = operand.uncertainty
-            try:
-                du = u.Quantity(du)
-            except TypeError:
-                du = 0.0*d.unit
-        else:
+        d = u.Quantity(operand.data)
+        du = operand.uncertainty
+        try:
+            du = u.Quantity(du)
+        except TypeError:
             du = 0.0*d.unit
         return d, du
 
@@ -87,12 +77,9 @@ def _arith_unct(result, operand1, operand2, operation, logger):
 def _arith_mask(operand1, operand2, operation, logger):
     """Handle the arithmatics of the masks."""
     def _extract(operand):
-        # This should be fine for numbers, nparrays, HDUs or CCDData
+        # Supose FrameData always
         # Transform to quantity auto handles units
-        if hasattr(operand, 'mask'):
-            d = operand.mask
-        else:
-            d = None
+        d = operand.mask
         return d
 
     mask1 = _extract(operand1)
@@ -154,10 +141,13 @@ def imarith(operand1, operand2, operation, inplace=False,
     """
     if operation not in _arith_funcs.keys():
         raise ValueError(f"Operation {operation} not supported.")
+    operand1 = check_framedata(operand1)
+    operand2 = check_framedata(operand2)
+    if operand1.data.empty or operand2.data.empty:
+        raise EmptyDataError(f'Operation {operation} not permited with empty'
+                             f' data containers.')
 
-    if inplace and isinstance(operand1, FrameData):
-        ccd = operand1
-    elif inplace:
+    if inplace:
         ccd = FrameData(operand1)
     else:
         ccd = FrameData(None)
