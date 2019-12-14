@@ -69,7 +69,7 @@ Documentation (not complete yet) can be found at `astropop.readthedocs.io <https
     :alt: Astropop's Coveralls Coverage Status
 
 
-.. |Covecov Status| image:: https://codecov.io/gh/juliotux/astropop/branch/master/graph/badge.svg
+.. |Codecov Status| image:: https://codecov.io/gh/juliotux/astropop/branch/master/graph/badge.svg
     :target: https://codecov.io/gh/juliotux/astropop
     :alt: Astropop's Codecov Coverage Status
 
