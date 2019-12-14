@@ -74,26 +74,24 @@ matrix:
 
         - os: linux
           stage: Cron tests
-          env: ASTROPY_VERSION=development NUMPY_VERSION=development
-               EVENT_TYPE='cron'
+          env: ASTROPY_VERSION=development NUMPY_VERSION=development EVENT_TYPE='cron'
 
-        #- os: linux
-        #  env: PYTHON_VERSION=3.5 NUMPY_VERSION=1.14 SETUP_CMD='test'
-        
-        #- os: linux
-        #  env: PYTHON_VERSION=3.8 NUMPY_VERSION=1.17 SETUP_CMD='test'
+        - os: linux
+          env: PYTHON_VERSION=3.8 NUMPY_VERSION=1.17 SETUP_CMD='test'
 
     allow_failures:
-         - os: linux
-           stage: Initial tests
-           env: MAIN_CMD='flake8 astropop --count --show-source --statistics $FLAKE8_OPT' SETUP_CMD=''
+        - os: linux
+          stage: Initial tests
+          env: MAIN_CMD='flake8 astropop --count --show-source --statistics $FLAKE8_OPT' SETUP_CMD=''
 
 install:
     - git clone --depth 1 git://github.com/astropy/ci-helpers.git
     - source ci-helpers/travis/setup_conda.sh
 
 script:
-   - $MAIN_CMD $SETUP_CMD
+  - echo "$PYTHON_VERSION $MAIN_CMD $SETUP_CMD" 
+  - $MAIN_CMD $SETUP_CMD
 
 after_success:
     - if [[ $SETUP_CMD == *coverage* ]]; then coveralls --rcfile='astropop/tests/coveragerc'; fi
+    - if [[ $SETUP_CMD == *coverage* ]]; then codecov; fi
