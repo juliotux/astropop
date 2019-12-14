@@ -28,14 +28,8 @@ _arith_funcs = {'+': np.add,
 
 def _arith_data(operand1, operand2, operation, logger):
     """Handle the arithmatics of the data."""
-    def _extract(operand):
-        # Supose data is FrameData always
-        # Transform to quantity auto handles units
-        d = u.Quantity(operand.data)
-        return d
-
-    data1 = _extract(operand1)
-    data2 = _extract(operand2)
+    data1 = u.Quantity(operand1.data)
+    data2 = u.Quantity(operand2.data)
 
     try:
         return _arith_funcs[operation](data1, data2)
@@ -82,8 +76,8 @@ def _arith_mask(operand1, operand2, operation, logger):
         d = operand.mask
         return d
 
-    mask1 = _extract(operand1)
-    mask2 = _extract(operand2)
+    mask1 = operand1.mask
+    mask2 = operand2.mask
 
     old_n = np.count_nonzero(mask1)
     nmask = np.logical_or(mask1, mask2)
@@ -121,7 +115,7 @@ def imarith(operand1, operand2, operation, inplace=False,
 
     Parameters
     ----------
-    operand1, operand2 : `FrameData` compatible, float or `astropy.units.Quantity`
+    operand1, operand2 : `FrameData` compatible, float or `astropy.units.Quantity`  # noqa
         Values to perform the operation.
     operation : {`+`, `-`, `*`, `/`, `**`, `%`, `//`}
         Math operation.
@@ -141,6 +135,7 @@ def imarith(operand1, operand2, operation, inplace=False,
     """
     if operation not in _arith_funcs.keys():
         raise ValueError(f"Operation {operation} not supported.")
+
     operand1 = check_framedata(operand1)
     operand2 = check_framedata(operand2)
     if operand1.data.empty or operand2.data.empty:
@@ -148,7 +143,7 @@ def imarith(operand1, operand2, operation, inplace=False,
                              f' data containers.')
 
     if inplace:
-        ccd = FrameData(operand1)
+        ccd = operand1
     else:
         ccd = FrameData(None)
 
@@ -164,7 +159,8 @@ def imarith(operand1, operand2, operation, inplace=False,
         ccd.mask = False
 
     if propagate_errors:
-        ccd.uncertainty = _arith_unct(ccd, operand1, operand2, operation, logger)
+        ccd.uncertainty = _arith_unct(ccd, operand1, operand2,
+                                      operation, logger)
     else:
         ccd.uncertainty = None
 

@@ -4,23 +4,20 @@
 # Important: We reimplemented and renamed astropy's frame to better
 # handle disk memmap and an easier unit/uncertainty workflow
 
-import six
 import os
 import numpy as np
 from tempfile import mkdtemp, mkstemp
 from astropy import units as u
 from astropy.io import fits
-from astropy.nddata import CCDData, NDData
 from astropy.nddata.ccddata import _generate_wcs_and_update_header
 
 from ..py_utils import mkdir_p
 from .compat import imhdus, _unsupport_fits_open_keywords
 from .memmap import MemMapArray
-from ..logger import logger
 
 
 __all__ = ['FrameData', 'shape_consistency', 'unit_consistency',
-           'check_framedata', 'setup_filename', 'framedata_read_fits',
+           'setup_filename', 'framedata_read_fits',
            'framedata_to_hdu', 'extract_units']
 
 
@@ -262,7 +259,7 @@ class FrameData:
 
     @property
     def shape(self):
-        """Data shape following numpy standards. Same as `FrameData.data.shape`"""
+        """Data shape following numpy. Same as `FrameData.data.shape`"""
         return self._data.shape
 
     @property

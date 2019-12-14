@@ -283,13 +283,14 @@ class MemMapArray:
         return 'MemMapArray:\n' + repr(self._contained) + \
                f'\nfile: {self.filename}'
 
-    def __array__(self):
+    def __array__(self, dtype=None):
         if self.empty:
             return np.array(None)
         elif self.memmap:
+            # for memmap, ignore dtype
             return self._contained
         else:
-            return np.array(self._contained)
+            return np.array(self._contained, dtype=dtype)
 
     __lt__ = to_memmap_operator('__lt__')
     __le__ = to_memmap_operator('__le__')
