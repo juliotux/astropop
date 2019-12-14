@@ -1,7 +1,7 @@
 AstroPoP
 ========
 
-|Travis Status| |Coverall Status| |RTD Status|  |CODACY|  |Powered by Astropy|  
+|Travis Status| |Coverall Status| |Codecov Status| |RTD Status|  |CODACY|  |Powered by Astropy|  
 
 The (non) famous ASTROnomical POlarimetry and Photometry pipeline. Developed for work with IAGPOL polarimeter at Observatório Pico dos Dias (Brazil), but suitable to be used in other image polarimeters around the world.
 
@@ -66,7 +66,12 @@ Documentation (not complete yet) can be found at `astropop.readthedocs.io <https
 
 .. |Coverall Status| image:: https://coveralls.io/repos/github/juliotux/astropop/badge.svg?branch=master
     :target: https://coveralls.io/github/juliotux/astropop?branch=master
-    :alt: Astropop's Coverage Status
+    :alt: Astropop's Coveralls Coverage Status
+
+
+.. |Covecov Status| image:: https://codecov.io/gh/juliotux/astropop/branch/master/graph/badge.svg
+    :target: https://codecov.io/gh/juliotux/astropop
+    :alt: Astropop's Codecov Coverage Status
 
 .. |RTD Status| image:: https://readthedocs.org/projects/astropop/badge/?version=latest
     :target: https://astropop.readthedocs.io/en/latest/?badge=latest
