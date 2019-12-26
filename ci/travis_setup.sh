@@ -14,6 +14,7 @@ source "$HOME/miniconda/etc/profile.d/conda.sh"
 conda update -n base -c defaults conda
 hash -r
 conda config --set always_yes yes --set changeps1 no
+conda config --set pip_interop_enabled True
 
 # Create test environment
 echo "-----------------------------------------------"
@@ -98,7 +99,7 @@ else
 fi
 
 # Another pins are ignored
-conda env update --name test --file ../rtd-environment.yml
+conda env update --file ../rtd-environment.yml
 
 echo "-----------------------------------------------"
 echo "Environment done."
