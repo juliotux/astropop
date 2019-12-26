@@ -8,14 +8,12 @@ export SCIPY_STABLE="1.4"
 echo "-----------------------------------------------"
 echo "Setup Conda"
 echo "-----------------------------------------------"
-sudo apt-get update
 wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
 bash miniconda.sh -b -p "$HOME/miniconda"
 source "$HOME/miniconda/etc/profile.d/conda.sh"
-conda init bash
+conda update -n base -c defaults conda
 hash -r
 conda config --set always_yes yes --set changeps1 no
-conda update -q conda
 
 # Create test environment
 echo "-----------------------------------------------"
@@ -100,7 +98,7 @@ else
 fi
 
 # Another pins are ignored
-conda env update -n test -f ../rtd-environment.yml
+conda env update --name test --file ../rtd-environment.yml
 
 echo "-----------------------------------------------"
 echo "Environment done."
