@@ -22,7 +22,6 @@ dependencies:
     - ccdproc
     - photutils
     - sep
-    - pip
     - pip:
         - sphinx-rtd-theme
         - sphinxcontrib-apidoc

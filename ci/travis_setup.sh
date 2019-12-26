@@ -4,6 +4,8 @@ export NUMPY_STABLE="1.17"
 export ASTROPY_STABLE="4.0"
 export SCIPY_STABLE="1.4"
 
+export NAME="astropop"
+
 # Install and update conda
 echo "-----------------------------------------------"
 echo "Setup Conda"
@@ -34,16 +36,17 @@ if [[ -z $PYTHON_VERSION ]]; then
     return 1
 else
     echo "Using python $PYTHON_VERSION"
-    conda create -n test python="$PYTHON_VERSION"
+    conda create -n $NAME python="$PYTHON_VERSION"
 fi
 
 echo "Entering in test environment"
-conda activate test
+conda activate $NAME
 conda update -q conda
+conda install -q pip
 conda config --show
 conda info -a
 
-PIN_FILE=$HOME/miniconda/envs/test/conda-meta/pinned
+PIN_FILE=$HOME/miniconda/envs/$NAME/conda-meta/pinned
 touch "$PIN_FILE"
 
 if [[ $SETUP_CMD == egg_info ]]; then
@@ -56,53 +59,55 @@ echo "-----------------------------------------------"
 
 if [[ -z $NUMPY_VERSION ]]; then
     echo "Empty numpy version. Setting using default."
-    conda install -n test numpy
+    conda install -n $NAME numpy
 elif [[ $NUMPY_VERSION == stable ]]; then
     echo "Using stable numpy version. Set to $NUMPY_STABLE"
-    conda install -n test numpy="$NUMPY_STABLE"
+    conda install -n $NAME numpy="$NUMPY_STABLE"
 elif [[ $NUMPY_VERSION == dev* ]] || [[ $NUMPY_VERSION == unstable ]]; then
     echo "Using development numpy. Installing from git."
     pip install git+https://github.com/numpy/numpy.git
 else
     echo "Using numpy $NUMPY_VERSION"
-    conda install -n test numpy="$NUMPY_VERSION" "$MKL"
+    conda install -n $NAME numpy="$NUMPY_VERSION" "$MKL"
     echo "numpy=$NUMPY_VERSION.*" >> "$PIN_FILE"
 fi
 
 if [[ -z $SCIPY_VERSION ]]; then
     echo "Empty scipy version. Setting using default."
-    conda install -n test scipy
+    conda install -n $NAME scipy
 elif [[ $SCIPY_VERSION == stable ]]; then
     echo "Using stable scipy version. Set to $SCIPY_STABLE"
-    conda install -n test scipy=$SCIPY_STABLE
+    conda install -n $NAME scipy=$SCIPY_STABLE
 elif [[ $SCIPY_VERSION == dev* ]] || [[ $SCIPY_VERSION = unstable ]]; then
     echo "Using development scipy. Installing from git."
     pip install git+https://github.com/scipy/scipy.git
 else
     echo "Using numpy $SCIPY_VERSION"
-    conda install -n test scipy="$SCIPY_VERSION"
+    conda install -n $NAME scipy="$SCIPY_VERSION"
     echo "numpy=$SCIPY_VERSION.*" >> "$PIN_FILE"
 fi
 
 if [[ -z $ASTROPY_VERSION ]]; then
     echo "Empty astropy version. Setting using default."
-    conda install -n test astropy
+    conda install -n $NAME astropy
 elif [[ $ASTROPY_VERSION == stable ]]; then
     echo "Using stable astropy version. Set to $ASTROPY_STABLE"
-    conda install -n test astropy=$ASTROPY_STABLE
+    conda install -n $NAME astropy=$ASTROPY_STABLE
 elif [[ $ASTROPY_VERSION == dev* ]] || [[ $ASTROPY_VERSION == unstable ]]; then
     echo "Using development astropy. Installing from git."
     pip install git+https://github.com/astropy/astropy.git
 else
     echo "Using astropy $ASTROPY_VERSION"
-    conda install -n test astropy="$ASTROPY_VERSION"
+    conda install -n $NAME astropy="$ASTROPY_VERSION"
     echo "numpy=$ASTROPY_VERSION.*" >> "$PIN_FILE"
 fi
 
 # Another pins are ignored
+echo "Installing another packages"
 conda env update -f "$CONDA_ENVIRONMENT"
+
 
 echo "-----------------------------------------------"
 echo "Environment done."
 echo "-----------------------------------------------"
-conda info -a
+conda list -n $NAME
