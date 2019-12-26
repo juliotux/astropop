@@ -4,8 +4,6 @@ export NUMPY_STABLE="1.17"
 export ASTROPY_STABLE="4.0"
 export SCIPY_STABLE="1.4"
 
-export NAME="astropop"
-
 # Install and update conda
 echo "-----------------------------------------------"
 echo "Setup Conda"

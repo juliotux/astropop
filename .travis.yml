@@ -28,6 +28,7 @@ env:
         # The following versions are the 'default' for tests, unless
         # overridden underneath. They are defined here in order to save having
         # to repeat them for all configurations.
+        - NAME="astropop"
         - PYTHON_VERSION=3.7
         - NUMPY_VERSION=stable
         - ASTROPY_VERSION=stable
@@ -78,7 +79,7 @@ install:
     - source ./ci/travis_setup.sh
 
 script:
-  - conda activate test
+  - conda activate $NAME
   - $MAIN_CMD $SETUP_CMD
 
 after_success:
