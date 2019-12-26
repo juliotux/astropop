@@ -1,65 +1,15 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
 import numpy as np
-from scipy.spatial import cKDTree
 from astropy.modeling.fitting import LevMarLSQFitter
-from astropy.table import Table
 
-from .polarimetry_models import HalfWaveModel, QuarterWaveModel
+from ._dualbeam_utils import HalfWaveModel, QuarterWaveModel
+
 from ..logger import logger
 
 
-def estimate_dxdy(x, y, steps=[100, 30, 5, 3], bins=30, dist_limit=100,
-                  logger=logger):
-    def _find_max(d):
-        dx = 0
-        for lim in (np.max(d), *steps):
-            lo, hi = (dx-lim, dx+lim)
-            lo, hi = (lo, hi) if (lo < hi) else (hi, lo)
-            histx = np.histogram(d, bins=bins, range=[lo, hi])
-            mx = np.argmax(histx[0])
-            dx = (histx[1][mx]+histx[1][mx+1])/2
-        return dx
-
-    # take all combinations
-    comb = np.array(np.meshgrid(np.arange(len(x)),
-                                np.arange(len(x)))).T.reshape(-1, 2)
-    # filter only y[j] > y[i]
-    filt = y[comb[:, 1]] > y[comb[:, 0]]
-    comb = comb[np.where(filt)]
-
-    # compute the distances
-    dx = x[comb[:, 0]] - x[comb[:, 1]]
-    dy = y[comb[:, 0]] - y[comb[:, 1]]
-
-    # filter by distance
-    filt = (np.abs(dx) <= dist_limit) & (np.abs(dy) <= dist_limit)
-    dx = dx[np.where(filt)]
-    dy = dy[np.where(filt)]
-
-    logger.debug("Determining the best dx,dy with {} combinations."
-                 .format(len(dx)))
-
-    return (_find_max(dx), _find_max(dy))
-
-
-def match_pairs(x, y, dx, dy, tolerance=1.0, logger=logger):
-    """Match the pairs of ordinary/extraordinary points (x, y)."""
-    kd = cKDTree(list(zip(x, y)))
-
-    px = np.array(x-dx)
-    py = np.array(y-dy)
-
-    d, ind = kd.query(list(zip(px, py)), k=1, distance_upper_bound=tolerance,
-                      n_jobs=-1)
-
-    o = np.arange(len(x))[np.where(d <= tolerance)]
-    e = np.array(ind[np.where(d <= tolerance)])
-    result = Table()
-    result['o'] = o
-    result['e'] = e
-
-    return result.as_array()
+_retarders = {'half': {'ncons': 4},
+              'quarter': {'ncons': 8}}
 
 
 def estimate_normalize(o, e, positions, n_consecutive, logger=logger):
@@ -101,7 +51,7 @@ def compute_theta(q, u):
     return theta
 
 
-def _polarimetry_by_fit(z, psi, retarder='half', z_err=None, logger=logger):
+def _polarimetry_sls(z, psi, retarder='half', z_err=None, logger=logger):
     """Calculate the polarimetry directly using z.
     psi in degrees
     """
@@ -151,8 +101,8 @@ def _polarimetry_by_fit(z, psi, retarder='half', z_err=None, logger=logger):
     return result
 
 
-def _polarimetry_by_sum(z, psi, retarder='half', z_err=None,
-                        logger=logger):
+def _polarimetry_mbr84(z, psi, retarder='half', z_err=None,
+                       logger=logger):
     """Implement the polarimetry calculation method described by
     Magalhaes et al 1984 (ads string: 1984PASP...96..383M)
     """
@@ -203,16 +153,14 @@ def reduced_chi2(psi, z, z_err, q, u, v=None, retarder='half', logger=logger):
     return np.sum(np.square((z-z_m)/z_err))/nu
 
 
-def calculate_polarimetry(o, e, psi, retarder='half', o_err=None, e_err=None,
-                          normalize=True, positions=None, min_snr=None,
-                          filter_negative=True, mode='sum', global_k=None,
-                          logger=logger):
+def dualbeam_polarimetry(o, e, psi, retarder='half', o_err=None, e_err=None,
+                         normalize=True, positions=None, min_snr=None,
+                         filter_negative=True, mode='sum', global_k=None,
+                         logger=logger):
     """Calculate the polarimetry."""
 
-    if retarder == 'half':
-        ncons = 4
-    elif retarder == 'quarter':
-        ncons = 8
+    if retarder in _retarders.keys():
+        ncons = _retarders[retarder]['ncons']
     else:
         raise ValueError('retarder {} not supported.'.format(retarder))
 
@@ -220,7 +168,7 @@ def calculate_polarimetry(o, e, psi, retarder='half', o_err=None, e_err=None,
     e = np.array(e)
 
     # clean problematic sources (bad sky subtraction, low snr)
-    if filter_negative and (np.array(o <= 0).any() or np.array(e <= 0).any()):
+    if filter_negative:
         filt = (o < 0) | (e < 0)
         w = np.where(~filt)
         o[w] = np.nan
@@ -271,20 +219,20 @@ def calculate_polarimetry(o, e, psi, retarder='half', o_err=None, e_err=None,
 
     try:
         if mode == 'sum':
-            result = _polarimetry_by_sum(z, psi, retarder=retarder,
-                                         z_err=z_erro)
+            result = _polarimetry_mbr84(z, psi, retarder=retarder,
+                                        z_err=z_erro)
         elif mode == 'fit':
-            result = _polarimetry_by_fit(z, psi, retarder=retarder,
-                                         z_err=z_erro)
+            result = _polarimetry_sls(z, psi, retarder=retarder,
+                                      z_err=z_erro)
         elif mode == 'both':
-            res_sum = _polarimetry_by_sum(z, psi, retarder=retarder,
-                                          z_err=z_erro)
-            res_fit = _polarimetry_by_fit(z, psi, retarder=retarder,
-                                          z_err=z_erro)
+            res_sum = _polarimetry_mbr84(z, psi, retarder=retarder,
+                                         z_err=z_erro)
+            res_fit = _polarimetry_sls(z, psi, retarder=retarder,
+                                       z_err=z_erro)
             result = {}
             for key in res_sum.keys():
-                result["fit_{}".format(key)] = res_fit[key]
-                result["sum_{}".format(key)] = res_sum[key]
+                result["sls_{}".format(key)] = res_fit[key]
+                result["mbr84_{}".format(key)] = res_sum[key]
                 result[key] = res_fit[key]
         else:
             return _return_empty()
