@@ -99,7 +99,7 @@ else
 fi
 
 # Another pins are ignored
-conda env update --file ../rtd-environment.yml
+conda env update --file ../.rtd-environment.yml
 
 echo "-----------------------------------------------"
 echo "Environment done."
