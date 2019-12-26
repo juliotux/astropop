@@ -5,6 +5,7 @@ set -e
 export NUMPY_STABLE="1.17"
 export ASTROPY_STABLE="4.0"
 export SCIPY_STABLE="1.4"
+export CONDA_CHANNELS="astropy juliotux conda-forge"
 
 # Install and update conda
 echo "-----------------------------------------------"
@@ -24,7 +25,7 @@ echo "Creating environment"
 echo "-----------------------------------------------"
 
 if [[ ! -z $CONDA_CHANNELS ]]; then
-    for channel in $(echo "$CONDA_CHANNELS"); do
+    for channel in $CONDA_CHANNELS; do
         echo "Adding $channel channel."
         conda config --add channels $channel
     done
