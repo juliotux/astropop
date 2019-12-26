@@ -16,7 +16,6 @@ conda init bash
 hash -r
 conda config --set always_yes yes --set changeps1 no
 conda update -q conda
-conda info -a
 
 # Create test environment
 echo "-----------------------------------------------"
@@ -60,7 +59,7 @@ if [[ -z $NUMPY_VERSION ]]; then
     conda install -n test numpy
 elif [[ $NUMPY_VERSION == stable ]]; then
     echo "Using stable numpy version. Set to $NUMPY_STABLE"
-    conda install -n test scipy="$NUMPY_STABLE"
+    conda install -n test numpy="$NUMPY_STABLE"
 elif [[ $NUMPY_VERSION == dev* ]] || [[ $NUMPY_VERSION == unstable ]]; then
     echo "Using development numpy. Installing from git."
     pip install git+https://github.com/numpy/numpy.git
