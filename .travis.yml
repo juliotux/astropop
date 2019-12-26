@@ -6,15 +6,9 @@ cache:
     directories:
         - $HOME/.astropy/cache
         - $XDG_CACHE_HOME/astropy
-        - /astropy
 
 os:
     - linux
-
-addons:
-    apt:
-        packages:
-            - graphviz
 
 
 stage: Comprehensive tests
@@ -42,14 +36,6 @@ env:
         - EVENT_TYPE='pull_request push'
         - CONDA_ENVIRONMENT='.rtd-environment.yml'
         - MINICONDA_VERSION=latest
-
-        # If there are matplotlib or other GUI tests, uncomment the following
-        # line to use the X virtual framebuffer.
-        # - SETUP_XVFB=True
-
-        # If you want to ignore certain flake8 errors, you can list them
-        # in FLAKE8_OPT, for example:
-        # - FLAKE8_OPT='--ignore=E501'
         - FLAKE8_OPT=''
 
 matrix:
@@ -82,10 +68,9 @@ matrix:
           env: MAIN_CMD='flake8 astropop --count --show-source --statistics $FLAKE8_OPT' SETUP_CMD=''
 
 install:
-    - echo "Setting up conda"
-    - git clone --depth 1 git://github.com/astropy/ci-helpers.git
-    - source ci-helpers/travis/setup_conda.sh
-    - echo "Setup finished"
+    - bash ./ci/travis_setup.sh
+    # - git clone --depth 1 git://github.com/astropy/ci-helpers.git
+    # - source ci-helpers/travis/setup_conda.sh
 
 script:
   - conda activate test
