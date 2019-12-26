@@ -100,7 +100,7 @@ else
 fi
 
 # Another pins are ignored
-conda env update -f "../$CONDA_ENVIRONMENT"
+conda env update -f "$CONDA_ENVIRONMENT"
 
 echo "-----------------------------------------------"
 echo "Environment done."
