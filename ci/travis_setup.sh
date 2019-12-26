@@ -1,4 +1,6 @@
-#!/bin/bash
+#!/bin/bash -x
+
+set -e
 
 export NUMPY_STABLE="1.17"
 export ASTROPY_STABLE="4.0"
@@ -109,3 +111,5 @@ echo "-----------------------------------------------"
 echo "Environment done."
 echo "-----------------------------------------------"
 conda list -n $NAME
+
+set +ex
