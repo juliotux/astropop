@@ -24,9 +24,9 @@ echo "Creating environment"
 echo "-----------------------------------------------"
 
 if [[ ! -z $CONDA_CHANNELS ]]; then
-    for channel in $CONDA_CHANNELS; do
-        echo "Adding $channel channel"
-        conda config --add channels "$channel"
+    for channel in $(echo "$CONDA_CHANNELS"); do
+        echo "Adding $channel channel."
+        conda config --add channels $channel
     done
 fi
 unset CONDA_CHANNELS
