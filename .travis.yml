@@ -41,7 +41,7 @@ env:
         - SETUP_CMD='test'
         - EVENT_TYPE='pull_request push'
         - CONDA_ENVIRONMENT='.rtd-environment.yml'
-        - MINICONDA_VERSION=4.7.10
+        - MINICONDA_VERSION=lastest
 
         # If there are matplotlib or other GUI tests, uncomment the following
         # line to use the X virtual framebuffer.
@@ -73,8 +73,8 @@ matrix:
           stage: Cron tests
           env: ASTROPY_VERSION=development NUMPY_VERSION=development EVENT_TYPE='cron'
 
-        # - os: linux
-        #   env: PYTHON_VERSION=3.8 NUMPY_VERSION=1.17 SETUP_CMD='test'
+        - os: linux
+          env: PYTHON_VERSION=3.8 NUMPY_VERSION=1.17 SETUP_CMD='test'
 
     allow_failures:
         - os: linux
