@@ -82,7 +82,7 @@ matrix:
           env: MAIN_CMD='flake8 astropop --count --show-source --statistics $FLAKE8_OPT' SETUP_CMD=''
 
 install:
-    - ./.travis_setup.sh
+    - bash .travis_setup.sh
     # - git clone --depth 1 git://github.com/astropy/ci-helpers.git
     # - source ci-helpers/travis/setup_conda.sh
 
