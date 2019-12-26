@@ -1,8 +1,8 @@
 #!/bin/bash
 
-export NUMPY_STABLE=1.17
-export ASTROPY_STABLE=4.0
-export SCIPY_STABLE=1.4
+export NUMPY_STABLE="1.17"
+export ASTROPY_STABLE="4.0"
+export SCIPY_STABLE="1.4"
 
 # Install and update conda
 echo "-----------------------------------------------"
