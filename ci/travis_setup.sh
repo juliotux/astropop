@@ -16,18 +16,15 @@ source "$HOME/miniconda/etc/profile.d/conda.sh"
 conda update conda
 hash -r
 conda config --set always_yes yes --set changeps1 no
-conda config --set pip_interop_enabled True
 
 # Create test environment
 echo "-----------------------------------------------"
 echo "Creating environment"
 echo "-----------------------------------------------"
 
-for channel in 'astropy' 'juliotux' 'conda-forge'; do
-    echo "Adding $channel channel."
-    conda config --add channels $channel
-done
-unset CONDA_CHANNELS
+conda config --add channels astropy
+conda config --add channels juliotux
+conda config --add channels conda-forge
 
 if [[ -z $PYTHON_VERSION ]]; then
     echo "ERROR: Empty python version. Must be set in PYTHON_VERSION"
