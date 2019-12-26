@@ -23,12 +23,10 @@ echo "-----------------------------------------------"
 echo "Creating environment"
 echo "-----------------------------------------------"
 
-if [[ ! -z $CONDA_CHANNELS ]]; then
-    for channel in $CONDA_CHANNELS; do
-        echo "Adding $channel channel."
-        conda config --add channels $channel
-    done
-fi
+for channel in 'astropy' 'juliotux' 'conda-forge'; do
+    echo "Adding $channel channel."
+    conda config --add channels $channel
+done
 unset CONDA_CHANNELS
 
 if [[ -z $PYTHON_VERSION ]]; then
