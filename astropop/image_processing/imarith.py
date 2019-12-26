@@ -6,7 +6,6 @@ imarith
 Handle the IRAF's imarith and imcombine functions.
 '''
 # TODO: reimplement imcombine
-# TODO: WCS align
 
 import numpy as np
 from astropy import units as u
@@ -95,29 +94,31 @@ def _join_headers(operand1, operand2, operation, logger):
 
 def imarith(operand1, operand2, operation, inplace=False,
             propagate_errors=False, handle_mask=False, logger=logger):
-    """Simple arithmetic operations using CCDData.
+    """Simple arithmetic operations using `~astropop.framedata.FrameData`.
 
     Notes
     -----
     * Keeps the header of the first image.
 
-    * If `operand1` is not a `FrameData` instance, inplies in `inplace=False`,
-      and a new `FrameData` instance will be created.
+    * If ``operand1`` is not a `~astropop.framedata.FrameData` instance,
+      inplies in ``inplace=False``, and a new `~astropop.framedata.FrameData`
+      instance will be created.
 
     * Supported operations:
-        - `+` : add. Example: 1+1=2
-        - `-` : subtract. Example: 2-1=1
-        - `*` : scalar product. Example: 2*3=6
-        - `/` : true division. Example: 3/2=1.5
-        - `**` : power. Example: 3**2=9
-        - `%` : modulus. Example: 7%2=1
-        - `//` : floor division. Example: 7//2=3
+        - ``+`` : add. Example: 1+1=2
+        - ``-`` : subtract. Example: 2-1=1
+        - ``*`` : scalar product. Example: 2*3=6
+        - ``/`` : true division. Example: 3/2=1.5
+        - ``**`` : power. Example: 3**2=9
+        - ``%`` : modulus. Example: 7%2=1
+        - ``//`` : floor division. Example: 7//2=3
 
     Parameters
     ----------
-    operand1, operand2 : `FrameData` compatible, float or `astropy.units.Quantity`  # noqa
-        Values to perform the operation.
-    operation : {`+`, `-`, `*`, `/`, `**`, `%`, `//`}
+    operand1, operand2 : `~astropop.framedata.FrameData` compatible
+        Values to perform the operation. `~astropy.units.Quantity`, numerical
+        values and `~astropy.nddata.CCDData` are also suported.
+    operation : {``+``, ``-``, ``*``, ``/``, ``**``, ``%``, ``//``}
         Math operation.
     inplace : bool, optional
         If True, the operations will be performed inplace in the operand 1.
@@ -130,8 +131,9 @@ def imarith(operand1, operand2, operation, inplace=False,
 
     Returns
     -------
-        `FrameData` : new `FrameData` instance if not `inplace`, else the
-        `operand1` `FrameData` instance.
+    `~astropop.framedata.FrameData`:
+        new `FrameData` instance if not ``inplace``, else the ``operand1``
+        `~astropop.framedata.FrameData` instance.
     """
     if operation not in _arith_funcs.keys():
         raise ValueError(f"Operation {operation} not supported.")

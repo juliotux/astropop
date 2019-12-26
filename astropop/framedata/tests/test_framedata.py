@@ -9,7 +9,7 @@ import os
 import numpy as np
 import numpy.testing as npt
 from astropop.framedata import FrameData, setup_filename, framedata_read_fits, \
-                               framedata_to_hdu, extract_units
+                               extract_units
 from astropy.io import fits
 from astropy.utils import NumpyRNGContext
 from astropy import units as u
