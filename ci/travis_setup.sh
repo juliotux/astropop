@@ -36,7 +36,6 @@ fi
 
 echo "Entering in test environment"
 conda activate $NAME
-conda update -q conda
 conda install -q pip
 conda config --show
 conda info -a
