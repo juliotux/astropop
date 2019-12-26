@@ -11,7 +11,7 @@ echo "-----------------------------------------------"
 wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
 bash miniconda.sh -b -p "$HOME/miniconda"
 source "$HOME/miniconda/etc/profile.d/conda.sh"
-conda update -n base -c defaults conda
+conda update conda
 hash -r
 conda config --set always_yes yes --set changeps1 no
 conda config --set pip_interop_enabled True
@@ -39,6 +39,7 @@ fi
 
 echo "Entering in test environment"
 conda activate test
+conda update -q conda
 conda config --show
 conda info -a
 
@@ -99,7 +100,7 @@ else
 fi
 
 # Another pins are ignored
-conda env update --file ../.rtd-environment.yml
+conda env update -f "../$CONDA_ENVIRONMENT"
 
 echo "-----------------------------------------------"
 echo "Environment done."
