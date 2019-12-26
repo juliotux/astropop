@@ -411,14 +411,38 @@ class FrameData:
 
         if hdu_uncertainty is not None and self.uncertainty is not None:
             uncert = self.uncertainty
-            uncert_unit = self.uncert_unit.to_string()
+            uncert_unit = uncert.unit.to_string()
             uncert_h = fits.Header()
             uncert_h[unit_key] = uncert_unit
             hdul.append(fits.ImageHDU(uncert, header=uncert_h,
-                                    name=hdu_uncertainty))
+                                      name=hdu_uncertainty))
 
         if hdu_mask is not None and self.mask is not None:
             mask = self.mask
+            if np.issubdtype(mask.dtype, np.bool):
+                # Fits do not support bool
+                mask = mask.astype('uint8')
             hdul.append(fits.ImageHDU(mask, name=hdu_mask))
 
         return hdul
+
+    def to_ccddata(self):
+        """Convert actual FrameData to CCDData.
+
+        Return
+        ------
+        `~astropy.nddata.CCDData` :
+            CCDData instance with actual FrameData informations.
+        """
+        data = np.array(self.data)
+        unit = self.unit
+        meta = self.header
+        wcs = self.wcs
+        uncertainty = self.uncertainty
+        if not uncertainty.empty:
+            from astropy.nddata import StdDevUncertainty
+            uncertainty = StdDevUncertainty(uncertainty, unit=unit)
+        mask = np.array(self.mask)
+
+        return CCDData(data, unit=unit, meta=meta, wcs=wcs,
+                       uncertainty=uncertainty, mask=mask)
