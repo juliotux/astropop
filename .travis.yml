@@ -70,10 +70,10 @@ matrix:
           env: PYTHON_VERSION=3.7 NUMPY_VERSION=1.17 SETUP_CMD='test'
 
         - os: linux
-          env: PYTHON_VERSION=3.7 NUMPY_VERSION=1.17 ASTROPY_VERSION=4.0 SETUP_CMD='test'
+          env: PYTHON_VERSION=3.7 ASTROPY_VERSION=4.0 SETUP_CMD='test'
 
         - os: linux
-          env: PYTHON_VERSION=3.7 NUMPY_VERSION=1.17 ASTROPY_VERSION=3.2 SETUP_CMD='test'
+          env: PYTHON_VERSION=3.7 ASTROPY_VERSION=3.2 SETUP_CMD='test'
 
         - os: linux
           env: PYTHON_VERSION=3.8 NUMPY_VERSION=1.17 SETUP_CMD='test'
