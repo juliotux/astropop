@@ -51,12 +51,26 @@ echo "-----------------------------------------------"
 echo "Installing Dependencies"
 echo "-----------------------------------------------"
 
+if [[ $MAIN_CMD == pep8* ]]; then
+    pip install -U -q pep8
+    return  # no more dependencies needed
+elif [[ $MAIN_CMD == pycodestyle* ]]; then
+    pip install -U -q pycodestyle
+    return  # no more dependencies needed
+elif [[ $MAIN_CMD == flake8* ]]; then
+    pip install -U -q flake8
+    return  # no more dependencies needed
+elif [[ $MAIN_CMD == pylint* ]]; then
+    pip install -U -q pylint
+    return  # no more dependencies needed
+fi
+
 if [[ -z $NUMPY_VERSION ]]; then
     echo "Empty numpy version. Setting using default."
-    conda install -n $NAME numpy
+    conda install -n $NAME numpy "$MKL"
 elif [[ $NUMPY_VERSION == stable ]]; then
     echo "Using stable numpy version. Set to $NUMPY_STABLE"
-    conda install -n $NAME -q numpy="$NUMPY_STABLE"
+    conda install -n $NAME -q numpy="$NUMPY_STABLE" "$MKL"
 elif [[ $NUMPY_VERSION == dev* ]] || [[ $NUMPY_VERSION == unstable ]]; then
     echo "Using development numpy. Installing from git."
     pip install git+https://github.com/numpy/numpy.git
@@ -94,6 +108,37 @@ else
     echo "Using astropy $ASTROPY_VERSION"
     conda install -n $NAME -q astropy="$ASTROPY_VERSION"
     echo "numpy=$ASTROPY_VERSION.*" >> "$PIN_FILE"
+fi
+
+if [[ $SETUP_CMD == *coverage* ]]; then
+    # We install requests with conda since it's required by coveralls.
+    echo "Installing coverage"
+    conda install -n $NAME -q coverage requests
+    pip install -U -q coveralls codecov
+fi
+
+if [[ $SETUP_CMD == *-cov* ]]; then
+    echo "Installing coverage"
+    pip install -U -q coveralls codecov pytest-cov
+fi
+
+if [[ $SETUP_CMD == *build_sphinx* ]] || [[ $SETUP_CMD == *build_docs* ]]; then
+    if [[ ! -z $MATPLOTLIB_VERSION ]]; then
+        if [[ -z $(grep matplotlib "$PIN_FILE") ]]; then
+            echo "matplotlib ${MATPLOTLIB_VERSION}.*" >> "$PIN_FILE"
+        fi
+    fi
+    
+    if [[ ! -z $SPHINX_VERSION ]]; then
+        if [[ -z $(grep sphinx "$PIN_FILE") ]]; then
+            echo "sphinx ${SPHINX_VERSION}.*" >> "$PIN_FILE"
+        fi
+    fi
+
+    conda install -q sphinx matplotlib sip
+    
+    # test matplotlib import
+    python -c "import matplotlib.pyplot"
 fi
 
 # Another pins are ignored
