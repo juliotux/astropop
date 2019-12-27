@@ -94,7 +94,7 @@ elif [[ $SCIPY_VERSION == dev* ]] || [[ $SCIPY_VERSION = unstable ]]; then
 else
     echo "Using numpy $SCIPY_VERSION"
     conda install -n $NAME -q scipy="$SCIPY_VERSION"
-    echo "numpy=$SCIPY_VERSION.*" >> "$PIN_FILE"
+    echo "scipy=$SCIPY_VERSION.*" >> "$PIN_FILE"
 fi
 
 if [[ -z $ASTROPY_VERSION ]]; then
@@ -109,7 +109,7 @@ elif [[ $ASTROPY_VERSION == dev* ]] || [[ $ASTROPY_VERSION == unstable ]]; then
 else
     echo "Using astropy $ASTROPY_VERSION"
     conda install -n $NAME -q astropy="$ASTROPY_VERSION"
-    echo "numpy=$ASTROPY_VERSION.*" >> "$PIN_FILE"
+    echo "astropy=$ASTROPY_VERSION.*" >> "$PIN_FILE"
 fi
 
 if [[ $SETUP_CMD == *coverage* ]]; then
