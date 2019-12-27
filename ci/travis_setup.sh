@@ -7,13 +7,15 @@ export ASTROPY_STABLE="4.0"
 export SCIPY_STABLE="1.4"
 export MKL="nomkl"
 
+MINICONDA="$HOME/miniconda"
+
 # Install and update conda
 echo "-----------------------------------------------"
 echo "Setup Conda"
 echo "-----------------------------------------------"
 wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-bash miniconda.sh -b -p "$HOME/miniconda"
-source "$HOME/miniconda/etc/profile.d/conda.sh"
+bash miniconda.sh -b -p "$MINICONDA"
+source "$MINICONDA/etc/profile.d/conda.sh"
 conda config --set always_yes yes --set changeps1 no
 conda update conda
 hash -r
@@ -40,8 +42,7 @@ conda activate $NAME
 conda install -q pip
 conda config --show
 conda info -a
-
-PIN_FILE=$HOME/miniconda/envs/$NAME/conda-meta/pinned
+PIN_FILE=$MINICONDA/envs/$NAME/conda-meta/pinned
 touch "$PIN_FILE"
 
 if [[ $SETUP_CMD == egg_info ]]; then
