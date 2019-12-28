@@ -4,4 +4,4 @@ exclude_paths:
     - 'setup.py'
     - 'astropop/conftest.py'
     - 'astropop/_astropy_init.py'
-    - 'docs/conf.py'
+    - 'docs/**'
