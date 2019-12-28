@@ -35,7 +35,7 @@ def get_image_index():
     d = 'http://broiler.astrometry.net/~dstn/4100/' + index
     f = os.path.join(ast_data, index)
     if not os.path.isfile(f):
-        request.urlretrieve(d, f)
+        request.urlretrieve(d, f)  # nosec
     name = os.path.join(cache, 'm20_dss.fits')
     if not os.path.isfile(name):
         s = SkyView.get_images('M20', radius=Angle('60arcmin'),
