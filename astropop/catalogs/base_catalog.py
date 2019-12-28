@@ -121,8 +121,8 @@ class _BasePhotometryCatalog(_BaseCatalog, abc.ABC):
             return band in self.available_filters
         elif band not in self.available_filters:
             raise ValueError(f'This catalog does not support {band} filter. '
-                             'The available formats are:"
-                             f" {self.available_filters}')
+                             'The available formats are:'
+                             f' {self.available_filters}')
 
     @abc.abstractmethod
     def query_ra_dec(self, center, radius, logger=logger, **kwargs):

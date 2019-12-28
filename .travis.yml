@@ -87,3 +87,4 @@ script:
 after_success:
     - if [[ $SETUP_CMD == *coverage* ]]; then coveralls --rcfile='astropop/tests/coveragerc'; fi
     - if [[ $SETUP_CMD == *coverage* ]]; then codecov; fi
+    - if [[ $SETUP_CMD == *coverage* ]]; then coverage xml; python-codacy-coverage -r coverage.xml; fi

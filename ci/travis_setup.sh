@@ -116,12 +116,12 @@ if [[ $SETUP_CMD == *coverage* ]]; then
     # We install requests with conda since it's required by coveralls.
     echo "Installing coverage"
     conda install -n $NAME -q coverage requests
-    pip install -U -q coveralls codecov
+    pip install -U -q coveralls codecov codacy-coverage
 fi
 
 if [[ $SETUP_CMD == *-cov* ]]; then
     echo "Installing coverage"
-    pip install -U -q coveralls codecov pytest-cov
+    pip install -U -q coveralls codecov pytest-cov codacy-coverage
 fi
 
 if [[ $SETUP_CMD == *build_sphinx* ]] || [[ $SETUP_CMD == *build_docs* ]]; then
