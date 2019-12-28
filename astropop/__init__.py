@@ -23,8 +23,8 @@ class UnsupportedPythonError(Exception):
 
 
 if LooseVersion(sys.version) < LooseVersion(__minimum_python_version__):
-    raise UnsupportedPythonError("astropop does not support Python < {}"
-                                 .format(__minimum_python_version__))
+    raise UnsupportedPythonError(f"astropop does not support Python <"
+                                 f" {__minimum_python_version__}")
 
 if not _ASTROPY_SETUP_:   # noqa
     # For egg_info test builds to pass, put package imports here.

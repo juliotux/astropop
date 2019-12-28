@@ -1,5 +1,6 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
+import abc
 import numpy as np
 from astropy.modeling.fitting import LevMarLSQFitter
 
@@ -8,8 +9,35 @@ from ._dualbeam_utils import HalfWaveModel, QuarterWaveModel
 from ..logger import logger
 
 
+__all__ = ['compute_theta', 'reduced_chi2', 'dualbeam_polarimetry']
+
+
 _retarders = {'half': {'ncons': 4},
               'quarter': {'ncons': 8}}
+
+
+def compute_theta(q, u):
+    '''Giving q and u, compute theta'''
+    # numpy arctan2 already looks for quadrants and is defined in [-pi, pi]
+    theta = np.degrees(0.5*np.arctan2(u, q))
+    # do not allow negative values
+    if theta < 0:
+        theta += 180
+    return theta
+
+
+class DualBeamPolarimetryBase(abc.ABC):
+    """Base class for polarimetry computation."""
+    def __init__(self, retarder):
+        self._retarder = retarder
+
+
+class SLSDualBeamPolarimetry(DualBeamPolarimetryBase):
+    pass
+
+
+class MBR84DualBeamPolarimetry(DualBeamPolarimetryBase):
+    pass
 
 
 def estimate_normalize(o, e, positions, n_consecutive, logger=logger):
@@ -41,16 +69,6 @@ def estimate_normalize(o, e, positions, n_consecutive, logger=logger):
     return k
 
 
-def compute_theta(q, u):
-    '''Giving q and u, compute theta'''
-    # numpy arctan2 already looks for quadrants and is defined in [-pi, pi]
-    theta = np.degrees(0.5*np.arctan2(u, q))
-    # do not allow negative values
-    if theta < 0:
-        theta += 180
-    return theta
-
-
 def _polarimetry_sls(z, psi, retarder='half', z_err=None, logger=logger):
     """Calculate the polarimetry directly using z.
     psi in degrees
@@ -67,7 +85,7 @@ def _polarimetry_sls(z, psi, retarder='half', z_err=None, logger=logger):
     elif retarder == 'quarter':
         model = QuarterWaveModel()
     else:
-        raise ValueError('retarder {} not supported.'.format(retarder))
+        raise ValueError(f'retarder {retarder} not supported.')
 
     psi = np.radians(psi)
 
@@ -130,7 +148,7 @@ def _polarimetry_mbr84(z, psi, retarder='half', z_err=None,
         theta = compute_theta(q, u)
         result['theta'] = {'value': theta, 'sigma': 28.65*err/p}
     else:
-        raise ValueError('Retarder {} not supported'.format(retarder))
+        raise ValueError(f'Retarder {retarder} not supported')
 
     return result
 
@@ -162,7 +180,7 @@ def dualbeam_polarimetry(o, e, psi, retarder='half', o_err=None, e_err=None,
     if retarder in _retarders.keys():
         ncons = _retarders[retarder]['ncons']
     else:
-        raise ValueError('retarder {} not supported.'.format(retarder))
+        raise ValueError(f'retarder {retarder} not supported.')
 
     o = np.array(o)
     e = np.array(e)
@@ -214,7 +232,7 @@ def dualbeam_polarimetry(o, e, psi, retarder='half', o_err=None, e_err=None,
     if min_snr is not None and o_err is not None and e_err is not None:
         snr = flux/flux_err
         if snr < min_snr:
-            logger.debug('Star with SNR={} eliminated.'.format(snr))
+            logger.debug(f'Star with SNR={snr} eliminated.')
             return _return_empty()
 
     try:
@@ -231,8 +249,8 @@ def dualbeam_polarimetry(o, e, psi, retarder='half', o_err=None, e_err=None,
                                        z_err=z_erro)
             result = {}
             for key in res_sum.keys():
-                result["sls_{}".format(key)] = res_fit[key]
-                result["mbr84_{}".format(key)] = res_sum[key]
+                result[f"sls_{key}"] = res_fit[key]
+                result[f"mbr84_{key}"] = res_sum[key]
                 result[key] = res_fit[key]
         else:
             return _return_empty()

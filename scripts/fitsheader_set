@@ -29,7 +29,7 @@ def main():
     files = args[2:]
 
     for i in files:
-        logger.debug("setting key:{} with value:{} on {}".format(key, value, i))
+        logger.debug(f"setting key:{key} with value:{value} on {i}")
         fits.setval(i, key, value=value, ext=options.hdu)
 
 

@@ -24,8 +24,7 @@ class DummyInstrument(Instrument):
         return b*d
 
     def gen_string(self, ab, bd):
-        return "{}{} {}{}".format(self.a, ab,
-                                  self.b, bd)
+        return f"{self.a}{ab} {self.b}{bd}"
 
 
 class SumStage(Stage):
@@ -68,7 +67,7 @@ class StringStage(Stage):
         s = variables.get('dummy_sum')
         m = variables.get('dummy_mult')
 
-        string_c = "{}{}".format(c_str, c)
+        string_c = f"{c_str}{c}"
         string_abbd = instrument.gen_string(s, m)
 
         return {'string_c': string_c,

@@ -40,8 +40,7 @@ def estimate_dxdy(x, y, steps=[100, 30, 5, 3], bins=30, dist_limit=100,
     dx = dx[np.where(filt)]
     dy = dy[np.where(filt)]
 
-    logger.debug("Determining the best dx,dy with {} combinations."
-                 .format(len(dx)))
+    logger.debug(f"Determining the best dx,dy with {len(dx)} combinations.")
 
     return (_find_max(dx), _find_max(dy))
 

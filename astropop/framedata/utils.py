@@ -155,15 +155,14 @@ def framedata_read_fits(filename=None, hdu=0, unit='BUNIT',
 def _fits_handle(data, logger=logger, **kwargs):
     if isinstance(data, fits.HDUList):
         ext = kwargs.pop('ext', 0)
-        logger.debug("Extracting FrameData from ext {} of HDUList"
-                     .format(ext))
+        logger.debug(f"Extracting FrameData from ext {ext} of HDUList")
         # TODO: Implement this
         raise NotImplementedError
         # return hdulist2framedata(data, ext, ext_mask, ext_uncert,
         #                          bunit=bunit, uunit=uunit)
     elif isinstance(data, six.string_types):
         ext = kwargs.pop('ext', 0)
-        logger.debug("Loading FrameData from {} file".format(data))
+        logger.debug(f"Loading FrameData from {data} file")
         try:
             ccd = FrameData.read_fits(data, hdu=ext)
             ccd.filename = data
@@ -175,7 +174,7 @@ def _fits_handle(data, logger=logger, **kwargs):
             # return hdulist2framedata(data, ext, ext_mask, ext_uncert,
             #                          bunit=bunit, uunit=uunit)
     elif isinstance(data, imhdus):
-        logger.debug("Loading FrameData from {} HDU".format(data))
+        logger.debug(f"Loading FrameData from {data} HDU")
         raise NotImplementedError
         # TODO: implement this
         # hdu2framedata(data, bunit=bunit)

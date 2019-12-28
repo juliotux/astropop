@@ -78,7 +78,7 @@ def batch_key_replace(dictionary, key=None):
     if isinstance(dictionary[key], (six.string_types)):
         for i in dictionary.keys():
             if '{'+i+'}' in dictionary[key]:
-                logger.debug("replacing key {} in key {}".format(i, key))
+                logger.debug(f"replacing key {i} in key {key}")
                 batch_key_replace(dictionary, i)
                 dictionary[key] = dictionary[key].format(**{i: dictionary[i]})
     elif check_iterable(dictionary[key]):
@@ -86,8 +86,8 @@ def batch_key_replace(dictionary, key=None):
             for i in dictionary.keys():
                 v = dictionary[key][j]
                 if '{'+i+'}' in str(v):
-                    logger.debug("replacing key {} in key"
-                                 " {}".format(i, key))
+                    logger.debug(f"replacing key {i} in key"
+                                 f" {key}")
                     dictionary[key][j] = v.format(**{i: dictionary[i]})
     else:
         return
