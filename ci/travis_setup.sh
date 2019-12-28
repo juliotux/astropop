@@ -17,8 +17,8 @@ wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O mi
 bash miniconda.sh -b -p "$MINICONDA"
 source "$MINICONDA/etc/profile.d/conda.sh"
 conda config --set always_yes yes --set changeps1 no
+conda update -n base -c defaults conda
 conda config --set channel_priority false
-conda update conda
 hash -r
 
 # Create test environment

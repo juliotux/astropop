@@ -64,11 +64,11 @@ matrix:
 
         # # python 3.8 enter in recursive conflicts
 
-        - os: linux
-          env: PYTHON_VERSION=3.6 NUMPY_VERSION=1.14 ASTROPY_VERSION=3.2 SETUP_CMD='test'
+        # - os: linux
+        #   env: PYTHON_VERSION=3.6 NUMPY_VERSION=1.14 ASTROPY_VERSION=3.2 SETUP_CMD='test'
 
-        - os: linux
-          env: PYTHON_VERSION=3.8 NUMPY_VERSION=1.17 SETUP_CMD='test'
+        # - os: linux
+        #   env: PYTHON_VERSION=3.8 NUMPY_VERSION=1.17 SETUP_CMD='test'
 
     allow_failures:
         - os: linux
