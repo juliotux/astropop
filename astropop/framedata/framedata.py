@@ -85,9 +85,7 @@ def extract_units(data, unit):
         else:
             return dunit
     elif dunit is not None:
-        return dunit
-    elif unit is not None:
-        return unit
+        return dunitastropop
     else:
         return None
 
@@ -135,7 +133,7 @@ def setup_filename(frame, cache_folder=None, filename=None):
 
 
 class FrameData:
-    """Data conainer for image frame to handle memmapping data from disk.
+    """Data container for image frame to handle memmapping data from disk.
 
     The main difference from Astropy's CCDData is the memmapping itself.
     However it handles uncertainties in a totally different way. It stores only

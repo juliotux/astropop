@@ -82,7 +82,7 @@ def _arith_mask(operand1, operand2, operation, logger):
     old_n = np.count_nonzero(mask1)
     nmask = np.logical_or(mask1, mask2)
     new_n = np.count_nonzero(nmask)
-    logger.debug(f'Updating mask in math operation. '
+    logger.debug(f'Updating mask in math operation. 'imarith
                  f'From {old_n} to {new_n} masked elements.')
     return nmask
 
