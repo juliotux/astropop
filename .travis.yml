@@ -6,15 +6,9 @@ cache:
     directories:
         - $HOME/.astropy/cache
         - $XDG_CACHE_HOME/astropy
-        - /astropy
 
 os:
     - linux
-
-addons:
-    apt:
-        packages:
-            - graphviz
 
 
 stage: Comprehensive tests
@@ -31,9 +25,7 @@ stages:
 
 env:
     global:
-        # The following versions are the 'default' for tests, unless
-        # overridden underneath. They are defined here in order to save having
-        # to repeat them for all configurations.
+        - NAME="astropop"
         - PYTHON_VERSION=3.7
         - NUMPY_VERSION=stable
         - ASTROPY_VERSION=stable
@@ -41,30 +33,21 @@ env:
         - SETUP_CMD='test'
         - EVENT_TYPE='pull_request push'
         - CONDA_ENVIRONMENT='.rtd-environment.yml'
-        - MINICONDA_VERSION=4.7.10
-
-        # If there are matplotlib or other GUI tests, uncomment the following
-        # line to use the X virtual framebuffer.
-        # - SETUP_XVFB=True
-
-        # If you want to ignore certain flake8 errors, you can list them
-        # in FLAKE8_OPT, for example:
-        # - FLAKE8_OPT='--ignore=E501'
-        - FLAKE8_OPT=''
+        - MINICONDA_VERSION=latest
 
 matrix:
     fast_finish: true
 
     include:
         - stage: Initial tests
-          env: PYTHON_VERSION=3.7 SETUP_CMD='egg_info'
+          env: SETUP_CMD='egg_info'
 
         - os: linux
         - stage: Initial tests
-          env: PYTHON_VERSION=3.7 NUMPY_VERSION=1.17 SETUP_CMD='test'
+          env: SETUP_CMD='test'
 
         - os: linux
-          env: PYTHON_VERSION=3.7 NUMPY_VERSION=1.17 SETUP_CMD='test --coverage'
+          env: SETUP_CMD='test --coverage'
 
         - os: linux
           env: SETUP_CMD='build_docs'
@@ -72,6 +55,17 @@ matrix:
         - os: linux
           stage: Cron tests
           env: ASTROPY_VERSION=development NUMPY_VERSION=development EVENT_TYPE='cron'
+
+        - os: linux
+          env: PYTHON_VERSION=3.7 NUMPY_VERSION=1.16 ASTROPY_VERSION=3.2 SETUP_CMD='test'
+
+        - os: linux
+          env: PYTHON_VERSION=3.7 NUMPY_VERSION=1.14 ASTROPY_VERSION=3.2 SETUP_CMD='test'
+
+        # # python 3.8 enter in recursive conflicts
+
+        # - os: linux
+        #   env: PYTHON_VERSION=3.6 NUMPY_VERSION=1.14 ASTROPY_VERSION=3.2 SETUP_CMD='test'
 
         # - os: linux
         #   env: PYTHON_VERSION=3.8 NUMPY_VERSION=1.17 SETUP_CMD='test'
@@ -82,13 +76,15 @@ matrix:
           env: MAIN_CMD='flake8 astropop --count --show-source --statistics $FLAKE8_OPT' SETUP_CMD=''
 
 install:
-    - git clone --depth 1 git://github.com/astropy/ci-helpers.git
-    - source ci-helpers/travis/setup_conda.sh
+    - source ./ci/travis_setup.sh
+    # - git clone --depth 1 git://github.com/astropy/ci-helpers.git
+    # - source ci-helpers/travis/setup_conda.sh
 
 script:
-  - echo "$PYTHON_VERSION $MAIN_CMD $SETUP_CMD" 
-  - $MAIN_CMD $SETUP_CMD
+    # - conda activate $NAME
+    - $MAIN_CMD $SETUP_CMD
 
 after_success:
     - if [[ $SETUP_CMD == *coverage* ]]; then coveralls --rcfile='astropop/tests/coveragerc'; fi
     - if [[ $SETUP_CMD == *coverage* ]]; then codecov; fi
+    - if [[ $SETUP_CMD == *coverage* ]]; then coverage xml; python-codacy-coverage -r coverage.xml; fi

@@ -38,7 +38,7 @@ class AstrometryNetUnsolvedField(CalledProcessError):
         self.path = path
 
     def __str__(self):
-        return "{0}: could not solve field".format(self.path)
+        return f"{self.path}: could not solve field"
 
 
 wcs_header_keys = ['CRPIX1', 'CRPIX2', 'CD1_1', 'CD1_2', 'CD2_1', 'CD2_2',
@@ -97,14 +97,12 @@ class AstrometrySolver():
             try:
                 ra = float(image_params.get('ra'))
                 dec = float(image_params.get('dec'))
-                self.logger.info("Usign given field coordinates: {} {}"
-                                 .format(ra, dec))
+                self.logger.info(f"Usign given field coordinates: {ra} {dec}")
                 options['ra'] = ra
                 options['dec'] = dec
             except ValueError:
-                self.logger.warn('Could not convert field coordinates to'
-                                 ' decimal degrees. Ignoring it: {}{}'
-                                 .format(ra, dec))
+                self.logger.warn(f'Could not convert field coordinates to'
+                                 ' decimal degrees. Ignoring it: {ra} {dec}')
         elif 'ra_key' in keys and 'dec_key' in keys:
             self.logger.info("Figuring out field center coordinates")
             try:
@@ -129,10 +127,10 @@ class AstrometrySolver():
                     pltscl = float(image_params.get('pltscl'))
                     pltscl = [0.8*pltscl, 1.2*pltscl]
                 pltscl = np.array(sorted(pltscl))
-                self.logger.info("Usign given plate scale: {}".format(pltscl))
+                self.logger.info(f"Usign given plate scale: {pltscl}")
             except ValueError:
                 self.logger.warn('Plate scale value not recognized.'
-                                 ' Ignoring it. {}'.format(pltscl))
+                                 f' Ignoring it. {pltscl}')
         elif 'pltscl_key' in keys:
             self.logger.info("Figuring out the plate scale from FITS header")
             try:
@@ -235,7 +233,7 @@ class AstrometrySolver():
 
         for i, v in params.items():
             ndashes = 1 if len(i) == 1 else 2
-            args.append("{0}{1}".format(ndashes * '-', i))
+            args.append(f"{ndashes * '-'}{i}")
             if v is not None:
                 args.append(str(v))
 
@@ -399,11 +397,10 @@ def fit_wcs(x, y, ra, dec, image_width, image_height, sip=False,
         process, _, _ = run_command(args, logger=logger, **kwargs)
         if process.returncode != 0:
             raise CalledProcessError(process.returncode, args)
-        logger.info('Loading solved header from {}'
-                    .format(solved_wcs_file.name))
+        logger.info(f'Loading solved header from {solved_wcs_file.name}')
         solved_header = fits.getheader(solved_wcs_file.name, 0)
     except Exception as e:
         raise AstrometryNetUnsolvedField("Could not fit wcs to this lists."
-                                         " Error: {}".format(e))
+                                         f" Error: {e}")
 
     return WCS(solved_header, relax=True)

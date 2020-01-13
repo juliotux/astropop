@@ -6,7 +6,7 @@ import astroscrappy
 
 from ..logger import logger
 from .imarith import imarith
-# from ..framedata import check_framedata
+from ..framedata import check_framedata
 
 
 __all__ = ['cosmics_lacosmic']
@@ -89,8 +89,8 @@ def subtract_dark(image, master_dark, dark_exposure, image_exposure,
     master_dark = check_framedata(master_dark)
     scale = image_exposure/dark_exposure
     if scale != 1:
-        logger.debug('Scaling dark by {} factor to match image exposure.'
-                     .format(scale))
+        logger.debug(f'Scaling dark by {scale} factor to match image'
+                     ' exposure.')
         master_dark = imarith(master_dark, scale, "*", inplace=False,
                               logger=logger)
 
@@ -113,12 +113,12 @@ def flat_correct(image, master_flat, min_value=None, norm_value=None,
     image = check_framedata(image)
 
     if min_value is not None:
-        logger.debug('Set lower flat value to {}'.format(min_value))
+        logger.debug(f'Set lower flat value to {min_value}')
         mask = master_flat.data < min_value
         master_flat.data[np.where(mask)] = min_value
 
     if norm_value is not None:
-        logger.debug('Normalizing flat with {} value.'.format(norm_value))
+        logger.debug(f'Normalizing flat with {norm_value} value.')
         master_flat = imarith(master_flat, norm_value, '/',
                               inplace=False, logger=logger)
 

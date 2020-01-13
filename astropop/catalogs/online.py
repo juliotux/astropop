@@ -65,8 +65,7 @@ def get_center_skycoord(center, logger=logger):
     elif isinstance(center, SkyCoord):
         return center
 
-    raise ValueError('Center coordinates {} not undertood.'
-                     .format(center))
+    raise ValueError(f'Center coordinates {center} not undertood.')
 
 
 class VizierCatalogClass(_BasePhotometryCatalog):
@@ -133,7 +132,7 @@ class VizierCatalogClass(_BasePhotometryCatalog):
         center = self._get_center(center)
 
         if radius is not None:
-            radius = "{}d".format(self._get_radius(radius))
+            radius = f"{self._get_radius(radius)}d"
             query = _timeout_retry(self.vizier.query_region, center,
                                    radius=radius, catalog=table)
         else:
@@ -181,7 +180,7 @@ class VizierCatalogClass(_BasePhotometryCatalog):
                 id_key = self.prepend_id_key
             else:
                 id_key = self.id_key
-            id = ["{id_key} {id}".format(id_key=id_key, id=i) for i in id]
+            id = [f"{id_key} {i}" for i in id]
             id = np.array(id)
 
         return string_fix(id)
@@ -286,8 +285,8 @@ class SimbadCatalogClass(_BasePhotometryCatalog):
             if isinstance(center, six.string_types):
                 return center
 
-        raise ValueError('Center {} is not a object center name for Simbad!'
-                         .format(center))
+        raise ValueError(f'Center {center} is not a object center name'
+                         ' for Simbad!')
 
     def _flux_keys(self, band, logger=logger):
         flux_key = self.flux_key.format(band=band)

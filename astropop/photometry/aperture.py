@@ -22,7 +22,8 @@ def sky_annulus(data, x, y, r_ann, algorithm='mmm', mask=None, logger=logger):
         - x, y : array_like
             Positions of the sources
         - r_ann : array_like([float, float])
-            Annulus radius (intern and extern) to calculate the background value
+            Annulus radius (intern and extern) to calculate the background
+            value
         - algorithm : 'mmm' or 'sigmaclip' (optional)
             Algorith to calculate the background value. 'mmm' (mean, median,
             mode) should be better for populated fields, while 'sigmaclip'
@@ -39,7 +40,7 @@ def sky_annulus(data, x, y, r_ann, algorithm='mmm', mask=None, logger=logger):
     # TODO: this code needs optimization for faster work
     if len(x) != len(y):
         raise ValueError('x and y variables don\'t have the same lenght.')
-    
+
     if len(r_ann) != 2:
         raise ValueError('r_ann must have two components (r_in, r_out)')
 
@@ -68,8 +69,8 @@ def sky_annulus(data, x, y, r_ann, algorithm='mmm', mask=None, logger=logger):
             filt = filt & ~m
         f = f[np.where(filt)]
         if len(f) < 1:
-            logger.warn('No pixels for sky subtraction found at position {}x{}.'
-                        .format(x[i], y[i]))
+            logger.warn('No pixels for sky subtraction found at position'
+                        f' {x[i]}x{y[i]}.')
             sky[i] = 0
             sky_error[i] = 0
         else:
@@ -84,8 +85,7 @@ def sky_annulus(data, x, y, r_ann, algorithm='mmm', mask=None, logger=logger):
             elif algorithm == 'sigmaclip':
                 sky[i] = mean
             else:
-                raise ValueError('Sky algorithm {} not supported.'
-                                 .format(algorithm))
+                raise ValueError(f'Sky algorithm {algorithm} not supported.')
 
     return sky, sky_error
 
@@ -147,7 +147,7 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto', gain=1.0,
         r = 0.6371*fwhm
         res_ap.meta['fwhm'] = fwhm
         res_ap.meta['r_auto'] = True
-        logger.debug('FWHM:{} r:{}'.format(fwhm, r))
+        logger.debug(f'FWHM:{fwhm} r:{r}')
 
     res_ap['aperture'] = [r]*len(x)
 
@@ -156,7 +156,7 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto', gain=1.0,
         r_in = int(round(4*r, 0))
         r_out = int(max(r_in+10, round(6*r, 0)))  # Ensure a dannulus geq 10
         r_ann = (r_in, r_out)
-        logger.debug('r_ann:{}'.format(r_ann))
+        logger.debug(f'r_ann:{r_ann}')
 
     # from .daophot.aper import aper
     # if r_ann is None:
@@ -189,7 +189,7 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto', gain=1.0,
 
         # SEP do not expose aperture area, so we calculate
         nkwargs = kwargs.copy()
-        nkwargs['gain'] = 1.0 # ensure gain not change the area
+        nkwargs['gain'] = 1.0  # ensure gain not change the area
         ones = _sep_fix_byte_order(np.ones(data.shape, dtype='<f8'))
         area, _, _ = sep.sum_circle(ones, x, y, r, mask=mask, **nkwargs)
 

@@ -53,9 +53,9 @@ def check_header_keys(image1, image2, keywords=[], logger=logger):
                                                '`{v1}`  `{v2}`')
         elif i in image1.header.keys() or i in image2.header.keys():
             raise IncompatibleHeadersError("Headers have inconsisten presence "
-                                           "of {} Keyword".format(i))
+                                           f"of {i} Keyword")
         else:
-            logger.debug("The images do not have the {} keyword".format(i))
+            logger.debug(f"The images do not have the {i} keyword")
     return True
 
 
@@ -63,7 +63,7 @@ def check_image_hdu(data, ext=0, logger=logger):
     """Check if a data is a valid ImageHDU type or convert it."""
     if not isinstance(data, imhdus):
         if isinstance(data, fits.HDUList):
-            logger.debug("Extracting HDU from ext {} of HDUList".format(ext))
+            logger.debug(f"Extracting HDU from ext {ext} of HDUList")
             data = data[ext]
         elif isinstance(data, six.string_types):
             data = fits.open(data)[ext]
@@ -90,7 +90,7 @@ def save_image_hdu(hdu, filename, overwrite=False, logger=logger):
         ext += ext2
 
     filename = base + ext
-    logger.debug('Saving fits file to: {}'.format(filename))
+    logger.debug(f'Saving fits file to: {filename}')
 
     if ext == '.fz':
         p = fits.PrimaryHDU()
@@ -167,18 +167,18 @@ def fits_yielder(return_type, file_list, ext=0, append_to_name=None,
             basename = os.path.basename(i)
             if append_to_name is not None:
                 base, extf = os.path.splitext(basename)
-                basename = "{}{}.{}".format(base, append_to_name, extf)
+                basename = f"{base}{append_to_name}.{extf}"
 
             base, extf = os.path.splitext(basename)
             if extf not in ['fits', 'fts', 'fit', 'gz', 'bz2', 'fz']:
-                logger.warn('{} extension not supported for writing. '
-                            'Changing to fits'.format(extf))
+                logger.warn(f'{extf} extension not supported for writing. '
+                            'Changing to fits')
                 subext = os.path.splitext(base)[1]
                 if subext in ['fits', 'fts', 'fit', 'fz']:
                     nextf = ''
                 else:
                     nextf = 'fits'
-                basename = "{}.{}".format(base, nextf)
+                basename = f"{base}.{nextf}"
 
             save_fname = os.path.join(save_to, basename)
 
@@ -194,7 +194,7 @@ def headers_to_table(headers, filenames=None, keywords=None, empty_value=None,
     for head in headers:
         hlist.append(head)
         actual += 1
-        logger.debug("Reading header {}".format(actual))
+        logger.debug(f"Reading header {actual}")
 
     n = len(hlist)
 
@@ -215,7 +215,7 @@ def headers_to_table(headers, filenames=None, keywords=None, empty_value=None,
         headict[k] = [empty_value]*n
 
     for i in range(n):
-        logger.debug("Processing header {} from {}".format(i, n))
+        logger.debug(f"Processing header {i} from {n}")
         for key, val in hlist[i].items():
             key = key.lower()
             if key in keywords:

@@ -1,6 +1,7 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
 import pytest
+import pytest_check as check
 
 from astropop.pipelines import Manager, Config, Instrument, Stage, Product
 from astropop.pipelines import FrozenError
@@ -23,8 +24,7 @@ class DummyInstrument(Instrument):
         return b*d
 
     def gen_string(self, ab, bd):
-        return "{}{} {}{}".format(self.a, ab,
-                                  self.b, bd)
+        return f"{self.a}{ab} {self.b}{bd}"
 
 
 class SumStage(Stage):
@@ -67,7 +67,7 @@ class StringStage(Stage):
         s = variables.get('dummy_sum')
         m = variables.get('dummy_mult')
 
-        string_c = "{}{}".format(c_str, c)
+        string_c = f"{c_str}{c}"
         string_abbd = instrument.gen_string(s, m)
 
         return {'string_c': string_c,
@@ -116,7 +116,8 @@ def test_pipeline_complete_flow():
     m.show_products()
     m.run()
     m.run(index=0, target='sum')
-    assert string_store == [('c=3', 'a+b=3 b*d=16'), ('c=3', 'a+b=3 b*d=16')]
+    check.equal(string_store, [('c=3', 'a+b=3 b*d=16'),
+                               ('c=3', 'a+b=3 b*d=16')])
 
 
 def test_config_item_freezing():

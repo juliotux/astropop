@@ -2,6 +2,7 @@
 import os
 import mmap
 import pytest
+import pytest_check as check
 from astropop.framedata import MemMapArray, create_array_memmap, \
                                delete_array_memmap, EmptyDataError
 from astropy import units as u
@@ -16,32 +17,32 @@ def test_create_and_delete_memmap(tmpdir):
     a = np.ones((30, 30), dtype='f8')
     b = create_array_memmap(f, a)
     c = create_array_memmap(g, a, dtype=bool)
-    assert isinstance(b, np.memmap)
-    assert isinstance(c, np.memmap)
+    check.is_instance(b, np.memmap)
+    check.is_instance(c, np.memmap)
     npt.assert_array_equal(a, b)
     npt.assert_allclose(a, c)
-    assert os.path.exists(f)
-    assert os.path.exists(g)
+    check.is_true(os.path.exists(f))
+    check.is_true(os.path.exists(g))
 
     # Deletion
     # Since for the uses the object is overwritten, we do it here too
     d = delete_array_memmap(b, read=True, remove=False)
     e = delete_array_memmap(c, read=True, remove=False)
-    assert not isinstance(d, np.memmap)
-    assert not isinstance(e, np.memmap)
-    assert isinstance(d, np.ndarray)
-    assert isinstance(e, np.ndarray)
+    check.is_not_instance(d, np.memmap)
+    check.is_not_instance(e, np.memmap)
+    check.is_instance(d, np.ndarray)
+    check.is_instance(e, np.ndarray)
     npt.assert_array_equal(a, d)
     npt.assert_allclose(a, e)
-    assert os.path.exists(f)
-    assert os.path.exists(g)
+    check.is_true(os.path.exists(f))
+    check.is_true(os.path.exists(g))
 
     d = delete_array_memmap(b, read=False, remove=True)
     e = delete_array_memmap(c, read=False, remove=True)
-    assert d is None
-    assert e is None
-    assert not os.path.exists(f)
-    assert not os.path.exists(g)
+    check.is_true(d is None)
+    check.is_true(e is None)
+    check.is_false(os.path.exists(f))
+    check.is_false(os.path.exists(g))
 
     # None should not raise errors
     create_array_memmap('dummy', None)
@@ -52,12 +53,12 @@ def test_create_and_delete_memmap(tmpdir):
 def test_create_empty_memmap(tmpdir, memmap):
     f = os.path.join(tmpdir, 'empty.npy')
     a = MemMapArray(None, filename=f, dtype=None, unit=None, memmap=memmap)
-    assert a.filename == f
-    assert a._contained is None
-    assert a.memmap == memmap
-    assert a.empty
-    assert not os.path.exists(f)
-    assert a.unit is u.dimensionless_unscaled
+    check.equal(a.filename, f)
+    check.is_true(a._contained is None)
+    check.equal(a.memmap, memmap)
+    check.is_true(a.empty)
+    check.is_false(os.path.exists(f))
+    check.is_true(a.unit is u.dimensionless_unscaled)
     with pytest.raises(EmptyDataError):
         # dtype whould rise
         a.dtype
@@ -77,16 +78,16 @@ def test_create_memmap(tmpdir, memmap):
     f = os.path.join(tmpdir, 'npn_empty.npy')
     arr = [[0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5]]
     a = MemMapArray(arr, filename=f, dtype=None, unit=None, memmap=memmap)
-    assert a.filename == f
+    check.equal(a.filename, f)
     npt.assert_array_equal(a, arr)
-    assert not a.empty
-    assert a.memmap == memmap
-    assert os.path.exists(f) == memmap
-    assert a.unit == u.dimensionless_unscaled
-    assert a.dtype == np.int64
+    check.is_false(a.empty)
+    check.equal(a.memmap, memmap)
+    check.equal(os.path.exists(f), memmap)
+    check.equal(a.unit, u.dimensionless_unscaled)
+    check.equal(a.dtype, np.int64)
 
     a[0][0] = 10
-    assert a[0][0] == 10
+    check.equal(a[0][0], 10)
 
     a[0][:] = 20
     npt.assert_array_equal(a[0], [20, 20, 20, 20, 20, 20])
@@ -96,30 +97,30 @@ def test_enable_disable_memmap(tmpdir):
     f = os.path.join(tmpdir, 'npn_empty.npy')
     arr = [[0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5]]
     a = MemMapArray(arr, filename=f, dtype=None, unit=None, memmap=False)
-    assert not a.memmap
-    assert not os.path.exists(f)
+    check.is_false(a.memmap)
+    check.is_false(os.path.exists(f))
 
     a.enable_memmap()
-    assert a.memmap
-    assert os.path.exists(f)
-    assert isinstance(a._contained, np.memmap)
+    check.is_true(a.memmap)
+    check.is_true(os.path.exists(f))
+    check.is_instance(a._contained, np.memmap)
 
     # First keep the file
     a.disable_memmap(remove=False)
-    assert not a.memmap
-    assert os.path.exists(f)
-    assert not isinstance(a._contained, np.memmap)
+    check.is_false(a.memmap)
+    check.is_true(os.path.exists(f))
+    check.is_not_instance(a._contained, np.memmap)
 
     a.enable_memmap()
-    assert a.memmap
-    assert os.path.exists(f)
-    assert isinstance(a._contained, np.memmap)
+    check.is_true(a.memmap)
+    check.is_true(os.path.exists(f))
+    check.is_instance(a._contained, np.memmap)
 
     # Remove the file
     a.disable_memmap(remove=True)
-    assert not a.memmap
-    assert not os.path.exists(f)
-    assert not isinstance(a._contained, np.memmap)
+    check.is_false(a.memmap)
+    check.is_false(os.path.exists(f))
+    check.is_not_instance(a._contained, np.memmap)
 
     with pytest.raises(ValueError):
         # raises error if name is locked
@@ -128,13 +129,13 @@ def test_enable_disable_memmap(tmpdir):
 
 def test_units_on_creation(tmpdir):
     m = MemMapArray(None, os.path.join(tmpdir, 'unit.npy'), unit='adu')
-    assert m.unit is u.adu
+    check.is_true(m.unit is u.adu)
 
 
 def test_unit_assign(tmpdir):
     m = MemMapArray(None, os.path.join(tmpdir, 'unit.npy'), unit=None)
     m.set_unit('adu')
-    assert m.unit is u.adu
+    check.is_true(m.unit is u.adu)
 
     with pytest.raises(AttributeError):
         # no direct assignment
@@ -154,43 +155,43 @@ def test_invalid_unit(tmpdir):
 
 def test_unit_change(tmpdir):
     m = MemMapArray(None, unit='m')
-    assert m.unit is u.m
+    check.is_true(m.unit is u.m)
     m.set_unit('adu')
-    assert m.unit is u.adu
+    check.is_true(m.unit is u.adu)
 
 
 def test_reset_data(tmpdir):
     d1 = np.array([[1, 2], [3, 4]]).astype('float32')
     m = MemMapArray(d1, os.path.join(tmpdir, 'reset.npy'),
                     dtype='float64', unit='adu', memmap=True)
-    assert np.issubdtype(m.dtype, np.float64)
+    check.is_true(np.issubdtype(m.dtype, np.float64))
     npt.assert_array_equal(m, d1)
-    assert not m.empty
-    assert m.memmap
+    check.is_false(m.empty)
+    check.is_true(m.memmap)
 
     m.reset_data(d1)
-    assert np.issubdtype(m.dtype, np.float32)
+    check.is_true(np.issubdtype(m.dtype, np.float32))
     npt.assert_array_equal(m, d1)
-    assert not m.empty
-    assert m.memmap
+    check.is_false(m.empty)
+    check.is_true(m.memmap)
 
     m.reset_data(d1.astype('int16'))
-    assert np.issubdtype(m.dtype, np.int16)
+    check.is_true(np.issubdtype(m.dtype, np.int16))
     npt.assert_array_equal(m, d1)
-    assert not m.empty
-    assert m.memmap
+    check.is_false(m.empty)
+    check.is_true(m.memmap)
 
     m.reset_data(None)
-    assert m.empty
-    assert m._contained is None
-    assert m.memmap
+    check.is_true(m.empty)
+    check.is_true(m._contained is None)
+    check.is_true(m.memmap)
     m.disable_memmap()
 
     m.reset_data(np.ones((10, 10)), unit='m', dtype='float32')
-    assert np.issubdtype(m.dtype, np.float32)
+    check.is_true(np.issubdtype(m.dtype, np.float32))
     npt.assert_array_equal(m, np.ones((10, 10)))
-    assert not m.empty
-    assert not m.memmap
+    check.is_false(m.empty)
+    check.is_false(m.memmap)
 
 
 # TODO: flush
@@ -689,18 +690,18 @@ def test_math_bool_all_any(tmpdir, memmap, value, other):
     a = MemMapArray(arr, filename=f, memmap=memmap)
     with pytest.raises(ValueError):
         bool(a)
-    assert not a.all()
-    assert a.any()
+    check.is_false(a.all())
+    check.is_true(a.any())
 
     arr = np.array([0, 0, 0])
     a = MemMapArray(arr, filename=f+'1', memmap=memmap)
-    assert not a.all()
-    assert not a.any()
+    check.is_false(a.all())
+    check.is_false(a.any())
 
     arr = np.array([1, 1, 1])
     a = MemMapArray(arr, filename=f+'2', memmap=memmap)
-    assert a.all()
-    assert a.any()
+    check.is_true(a.all())
+    check.is_true(a.any())
 
 
 @parametrize_matrice
@@ -712,7 +713,7 @@ def test_math_float(tmpdir, memmap, value, other):
         float(a)
 
     a = MemMapArray([value], filename=f, memmap=memmap)
-    assert float(value) == float(a)
+    check.equal(float(value), float(a))
 
 
 @parametrize_matrice
@@ -724,7 +725,7 @@ def test_math_int(tmpdir, memmap, value, other):
         int(a)
 
     a = MemMapArray([value], filename=f, memmap=memmap)
-    assert int(value) == int(a)
+    check.equal(int(value), int(a))
 
 
 @parametrize_matrice
@@ -743,15 +744,15 @@ def test_math_complex(tmpdir, memmap, value, other):
             complex(a, other)
     else:
         try:
-            assert complex(value) == complex(arr)
-            assert complex(value, other) == complex(arr, other)
+            check.equal(complex(value), complex(arr))
+            check.equal(complex(value, other), complex(arr, other))
         except Exception as e:
             with pytest.raises(e.__class__):
-                assert complex(value) == complex(arr)
-                assert complex(value, other) == complex(arr, other)
+                check.equal(complex(value), complex(arr))
+                check.equal(complex(value, other), complex(arr, other))
         else:
-            assert complex(value) == complex(arr)
-            assert complex(value, other) == complex(arr, other)
+            check.equal(complex(value), complex(arr))
+            check.equal(complex(value, other), complex(arr, other))
 
 
 @pytest.mark.parametrize('memmap', [True, False])
@@ -768,7 +769,7 @@ def test_math_len(tmpdir, memmap):
                 ap_v = len(a)
         else:
             ap_v = len(a)
-            assert np_v == ap_v
+            check.equal(np_v, ap_v)
 
 
 @pytest.mark.parametrize('memmap', [True, False])
@@ -781,35 +782,35 @@ def test_math_redirects(tmpdir, memmap):
         for i in ['C_CONTIGUOUS', 'F_CONTIGUOUS', 'WRITEABLE', 'ALIGNED',
                   'WRITEBACKIFCOPY', 'UPDATEIFCOPY', 'FNC', 'FORC',
                   'BEHAVED', 'CARRAY', 'FARRAY']:
-            assert arr_flags[i] == a_flags[i]
+            check.equal(arr_flags[i], a_flags[i])
         for i in ['OWNDATA']:
             if memmap:
-                arr_flags[i] != a_flags[i]
+                check.not_equal(arr_flags[i], a_flags[i])
             else:
-                arr_flags[i] == a_flags[i]
+                check.equal(arr_flags[i], a_flags[i])
 
         if memmap:
-            assert isinstance(a.base, mmap.mmap)
+            check.is_instance(a.base, mmap.mmap)
         else:
-            assert a.base is None
+            check.is_true(a.base is None)
 
-        assert arr.shape == a.shape
-        assert arr.strides == a.strides
-        assert arr.ndim == a.ndim
-        assert arr.data == a.data
-        assert arr.size == a.size
-        assert arr.itemsize == a.itemsize
-        assert arr.nbytes == a.nbytes
-        assert arr.dtype == a.dtype
+        check.equal(arr.shape, a.shape)
+        check.equal(arr.strides, a.strides)
+        check.equal(arr.ndim, a.ndim)
+        check.equal(arr.data, a.data)
+        check.equal(arr.size, a.size)
+        check.equal(arr.itemsize, a.itemsize)
+        check.equal(arr.nbytes, a.nbytes)
+        check.equal(arr.dtype, a.dtype)
 
-        assert isinstance(a.tolist(), list)
-        assert arr.tolist() == a.tolist()
-        assert isinstance(a.tostring(), bytes)
-        assert arr.tostring() == a.tostring()
-        assert isinstance(a.tobytes(), bytes)
-        assert arr.tobytes() == a.tobytes()
-        assert isinstance(a.dumps(), bytes)
-        # FIXME: assert arr.dumps() == a.dumps()
+        check.is_instance(a.tolist(), list)
+        check.equal(arr.tolist(), a.tolist())
+        check.is_instance(a.tostring(), bytes)
+        check.equal(arr.tostring(), a.tostring())
+        check.is_instance(a.tobytes(), bytes)
+        check.equal(arr.tobytes(), a.tobytes())
+        check.is_instance(a.dumps(), bytes)
+        # FIXME: check.equal(arr.dumps(), a.dumps())
 
         npt.assert_array_equal(arr.T, a.T)
         npt.assert_array_equal(arr.transpose(), a.transpose())
@@ -819,10 +820,10 @@ def test_math_redirects(tmpdir, memmap):
         npt.assert_array_equal(arr.argsort(), a.argsort())
         npt.assert_array_equal(arr.argpartition(1), a.argpartition(1))
         npt.assert_array_equal(arr.nonzero(), a.nonzero())
-        assert arr.max() == a.max()
-        assert arr.argmax() == a.argmax()
-        assert arr.min() == a.min()
-        assert arr.argmin() == a.argmin()
+        check.equal(arr.max(), a.max())
+        check.equal(arr.argmax(), a.argmax())
+        check.equal(arr.min(), a.min())
+        check.equal(arr.argmin(), a.argmin())
         npt.assert_array_equal(arr.max(axis=0), a.max(axis=0))
         npt.assert_array_equal(arr.min(axis=0), a.min(axis=0))
         npt.assert_array_equal(arr.argmax(axis=0), a.argmax(axis=0))
@@ -830,33 +831,33 @@ def test_math_redirects(tmpdir, memmap):
         npt.assert_array_equal(arr.real, a.real)
         npt.assert_array_equal(arr.imag, a.imag)
         npt.assert_array_equal(arr.round(), a.round())
-        assert arr.sum() == a.sum()
+        check.equal(arr.sum(), a.sum())
         npt.assert_array_equal(arr.sum(axis=0), a.sum(axis=0))
         npt.assert_array_equal(arr.cumsum(), a.cumsum())
         npt.assert_array_equal(arr.cumsum(axis=0), a.cumsum(axis=0))
-        assert arr.mean() == a.mean()
+        check.equal(arr.mean(), a.mean())
         npt.assert_array_equal(arr.mean(axis=0), a.mean(axis=0))
-        assert arr.var() == a.var()
+        check.equal(arr.var(), a.var())
         npt.assert_array_equal(arr.var(axis=0), a.var(axis=0))
-        assert arr.std() == a.std()
+        check.equal(arr.std(), a.std())
         npt.assert_array_equal(arr.std(axis=0), a.std(axis=0))
-        assert arr.prod() == a.prod()
+        check.equal(arr.prod(), a.prod())
         npt.assert_array_equal(arr.prod(axis=0), a.prod(axis=0))
         npt.assert_array_equal(arr.cumprod(), a.cumprod())
         npt.assert_array_equal(arr.cumprod(axis=0), a.cumprod(axis=0))
 
         for i, j in zip(arr.flat, a.flat):
-            assert i == j
+            check.equal(i, j)
         for i in range(9):
-            assert arr.item(i) == a.item(i)
+            check.equal(arr.item(i), a.item(i))
 
         npt.assert_array_equal(arr.astype(bool), a.astype(bool))
         npt.assert_array_equal(arr.astype(int), a.astype(int))
 
-        assert arr.all() == a.all()
-        assert arr.any() == a.any()
+        check.equal(arr.all(), a.all())
+        check.equal(arr.any(), a.any())
 
-        # FIXME: assert arr.ctypes == a.ctypes
+        # FIXME: check.equal(arr.ctypes, a.ctypes)
 
         # TODO: itemset
         # TODO: tofile

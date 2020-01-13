@@ -174,7 +174,7 @@ def hdu_shift_images(hdu_list, method='fft', register_method='asterism',
             shifts = create_chi2_shift_list([ccd.data for ccd in hdu_list])
         else:
             shifts = create_fft_shift_list([ccd.data for ccd in hdu_list])
-        logger.info("Aligning CCDData with shifts: {}".format(shifts))
+        logger.info(f"Aligning CCDData with shifts: {shifts}")
         for ccd, shift in zip(hdu_list, shifts):
             if method == 'fft':
                 s_method = method

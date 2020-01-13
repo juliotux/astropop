@@ -9,23 +9,19 @@ import numpy as np
 from tempfile import mkdtemp, mkstemp
 from astropy import units as u
 from astropy.io import fits
-from astropy.nddata.ccddata import _generate_wcs_and_update_header
+from astropy.wcs import WCS
+from astropy.nddata.ccddata import _generate_wcs_and_update_header, CCDData
 
 from ..py_utils import mkdir_p
-from .compat import imhdus, _unsupport_fits_open_keywords
 from .memmap import MemMapArray
 
 
 __all__ = ['FrameData', 'shape_consistency', 'unit_consistency',
-           'setup_filename', 'framedata_read_fits',
-           'framedata_to_hdu', 'extract_units']
-
-
-# TODO: FrameData initializers for CCDData and HDUList with functions
+           'setup_filename', 'extract_units']
 
 
 def shape_consistency(data=None, uncertainty=None, mask=None):
-    """Check shape consistency across data, uncertaitny and mask"""
+    """Check shape consistency across ``data``, ``uncertaitny`` and ``mask``"""
     if data is None and uncertainty is not None:
         raise ValueError('Uncertainty set for an empty data.')
     if data is None and mask not in (None, False):
@@ -135,9 +131,9 @@ def setup_filename(frame, cache_folder=None, filename=None):
 class FrameData:
     """Data container for image frame to handle memmapping data from disk.
 
-    The main difference from Astropy's CCDData is the memmapping itself.
-    However it handles uncertainties in a totally different way. It stores only
-    StdDev uncertainty arrays. It also stores the unit.
+    The main difference from Astropy's `~astropy.nddata.CCDData` is the
+    memmapping itself. However it handles uncertainties in a totally different
+    way. It stores only StdDev uncertainty arrays. It also stores the unit.
 
     Parameters:
     -----------
@@ -147,7 +143,7 @@ class FrameData:
         The data unit. Must be `astropy.units.Unit` compilant.
     - dtype : string or `numpy.dtype` (optional)
         Mandatory dtype of the data.
-    - uncertainty : array_like or `astropy.nddata.Uncertanty` or None \
+    - uncertainty : array_like or `astropy.nddata.Uncertanty` or `None` \
                     (optional)
         Uncertainty of the data.
     - u_unit : `astropy.units.Unit` or string (optional)
@@ -155,7 +151,7 @@ class FrameData:
         data.
     - u_dtype : string or `numpy.dtype` (optional)
         Mandatory dtype of uncertainty.
-    - mask : array_like or None (optional)
+    - mask : array_like or `None` (optional)
         Frame mask.
     - m_dtype : string or `numpy.dtype` (optional)
         Mandatory dtype of mask. Default `bool`
@@ -164,15 +160,14 @@ class FrameData:
     - meta or header: dict or `astropy.fits.Header` (optional)
         Metadata (header) of the frame. If both set, they will be merged.
         `header` priority.
-    - cache_folder : string, `pathlib.Path` or None (optional)
-        Place to store the cached FrameData
-    - cache_filename : string, `pathlib.Path` or None (optional)
-        Base file name to store the cached FrameData.
-    - use_memmap_backend : bool (optional)
+    - cache_folder : string, `pathlib.Path` or `None` (optional)
+        Place to store the cached `FrameData`
+    - cache_filename : string, `pathlib.Path` or `None` (optional)
+        Base file name to store the cached `FrameData`.
+    - use_memmap_backend : `bool` (optional)
         True if enable memmap in constructor.
     """
-    # TODO: Complete reimplement the initializer
-    # TODO: History storing?
+    # TODO: Complete reimplement the initialize
     # TODO: __copy__
     _memmapping = False
     _data = None
@@ -230,8 +225,13 @@ class FrameData:
         # Masks can also be flags (uint8)
         self._mask.reset_data(mask, None, m_dtype)
 
-        # TODO: Handle wcs creation
+        self._header_update(header, meta, wcs)
 
+        self._history = []
+
+    def _header_update(self, header, meta, wcs):
+        if wcs is not None:
+            self.wcs = wcs
         if meta is not None and header is not None:
             header = dict(header)
             meta = dict(meta)
@@ -243,8 +243,6 @@ class FrameData:
             self._meta = dict(meta)
         else:
             self._meta = dict()
-
-        self._history = []
 
     @property
     def history(self):
@@ -277,8 +275,10 @@ class FrameData:
 
     @wcs.setter
     def wcs(self, value):
-        self.header, wcs = _generate_wcs_and_update_header(value)
-        self._wcs = wcs
+        if isinstance(value, WCS):
+            self._wcs = value
+        else:
+            raise TypeError('wcs setter value must be a WCS instance.')
 
     @property
     def meta(self):
@@ -296,6 +296,10 @@ class FrameData:
 
     @header.setter
     def header(self, value):
+        value, wcs = _generate_wcs_and_update_header(value)
+        if wcs is not None:
+            # If a WCS is found, overriding framedata WCS.
+            self.wcs = wcs
         self._meta = dict(value)
 
     @property
@@ -371,184 +375,72 @@ class FrameData:
         self._unct.disable_memmap(remove=True)
         self._memmapping = False
 
-    def to_hdu(self, *args, **kwargs):
-        f"""{framedata_to_hdu.__doc__}"""
-        return framedata_to_hdu(self, *args, **kwargs)
+    def to_hdu(self, hdu_uncertainty='UNCERT',
+               hdu_mask='MASK', unit_key='BUNIT',
+               wcs_relax=True):
+        """Generate an HDUList from this FrameData.
 
-    def read_fits(self, *args, **kwargs):
-        f"""{framedata_read_fits.__doc__}"""
-        if isinstance(self, FrameData):
-            arg0 = []
-        else:
-            arg0 = [self]
-        arg0.extend(args)
-        return framedata_read_fits(*arg0, **kwargs)
+        Parameters
+        ----------
+        hdu_uncertainty : string, optional
+            Extension name to store the uncertainty. If None,
+            no uncertainty will be stored.
+        hdu_mask : string, optional
+            Extension name to store the mask. If None, no mask
+            will be saved.
+        unit_key : string, optional
+            Header key for physical unit.
+        wcs_relax : `bool`, optional.
+            Allow non-standard WCS keys.
 
-    def write_fits(self, *args, **kwargs):
-        f"""{framedata_write_fits.__doc__}"""
-        return framedata_write_fits(self, *args, **kwargs)
+        Return
+        ------
+        `~astropy.fits.HDUList` :
+            HDU storing all FrameData informations.
+        """
+        # TODO: Add history
+        data = self.data.copy()
+        header = fits.Header(self.header)
+        if self.wcs is not None:
+            header.extend(self.wcs.to_header(relax=wcs_relax),
+                          useblanks=False, update=True)
+        header[unit_key] = self.unit.to_string()
+        hdul = fits.HDUList(fits.PrimaryHDU(data, header=header))
 
+        if hdu_uncertainty is not None and self.uncertainty is not None:
+            uncert = self.uncertainty
+            uncert_unit = uncert.unit.to_string()
+            uncert_h = fits.Header()
+            uncert_h[unit_key] = uncert_unit
+            hdul.append(fits.ImageHDU(uncert, header=uncert_h,
+                                      name=hdu_uncertainty))
 
-def framedata_to_hdu(framedata, hdu_uncertainty='UNCERT',
-                     hdu_mask='MASK', unit_key='BUNIT',
-                     wcs_relax=True):
-    """Generate an HDUList from this FrameData."""
-    data = framedata.data.copy()
-    header = fits.Header(framedata.header)
-    if framedata.wcs is not None:
-        header.extend(framedata.wcs.to_header(relax=wcs_relax),
-                      useblanks=False, update=True)
-    header[unit_key] = framedata.unit.to_string()
-    hdul = fits.HDUList(fits.PrimaryHDU(data, header=header))
+        if hdu_mask is not None and self.mask is not None:
+            mask = self.mask
+            if np.issubdtype(mask.dtype, np.bool):
+                # Fits do not support bool
+                mask = mask.astype('uint8')
+            hdul.append(fits.ImageHDU(mask, name=hdu_mask))
 
-    if hdu_uncertainty is not None and framedata.uncertainty is not None:
-        uncert = framedata.uncertainty
-        uncert_unit = framedata.uncert_unit.to_string()
-        uncert_h = fits.Header()
-        uncert_h[unit_key] = uncert_unit
-        hdul.append(fits.ImageHDU(uncert, header=uncert_h,
-                                  name=hdu_uncertainty))
+        return hdul
 
-    if hdu_mask is not None and framedata.mask is not None:
-        mask = framedata.mask
-        hdul.append(fits.ImageHDU(mask, name=hdu_mask))
+    def to_ccddata(self):
+        """Convert actual FrameData to CCDData.
 
-    return hdul
+        Return
+        ------
+        `~astropy.nddata.CCDData` :
+            CCDData instance with actual FrameData informations.
+        """
+        data = np.array(self.data)
+        unit = self.unit
+        meta = self.header
+        wcs = self.wcs
+        uncertainty = self.uncertainty
+        if not uncertainty.empty:
+            from astropy.nddata import StdDevUncertainty
+            uncertainty = StdDevUncertainty(uncertainty, unit=unit)
+        mask = np.array(self.mask)
 
-
-def framedata_write_fits(framedata, filename, hdu_mask='MASK',
-                         hdu_uncertainty='UNCERT', unit_key='BUNIT',
-                         wcs_relax=True, **kwargs):
-    """Write a framedata to a file."""
-    hdul = framedata.to_hdu(hdu_uncertainty=hdu_uncertainty, hdu_mask=hdu_mask,
-                            unit_key=unit_key, wcs_relax=wcs_relax)
-    hdul.writeto(filename, **kwargs)
-
-
-def framedata_read_fits(filename=None, hdu=0, unit='BUNIT',
-                        hdu_uncertainty='UNCERT',
-                        hdu_mask='MASK',
-                        use_memmap_backend=False, **kwargs):
-    f"""Create a FrameData from a FITS file.
-
-    Parameters:
-    -----------
-    - filename : string, `pathlib.Path` or `astropy.io.fits.HDUList`
-        File to be loaded. It can be passed in the form of a string or a
-        `pathlib.Path` to be read by `astropy.io.fits`. If a
-        `astropy.io.fits.HDUList is passed, it is directly loaded.
-    - hdu : string or int (optional)
-        Extension of the fits to be used as data provider. If 0, the reader
-        will seek for the first HDU with valid data in file, skipping
-        tables.
-        Default: ``0``
-    - unit : `astropy.units.Unit`, string or None (optional)
-        Manual specifying the data unit. If a string is passed, first the
-        code try to interpret the string as a unit. Except, the reader
-        search for the string in header and try to colect the information
-        from header. If None, the reader will seek in HDU header for unit
-        using the default BUNIT key.
-        Default: ``'BUNIT'``
-    - hdu_uncertainty : string or int (optional)
-        HDU containing the uncertainty data. Unit will be assigned
-        according the `unit` argument. Only StdDevUncertainty is
-        supported.
-        Default: ``'UNCERT'``
-    - hdu_mask : string or int (optional)
-        HDU containing the mask data.
-        Default: ``'MASK'``
-    - kwargs :
-        Keyword arguments to be passed to `astropy.io.fits`. The following
-        keyowrds are not supported:
-        {_unsupport_fits_open_keywords}
-    """
-    for key, msg in _unsupport_fits_open_keywords.items():
-        if key in kwargs:
-            prefix = f'unsupported keyword: {key}.'
-            raise TypeError(' '.join([prefix, msg]))
-
-    hdul = None
-    if isinstance(filename, fits.HDUList):
-        hdul = filename
-    else:
-        hdul = fits.open(filename, **kwargs)
-
-    # Read data and header
-    data_hdu = hdul[hdu]
-    if data_hdu.data is None and hdu == 0:
-        # Seek for first valid image data
-        i = 1
-        while i < len(hdul):
-            if isinstance(hdul[i], imhdus):
-                data_hdu = hdul[i]
-                hdu = i
-                break
-    if data_hdu.data is None:
-        raise ValueError('No valid image HDU found in fits file.')
-    header = data_hdu.header
-
-    # Unit
-    dunit = None
-    try:
-        dunit = u.Unit(unit)
-    except (TypeError, ValueError):
-        if unit in header.keys():
-            val = header[unit].strip()
-            if val.lower() == 'adu':
-                # fix problematic upper case adu
-                val = val.lower()
-            dunit = u.Unit(val)
-        else:
-            raise ValueError(f'Unit {unit} is not a valid astropy '
-                             'unit or a valid unit key header.')
-
-    # Uncertainty
-    try:
-        hdu_uncert = hdul[hdu_uncertainty]
-    except KeyError:
-        hdu_uncert = None
-    if hdu_uncert is not None:
-        if hdu_uncert == hdul[hdu]:
-            raise ValueError('`hdu_uncertainty` and `hdu` cannot be the '
-                             'same!')
-        uncertainty = hdul[hdu_uncertainty]
-        unc_header = uncertainty.header
-        uncertainty = uncertainty.data
-        uunit = None
-        try:
-            uunit = u.Unit(unit)
-        except (TypeError, ValueError):
-            if unit in unc_header.keys():
-                val = unc_header[unit].strip()
-                if val.lower() == 'adu':
-                    # fix problematic upper case adu
-                    val = val.lower()
-                uunit = u.Unit(val)
-            else:
-                raise ValueError(f'Unit {unit} is not a valid astropy '
-                                 'unit or a valid unit key header.')
-    else:
-        uncertainty = None
-        uunit = None
-
-    # Mask
-    try:
-        mask_hdu = hdul[hdu_mask]
-    except KeyError:
-        mask_hdu = None
-    if mask_hdu is not None:
-        if hdul[hdu_mask] == hdul[hdu]:
-            raise ValueError('`hdu_mask` and `hdu` cannot be the '
-                             'same!')
-        mask = mask_hdu.data
-    else:
-        mask = None
-
-    # WCS
-    wcs = _generate_wcs_and_update_header(header)
-    frame = FrameData(data_hdu.data, unit=dunit, wcs=wcs, meta=header,
-                      uncertainty=uncertainty, u_unit=uunit,
-                      mask=mask, use_memmap_backend=use_memmap_backend)
-    hdul.close()
-
-    return frame
+        return CCDData(data, unit=unit, meta=meta, wcs=wcs,
+                       uncertainty=uncertainty, mask=mask)

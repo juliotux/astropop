@@ -21,8 +21,9 @@ dependencies:
     - astroalign
     - ccdproc
     - photutils
+    - sep
     - pip:
-        - sep
         - sphinx-rtd-theme
         - sphinxcontrib-apidoc
-        - astropy-helpers==3.2.2
+        - astropy-helpers
+        - pytest_check

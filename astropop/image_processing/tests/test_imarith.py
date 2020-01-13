@@ -3,6 +3,7 @@
 import numpy as np
 import numpy.testing as npt
 import pytest
+import pytest_check as check
 
 from astropop.image_processing.imarith import imarith
 from astropop.framedata import FrameData
@@ -18,7 +19,7 @@ def test_invalid_op():
     frame2 = FrameData(np.zeros((10, 10)), unit='')
     with pytest.raises(ValueError) as exc:
         imarith(frame1, frame2, 'not an op')
-        assert 'not suppoerted' in str(exc.value)
+        check.is_in('not suppoerted', str(exc.value))
 
 
 def test_invalid_shapes():
@@ -40,9 +41,9 @@ def test_imarith_add(inplace):
                   handle_mask=False, inplace=inplace)
     npt.assert_array_equal(res.data, exp_res)
     if inplace:
-        assert res is frame1
+        check.is_true(res is frame1)
     else:
-        assert res is not frame1
+        check.is_false(res is frame1)
 
 
 @pytest.mark.parametrize('inplace', [True, False])
@@ -61,9 +62,9 @@ def test_imarith_add_uncertainty(inplace):
     npt.assert_array_almost_equal(res.uncertainty,
                                   np.ones_like(frame2.data)*5.0)
     if inplace:
-        assert res is frame1
+        check.is_true(res is frame1)
     else:
-        assert res is not frame1
+        check.is_false(res is frame1)
 
 
 @pytest.mark.parametrize('inplace', [True, False])
@@ -88,6 +89,6 @@ def test_imarith_add_mask(inplace):
     npt.assert_array_equal(res.data, exp_res)
     npt.assert_array_almost_equal(res.mask, expect)
     if inplace:
-        assert res is frame1
+        check.is_true(res is frame1)
     else:
-        assert res is not frame1
+        check.is_false(res is frame1)
