@@ -88,8 +88,12 @@ class MemMapArray:
 
     def __init__(self, data, filename=None, dtype=None, unit=None,
                  memmap=False):
-        if isinstance(data, u.Quantity):
-            raise TypeError('astropy Quantity not supported yet.')
+        if isinstance(data, u.Quantity) and unit is not None:
+            raise ValueError('astropy Quantity and unit set together')
+        elif isinstance(data, u.Quantity):
+            unit = data.unit
+            data = data.value
+
         # None data should generate a empty container
         if data is None:
             self._contained = None
