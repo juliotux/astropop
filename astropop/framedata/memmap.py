@@ -59,6 +59,7 @@ def delete_array_memmap(memmap, read=True, remove=False):
 
 
 def to_memmap_operator(item):
+    # TODO: direct operations fail with quantities
     def wrapper(self, *args, **kwargs):
         if not self.empty:
             func = self._contained.__getattribute__(item)

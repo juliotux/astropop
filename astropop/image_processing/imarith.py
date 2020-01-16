@@ -61,9 +61,10 @@ def _arith_unct(result, operand1, operand2, operation, logger):
 
     data1, unct1 = _extract(operand1)
     data2, unct2 = _extract(operand2)
+    resd, _ = _extract(result)
 
     # Only propagate if operand1 has no empty uncertainty
-    nunct = _error_propagation(result.data, data1, data2, unct1, unct2)
+    nunct = _error_propagation(resd, data1, data2, unct1, unct2)
     return nunct
 
 
