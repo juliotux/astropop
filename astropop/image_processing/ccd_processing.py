@@ -9,7 +9,8 @@ from .imarith import imarith
 from ..framedata import check_framedata
 
 
-__all__ = ['cosmics_lacosmic']
+__all__ = ['cosmics_lacosmic', 'gain_correct', 'subtract_bias', 'subtract_dark',
+           'flat_correct', 'process_ccd']
 
 
 # TODO: replace ccdproc functions by built-in, skiping units
