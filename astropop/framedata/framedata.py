@@ -140,7 +140,7 @@ class FrameData:
     - data : array_like or `astropy.units.Quantity`
         The main data values. If `Quantity`, unit will be set automatically.
     - unit : `astropy.units.Unit` or string (optional)
-        The data unit. Must be `astropy.units.Unit` compilant.
+        The data unit. Must be `astropy.units.Unit` compliant.
     - dtype : string or `numpy.dtype` (optional)
         Mandatory dtype of the data.
     - uncertainty : array_like or `astropy.nddata.Uncertanty` or `None` \
@@ -154,7 +154,7 @@ class FrameData:
     - mask : array_like or `None` (optional)
         Frame mask.
     - m_dtype : string or `numpy.dtype` (optional)
-        Mandatory dtype of mask. Default `bool`
+        Mandatory dtype of mask. Default `bool`compilant
     - wcs : dict, `astropy.fits.Header` or `astropy.wcs.WCS` (optional)
         World Coordinate System of the image.
     - meta or header: dict or `astropy.fits.Header` (optional)

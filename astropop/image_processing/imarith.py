@@ -32,7 +32,7 @@ def _arith_data(operand1, operand2, operation, logger):
 
     try:
         return _arith_funcs[operation](data1, data2)
-    except Exception as e:
+    except Exception as e:´
         raise ValueError(f'Could not process the operation {operation} between'
                          f'{operand1} and {operand2}. Error: {e}')
 
@@ -81,7 +81,7 @@ def _arith_mask(operand1, operand2, operation, logger):
     old_n = np.count_nonzero(mask1)
     nmask = np.logical_or(mask1, mask2)
     new_n = np.count_nonzero(nmask)
-    logger.debug(f'Updating mask in math operation. 'imarith
+    logger.debug(f'Updating mask in math operation. '
                  f'From {old_n} to {new_n} masked elements.')
     return nmask
 
