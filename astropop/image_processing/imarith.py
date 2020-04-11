@@ -32,7 +32,7 @@ def _arith_data(operand1, operand2, operation, logger):
 
     try:
         return _arith_funcs[operation](data1, data2)
-    except Exception as e:´
+    except Exception as e:
         raise ValueError(f'Could not process the operation {operation} between'
                          f'{operand1} and {operand2}. Error: {e}')
 

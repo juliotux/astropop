@@ -9,8 +9,8 @@ from .imarith import imarith
 from ..framedata import check_framedata
 
 
-__all__ = ['cosmics_lacosmic', 'gain_correct', 'subtract_bias', 'subtract_dark',
-           'flat_correct', 'process_ccd']
+__all__ = ['cosmics_lacosmic', 'gain_correct', 'subtract_bias',
+           'subtract_dark', 'flat_correct', 'process_ccd']
 
 
 # TODO: replace ccdproc functions by built-in, skiping units
@@ -114,6 +114,7 @@ def flat_correct(image, master_flat, min_value=None, norm_value=None,
     image = check_framedata(image)
 
     if min_value is not None:
+        # FIXME: this will modify master flat!
         logger.debug(f'Set lower flat value to {min_value}')
         mask = master_flat.data < min_value
         master_flat.data[np.where(mask)] = min_value
@@ -142,5 +143,4 @@ def process_ccd(ccddata, master_bias=None, master_dark=None, master_flat=None,
                 overscan=None,
                 logger=logger):
     """Process all the default steps of CCD calibration."""
-
     raise NotImplementedError
