@@ -35,7 +35,7 @@ env:
     - CONDA_ENVIRONMENT='.rtd-environment.yml'
     - MINICONDA_VERSION=latest
 
-jobs:
+matrix:
   fast_finish: true
 
   include:
