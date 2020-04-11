@@ -10,16 +10,13 @@ cache:
 os:
   - linux
 
-dist: xenial
-
-
 stages:
   # Do the style check and a single test job, don't proceed if it fails
-  - name: Initial tests
+  - name: Initial
   # Test docs, astropy dev, and without optional dependencies
-  - name: Comprehensive tests
-    These will only run when cron is opted in
-  - name: Cron tests
+  - name: Comprehensive
+    # These will only run when cron is opted in
+  - name: Cron
     if: type = cron
 
 
@@ -29,8 +26,6 @@ env:
     - PYTHON_VERSION=3.7
     - NUMPY_VERSION=stable
     - ASTROPY_VERSION=stable
-    - MAIN_CMD='python setup.py'
-    - SETUP_CMD='test'
     - EVENT_TYPE='pull_request push'
     - CONDA_ENVIRONMENT='.rtd-environment.yml'
     - MINICONDA_VERSION=latest
@@ -40,54 +35,53 @@ matrix:
 
   include:
     - os: linux
-      stage: Initial tests
-      env: SETUP_CMD='egg_info'
+      stage: Initial
+      script: python setup.py egg_info
 
     - os: linux
-      stage: Initial tests
-      env: SETUP_CMD='test'
+      stage: Initial
+      script: python setup.py test
 
     - os: linux
-      stage: Initial tests
-      env: SETUP_CMD='test --coverage'
+      stage: Initial
+      script: python setup.py test --coverage
 
     - os: linux
-      stage: Initial tests
-      env: SETUP_CMD='build_docs'
+      stage: Initial
+      script: python setup.pu build_docs
 
     - os: linux
-      stage: Cron tests
+      stage: Cron
       env: ASTROPY_VERSION=development NUMPY_VERSION=development EVENT_TYPE='cron'
+      script: python setup.py test
 
     - os: linux
-      stage: Comprehensive tests
+      stage: Comprehensive
       env: PYTHON_VERSION=3.7 NUMPY_VERSION=1.16 ASTROPY_VERSION=4.0 SETUP_CMD='test'
+      script: python setup.py test
 
     - os: linux
-      stage: Comprehensive tests
+      stage: Comprehensive
       env: PYTHON_VERSION=3.7 NUMPY_VERSION=1.14 ASTROPY_VERSION=3.2 SETUP_CMD='test'
+      script: python setup.py test
 
     - os: linux
-      stage: Comprehensive tests
+      stage: Comprehensive
       env: PYTHON_VERSION=3.6 NUMPY_VERSION=1.14 ASTROPY_VERSION=3.2 SETUP_CMD='test'
+      script: python setup.py test
 
     - os: linux
-      stage: Comprehensive tests
-      env: PYTHON_VERSION=3.8 NUMPY_VERSION=1.17 ASTROPY_VERSION=4.0 SETUP_CMD='test'
+      stage: Comprehensive
+      env: PYTHON_VERSION=3.8 NUMPY_VERSION=1.17 ASTROPY_VERSION=4.0
+      script: python setup.py test
 
   allow_failures:
     - os: linux
-      stage: Initial tests
-      env: MAIN_CMD='flake8 astropop --count --show-source --statistics $FLAKE8_OPT' SETUP_CMD=''
+      stage: Initial
+      script: flake8 astropop --count --show-source --statistics $FLAKE8_OPT
 
 install:
   - source ./ci/travis_setup.sh
-  # - git clone --depth 1 git://github.com/astropy/ci-helpers.git
-  # - source ci-helpers/travis/setup_conda.sh
-
-script:
-  # - conda activate $NAME
-  - $MAIN_CMD $SETUP_CMD
 
 after_success:
   - if [[ $SETUP_CMD == *coverage* ]]; then coveralls --rcfile='astropop/tests/coveragerc'; fi
