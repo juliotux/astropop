@@ -15,7 +15,7 @@ dist: xenial
 
 stages:
   # Do the style check and a single test job, don't proceed if it fails
-  - name: Initial tests;
+  - name: Initial tests
   # Test docs, astropy dev, and without optional dependencies
   - name: Comprehensive tests
     These will only run when cron is opted in
@@ -48,9 +48,11 @@ jobs:
       env: SETUP_CMD='test'
 
     - os: linux
+      stage: Initial tests
       env: SETUP_CMD='test --coverage'
 
     - os: linux
+      stage: Initial tests
       env: SETUP_CMD='build_docs'
 
     - os: linux
