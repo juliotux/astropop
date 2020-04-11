@@ -13,7 +13,8 @@ MINICONDA="$HOME/miniconda"
 echo "-----------------------------------------------"
 echo "Setup Conda"
 echo "-----------------------------------------------"
-wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh -O miniconda.sh
+# wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
 bash miniconda.sh -b -p "$MINICONDA"
 source "$MINICONDA/etc/profile.d/conda.sh"
 conda config --set always_yes yes --set changeps1 no
