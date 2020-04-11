@@ -36,6 +36,7 @@ matrix:
   include:
     - os: linux
       stage: Initial
+      env: SETUP_CMD='egg_info'
       script: python setup.py egg_info
 
     - os: linux
@@ -44,11 +45,13 @@ matrix:
 
     - os: linux
       stage: Initial
+      env: SETUP_CMD='coverage'
       script: python setup.py test --coverage
 
     - os: linux
       stage: Initial
-      script: python setup.pu build_docs
+      env: SETUP_CMD='docs'
+      script: python setup.py build_docs
 
     - os: linux
       stage: Cron
@@ -84,6 +87,6 @@ install:
   - source ./ci/travis_setup.sh
 
 after_success:
-  - if [[ $SETUP_CMD == *coverage* ]]; then coveralls --rcfile='astropop/tests/coveragerc'; fi
-  - if [[ $SETUP_CMD == *coverage* ]]; then codecov; fi
-  - if [[ $SETUP_CMD == *coverage* ]]; then coverage xml; python-codacy-coverage -r coverage.xml; fi
+  - if [[ $SETUP_CMD == coverage ]]; then coveralls --rcfile='astropop/tests/coveragerc'; fi
+  - if [[ $SETUP_CMD == coverage ]]; then codecov; fi
+  - if [[ $SETUP_CMD == coverage ]]; then coverage xml; python-codacy-coverage -r coverage.xml; fi
