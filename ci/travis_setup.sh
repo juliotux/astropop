@@ -126,7 +126,7 @@ if [[ $SETUP_CMD == *-cov* ]]; then
     pip install -U -q coveralls codecov pytest-cov codacy-coverage
 fi
 
-if [[ $SETUP_CMD == *build_sphinx* ]] || [[ $SETUP_CMD == *build_docs* ]]; then
+if [[ $SETUP_CMD == *build_sphinx* ]] || [[ $SETUP_CMD == *docs* ]]; then
     if [[ ! -z $MATPLOTLIB_VERSION ]]; then
         if [[ -z $(grep matplotlib "$PIN_FILE") ]]; then
             echo "matplotlib ${MATPLOTLIB_VERSION}.*" >> "$PIN_FILE"
