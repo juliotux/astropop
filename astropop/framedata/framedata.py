@@ -393,8 +393,8 @@ class FrameData:
         wcs_relax : `bool`, optional.
             Allow non-standard WCS keys.
 
-        Return
-        ------
+        Returns
+        -------
         `~astropy.fits.HDUList` :
             HDU storing all FrameData informations.
         """
