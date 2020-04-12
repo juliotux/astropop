@@ -5,8 +5,7 @@ Image Arithmetics (imarith) and Combination (imcombine)
 
 .. TODO:: Write imcombine documentation
 
-Arithmetics API
----------------
-.. automodapi:: astropop.image_processing.imarith
-    :no-inheritance-diagram:
-    :noindex:
+Imarith API
+-----------
+
+.. TODO:: Put properly API link here

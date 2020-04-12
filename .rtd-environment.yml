@@ -29,4 +29,5 @@ dependencies:
         - sphinxcontrib-apidoc
         - astropy-helpers
         - pytest_check
+        - sphinxcontrib-napoleon
 

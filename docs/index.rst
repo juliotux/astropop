@@ -44,6 +44,14 @@ The main astronomical processing tasks can be found in:
     polarimetry
     astrometry
 
+***************
+API
+***************
+
+.. toctree::
+    :maxdepth: 1
+
+    api
 
 ***************
 Index

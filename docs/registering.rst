@@ -5,6 +5,5 @@ Image Alignment and Registering
 
 Registering API
 ---------------
-.. automodapi:: astropop.image_processing.register
-    :no-inheritance-diagram:
-    :noindex:
+
+.. TODO:: Put properly API link here

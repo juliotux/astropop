@@ -5,6 +5,5 @@ Photometry Processing
 
 Photometry API
 --------------
-.. automodapi:: astropop.photometry
-    :no-inheritance-diagram:
-    :noindex:
+
+.. TODO:: Put properly API link here

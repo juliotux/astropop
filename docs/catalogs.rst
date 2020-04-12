@@ -4,7 +4,6 @@ Catalogs Data
 .. TODO:: Write catalogs documentation
 
 Catalogs API
---------------
-.. automodapi:: astropop.catalogs
-    :no-inheritance-diagram:
-    :noindex:
+------------
+
+.. TODO:: Put properly API link here

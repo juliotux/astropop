@@ -5,6 +5,5 @@ File Management
 
 File Manager API
 ----------------
-.. automodapi:: astropop.file_manager
-    :no-inheritance-diagram:
-    :noindex:
+
+.. TODO:: Put properly API link here

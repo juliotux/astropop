@@ -5,6 +5,5 @@ FITS file Utilities
 
 FITS Utils API
 --------------
-.. automodapi:: astropop.fits_utils
-    :no-inheritance-diagram:
-    :noindex:
+
+.. TODO:: Put properly API link here

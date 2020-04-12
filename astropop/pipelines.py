@@ -6,8 +6,8 @@ from functools import partial
 from collections.abc import Mapping
 import copy
 
-from ..logger import logger, log_to_list
-from ..py_utils import IndexedDict, check_iterable
+from .logger import logger, log_to_list
+from .py_utils import IndexedDict, check_iterable
 
 
 # TODO: __str__, __repr__, print functions for all classes

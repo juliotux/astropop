@@ -39,6 +39,4 @@ The general behavior of Astropop logger is the same of Python default logger, ve
 Logger API
 ----------
 
-.. automodapi:: astropop.logger
-    :no-inheritance-diagram:
-    :noindex:
+.. TODO:: Put properly API link here

@@ -5,6 +5,5 @@ CCD Image Processing
 
 CCD Processing API
 ------------------
-.. automodapi:: astropop.image_processing.ccd_processing
-    :no-inheritance-diagram:
-    :noindex:
+
+.. TODO:: Put properly API link here

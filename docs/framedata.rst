@@ -32,6 +32,5 @@ Data IO
 
 FrameData API
 ---------------
-.. automodapi:: astropop.framedata
-    :no-inheritance-diagram:
-    :noindex:
+
+.. TODO:: Put properly API link here
