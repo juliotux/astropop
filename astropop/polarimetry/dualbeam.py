@@ -69,7 +69,7 @@ def check_shapes(func):
 
         return func(self, psi, ford, fext, ford_err,
                     fext_err, *args, **kwargs)
-
+    wrapper.__doc__ = func.__doc__
     return wrapper
 
 
