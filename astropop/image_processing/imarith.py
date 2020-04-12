@@ -1,10 +1,5 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
-'''
-imarith
--------
-
-Handle the IRAF's imarith and imcombine functions.
-'''
+"""Handle the IRAF's imarith and imcombine functions."""
 # TODO: reimplement imcombine
 
 import numpy as np
@@ -95,7 +90,7 @@ def _join_headers(operand1, operand2, operation, logger):
 
 def imarith(operand1, operand2, operation, inplace=False,
             propagate_errors=False, handle_mask=False, logger=logger):
-    """Simple arithmetic operations using `~astropop.framedata.FrameData`.
+    """Perform arithmetic operations using `~astropop.framedata.FrameData`.
 
     Notes
     -----
