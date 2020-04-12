@@ -24,6 +24,7 @@ dependencies:
     - sep
     - pytest-astropy
     - pip
+    - ipython
     - pip:
         - sphinx-rtd-theme
         - sphinxcontrib-apidoc
