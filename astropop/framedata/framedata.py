@@ -81,7 +81,7 @@ def extract_units(data, unit):
         else:
             return dunit
     elif dunit is not None:
-        return dunitastropop
+        return dunit
     else:
         return None
 

@@ -29,8 +29,7 @@ with NumpyRNGContext(123):
 
 
 def create_framedata():
-    """
-    Return a FrameData object of size DEFAULT_DATA_SIZE x DEFAULT_DATA_SIZE
+    """Return a FrameData object of size DEFAULT_DATA_SIZE x DEFAULT_DATA_SIZE
     with units of ADU.
     """
     data = _random_array.copy()
