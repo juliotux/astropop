@@ -46,7 +46,11 @@ matrix:
     - os: linux
       stage: Initial
       env: SETUP_CMD='coverage'
-      script: python setup.py test --coverage
+      script:
+        - python setup.py test --coverage
+        - coveralls --rcfile='astropop/tests/coveragerc'
+        - codecov
+        - coverage xml; python-codacy-coverage -r coverage.xml
 
     - os: linux
       stage: Initial
@@ -85,8 +89,3 @@ matrix:
 
 install:
   - source ./ci/travis_setup.sh
-
-after_success:
-  - if [[ $SETUP_CMD == coverage ]]; then coveralls --rcfile='astropop/tests/coveragerc'; fi
-  - if [[ $SETUP_CMD == coverage ]]; then codecov; fi
-  - if [[ $SETUP_CMD == coverage ]]; then coverage xml; python-codacy-coverage -r coverage.xml; fi
