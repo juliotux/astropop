@@ -29,9 +29,6 @@ with NumpyRNGContext(123):
 
 
 def create_framedata():
-    """Return a FrameData object of size DEFAULT_DATA_SIZE x DEFAULT_DATA_SIZE
-    with units of ADU.
-    """
     data = _random_array.copy()
     fake_meta = DEFAULT_HEADER.copy()
     frame = FrameData(data, unit=u.Unit('adu'))
@@ -56,7 +53,7 @@ def test_extract_units(dunit, unit, expected):
         eunit = extract_units(d, unit)
         if expected is not None:
             expected = u.Unit(expected)
-        check.is_true(eunit is expected)
+        check.is_true(eunit == expected)
 
 
 def test_setup_filename(tmpdir):

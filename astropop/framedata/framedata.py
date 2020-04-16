@@ -16,12 +16,11 @@ from ..py_utils import mkdir_p
 from .memmap import MemMapArray
 
 
-__all__ = ['FrameData', 'shape_consistency', 'unit_consistency',
-           'setup_filename', 'extract_units']
+__all__ = ['FrameData', 'shape_consistency', 'setup_filename', 'extract_units']
 
 
 def shape_consistency(data=None, uncertainty=None, mask=None):
-    """Check shape consistency across ``data``, ``uncertaitny`` and ``mask``"""
+    """Check shape consistency across `data`, `uncertaitny` and `mask`."""
     if data is None and uncertainty is not None:
         raise ValueError('Uncertainty set for an empty data.')
     if data is None and mask not in (None, False):
@@ -78,30 +77,15 @@ def extract_units(data, unit):
         if dunit is not unit:
             raise ValueError(f"Unit {unit} cannot be set for a data with"
                              f" unit {dunit}")
-        else:
-            return dunit
+        return dunit
     elif dunit is not None:
         return dunit
     else:
         return None
 
 
-def unit_consistency(data_unit=None, uncertainty_unit=None):
-    '''Check physical unit consistency between data and uncertanty.'''
-    if uncertainty_unit is None:
-        # Uncertainty unit None is always compatible
-        return
-    elif data_unit is None:
-        raise ValueError(f'Uncertainty with unit {uncertainty_unit} '
-                         'incompatible with dimensionless data.')
-    # Trick to make it run
-    elif 1*u.Unit(data_unit) != 1*u.Unit(uncertainty_unit):
-        raise ValueError(f'Units {data_unit} and {uncertainty_unit} '
-                         'are incompatible')
-
-
 def setup_filename(frame, cache_folder=None, filename=None):
-    """Setup filename and cache folder to a frame"""
+    """Handle filename and cache folder to a frame."""
     if hasattr(frame, 'cache_folder'):
         cache_folder_ccd = frame.cache_folder
     else:
@@ -135,41 +119,48 @@ class FrameData:
     memmapping itself. However it handles uncertainties in a totally different
     way. It stores only StdDev uncertainty arrays. It also stores the unit.
 
-    Parameters:
-    -----------
-    - data : array_like or `astropy.units.Quantity`
-        The main data values. If `Quantity`, unit will be set automatically.
-    - unit : `astropy.units.Unit` or string (optional)
-        The data unit. Must be `astropy.units.Unit` compliant.
-    - dtype : string or `numpy.dtype` (optional)
+    Parameters
+    ----------
+    data : array_like or `~astropy.units.Quantity`
+        The main data values. If `~astropy.units.Quantity`, unit will be set
+        automatically.
+    unit : `~astropy.units.Unit` or string (optional)
+        The data unit. Must be `~astropy.units.Unit` compliant.
+    dtype : string or `~numpy.dtype` (optional)
         Mandatory dtype of the data.
-    - uncertainty : array_like or `astropy.nddata.Uncertanty` or `None` \
+    uncertainty : array_like or `~astropy.nddata.Uncertanty` or `None` \
                     (optional)
         Uncertainty of the data.
-    - u_unit : `astropy.units.Unit` or string (optional)
-        Unit of uncertainty of the data. If None, will be the same of the
-        data.
-    - u_dtype : string or `numpy.dtype` (optional)
+    u_dtype : string or `~numpy.dtype` (optional)
         Mandatory dtype of uncertainty.
-    - mask : array_like or `None` (optional)
+    mask : array_like or `None` (optional)
         Frame mask.
-    - m_dtype : string or `numpy.dtype` (optional)
+    m_dtype : string or `~numpy.dtype` (optional)
         Mandatory dtype of mask. Default `bool`compilant
-    - wcs : dict, `astropy.fits.Header` or `astropy.wcs.WCS` (optional)
+    wcs : `dict`, `~astropy.fits.Header` or `~astropy.wcs.WCS` (optional)
         World Coordinate System of the image.
-    - meta or header: dict or `astropy.fits.Header` (optional)
+    meta or header: `dict` or `astropy.fits.Header` (optional)
         Metadata (header) of the frame. If both set, they will be merged.
         `header` priority.
-    - cache_folder : string, `pathlib.Path` or `None` (optional)
+    cache_folder : string, `~pathlib.Path` or `None` (optional)
         Place to store the cached `FrameData`
-    - cache_filename : string, `pathlib.Path` or `None` (optional)
+    cache_filename : string, `~pathlib.Path` or `None` (optional)
         Base file name to store the cached `FrameData`.
-    - use_memmap_backend : `bool` (optional)
+    use_memmap_backend : `bool` (optional)
         True if enable memmap in constructor.
+
+    Notes
+    -----
+    - The physical unit is assumed to be the same for data and uncertainty.
+      So, we droped the support for data with data with different uncertainty
+      unit, like CCDData does.
     """
+
     # TODO: Complete reimplement the initialize
     # TODO: __copy__
+    # TODO: Direct implement math operations
     _memmapping = False
+    _unit = None
     _data = None
     _mask = None
     _unct = None
@@ -179,7 +170,7 @@ class FrameData:
     _history = None
 
     def __init__(self, data, unit=None, dtype=None,
-                 uncertainty=None, u_unit=None, u_dtype=None,
+                 uncertainty=None, u_dtype=None,
                  mask=None, m_dtype=bool,
                  wcs=None, meta=None, header=None,
                  cache_folder=None, cache_filename=None,
@@ -217,14 +208,11 @@ class FrameData:
         data, uncertainty, mask = shape_consistency(data, uncertainty, mask)
         # raise errors if incompatible units
         dunit = extract_units(data, unit)
-        uunit = extract_units(data, u_unit)
-        unit_consistency(dunit, uunit)
-
-        self._data.reset_data(data, dunit, dtype)
-        self._unct.reset_data(uncertainty, uunit, u_dtype)
+        self.unit = dunit
+        self._data.reset_data(data, dtype)
+        self._unct.reset_data(uncertainty, u_dtype)
         # Masks can also be flags (uint8)
-        self._mask.reset_data(mask, None, m_dtype)
-
+        self._mask.reset_data(mask, m_dtype)
         self._header_update(header, meta, wcs)
 
         self._history = []
@@ -246,6 +234,7 @@ class FrameData:
 
     @property
     def history(self):
+        """FrameData stored history."""
         return self._history
 
     @property
@@ -309,18 +298,28 @@ class FrameData:
 
     @data.setter
     def data(self, value):
+        if hasattr(value, 'unit'):
+            dunit = extract_units(value, None)
+            self.unit = dunit
         self._data.reset_data(value)
 
     @property
     def unit(self):
-        """Physical unit of the data. Same as `FrameData.data.unit`."""
-        return self._data.unit
+        """Physical unit of the data."""
+        if self._unit is None:
+            return u.dimensionless_unscaled
+        return self._unit
+
+    @unit.setter
+    def unit(self, value):
+        if value is None:
+            self._unit = None
+        else:
+            self._unit = u.Unit(value)
 
     @property
     def uncertainty(self):
         """Data uncertainty."""
-        if self._unct.empty:
-            return 0.0*self._data.unit
         return self._unct
 
     @uncertainty.setter
@@ -329,13 +328,7 @@ class FrameData:
             self._unct.reset_data(value)
         else:
             _, value, _ = shape_consistency(self.data, value, None)
-            if hasattr(value, 'unit'):
-                v_unit = value.unit
-            else:
-                # FIXME: Assume scalar value has the same unit of data?
-                v_unit = self.data.unit
-            unit_consistency(self.data.unit, v_unit)
-            self._unct.reset_data(value, unit=v_unit)
+            self._unct.reset_data(value)
 
     @property
     def mask(self):
@@ -427,8 +420,8 @@ class FrameData:
     def to_ccddata(self):
         """Convert actual FrameData to CCDData.
 
-        Return
-        ------
+        Returns
+        -------
         `~astropy.nddata.CCDData` :
             CCDData instance with actual FrameData informations.
         """
