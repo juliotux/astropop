@@ -46,8 +46,8 @@ matrix:
     - os: linux
       stage: Initial
       env: SETUP_CMD='coverage'
-      script:
-        - python setup.py test --coverage
+      script: python setup.py test --coverage
+      after_success:
         - coveralls --rcfile='astropop/tests/coveragerc'
         - codecov
         - coverage xml; python-codacy-coverage -r coverage.xml
