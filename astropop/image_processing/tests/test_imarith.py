@@ -14,45 +14,48 @@ from astropop.framedata import FrameData
 
 
 # TODO: '%' and '**' functions
-@pytest.mark.parametrize('inplace', [True, False])
+pars = pytest.mark.parametrize('op,vs', [('+', {'f1': {'v': 30, 'u': None},
+                                                'f2': {'v': 10, 'u': None},
+                                                'r': {'v': 40, 'u': None}}),
+                                         ('+', {'f1': {'v': 30, 'u': 3},
+                                                'f2': {'v': 10, 'u': 4},
+                                                'r': {'v': 40, 'u': 5}}),
+                                         ('-', {'f1': {'v': 30, 'u': None},
+                                                'f2': {'v': 10, 'u': None},
+                                                'r': {'v': 20, 'u': None}}),
+                                         ('-', {'f1': {'v': 30, 'u': 3},
+                                                'f2': {'v': 10, 'u': 4},
+                                                'r': {'v': 20, 'u': 5}}),
+                                         ('*', {'f1': {'v': 5, 'u': None},
+                                                'f2': {'v': 6, 'u': None},
+                                                'r': {'v': 30, 'u': None}}),
+                                         ('*', {'f1': {'v': 5, 'u': 0.3},
+                                                'f2': {'v': 6, 'u': 0.4},
+                                                'r': {'v': 30,
+                                                      'u': 2.022375}}),
+                                         ('/', {'f1': {'v': 10, 'u': None},
+                                                'f2': {'v': 3, 'u': None},
+                                                'r': {'v': 3.33333333,
+                                                      'u': None}}),
+                                         ('/', {'f1': {'v': 10, 'u': 1},
+                                                'f2': {'v': 3, 'u': 0.3},
+                                                'r': {'v': 3.33333333,
+                                                      'u': 0.47140452}}),
+                                         ('//', {'f1': {'v': 10, 'u': None},
+                                                 'f2': {'v': 3, 'u': None},
+                                                 'r': {'v': 3.000000,
+                                                       'u': None}}),
+                                         ('//', {'f1': {'v': 10, 'u': 1},
+                                                 'f2': {'v': 3, 'u': 0.3},
+                                                 'r': {'v': 3.000000,
+                                                       'u': 0.424264}})])
+
+
 @pytest.mark.parametrize('handle_mask', [True, False])
-@pytest.mark.parametrize('op,values', [('+', {'f1': {'v': 30, 'u': None},
-                                              'f2': {'v': 10, 'u': None},
-                                              'r': {'v': 40, 'u': None}}),
-                                       ('+', {'f1': {'v': 30, 'u': 3},
-                                              'f2': {'v': 10, 'u': 4},
-                                              'r': {'v': 40, 'u': 5}}),
-                                       ('-', {'f1': {'v': 30, 'u': None},
-                                              'f2': {'v': 10, 'u': None},
-                                              'r': {'v': 20, 'u': None}}),
-                                       ('-', {'f1': {'v': 30, 'u': 3},
-                                              'f2': {'v': 10, 'u': 4},
-                                              'r': {'v': 20, 'u': 5}}),
-                                       ('*', {'f1': {'v': 5, 'u': None},
-                                              'f2': {'v': 6, 'u': None},
-                                              'r': {'v': 30, 'u': None}}),
-                                       ('*', {'f1': {'v': 5, 'u': 0.3},
-                                              'f2': {'v': 6, 'u': 0.4},
-                                              'r': {'v': 30,
-                                                    'u': 2.022375}}),
-                                       ('/', {'f1': {'v': 10, 'u': None},
-                                              'f2': {'v': 3, 'u': None},
-                                              'r': {'v': 3.33333333,
-                                                    'u': None}}),
-                                       ('/', {'f1': {'v': 10, 'u': 1},
-                                              'f2': {'v': 3, 'u': 0.3},
-                                              'r': {'v': 3.33333333,
-                                                    'u': 0.47140452}}),
-                                       ('//', {'f1': {'v': 10, 'u': None},
-                                               'f2': {'v': 3, 'u': None},
-                                               'r': {'v': 3.000000,
-                                                     'u': None}}),
-                                       ('//', {'f1': {'v': 10, 'u': 1},
-                                               'f2': {'v': 3, 'u': 0.3},
-                                               'r': {'v': 3.000000,
-                                                     'u': 0.424264}})])
-def test_imarith_ops_frames(op, values, inplace, handle_mask):
-    propagate_errors = [False]  # use list to gen_frame works
+@pytest.mark.parametrize('inplace', [True, False])
+@pars
+def test_imarith_ops_frames(op, vs, inplace, handle_mask):
+    propag_errors = [False]  # use list to gen_frame works
 
     def gen_frame(v):
         # Gen frames with {'v', 'u'} dict
@@ -61,15 +64,14 @@ def test_imarith_ops_frames(op, values, inplace, handle_mask):
             frame = FrameData(np.ones(shape, dtype='f8'), unit='adu')
         else:
             frame = FrameData(np.ones(shape, dtype='f8'), unit='adu',
-                              uncertainty=v['u'],
-                              u_unit='adu')
-            propagate_errors[0] = True
+                              uncertainty=v['u'])
+            propag_errors[0] = True  # noqa
         frame.data[:] = v['v']
         return frame
 
-    frame1 = gen_frame(values['f1'])
-    frame2 = gen_frame(values['f2'])
-    exp_res = gen_frame(values['r'])
+    frame1 = gen_frame(vs['f1'])
+    frame2 = gen_frame(vs['f2'])
+    exp_res = gen_frame(vs['r'])
     if handle_mask:
         mask1 = np.zeros((10, 10))
         mask2 = np.zeros((10, 10))
@@ -82,13 +84,13 @@ def test_imarith_ops_frames(op, values, inplace, handle_mask):
         frame2.mask = mask2
         exp_res.mask = exp_mask
 
-    propagate_errors = propagate_errors[0]
+    propag_errors = propag_errors[0]
     res = imarith(frame1, frame2, op, inplace=inplace,
-                  propagate_errors=propagate_errors,
+                  propagate_errors=propag_errors,
                   handle_mask=handle_mask)
 
     npt.assert_array_almost_equal(res.data, exp_res.data)
-    if propagate_errors:
+    if propag_errors:
         npt.assert_array_almost_equal(res.uncertainty,
                                       exp_res.uncertainty)
     if handle_mask:
