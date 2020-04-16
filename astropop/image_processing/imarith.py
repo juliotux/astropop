@@ -20,7 +20,7 @@ _arith_funcs = {'+': np.add,
                 '%': np.remainder}
 
 
-def _arith_data(operand1, operand2, operation, logger):
+def _arith_data(operand1, operand2, operation):
     """Handle the arithmatics of the data."""
     data1 = u.Quantity(operand1.data)
     data2 = u.Quantity(operand2.data)
@@ -32,7 +32,7 @@ def _arith_data(operand1, operand2, operation, logger):
                          f'{operand1} and {operand2}. Error: {e}')
 
 
-def _arith_unct(result, operand1, operand2, operation, logger):
+def _arith_unct(result, operand1, operand2, operation):
     """Handle the arithmatics of the uncertainties."""
     def _extract(operand):
         # Supose data is FrameData always
@@ -63,7 +63,7 @@ def _arith_unct(result, operand1, operand2, operation, logger):
     return nunct
 
 
-def _arith_mask(operand1, operand2, operation, logger):
+def _arith_mask(operand1, operand2, logger):
     """Handle the arithmatics of the masks."""
     def _extract(operand):
         # Supose FrameData always
@@ -82,7 +82,7 @@ def _arith_mask(operand1, operand2, operation, logger):
     return nmask
 
 
-def _join_headers(operand1, operand2, operation, logger):
+def _join_headers(operand1, operand2, operation, logger):  # noqa
     """Join the headers to result."""
     # TODO: Think if this is the best behavior
     return operand1.header.copy()
@@ -150,15 +150,15 @@ def imarith(operand1, operand2, operation, inplace=False,
     logger.debug(f'Operation {operation} between {operand1} and {operand2}')
 
     # Perform data, mask and uncertainty operations
-    ccd.data = _arith_data(operand1, operand2, operation, logger)
+    ccd.data = _arith_data(operand1, operand2, operation)
     if handle_mask:
-        ccd.mask = _arith_mask(operand1, operand2, operation, logger)
+        ccd.mask = _arith_mask(operand1, operand2, logger)
     else:
         ccd.mask = False
 
     if propagate_errors:
         ccd.uncertainty = _arith_unct(ccd, operand1, operand2,
-                                      operation, logger)
+                                      operation)
     else:
         ccd.uncertainty = None
 

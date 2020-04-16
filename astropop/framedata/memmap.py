@@ -24,7 +24,23 @@ redirects = ['flags', 'shape', 'strides', 'ndim', 'data', 'size',
 
 
 def create_array_memmap(filename, data, dtype=None):
-    """Create a memory map to an array data."""
+    """Create a memory map to an array data.
+
+    Parameters
+    ----------
+    filename : `string`, `~pathlib.Path`
+        Name of memmap file to be created.
+    data : array_like
+        Data to be stored in the memmap.
+    dtype : `string`, `~numpy.dtype` or `None` (optional)
+        `~numpy.dtype` compilant data type. If `None`, `data.dtype` will be
+        used.
+
+    Returns
+    -------
+    memmap : `~numpy.memmap`
+        Memmap object of cached data.
+    """
     if data is None:
         return None
 
@@ -42,7 +58,22 @@ def create_array_memmap(filename, data, dtype=None):
 
 
 def delete_array_memmap(memmap, read=True, remove=False):
-    """Delete a memmap and read the data to a np.ndarray"""
+    """Delete a memmap and read the data to a np.ndarray.
+
+    Parameters
+    ----------
+    memmap : array_like or `None`
+        MemMap array to be deleted.
+    read : `bool` (optional)
+        Read the data to memory before delete.
+    remove : `bool` (optional)
+        Delete the memmap file.
+
+    Returns
+    -------
+    data : array_like or `None`
+        Data read from memmap.
+    """
     if memmap is None:
         return None
 
@@ -58,7 +89,7 @@ def delete_array_memmap(memmap, read=True, remove=False):
 
 
 def to_memmap_operator(item):
-    # TODO: direct operations fail with quantities
+    """Wrap operators to `MemMapArray`"""
     def wrapper(self, *args, **kwargs):
         if not self.empty:
             func = self._contained.__getattribute__(item)
@@ -70,6 +101,7 @@ def to_memmap_operator(item):
 
 
 def to_memmap_attr(func):
+    """Wrap attrs to `MemMapArray`"""
     def wrapper(*args, **kwargs):
         result = func(*args, **kwargs)
         if isinstance(result, np.ndarray):
