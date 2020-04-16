@@ -79,6 +79,32 @@ def to_memmap_attr(func):
 
 
 class MemMapArray:
+    """An array object that can be easily cached (memmaped) to disk.
+
+    `MemMapArray` is a wrapper around `~numpy.nddata` that allows easy enable
+    or disable of memmapping feature (using `~numpy.memmap`). It also wraps
+    all numpy array operations and must behave like every single
+    `numpy.ndarray`.
+
+    Parameters
+    ----------
+    data : array_like or `None`
+        The data to be assigned to array. If `None`, an empty array will be
+        created.
+    filename : `string`, `~pathlib.Path` or `None` (optional)
+        Base file name for the cache file.
+    dtype : `string`, `~numpy.dtype` or `None` (optional)
+        Data type to be used in the array to be stores. If `None`, altomatic
+        `numpy` dtype will be used. Must be `numpy.dtype` compilant.
+    memmap : `bool` (optional)
+        If the instance is set to memmap mode from the start.
+        Default: `False`
+
+    Notes
+    -----
+    - This is just a numeric storing array. No unit is assigned and it behaves
+      like any dimensionless number in operations.
+    """
     # TODO: __copy__
     _filename = None  # filename of memmap
     _file_lock = False  # lock filename
@@ -128,10 +154,10 @@ class MemMapArray:
         If the instance is already memmapping, memmap will be moved to the new
         file.
 
-        Parameters:
-        -----------
-            value : string
-                New memmap filename.
+        Parameters
+        ----------
+        value : `string`
+            New memmap filename.
         """
         if not self._file_lock:
             self._filename = value
@@ -147,11 +173,11 @@ class MemMapArray:
     def enable_memmap(self, filename=None):
         """Enable data file memmapping (write data to disk).
 
-        Parameters:
-        -----------
-            filename : string or None (optional)
-                File name of new memmapping. If `None`, the class default
-                value will be used.
+        Parameters
+        ----------
+        filename : `string` or `None` (optional)
+            File name of new memmapping. If `None`, the class default
+            value will be used.
         """
         if self.memmap:
             return
@@ -165,10 +191,10 @@ class MemMapArray:
     def disable_memmap(self, remove=False):
         """Disable data file memmapping (read to memory).
 
-        Parameters:
-        -----------
-            remove : bool
-                Remove the memmap file after read values.
+        Parameters
+        ----------
+        remove : `bool`
+            Remove the memmap file after read values.
         """
         if not self.memmap:
             return
@@ -185,12 +211,12 @@ class MemMapArray:
     def reset_data(self, data=None, dtype=None):
         """Set new data.
 
-        Parameters:
-        -----------
-            data : np.ndarray or None (optional)
-                Data array to be owned. If None, the container will be empty.
-            dtype : string or `numpy.dtype` (optional)
-                Imposed data type.
+        Parameters
+        ----------
+        data : `~numpy.ndarray` or `None` (optional)
+            Data array to be owned. If None, the container will be empty.
+        dtype : `string` or `numpy.dtype` (optional)
+            Imposed data type.
         """
         if data is None:
             if self.memmap:
