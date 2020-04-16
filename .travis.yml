@@ -5,7 +5,7 @@ language: c
 cache:
   directories:
     - $HOME/.astropy/cache
-    - $XDG_CACHE_HOME/astropy
+    - $HOME/.astropop/cache
 
 os:
   - linux
@@ -28,7 +28,6 @@ env:
     - ASTROPY_VERSION=stable
     - EVENT_TYPE='pull_request push'
     - CONDA_ENVIRONMENT='.rtd-environment.yml'
-    - MINICONDA_VERSION=latest
 
 matrix:
   fast_finish: true

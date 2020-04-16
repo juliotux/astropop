@@ -10,13 +10,23 @@ from tempfile import mkdtemp, mkstemp
 from astropy import units as u
 from astropy.io import fits
 from astropy.wcs import WCS
-from astropy.nddata.ccddata import _generate_wcs_and_update_header, CCDData
+from astropy.nddata.ccddata import CCDData
+from astropy.nddata import StdDevUncertainty
 
 from ..py_utils import mkdir_p
 from .memmap import MemMapArray
+from .compat import extract_header_wcs
 
 
-__all__ = ['FrameData', 'shape_consistency', 'setup_filename', 'extract_units']
+__all__ = ['FrameData']
+
+
+def _get_shape(d):
+    if hasattr(d, 'shape'):
+        ds = d.shape
+    else:
+        ds = np.array(d).shape
+    return ds
 
 
 def shape_consistency(data=None, uncertainty=None, mask=None):
@@ -26,16 +36,10 @@ def shape_consistency(data=None, uncertainty=None, mask=None):
     if data is None and mask not in (None, False):
         raise ValueError('Mask set for an empty data.')
 
-    if hasattr(data, 'shape'):
-        dshape = data.shape
-    else:
-        dshape = np.array(data).shape
+    dshape = _get_shape(data)
 
     if uncertainty is not None:
-        if hasattr(uncertainty, 'shape'):
-            ushape = uncertainty.shape
-        else:
-            ushape = np.array(uncertainty).shape
+        ushape = _get_shape(uncertainty)
 
         if ushape == ():
             uncertainty = np.ones(dshape)*uncertainty
@@ -46,10 +50,7 @@ def shape_consistency(data=None, uncertainty=None, mask=None):
                              f' Data shape {dshape}.')
 
     if mask is not None:
-        if hasattr(mask, 'shape'):
-            mshape = mask.shape
-        else:
-            mshape = np.array(mask).shape
+        mshape = _get_shape(mask)
 
         if mshape == ():
             mask = np.logical_or(np.zeros(dshape), mask)
@@ -77,11 +78,7 @@ def extract_units(data, unit):
         if dunit is not unit:
             raise ValueError(f"Unit {unit} cannot be set for a data with"
                              f" unit {dunit}")
-        return dunit
-    elif dunit is not None:
-        return dunit
-    else:
-        return None
+    return dunit
 
 
 def setup_filename(frame, cache_folder=None, filename=None):
@@ -153,7 +150,7 @@ class FrameData:
     -----
     - The physical unit is assumed to be the same for data and uncertainty.
       So, we droped the support for data with data with different uncertainty
-      unit, like CCDData does.
+      unit, like `~astropy.nddata.ccddata.CCDData` does.
     """
 
     # TODO: Complete reimplement the initialize
@@ -176,9 +173,6 @@ class FrameData:
                  cache_folder=None, cache_filename=None,
                  use_memmap_backend=False, origin_filename=None):
 
-        if isinstance(data, u.Quantity):
-            raise TypeError('astropy Quantity not supported yet.')
-
         self.cache_folder = cache_folder
         self.cache_filename = cache_filename
         self._origin = origin_filename
@@ -195,6 +189,7 @@ class FrameData:
         if use_memmap_backend:
             self.enable_memmap()
 
+        # Masking handle
         if hasattr(data, 'mask'):
             dmask = data.mask
             if mask is not None:
@@ -207,8 +202,8 @@ class FrameData:
         # raise errors if incompatible shapes
         data, uncertainty, mask = shape_consistency(data, uncertainty, mask)
         # raise errors if incompatible units
-        dunit = extract_units(data, unit)
-        self.unit = dunit
+        unit = extract_units(data, unit)
+        self.unit = unit
         self._data.reset_data(data, dtype)
         self._unct.reset_data(uncertainty, u_dtype)
         # Masks can also be flags (uint8)
@@ -285,7 +280,7 @@ class FrameData:
 
     @header.setter
     def header(self, value):
-        value, wcs = _generate_wcs_and_update_header(value)
+        value, wcs = extract_header_wcs(value)
         if wcs is not None:
             # If a WCS is found, overriding framedata WCS.
             self.wcs = wcs
@@ -391,18 +386,19 @@ class FrameData:
         `~astropy.fits.HDUList` :
             HDU storing all FrameData informations.
         """
-        # TODO: Add history
         data = self.data.copy()
         header = fits.Header(self.header)
         if self.wcs is not None:
             header.extend(self.wcs.to_header(relax=wcs_relax),
                           useblanks=False, update=True)
         header[unit_key] = self.unit.to_string()
+        for i in self.history:
+            header['history'] = i
         hdul = fits.HDUList(fits.PrimaryHDU(data, header=header))
 
         if hdu_uncertainty is not None and self.uncertainty is not None:
             uncert = self.uncertainty
-            uncert_unit = uncert.unit.to_string()
+            uncert_unit = self.unit.to_string()
             uncert_h = fits.Header()
             uncert_h[unit_key] = uncert_unit
             hdul.append(fits.ImageHDU(uncert, header=uncert_h,
@@ -431,7 +427,6 @@ class FrameData:
         wcs = self.wcs
         uncertainty = self.uncertainty
         if not uncertainty.empty:
-            from astropy.nddata import StdDevUncertainty
             uncertainty = StdDevUncertainty(uncertainty, unit=unit)
         mask = np.array(self.mask)
 

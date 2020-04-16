@@ -8,8 +8,8 @@ import os
 import numpy as np
 import numpy.testing as npt
 import pytest_check as check
-from astropop.framedata import FrameData, setup_filename, framedata_read_fits,\
-                               extract_units
+from astropop.framedata.framedata import FrameData, setup_filename, \
+                                         extract_units
 from astropy.io import fits
 from astropy.utils import NumpyRNGContext
 from astropy import units as u
@@ -112,8 +112,7 @@ def test_framedata_cration_array_uncertainty():
     b = _random_array.copy()
     meta = DEFAULT_HEADER.copy()
     unit = 'adu'
-    f = FrameData(a, unit=unit, meta=meta, uncertainty=b,
-                  u_unit=unit, u_dtype='float32')
+    f = FrameData(a, unit=unit, meta=meta, uncertainty=b, u_dtype='float32')
     npt.assert_array_almost_equal(a, f.data)
     npt.assert_array_almost_equal(b, f.uncertainty)
     check.is_true(f.unit is u.adu)
@@ -155,7 +154,8 @@ def test_framedata_cration_array_mask_flags():
 
 def test_framedata_empty():
     with pytest.raises(TypeError):
-        FrameData()  # empty initializer should fail
+        # empty initializer should fail
+        FrameData()  # noqa
 
 
 def test_framedata_meta_header():
@@ -473,6 +473,7 @@ def test_setting_bad_uncertainty_raises_error():
     with pytest.raises(TypeError):
         # Uncertainty is supposed to be an instance of NDUncertainty
         frame.uncertainty = 'not a uncertainty'
+
 
 # TODO:
 @pytest.mark.skip('Wait Fits Implementation')

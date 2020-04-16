@@ -28,6 +28,20 @@ _CDs = set(['CD1_1', 'CD1_2', 'CD2_1', 'CD2_2'])
 _KEEP = set(['JD-OBS', 'MJD-OBS', 'DATE-OBS'])
 
 
+def _remove_sip_keys(header, wcs):
+    """Just remove the SIP keys. (Too complex fixing)"""
+    kwd = '{}_{}_{}'
+    pol = ['A', 'B', 'AP', 'BP']
+    for poly in pol:
+        order = wcs.sip.__getattribute__(f'{poly.lower()}_order')
+        header.remove(f'{poly}_ORDER', ignore_missing=True)
+        header.remove(f'{poly}_DMAX', ignore_missing=True)
+        for i, j in itertools.product(range(order), repeat=2):
+            header.remove(kwd.format(poly, i, j),
+                          ignore_missing=True)
+    return header
+
+
 def extract_header_wcs(header, logger=logger):
     """Get a header (or dict) and extract a WCS based on the keys.
 
@@ -43,7 +57,7 @@ def extract_header_wcs(header, logger=logger):
     header : `~astropy.fits.Header`
         Header cleaned from WCS keys.
     wcs : `~astropy.wcs.WCS` os `None`
-        World Coordinate Sistem extracted from the header.    
+        World Coordinate Sistem extracted from the header.
     """
     header = header.copy()  # Ensure original header will not be modified
 
@@ -70,15 +84,7 @@ def extract_header_wcs(header, logger=logger):
 
         # Check and remove remaining SIP coefficients
         if wcs.sip is not None:
-            kwd = '{}_{}_{}'
-            pol = ['A', 'B', 'AP', 'BP']
-            for poly in pol:
-                order = wcs.sip.__getattribute__(f'{poly.lower()}_order')
-                for i, j in itertools.product(range(order), repeat=2):
-                    header.remove(kwd.format(poly, i, j),
-                                  ignore_missing=True)
-                header.remove(f'{poly}_ORDER', ignore_missing=True)
-                header.remove(f'{poly}_DMAX', ignore_missing=True)
+            header = _remove_sip_keys(header, wcs)
 
     return (header, wcs)
 
