@@ -31,6 +31,7 @@ Astropop has several useful modules, to make simple to implement your pipeline. 
     fits_utils
     py_utils
     catalogs
+    physical
 
 The main astronomical processing tasks can be found in:
 

@@ -71,6 +71,7 @@ Math Utils
    astropop.math.hasher
    astropop.math.moffat
    astropop.math.opd_utils
+   astropop.math.physical
 
 Photometry Processing
 ---------------------
