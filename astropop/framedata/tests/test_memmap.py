@@ -5,7 +5,6 @@ import pytest
 import pytest_check as check
 from astropop.framedata import MemMapArray, create_array_memmap, \
                                delete_array_memmap, EmptyDataError
-from astropy import units as u
 import numpy as np
 import numpy.testing as npt
 
@@ -52,13 +51,12 @@ def test_create_and_delete_memmap(tmpdir):
 @pytest.mark.parametrize('memmap', [True, False])
 def test_create_empty_memmap(tmpdir, memmap):
     f = os.path.join(tmpdir, 'empty.npy')
-    a = MemMapArray(None, filename=f, dtype=None, unit=None, memmap=memmap)
+    a = MemMapArray(None, filename=f, dtype=None, memmap=memmap)
     check.equal(a.filename, f)
     check.is_true(a._contained is None)
     check.equal(a.memmap, memmap)
     check.is_true(a.empty)
     check.is_false(os.path.exists(f))
-    check.is_true(a.unit is u.dimensionless_unscaled)
     with pytest.raises(EmptyDataError):
         # dtype whould rise
         a.dtype
@@ -77,13 +75,12 @@ def test_create_empty_memmap(tmpdir, memmap):
 def test_create_memmap(tmpdir, memmap):
     f = os.path.join(tmpdir, 'npn_empty.npy')
     arr = [[0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5]]
-    a = MemMapArray(arr, filename=f, dtype=None, unit=None, memmap=memmap)
+    a = MemMapArray(arr, filename=f, dtype=None, memmap=memmap)
     check.equal(a.filename, f)
     npt.assert_array_equal(a, arr)
     check.is_false(a.empty)
     check.equal(a.memmap, memmap)
     check.equal(os.path.exists(f), memmap)
-    check.equal(a.unit, u.dimensionless_unscaled)
     check.equal(a.dtype, np.int64)
 
     a[0][0] = 10
@@ -96,7 +93,7 @@ def test_create_memmap(tmpdir, memmap):
 def test_enable_disable_memmap(tmpdir):
     f = os.path.join(tmpdir, 'npn_empty.npy')
     arr = [[0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5]]
-    a = MemMapArray(arr, filename=f, dtype=None, unit=None, memmap=False)
+    a = MemMapArray(arr, filename=f, dtype=None, memmap=False)
     check.is_false(a.memmap)
     check.is_false(os.path.exists(f))
 
@@ -127,43 +124,10 @@ def test_enable_disable_memmap(tmpdir):
         a.enable_memmap('not_the_same_name.npy')
 
 
-def test_units_on_creation(tmpdir):
-    m = MemMapArray(None, os.path.join(tmpdir, 'unit.npy'), unit='adu')
-    check.is_true(m.unit is u.adu)
-
-
-def test_unit_assign(tmpdir):
-    m = MemMapArray(None, os.path.join(tmpdir, 'unit.npy'), unit=None)
-    m.set_unit('adu')
-    check.is_true(m.unit is u.adu)
-
-    with pytest.raises(AttributeError):
-        # no direct assignment
-        m.unit = 'adu'
-
-
-def test_invalid_unit(tmpdir):
-    with pytest.raises(ValueError):
-        m = MemMapArray(None, unit='Invalid')
-
-    m = MemMapArray(None)
-    with pytest.raises(ValueError):
-        m.set_unit('invalid')
-    with pytest.raises(AttributeError):
-        m.unit = 'invalid'
-
-
-def test_unit_change(tmpdir):
-    m = MemMapArray(None, unit='m')
-    check.is_true(m.unit is u.m)
-    m.set_unit('adu')
-    check.is_true(m.unit is u.adu)
-
-
 def test_reset_data(tmpdir):
     d1 = np.array([[1, 2], [3, 4]]).astype('float32')
     m = MemMapArray(d1, os.path.join(tmpdir, 'reset.npy'),
-                    dtype='float64', unit='adu', memmap=True)
+                    dtype='float64', memmap=True)
     check.is_true(np.issubdtype(m.dtype, np.float64))
     npt.assert_array_equal(m, d1)
     check.is_false(m.empty)
@@ -187,7 +151,7 @@ def test_reset_data(tmpdir):
     check.is_true(m.memmap)
     m.disable_memmap()
 
-    m.reset_data(np.ones((10, 10)), unit='m', dtype='float32')
+    m.reset_data(np.ones((10, 10)), dtype='float32')
     check.is_true(np.issubdtype(m.dtype, np.float32))
     npt.assert_array_equal(m, np.ones((10, 10)))
     check.is_false(m.empty)

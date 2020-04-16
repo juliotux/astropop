@@ -3,7 +3,6 @@
 
 import os
 import numpy as np
-from astropy import units as u
 
 from .compat import EmptyDataError
 
@@ -27,7 +26,7 @@ redirects = ['flags', 'shape', 'strides', 'ndim', 'data', 'size',
 def create_array_memmap(filename, data, dtype=None):
     """Create a memory map to an array data."""
     if data is None:
-        return
+        return None
 
     if filename is None:
         raise ValueError('Could not create a memmap file with None filename.')
@@ -45,7 +44,7 @@ def create_array_memmap(filename, data, dtype=None):
 def delete_array_memmap(memmap, read=True, remove=False):
     """Delete a memmap and read the data to a np.ndarray"""
     if memmap is None:
-        return
+        return None
 
     if read:
         data = np.array(memmap[:])
@@ -85,16 +84,9 @@ class MemMapArray:
     _file_lock = False  # lock filename
     _contained = None  # Data contained: numpy ndarray or memmap
     _memmap = False
-    _unit = u.dimensionless_unscaled
 
-    def __init__(self, data, filename=None, dtype=None, unit=None,
+    def __init__(self, data, filename=None, dtype=None,
                  memmap=False):
-        if isinstance(data, u.Quantity) and unit is not None:
-            raise ValueError('astropy Quantity and unit set together')
-        elif isinstance(data, u.Quantity):
-            unit = data.unit
-            data = data.value
-
         # None data should generate a empty container
         if data is None:
             self._contained = None
@@ -108,7 +100,6 @@ class MemMapArray:
             dtype = dtype or 'float64'
             self._contained = np.array(data, dtype=dtype)
         self.set_filename(filename)
-        self.set_unit(unit)
         self._file_lock = True
 
         if memmap:
@@ -118,11 +109,6 @@ class MemMapArray:
     def empty(self):
         """True if contained data is empty (None)."""
         return self._contained is None
-
-    @property  # read only
-    def unit(self):
-        """Physical data unit."""
-        return self._unit
 
     @property  # read only
     def filename(self):
@@ -157,21 +143,6 @@ class MemMapArray:
                 n_mm = create_array_memmap(value, self._contained)
                 delete_array_memmap(self._contained, read=False, remove=True)
                 self._contained = n_mm
-
-    def set_unit(self, value=None):
-        """Set the data physical unit.
-
-        Parameters:
-        -----------
-            value = string or `astropy.units.Unit`
-                New physical unit of the data.
-        """
-        from astropy import units as u
-
-        if value is None:
-            self._unit = u.dimensionless_unscaled
-        else:
-            self._unit = u.Unit(value)
 
     def enable_memmap(self, filename=None):
         """Enable data file memmapping (write data to disk).
@@ -211,15 +182,13 @@ class MemMapArray:
         if self.memmap:
             self._contained.flush()
 
-    def reset_data(self, data=None, unit=None, dtype=None):
+    def reset_data(self, data=None, dtype=None):
         """Set new data.
 
         Parameters:
         -----------
             data : np.ndarray or None (optional)
                 Data array to be owned. If None, the container will be empty.
-            unit : string or `astropy.units.Unit` (optional)
-                Physical unit of the data.
             dtype : string or `numpy.dtype` (optional)
                 Imposed data type.
         """
@@ -232,7 +201,6 @@ class MemMapArray:
             else:
                 # don't need to delete memmap
                 self._contained = None
-            self.set_unit(None)
 
         # Not None data
         else:
@@ -246,20 +214,6 @@ class MemMapArray:
                 delete_array_memmap(mm, read=False, remove=True)
             else:
                 self._contained = np.array(adata, dtype=dtype)
-
-            # Unit handling
-            if hasattr(data, 'unit'):
-                dunit = u.Unit(data.unit)
-                if unit is not None:
-                    unit = u.Unit(unit)
-                    if unit is not dunit:
-                        raise ValueError(f'unit={unit} set for a Quantity data'
-                                         f' with {dunit} unit.')
-                self.set_unit(dunit)
-            else:
-                if unit is not None:
-                    self.set_unit(unit)
-                # if None, keep the old unit
 
     def __getitem__(self, item):
         if self.empty:
