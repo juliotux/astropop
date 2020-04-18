@@ -1,4 +1,10 @@
 {
     "editor.autoSave": "on",
-    "python.pythonPath": "/home/gitpod/conda/envs/astropop/bin/python"
+    "python.pythonPath": "/home/gitpod/conda/envs/astropop/bin/python",
+    "python.testing.pytestArgs": [
+        "."
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.nosetestsEnabled": false,
+    "python.testing.pytestEnabled": true
 }
