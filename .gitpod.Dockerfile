@@ -29,6 +29,7 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86
 RUN source ~/conda/etc/profile.d/conda.sh && \
     conda activate base && \
     conda create -n astropop python=3.7 numpy=1.17 && \
+    conda activate astropop && \
     conda install -n astropop -c juliotux -c astropy -c conda-forge \
                             astropy cython matplotlib \
                             sphinx-astropy pytz pyyaml \
