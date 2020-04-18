@@ -1,7 +1,7 @@
-AstroPoP |RTD Status| |GITPOD|
+AstroPoP  
 ========
 
-|Travis Status| |Coverall Status| |Codecov Status| |CODACY|  |Powered by Astropy|  
+|Travis Status| |Coverall Status| |Codecov Status| |RTD Status| |CODACY| |Powered by Astropy| |GITPOD|
 
 The (non) famous ASTROnomical POlarimetry and Photometry pipeline. Developed for work with IAGPOL polarimeter at Observatório Pico dos Dias (Brazil), but suitable to be used in other image polarimeters around the world.
 
@@ -97,7 +97,7 @@ Documentation (not complete yet) can be found at `astropop.readthedocs.io <https
     :target: http://ascl.net/1805.024
     :alt: ASCL register
 
-.. |CODACY|  image:: https://api.codacy.com/project/badge/Grade/d847c7831b274bf6aab2e51d48eeec48
+.. |CODACY|  image:: https://api.codacy.com/project/badge/Grade/fddfa579353a40b1bab06300ce15f227
     :target: https://www.codacy.com/app/juliotux/astropop
 
 .. |GITPOD|  image:: https://img.shields.io/badge/Gitpod-ready--to--code-blue?logo=gitpod
