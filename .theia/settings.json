@@ -1,0 +1,4 @@
+{
+    "editor.autoSave": "on",
+    "python.pythonPath": "/home/gitpod/conda/envs/astropop/bin/python"
+}

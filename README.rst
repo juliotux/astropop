@@ -99,3 +99,7 @@ Documentation (not complete yet) can be found at `astropop.readthedocs.io <https
 
 .. |CODACY|  image:: https://api.codacy.com/project/badge/Grade/d847c7831b274bf6aab2e51d48eeec48
     :target: https://www.codacy.com/app/juliotux/astropop
+
+.. |GITPOD|  image:: https://img.shields.io/badge/Gitpod-ready--to--code-blue?logo=gitpod
+    :target: https://gitpod.io/#https://github.com/juliotux/astropop
+    :alt: Gitpod Ready-to-Code

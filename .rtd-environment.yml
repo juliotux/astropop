@@ -6,6 +6,7 @@ channels:
     - conda-forge
 
 dependencies:
+    - python
     - astropy
     - cython
     - matplotlib
@@ -14,7 +15,6 @@ dependencies:
     - pytz
     - pyyaml
     - scikit-image
-    - matplotlib
     - scipy
     - astroquery
     - astroscrappy
