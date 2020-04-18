@@ -1,4 +1,5 @@
 tasks:
+  - init: python setup.py build
   - command: source ~/conda/etc/profile.d/conda.sh && conda activate astropop
 
 image:
