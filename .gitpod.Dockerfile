@@ -8,7 +8,6 @@ RUN apt-get update \
   sudo \
   git \
   less \
-  sh \
   wget
 
 RUN mkdir -p /workspace/data \
