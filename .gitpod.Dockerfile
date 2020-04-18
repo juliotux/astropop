@@ -20,7 +20,7 @@ RUN mkdir /home/gitpod/.conda
 RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
     /bin/bash ~/miniconda.sh -b -p ~/conda && \
     rm ~/miniconda.sh && \
-    source ~/conda/etc/profile.d/conda.sh && \
+    . ~/conda/etc/profile.d/conda.sh && \
     conda init bash && \
     conda config --set auto_activate_base false
 
