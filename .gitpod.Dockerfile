@@ -32,8 +32,8 @@ RUN source ~/conda/etc/profile.d/conda.sh && \
     conda install -n astropop -c juliotux -c astropy -c conda-forge \
                             astropy cython matplotlib \
                             sphinx-astropy pytz pyyaml \
-                            sckikit-image scipy astroquery \
-                            astroscrappy astroallign ccdproc \
+                            scikit-image scipy astroquery \
+                            astroscrappy astroalign ccdproc \
                             photutils sep pytest-astropy \
                             pip ipython && \
     pip install sphinx-rtd-theme shinxcontrib-apidoc \
