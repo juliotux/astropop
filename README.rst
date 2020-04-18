@@ -1,7 +1,7 @@
-AstroPoP
+AstroPoP |RTD Status| |GITPOD|
 ========
 
-|Travis Status| |Coverall Status| |Codecov Status| |RTD Status|  |CODACY|  |Powered by Astropy|  
+|Travis Status| |Coverall Status| |Codecov Status| |CODACY|  |Powered by Astropy|  
 
 The (non) famous ASTROnomical POlarimetry and Photometry pipeline. Developed for work with IAGPOL polarimeter at Observatório Pico dos Dias (Brazil), but suitable to be used in other image polarimeters around the world.
 
