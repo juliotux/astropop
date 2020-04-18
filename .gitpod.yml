@@ -1,6 +1,5 @@
 tasks:
-  - init: python setup.py build
-  - command: source ~/conda/etc/profile.d/conda.sh && conda activate astropop
+  - init: source ~/conda/etc/profile.d/conda.sh && conda activate astropop && python setup.py build
 
 image:
   file: .gitpod.Dockerfile
