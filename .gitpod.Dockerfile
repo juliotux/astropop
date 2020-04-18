@@ -36,7 +36,7 @@ RUN source ~/conda/etc/profile.d/conda.sh && \
                             astroscrappy astroalign ccdproc \
                             photutils sep pytest-astropy \
                             pip ipython && \
-    pip install sphinx-rtd-theme shinxcontrib-apidoc \
+    pip install sphinx-rtd-theme sphinxcontrib-apidoc \
                 astropy-helpers pytest_check \
                 sphinxcontrib-napoleon && \
     conda clean -a
