@@ -28,7 +28,17 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86
 
 RUN source ~/conda/etc/profile.d/conda.sh && \
     conda activate base && \
-    conda env create -f /workspace/astropop/.rtd-environment.yml && \
+    conda create -n astropop python=3.7 numpy=1.17 && \
+    conda install -n astropop -c juliotux -c astropy -c conda-forge \
+                            astropy cython matplotlib \
+                            sphinx-astropy pytz pyyaml \
+                            sckikit-image scipy astroquery \
+                            astroscrappy astroallign ccdproc \
+                            photutils sep pytest-astropy \
+                            pip ipython && \
+    pip install sphinx-rtd-theme shinxcontrib-apidoc \
+                astropy-helpers pytest_check \
+                sphinxcontrib-napoleon && \
     conda clean -a
 
 # Give back control
