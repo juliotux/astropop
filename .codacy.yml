@@ -5,3 +5,4 @@ exclude_paths:
     - 'astropop/conftest.py'
     - 'astropop/_astropy_init.py'
     - 'docs/**'
+    - .*

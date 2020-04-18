@@ -5,14 +5,12 @@ import six
 import numpy as np
 from astropy.io import fits
 from astropy.io.fits.hdu.base import _ValidHDU
-from astropy.nddata import NDData, StdDevUncertainty, CCDData
-from astropy import units as u
 from astropy.table import Table, hstack
 from collections import OrderedDict
 import functools
 
 from .py_utils import check_iterable, process_list
-from .framedata import FrameData, imhdus
+from .framedata import imhdus
 from .logger import logger
 
 __all__ = ['imhdus', 'check_header_keys', 'check_image_hdu', 'fits_yielder',
@@ -29,8 +27,10 @@ class IncompatibleHeadersError(ValueError):
     """When 2 image header are not compatible."""
 
 
-def check_header_keys(image1, image2, keywords=[], logger=logger):
+def check_header_keys(image1, image2, keywords=None, logger=logger):
     """Compare header keys from 2 images to check if the have equal values."""
+    keywords = keywords or []
+
     # Compatibility with fits HDU and FrameData
     if hasattr(image1, 'header'):
         hk1 = 'header'
@@ -55,7 +55,7 @@ def check_header_keys(image1, image2, keywords=[], logger=logger):
             raise IncompatibleHeadersError("Headers have inconsisten presence "
                                            f"of {i} Keyword")
         else:
-            logger.debug(f"The images do not have the {i} keyword")
+            logger.debug("The images do not have the %s keyword", i)
     return True
 
 
@@ -63,7 +63,7 @@ def check_image_hdu(data, ext=0, logger=logger):
     """Check if a data is a valid ImageHDU type or convert it."""
     if not isinstance(data, imhdus):
         if isinstance(data, fits.HDUList):
-            logger.debug(f"Extracting HDU from ext {ext} of HDUList")
+            logger.debug("Extracting HDU from ext %s of HDUList", str(ext))
             data = data[ext]
         elif isinstance(data, six.string_types):
             data = fits.open(data)[ext]
@@ -90,7 +90,7 @@ def save_image_hdu(hdu, filename, overwrite=False, logger=logger):
         ext += ext2
 
     filename = base + ext
-    logger.debug(f'Saving fits file to: {filename}')
+    logger.debug('Saving fits file to: %s', filename)
 
     if ext == '.fz':
         p = fits.PrimaryHDU()
@@ -136,12 +136,14 @@ def fits_yielder(return_type, file_list, ext=0, append_to_name=None,
 
     # if the image list contain hdus, re-yield them
     def _reyield(ver_obj):
+        ret = None
         if return_type == 'header':
-            return ver_obj.header
+            ret = ver_obj.header
         elif return_type == 'data':
-            return ver_obj.data
+            ret = ver_obj.data
         elif return_type == 'hdu':
-            return ver_obj
+            ret = ver_obj
+        return ret
 
     def _save(old, new, yielded):
         hdul = fits.open(old)
@@ -153,7 +155,7 @@ def fits_yielder(return_type, file_list, ext=0, append_to_name=None,
         elif return_type == 'hdu':
             hdul[index] = yielded
 
-        hdul.writeto(save_fname, overwrite=overwrite)
+        hdul.writeto(new, overwrite=overwrite)
 
     for i in file_list:
         if isinstance(i, _ValidHDU):
@@ -171,8 +173,8 @@ def fits_yielder(return_type, file_list, ext=0, append_to_name=None,
 
             base, extf = os.path.splitext(basename)
             if extf not in ['fits', 'fts', 'fit', 'gz', 'bz2', 'fz']:
-                logger.warn(f'{extf} extension not supported for writing. '
-                            'Changing to fits')
+                logger.warning('%s extension not supported for writing. '
+                               'Changing to fits', str(extf))
                 subext = os.path.splitext(base)[1]
                 if subext in ['fits', 'fts', 'fit', 'fz']:
                     nextf = ''
@@ -194,7 +196,7 @@ def headers_to_table(headers, filenames=None, keywords=None, empty_value=None,
     for head in headers:
         hlist.append(head)
         actual += 1
-        logger.debug(f"Reading header {actual}")
+        logger.debug("Reading header %d", actual)
 
     n = len(hlist)
 
@@ -215,7 +217,7 @@ def headers_to_table(headers, filenames=None, keywords=None, empty_value=None,
         headict[k] = [empty_value]*n
 
     for i in range(n):
-        logger.debug(f"Processing header {i} from {n}")
+        logger.debug("Processing header %d from %d", i, n)
         for key, val in hlist[i].items():
             key = key.lower()
             if key in keywords:
