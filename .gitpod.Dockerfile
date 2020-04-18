@@ -36,10 +36,10 @@ RUN source ~/conda/etc/profile.d/conda.sh && \
                             astroscrappy astroalign ccdproc \
                             photutils sep pytest-astropy \
                             pip ipython && \
-    pip install -U -y sphinx-rtd-theme sphinxcontrib-apidoc \
+    pip install -U sphinx-rtd-theme sphinxcontrib-apidoc \
                 astropy-helpers pytest_check \
                 sphinxcontrib-napoleon && \
-    pip install -U -y pylint prospector pylama bandit && \
+    pip install -U pylint prospector pylama bandit && \
     conda clean -a
 
 # Give back control
