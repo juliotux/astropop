@@ -1,5 +1,5 @@
 tasks:
-  - init: ~/conda/etc/profile.d/conda.sh && conda activate astropop
+  - command: source ~/conda/etc/profile.d/conda.sh && conda activate astropop
 
 image:
   file: .gitpod.Dockerfile
