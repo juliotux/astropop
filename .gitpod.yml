@@ -23,3 +23,12 @@ github:
     addBadge: false
     # add a label once the prebuild is ready to pull requests (defaults to false)
     addLabel: false
+
+vscode:
+  extensions:
+    - aaron-bond.better-comments@2.0.5:YKNfOclR4e8XAxlj4xp2AA==
+    - karyfoundation.theme-karyfoundation-themes@20.0.3:w4aePfn0e0SJgNOjXLH5iA==
+    - HookyQR.beautify@1.5.0:mXo/OcopUVNHHxCPZWwlxQ==
+    - lamartire.git-indicators@2.1.2:qeqMzEaDC/gSy6y3HKvG+Q==
+    - Gruntfuggly.todo-tree@0.0.172:YlN69Rd0yqC/rlRPh7AHzA==
+    - searKing.preview-vscode@2.1.0:QfrQf6Ej7ubvRQN81yMQkg==
