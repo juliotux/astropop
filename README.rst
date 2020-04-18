@@ -97,5 +97,5 @@ Documentation (not complete yet) can be found at `astropop.readthedocs.io <https
     :target: http://ascl.net/1805.024
     :alt: ASCL register
 
-.. |CODACY|  image:: https://api.codacy.com/project/badge/Grade/ef195a81b3194304af55109d76f48531
+.. |CODACY|  image:: https://api.codacy.com/project/badge/Grade/d847c7831b274bf6aab2e51d48eeec48
     :target: https://www.codacy.com/app/juliotux/astropop
