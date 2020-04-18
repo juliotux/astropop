@@ -23,10 +23,10 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86
     /bin/bash ~/miniconda.sh -b -p ~/conda && \
     rm ~/miniconda.sh && \
     source ~/conda/etc/profile.d/conda.sh && \
-    conda init bash && \
+    conda init --all --dry-run --verbose && \
     conda config --set auto_activate_base false
 
-RUN source ~/.bashrc && \
+RUN source ~/conda/etc/profile.d/conda.sh && \
     conda activate base && \
     conda env create -f /workspace/astropop/.rtd-environment.yml && \
     conda clean -a
