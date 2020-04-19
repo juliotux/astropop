@@ -10,6 +10,7 @@ RUN apt-get update \
   sudo \
   git \
   less \
+  ripgrep \
   wget
 
 RUN mkdir -p /workspace/data \
