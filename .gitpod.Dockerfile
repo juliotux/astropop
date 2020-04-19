@@ -23,11 +23,11 @@ RUN mkdir /home/gitpod/.conda
 RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
     /bin/bash ~/miniconda.sh -b -p ~/anaconda3 && \
     rm ~/miniconda.sh && \
-    source ~/conda/etc/profile.d/conda.sh && \
+    source ~/anaconda3/etc/profile.d/conda.sh && \
     conda init --all --dry-run --verbose && \
     conda config --set auto_activate_base false
 
-RUN source ~/conda/etc/profile.d/conda.sh && \
+RUN source ~/anaconda3/etc/profile.d/conda.sh && \
     conda activate base && \
     conda create -n astropop python=3.7 numpy=1.17 && \
     conda activate astropop && \
