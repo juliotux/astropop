@@ -21,7 +21,7 @@ USER gitpod
 RUN mkdir /home/gitpod/.conda
 # Install conda
 RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
-    /bin/bash ~/miniconda.sh -b -p ~/conda && \
+    /bin/bash ~/miniconda.sh -b -p ~/anaconda3 && \
     rm ~/miniconda.sh && \
     source ~/conda/etc/profile.d/conda.sh && \
     conda init --all --dry-run --verbose && \

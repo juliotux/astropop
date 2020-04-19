@@ -1,6 +1,6 @@
 {
     "editor.autoSave": "on",
-    "python.pythonPath": "/home/gitpod/conda/envs/astropop/bin/python",
+    "python.pythonPath": "~/anaconda3/envs/astropop/bin/python",
     "todo-tree.ripgrep.ripgrep": "/theia/node_modules/vscode-ripgrep/bin/rg",
     "python.testing.pytestArgs": [
         "."
