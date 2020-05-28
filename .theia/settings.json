@@ -1,11 +1,12 @@
 {
     "editor.autoSave": "on",
     "python.pythonPath": "~/anaconda3/envs/astropop/bin/python",
-    "todo-tree.ripgrep.ripgrep": "/theia/node_modules/vscode-ripgrep/bin/rg",
     "python.testing.pytestArgs": [
         "."
     ],
     "python.testing.unittestEnabled": false,
     "python.testing.nosetestsEnabled": false,
-    "python.testing.pytestEnabled": true
+    "python.testing.pytestEnabled": true,
+    "editor.minimap.enabled": false,
+    "editor.fontSize": 10
 }

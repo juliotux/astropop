@@ -16,6 +16,7 @@ from astropy.nddata import StdDevUncertainty
 from ..py_utils import mkdir_p
 from .memmap import MemMapArray
 from .compat import extract_header_wcs
+from ..math.physical import unit_property
 
 
 __all__ = ['FrameData']
@@ -109,6 +110,7 @@ def setup_filename(frame, cache_folder=None, filename=None):
     return os.path.join(cache_folder, filename)
 
 
+@unit_property
 class FrameData:
     """Data container for image frame to handle memmapping data from disk.
 
@@ -297,20 +299,6 @@ class FrameData:
             dunit = extract_units(value, None)
             self.unit = dunit
         self._data.reset_data(value)
-
-    @property
-    def unit(self):
-        """Physical unit of the data."""
-        if self._unit is None:
-            return u.dimensionless_unscaled
-        return self._unit
-
-    @unit.setter
-    def unit(self, value):
-        if value is None:
-            self._unit = None
-        else:
-            self._unit = u.Unit(value)
 
     @property
     def uncertainty(self):
