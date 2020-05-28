@@ -3,7 +3,7 @@ MemMapArrays
 
 `MemMapArray` is a data container, very likely ``numpy.ndarray``, intended to offer an ease use of data chaching, also called `memmap` in NumPy. The big difference here is that our implementation make possible a dynamic enabling/disabling of data memmapping without change the container instance itself.
 
-This class use `numpy`s implementation of `numpy.ndarray` and `numpy.memmap` as an intern contained data, and switch between them according user needs. It redirects all main operators and class properties to the NumPy contained data, transforming it to `MemMapArray` if the result is an array.
+This class use `numpy` s implementation of `numpy.ndarray` and `numpy.memmap` as an intern contained data, and switch between them according user needs. It redirects all main operators and class properties to the NumPy contained data, transforming it to `MemMapArray` if the result is an array.
 
 The class also supports physical units assignment, using `astropy.units.Unit` wrapping.
 

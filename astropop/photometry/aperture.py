@@ -15,27 +15,27 @@ from ..fits_utils import imhdus
 def sky_annulus(data, x, y, r_ann, algorithm='mmm', mask=None, logger=logger):
     """Determine the sky value of a single pixel based on a sky annulus.
 
-    Parameters:
-    -----------
-        - data : np.ndarray
-            2D image data for photometry
-        - x, y : array_like
-            Positions of the sources
-        - r_ann : array_like([float, float])
-            Annulus radius (intern and extern) to calculate the background
-            value
-        - algorithm : 'mmm' or 'sigmaclip' (optional)
-            Algorith to calculate the background value. 'mmm' (mean, median,
-            mode) should be better for populated fields, while 'sigmaclip'
-            (clipped mean) should be better for sparse fields.
-            Default: 'mmm'
+    Parameters
+    ----------
+    data : `~nnumpy.ndarray`
+        2D image data for photometry
+    x, y : array_like
+        Positions of the sources
+    r_ann : array_like([float, float])
+        Annulus radius (intern and extern) to calculate the background
+        value
+    algorithm : 'mmm' or 'sigmaclip' (optional)
+        Algorith to calculate the background value. 'mmm' (mean, median,
+        mode) should be better for populated fields, while 'sigmaclip'
+        (clipped mean) should be better for sparse fields.
+        Default: 'mmm'
 
-    Return:
+    Returns
     -------
-        - sky : array_like
-            The computed value of sky for each (x, y) source.
-        - sky_error : array_like
-            The error of sky value, computed as the sigma cliped stddev.
+    sky : array_like
+        The computed value of sky for each (x, y) source.
+    sky_error : array_like
+        The error of sky value, computed as the sigma cliped stddev.
     """
     # TODO: this code needs optimization for faster work
     if len(x) != len(y):
@@ -95,33 +95,38 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto', gain=1.0,
                         logger=logger):
     """Perform aperture photometry using sep.
 
-    Parameters:
-    -----------
-        - data : np.ndarray
-            2D image data for photometry
-        - x, y : array_like
-            Positions of the sources
-        - r : float or 'auto' (optional)
-            Aperture radius. If `auto`, the value will be estimated based in
-            the median gaussian FWHM of the sources in the image
-            (r=0.6731*GFWHM).
-            Default: 'auto'
-        - r_ann : array_like([float, float]), None or 'auto' (optional)
-            Annulus radii (r_in, r_out) for local background extraction.
-            If `auto`, the annulus will be set based on aperture as (4*r, 6*r).
-            If None, no local background subtraction will be performed.
-            Default: 'auto'
-        - gain : float (optional)
-            Gain to correctly calculate the error.
-        - readnoise : float (optional)
-            Readnoise of the image to correctly calculate the error.
-        - mask : np.ndarray (optional)
-            Mask badpixels and problematic ccd areas.
-        - sky_algorithm : 'mmm' or 'sigmaclip'
-            Algorith to calculate the background value. 'mmm' (mean, median,
-            mode) should be better for populated fields, while 'sigmaclip'
-            (clipped median) should be better for sparse fields.
-            Default: 'mmm'
+    Parameters
+    ----------
+    data : np.ndarray
+        2D image data for photometry
+    x, y : array_like
+        Positions of the sources
+    r : float or 'auto' (optional)
+        Aperture radius. If `auto`, the value will be estimated based in
+        the median gaussian FWHM of the sources in the image
+        (r=0.6731*GFWHM).
+        Default: 'auto'
+    r_ann : array_like([float, float]), None or 'auto' (optional)
+        Annulus radii (r_in, r_out) for local background extraction.
+        If `auto`, the annulus will be set based on aperture as (4*r, 6*r).
+        If None, no local background subtraction will be performed.
+        Default: 'auto'
+    gain : float (optional)
+        Gain to correctly calculate the error.
+    readnoise : float (optional)
+        Readnoise of the image to correctly calculate the error.
+    mask : np.ndarray (optional)
+        Mask badpixels and problematic ccd areas.
+    sky_algorithm : 'mmm' or 'sigmaclip'
+        Algorith to calculate the background value. 'mmm' (mean, median,
+        mode) should be better for populated fields, while 'sigmaclip'
+        (clipped median) should be better for sparse fields.
+        Default: 'mmm'
+
+    Returns
+    -------
+    res_ap : `~astropy.table.Table`
+        Table containing all aperture photometry informations.
     """
     res_ap = Table()
 
@@ -157,23 +162,6 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto', gain=1.0,
         r_out = int(max(r_in+10, round(6*r, 0)))  # Ensure a dannulus geq 10
         r_ann = (r_in, r_out)
         logger.debug(f'r_ann:{r_ann}')
-
-    # from .daophot.aper import aper
-    # if r_ann is None:
-    #     mag,magerr,flux,fluxerr,sky,skyerr,badflag,outstr = \
-    #             aper(data, x , y, phpadu=1, apr=r, zeropoint=25,
-    #                  badpix=[-12000,60000], exact=True)
-    # else:
-    #     mag,magerr,flux,fluxerr,sky,skyerr,badflag,outstr = \
-    #             aper(data, x , y, phpadu=1, apr=r, skyrad=list(r_ann),
-    #                  zeropoint=25, badpix=[-12000,60000], exact=True)
-    #
-    # res_ap['flux'] = flux
-    # res_ap['flux_error'] = fluxerr
-    # res_ap['flags'] = badflag
-    # res_ap['sky'] = sky
-    # res_ap['sky_error'] = skyerr
-    # res_ap['outstr'] = outstr
 
     sky = None
 

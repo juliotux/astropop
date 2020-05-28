@@ -65,12 +65,12 @@ def gain_correct(image, gain, gain_unit=None, inplace=False,
 
 def subtract_bias(image, master_bias, inplace=False,
                   logger=logger):
-    """Subtract a master_bias frame from a CCDData."""
+    """Subtract a master_bias frame from a FrameData."""
     master_bias = check_framedata(master_bias)
     nim = imarith(image, master_bias, '-', inplace=False, logger=logger)
 
     nim.header['hierarch astropop bias_corrected'] = True
-    name = master_bias.filename
+    name = master_bias.origin_filename
     if name is not None:
         nim.header['hierarch astropop bias_corrected_file'] = name
 
@@ -85,7 +85,7 @@ def subtract_bias(image, master_bias, inplace=False,
 
 def subtract_dark(image, master_dark, dark_exposure, image_exposure,
                   inplace=False, logger=logger):
-    """Subtract master_dark frame from a CCDData."""
+    """Subtract master_dark frame from a FrameData."""
     image = check_framedata(image)
     master_dark = check_framedata(master_dark)
     scale = image_exposure/dark_exposure
@@ -99,7 +99,7 @@ def subtract_dark(image, master_dark, dark_exposure, image_exposure,
 
     nim.header['hierarch astropop dark_corrected'] = True
     nim.header['hierarch astropop dark_corrected_scale'] = scale
-    name = master_dark.filename
+    name = master_dark.origin_filename
     if name is not None:
         name = os.path.basename(name)
         nim.header['hierarch astropop dark_corrected_file'] = name
@@ -128,7 +128,7 @@ def flat_correct(image, master_flat, min_value=None, norm_value=None,
 
     nim.header['hierarch astropop flat_corrected'] = True
 
-    name = master_flat.filename
+    name = master_flat.origin_filename
     if name is not None:
         name = os.path.basename(name)
         nim.header['hierarch astropop flat_corrected_file'] = name
