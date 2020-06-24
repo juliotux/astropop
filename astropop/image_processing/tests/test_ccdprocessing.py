@@ -14,22 +14,73 @@ from astropop.framedata import FrameData
 
 @pytest.mark.parametrize('inplace', [True, False])
 def test_simple_flat(inplace):
-    frame1 = FrameData(np.ones((20, 20))*3, unit='adu')
-    master_flat = FrameData(np.ones((20, 20)), unit=None)
-    master_flat.data[0:5, 0:5] = 0.5
-    expect = np.ones((20, 20))
-    expect *= 3
+    
+    expect = np.ones((20, 20))*3
     expect[0:5, 0:5] = 3/0.5
-
-    res = flat_correct(frame1, master_flat, inplace=inplace)
-
-    check.is_true(isinstance(res, FrameData))
-    npt.assert_array_equal(res.data, expect)
-    check.equal(res.header['hierarch astropop flat_corrected'], True)
-    check.equal(res.unit, u.Unit('adu'))
-
+    
+    # Checking flat division:
+    frame1 = FrameData(np.ones((20, 20))*3, unit=u.adu)
+    
+    master_flat_dimless = FrameData(np.ones((20, 20)), unit=None)
+    master_flat_dimless.data[0:5, 0:5] = 0.5
+    
+    res1 = flat_correct(frame1, master_flat_dimless, inplace=inplace)
+    
+    check.is_true(isinstance(res1, FrameData))
+    npt.assert_array_equal(res1.data, expect)
+    check.equal(res1.header['hierarch astropop flat_corrected'], True)
+    
+    # # Checking flat-corrected frame unit:
+    # check.equal(res1.unit, u.Unit('adu'))
+    
+    # Check inplace statement:
     if inplace:
-        check.is_true(res is frame 1)
+        check.is_true(res1.data is frame1.data)
     else:
-        check.is_false(res is frame 1)
-        
+        check.is_false(res1.data is frame1.data)
+    
+    
+@pytest.mark.parametrize('inplace', [True, False])
+def test_simple_bias(inplace):
+    
+    expected = np.ones((20, 20))*2
+    # expected[0:5, 0:5] = 1.5
+    expected[0:5, 0:5] = 2.5
+    
+    frame4bias = FrameData(np.ones((20, 20))*3, unit='adu')
+    
+    master_bias = FrameData(np.ones((20,20)),unit='adu')
+    master_bias.data[0:5, 0:5] = 0.5
+    
+    res4 = subtract_bias(frame4bias, master_bias, inplace=inplace)
+
+    check.is_true(isinstance(res4, FrameData))
+    npt.assert_array_equal(res4.data, expected)   # Assertion error
+    check.equal(res4.header['hierarch astropop bias_corrected'], True)
+    
+    # # Checking bias-subtracted frame unit:
+    # check.equal(res1.unit, u.Unit('adu'))
+    
+    # Check inplace statement:
+    if inplace:
+        check.is_true(res4.data is frame4bias.data)
+    else:
+        check.is_false(res4.data is frame4bias.data)
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    

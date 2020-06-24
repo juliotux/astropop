@@ -28,7 +28,8 @@ __all__ = ['cosmics_lacosmic', 'gain_correct', 'subtract_bias',
 
 
 def cosmics_lacosmic(ccddata, inplace=False, logger=logger, **lacosmic_kwargs):
-    """Remove cosmic rays with LAcosmic. From astroscrappy package.
+    """
+    Remove cosmic rays with LAcosmic. From astroscrappy package.
     
     Notes
     -----
@@ -39,7 +40,7 @@ def cosmics_lacosmic(ccddata, inplace=False, logger=logger, **lacosmic_kwargs):
     * If ``ccddata`` is not a `~astropop.framedata.FrameData` instance,
       inplies in ``inplace=False``, and a new `~astropop.framedata.FrameData`
       instance will be created.
-
+      
     Parameters
     ----------
     ccddata : `~astropop.framedata.FrameData` compatible
@@ -51,7 +52,7 @@ def cosmics_lacosmic(ccddata, inplace=False, logger=logger, **lacosmic_kwargs):
         Python logger to log the actions.
     lacosmic_kwargs : -- NOT WRITTEN YET --
         hejrjghsldhglksehlg
-
+        
     Returns
     -------
     `~astropop.framedata.FrameData`:
@@ -60,7 +61,7 @@ def cosmics_lacosmic(ccddata, inplace=False, logger=logger, **lacosmic_kwargs):
     """
     # As lacosmic removes and replace the cosmics pixels, no need to
     # update the mask
-    dat = astroscrappy.detect_cosmics(ccddata.data, **lacosmic_kwargs)
+    _, dat = astroscrappy.detect_cosmics(ccddata.data, **lacosmic_kwargs)
 
     if inplace:
         ccd = ccddata
@@ -76,7 +77,8 @@ def cosmics_lacosmic(ccddata, inplace=False, logger=logger, **lacosmic_kwargs):
 
 def gain_correct(image, gain, gain_unit=None, inplace=False,
                  logger=logger):
-    """Process the gain correction of an image.
+    """
+    Process the gain correction of an image.
     
     Notes
     -----
@@ -85,7 +87,7 @@ def gain_correct(image, gain, gain_unit=None, inplace=False,
     * If ``image`` is not a `~astropop.framedata.FrameData` instance,
       inplies in ``inplace=False``, and a new `~astropop.framedata.FrameData`
       instance will be created.
-
+      
     Parameters
     ----------
     image : `~astropop.framedata.FrameData` compatible
@@ -99,7 +101,7 @@ def gain_correct(image, gain, gain_unit=None, inplace=False,
         If True, the operations will be performed inplace in the ``image``.
     logger : `logging.Logger`
         Python logger to log the actions.
-
+        
     Returns
     -------
     `~astropop.framedata.FrameData`:
@@ -123,7 +125,8 @@ def gain_correct(image, gain, gain_unit=None, inplace=False,
 
 def subtract_bias(image, master_bias, inplace=False,
                   logger=logger):
-    """Subtract a master_bias frame from a FrameData.
+    """
+    Subtract a master_bias frame from a FrameData.
     
     Notes
     -----
@@ -134,7 +137,7 @@ def subtract_bias(image, master_bias, inplace=False,
     * If ``image`` is not a `~astropop.framedata.FrameData` instance,
       inplies in ``inplace=False``, and a new `~astropop.framedata.FrameData`
       instance will be created.
-
+      
     Parameters
     ----------
     image : `~astropop.framedata.FrameData` compatible
@@ -146,7 +149,7 @@ def subtract_bias(image, master_bias, inplace=False,
         If True, the operations will be performed inplace in the ``image``.
     logger : `logging.Logger`
         Python logger to log the actions.
-
+        
     Returns
     -------
     `~astropop.framedata.FrameData`:
@@ -172,8 +175,9 @@ def subtract_bias(image, master_bias, inplace=False,
 
 def subtract_dark(image, master_dark, dark_exposure, image_exposure,
                   inplace=False, logger=logger):
-    """Subtract master_dark frame from a FrameData.
-
+    """
+    Subtract master_dark frame from a FrameData.
+    
     Notes
     -----
     * This function will just subtract a master dark frame from the original image.
@@ -186,7 +190,7 @@ def subtract_dark(image, master_dark, dark_exposure, image_exposure,
     * If ``image`` is not a `~astropop.framedata.FrameData` instance,
       inplies in ``inplace=False``, and a new `~astropop.framedata.FrameData`
       instance will be created.
-
+      
     Parameters
     ----------
     image : `~astropop.framedata.FrameData` compatible
@@ -202,7 +206,7 @@ def subtract_dark(image, master_dark, dark_exposure, image_exposure,
         If True, the operations will be performed inplace in the ``image``.
     logger : `logging.Logger`, optional
         Python logger to log the actions.
-
+        
     Returns
     -------
     `~astropop.framedata.FrameData`:
@@ -232,15 +236,14 @@ def subtract_dark(image, master_dark, dark_exposure, image_exposure,
 
 def flat_correct(image, master_flat, min_value=None, norm_value=None,
                  inplace=False, logger=logger):
-    """Divide the image by a flat field frame.
-    
-    
+    """
+    Divide the image by a flat field frame.
     
     Parameters
     ----------
     image : `~astropop.framedata.FrameData` compatible
-        Image to perform the dark correction. `~astropy.units.Quantity`, numerical
-        values and `~astropy.nddata.CCDData` are also suported.
+        Image to perform the flat field correction. `~astropy.units.Quantity`,
+        numerical values and `~astropy.nddata.CCDData` are also suported.
     master_flat : `~astropop.framedata.FrameData` compatible
         Master flat field image to be subtracted from the ``image``.
     min_value : float, optional
