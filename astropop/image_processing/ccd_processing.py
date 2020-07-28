@@ -202,7 +202,7 @@ def subtract_dark(image, master_dark, dark_exposure, image_exposure,
         Exposure time of the Master dark.
     image_exposure : float
         Exposure time of the ``image``.
-    inplace : bool, optional 
+    inplace : bool, optional
         If True, the operations will be performed inplace in the ``image``.
     logger : `logging.Logger`, optional
         Python logger to log the actions.
@@ -211,7 +211,7 @@ def subtract_dark(image, master_dark, dark_exposure, image_exposure,
     -------
     `~astropop.framedata.FrameData`:
         New dark corrrected `FrameData` instance if ``inplace``, else the ``image``
-        `~astropop.framedata.FrameData` instance.   
+        `~astropop.framedata.FrameData` instance.
     """
     image = check_framedata(image)
     master_dark = check_framedata(master_dark)
@@ -259,7 +259,7 @@ def flat_correct(image, master_flat, min_value=None, norm_value=None,
     -------
     `~astropop.framedata.FrameData`:
         New flat field corrected `FrameData` instance if ``inplace``, else the
-        ``image`` `~astropop.framedata.FrameData` instance. 
+        ``image`` `~astropop.framedata.FrameData` instance.
     """
     master_flat = check_framedata(master_flat)
     image = check_framedata(image)

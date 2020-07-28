@@ -4,8 +4,9 @@ import pytest
 import numpy as np
 import numpy.testing as npt
 import pytest_check as check
-from astropop.photometry.aperture import aperture_photometry
+from astropop.photometry.aperture import aperture_photometry, sky_annulus
 
+#%%
 
 @pytest.mark.parametrize('r', [2, 3, 4])
 def test_simple_aperture(r):
@@ -21,12 +22,79 @@ def test_simple_aperture(r):
 
 
 data = np.array([[1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
-                 [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
-                 [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
-                 [1., 1., 1., 1., 2., 1., 1., 1., 1., 1.],
-                 [1., 1., 1., 2., 4., 2., 1., 1., 1., 1.],
-                 [1., 1., 1., 1., 2., 1., 1., 1., 1., 1.],
-                 [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
-                 [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
-                 [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
-                 [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.]])
+                  [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
+                  [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
+                  [1., 1., 1., 1., 2., 1., 1., 1., 1., 1.],
+                  [1., 1., 1., 2., 4., 2., 1., 1., 1., 1.],
+                  [1., 1., 1., 1., 2., 1., 1., 1., 1., 1.],
+                  [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
+                  [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
+                  [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
+                  [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.]])
+#%%
+
+@pytest.mark.parametrize(['algoritmo','sky_kind'],
+                         [['mmm', 'simple'],['sigmaclip','simple'],
+                          ['mmm', '2and4'],['sigmaclip','2and4']])
+def test_sky_annulus(algoritmo, sky_kind):
+    
+    if sky_kind == 'simple':
+        # Simple homogeneous test:
+        data = np.ones((20, 20))*3
+        data[10,10] = 10
+        data[9,9:12] = 5
+        data[10,9] = 5
+        data[10,11] = 5
+        data[11,9:12] = 5
+    
+        sky_target = np.ones((1,8))*3
+        sky_error_target = np.zeros((1,8))
+        
+    elif sky_kind == '2and4':
+        # Heterogeneous test:
+        data = np.ones((20, 20))*2
+        data[1,:20] = 4
+        data[3,:20] = 4
+        data[5,:20] = 4
+        data[7,:20] = 4
+        data[1,:20] = 4
+        data[9,:20] = 4
+        data[11,:20] = 4
+        data[13,:20] = 4
+        data[15,:20] = 4
+        data[17,:20] = 4
+        data[19,:20] = 4
+        data[10,10] = 10
+        data[9,9:12] = 5
+        data[10,9] = 5
+        data[10,11] = 5
+        data[11,9:12] = 5
+        
+        sky_target = np.ones((1,8))*3
+        sky_error_target = np.ones((1,8))
+    
+    x = [9,9,10,10,10,11,11,11]
+    y = [10,11,9,10,11,9,10,11]
+    r_ann = [3, 5]
+    
+    sky, sky_error = sky_annulus(data, x, y, r_ann, algoritmo) #estudar como testar logger e mask
+    
+    npt.assert_array_equal([sky], sky_target)
+    npt.assert_array_equal([sky_error], sky_error_target)
+
+
+
+# phototils - verificar casos testes para fotometrias
+# phototils
+# background
+# tests
+
+# devdolarpix do IRAF
+
+
+
+
+
+
+
+
