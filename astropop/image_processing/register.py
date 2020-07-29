@@ -20,8 +20,24 @@ def translate(image, shift, subpixel=True, cval=0):
     """Translate an image by (dy, dx) using scipy.
 
     Based on stsci.image.translation algorithm
-
-    cval = value to fill empty pixels after shift.
+    
+    Parameters
+    ----------
+    image : `~nnumpy.ndarray`
+        2D image data to be translated.
+    shift : `tuple (dx, dy)`
+        The shift along the axes. Shift should contain one value for each axis.
+    subpixel : `boolean (optional)`
+        Consider the CCD subpixels on the translation.
+        Default = True
+    cval : `float (optional)`
+        Value to fill empty pixels after shift.
+        Default = 0
+        
+    Returns
+    -------
+    image_new : `~nnumpy.ndarray`
+        2D shifted image.
     """
     # for subpixel, a correlation kernel need translation
     if subpixel:
