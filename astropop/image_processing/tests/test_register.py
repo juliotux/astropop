@@ -4,6 +4,10 @@ import pytest
 import numpy as np
 import numpy.testing as npt
 import pytest_check as check
+
+
+from skimage import transform
+
 from astropop.image_processing.register import (translate, create_fft_shift_list, 
                                                 create_chi2_shift_list, apply_shift, 
                                                 apply_shift_list, hdu_shift_images)
@@ -42,16 +46,16 @@ expt0 = np.array([[1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
                   [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
                   [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.]])
 
-exptp1 = np.array([[0., 0.5, 1., 1. , 1. , 1. , 1. , 1., 1., 1.],
-                   [0., 0.5, 1., 1. , 1. , 1. , 1. , 1., 1., 1.],
-                   [0., 0.5, 1., 1. , 1. , 1. , 1. , 1., 1., 1.],
-                   [0., 0.5, 1., 1. , 1.5, 1.5, 1. , 1., 1., 1.],
-                   [0., 0.5, 1., 1.5, 2.5, 3. , 1.5, 1., 1., 1.],
-                   [0., 0.5, 1., 1. , 1.5, 1.5, 1. , 1., 1., 1.],
-                   [0., 0.5, 1., 1. , 1. , 1. , 1. , 1., 1., 1.],
-                   [0., 0.5, 1., 1. , 1. , 1. , 1. , 1., 1., 1.],
-                   [0., 0.5, 1., 1. , 1. , 1. , 1. , 1., 1., 1.],
-                   [0., 0.5, 1., 1. , 1. , 1. , 1. , 1., 1., 1.]])
+exptp1 =   np.array([[0., 1. , 1., 1. , 1. , 1. , 1. , 1. , 1., 1.],
+                     [0., 1. , 1., 1. , 1. , 1. , 1. , 1. , 1., 1.],
+                     [0., 1. , 1., 1. , 1. , 1. , 1. , 1. , 1., 1.],
+                     [0., 1. , 1., 1. , 1. , 1.5, 1.5, 1. , 1., 1.],
+                     [0., 1. , 1., 1. , 1.5, 3. , 3. , 1.5, 1., 1.],
+                     [0., 1. , 1., 1. , 1. , 1.5, 1.5, 1. , 1., 1.],
+                     [0., 1. , 1., 1. , 1. , 1. , 1. , 1. , 1., 1.],
+                     [0., 1. , 1., 1. , 1. , 1. , 1. , 1. , 1., 1.],
+                     [0., 1. , 1., 1. , 1. , 1. , 1. , 1. , 1., 1.],
+                     [0., 1. , 1., 1. , 1. , 1. , 1. , 1. , 1., 1.]])
 
 exptp2 = np.array([[0., 0., 1., 1., 1., 1., 1., 1., 1., 1.],
                    [0., 0., 1., 1., 1., 1., 1., 1., 1., 1.],
@@ -65,12 +69,32 @@ exptp2 = np.array([[0., 0., 1., 1., 1., 1., 1., 1., 1., 1.],
                    [0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]])
 
 
-@pytest.mark.parametrize(('shift, test_result'), [((-2,0),exptm2), ((-1,-1),exptm1), 
-                                                ((0,0),expt0), ((1.5,0),exptp1),
-                                                ((2,-1),exptp2)])
+@pytest.mark.parametrize(('shift, test_result'), [((2,0),exptm2), ((1,1),exptm1), 
+                                                ((0,0),expt0), ((-1.5,0),exptp1),
+                                                ((-2,1),exptp2)])
 def test_translate(shift, test_result):
     
-    data = np.array([[1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
+    dat1 = np.array([[1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
+                      [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
+                      [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
+                      [1., 1., 1., 1., 2., 1., 1., 1., 1., 1.],
+                      [1., 1., 1., 2., 4., 2., 1., 1., 1., 1.],
+                      [1., 1., 1., 1., 2., 1., 1., 1., 1., 1.],
+                      [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
+                      [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
+                      [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
+                      [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.]])
+    
+    calculated = translate(dat1, shift)
+        
+    npt.assert_array_equal(calculated, test_result)
+
+@pytest.mark.parametrize(('shift, expected'), [((2,0),exptm2), ((1,1),exptm1), 
+                                                ((0,0),expt0), ((-1.5,0),exptp1),
+                                                ((-2,1),exptp2)])
+def test_translate_skimage(shift, expected):
+    
+    dat1 = np.array([[1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
                      [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
                      [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
                      [1., 1., 1., 1., 2., 1., 1., 1., 1., 1.],
@@ -81,10 +105,10 @@ def test_translate(shift, test_result):
                      [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
                      [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.]])
     
-    calculated = translate(data, shift)
+    tform = transform.AffineTransform(translation=shift)
+    calculated = transform.warp(dat1, tform)
         
-    npt.assert_array_equal(calculated, test_result)
-    
+    npt.assert_array_equal(calculated, expected)    
     
 
 # @pytest.mark.parametrize('r', [2, 3, 4])
@@ -105,5 +129,6 @@ def test_apply_shift_list():
 
 # @pytest.mark.parametrize('r', [2, 3, 4])
 def test_hdu_shift_images():
+    #nunca utilizado, testar com cuidado
     pass
 

@@ -40,31 +40,31 @@ def test_simple_flat(inplace):
     else:
         check.is_false(res1.data is frame1.data)
 #%%   
-# @pytest.mark.parametrize('inplace', [True, False])
-# def test_simple_bias(inplace):
+@pytest.mark.parametrize('inplace', [True, False])
+def test_simple_bias(inplace):
+  
+    expected = np.ones((20, 20))*2
+    expected[0:5, 0:5] = 2.5
+  
+    frame4bias = FrameData(np.ones((20, 20))*3, unit='adu')
+  
+    master_bias = FrameData(np.ones((20,20)),unit='adu')
+    master_bias.data[0:5, 0:5] = 0.5
     
-#     expected = np.ones((20, 20))*2
-#     expected[0:5, 0:5] = 2.5
+    res4 = subtract_bias(frame4bias, master_bias, inplace=inplace)
     
-#     frame4bias = FrameData(np.ones((20, 20))*3, unit='adu')
+    check.is_true(isinstance(res4, FrameData))
+    npt.assert_array_equal(res4.data, expected)
+    check.equal(res4.header['hierarch astropop bias_corrected'], True)
     
-#     master_bias = FrameData(np.ones((20,20)),unit='adu')
-#     master_bias.data[0:5, 0:5] = 0.5
-
-#     res4 = subtract_bias(frame4bias, master_bias, inplace=inplace)
-
-#     check.is_true(isinstance(res4, FrameData))
-#     npt.assert_array_equal(res4.data, expected)
-#     check.equal(res4.header['hierarch astropop bias_corrected'], True)
+    # # Checking bias-subtracted frame unit:
+    # check.equal(res1.unit, u.Unit('adu'))
     
-#     # # Checking bias-subtracted frame unit:
-#     # check.equal(res1.unit, u.Unit('adu'))
-    
-#     # Check inplace statement:
-#     if inplace:
-#         check.is_true(res4.data is frame4bias.data)
-#     else:
-#         check.is_false(res4.data is frame4bias.data)
+    # Check inplace statement:
+    if inplace:
+        check.is_true(res4.data is frame4bias.data)
+    else:
+        check.is_false(res4.data is frame4bias.data)
     
 #%%
     
