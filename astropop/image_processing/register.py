@@ -22,7 +22,7 @@ def translate(image, shift, subpixel=True, cval=0):
     ----------
     image : `~nnumpy.ndarray`
         2D image data to be translated.
-    shift : `tuple (dy, dx)`
+    shift : `tuple (dx, dy)`
         The shift along the axes. Shift should contain one value for each axis.
     subpixel : `boolean (optional)`
         Consider the CCD subpixels on the translation.
@@ -36,17 +36,17 @@ def translate(image, shift, subpixel=True, cval=0):
     image_new : `~nnumpy.ndarray`
         2D shifted image.
     """
-    dy, dx = shift
-    translated = (dx, dy)
+    # dy, dx = shift
+    # translated = (dx, dy)
 
-    tform = transform.AffineTransform(translation=translated)
+    tform = transform.AffineTransform(translation=shift)
     return transform.warp(image, tform, mode='constant', cval=cval)
 
 
 def create_fft_shift_list(image_list):
     """Use fft to calculate the shifts between images in a list.
 
-    Return a set os (y, x) shift pairs.
+    Return a set os (x, y) shift pairs.
     """
     shifts = [(0.0, 0.0)]*len(image_list)
     for i in range(len(image_list)-1):
@@ -68,20 +68,20 @@ def create_chi2_shift_list(image_list):
         im = image_list[i+1]
         err = np.nanstd(im)
         dx, dy, _, _ = chi2_shift(image_list[0], im, err)
-        shifts[i+1] = (-dy, -dx)
+        shifts[i+1] = (-dx, -dy)
 
     return shifts
 
 
 def apply_shift(image, shift, method='fft', subpixel=True, footprint=False,
                 logger=logger):
-    """Apply a shifts of (dy, dx) to a list of images.
+    """Apply a shifts of (dx, dy) to a list of images.
 
     Parameters:
         image : ndarray_like
             The image to be shifted.
         shift: array_like
-            shift to be applyed (dy, dx)
+            shift to be applyed (dx, dy)
         method : string
             The method used for shift images. Can be:
             - 'fft' -> scipy fourier_shift
@@ -115,7 +115,7 @@ def apply_shift(image, shift, method='fft', subpixel=True, footprint=False,
 
 def apply_shift_list(image_list, shift_list, method='fft',
                      logger=logger):
-    """Apply a list of (y, x) shifts to a list of images.
+    """Apply a list of (x, y) shifts to a list of images.
 
     Parameters:
         image_list : ndarray_like
@@ -172,8 +172,8 @@ def hdu_shift_images(hdu_list, method='fft', register_method='asterism',
                 s_method = 'simple'
             ccd.data = apply_shift(ccd.data, shift, method=s_method,
                                    logger=logger)
-            sh = [str(i) for i in shift[::-1]]
-            ccd.header['hierarch astropop register_shift'] = ",".join(sh)
+            sh_string = [str(i) for i in shift]
+            ccd.header['hierarch astropop register_shift'] = ",".join(sh_string)
             if footprint:
                 ccd.footprint = apply_shift(np.ones_like(ccd.data, dtype=bool),
                                             shift, method='simple',
