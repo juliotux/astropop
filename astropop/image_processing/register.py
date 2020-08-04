@@ -1,9 +1,8 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
 from skimage.feature import register_translation
+from skimage import transform
 from scipy.ndimage import fourier_shift
-from scipy.ndimage import shift as scipy_shift
-from scipy.signal import correlate2d
 import numpy as np
 try:
     import astroalign
@@ -17,15 +16,13 @@ from ..logger import logger
 
 
 def translate(image, shift, subpixel=True, cval=0):
-    """Translate an image by (dy, dx) using scipy.
-
-    Based on stsci.image.translation algorithm
+    """Translate an image by (dy, dx) using Scikit AffineTransform.
     
     Parameters
     ----------
     image : `~nnumpy.ndarray`
         2D image data to be translated.
-    shift : `tuple (dx, dy)`
+    shift : `tuple (dy, dx)`
         The shift along the axes. Shift should contain one value for each axis.
     subpixel : `boolean (optional)`
         Consider the CCD subpixels on the translation.
@@ -39,34 +36,11 @@ def translate(image, shift, subpixel=True, cval=0):
     image_new : `~nnumpy.ndarray`
         2D shifted image.
     """
-    # for subpixel, a correlation kernel need translation
-    if subpixel:
-        rot = 0
-        dy, dx = shift
-        dx, dy = -dx, -dy
-        if dx >= 0 and dy >= 0:
-            rot = 2
-        elif dx >= 0 and dy < 0:
-            rot = 1
-        elif dx < 0 and dy >= 0:
-            rot = 3
-        elif dx < 0 and dy < 0:
-            rot = 0
-        dx, dy = np.abs([dx, dy])
-        if rot % 2 != 0:
-            dx, dy = dy, dx
+    dy, dx = shift
+    translated = (dx, dy)
 
-        nim = np.rot90(image, rot)
-        nim = scipy_shift(nim, (dy, dx), mode='constant', cval=cval)
-
-        # correlation kernel to fix subpixel shifting
-        x, y = dx % 1.0, dy % 1.0
-        kernel = np.array([[x*y, (1-x)*y],
-                           [(1-y)*x, (1-y)*(1-x)]])
-        nim = correlate2d(nim, kernel, mode='full', fillvalue=cval)
-        return np.rot90(nim, -rot % 4).astype(image.dtype)[:-1, :-1]
-
-    return scipy_shift(image, shift, mode='constant', cval=cval)
+    tform = transform.AffineTransform(translation=translated)
+    return transform.warp(image, tform, mode='constant', cval=cval)
 
 
 def create_fft_shift_list(image_list):
