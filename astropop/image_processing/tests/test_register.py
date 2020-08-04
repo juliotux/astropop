@@ -5,9 +5,6 @@ import numpy as np
 import numpy.testing as npt
 import pytest_check as check
 
-
-from skimage import transform
-
 from astropop.image_processing.register import (translate, create_fft_shift_list, 
                                                 create_chi2_shift_list, apply_shift, 
                                                 apply_shift_list, hdu_shift_images)
@@ -69,9 +66,9 @@ exptp2 = np.array([[0., 0., 1., 1., 1., 1., 1., 1., 1., 1.],
                    [0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]])
 
 
-@pytest.mark.parametrize(('shift, test_result'), [((0,2),exptm2), ((1,1),exptm1), 
-                                                ((0,0),expt0), ((0,-1.5),exptp1),
-                                                ((1,-2),exptp2)])
+@pytest.mark.parametrize(('shift, test_result'), [((2,0),exptm2), ((1,1),exptm1), 
+                                                ((0,0),expt0), ((-1.5,0),exptp1),
+                                                ((-2,1),exptp2)])
 def test_translate(shift, test_result):
     
     dat1 = np.array([[1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
