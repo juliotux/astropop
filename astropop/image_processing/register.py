@@ -73,7 +73,7 @@ def create_chi2_shift_list(image_list):
     return shifts
 
 
-def apply_shift(image, shift, method='fft', subpixel=True, footprint=False,
+def apply_shift(image, shiftxy, method='fft', subpixel=True, footprint=False,
                 logger=logger):
     """Apply a shifts of (dx, dy) to a list of images.
 
@@ -89,22 +89,26 @@ def apply_shift(image, shift, method='fft', subpixel=True, footprint=False,
 
     Return the shifted images.
     """
+    
+    dx, dy = shiftxy
+    shift_col_lin = (dy, dx)
+    
     # Shift with fft, much more precise and fast
     if method == 'fft':
-        nimage = fourier_shift(np.fft.fftn(image), np.array(shift))
+        nimage = fourier_shift(np.fft.fftn(image), np.array(shift_col_lin))
         nimage = np.fft.ifftn(nimage).real.astype(image.dtype)
         if footprint:
             foot = np.ones(nimage.shape)
-            foot = translate(foot, shift, subpixel=True, cval=0)
+            foot = translate(foot, shift_col_lin, subpixel=True, cval=0)
             return nimage, foot
         else:
             return nimage
 
     elif method == 'simple':
-        nimage = translate(image, shift, subpixel=subpixel, cval=0)
+        nimage = translate(image, shift_col_lin, subpixel=subpixel, cval=0)
         if footprint:
             foot = np.ones(nimage.shape)
-            foot = translate(foot, shift, subpixel=subpixel, cval=0)
+            foot = translate(foot, shift_col_lin, subpixel=subpixel, cval=0)
             return nimage, foot
         else:
             return nimage

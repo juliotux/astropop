@@ -65,6 +65,17 @@ exptp2 = np.array([[0., 0., 1., 1., 1., 1., 1., 1., 1., 1.],
                    [0., 0., 1., 1., 1., 1., 1., 1., 1., 1.],
                    [0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]])
 
+exptm22 = np.array([[1., 1., 1., 1., 1., 1., 1., 1., 1, 1],
+                    [1., 1., 1., 1., 1., 1., 1., 1., 1, 1],
+                    [1., 1., 2., 1., 1., 1., 1., 1., 1, 1],
+                    [1., 2., 4., 2., 1., 1., 1., 1., 1, 1],
+                    [1., 1., 2., 1., 1., 1., 1., 1., 1, 1],
+                    [1., 1., 1., 1., 1., 1., 1., 1., 1, 1],
+                    [1., 1., 1., 1., 1., 1., 1., 1., 1, 1],
+                    [1., 1., 1., 1., 1., 1., 1., 1., 1, 1],
+                    [1., 1., 1., 1., 1., 1., 1., 1., 1, 1],
+                    [1., 1., 1., 1., 1., 1., 1., 1., 1, 1]])
+
 
 @pytest.mark.parametrize(('shift, test_result'), [((2,0),exptm2), ((1,1),exptm1), 
                                                 ((0,0),expt0), ((-1.5,0),exptp1),
@@ -72,15 +83,15 @@ exptp2 = np.array([[0., 0., 1., 1., 1., 1., 1., 1., 1., 1.],
 def test_translate(shift, test_result):
     
     dat1 = np.array([[1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
-                      [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
-                      [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
-                      [1., 1., 1., 1., 2., 1., 1., 1., 1., 1.],
-                      [1., 1., 1., 2., 4., 2., 1., 1., 1., 1.],
-                      [1., 1., 1., 1., 2., 1., 1., 1., 1., 1.],
-                      [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
-                      [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
-                      [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
-                      [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.]])
+                     [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
+                     [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
+                     [1., 1., 1., 1., 2., 1., 1., 1., 1., 1.],
+                     [1., 1., 1., 2., 4., 2., 1., 1., 1., 1.],
+                     [1., 1., 1., 1., 2., 1., 1., 1., 1., 1.],
+                     [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
+                     [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
+                     [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
+                     [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.]])
     
     calculated = translate(dat1, shift)
         
@@ -94,9 +105,59 @@ def test_create_fft_shift_list():
 def test_create_chi2_shift_list():
     pass
 
-# @pytest.mark.parametrize('r', [2, 3, 4])
-def test_apply_shift():
-    pass
+@pytest.mark.parametrize(('shift2, test_result2'), [((-2,0),exptm22)])#, ((1,1),exptm1), 
+                                                # ((0,0),expt0), ((-1.5,0),exptp1),
+                                                # ((2,-1),exptp2)])
+def test_apply_shift(shift2, test_result2):
+    # apply_shift(image, shift, method='fft', subpixel=True, footprint=False,
+    #             logger=logger):
+    """Apply a shifts of (dx, dy) to a list of images.
+
+    Parameters:
+        image : ndarray_like
+            The image to be shifted.
+        shift: array_like
+            shift to be applyed (dx, dy)
+        method : string
+            The method used for shift images. Can be:
+            - 'fft' -> scipy fourier_shift
+            - 'simple' -> simples translate using scipy
+
+    Return the shifted images.
+    """
+    
+    
+    dat1 = np.array([[1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
+                     [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
+                     [1., 1., 1., 1., 2., 1., 1., 1., 1., 1.],
+                     [1., 1., 1., 2., 4., 2., 1., 1., 1., 1.],
+                     [1., 1., 1., 1., 2., 1., 1., 1., 1., 1.],
+                     [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
+                     [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
+                     [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
+                     [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
+                     [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.]])
+    
+    calculated_fft_nofootprint = apply_shift(dat1, shift2, 'fft', True, False)
+    npt.assert_array_almost_equal(calculated_fft_nofootprint, test_result2) 
+    
+    calculated_fft, foot = apply_shift(dat1, shift2, 'fft', True, True)
+    npt.assert_array_almost_equal(calculated_fft, test_result2) 
+
+    dat0 = dat1 - 1
+    dat2 = dat1 + 2
+    
+    calculated_fft_nofootprint = apply_shift(dat0, shift2, 'fft', True, False)
+    npt.assert_array_almost_equal(calculated_fft_nofootprint, test_result2-1) 
+    
+    calculated_fft, foot = apply_shift(dat0, shift2, 'fft', True, True)
+    npt.assert_array_almost_equal(calculated_fft, test_result2-1)     
+    
+    calculated_fft_nofootprint = apply_shift(dat2, shift2, 'fft', True, False)
+    npt.assert_array_almost_equal(calculated_fft_nofootprint, test_result2+2) 
+    
+    calculated_fft, foot = apply_shift(dat2, shift2, 'fft', True, True)
+    npt.assert_array_almost_equal(calculated_fft, test_result2+2)
 
 # @pytest.mark.parametrize('r', [2, 3, 4])
 def test_apply_shift_list():
