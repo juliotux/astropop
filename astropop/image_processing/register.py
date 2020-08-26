@@ -73,8 +73,7 @@ def create_chi2_shift_list(image_list):
     return shifts
 
 
-def apply_shift(image, shiftxy, method='fft', subpixel=True, footprint=False,
-                logger=logger):
+def apply_shift(image, shiftxy, subpixel=True, footprint=False, logger=logger):
     """Apply a shifts of (dx, dy) to a list of images.
 
     Parameters:
@@ -82,10 +81,7 @@ def apply_shift(image, shiftxy, method='fft', subpixel=True, footprint=False,
             The image to be shifted.
         shift: array_like
             shift to be applyed (dx, dy)
-        method : string
-            The method used for shift images. Can be:
-            - 'fft' -> scipy fourier_shift
-            - 'simple' -> simples translate using scipy
+
 
     Return the shifted images.
     """
@@ -93,28 +89,22 @@ def apply_shift(image, shiftxy, method='fft', subpixel=True, footprint=False,
     dx, dy = shiftxy
     shift_col_lin = (dy, dx)
     
-    # Shift with fft, much more precise and fast
-    if method == 'fft':
-        nimage = fourier_shift(np.fft.fftn(image), np.array(shift_col_lin))
-        nimage = np.fft.ifftn(nimage).real.astype(image.dtype)
-        if footprint:
-            foot = np.ones(nimage.shape)
-            foot = translate(foot, shift_col_lin, subpixel=True, cval=0)
-            return nimage, foot
-        else:
-            return nimage
-
-    elif method == 'simple':
-        nimage = translate(image, shift_col_lin, subpixel=subpixel, cval=0)
-        if footprint:
-            foot = np.ones(nimage.shape)
-            foot = translate(foot, shift_col_lin, subpixel=subpixel, cval=0)
-            return nimage, foot
-        else:
-            return nimage
-
+    nimage = translate(image, shift_col_lin, subpixel=subpixel, cval=0)
+    
+    nimage.masks = np.falses(nimage.shape)
+    if dx < 0: nimage.masks[dx:] = True
+    else: nimage.masks[:dx] = True
+    if dy < 0: nimage.masks[:,dy:] = True
+    else: nimage.masks[:,:dy] = True
+    
+    if footprint:
+        foot = np.ones(nimage.shape)
+        foot = translate(foot, shift_col_lin, subpixel=subpixel, cval=0)
+        return nimage, foot
     else:
-        raise ValueError('Unrecognized shift image method.')
+        return nimage
+
+    # raise ValueError('Unrecognized shift image method.')
 
 
 def apply_shift_list(image_list, shift_list, method='fft',
