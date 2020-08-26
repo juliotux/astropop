@@ -2,7 +2,7 @@
 
 from skimage.feature import register_translation
 from skimage import transform
-from scipy.ndimage import fourier_shift
+# from scipy.ndimage import fourier_shift
 import numpy as np
 try:
     import astroalign
@@ -152,7 +152,7 @@ def hdu_shift_images(hdu_list, method='fft', register_method='asterism',
                                                          np.ones(i.data.shape,
                                                                  dtype=bool),
                                                          im0)
-            s_method = 'similarity_transform'
+            # s_method = 'similarity_transform'
     else:
         if method == 'chi2':
             shifts = create_chi2_shift_list([ccd.data for ccd in hdu_list])
