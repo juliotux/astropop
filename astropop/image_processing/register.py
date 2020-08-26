@@ -160,21 +160,26 @@ def hdu_shift_images(hdu_list, method='fft', register_method='asterism',
             shifts = create_fft_shift_list([ccd.data for ccd in hdu_list])
         logger.info(f"Aligning CCDData with shifts: {shifts}")
         for ccd, shift in zip(hdu_list, shifts):
-            if method == 'fft':
-                s_method = method
-            else:
-                s_method = 'simple'
-            ccd.data = apply_shift(ccd.data, shift, method=s_method,
-                                   logger=logger)
+            # if method == 'fft':
+            #     s_method = method
+            # else:
+            #     s_method = 'simple'
+            # ccd.data = apply_shift(ccd.data, shift, method=s_method,
+            #                        logger=logger)
+            #     s_method = 'simple'
+            ccd.data = apply_shift(ccd.data, shift, logger=logger)
             sh_string = [str(i) for i in shift]
             ccd.header['hierarch astropop register_shift'] = ",".join(sh_string)
+            # if footprint:
+            #     ccd.footprint = apply_shift(np.ones_like(ccd.data, dtype=bool),
+            #                                 shift, method='simple',
+            #                                 logger=logger)
             if footprint:
                 ccd.footprint = apply_shift(np.ones_like(ccd.data, dtype=bool),
-                                            shift, method='simple',
-                                            logger=logger)
+                                            shift, logger=logger)
     for i in hdu_list:
         i.header['hierarch astropop registered'] = True
-        i.header['hierarch astropop register_method'] = method
-        i.header['hierarch astropop transform_method'] = s_method
+        # i.header['hierarch astropop register_method'] = method
+        # i.header['hierarch astropop transform_method'] = s_method
 
     return hdu_list
