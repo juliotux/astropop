@@ -3,7 +3,6 @@
 import numpy as np
 import os
 import pytest
-import shutil
 from urllib import request
 from astroquery.skyview import SkyView
 from astropy.coordinates import Angle, SkyCoord
@@ -12,14 +11,17 @@ from astropy.io import fits
 from astropy.nddata.ccddata import _generate_wcs_and_update_header
 from astropy.wcs import WCS
 
-from astropop.astrometry.astrometrynet import _solve_field, \
+from astropop.astrometry.astrometrynet import _solve_field, fit_wcs, \
                                               solve_astrometry_image, \
                                               solve_astrometry_xy, \
-                                              solve_astrometry_hdu, \
-                                              AstrometrySolver
+                                              solve_astrometry_hdu
 from astropop.astrometry.manual_wcs import wcs_from_coords
 from astropop.astrometry.coords_utils import guess_coordinates
+from astropop.photometry.aperture import aperture_photometry
+from astropop.photometry.detection import starfind
+from astropop.py_utils import mkdir_p
 
+import pytest_check as check
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 
@@ -28,11 +30,12 @@ def get_image_index():
     ast_data = os.path.dirname(_solve_field)
     ast_data = os.path.dirname(ast_data)
     ast_data = os.path.join(ast_data, 'data')
+    mkdir_p(ast_data)
     index = 'index-4107.fits'  # index-4202-28.fits'
     d = 'http://broiler.astrometry.net/~dstn/4100/' + index
     f = os.path.join(ast_data, index)
     if not os.path.isfile(f):
-        request.urlretrieve(d, f)
+        request.urlretrieve(d, f)  # nosec
     name = os.path.join(cache, 'm20_dss.fits')
     if not os.path.isfile(name):
         s = SkyView.get_images('M20', radius=Angle('60arcmin'),
@@ -41,24 +44,84 @@ def get_image_index():
     return name, f
 
 
-@pytest.mark.skipif('_solve_field is None')
+def compare_wcs(wcs, nwcs):
+    for i in [(100, 100), (1000, 1500), (357.5, 948.2), (2015.1, 403.7)]:
+        res1 = np.array(wcs.all_pix2world(*i, 0))
+        res2 = np.array(nwcs.all_pix2world(*i, 0))
+        assert_array_almost_equal(res1, res2)
+
+
+skip_astrometry = pytest.mark.skipif("_solve_field is None or "
+                                     "os.getenv('SKIP_TEST_ASTROMETRY', "
+                                     "False)")
+
+
+@skip_astrometry
 def test_solve_astrometry_hdu(tmpdir):
     data, index = get_image_index()
     hdu = fits.open(data)[0]
     header, wcs = _generate_wcs_and_update_header(hdu.header)
     hdu.header = header
     nwcs = solve_astrometry_hdu(hdu, return_wcs=True)
-    assert isinstance(nwcs, WCS)
-    assert nwcs.naxis == 2
-    # TODO: complete this test
+    check.is_true(isinstance(nwcs, WCS))
+    check.equal(nwcs.naxis, 2)
+    compare_wcs(wcs, nwcs)
+
+
+@skip_astrometry
+def test_solve_astrometry_xyl(tmpdir):
+    data, index = get_image_index()
+    hdu = fits.open(data)[0]
+    header, wcs = _generate_wcs_and_update_header(hdu.header)
+    hdu.header = header
+    sources = starfind(hdu.data, 10, np.median(hdu.data),
+                       np.std(hdu.data), 4)
+    phot = aperture_photometry(hdu.data, sources['x'], sources['y'])
+    imw, imh = hdu.data.shape
+    nwcs = solve_astrometry_xy(phot['x'], phot['y'], phot['flux'], header,
+                               imw, imh, return_wcs=True)
+    check.is_instance(nwcs, WCS)
+    check.equal(nwcs.naxis, 2)
+    compare_wcs(wcs, nwcs)
+
+
+@skip_astrometry
+def test_solve_astrometry_image(tmpdir):
+    data, index = get_image_index()
+    hdu = fits.open(data)[0]
+    header, wcs = _generate_wcs_and_update_header(hdu.header)
+    hdu.header = header
+    name = tmpdir.join('testimage.fits').strpath
+    hdu.writeto(name)
+    nwcs = solve_astrometry_image(name, return_wcs=True)
+    check.is_instance(nwcs, WCS)
+    check.equal(nwcs.naxis, 2)
+    compare_wcs(wcs, nwcs)
+
+
+@skip_astrometry
+def test_fit_wcs(tmpdir):
+    data, index = get_image_index()
+    hdu = fits.open(data)[0]
+    imw, imh = hdu.data.shape
+    header, wcs = _generate_wcs_and_update_header(hdu.header)
+    hdu.header = header
+    sources = starfind(hdu.data, 10, np.median(hdu.data),
+                       np.std(hdu.data), 4)
+    sources['ra'], sources['dec'] = wcs.all_pix2world(sources['x'],
+                                                      sources['y'], 1)
+    nwcs = fit_wcs(sources['x'], sources['y'], sources['ra'], sources['dec'],
+                   imw, imh)
+    check.is_instance(nwcs, WCS)
+    check.equal(nwcs.naxis, 2)
+    compare_wcs(wcs, nwcs)
 
 
 def test_manual_wcs_top():
     # Checked with DS9
     x, y = (11, 11)
     ra, dec = (10.0, 0.0)
-    ps = 36 # arcsec/px
-    ps_dev = ps/3600
+    ps = 36  # arcsec/px
     north = 'top'  # north to right
     wcs = wcs_from_coords(x, y, ra, dec, ps, north)
     assert_array_almost_equal(wcs.all_pix2world(11, 11, 1), (ra, dec))
@@ -75,8 +138,7 @@ def test_manual_wcs_left():
     # Checked with DS9
     x, y = (11, 11)
     ra, dec = (10.0, 0.0)
-    ps = 36 # arcsec/px
-    ps_dev = ps/3600
+    ps = 36  # arcsec/px
     north = 'left'  # north to right
     wcs = wcs_from_coords(x, y, ra, dec, ps, north)
     assert_array_almost_equal(wcs.all_pix2world(11, 11, 1), (ra, dec))
@@ -93,8 +155,7 @@ def test_manual_wcs_bottom():
     # Checked with DS9
     x, y = (11, 11)
     ra, dec = (10.0, 0.0)
-    ps = 36 # arcsec/px
-    ps_dev = ps/3600
+    ps = 36  # arcsec/px
     north = 'bottom'  # north to right
     wcs = wcs_from_coords(x, y, ra, dec, ps, north)
     assert_array_almost_equal(wcs.all_pix2world(11, 11, 1), (ra, dec))
@@ -111,8 +172,7 @@ def test_manual_wcs_right():
     # Checked with DS9
     x, y = (11, 11)
     ra, dec = (10.0, 0.0)
-    ps = 36 # arcsec/px
-    ps_dev = ps/3600
+    ps = 36  # arcsec/px
     north = 'right'
     wcs = wcs_from_coords(x, y, ra, dec, ps, north)
     assert_array_almost_equal(wcs.all_pix2world(11, 11, 1), (ra, dec))
@@ -129,8 +189,7 @@ def test_manual_wcs_angle():
     # Checked with DS9
     x, y = (11, 11)
     ra, dec = (10.0, 0.0)
-    ps = 36 # arcsec/px
-    ps_dev = ps/3600
+    ps = 36  # arcsec/px
     north = 45
     wcs = wcs_from_coords(x, y, ra, dec, ps, north)
     assert_array_almost_equal(wcs.all_pix2world(11, 11, 1), (ra, dec))
@@ -144,8 +203,7 @@ def test_manual_wcs_top_flip_ra():
     # Checked with DS9
     x, y = (11, 11)
     ra, dec = (10.0, 0.0)
-    ps = 36 # arcsec/px
-    ps_dev = ps/3600
+    ps = 36  # arcsec/px
     north = 'top'
     flip = 'ra'
     wcs = wcs_from_coords(x, y, ra, dec, ps, north, flip=flip)
@@ -163,8 +221,7 @@ def test_manual_wcs_top_flip_dec():
     # Checked with DS9
     x, y = (11, 11)
     ra, dec = (10.0, 0.0)
-    ps = 36 # arcsec/px
-    ps_dev = ps/3600
+    ps = 36  # arcsec/px
     north = 'top'
     flip = 'dec'
     wcs = wcs_from_coords(x, y, ra, dec, ps, north, flip=flip)
@@ -182,8 +239,7 @@ def test_manual_wcs_top_flip_all():
     # Checked with DS9
     x, y = (11, 11)
     ra, dec = (10.0, 0.0)
-    ps = 36 # arcsec/px
-    ps_dev = ps/3600
+    ps = 36  # arcsec/px
     north = 'top'
     flip = 'all'
     wcs = wcs_from_coords(x, y, ra, dec, ps, north, flip=flip)
@@ -199,13 +255,14 @@ def test_manual_wcs_top_flip_all():
 def test_raise_north_angle():
     with pytest.raises(ValueError) as exc:
         wcs_from_coords(0, 0, 0, 0, 0, 'not a direction')
-        assert 'invalid value for north' in str(exc.value)
+        check.is_in('invalid value for north', str(exc.value))
 
 
 def test_guess_coords_float():
     ra = 10.0
     dec = 0.0
     assert_array_equal(guess_coordinates(ra, dec, skycoord=False), (ra, dec))
+
 
 def test_guess_coords_strfloat():
     ra = "10.0"
@@ -231,9 +288,18 @@ def test_guess_coords_skycord_float():
     ra = 10.0
     dec = 0.0
     sk = guess_coordinates(ra, dec, skycoord=True)
-    assert isinstance(sk, SkyCoord)
-    assert sk.ra.degree == ra
-    assert sk.dec.degree == dec
+    check.is_instance(sk, SkyCoord)
+    check.equal(sk.ra.degree, ra)
+    check.equal(sk.dec.degree, dec)
+
+
+def test_guess_coords_skycord_hexa():
+    ra = "1:00:00"
+    dec = "00:00:00"
+    sk = guess_coordinates(ra, dec, skycoord=True)
+    check.is_instance(sk, SkyCoord)
+    check.is_true(sk.ra.degree - 15 < 1e-8)
+    check.is_true(sk.dec.degree - 0 < 1e-8)
 
 
 def test_guess_coords_list_hexa():

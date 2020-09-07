@@ -1,0 +1,7 @@
+.. |astropop| replace:: :module: `~astropop`
+.. |FrameData| replace:: :class:`~astropop.framedata.FrameData`
+.. |MemMapArray| replace:: :class:`~astropop.framedata.MemMapArray`
+
+.. |CCDData| replace:: :class:`~astropy.nddata.ccddata.CCDData`
+.. |HDUList| replace:: :class:`~astropy.io.fits.HDUList`
+.. |Header| replace:: :class:`~astropy.io.fits.Header`

@@ -5,18 +5,16 @@ import six
 import numpy as np
 from astropy.io import fits
 from astropy.io.fits.hdu.base import _ValidHDU
-from astropy.nddata import NDData, StdDevUncertainty, CCDData
-from astropy import units as u
 from astropy.table import Table, hstack
 from collections import OrderedDict
 import functools
 
 from .py_utils import check_iterable, process_list
-from .framedata import FrameData, imhdus
+from .framedata import imhdus
 from .logger import logger
 
 __all__ = ['imhdus', 'check_header_keys', 'check_image_hdu', 'fits_yielder',
-           'headers_to_table', 'check_ccddata']
+           'headers_to_table']
 
 
 _supported_formats = [".fts", ".fit", ".fz", ".fits"]
@@ -29,8 +27,10 @@ class IncompatibleHeadersError(ValueError):
     """When 2 image header are not compatible."""
 
 
-def check_header_keys(image1, image2, keywords=[], logger=logger):
+def check_header_keys(image1, image2, keywords=None, logger=logger):
     """Compare header keys from 2 images to check if the have equal values."""
+    keywords = keywords or []
+
     # Compatibility with fits HDU and FrameData
     if hasattr(image1, 'header'):
         hk1 = 'header'
@@ -53,85 +53,17 @@ def check_header_keys(image1, image2, keywords=[], logger=logger):
                                                '`{v1}`  `{v2}`')
         elif i in image1.header.keys() or i in image2.header.keys():
             raise IncompatibleHeadersError("Headers have inconsisten presence "
-                                           "of {} Keyword".format(i))
+                                           f"of {i} Keyword")
         else:
-            logger.debug("The images do not have the {} keyword".format(i))
+            logger.debug("The images do not have the %s keyword", i)
     return True
-
-
-def hdu2framedata(hdu, bunit=None):
-    """Convert HDU to CCDData"""
-    # if key_utype in hdu.header:
-    #     unit = u.Unit(hdu.header[key_utype])
-    # else:
-    ccd = FrameData(hdu.data, meta=hdu.header, unit=bunit)
-    info = hdu.fileinfo()
-    if info is not None:
-        ccd.filename = info['file'].name
-    return ccd
-
-
-def hdulist2framedata(hdulist, ext=0, ext_mask='MASK', ext_uncert='UNCERT',
-                      bunit=u.dimensionless_unscaled,
-                      uunit=u.dimensionless_unscaled):
-    """Convert a fits.HDUList (single image) to a CCDData."""
-    ccddata = hdu2framedata(hdulist[ext], bunit)
-
-    if ext_mask in hdulist:
-        mask = hdulist[ext_mask].data
-    else:
-        mask = None
-
-    ccddata.mask = mask
-
-    if ext_uncert in hdulist:
-        uncert = hdulist[ext_uncert]
-        ccddata.uncertainty = StdDevUncertainty(uncert, unit=uunit)
-    else:
-        ccddata.uncertainty = None
-
-    return ccddata
-
-
-def check_framedata(data, ext=0, ext_mask='MASK', ext_uncert='UNCERT',
-                  bunit='BUNIT', uunit=None):
-    """Check if a data is a valid CCDData or convert it."""
-    if isinstance(data, (FrameData, CCDData)):
-        return FrameData(data)
-    elif isinstance(data, NDData):
-        ccd = FrameData(data.data, mask=data.mask, uncertainty=data.uncertainty,
-                        meta=data.meta, unit=data.unit or u.Unit(bunit))
-        ccd.filename = None
-        return ccd
-    else:
-        if isinstance(data, fits.HDUList):
-            logger.debug("Extracting CCDData from ext {} of HDUList"
-                         .format(ext))
-            return hdulist2framedata(data, ext, ext_mask, ext_uncert,
-                                   bunit=bunit, uunit=uunit)
-        elif isinstance(data, six.string_types):
-            logger.debug("Loading CCDData from {} file".format(data))
-            try:
-                ccd = FrameData.read(data, hdu=ext)
-                ccd.filename = data
-                return ccd
-            except ValueError:
-                data = fits.open(data)
-                return hdulist2framedata(data, ext, ext_mask, ext_uncert,
-                                       bunit=bunit, uunit=uunit)
-        elif isinstance(data, imhdus):
-            logger.debug("Loading FrameData from {} HDU".format(data))
-            hdu2framedata(data, bunit=bunit)
-        else:
-            raise ValueError('The given data is not a valid FrameData type.')
-    return data
 
 
 def check_image_hdu(data, ext=0, logger=logger):
     """Check if a data is a valid ImageHDU type or convert it."""
     if not isinstance(data, imhdus):
         if isinstance(data, fits.HDUList):
-            logger.debug("Extracting HDU from ext {} of HDUList".format(ext))
+            logger.debug("Extracting HDU from ext %s of HDUList", str(ext))
             data = data[ext]
         elif isinstance(data, six.string_types):
             data = fits.open(data)[ext]
@@ -158,7 +90,7 @@ def save_image_hdu(hdu, filename, overwrite=False, logger=logger):
         ext += ext2
 
     filename = base + ext
-    logger.debug('Saving fits file to: {}'.format(filename))
+    logger.debug('Saving fits file to: %s', filename)
 
     if ext == '.fz':
         p = fits.PrimaryHDU()
@@ -204,12 +136,14 @@ def fits_yielder(return_type, file_list, ext=0, append_to_name=None,
 
     # if the image list contain hdus, re-yield them
     def _reyield(ver_obj):
+        ret = None
         if return_type == 'header':
-            return ver_obj.header
+            ret = ver_obj.header
         elif return_type == 'data':
-            return ver_obj.data
+            ret = ver_obj.data
         elif return_type == 'hdu':
-            return ver_obj
+            ret = ver_obj
+        return ret
 
     def _save(old, new, yielded):
         hdul = fits.open(old)
@@ -221,7 +155,7 @@ def fits_yielder(return_type, file_list, ext=0, append_to_name=None,
         elif return_type == 'hdu':
             hdul[index] = yielded
 
-        hdul.writeto(save_fname, overwrite=overwrite)
+        hdul.writeto(new, overwrite=overwrite)
 
     for i in file_list:
         if isinstance(i, _ValidHDU):
@@ -235,18 +169,18 @@ def fits_yielder(return_type, file_list, ext=0, append_to_name=None,
             basename = os.path.basename(i)
             if append_to_name is not None:
                 base, extf = os.path.splitext(basename)
-                basename = "{}{}.{}".format(base, append_to_name, extf)
+                basename = f"{base}{append_to_name}.{extf}"
 
             base, extf = os.path.splitext(basename)
             if extf not in ['fits', 'fts', 'fit', 'gz', 'bz2', 'fz']:
-                logger.warn('{} extension not supported for writing. '
-                            'Changing to fits'.format(extf))
+                logger.warning('%s extension not supported for writing. '
+                               'Changing to fits', str(extf))
                 subext = os.path.splitext(base)[1]
                 if subext in ['fits', 'fts', 'fit', 'fz']:
                     nextf = ''
                 else:
                     nextf = 'fits'
-                basename = "{}.{}".format(base, nextf)
+                basename = f"{base}.{nextf}"
 
             save_fname = os.path.join(save_to, basename)
 
@@ -262,7 +196,7 @@ def headers_to_table(headers, filenames=None, keywords=None, empty_value=None,
     for head in headers:
         hlist.append(head)
         actual += 1
-        logger.debug("Reading header {}".format(actual))
+        logger.debug("Reading header %d", actual)
 
     n = len(hlist)
 
@@ -283,7 +217,7 @@ def headers_to_table(headers, filenames=None, keywords=None, empty_value=None,
         headict[k] = [empty_value]*n
 
     for i in range(n):
-        logger.debug("Processing header {} from {}".format(i, n))
+        logger.debug("Processing header %d from %d", i, n)
         for key, val in hlist[i].items():
             key = key.lower()
             if key in keywords:

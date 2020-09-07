@@ -3,24 +3,32 @@ name: astropop
 channels:
     - astropy
     - juliotux
+    - conda-forge
 
 dependencies:
-    - python>=3.7
+    - python
     - astropy
     - cython
     - matplotlib
-    - numpy>=1.16
+    - numpy
     - sphinx-astropy
     - pytz
     - pyyaml
     - scikit-image
-    - matplotlib
     - scipy
     - astroquery
     - astroscrappy
     - astroalign
     - ccdproc
     - photutils
+    - sep
+    - pytest-astropy
+    - pip
+    - ipython
     - pip:
-        - sep
         - sphinx-rtd-theme
+        - sphinxcontrib-apidoc
+        - astropy-helpers
+        - pytest_check
+        - sphinxcontrib-napoleon
+

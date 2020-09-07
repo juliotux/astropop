@@ -1,7 +1,8 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
+"""Small utility to identify stars in a catalog."""
+
 from astropy.table import Table
 
-from ..astrometry import wcs_xy2radec
 from ..py_utils import process_list, string_fix
 
 __all__ = ['identify_stars']
@@ -13,7 +14,7 @@ def identify_stars(x, y, wcs, identify_catalog,
     """Identify stars with coordinates x and y in a wcs frame and return
     pertinent parameters from the catalogs."""
     cat = identify_catalog
-    ra, dec = wcs_xy2radec(x, y, wcs)
+    ra, dec = wcs.all_pix2world(x, y, 1)  # Native wcs has 1 index counting
 
     cat_res = cat.match_objects(ra, dec, filter, limit_angle=limit_angle)
     name = cat_res['id']

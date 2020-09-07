@@ -11,9 +11,11 @@ from ._astropy_init import *   # noqa
 import sys
 from distutils.version import LooseVersion
 
+from .logger import logger
+
 __minimum_python_version__ = "3.7"
 
-__all__ = []
+__all__ = ['logger']
 
 
 class UnsupportedPythonError(Exception):
@@ -21,8 +23,8 @@ class UnsupportedPythonError(Exception):
 
 
 if LooseVersion(sys.version) < LooseVersion(__minimum_python_version__):
-    raise UnsupportedPythonError("astropop does not support Python < {}"
-                                 .format(__minimum_python_version__))
+    raise UnsupportedPythonError(f"astropop does not support Python <"
+                                 f" {__minimum_python_version__}")
 
 if not _ASTROPY_SETUP_:   # noqa
     # For egg_info test builds to pass, put package imports here.

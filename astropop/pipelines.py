@@ -6,8 +6,8 @@ from functools import partial
 from collections.abc import Mapping
 import copy
 
-from ..logger import logger, log_to_list
-from ..py_utils import IndexedDict, check_iterable
+from .logger import logger, log_to_list
+from .py_utils import IndexedDict, check_iterable
 
 
 # TODO: __str__, __repr__, print functions for all classes
@@ -30,10 +30,44 @@ class FrozenError(RuntimeError):
     pass
 
 
-class Config(dict):
+class _Frozable():
+    _frozen = False
+
+    def __init__(self):
+        self._frozen = False
+
+    def __setattr__(self, name, value):
+        if self._frozen and name not in self._mutable:
+            raise FrozenError('Trying to change an attr while frozen.')
+        return super().__setattr__(name, value)
+
+    def __delattr__(self, name):
+        if self._frozen:
+            raise FrozenError('Trying to delete an attr while frozen.')
+        return super().__delattr__(name)
+
+    def freeze(self):
+        self._frozen = True
+        for v in self.__dict__.values():
+            if isinstance(v, _Frozable):
+                v.freeze()
+        return self
+
+    def unfreeze(self):
+        self._frozen = False
+        for v in self.__dict__.values():
+            if isinstance(v, _Frozable):
+                v.unfreeze()
+        return self
+
+    @property
+    def frozen(self):
+        return self._frozen
+
+
+class Config(dict, _Frozable):
     """Class for generic sotring configs. Like a powered dict."""
     _mutable = ['_frozen', 'logger']
-    _frozen = False
 
     def __init__(self, *args, **kwargs):
         self._frozen = False
@@ -57,7 +91,8 @@ class Config(dict):
 
     def __setitem__(self, name, value):
         if self._frozen:
-            raise FrozenError(f'Tried to change `{name}` with value `{value}` while'
+            raise FrozenError(f'Tried to change `{name}` with value '
+                              '`{value}` while'
                               ' {self.__class__.__name__} is frozen.')
 
         if isinstance(value, Mapping):
@@ -72,57 +107,33 @@ class Config(dict):
                               ' {self.__class__.__name__} is frozen.')
         return super().__delitem__(name)
 
-    def __setattr__(self, name, value):
-        if self._frozen and name not in self._mutable:
-            raise FrozenError('Trying to change an attr while frozen.')
-        return super().__setattr__(name, value)
-
-    def __delattr__(self, name):
-        if self._frozen:
-            raise FrozenError('Trying to delete an attr while frozen.')
-        return super().__delattr__(name)
-
     def update(self, dictlike):
         for k, v in dictlike.items():
             self.__setitem__(k, v)
 
     def freeze(self):
-        self._frozen = True
+        super().freeze()
         for v in self.values():
-            if isinstance(v, Config):
+            if isinstance(v, _Frozable):
                 v.freeze()
         return self
 
     def unfreeze(self):
-        self._frozen = False
+        super().unfreeze()
         for v in self.values():
-            if isinstance(v, Config):
+            if isinstance(v, _Frozable):
                 v.unfreeze()
         return self
 
-    @property
-    def frozen(self):
-        return self._frozen
 
-
-class Instrument(abc.ABC):
+class Instrument(abc.ABC, _Frozable):
     """Store all the informations and needed functions of a instrument."""
-    _frozen = False
     _mutable = ['_frozen']
     _identifier = ''
 
     def __init__(self, *args, **kwargs):
-        super(Instrument, self).__init__(*args, **kwargs)
-
-    def __setattr__(self, name, value):
-        if self._frozen and name not in self._mutable:
-            raise FrozenError('Trying to change an attr while frozen.')
-        return super().__setattr__(name, value)
-
-    def __delattr__(self, name):
-        if self._frozen:
-            raise FrozenError('Trying to delete an attr while frozen.')
-        return super().__delattr__(name)
+        self._frozen = False
+        super().__init__(*args, **kwargs)
 
     def list_functions(self):
         """List the class functions."""
@@ -140,18 +151,6 @@ class Instrument(abc.ABC):
             if i in funcs:
                 funcs.remove(i)
         return funcs
-
-    def freeze(self):
-        self._frozen = True
-        return self
-
-    def unfreeze(self):
-        self._frozen = False
-        return self
-
-    @property
-    def frozen(self):
-        return self._frozen
 
 
 class Product():
@@ -242,12 +241,11 @@ class Product():
     def add_info(self, session, info_dict):
         """Custom add information dictionaries to the product."""
         if session in self._infos.keys():
-            self.logger.warn('Session {} already exists in this product infos.'
-                             ' Overwriting it.'
-                             .format(session))
+            self.logger.warn(f'Session {session} already exists in this '
+                             'product infos. Overwriting it.')
         if session in ['variables', 'history', 'destruction_callbacks']:
-            self.logger.warn('{} is a protected name of session. Skipping.'
-                             .format(session))
+            self.logger.warn(f'{session} is a protected name of session. '
+                             'Skipping.')
             return
         self._infos[session] = info_dict
 
@@ -256,16 +254,14 @@ class Product():
         if name not in self._targets:
             self._targets.append(name)
         else:
-            self.logger.debug('Stage {} already in product targets.'
-                              .format(name))
+            self.logger.debug(f'Stage {name} already in product targets.')
 
     def del_target(self, name):
         """Remove a stage from the target list."""
         if name in self._targets:
             self._targets.remove(name)
         else:
-            self.logger.debug('Stage {} not in the target list.'
-                              .format(name))
+            self.logger.debug(f'Stage {name} not in the target list.')
 
     def add_destruct_callback(self, callback, *args, **kwargs):
         """Add a destruction callback. First argument must be a class slot,
@@ -279,8 +275,7 @@ class Product():
             try:
                 func()
             except Exception as e:
-                logger.debug("Destruction callback {} problem. Error: {}"
-                             .format(i, e))
+                logger.debug(f"Destruction callback {i} problem. Error: {e}")
 
 
 class Stage(abc.ABC):
@@ -302,11 +297,10 @@ class Stage(abc.ABC):
         return self._status
 
     @status.setter
-    def status(self, status):
-        if status not in ['idle', 'running', 'done', 'error']:
-            raise ValueError('Status {} not allowed.'
-                             .format(status))
-        self._status = status
+    def status(self, stat):
+        if stat not in ['idle', 'running', 'done', 'error']:
+            raise ValueError(f'Status {stat} not allowed.')
+        self._status = stat
 
     @property
     def name(self):
@@ -370,23 +364,20 @@ class Stage(abc.ABC):
 
             self.status = 'running'
             instrument = self.get_instrument()
-            self.logger.info('Executing {} stage.'.format(self.name))
-            self.logger.debug('Stage {} variables: {}'.format(self.name,
-                                                              variables))
-            self.logger.debug('Stage {} config: {}'.format(self.name, conf))
+            self.logger.info(f'Executing {self.name} stage.')
+            self.logger.debug(f'Stage {self.name} variables: {variables}')
+            self.logger.debug(f'Stage {self.name} config: {conf}')
             result.update(self.callback(instrument, variables, conf,
                                         self.logger))
             self.status = 'done'
-            self.logger.debug('Stage {} results: {}'.format(self.name,
-                                                            result))
+            self.logger.debug(f'Stage {self.name} results: {result}')
             for i, v in result.items():
                 if i in owned:
                     self.factory.set_value(self, i, v)
         except Exception as e:
             if self._raise_error:
                 raise e
-            self.logger.error('Stage {} error: {}'
-                              .format(self.name, e))
+            self.logger.error(f'Stage {self.name} error: {e}')
             self.status = 'error'
 
 
@@ -413,8 +404,7 @@ class Factory():
     def get_value(self, stage, variable):
         """Get a value from a registered variable."""
         if variable not in self._register.keys():
-            raise KeyError('Variable {} not registered.'
-                           .format(variable))
+            raise KeyError(f'Variable {variable} not registered.')
 
         if stage is None or self._register[variable] is None:
             # Non-stage variable access
@@ -422,17 +412,16 @@ class Factory():
 
         if stage.status != 'idle':
             raise RuntimeError('Only idle stages can access variables. '
-                               'Current status of {} stage: {}'
-                               .format(stage.name, stage.status))
+                               f'Current status of {stage.name}'
+                               f' stage: {stage.status}')
 
         # Check the status of registered stage for this variable
         var_stage = self._stages[self._register[variable]]
 
         if var_stage.status == 'idle':
             # If not started yet, run it
-            self.logger.debug('Variable {} not executed. '
-                              'Opening {} stage to do it.'
-                              .format(variable, var_stage.name))
+            self.logger.debug(f'Variable {variable} not executed. '
+                              f'Opening {var_stage.name} stage to do it.')
             self.run_stage(var_stage.name)
 
         if var_stage.status == 'running':
@@ -446,37 +435,36 @@ class Factory():
             raise RuntimeError('Variable {} not accessible due to '
                                '{} stage processing error.')
         else:
-            raise ValueError('This should be impossible! Stage status: {}'
-                             .format(var_stage.status))
+            raise ValueError('This should be impossible! Stage status: '
+                             f'{var_stage.status}')
 
     def set_value(self, stage, variable, value):
         """Set a variable value to product."""
         if isinstance(stage, Product):
-            self.logger.debug('Setting {} variable manually for {} product.'
-                              .format(variable, stage.name))
+            self.logger.debug(f'Setting {variable} variable manually for '
+                              f'{stage.name} product.')
             stage.set_value(variable, copy.deepcopy(value))
             self._register[variable] = None
             return
 
         if variable not in self._register.keys():
-            raise ValueError('Variable {} not registered.'.format(variable))
+            raise ValueError(f'Variable {variable} not registered.')
 
         if isinstance(stage, Stage):
             # If a stage instance is passed, get its name for checking
             stage = stage.name
 
         if stage != self._register[variable]:
-            raise ValueError('Stage {} not own {} variable.'
-                             .format(stage, variable))
+            raise ValueError(f'Stage {stage} not own {variable} variable.')
 
         var_stage = self._stages[stage]
         if var_stage.status != 'done':
             raise RuntimeError('Only done stages can set variables. '
-                               'Current {} stage status: {}'
-                               .format(var_stage.name, var_stage.status))
+                               f'Current {var_stage.name} '
+                               f'stage status: {var_stage.status}')
 
-        self.logger.debug('Setting {} variable with value {} from {} stage.'
-                          .format(variable, value, var_stage.name))
+        self.logger.debug(f'Setting {variable} variable with value {value} '
+                          f'from {var_stage.name} stage.')
         self._active_prod.set_value(variable, copy.deepcopy(value))
 
     def get_instrument(self):
@@ -490,11 +478,11 @@ class Factory():
             raise ValueError('Stage already registered.')
 
         if name in self._stages.keys():
-            raise ValueError('Stage name {} already in use.'.format(name))
+            raise ValueError(f'Stage name {name} already in use.')
 
         var = [i for i in stage._provided if i not in disable_variables]
-        self.logger.debug('Registering stage {} with {} variables.'
-                          .format(stage.name, var))
+        self.logger.debug(f'Registering stage {stage.name} with {var} '
+                          'variables.')
         for i in var:
             self._register[i] = name
 
@@ -506,12 +494,12 @@ class Factory():
             # If a stage instance is passed, get its name for checking
             stage = stage.name
 
-        self.logger.debug('Unregistering stage {} with {} variables.'
-                          .format(stage, self.owned_variables(stage)))
+        self.logger.debug(f'Unregistering stage {stage} with'
+                          f' {self.owned_variables(stage)} variables.')
 
         for i, v in self._register.items():
             if v == stage:
-                self._register.popitem(v)
+                self._register.pop(i)
 
         self._stages.popitem(stage)
 
@@ -534,13 +522,13 @@ class Factory():
             stage = stage.name
 
         owned = [k for k, v in self._register.items() if v == stage]
-        self.logger.debug('Stage {} owns variables: {}'.format(stage, owned))
+        self.logger.debug(f'Stage {stage} owns variables: {owned}')
         return owned
 
     def activate_product(self, product):
         """Activate a product to this factory."""
         self.reset()
-        self.logger.info('Actiavting {} product.'.format(product.name))
+        self.logger.info(f'Actiavting {product.name} product.')
         self._active_prod = product
         self._factory_logger = self._logger
         self._logger = product.logger
@@ -567,9 +555,8 @@ class Factory():
         if self._active_prod is None:
             raise ValueError("No product has been activated!")
 
-        self.logger.info('Opening job for {} stage for {} product.'
-                         .format(self._stages[stage].name,
-                                 self._active_prod.name))
+        self.logger.info(f'Opening job for {self._stages[stage].name}'
+                         f' stage for {self._active_prod.name} product.')
 
         stage_conf = self._active_config.get(stage, {})
         stage_conf = Config(stage_conf)
@@ -583,14 +570,14 @@ class Factory():
         self._stages[stage]._call_pipeline(instrument, stage_conf)
 
         if self._stages[stage].status == 'error':
-            self.logger.error('Stage {} failed.'.format(stage))
+            self.logger.error(f'Stage {stage} failed.')
         elif self._stages[stage].status == 'done':
-            self.logger.info('Stage {} done without problems.'.format(stage))
+            self.logger.info(f'Stage {stage} done without problems.')
 
         self.logger.debug('Unfreezing instrument and config')
         stage_conf.unfreeze()
         instrument.unfreeze()
-        self.logger.info('Closing job for {} stage.'.format(stage))
+        self.logger.info(f'Closing job for {stage} stage.')
 
     def run(self, config, target=None):
         """Run te factory to the product."""
@@ -599,8 +586,7 @@ class Factory():
         targets = target or self._active_prod.targets
         if not check_iterable(targets):
             targets = [targets]
-        self.logger.info('Executing pipeline with {} targets.'
-                         .format(targets))
+        self.logger.info(f'Executing pipeline with {targets} targets.')
         for i in targets:
             self.run_stage(i)
         self.logger.info('Pipeline executed.')
@@ -673,8 +659,9 @@ class Manager(abc.ABC):
 
         if index1 is not None and index is not None:
             if index1 < index:
-                logger.warn('Cannot insert product {} before its requirements.'
-                            ' Overwriting to {}'.format(index, index1))
+                logger.warn(f'Cannot insert product {index} before its'
+                            ' requirements.'
+                            f' Overwriting to {index1}')
                 index = index1
 
         if index is None:
@@ -689,7 +676,7 @@ class Manager(abc.ABC):
             if k == name:
                 return i
 
-        self.logger.warn("Product {} not found.".format(name))
+        self.logger.warn(f"Product {name} not found.")
 
     def get_product_name(self, instance):
         """Return the name of a product based on its instance."""
@@ -703,15 +690,14 @@ class Manager(abc.ABC):
             if v == instance:
                 return i
 
-        self.logger.warn("No product associated to {} instance."
-                         .format(str(instance)))
+        self.logger.warn(f"No product associated to {str(instance)} instance.")
 
     def del_product(self, name):
         """Remove and clean a product."""
         try:
             del self._products[name]
         except KeyError:
-            logger.debug("Product {} not in this factory.".format(name))
+            logger.debug(f"Product {name} not in this factory.")
             pass
 
     def register_stage(self, name, stage, disable_variables=[]):
@@ -736,7 +722,7 @@ class Manager(abc.ABC):
             print('# No products on this manager.')
         else:
             for i, n in enumerate(self._products.keys()):
-                print("{}\t{}".format(i, n))
+                print(f"{i}\t{n}")
 
     def run(self, index=None, target=None):
         if index is not None:
@@ -746,10 +732,10 @@ class Manager(abc.ABC):
             index = list(range(len(self._products)))
 
         n = len(index)
-        self.logger.info('Processing {} products.'.format(n))
+        self.logger.info(f'Processing {n} products.')
 
         for i in index:
-            self.logger.info("Processing product {} from {}".format(i+1, n))
+            self.logger.info(f"Processing product {i+1} from {n}")
             name = list(self._products.keys())[i]
             self.factory.activate_product(self._products[name])
             self.factory.run(self.config['stages'], target=target)

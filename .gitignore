@@ -1,3 +1,6 @@
+# Remove for github actions
+.github
+
 examples
 .vscode
 .pytest_cache
@@ -23,6 +26,7 @@ MANIFEST
 
 # Sphinx
 docs/api
+docs/_api
 docs/_build
 
 # Eclipse editor project files

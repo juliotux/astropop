@@ -1,7 +1,7 @@
-AstroPoP
+AstroPoP  
 ========
 
-|Travis Status| |Coverall Status| |RTD Status|  |CODACY|  |Powered by Astropy|  
+|Travis Status| |Coverall Status| |Codecov Status| |RTD Status| |CODACY| |Powered by Astropy| |GITPOD|
 
 The (non) famous ASTROnomical POlarimetry and Photometry pipeline. Developed for work with IAGPOL polarimeter at Observatório Pico dos Dias (Brazil), but suitable to be used in other image polarimeters around the world.
 
@@ -66,7 +66,12 @@ Documentation (not complete yet) can be found at `astropop.readthedocs.io <https
 
 .. |Coverall Status| image:: https://coveralls.io/repos/github/juliotux/astropop/badge.svg?branch=master
     :target: https://coveralls.io/github/juliotux/astropop?branch=master
-    :alt: Astropop's Coverage Status
+    :alt: Astropop's Coveralls Coverage Status
+
+
+.. |Codecov Status| image:: https://codecov.io/gh/juliotux/astropop/branch/master/graph/badge.svg
+    :target: https://codecov.io/gh/juliotux/astropop
+    :alt: Astropop's Codecov Coverage Status
 
 .. |RTD Status| image:: https://readthedocs.org/projects/astropop/badge/?version=latest
     :target: https://astropop.readthedocs.io/en/latest/?badge=latest
@@ -92,5 +97,9 @@ Documentation (not complete yet) can be found at `astropop.readthedocs.io <https
     :target: http://ascl.net/1805.024
     :alt: ASCL register
 
-.. |CODACY|  image:: https://api.codacy.com/project/badge/Grade/ef195a81b3194304af55109d76f48531
+.. |CODACY|  image:: https://api.codacy.com/project/badge/Grade/fddfa579353a40b1bab06300ce15f227
     :target: https://www.codacy.com/app/juliotux/astropop
+
+.. |GITPOD|  image:: https://img.shields.io/badge/Gitpod-ready--to--code-blue?logo=gitpod
+    :target: https://gitpod.io/#https://github.com/juliotux/astropop
+    :alt: Gitpod Ready-to-Code

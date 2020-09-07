@@ -1,16 +1,20 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
+"""Module to handle local (offline) astronomical catalogs."""
+
+import abc
 import numpy as np
 from astropy.table import Table
-from astropy.coordinates import SkyCoord, match_coordinates_sky
+from astropy.coordinates import SkyCoord
 from astropy import units as u
 
 from ..astrometry.coords_utils import guess_coordinates
 from .base_catalog import _BasePhotometryCatalog, match_indexes
 
-from ..logger import logger
+
+__all__ = ['TableCatalog', 'ASCIICatalog', 'FITSCatalog']
 
 
-class _LocalCatalog(_BasePhotometryCatalog):
+class _LocalCatalog(_BasePhotometryCatalog, abc.ABC):
     type = 'local'
     id_key = None
     ra_key = None
@@ -119,17 +123,15 @@ class _LocalCatalog(_BasePhotometryCatalog):
         return self.match_objects(ra, dec, limit_angle=limit_angle)['id']
 
 
-class ASCIICatalogClass(_LocalCatalog):
+class TableCatalog(_LocalCatalog):
+    """Local catalog loaded from anything that can be converted directly to
+    an ``astropy.table.Table``."""
     type = 'local'
 
-    def __init__(self, filename, id_key=None, ra_key=None, dec_key=None,
+    def __init__(self, table, id_key=None, ra_key=None, dec_key=None,
                  flux_key=None, flux_error_key=None, flux_unit=None,
-                 available_filters=None, prepend_id_key=False, bibcode=None,
-                 **reader_kwargs):
-        """
-        **reader_kwargs : kwargs to be passed to the Table.read function
-        """
-        self._table = Table.read(filename, **reader_kwargs)
+                 available_filters=None, prepend_id_key=False, bibcode=None):
+        self._table = Table(table)
 
         self.id_key = id_key
         self.ra_key = ra_key
@@ -140,3 +142,23 @@ class ASCIICatalogClass(_LocalCatalog):
         self.available_filters = available_filters
         self.prepend_id_key = prepend_id_key
         self.bibcode = bibcode
+
+
+class ASCIICatalog(TableCatalog):
+    """Local catalog read from a ASCII table file."""
+    def __init__(self, filename, id_key=None, ra_key=None, dec_key=None,
+                 flux_key=None, flux_error_key=None, flux_unit=None,
+                 available_filters=None, prepend_id_key=False, bibcode=None,
+                 **reader_kwargs):
+        """
+        **reader_kwargs : kwargs to be passed to the Table.read function
+        """
+        table = Table.read(filename, **reader_kwargs)
+
+        super().__init__(table, id_key, ra_key, dec_key, flux_key,
+                         flux_error_key, flux_unit, available_filters,
+                         prepend_id_key, bibcode)
+
+
+class FITSCatalog(ASCIICatalog):
+    """Local catalog read from a FITS table."""

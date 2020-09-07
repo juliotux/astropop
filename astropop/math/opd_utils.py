@@ -30,7 +30,7 @@ def opd2jd(opd_dates):
     Convert the OPD std date designation '99ago01' to Julian Date.
     '''
     def _match_opddate(date):
-        if not re.match('\d\d\S\S\S\d\d', date):
+        if not re.match(r'\d\d\S\S\S\d\d', date):
             return False
         else:
             if date[2:5] in dict_meses.keys():
@@ -71,7 +71,7 @@ def opd2jd(opd_dates):
 
 def solve_decimal(value):
     """Resolve problems with ',' decimal separator"""
-    decmark = re.compile('(?<=\d),(?=\d)')
+    decmark = re.compile(r'(?<=\d),(?=\d)')
     return decmark.sub('.', str(value))
 
 
@@ -92,6 +92,6 @@ def read_opd_header_number(value):
             else:
                 v = int(v)
         except ValueError:
-            raise ValueError('Could not read the number: {}'.format(value))
+            raise ValueError(f'Could not read the number: {value}')
 
     return v

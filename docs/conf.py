@@ -1,67 +1,62 @@
-# -*- coding: utf-8 -*-
-# Licensed under a 3-clause BSD style license - see LICENSE.rst
+import sys, os, re
+import sphinx_rtd_theme
 
-import os
-import sys
-import datetime
-from importlib import import_module
+if not os.path.exists('api'):
+    os.mkdir('api')
 
-try:
-    from sphinx_astropy.conf.v1 import *  # noqa
-except ImportError:
-    print('ERROR: the documentation requires the sphinx-astropy package '
-          'to be installed')
-    sys.exit(1)
+# Minimum version, enforced by sphinx
+needs_sphinx = '2.2.0'
 
-from configparser import ConfigParser
-conf = ConfigParser()
+extensions = [
+    # 'sphinx.ext.autodoc',
+    'sphinxcontrib.napoleon',  # use napoleon to compatibility
+    'sphinx.ext.intersphinx',
+    'sphinx.ext.coverage',
+    'sphinx.ext.doctest',
+    'sphinx.ext.autosummary',
+    'sphinx.ext.graphviz',
+    'sphinx.ext.ifconfig',
+    'matplotlib.sphinxext.plot_directive',
+    'IPython.sphinxext.ipython_console_highlighting',
+    'IPython.sphinxext.ipython_directive',
+    'sphinx.ext.imgmath',
+]
 
-conf.read([os.path.join(os.path.dirname(__file__), '..', 'setup.cfg')])
-setup_cfg = dict(conf.items('metadata'))
-highlight_language = 'python3'
-exclude_patterns += ['_templates', '_build', 'Thumbs.db', '.DS_Store']
+napoleon_use_rtype = False
+napoleon_use_ivar = True
 
-# This is added to the end of RST files - a good place to put substitutions to
-# be used globally.
-rst_epilog += """
-"""
+# Add any paths that contain templates here, relative to this directory.
+templates_path = ['_templates']
+# The suffix of source filenames.
+source_suffix = '.rst'
+# Doc entrypoint
+master_doc = 'index'
 
-project = setup_cfg['name']
-author = setup_cfg['author']
-copyright = '{0}, {1}'.format(
-    datetime.datetime.now().year, setup_cfg['author'])
+# Project info
+project = 'astropop'
+copyright = '2018-2020, Julio Campagnolo and contributors'
+import astropop
+version = astropop.__version__.split('-', 1)[0]
+# The full version, including alpha/beta/rc tags.
+release = astropop.__version__
+today_fmt = '%B %d, %Y'
 
-import_module(setup_cfg['name'])
-package = sys.modules[setup_cfg['name']]
-
-version = package.__version__.split('-', 1)[0]
-release = package.__version__
-
+# General theme infos
+exclude_patterns = ['_templates', '_build', 'Thumbs.db', '.DS_Store']
+pygments_style = 'sphinx'
 html_theme = "sphinx_rtd_theme"
-html_title = '{0} v{1}'.format(project, release)
-htmlhelp_basename = project + 'doc'
+# html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+html_static_path = ['_static']
+imgmath_image_format = 'svg'
+htmlhelp_basename = 'astropop'
 
-latex_documents = [('index', project + '.tex', project + u' Documentation',
-                    author, 'manual')]
+autosummary_generate = True
 
-man_pages = [('index', project.lower(), project + u' Documentation',
-              [author], 1)]
-
-if eval(setup_cfg.get('edit_on_github')):
-    extensions += ['sphinx_astropy.ext.edit_on_github']
-
-    versionmod = __import__(setup_cfg['package_name'] + '.version')
-    edit_on_github_project = setup_cfg['github_project']
-    if versionmod.version.release:
-        edit_on_github_branch = "v" + versionmod.version.version
-    else:
-        edit_on_github_branch = "master"
-
-    edit_on_github_source_root = ""
-    edit_on_github_doc_root = "docs"
-
-github_issues_url = ('https://github.com/{0}/issues/'
-                     .format(setup_cfg['github_project']))
-
-extensions += ['sphinx.ext.todo']
-todo_include_todos = True
+default_role = 'py:obj'
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3/", None),
+    "numpy": ("https://docs.scipy.org/doc/numpy/", None),
+    "scipy": ("https://docs.scipy.org/doc/scipy/reference", None),
+    "matplotlib": ("https://matplotlib.org/", None),
+    "astropy": ('http://docs.astropy.org/en/latest/', None)
+}

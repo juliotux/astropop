@@ -5,7 +5,6 @@ import numpy as np
 from astropy.wcs import WCS
 
 from .coords_utils import guess_coordinates
-from ..py_utils import check_iterable
 from ..logger import logger
 
 __all__ = ['wcs_from_coords']

@@ -1,6 +1,6 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
-import subprocess
+import subprocess  # nosec
 import select
 import shlex
 import six
@@ -57,8 +57,19 @@ def check_iterable(value):
 
 
 def batch_key_replace(dictionary, key=None):
-    """Scan and replace {key} values in a dictionary by dictionary['key']
-    value."""
+    """Scan and replace {key} values in a dict by dict['key'] value.
+
+    Notes
+    -----
+    All the replacement is did inplace. Nothing is returned.
+
+    Parameters
+    ----------
+    dictionary : dict_like
+        Dictionary to replace the keys.
+    key : string or None, optional
+        The key to be replaced.
+    """
     if key is None:
         for i in dictionary.keys():
             batch_key_replace(dictionary, i)
@@ -67,7 +78,7 @@ def batch_key_replace(dictionary, key=None):
     if isinstance(dictionary[key], (six.string_types)):
         for i in dictionary.keys():
             if '{'+i+'}' in dictionary[key]:
-                logger.debug("replacing key {} in key {}".format(i, key))
+                logger.debug(f"replacing key {i} in key {key}")
                 batch_key_replace(dictionary, i)
                 dictionary[key] = dictionary[key].format(**{i: dictionary[i]})
     elif check_iterable(dictionary[key]):
@@ -75,8 +86,8 @@ def batch_key_replace(dictionary, key=None):
             for i in dictionary.keys():
                 v = dictionary[key][j]
                 if '{'+i+'}' in str(v):
-                    logger.debug("replacing key {} in key"
-                                 " {}".format(i, key))
+                    logger.debug(f"replacing key {i} in key"
+                                 f" {key}")
                     dictionary[key][j] = v.format(**{i: dictionary[i]})
     else:
         return
@@ -94,7 +105,7 @@ def run_command(args, stdout=None, stderr=None, stdout_loglevel='DEBUG',
 
     logger.log(stdout_loglevel, 'Runing: ' + " ".join(args))
 
-    process = subprocess.Popen(args, stdout=subprocess.PIPE,
+    process = subprocess.Popen(args, stdout=subprocess.PIPE,  # nosec
                                stderr=subprocess.PIPE, **kwargs)
 
     log_level = {process.stdout: stdout_loglevel,

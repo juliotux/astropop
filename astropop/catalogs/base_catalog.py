@@ -1,4 +1,6 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
+"""Base classes for astronomical catalogs query"""
+import abc
 import six
 import numpy as np
 from astropy.coordinates import Angle, SkyCoord, match_coordinates_sky
@@ -6,7 +8,7 @@ from astropy.coordinates import Angle, SkyCoord, match_coordinates_sky
 from ..logger import logger
 
 
-def match_indexes(ra, dec, cat_ra, cat_dec, limit_angle):
+def match_indexes(ra, dec, cat_ra, cat_dec, limit_angle, logger=logger):
     '''Matches ra and dec lists coordinates with cat_ra and cat_dec coordinates
     from a catalog, within a limit angle.
     ra, dec, cat_ra, cat_dec are lists of decimal degrees floats
@@ -32,13 +34,12 @@ def match_indexes(ra, dec, cat_ra, cat_dec, limit_angle):
     return index
 
 
-class _BaseCatalog():
+class _BaseCatalog(abc.ABC):
     '''Base class for catalog query.'''
     # stores all the needed information to avoid continuous redundat queries
     _last_query_info = None
     _last_query_table = None
     comment = None
-    logger = logger
 
     def __evaluate__(self, center, radius=None, **kwargs):
         '''Query the results in the catalog.
@@ -74,27 +75,27 @@ class _BaseCatalog():
             radius = float(radius)
             return radius
         except ValueError:
-            raise ValueError("Radius value {} not understood.".format(radius))
+            raise ValueError(f"Radius value {radius} not understood.")
 
-    def _get_center(self, center):
-        raise NotImplementedError("Resolve the center of the query is not "
-                                  "supported by this catalog.")
+    @abc.abstractmethod
+    def _get_center(self, center, logger=logger):
+        """Get the center of a field"""
 
-    def query_object(self, center, **kwargs):
-        raise NotImplementedError("This catalog does not support object mode"
-                                  " query")
+    @abc.abstractmethod
+    def query_object(self, center, logger=logger, **kwargs):
+        """Query a single object in the catalog"""
 
-    def query_region(self, center, radius, **kwargs):
-        raise NotImplementedError("This catalog does not support region mode"
-                                  " query")
+    @abc.abstractmethod
+    def query_region(self, center, radius, logger=logger, **kwargs):
+        """Query all objects in a region"""
 
     def flush(self):
         '''Clear previous query informations.'''
-        self._last_query_info = None
-        self._last_query_table = None
+        del self._last_query_info
+        del self._last_query_table
 
 
-class _BasePhotometryCatalog(_BaseCatalog):
+class _BasePhotometryCatalog(_BaseCatalog, abc.ABC):
     '''A base class for photometry catalogsself.
 
     Parameters:
@@ -114,33 +115,29 @@ class _BasePhotometryCatalog(_BaseCatalog):
     available_filters = []
     bibcode = None
 
-    def check_filter(self, filter, raise_error=True):
+    def check_filter(self, band, raise_error=True):
         '''Check if a filter is available for this catalog.'''
         if not raise_error:
-            return filter in self.available_filters
-        elif filter not in self.available_filters:
-            raise ValueError('This catalog does not support {} filter. '
-                             'The available formats are: {}'
-                             .format(filter, self.available_filters))
+            return band in self.available_filters
+        elif band not in self.available_filters:
+            raise ValueError(f'This catalog does not support {band} filter. '
+                             'The available formats are:'
+                             f' {self.available_filters}')
 
-    def query_ra_dec(self, center, radius, **kwargs):
+    @abc.abstractmethod
+    def query_ra_dec(self, center, radius, logger=logger, **kwargs):
         """Query coordinates in a region of the catalog."""
-        raise NotImplementedError("This catalog does not support coordinates"
-                                  " query mode")
 
-    def query_flux(self, center, radius, **kwargs):
+    @abc.abstractmethod
+    def query_flux(self, center, radius, logger=logger, **kwargs):
         """Query the flux data in a region of the catalog."""
-        raise NotImplementedError("This catalog does not support coordinates"
-                                  " query mode")
 
-    def query_id(self, center, radius, **kwargs):
+    @abc.abstractmethod
+    def query_id(self, center, radius, logger=logger, **kwargs):
         """Query coordinates in a region of the catalog."""
-        raise NotImplementedError("This catalog does not support coordinates"
-                                  " query mode")
 
-    def match_objects(self, ra, dec, limit_angle='2 arcsec'):
+    @abc.abstractmethod
+    def match_objects(self, ra, dec, limit_angle='2 arcsec', logger=logger):
         '''Query the informations in the catalog from a list of ra and dec
         coordinates, matching the stars by a limit_angle.
         '''
-        raise NotImplementedError("This catalog does not support object"
-                                  " matching.")
