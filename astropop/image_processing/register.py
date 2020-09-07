@@ -1,9 +1,8 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
 from skimage.feature import register_translation
-from scipy.ndimage import fourier_shift
-from scipy.ndimage import shift as scipy_shift
-from scipy.signal import correlate2d
+from skimage import transform
+# from scipy.ndimage import fourier_shift
 import numpy as np
 try:
     import astroalign
@@ -17,46 +16,37 @@ from ..logger import logger
 
 
 def translate(image, shift, subpixel=True, cval=0):
-    """Translate an image by (dy, dx) using scipy.
-
-    Based on stsci.image.translation algorithm
-
-    cval = value to fill empty pixels after shift.
+    """Translate an image by (dy, dx) using Scikit AffineTransform.
+    
+    Parameters
+    ----------
+    image : `~nnumpy.ndarray`
+        2D image data to be translated.
+    shift : `tuple (dx, dy)`
+        The shift along the axes. Shift should contain one value for each axis.
+    subpixel : `boolean (optional)`
+        Consider the CCD subpixels on the translation.
+        Default = True
+    cval : `float (optional)`
+        Value to fill empty pixels after shift.
+        Default = 0
+        
+    Returns
+    -------
+    image_new : `~nnumpy.ndarray`
+        2D shifted image.
     """
-    # for subpixel, a correlation kernel need translation
-    if subpixel:
-        rot = 0
-        dy, dx = shift
-        dx, dy = -dx, -dy
-        if dx >= 0 and dy >= 0:
-            rot = 2
-        elif dx >= 0 and dy < 0:
-            rot = 1
-        elif dx < 0 and dy >= 0:
-            rot = 3
-        elif dx < 0 and dy < 0:
-            rot = 0
-        dx, dy = np.abs([dx, dy])
-        if rot % 2 != 0:
-            dx, dy = dy, dx
+    # dy, dx = shift
+    # translated = (dx, dy)
 
-        nim = np.rot90(image, rot)
-        nim = scipy_shift(nim, (dy, dx), mode='constant', cval=cval)
-
-        # correlation kernel to fix subpixel shifting
-        x, y = dx % 1.0, dy % 1.0
-        kernel = np.array([[x*y, (1-x)*y],
-                           [(1-y)*x, (1-y)*(1-x)]])
-        nim = correlate2d(nim, kernel, mode='full', fillvalue=cval)
-        return np.rot90(nim, -rot % 4).astype(image.dtype)[:-1, :-1]
-
-    return scipy_shift(image, shift, mode='constant', cval=cval)
+    tform = transform.AffineTransform(translation=shift)
+    return transform.warp(image, tform, mode='constant', cval=cval)
 
 
 def create_fft_shift_list(image_list):
     """Use fft to calculate the shifts between images in a list.
 
-    Return a set os (y, x) shift pairs.
+    Return a set os (x, y) shift pairs.
     """
     shifts = [(0.0, 0.0)]*len(image_list)
     for i in range(len(image_list)-1):
@@ -78,54 +68,48 @@ def create_chi2_shift_list(image_list):
         im = image_list[i+1]
         err = np.nanstd(im)
         dx, dy, _, _ = chi2_shift(image_list[0], im, err)
-        shifts[i+1] = (-dy, -dx)
+        shifts[i+1] = (-dx, -dy)
 
     return shifts
 
 
-def apply_shift(image, shift, method='fft', subpixel=True, footprint=False,
-                logger=logger):
-    """Apply a shifts of (dy, dx) to a list of images.
+def apply_shift(image, shiftxy, subpixel=True, footprint=False, logger=logger):
+    """Apply a shifts of (dx, dy) to a list of images.
 
     Parameters:
         image : ndarray_like
             The image to be shifted.
         shift: array_like
-            shift to be applyed (dy, dx)
-        method : string
-            The method used for shift images. Can be:
-            - 'fft' -> scipy fourier_shift
-            - 'simple' -> simples translate using scipy
+            shift to be applyed (dx, dy)
+
 
     Return the shifted images.
     """
-    # Shift with fft, much more precise and fast
-    if method == 'fft':
-        nimage = fourier_shift(np.fft.fftn(image), np.array(shift))
-        nimage = np.fft.ifftn(nimage).real.astype(image.dtype)
-        if footprint:
-            foot = np.ones(nimage.shape)
-            foot = translate(foot, shift, subpixel=True, cval=0)
-            return nimage, foot
-        else:
-            return nimage
-
-    elif method == 'simple':
-        nimage = translate(image, shift, subpixel=subpixel, cval=0)
-        if footprint:
-            foot = np.ones(nimage.shape)
-            foot = translate(foot, shift, subpixel=subpixel, cval=0)
-            return nimage, foot
-        else:
-            return nimage
-
+    
+    dx, dy = shiftxy
+    shift_col_lin = (dy, dx)
+    
+    nimage = translate(image, shift_col_lin, subpixel=subpixel, cval=0)
+    
+    nimage.masks = np.falses(nimage.shape)
+    if dx < 0: nimage.masks[dx:] = True
+    else: nimage.masks[:dx] = True
+    if dy < 0: nimage.masks[:,dy:] = True
+    else: nimage.masks[:,:dy] = True
+    
+    if footprint:
+        foot = np.ones(nimage.shape)
+        foot = translate(foot, shift_col_lin, subpixel=subpixel, cval=0)
+        return nimage, foot
     else:
-        raise ValueError('Unrecognized shift image method.')
+        return nimage
+
+    # raise ValueError('Unrecognized shift image method.')
 
 
 def apply_shift_list(image_list, shift_list, method='fft',
                      logger=logger):
-    """Apply a list of (y, x) shifts to a list of images.
+    """Apply a list of (x, y) shifts to a list of images.
 
     Parameters:
         image_list : ndarray_like
@@ -168,7 +152,7 @@ def hdu_shift_images(hdu_list, method='fft', register_method='asterism',
                                                          np.ones(i.data.shape,
                                                                  dtype=bool),
                                                          im0)
-            s_method = 'similarity_transform'
+            # s_method = 'similarity_transform'
     else:
         if method == 'chi2':
             shifts = create_chi2_shift_list([ccd.data for ccd in hdu_list])
@@ -176,21 +160,26 @@ def hdu_shift_images(hdu_list, method='fft', register_method='asterism',
             shifts = create_fft_shift_list([ccd.data for ccd in hdu_list])
         logger.info(f"Aligning CCDData with shifts: {shifts}")
         for ccd, shift in zip(hdu_list, shifts):
-            if method == 'fft':
-                s_method = method
-            else:
-                s_method = 'simple'
-            ccd.data = apply_shift(ccd.data, shift, method=s_method,
-                                   logger=logger)
-            sh = [str(i) for i in shift[::-1]]
-            ccd.header['hierarch astropop register_shift'] = ",".join(sh)
+            # if method == 'fft':
+            #     s_method = method
+            # else:
+            #     s_method = 'simple'
+            # ccd.data = apply_shift(ccd.data, shift, method=s_method,
+            #                        logger=logger)
+            #     s_method = 'simple'
+            ccd.data = apply_shift(ccd.data, shift, logger=logger)
+            sh_string = [str(i) for i in shift]
+            ccd.header['hierarch astropop register_shift'] = ",".join(sh_string)
+            # if footprint:
+            #     ccd.footprint = apply_shift(np.ones_like(ccd.data, dtype=bool),
+            #                                 shift, method='simple',
+            #                                 logger=logger)
             if footprint:
                 ccd.footprint = apply_shift(np.ones_like(ccd.data, dtype=bool),
-                                            shift, method='simple',
-                                            logger=logger)
+                                            shift, logger=logger)
     for i in hdu_list:
         i.header['hierarch astropop registered'] = True
-        i.header['hierarch astropop register_method'] = method
-        i.header['hierarch astropop transform_method'] = s_method
+        # i.header['hierarch astropop register_method'] = method
+        # i.header['hierarch astropop transform_method'] = s_method
 
     return hdu_list
