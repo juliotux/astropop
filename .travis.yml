@@ -1,90 +1,171 @@
-# We set the language to c because python isn't supported on the MacOS X nodes
-# on Travis. However, the language ends up being irrelevant anyway, since we
-# install Python ourselves using conda.
-language: c
-cache:
-  directories:
-    - $HOME/.astropy/cache
-    - $HOME/.astropop/cache
+language: python
+
+# We need a full clone to make sure setuptools_scm works properly
+git:
+    depth: false
 
 os:
-  - linux
+    - linux
+
+# The apt packages below are needed for sphinx builds. A full list of packages
+# that can be included can be found here:
+#
+# https://github.com/travis-ci/apt-package-whitelist/blob/master/ubuntu-precise
+
+addons:
+    apt:
+        packages:
+            - graphviz
+
 
 stages:
-  # Do the style check and a single test job, don't proceed if it fails
-  - name: Initial
-  # Test docs, astropy dev, and without optional dependencies
-  - name: Comprehensive
-    # These will only run when cron is opted in
-  - name: Cron
-    if: type = cron
+   # Do the style check and a single test job, don't proceed if it fails
+   - name: Initial tests
+   # Test docs, astropy dev, and without optional dependencies
+   - name: Comprehensive tests
+   # These will only run when cron is opted in
+   - name: Cron tests
+     if: type = cron
 
 
 env:
-  global:
-    - NAME="astropop"
-    - PYTHON_VERSION=3.7
-    - NUMPY_VERSION=stable
-    - ASTROPY_VERSION=stable
-    - EVENT_TYPE='pull_request push'
-    - CONDA_ENVIRONMENT='.rtd-environment.yml'
+    global:
+
+        # The following versions are the 'default' for tests, unless
+        # overridden underneath. They are defined here in order to save having
+        # to repeat them for all configurations.
+
+        # The following three variables are for tox. TOXENV is a standard
+        # variable that tox uses to determine the environment to run,
+        # TOXARGS are arguments passed to tox, and TOXPOSARGS are arguments
+        # that tox passes through to the {posargs} indicator in tox.ini.
+        # The latter can be used for example to pass arguments to pytest.
+        - TOXENV='test'
+        - TOXARGS='-v'
+        - TOXPOSARGS=''
+
+        # The following is needed to avoid issues if e.g. Matplotlib tries
+        # to open a GUI window.
+        - SETUP_XVFB=True
 
 matrix:
-  fast_finish: true
 
-  include:
-    - os: linux
-      stage: Initial
-      env: SETUP_CMD='egg_info'
-      script: python setup.py egg_info
+    # Don't wait for allowed failures
+    fast_finish: true
 
-    - os: linux
-      stage: Initial
-      script: python setup.py test
+    include:
 
-    - os: linux
-      stage: Initial
-      env: SETUP_CMD='coverage'
-      script: python setup.py test --coverage
-      after_success:
-        - coveralls --rcfile='astropop/tests/coveragerc'
-        - codecov
-        - coverage xml; python-codacy-coverage -r coverage.xml
+        # Try MacOS X, usually enough only to run from cron as hardly there are
+        # issues that are not picked up by a linux worker. We set language to
+        # 'c' since 'python' doesn't work on non-Linux platforms.
+        - os: osx
+          language: c
+          name: Python 3.7 with required dependencies
+          stage: Cron tests
+          env: PYTHON_VERSION=3.7 TOXENV=py37-test
 
-    - os: linux
-      stage: Initial
-      env: SETUP_CMD='docs'
-      script: python setup.py build_docs
+        # Do a regular build on Linux with Python 3.8, with cov
+        # For Linux we use language: python to avoid using conda.
+        - os: linux
+          python: 3.8
+          name: Python 3.8 with required dependencies and measure coverage
+          stage: Initial tests
+          env: TOXENV=py38-test-cov
 
-    - os: linux
-      stage: Cron
-      env: ASTROPY_VERSION=development NUMPY_VERSION=development EVENT_TYPE='cron'
-      script: python setup.py test
+        # Check for sphinx doc build warnings
+        - os: linux
+          python: 3.8
+          name: Documentation build
+          stage: Comprehensive tests
+          env: TOXENV=build_docs
 
-    - os: linux
-      stage: Comprehensive
-      env: PYTHON_VERSION=3.7 NUMPY_VERSION=1.16 ASTROPY_VERSION=4.0 SETUP_CMD='test'
-      script: python setup.py test
+        # Now try Astropy dev with the latest Python
+        - os: linux
+          python: 3.8
+          name: Python 3.8 with developer version of astropy
+          stage: Comprehensive tests
+          env: TOXENV=py38-test-devdeps
 
-    - os: linux
-      stage: Comprehensive
-      env: PYTHON_VERSION=3.7 NUMPY_VERSION=1.14 ASTROPY_VERSION=3.2 SETUP_CMD='test'
-      script: python setup.py test
+        # And with an older Python, Astropy LTS, and the oldest supported Numpy
+        - os: linux
+          python: 3.6
+          name: Python 3.6 astropy LTS and Numpy 1.16
+          stage: Comprehensive tests
+          env: TOXENV=py36-test-astropylts-numpy116
 
-    - os: linux
-      stage: Comprehensive
-      env: PYTHON_VERSION=3.6 NUMPY_VERSION=1.14 ASTROPY_VERSION=3.2 SETUP_CMD='test'
-      script: python setup.py test
+        # Add a job that runs from cron only and tests against astropy dev and
+        # numpy dev to give a change for early discovery of issues and feedback
+        # for both developer teams.
+        - os: linux
+          python: 3.8
+          name: Python 3.8 latest developer version of key dependencies
+          stage: Cron tests
+          env: TOXENV=py38-test-devdeps
 
-    - os: linux
-      stage: Comprehensive
-      env: PYTHON_VERSION=3.8 NUMPY_VERSION=1.17 ASTROPY_VERSION=4.0
-      script: python setup.py test
+        # Try on Windows.
+        - os: windows
+          language: c
+          name: Python 3.8 with required dependencies
+          stage: Comprehensive tests
+          env: PYTHON_VERSION=3.8 TOXENV=py38-test
 
-  allow_failures:
-    - os: linux
-      stage: Initial
-      script: flake8 astropop --count --show-source --statistics $FLAKE8_OPT
+        # Try other python versions and Numpy versions. Since we can assume that
+        # the Numpy developers have taken care of testing Numpy with different
+        # versions of Python, we can vary Python and Numpy versions at the same
+        # time.
+
+        - os: linux
+          python: 3.7
+          name: Python 3.7 with astropy 3.0 and Numpy 1.17
+          stage: Comprehensive tests
+          env: TOXENV=py37-test-astropy30-numpy117
+
+        # Do a code style check
+        - os: linux
+          python: 3.8
+          name: Code style checks
+          stage: Initial tests
+          env: TOXENV=codestyle
+
+    allow_failures:
+        # Do a PEP8 test with flake8
+        # (do allow to fail unless your code completely compliant)
+        # - os: linux
+        #   python: 3.8
+        #   name: Code style checks
+        #   stage: Initial tests
+        #   env: TOXENV=codestyle
+
+before_install:
+    # Create a coverage.xml for use by coveralls or codecov
+    - if [[ $TOXENV == *-cov ]]; then
+        export TOXPOSARGS=$TOXPOSARGS" --cov-report=xml:"$TRAVIS_BUILD_DIR"/coverage.xml";
+      fi
 
 install:
-  - source ./ci/travis_setup.sh
+
+    # We now use the ci-helpers package to set up our Python environment
+    # on Windows and MacOS X but we don't set up any other dependencies,
+    # instead using tox to do this. See https://github.com/astropy/ci-helpers
+    # for more information about ci-helpers.
+
+    - if [[ $TRAVIS_OS_NAME != linux ]]; then
+        git clone --depth 1 git://github.com/astropy/ci-helpers.git;
+        source ci-helpers/travis/setup_conda.sh;
+      fi
+
+script:
+    - pip install tox
+    - tox $TOXARGS -- $TOXPOSARGS
+
+after_success:
+    # if either coveralls or codecov is used, uncomment the if and fi statements
+    # and the appropriate two lines inside the if statement
+    # - if [[ $TOXENV == *-cov ]]; then
+    #    # If coveralls.io is set up for this package, uncomment the two lines below.
+    #    pip install coveralls;
+    #    coveralls;
+    #    # If codecov is set up for this package, uncomment the two lines below
+    #    pip install codecov;
+    #    codecov;
+    # fi
