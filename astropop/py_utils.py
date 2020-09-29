@@ -120,7 +120,7 @@ def run_command(args, stdout=None, stderr=None, stdout_loglevel='DEBUG',
                                       [], [], 1000)[0]
         for io in ready_to_read:
             line = str(io.readline().decode()).strip('\n')
-            if line is not "":
+            if line != "":
                 if store[io] is not None:  # only stores the desired io
                     store[io].append(line)
                 logger.log(log_level[io], line[:-1])
