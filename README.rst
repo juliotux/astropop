@@ -60,17 +60,17 @@ Documentation
 
 Documentation (not complete yet) can be found at `astropop.readthedocs.io <https://astropop.readthedocs.io>`_
 
-.. |Travis Status| image:: https://travis-ci.org/juliotux/astropop.svg?branch=master
-    :target: https://travis-ci.org/juliotux/astropop
+.. |Travis Status| image:: https://travis-ci.org/sparc4-dev/astropop.svg?branch=master
+    :target: https://travis-ci.org/sparc4-dev/astropop
     :alt: Astropop's Travis CI Status
 
-.. |Coverall Status| image:: https://coveralls.io/repos/github/juliotux/astropop/badge.svg?branch=master
-    :target: https://coveralls.io/github/juliotux/astropop?branch=master
+.. |Coverall Status| image:: https://coveralls.io/repos/github/sparc4-dev/astropop/badge.svg?branch=master
+    :target: https://coveralls.io/github/sparc4-dev/astropop?branch=master
     :alt: Astropop's Coveralls Coverage Status
 
 
-.. |Codecov Status| image:: https://codecov.io/gh/juliotux/astropop/branch/master/graph/badge.svg
-    :target: https://codecov.io/gh/juliotux/astropop
+.. |Codecov Status| image:: https://codecov.io/gh/sparc4-dev/astropop/branch/master/graph/badge.svg
+    :target: https://codecov.io/gh/sparc4-dev/astropop
     :alt: Astropop's Codecov Coverage Status
 
 .. |RTD Status| image:: https://readthedocs.org/projects/astropop/badge/?version=latest
@@ -97,9 +97,9 @@ Documentation (not complete yet) can be found at `astropop.readthedocs.io <https
     :target: http://ascl.net/1805.024
     :alt: ASCL register
 
-.. |CODACY|  image:: https://api.codacy.com/project/badge/Grade/fddfa579353a40b1bab06300ce15f227
-    :target: https://www.codacy.com/app/juliotux/astropop
+.. |CODACY|  image:: https://app.codacy.com/project/badge/Grade/ab9d4647935d4b33aee0544b6957d7a7
+    :target: https://www.codacy.com/gh/sparc4-dev/astropop/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=sparc4-dev/astropop&amp;utm_campaign=Badge_Grade
 
 .. |GITPOD|  image:: https://img.shields.io/badge/Gitpod-ready--to--code-blue?logo=gitpod
-    :target: https://gitpod.io/#https://github.com/juliotux/astropop
+    :target: https://gitpod.io/#https://github.com/sparc4-dev/astropop
     :alt: Gitpod Ready-to-Code
