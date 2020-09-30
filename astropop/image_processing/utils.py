@@ -73,11 +73,11 @@ def combine_dark(image_list, save_file=None,
 
 def combine_flat(image_list, save_file=None,
                  master_bias=None, dark_frame=None,
-                 rebin_size=None, gain=None, gain_key='GAIN', rebin_func=np.sum,
+                 rebin_size=None, gain=None, gain_key='GAIN',
                  readnoise_key='RDNOISE', combine_method='median',
                  combine_sigma_clip=3, exposure_key='EXPTIME',
                  remove_cosmics=False, lacosmic_params={}, mem_limit=1e8,
-                 inplace=True, add_keywords={},
+                 inplace=True, add_keywords={}, rebin_func=np.sum,
                  logger=logger, **kwargs):
     """Process and combine flat images (normalizing)."""
     hdus = process_list(process_image, image_list, rebin_size=rebin_size,
