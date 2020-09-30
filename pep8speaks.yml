@@ -1,0 +1,18 @@
+scanner:
+    linter: flake8
+
+flake8:
+  max-line-length: 79  # Using the default of 79 in PEP8
+
+  ignore:
+    - E741  # single char variables
+    - E226  # Don't force "missing whitespace around arithmetic operator"
+    - E402  # .conf has to be set in the __init__.py modules imports
+    - W503  # line break before binary operator
+    - W504  #
+
+  exclude:
+    - _astropy_init.py
+    - version.py
+    - setup.py
+
