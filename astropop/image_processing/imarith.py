@@ -8,7 +8,7 @@ from astropy import units as u
 from ..framedata import FrameData, check_framedata, EmptyDataError
 from ..logger import logger, log_to_list
 
-__all__ = ['imarith']
+__all__ = ['imarith', 'imcombine']
 
 
 _arith_funcs = {'+': np.add,
@@ -167,3 +167,7 @@ def imarith(operand1, operand2, operation, inplace=False,
 
     logger.removeHandler(lh)
     return ccd
+
+
+def imcombine(*args, **kwargs):
+    raise NotImplementedError
