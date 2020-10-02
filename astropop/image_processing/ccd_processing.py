@@ -10,7 +10,7 @@ from ..framedata import check_framedata
 
 
 __all__ = ['cosmics_lacosmic', 'gain_correct', 'subtract_bias',
-           'subtract_dark', 'flat_correct', 'process_ccd']
+           'subtract_dark', 'flat_correct', 'process_image']
 
 
 # TODO: replace ccdproc functions by built-in, skiping units
@@ -285,11 +285,12 @@ def flat_correct(image, master_flat, min_value=None, norm_value=None,
     return nim
 
 
-def process_ccd(ccddata, master_bias=None, master_dark=None, master_flat=None,
-                gain=None, image_exposure=None, dark_exposure=None, trim=None,
-                lacosmic=False, rebin_func=np.sum,
-                rebin_size=None, readnoise=None, badpixmask=None,
-                overscan=None,
-                logger=logger):
+def process_image(framedata, master_bias=None, master_dark=None,
+                  master_flat=None, gain=None, image_exposure=None,
+                  dark_exposure=None, trim=None,
+                  lacosmic=False, rebin_func=np.sum,
+                  rebin_size=None, readnoise=None, badpixmask=None,
+                  overscan=None,
+                  logger=logger):
     """Process all the default steps of CCD calibration."""
     raise NotImplementedError
