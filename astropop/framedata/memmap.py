@@ -89,7 +89,7 @@ def delete_array_memmap(memmap, read=True, remove=False):
 
 
 def to_memmap_operator(item):
-    """Wrap operators to `MemMapArray`"""
+    """Wrap operators to `MemMapArray`."""
     def wrapper(self, *args, **kwargs):
         if not self.empty:
             func = self._contained.__getattribute__(item)
@@ -101,7 +101,7 @@ def to_memmap_operator(item):
 
 
 def to_memmap_attr(func):
-    """Wrap attrs to `MemMapArray`"""
+    """Wrap attrs to `MemMapArray`."""
     def wrapper(*args, **kwargs):
         result = func(*args, **kwargs)
         if isinstance(result, np.ndarray):
@@ -137,6 +137,7 @@ class MemMapArray:
     - This is just a numeric storing array. No unit is assigned and it behaves
       like any dimensionless number in operations.
     """
+
     # TODO: __copy__
     _filename = None  # filename of memmap
     _file_lock = False  # lock filename
