@@ -114,6 +114,7 @@ nosetests.xml
 coverage.xml
 *.cover
 .hypothesis/
+.tmp
 
 # Translations
 *.mo
