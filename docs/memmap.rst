@@ -13,8 +13,8 @@ Creating an MemMapArray
 `MemMapArray` are very simple to create, just like a `numpy.array`. For example:
 
     >>> from astropop.framedata import MemMapArray
-    >>> m = MemMapArray([[0, 1], [2, 3]], filename='./mymemmaparray.npy', dtype='float32', unit='adu', memmap=True)
-    >>> print(m) # doctest: +SKIP
+    >>> m = MemMapArray([[0, 1], [2, 3]], filename='./mymemmaparray.npy', dtype='float32', memmap=True)
+    >>> print(m)
     MemMapArray:
     memmap([[0., 1.],
             [2., 3.]], dtype=float32)
@@ -30,10 +30,7 @@ This will create a MemMapArray instance, accessible just like Numpy arrays:
     >>> m.dtype
     dtype('float32')
 
-However, this data is not in memory, but is cached in disk, in file `./mymemmaparray.npy`. Also, the new `unit` property is available.
-
-    >>> m.unit
-    Unit("adu")
+However, this data is not in memory, but is cached in disk, in file `./mymemmaparray.npy`.
 
 `MemMapArray` also can create empty data instances, and handle it. You can just pass `None` data to it and it's ok.
 
