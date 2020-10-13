@@ -16,6 +16,7 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.graphviz',
     'sphinx.ext.ifconfig',
+    'sphinx.ext.todo',
     'matplotlib.sphinxext.plot_directive',
     'IPython.sphinxext.ipython_console_highlighting',
     'IPython.sphinxext.ipython_directive',
@@ -58,5 +59,6 @@ intersphinx_mapping = {
     "numpy": ("https://docs.scipy.org/doc/numpy/", None),
     "scipy": ("https://docs.scipy.org/doc/scipy/reference", None),
     "matplotlib": ("https://matplotlib.org/", None),
-    "astropy": ('http://docs.astropy.org/en/latest/', None)
+    "astropy": ('http://docs.astropy.org/en/latest/', None),
+    "uncertainties": ("https://uncertainties-python-package.readthedocs.io/en/latest/", None)
 }
