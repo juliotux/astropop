@@ -10,6 +10,7 @@ flake8:
     - E402  # .conf has to be set in the __init__.py modules imports
     - W503  # line break before binary operator
     - W504  #
+    - D105  # Docstring in magic functions
 
   exclude:
     - _astropy_init.py
