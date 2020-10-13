@@ -12,15 +12,15 @@ from astropy.table import Table
 from scipy.optimize import curve_fit
 from scipy.ndimage.filters import convolve
 
-from ._utils import _sep_fix_byte_order
-from ..math.moffat import moffat_r, moffat_fwhm, PSFMoffat2D
-from ..math.gaussian import gaussian_r, gaussian_fwhm, PSFGaussian2D
-from ..math.array import trim_array, xy2r
-from ..logger import logger
+from astropop.photometry._utils import _sep_fix_byte_order
+from astropop.math.moffat import moffat_r, moffat_fwhm, PSFMoffat2D
+from astropop.math.gaussian import gaussian_r, gaussian_fwhm, PSFGaussian2D
+from astropop.math.array import trim_array, xy2r
+from astropop.logger import logger
 
-from astropop.photometry import (gen_filter_kernel, background, sepfind, daofind,
-                                 starfind, sources_mask, _fwhm_loop, calc_fwhm, 
-                                 _recenter_loop, recenter_sources)
+from astropop.photometry.detection import (gen_filter_kernel, background, sepfind,
+                                           daofind, starfind, sources_mask, _fwhm_loop,
+                                           calc_fwhm, _recenter_loop, recenter_sources)
 
 # @pytest.mark.parametrize('r', [2, 3, 4])
 def test_gen_filter_kernel():
