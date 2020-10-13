@@ -6,10 +6,9 @@ from numpy import testing as npt
 import pytest_check as check
 
 from uncertainties import UFloat, unumpy
-from uncertainties.core import AffineScalarFunc
 
 from astropop.math.physical import QFloat, qfloat, unit_property, units, \
-                                   same_unit, require_qfloat, UnitsError, \
+                                   same_unit, UnitsError, \
                                    equal_within_errors, ufloat_or_uarray, \
                                    convert_to_qfloat
 from astropop.py_utils import check_iterable
@@ -149,7 +148,7 @@ def test_qfloat_unit_property_none():
 @pytest.mark.parametrize('unit', ['None', 'Invalid'])
 def test_qfloat_unit_property_invalid(unit):
     with pytest.raises(ValueError):
-        c = DummyClass(unit)
+        DummyClass(unit)
 
 
 def test_qfloat_creation():
@@ -200,6 +199,20 @@ def test_qfloat_ufloat_or_uarray_float():
     check.is_false(check_iterable(q.n))
     check.is_false(check_iterable(q.s))
 
+    # multiple values
+    q1, q2 = ufloat_or_uarray(QFloat(1.0, 0.1, 'm'),
+                              QFloat(60.0, 0.1, 's'))
+    check.is_instance(q1, UFloat)
+    check.equal(q1.n, 1.0)
+    check.equal(q1.s, 0.1)
+    check.is_false(check_iterable(q1.n))
+    check.is_false(check_iterable(q1.s))
+    check.is_instance(q2, UFloat)
+    check.equal(q2.n, 60.0)
+    check.equal(q2.s, 0.1)
+    check.is_false(check_iterable(q2.n))
+    check.is_false(check_iterable(q2.s))
+
 
 def test_qfloat_ufloat_or_uarray_array():
     a = np.arange(0, 100, 1).reshape((10, 10))
@@ -213,13 +226,38 @@ def test_qfloat_ufloat_or_uarray_array():
     npt.assert_array_equal(n, a)
     npt.assert_array_equal(ns, s)
 
+    # multiple values
+    a1 = np.arange(0, 100, 1).reshape((10, 10))
+    s1 = a1*0.01
+    a2 = [1, 2, 3, 4]
+    s2 = [0.1, 0.1, 0.1, 0.1]
+    q1, q2 = ufloat_or_uarray(QFloat(a1, s1, 'm'),
+                              QFloat(a2, s2, 'm'))
+    check.is_instance(q1, np.ndarray)
+    check.is_instance(q1[0][0], UFloat)
+    n1 = unumpy.nominal_values(q1)
+    ns1 = unumpy.std_devs(q1)
+    check.equal(q1.shape, (10, 10))
+    npt.assert_array_equal(n1, a1)
+    npt.assert_array_equal(ns1, s1)
+    check.is_instance(q2, np.ndarray)
+    check.is_instance(q2[0], UFloat)
+    n2 = unumpy.nominal_values(q2)
+    ns2 = unumpy.std_devs(q2)
+    check.equal(q2.shape, (4,))
+    npt.assert_array_equal(n2, a2)
+    npt.assert_array_equal(ns2, s2)
 
-# TODO: (UFloat(1.0, 0.1), QFloat(1.0, 0.1)) is failing because uncertainties bug
-@pytest.mark.parametrize('value,expect', [(QFloat(1.0, 0.1, 'm'), QFloat(1.0, 0.1, 'm')),
+
+# TODO: (UFloat(1.0, 0.1), QFloat(1.0, 0.1)) is failing because uncert. bug
+@pytest.mark.parametrize('value,expect', [(QFloat(1.0, 0.1, 'm'),
+                                           QFloat(1.0, 0.1, 'm')),
                                           (1, QFloat(1.0, 0, None)),
-                                          (np.array([1, 2, 3]), QFloat([1, 2, 3], unit=None)),
+                                          (np.array([1, 2, 3]),
+                                           QFloat([1, 2, 3], unit=None)),
                                           ('string', 'raise'),
-                                          (1.0*units.m, QFloat(1.0, 0.0, 'm'))])
+                                          (1.0*units.m,
+                                           QFloat(1.0, 0.0, 'm'))])
 def test_qfloat_converttoqfloat(value, expect):
     if expect == 'raise':
         with pytest.raises(Exception):
@@ -1030,10 +1068,14 @@ def test_qfloat_math_mul_array():
                                           [80, 100, 120, 140],
                                           [160, 180, 200, 220],
                                           [240, 260, 280, 300]])
-    npt.assert_almost_equal(res6.uncertainty, [[0.        , 0.10002   , 0.20004   , 0.30005999],
-                                               [0.40007999, 0.50009999, 0.60011999, 0.70013999],
-                                               [0.80015998, 0.90017998, 1.00019998, 1.10021998],
-                                               [1.20023998, 1.30025997, 1.40027997, 1.50029997]])
+    npt.assert_almost_equal(res6.uncertainty, [[0, 0.10002, 0.20004,
+                                                0.30005999],
+                                               [0.40007999, 0.50009999,
+                                                0.60011999, 0.70013999],
+                                               [0.80015998, 0.90017998,
+                                                1.00019998, 1.10021998],
+                                               [1.20023998, 1.30025997,
+                                                1.40027997, 1.50029997]])
     check.equal(res6.unit, units.km*units.s)
     # inverse same
     res7 = qf3 * qf2
@@ -1041,21 +1083,29 @@ def test_qfloat_math_mul_array():
                                           [80, 100, 120, 140],
                                           [160, 180, 200, 220],
                                           [240, 260, 280, 300]])
-    npt.assert_almost_equal(res7.uncertainty, [[0.        , 0.10002   , 0.20004   , 0.30005999],
-                                               [0.40007999, 0.50009999, 0.60011999, 0.70013999],
-                                               [0.80015998, 0.90017998, 1.00019998, 1.10021998],
-                                               [1.20023998, 1.30025997, 1.40027997, 1.50029997]])
+    npt.assert_almost_equal(res7.uncertainty, [[0, 0.10002, 0.20004,
+                                                0.30005999],
+                                               [0.40007999, 0.50009999,
+                                                0.60011999, 0.70013999],
+                                               [0.80015998, 0.90017998,
+                                                1.00019998, 1.10021998],
+                                               [1.20023998, 1.30025997,
+                                                1.40027997, 1.50029997]])
     check.equal(res7.unit, units.km*units.s)
 
     # 2D array with numbers
     res8 = 3 * qf3
-    npt.assert_array_equal(res8.nominal, np.arange(16).reshape((4, 4))*3)
-    npt.assert_almost_equal(res8.uncertainty, np.arange(16).reshape((4, 4))*0.0001*3)
+    npt.assert_array_equal(res8.nominal,
+                           np.arange(16).reshape((4, 4))*3)
+    npt.assert_almost_equal(res8.uncertainty,
+                            np.arange(16).reshape((4, 4))*0.0001*3)
     check.equal(res8.unit, units.km)
     # same inverse
     res9 = qf3 * 3
-    npt.assert_array_equal(res9.nominal, np.arange(16).reshape((4, 4))*3)
-    npt.assert_almost_equal(res9.uncertainty, np.arange(16).reshape((4, 4))*0.0001*3)
+    npt.assert_array_equal(res9.nominal,
+                           np.arange(16).reshape((4, 4))*3)
+    npt.assert_almost_equal(res9.uncertainty,
+                            np.arange(16).reshape((4, 4))*0.0001*3)
     check.equal(res9.unit, units.km)
 
     # With units
@@ -1116,29 +1166,273 @@ def test_qfloat_math_mul_inline():
     i = id(qf2)
     qf2 *= QFloat(5, 0.01, None)
     npt.assert_almost_equal(qf2.nominal, [10, 15, 20])
-    npt.assert_almost_equal(qf2.uncertainty, [0.50039984, 1.0004499, 1.50053324])
+    npt.assert_almost_equal(qf2.uncertainty, [0.50039984, 1.0004499,
+                                              1.50053324])
     check.equal(qf2.unit, units.m)
     check.equal(i, id(qf2))
     qf2 *= QFloat(3.5, 0.1, 'm')
     npt.assert_almost_equal(qf2.nominal, [35, 52.5, 70])
-    npt.assert_almost_equal(qf2.uncertainty, [2.01677961, 3.80933393, 5.61979537])
+    npt.assert_almost_equal(qf2.uncertainty, [2.01677961, 3.80933393,
+                                              5.61979537])
     check.equal(qf2.unit, units.m*units.m)
     check.equal(i, id(qf2))
     qf2 *= 10
     npt.assert_almost_equal(qf2.nominal, [350, 525, 700])
-    npt.assert_almost_equal(qf2.uncertainty, [20.1677961, 38.0933393, 56.1979537])
+    npt.assert_almost_equal(qf2.uncertainty, [20.1677961, 38.0933393,
+                                              56.1979537])
     check.equal(qf2.unit, units.m*units.m)
     check.equal(i, id(qf2))
     qf2 *= 'g'
     npt.assert_almost_equal(qf2.nominal, [350, 525, 700])
-    npt.assert_almost_equal(qf2.uncertainty, [20.1677961, 38.0933393, 56.1979537])
+    npt.assert_almost_equal(qf2.uncertainty, [20.1677961, 38.0933393,
+                                              56.1979537])
     check.equal(qf2.unit, units.m*units.m*units.g)
     check.equal(i, id(qf2))
     qf2 *= units.K
     npt.assert_almost_equal(qf2.nominal, [350, 525, 700])
-    npt.assert_almost_equal(qf2.uncertainty, [20.1677961, 38.0933393, 56.1979537])
+    npt.assert_almost_equal(qf2.uncertainty, [20.1677961, 38.0933393,
+                                              56.1979537])
     check.equal(qf2.unit, units.m*units.m*units.g*units.K)
     check.equal(i, id(qf2))
+
+# DIVISION -------------------------------------------------------------------
+
+
+def test_qfloat_math_divmod_single():
+    qf1 = QFloat(20, 0.5, 's')
+    qf2 = QFloat(100, 0.1, 'm')
+    qf3 = QFloat(2030, 1, 'cm')
+    qf4 = QFloat(5, 0.01, None)
+
+    res1 = qf2 / qf1
+    check.equal(res1.nominal, 5)
+    npt.assert_almost_equal(res1.uncertainty, 0.12509996003196805)
+    check.equal(res1.unit, units.m/units.s)
+    res1f = qf2 // qf1
+    check.equal(res1f.nominal, 5)
+    npt.assert_almost_equal(res1f.uncertainty, 0.0)
+    check.equal(res1f.unit, units.m/units.s)
+    res1m = qf2 % qf1
+    check.equal(res1m.nominal, 0)
+    # this uncertainty is not continuous
+    # npt.assert_almost_equal(res1m.uncertainty, 16777213.75)
+    check.equal(res1m.unit, units.m)
+    # inverse inverse
+    res2 = qf1 / qf2
+    check.equal(res2.nominal, 0.2)
+    npt.assert_almost_equal(res2.uncertainty, 0.005003998401278721)
+    check.equal(res2.unit, units.s/units.m)
+    res2f = qf1 // qf2
+    check.equal(res2f.nominal, 0)
+    npt.assert_almost_equal(res2f.uncertainty, 0.0)
+    check.equal(res2f.unit, units.s/units.m)
+    res2m = qf1 % qf2
+    check.equal(res2m.nominal, 20)
+    npt.assert_almost_equal(res2m.uncertainty, 0.5)
+    check.equal(res2m.unit, units.s)
+
+    # same dimensionality
+    res3 = qf3 / qf2
+    check.equal(res3.nominal, 20.3)
+    npt.assert_almost_equal(res3.uncertainty, 0.022629405648403586)
+    check.equal(res3.unit, units.cm/units.m)
+    res3f = qf3 // qf2
+    check.equal(res3f.nominal, 20)
+    npt.assert_almost_equal(res3f.uncertainty, 0.0)
+    check.equal(res3f.unit, units.cm/units.m)
+    res3m = qf3 % qf2
+    check.equal(res3m.nominal, 30)
+    npt.assert_almost_equal(res3m.uncertainty, 2.23606797749979)
+    check.equal(res3m.unit, units.cm)
+
+    # with no dimensionality
+    res4 = qf4 / qf2
+    check.equal(res4.nominal, 0.05)
+    npt.assert_almost_equal(res4.uncertainty, 0.00011180339887498949)
+    check.equal(res4.unit, 1/units.m)
+    res4f = qf4 // qf2
+    check.equal(res4f.nominal, 0)
+    npt.assert_almost_equal(res4f.uncertainty, 0.0)
+    check.equal(res4f.unit, 1/units.m)
+    res4m = qf4 % qf2
+    check.equal(res4m.nominal, 5)
+    npt.assert_almost_equal(res4m.uncertainty, 0.01)
+    check.equal(res4m.unit, units.dimensionless_unscaled)
+
+    # with numbers
+    res5 = qf1 / 7
+    npt.assert_almost_equal(res5.nominal, 2.857142857142857)
+    npt.assert_almost_equal(res5.uncertainty, 0.07142857142857142)
+    check.equal(res5.unit, units.s)
+    res5f = qf1 // 7
+    check.equal(res5f.nominal, 2)
+    npt.assert_almost_equal(res5f.uncertainty, 0.0)
+    check.equal(res5f.unit, units.s)
+    res5m = qf1 % 7
+    check.equal(res5m.nominal, 6)
+    npt.assert_almost_equal(res5m.uncertainty, 0.5)
+    check.equal(res5m.unit, units.s)
+    # and inverse
+    res6 = 70 / qf1
+    npt.assert_almost_equal(res6.nominal, 3.5)
+    npt.assert_almost_equal(res6.uncertainty, 0.0875)
+    check.equal(res6.unit, 1/units.s)
+    res6f = 70 // qf1
+    npt.assert_almost_equal(res6f.nominal, 3.0)
+    npt.assert_almost_equal(res6f.uncertainty, 0.0)
+    check.equal(res6f.unit, 1/units.s)
+    res6m = 70 % qf1
+    npt.assert_almost_equal(res6m.nominal, 10)
+    npt.assert_almost_equal(res6m.uncertainty, 1.5)
+    check.equal(res6m.unit, units.dimensionless_unscaled)
+
+    # with units
+    res7 = qf1 / units.m
+    check.equal(res7.nominal, qf1.nominal)
+    check.equal(res7.uncertainty, qf1.uncertainty)
+    check.equal(res7.unit, units.s/units.m)
+    res7m = qf1 % units.m
+    check.equal(res7m.unit, units.s)
+    # string
+    res8 = qf1 / 'm'
+    check.equal(res8.nominal, qf1.nominal)
+    check.equal(res8.uncertainty, qf1.uncertainty)
+    check.equal(res8.unit, units.s/units.m)
+    res8m = qf1 % 'm'
+    check.equal(res8m.unit, units.s)
+
+
+def test_qfloat_math_divmod_array():
+    qf1 = QFloat(np.arange(1, 5)*2, np.arange(1, 5)*0.01, 'm')
+    qf2 = QFloat(np.arange(1, 5), np.arange(1, 5)*0.01, 's')
+    qf3 = QFloat(2, 0.1, 'min')
+    qf4 = QFloat(np.arange(1, 17).reshape((4, 4)),
+                 np.arange(1, 17).reshape((4, 4))*0.01, 'km')
+    qf5 = QFloat(np.arange(1, 17).reshape((4, 4))*4.5,
+                 np.arange(1, 17).reshape((4, 4))*0.01, 'h')
+
+    res1 = qf1 / qf2
+    npt.assert_array_equal(res1.nominal, np.ones(4)*2)
+    npt.assert_almost_equal(res1.uncertainty, np.ones(4)*0.022360679774997897)
+    check.equal(res1.unit, units.m/units.s)
+    res1f = qf1 // qf2
+    npt.assert_array_equal(res1f.nominal, np.ones(4)*2)
+    npt.assert_array_equal(res1f.uncertainty, np.ones(4)*0.0)
+    check.equal(res1f.unit, units.m/units.s)
+    res1m = qf1 % qf2
+    npt.assert_array_equal(res1m.nominal, np.ones(4)*0)
+    # not continuous
+    # npt.assert_array_equal(res1m.uncertainty, np.ones(4)*0.0)
+    check.equal(res1m.unit, units.m)
+    # inverse
+    res2 = qf2 / qf1
+    npt.assert_array_equal(res2.nominal, np.ones(4)*0.5)
+    npt.assert_almost_equal(res2.uncertainty, np.ones(4)*0.005590169943749474)
+    check.equal(res2.unit, units.s/units.m)
+    res2f = qf2 // qf1
+    npt.assert_array_equal(res2f.nominal, np.ones(4)*0)
+    npt.assert_array_equal(res2f.uncertainty, np.ones(4)*0.0)
+    check.equal(res2f.unit, units.s/units.m)
+    res2m = qf2 % qf1
+    npt.assert_array_equal(res2m.nominal, [1, 2, 3, 4])
+    npt.assert_array_equal(res2m.uncertainty, [0.01, 0.02, 0.03, 0.04])
+    check.equal(res2m.unit, units.s)
+
+    # 2D arrays
+    res3 = qf5 / qf4
+    npt.assert_array_equal(res3.nominal, np.ones(16).reshape((4, 4))*4.5)
+    npt.assert_almost_equal(res3.uncertainty,
+                            np.ones(16).reshape((4, 4))*0.046097722286464436)
+    check.equal(res3.unit, units.h/units.km)
+    res4 = qf5 // qf4
+    npt.assert_array_equal(res4.nominal, np.ones(16).reshape((4, 4))*4.0)
+    npt.assert_almost_equal(res4.uncertainty,
+                            np.ones(16).reshape((4, 4))*0.0)
+    check.equal(res4.unit, units.h/units.km)
+    res4 = qf5 % qf4
+    npt.assert_array_equal(res4.nominal, np.arange(1, 17).reshape((4, 4))*0.5)
+    npt.assert_almost_equal(res4.uncertainty,
+                            np.arange(1, 17).reshape((4, 4))*0.04123105625617)
+    check.equal(res4.unit, units.h)
+
+    # Array and single
+    res5 = qf2 / qf3
+    npt.assert_array_equal(res5.nominal, np.arange(1, 5)*0.5)
+    npt.assert_almost_equal(res5.uncertainty,
+                            np.arange(1, 5)*0.025495097567963927)
+    check.equal(res5.unit, units.s/units.min)
+    res5f = qf2 // qf3
+    npt.assert_array_equal(res5f.nominal, [0, 1, 1, 2])
+    npt.assert_almost_equal(res5f.uncertainty, np.zeros(4))
+    check.equal(res5f.unit, units.s/units.min)
+    res5m = qf2 % qf3
+    npt.assert_array_equal(res5m.nominal, [1, 0, 1, 0])
+    # Some are not continuous
+    # npt.assert_almost_equal(res5m.uncertainty, np.zeros(4))
+    check.equal(res5m.unit, units.s)
+    # inverse
+    res6 = qf3 / qf2
+    npt.assert_almost_equal(res6.nominal, [2, 1, 2/3, 0.5])
+    npt.assert_almost_equal(res6.uncertainty, [0.10198039027185571,
+                                               0.050990195135927854,
+                                               0.033993463423951896,
+                                               0.025495097567963927])
+    check.equal(res6.unit, units.min/units.s)
+    res6f = qf3 // qf2
+    npt.assert_array_equal(res6f.nominal, [2, 1, 0, 0])
+    npt.assert_almost_equal(res6f.uncertainty, np.zeros(4))
+    check.equal(res6f.unit, units.min/units.s)
+    res6m = qf3 % qf2
+    npt.assert_array_equal(res6m.nominal, [0, 0, 2, 2])
+    check.equal(res6m.unit, units.min)
+
+    # with units
+    res7 = qf2 / units.m
+    npt.assert_almost_equal(res7.nominal, qf2.nominal)
+    npt.assert_almost_equal(res7.uncertainty, qf2.uncertainty)
+    check.equal(res7.unit, units.s/units.m)
+    res7m = qf2 % units.m
+    check.equal(res7m.unit, units.s)
+    # string
+    res8 = qf2 / 'm'
+    npt.assert_almost_equal(res8.nominal, qf2.nominal)
+    npt.assert_almost_equal(res8.uncertainty, qf2.uncertainty)
+    check.equal(res8.unit, units.s/units.m)
+    res8m = qf2 % 'm'
+    check.equal(res8m.unit, units.s)
+
+    # with numbers
+    res9 = qf1 / 4
+    npt.assert_almost_equal(res9.nominal, np.arange(1, 5)*0.5)
+    npt.assert_almost_equal(res9.uncertainty, np.arange(1, 5)*0.0025)
+    check.equal(res9.unit, units.m)
+    res9f = qf1 // 4
+    npt.assert_almost_equal(res9f.nominal, [0, 1, 1, 2])
+    npt.assert_almost_equal(res9f.uncertainty, [0, 0, 0, 0])
+    check.equal(res9f.unit, units.m)
+    res9m = qf1 % 4
+    npt.assert_almost_equal(res9m.nominal, [2, 0, 2, 0])
+    npt.assert_almost_equal(res9m.uncertainty, np.arange(1, 5)*0.01)
+    check.equal(res9m.unit, units.m)
+    resA = 8 / qf1
+    npt.assert_almost_equal(resA.nominal, [4, 2, 4/3, 1])
+    npt.assert_almost_equal(resA.uncertainty, [0.02, 0.01, 6/900,
+                                               0.005])
+    check.equal(resA.unit, 1/units.m)
+    resAf = 8 // qf1
+    npt.assert_almost_equal(resAf.nominal, [4, 2, 1, 1])
+    npt.assert_almost_equal(resAf.uncertainty, [0.0, 0.0, 0.0, 0.0])
+    check.equal(resAf.unit, 1/units.m)
+    resAm = 8 % qf1
+    npt.assert_almost_equal(resAm.nominal, [0, 0, 2, 0])
+    # npt.assert_almost_equal(resAm.uncertainty, [0.0, 0.0, 0.0, 0.0])
+    check.equal(resAm.unit, units.dimensionless_unscaled)
+
+
+def test_qfloat_math_divmod_inline():
+    qf1 = QFloat(30, 0.5, 's')
+    # TODO: Terminar este teste
+
 
 # POS and NEG ----------------------------------------------------------------
 
@@ -1183,5 +1477,27 @@ def test_qfloat_math_pos():
                  'm')
     qfn3 = +qf3
     npt.assert_array_equal(qfn3.nominal, [-2, 3, -5, 10])
+    npt.assert_array_equal(qfn3.uncertainty, [0.1, 0.4, 0.3, 0.1])
+    check.equal(qfn3.unit, units.m)
+
+
+def test_qfloat_math_abs():
+    qf1 = QFloat(1.0, 0.1, 'm')
+    qfn1 = abs(qf1)
+    check.equal(qfn1.nominal, 1.0)
+    check.equal(qfn1.uncertainty, 0.1)
+    check.equal(qfn1.unit, units.m)
+
+    qf2 = QFloat(-5, 0.1, 'm')
+    qfn2 = abs(qf2)
+    check.equal(qfn2.nominal, 5.0)
+    check.equal(qfn2.uncertainty, 0.1)
+    check.equal(qfn2.unit, units.m)
+
+    qf3 = QFloat([-2, 3, -5, 10],
+                 [0.1, 0.4, 0.3, -0.1],
+                 'm')
+    qfn3 = abs(qf3)
+    npt.assert_array_equal(qfn3.nominal, [2, 3, 5, 10])
     npt.assert_array_equal(qfn3.uncertainty, [0.1, 0.4, 0.3, 0.1])
     check.equal(qfn3.unit, units.m)

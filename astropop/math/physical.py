@@ -54,11 +54,28 @@ def unit_property(cls):
     return cls
 
 
-def ufloat_or_uarray(qf):
+def ufloat_or_uarray(*qf):
     """Convert a qfloat to a ufloat, according to iterability."""
-    if check_iterable(qf.nominal):
-        return unp.uarray(qf.nominal, qf.std_dev)
-    return ufloat(qf.nominal, qf.std_dev)
+    res = [None]*len(qf)
+    for i, q in enumerate(qf):
+        if check_iterable(q.nominal):
+            res[i] = unp.uarray(q.nominal, q.std_dev)
+        else:
+            res[i] = ufloat(q.nominal, q.std_dev)
+    if len(res) == 1:
+        return res[0]
+    return res
+
+
+def extract_nominal_std(uf):
+    """Convenient extractor of nominal and std values from ufloats."""
+    if isinstance(uf, np.ndarray):
+        nominal = unp.nominal_values(uf)
+        std_dev = unp.std_devs(uf)
+    else:
+        nominal = uf.nominal_value
+        std_dev = uf.std_dev
+    return nominal, std_dev
 
 
 def convert_to_qfloat(value):
@@ -442,17 +459,9 @@ class QFloat():
     @require_qfloat
     def __add__(self, other):
         this, other = same_unit(self, other, self.__add__)
-        uf1 = ufloat_or_uarray(this)
-        uf2 = ufloat_or_uarray(other)
+        uf1, uf2 = ufloat_or_uarray(this, other)
         res = uf1 + uf2
-        if isinstance(res, np.ndarray):
-            nominal = unp.nominal_values(res)
-            std_dev = unp.std_devs(res)
-        else:
-            nominal = res.nominal_value
-            std_dev = res.std_dev
-
-        return QFloat(nominal, std_dev, this.unit)
+        return QFloat(*extract_nominal_std(res), this.unit)
 
     @require_qfloat
     def __iadd__(self, other):
@@ -467,17 +476,9 @@ class QFloat():
     @require_qfloat
     def __sub__(self, other):
         this, other = same_unit(self, other, self.__add__)
-        uf1 = ufloat_or_uarray(this)
-        uf2 = ufloat_or_uarray(other)
+        uf1, uf2 = ufloat_or_uarray(this, other)
         res = uf1 - uf2
-        if isinstance(res, np.ndarray):
-            nominal = unp.nominal_values(res)
-            std_dev = unp.std_devs(res)
-        else:
-            nominal = res.nominal_value
-            std_dev = res.std_dev
-
-        return QFloat(nominal, std_dev, this.unit)
+        return QFloat(*extract_nominal_std(res), this.unit)
 
     @require_qfloat
     def __isub__(self, other):
@@ -492,16 +493,9 @@ class QFloat():
     @require_qfloat
     def __mul__(self, other):
         unit = self.unit * other.unit
-        uf1 = ufloat_or_uarray(self)
-        uf2 = ufloat_or_uarray(other)
+        uf1, uf2 = ufloat_or_uarray(self, other)
         res = uf1 * uf2
-        if isinstance(res, np.ndarray):
-            nominal = unp.nominal_values(res)
-            std_dev = unp.std_devs(res)
-        else:
-            nominal = res.nominal_value
-            std_dev = res.std_dev
-        return QFloat(nominal, std_dev, unit)
+        return QFloat(*extract_nominal_std(res), unit)
 
     @require_qfloat
     def __imul__(self, other):
@@ -515,7 +509,10 @@ class QFloat():
 
     @require_qfloat
     def __truediv__(self, other):
-        raise NotImplementedError
+        unit = self.unit / other.unit
+        uf1, uf2 = ufloat_or_uarray(self, other)
+        res = uf1 / uf2
+        return QFloat(*extract_nominal_std(res), unit)
 
     @require_qfloat
     def __itruediv__(self, other):
@@ -525,11 +522,15 @@ class QFloat():
 
     @require_qfloat
     def __rtruediv__(self, other):
-        raise NotImplementedError
+        # As the argument always enter here as a qfloat...
+        return other.__truediv__(self)
 
     @require_qfloat
     def __floordiv__(self, other):
-        raise NotImplementedError
+        unit = self.unit / other.unit
+        uf1, uf2 = ufloat_or_uarray(self, other)
+        res = uf1 // uf2
+        return QFloat(*extract_nominal_std(res), unit)
 
     @require_qfloat
     def __ifloordiv__(self, other):
@@ -539,7 +540,8 @@ class QFloat():
 
     @require_qfloat
     def __rfloordiv__(self, other):
-        raise NotImplementedError
+        # As the argument always enter here as a qfloat...
+        return other.__floordiv__(self)
 
     @require_qfloat
     def __div__(self, other):
@@ -555,7 +557,9 @@ class QFloat():
 
     @require_qfloat
     def __mod__(self, other):
-        raise NotImplementedError
+        uf1, uf2 = ufloat_or_uarray(self, other)
+        res = uf1 % uf2
+        return QFloat(*extract_nominal_std(res), self.unit)
 
     @require_qfloat
     def __imod__(self, other):
@@ -565,7 +569,7 @@ class QFloat():
 
     @require_qfloat
     def __rmod__(self, other):
-        raise NotImplementedError
+        return other.__mod__(self)
 
     @require_qfloat
     def __pow__(self, other):
@@ -591,7 +595,7 @@ class QFloat():
 
     @require_qfloat
     def __abs__(self):
-        raise NotImplementedError
+        return QFloat(np.abs(self.nominal), self.uncertainty, self.unit)
 
     @require_qfloat
     def __invert__(self):
