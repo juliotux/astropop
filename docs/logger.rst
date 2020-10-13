@@ -25,7 +25,7 @@ Using Logger
 
 To use the logger, just import it and set a log level::
 
-    >>> from astropop import logger
+    >>> from astropop.logger import logger
     >>> logger.setLevel('WARN')
 
 You are now read to print simple logging::

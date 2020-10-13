@@ -13,12 +13,12 @@ Creating an MemMapArray
 `MemMapArray` are very simple to create, just like a `numpy.array`. For example:
 
     >>> from astropop.framedata import MemMapArray
-    >>> m = MemMapArray([[0, 1], [2, 3]], filename='./mymemmaparray.npy', dtype='float32', memmap=True)
+    >>> m = MemMapArray([[0, 1], [2, 3]], filename='/tmp/mymemmaparray.npy', dtype='float32', memmap=True)
     >>> print(m)
     MemMapArray:
     memmap([[0., 1.],
             [2., 3.]], dtype=float32)
-    file: /home/julio/mymemmaparray.npy
+    file: /tmp/mymemmaparray.npy
 
 
 This will create a MemMapArray instance, accessible just like Numpy arrays:
