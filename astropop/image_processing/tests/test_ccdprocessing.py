@@ -14,6 +14,8 @@ from astropop.image_processing.ccd_processing import cosmics_lacosmic, \
 from astropop.framedata import FrameData
 
 
+pytestmark = pytest.mark.skip
+
 @pytest.mark.parametrize('inplace', [True, False])
 def test_simple_flat(inplace):
     expect = np.ones((20, 20))*3
