@@ -24,7 +24,6 @@ def moffat_normalize(width, power):
     # return G(power)/(width*np.sqrt(np.pi)*G(power - 1/2))
     # Looking to the wikipedia, the PDF of Moffat distribution gives:
     return (power - 1)/(np.pi*width**2)
-    # Both give exatcly the same
 
 
 def moffat_fwhm(alpha, beta):
