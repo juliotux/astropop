@@ -7,6 +7,9 @@ from astropop.framedata import MemMapArray, create_array_memmap, \
                                delete_array_memmap, EmptyDataError
 import numpy as np
 import numpy.testing as npt
+import warnings
+
+warnings.filterwarnings('ignore')
 
 
 def test_create_and_delete_memmap(tmpdir):
