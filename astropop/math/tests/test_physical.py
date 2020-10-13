@@ -14,6 +14,8 @@ from astropop.math.physical import QFloat, qfloat, unit_property, units, \
                                    convert_to_qfloat
 from astropop.py_utils import check_iterable
 
+# pylint: disable=no-member, pointless-statement
+
 
 # Test units handling --------------------------------------------------------
 def test_qfloat_same_unit():
@@ -114,6 +116,7 @@ def test_qfloat_same_unit_array():
     npt.assert_array_almost_equal(qf_4.nominal, [120, 600])
     npt.assert_array_almost_equal(qf_4.std_dev, [0.6, 1.2])
     check.equal(qf_4.unit, units.s)
+
 
 @unit_property
 class DummyClass():
@@ -440,6 +443,7 @@ def test_qfloat_len():
 
 # Simple math comparisons -----------------------------------------------------
 
+
 def test_qfloat_comparison_equality_same_unit():
     # These numbers must not be equal, but equal within errors.
     qf1 = QFloat(1.0, 0.1, 'm')
@@ -554,7 +558,6 @@ def test_qfloat_math_add_single():
     qf2 = QFloat(50, 2, 'cm')
     qf3 = QFloat(10, 0.1, None)
     qf4 = QFloat(60, 0.001, 's')
-    qt = 10*units.cm
 
     res1 = qf1 + qf2
     check.equal(res1.nominal, 1.5)
@@ -728,7 +731,6 @@ def test_qfloat_math_sub_single():
     qf2 = QFloat(50, 2, 'cm')
     qf3 = QFloat(10, 0.1, None)
     qf4 = QFloat(60, 0.001, 's')
-    qt = 10*units.cm
 
     res1 = qf1 - qf2
     check.equal(res1.nominal, 0.5)
@@ -1056,7 +1058,7 @@ def test_qfloat_math_mul_array():
     npt.assert_almost_equal(res9.uncertainty, np.arange(16).reshape((4, 4))*0.0001*3)
     check.equal(res9.unit, units.km)
 
-        # With units
+    # With units
     resA = qf1 * units.m
     npt.assert_array_equal(resA.nominal, qf1.nominal)
     npt.assert_array_equal(resA.uncertainty, qf1.uncertainty)
@@ -1139,6 +1141,7 @@ def test_qfloat_math_mul_inline():
     check.equal(i, id(qf2))
 
 # POS and NEG ----------------------------------------------------------------
+
 
 def test_qfloat_math_neg():
     qf1 = QFloat(1.0, 0.1, 'm')

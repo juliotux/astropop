@@ -9,7 +9,6 @@ Simplified version of `uncertainties` python package with some
 # TODO: Numpy ufuncs compatibility
 # TODO: Numpy array funcs compatibility
 
-import copy
 import numbers
 from astropy import units
 from astropy.units.quantity_helper.helpers import get_converters_and_unit
@@ -19,7 +18,6 @@ from uncertainties import unumpy as unp
 from uncertainties import ufloat, UFloat
 
 from ..py_utils import check_iterable
-from ..logger import logger
 
 
 __all__ = ['unit_property', 'QFloat', 'qfloat', 'units', 'UnitsError',
@@ -87,28 +85,27 @@ def convert_to_qfloat(value):
         return QFloat(value, None, unit)
 
     # UFloat support
-    elif isinstance(value, UFloat):
+    if isinstance(value, UFloat):
         return QFloat(value.n, value.s, unit)
 
     # Numpy arrays support. They need to handle single numbers or ufloat
-    elif isinstance(value, (np.ndarray, list, tuple)):
+    if isinstance(value, (np.ndarray, list, tuple)):
         # UFloat members
         if isinstance(np.ravel(value)[0], UFloat):
             return QFloat(unp.nominal_values(value), unp.std_devs(value), unit)
         # Astropy Quantities
-        elif isinstance(value, Quantity):
+        if isinstance(value, Quantity):
             return QFloat(value.value, None, value.unit)
         # Everithing else is considered numbers.
         return QFloat(value, None, unit)
 
-
     # Handle Astropy units to multuply
-    elif isinstance(value, (units.UnitBase, str)):
+    if isinstance(value, (units.UnitBase, str)):
         return QFloat(1.0, 0.0, value)
 
     # TODO: astropy NDData support?
-    else:
-        raise ValueError(f'Value {value} is not QFloat compilant.')
+
+    raise ValueError(f'Value {value} is not QFloat compilant.')
 
 
 def require_qfloat(func):
@@ -434,7 +431,7 @@ class QFloat():
         return this.nominal <= other.nominal
 
     def __lshift__(self, other):
-        """lshift operator used to convert units"""
+        """Lshift operator used to convert units."""
         return self.to(other)
 
     def __ilshift__(self, other):
