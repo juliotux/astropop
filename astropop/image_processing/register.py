@@ -100,9 +100,9 @@ def apply_shift(image, shiftxy, subpixel=True, footprint=False, logger=logger):
     if footprint:
         foot = np.ones(nimage.shape)
         foot = translate(foot, shift_col_lin, subpixel=subpixel, cval=0)
-        return nimage, masks, foot
+        return [nimage, masks, foot]
     else:
-        return nimage, masks
+        return [nimage, masks]
 
     # raise ValueError('Unrecognized shift image method.')
 
