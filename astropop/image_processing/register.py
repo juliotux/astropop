@@ -91,18 +91,18 @@ def apply_shift(image, shiftxy, subpixel=True, footprint=False, logger=logger):
     
     nimage = translate(image, shift_col_lin, subpixel=subpixel, cval=0)
     
-    nimage.masks = np.falses(nimage.shape)
-    if dx < 0: nimage.masks[dx:] = True
-    else: nimage.masks[:dx] = True
-    if dy < 0: nimage.masks[:,dy:] = True
-    else: nimage.masks[:,:dy] = True
+    masks = np.full(nimage.shape, False)
+    if dx < 0: masks[dx:] = True
+    else: masks[:dx] = True
+    if dy < 0: masks[:,dy:] = True
+    else: masks[:,:dy] = True
     
     if footprint:
         foot = np.ones(nimage.shape)
         foot = translate(foot, shift_col_lin, subpixel=subpixel, cval=0)
-        return nimage, foot
+        return [nimage, masks, foot]
     else:
-        return nimage
+        return [nimage, masks]
 
     # raise ValueError('Unrecognized shift image method.')
 
@@ -167,7 +167,7 @@ def hdu_shift_images(hdu_list, method='fft', register_method='asterism',
             # ccd.data = apply_shift(ccd.data, shift, method=s_method,
             #                        logger=logger)
             #     s_method = 'simple'
-            ccd.data = apply_shift(ccd.data, shift, logger=logger)
+            ccd.data, ccd.masks = apply_shift(ccd.data, shift, logger=logger)
             sh_string = [str(i) for i in shift]
             ccd.header['hierarch astropop register_shift'] = ",".join(sh_string)
             # if footprint:
@@ -175,7 +175,7 @@ def hdu_shift_images(hdu_list, method='fft', register_method='asterism',
             #                                 shift, method='simple',
             #                                 logger=logger)
             if footprint:
-                ccd.footprint = apply_shift(np.ones_like(ccd.data, dtype=bool),
+                [],[],ccd.footprint = apply_shift(np.ones_like(ccd.data, dtype=bool),
                                             shift, logger=logger)
     for i in hdu_list:
         i.header['hierarch astropop registered'] = True
