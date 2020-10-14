@@ -85,6 +85,18 @@ matrix:
 
         - os: linux
           python: 3.6
+          name: Python 3.6 with astropy 3.2 and Numpy 1.17
+          stage: Comprehensive tests
+          env: TOXENV=py36-test-astropy32-numpy117
+
+        - os: linux
+          python: 3.7
+          name: Python 3.7 with astropy 4.0 and Numpy 1.18
+          stage: Comprehensive tests
+          env: TOXENV=py37-test-astropy40-numpy117
+
+        - os: linux
+          python: 3.6
           name: Python 3.6 astropy LTS and Numpy 1.17
           stage: Comprehensive tests
           env: TOXENV=py36-test-astropylts-numpy117
