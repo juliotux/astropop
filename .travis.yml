@@ -85,15 +85,21 @@ matrix:
 
         - os: linux
           python: 3.6
-          name: Python 3.6 astropy LTS and Numpy 1.17
+          name: Python 3.6 astropy LTS and Numpy 1.16
           stage: Comprehensive tests
-          env: TOXENV=py36-test-astropylts-numpylts
+          env: TOXENV=py36-test-astropylts-numpy116
 
         - os: linux
           python: 3.8
           name: Python 3.8 latest developer version of key dependencies
           stage: Cron tests
           env: TOXENV=py38-test-devdeps
+
+        - os: linux
+          python: 3.8
+          name: Python 3.8 astropy 4.0 and Numpy 1.19
+          stage: Comprehensive tests
+          env: TOXENV=py38-test-astropy40-numpy119
 
     allow_failures:
         # Do a PEP8 test with flake8
