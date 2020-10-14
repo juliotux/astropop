@@ -73,20 +73,21 @@ matrix:
 
         - os: linux
           python: 3.8
-          name: Python 3.8 with developer version of astropy
+          name: Python 3.8 with developer version of astropy and numpy nightly
           stage: Comprehensive tests
           env: TOXENV=py38-test-devdeps
 
         - os: linux
           python: 3.7
-          name: Python 3.7 with astropy 3.0 and Numpy 1.17
+          name: Python 3.7 with astropy 3.2 and Numpy 1.17
           stage: Comprehensive tests
-          env: TOXENV=py37-test-astropy30-numpy117
+          env: TOXENV=py37-test-astropy32-numpy117
+
         - os: linux
           python: 3.6
-          name: Python 3.6 astropy LTS and Numpy 1.16
+          name: Python 3.6 astropy LTS and Numpy 1.17
           stage: Comprehensive tests
-          env: TOXENV=py36-test-astropylts-numpy116
+          env: TOXENV=py36-test-astropylts-numpylts
 
         - os: linux
           python: 3.8
