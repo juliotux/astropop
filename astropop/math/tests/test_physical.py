@@ -138,6 +138,57 @@ def test_qfloat_unit_property(unit, expect):
     check.equal(c.unit, expect)
 
 
+def test_qfloat_properties_getset():
+    # access all important properties
+    qf = QFloat(5.0, 0.025, 'm')
+    check.equal(qf.uncertainty, 0.025)
+    qf.uncertainty = 0.10
+    check.equal(qf.uncertainty, 0.10)
+    check.equal(qf.std_dev, 0.10)
+    qf.uncertainty = 0.05
+    check.equal(qf.std_dev, 0.05)
+
+    # setting nominal resets the uncertainty
+    check.equal(qf.nominal, 5.0)
+    with pytest.raises(ValueError):
+        qf.nominal = None
+    check.equal(qf.nominal, 5.0)
+    qf.nominal = 10.0
+    check.equal(qf.nominal, 10.0)
+    check.equal(qf.std_dev, 0.0)
+    check.equal(qf.uncertainty, 0.0)
+
+    # with arrays
+    qf = QFloat([1, 2, 3], [0.1, 0.2, 0.3], 'm')
+    npt.assert_array_almost_equal(qf.uncertainty, [0.1, 0.2, 0.3])
+    qf.uncertainty = [0.4, 0.5, 0.6]
+    npt.assert_array_almost_equal(qf.uncertainty, [0.4, 0.5, 0.6])
+    npt.assert_array_almost_equal(qf.std_dev, [0.4, 0.5, 0.6])
+    qf.std_dev = [0.1, 0.2, 0.3]
+    npt.assert_array_almost_equal(qf.std_dev, [0.1, 0.2, 0.3])
+
+    npt.assert_array_almost_equal(qf.nominal, [1, 2, 3])
+    with pytest.raises(ValueError):
+        qf.nominal = None
+    npt.assert_array_almost_equal(qf.nominal, [1, 2, 3])
+    qf.nominal = [4, 5, 6]
+    npt.assert_array_almost_equal(qf.nominal, [4, 5, 6])
+    npt.assert_array_almost_equal(qf.std_dev, [0, 0, 0])
+    npt.assert_array_almost_equal(qf.uncertainty, [0, 0, 0])
+
+
+def test_qfloat_properties_reset():
+    qf = QFloat(5.0, 0.025, 'm')
+    i = id(qf)
+    qf.reset(12, 0.2, 's')
+    check.equal(i, id(qf))
+    check.equal(qf, QFloat(12, 0.2, 's'))
+
+    qf.reset([1, 2, 3], [0.1, 0.2, 0.3], 'm')
+    check.equal(i, id(qf))
+    npt.assert_array_equal(qf, QFloat([1, 2, 3], [0.1, 0.2, 0.3], 'm'))
+
+
 def test_qfloat_unit_property_none():
     # Check None and dimensionless_unscaled
     c = DummyClass(None)

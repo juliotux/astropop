@@ -266,7 +266,7 @@ class QFloat():
         else:
             self._nominal = value
 
-        self._uncert = None  # always value is reset, uncertainty resets
+        self.uncertainty = None  # always value is reset, uncertainty resets
         # No unit changes
 
     @property
@@ -542,18 +542,6 @@ class QFloat():
     def __rfloordiv__(self, other):
         # As the argument always enter here as a qfloat...
         return other.__floordiv__(self)
-
-    @require_qfloat
-    def __div__(self, other):
-        return self.__truediv__(other)
-
-    @require_qfloat
-    def __idiv__(self, other):
-        return self.__itruediv__(other)
-
-    @require_qfloat
-    def __rdiv__(self, other):
-        return self.__rtruediv__(other)
 
     @require_qfloat
     def __mod__(self, other):
