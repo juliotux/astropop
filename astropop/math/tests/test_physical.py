@@ -1527,12 +1527,14 @@ def test_qfloat_math_truediv_inline():
     check.equal(i, id(qf2))
 
     # array / qfloat
+    i = id(qf3)
     qf3 /= qf1
     npt.assert_array_almost_equal(qf3.nominal, [200, 100, 5])
     npt.assert_array_almost_equal(qf3.uncertainty, [3.370624736026114,
                                                     1.699673171197595,
                                                     0.08498365855987974])
     check.equal(qf3.unit, units.kg/units.s)
+    check.equal(i, id(qf2))
     # array / array
     qf3 /= qf4
     npt.assert_array_almost_equal(qf3.nominal, [20, 5, 50])
@@ -1540,6 +1542,7 @@ def test_qfloat_math_truediv_inline():
                                                     0.13123346456686352,
                                                     5.071708018234312])
     check.equal(qf3.unit, units.kg/units.s)
+    check.equal(i, id(qf2))
     # array / number
     qf3 /= 5
     npt.assert_array_almost_equal(qf3.nominal, [4, 1, 10])
@@ -1547,6 +1550,7 @@ def test_qfloat_math_truediv_inline():
                                                     0.026246692913372706,
                                                     1.0143416036468624])
     check.equal(qf3.unit, units.kg/units.s)
+    check.equal(i, id(qf2))
     # array  / unit
     qf3 /= units.m
     npt.assert_array_almost_equal(qf3.nominal, [4, 1, 10])
@@ -1554,6 +1558,7 @@ def test_qfloat_math_truediv_inline():
                                                     0.026246692913372706,
                                                     1.0143416036468624])
     check.equal(qf3.unit, units.kg/(units.s*units.m))
+    check.equal(i, id(qf2))
     # array / string
     qf3 /= 's'
     npt.assert_array_almost_equal(qf3.nominal, [4, 1, 10])
@@ -1561,6 +1566,7 @@ def test_qfloat_math_truediv_inline():
                                                     0.026246692913372706,
                                                     1.0143416036468624])
     check.equal(qf3.unit, units.kg/(units.s*units.s*units.m))
+    check.equal(i, id(qf2))
     # array / quantity
     qf3 /= 1/units.kg
     npt.assert_array_almost_equal(qf3.nominal, [4, 1, 10])
@@ -1568,6 +1574,132 @@ def test_qfloat_math_truediv_inline():
                                                     0.026246692913372706,
                                                     1.0143416036468624])
     check.equal(qf3.unit, units.kg*units.kg/(units.s*units.s*units.m))
+    check.equal(i, id(qf2))
+
+
+def test_qfloat_math_floordiv_inline():
+    qf1 = QFloat(30, 0.5, 's')
+    qf2 = QFloat(12010, 20, 'm')
+    qf3 = QFloat([6040, 3012, 153], [15, 10, 0.5], 'kg')
+    qf4 = QFloat([10, 20, 0.1], [0.1, 0.4, 0.01])
+
+    # qf/qf
+    i = id(qf2)
+    qf2 //= qf1
+    check.equal(qf2.nominal, 400)
+    npt.assert_almost_equal(qf2.uncertainty, 0)
+    check.equal(qf2.unit, units.m/units.s)
+    check.equal(i, id(qf2))
+    # number
+    qf2 //= 7
+    check.equal(qf2.nominal, 57)
+    npt.assert_almost_equal(qf2.uncertainty, 0)
+    check.equal(qf2.unit, units.m/units.s)
+    check.equal(i, id(qf2))
+    # unit
+    qf2 //= units.s
+    check.equal(qf2.nominal, 57)
+    npt.assert_almost_equal(qf2.uncertainty, 0)
+    check.equal(qf2.unit, units.m/(units.s*units.s))
+    check.equal(i, id(qf2))
+    # string
+    qf2 //= 'kg'
+    check.equal(qf2.nominal, 57)
+    npt.assert_almost_equal(qf2.uncertainty, 0)
+    check.equal(qf2.unit, units.m/(units.s*units.s*units.kg))
+    check.equal(i, id(qf2))
+    # quantity
+    qf2 //= 4/units.s
+    check.equal(qf2.nominal, 14)
+    npt.assert_almost_equal(qf2.uncertainty, 0.0)
+    check.equal(qf2.unit, units.m/(units.s*units.kg))
+    check.equal(i, id(qf2))
+
+    # array / qfloat
+    i = id(qf3)
+    qf3 //= qf1
+    npt.assert_array_almost_equal(qf3.nominal, [201, 100, 5])
+    npt.assert_array_almost_equal(qf3.uncertainty, [0, 0, 0])
+    check.equal(qf3.unit, units.kg/units.s)
+    check.equal(i, id(qf3))
+    # array / array
+    qf3 //= qf4
+    npt.assert_array_almost_equal(qf3.nominal, [20, 5, 49])
+    npt.assert_array_almost_equal(qf3.uncertainty, [0, 0, 0])
+    check.equal(qf3.unit, units.kg/units.s)
+    check.equal(i, id(qf3))
+    # array / number
+    qf3 //= 5
+    npt.assert_array_almost_equal(qf3.nominal, [4, 1, 9])
+    npt.assert_array_almost_equal(qf3.uncertainty, [0, 0, 0])
+    check.equal(qf3.unit, units.kg/units.s)
+    check.equal(i, id(qf3))
+    # array  / unit
+    qf3 //= units.m
+    npt.assert_array_almost_equal(qf3.nominal, [4, 1, 9])
+    npt.assert_array_almost_equal(qf3.uncertainty, [0, 0, 0])
+    check.equal(qf3.unit, units.kg/(units.s*units.m))
+    check.equal(i, id(qf3))
+    # array / string
+    qf3 //= 's'
+    npt.assert_array_almost_equal(qf3.nominal, [4, 1, 9])
+    npt.assert_array_almost_equal(qf3.uncertainty, [0, 0, 0])
+    check.equal(qf3.unit, units.kg/(units.s*units.s*units.m))
+    check.equal(i, id(qf3))
+    # array / quantity
+    qf3 //= 1/units.kg
+    npt.assert_array_almost_equal(qf3.nominal, [4, 1, 9])
+    npt.assert_array_almost_equal(qf3.uncertainty, [0, 0, 0])
+    check.equal(qf3.unit, units.kg*units.kg/(units.s*units.s*units.m))
+    check.equal(i, id(qf3))
+
+
+def test_qfloat_math_mod_inline():
+    qf1 = QFloat(30, 0.5, 's')
+    qf2 = QFloat(12010, 20, 'm')
+    qf3 = QFloat([6040, 3012, 153], [15, 10, 0.5], 'kg')
+    qf4 = QFloat([7, 5, 2], [0.1, 0.4, 0.01])
+
+    # crazy uncertainties
+
+    # qf/qf
+    i = id(qf2)
+    qf2 %= qf1
+    check.equal(qf2.nominal, 10)
+    check.equal(qf2.unit, units.m)
+    check.equal(i, id(qf2))
+    # number
+    qf2 %= 7
+    check.equal(qf2.nominal, 3)
+    check.equal(qf2.unit, units.m)
+    check.equal(i, id(qf2))
+    # quantity
+    qf2 %= 2/units.s
+    check.equal(qf2.nominal, 1)
+    check.equal(qf2.unit, units.m)
+    check.equal(i, id(qf2))
+
+    # array / qfloat
+    i = id(qf3)
+    qf3 %= qf1
+    npt.assert_array_almost_equal(qf3.nominal, [10, 12, 3])
+    check.equal(qf3.unit, units.kg)
+    check.equal(i, id(qf3))
+    # array / array
+    qf3 %= qf4
+    npt.assert_array_almost_equal(qf3.nominal, [3, 2, 1])
+    check.equal(qf3.unit, units.kg)
+    check.equal(i, id(qf3))
+    # array / number
+    qf3 %= 2
+    npt.assert_array_almost_equal(qf3.nominal, [1, 0, 1])
+    check.equal(qf3.unit, units.kg)
+    check.equal(i, id(qf3))
+    # array / quantity
+    qf3 %= 1/units.kg
+    npt.assert_array_almost_equal(qf3.nominal, [0, 0, 0])
+    check.equal(qf3.unit, units.kg)
+    check.equal(i, id(qf3))
 
 
 # POS and NEG ----------------------------------------------------------------
