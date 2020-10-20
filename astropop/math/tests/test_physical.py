@@ -1702,6 +1702,226 @@ def test_qfloat_math_mod_inline():
     check.equal(i, id(qf3))
 
 
+# POWER ----------------------------------------------------------------------
+
+
+def test_qfloat_math_power_single():
+    qf1 = QFloat(2.0, 0.1, 'm')
+    qf2 = QFloat(1.5, 0.2, 'cm')
+    qf3 = QFloat(0.5, 0.01)
+    qf4 = QFloat(4.0, 0.01)
+
+    with pytest.raises(ValueError):
+        qf1 ** qf2
+
+    res1 = qf1 ** qf3
+    npt.assert_almost_equal(res1.nominal, np.sqrt(2))
+    npt.assert_array_almost_equal(res1.uncertainty, 0.03668910741328604)
+    check.equal(res1.unit, units.m**0.5)
+
+    res2 = qf1 ** qf4
+    npt.assert_almost_equal(res2.nominal, 2**4)
+    npt.assert_array_almost_equal(res2.uncertainty, 3.201921235314246)
+    check.equal(res2.unit, units.m*units.m*units.m*units.m)
+
+    res3 = qf1 ** 2
+    npt.assert_almost_equal(res3.nominal, 4)
+    npt.assert_array_almost_equal(res3.uncertainty, 0.4)
+    check.equal(res3.unit, units.m*units.m)
+
+    res4 = qf1 ** 0.5
+    npt.assert_almost_equal(res4.nominal, np.sqrt(2))
+    npt.assert_array_almost_equal(res4.uncertainty, 0.03535533905932738)
+    check.equal(res4.unit, units.m**0.5)
+
+    # only dimensionless quantity
+    with pytest.raises(ValueError):
+        qf1 ** (1*units.m)
+    res5 = qf1 ** (1*units.dimensionless_unscaled)
+    npt.assert_almost_equal(res5.nominal, 2)
+    npt.assert_array_almost_equal(res5.uncertainty, 0.1)
+    check.equal(res5.unit, units.m)
+
+    # string and unit must fail, except for dimensionless
+    with pytest.raises(ValueError):
+        qf1 ** 's'
+    with pytest.raises(ValueError):
+        qf1 ** units.s
+    res6 = qf1 ** ''
+    npt.assert_almost_equal(res6.nominal, 2)
+    npt.assert_array_almost_equal(res6.uncertainty, 0.1)
+    check.equal(res6.unit, units.m)
+    res7 = qf1 ** units.dimensionless_unscaled
+    npt.assert_almost_equal(res7.nominal, 2)
+    npt.assert_array_almost_equal(res7.uncertainty, 0.1)
+    check.equal(res7.unit, units.m)
+
+    # only dimensionless should power
+    with pytest.raises(ValueError):
+        1 ** qf1
+    res8 = 2 ** qf4
+    npt.assert_almost_equal(res8.nominal, 16)
+    npt.assert_array_almost_equal(res8.uncertainty, 0.11090354888959125)
+    check.equal(res8.unit, units.dimensionless_unscaled)
+
+
+def test_qfloat_math_power_array():
+    qf1 = QFloat([2, 3, 4], [0.1, 0.2, 0.3], 'm')
+    qf2 = QFloat(1.5, 0.2, 'cm')
+    qf3 = QFloat(0.5, 0.01)
+    qf4 = QFloat([1, 2, 3], [0.1, 0.2, 0.3])
+
+    with pytest.raises(ValueError):
+        qf1 ** qf2
+
+    res1 = qf1 ** qf3
+    npt.assert_array_almost_equal(res1.nominal, np.sqrt([2, 3, 4]))
+    npt.assert_array_almost_equal(res1.uncertainty, [0.03668910741328604,
+                                                     0.06078995000472617,
+                                                     0.07996077052073174])
+    check.equal(res1.unit, units.m**0.5)
+
+    with pytest.raises(ValueError):
+        qf1 ** qf4
+
+    res3 = qf1 ** 2
+    npt.assert_almost_equal(res3.nominal, [4, 9, 16])
+    npt.assert_array_almost_equal(res3.uncertainty, [0.4, 1.2, 2.4])
+    check.equal(res3.unit, units.m*units.m)
+
+    res4 = qf1 ** 0.5
+    npt.assert_almost_equal(res4.nominal, np.sqrt([2, 3, 4]))
+    npt.assert_array_almost_equal(res4.uncertainty, [0.03535533905932738,
+                                                     0.057735026918962574,
+                                                     0.075])
+    check.equal(res4.unit, units.m**0.5)
+
+    # only dimensionless quantity
+    with pytest.raises(ValueError):
+        qf1 ** (1*units.m)
+    res5 = qf1 ** (1*units.dimensionless_unscaled)
+    npt.assert_almost_equal(res5.nominal, [2, 3, 4])
+    npt.assert_array_almost_equal(res5.uncertainty, [0.1, 0.2, 0.3])
+    check.equal(res5.unit, units.m)
+
+    # string and unit must fail, except for dimensionless
+    with pytest.raises(ValueError):
+        qf1 ** 's'
+    with pytest.raises(ValueError):
+        qf1 ** units.s
+    res6 = qf1 ** ''
+    npt.assert_almost_equal(res5.nominal, [2, 3, 4])
+    npt.assert_array_almost_equal(res5.uncertainty, [0.1, 0.2, 0.3])
+    check.equal(res6.unit, units.m)
+    res7 = qf1 ** units.dimensionless_unscaled
+    npt.assert_almost_equal(res5.nominal, [2, 3, 4])
+    npt.assert_array_almost_equal(res5.uncertainty, [0.1, 0.2, 0.3])
+    check.equal(res7.unit, units.m)
+
+    # only dimensionless size-1 array should work
+    with pytest.raises(ValueError):
+        1 ** qf1
+    with pytest.raises(ValueError):
+        1 ** qf2
+    with pytest.raises(ValueError):
+        1 ** qf4
+
+
+def test_qfloat_math_power_inline():
+    qf1 = QFloat(2.0, 0.1, 'm')
+    qf2 = QFloat(1.5, 0.2, 'cm')
+    qf3 = QFloat(0.5, 0.01)
+    qf4 = QFloat(4.0, 0.01)
+    qf5 = QFloat([2, 3, 4], [0.1, 0.2, 0.3], 'm')
+    qf6 = QFloat([1, 2, 3], [0.1, 0.2, 0.3])
+
+    i = id(qf1)
+    with pytest.raises(ValueError):
+        qf1 **= qf2
+    with pytest.raises(ValueError):
+        qf1 **= qf5
+    with pytest.raises(ValueError):
+        qf1 **= qf6
+    with pytest.raises(ValueError):
+        qf1 **= 'm'
+    with pytest.raises(ValueError):
+        qf1 **= units.s
+    check.equal(i, id(qf1))
+    qf1 **= qf3
+    npt.assert_almost_equal(qf1.nominal, np.sqrt(2))
+    npt.assert_array_almost_equal(qf1.uncertainty, 0.03668910741328604)
+    check.equal(qf1.unit, units.m**0.5)
+    check.equal(i, id(qf1))
+    qf1 **= qf4
+    npt.assert_almost_equal(qf1.nominal, 4)
+    npt.assert_array_almost_equal(qf1.uncertainty, 0.4153212953387695)
+    check.equal(qf1.unit, units.m**2)
+    check.equal(i, id(qf1))
+    qf1 **= 3
+    npt.assert_almost_equal(qf1.nominal, 64)
+    npt.assert_array_almost_equal(qf1.uncertainty, 19.935422176260943)
+    check.equal(qf1.unit, units.m**6)
+    check.equal(i, id(qf1))
+    qf1 **= ''
+    npt.assert_almost_equal(qf1.nominal, 64)
+    npt.assert_array_almost_equal(qf1.uncertainty, 19.935422176260943)
+    check.equal(qf1.unit, units.m**6)
+    check.equal(i, id(qf1))
+    qf1 **= units.dimensionless_unscaled
+    npt.assert_almost_equal(qf1.nominal, 64)
+    npt.assert_array_almost_equal(qf1.uncertainty, 19.935422176260943)
+    check.equal(qf1.unit, units.m**6)
+    check.equal(i, id(qf1))
+
+    i = id(qf5)
+    with pytest.raises(ValueError):
+        qf5 **= qf1
+    with pytest.raises(ValueError):
+        qf5 **= qf2
+    with pytest.raises(ValueError):
+        qf5 **= qf6
+    with pytest.raises(ValueError):
+        qf5 **= 'm'
+    with pytest.raises(ValueError):
+        qf5 **= units.s
+    check.equal(i, id(qf5))
+    qf5 **= qf3
+    npt.assert_array_almost_equal(qf5.nominal, np.sqrt([2, 3, 4]))
+    npt.assert_array_almost_equal(qf5.uncertainty, [0.03668910741328604,
+                                                    0.06078995000472617,
+                                                    0.07996077052073174])
+    check.equal(qf5.unit, units.m**0.5)
+    check.equal(i, id(qf5))
+    qf5 **= qf4
+    npt.assert_array_almost_equal(qf5.nominal, np.square([2, 3, 4]))
+    npt.assert_array_almost_equal(qf5.uncertainty, [0.4153212953387695,
+                                                    1.2644622006872943,
+                                                    2.5611469725808176])
+    check.equal(qf5.unit, units.m**2)
+    check.equal(i, id(qf5))
+    qf5 **= 3
+    npt.assert_array_almost_equal(qf5.nominal, [64, 729, 4096])
+    npt.assert_array_almost_equal(qf5.uncertainty, [19.935422176260943,
+                                                    307.2643147670124,
+                                                    1966.960874942068])
+    check.equal(qf5.unit, units.m**6)
+    check.equal(i, id(qf5))
+    qf5 **= ''
+    npt.assert_array_almost_equal(qf5.nominal, [64, 729, 4096])
+    npt.assert_array_almost_equal(qf5.uncertainty, [19.935422176260943,
+                                                    307.2643147670124,
+                                                    1966.960874942068])
+    check.equal(qf5.unit, units.m**6)
+    check.equal(i, id(qf5))
+    qf5 **= units.dimensionless_unscaled
+    npt.assert_array_almost_equal(qf5.nominal, [64, 729, 4096])
+    npt.assert_array_almost_equal(qf5.uncertainty, [19.935422176260943,
+                                                    307.2643147670124,
+                                                    1966.960874942068])
+    check.equal(qf5.unit, units.m**6)
+    check.equal(i, id(qf5))
+
+
 # POS and NEG ----------------------------------------------------------------
 
 

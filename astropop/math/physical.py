@@ -561,7 +561,13 @@ class QFloat():
 
     @require_qfloat
     def __pow__(self, other):
-        raise NotImplementedError
+        if other.unit != units.dimensionless_unscaled or \
+           not np.isscalar(other.nominal):
+            raise ValueError('Power operation size-1 require dimensionless'
+                             ' expoent')
+        uf1, uf2 = ufloat_or_uarray(self, other)
+        res = uf1 ** uf2
+        return QFloat(*extract_nominal_std(res), self.unit**other.nominal)
 
     @require_qfloat
     def __ipow__(self, other):
@@ -571,7 +577,7 @@ class QFloat():
 
     @require_qfloat
     def __rpow__(self, other):
-        raise NotImplementedError
+        return other.__pow__(self)
 
     @require_qfloat
     def __neg__(self):
