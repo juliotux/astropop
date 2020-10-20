@@ -24,15 +24,48 @@ __all__ = ['unit_property', 'QFloat', 'qfloat', 'units', 'UnitsError',
            'equal_within_errors']
 
 
-HANDLED_FUNCTIONS = {}
+# TODO:
+# Numpy ufuncs:
+#             - add, subtract, multiply, divide, true_divide, floor_divide,
+#               negative, positive, power, float_power, remainder, mod, fmod,
+#               divmod, absolute, fabs, rint, sign, exp, exp2, log, log2,
+#               log10, expm1, log1p, sqrt, square, cbrt,
+#             - sin, cos, tan, arcsin, arccos, arctan, hypot, sinh, cosh,
+#               tanh, arcsinh, arccosh, arctanh, degrees, radians, deg2rad,
+#               rad2deg
+#             - maximum, minimum, fmax, fmin
+#             - isfinit, isinf, isnan, fabs, signbit, copysign, modf, fmod,
+#               floor, ceil, trunc
+# Array functions:
+#             - copyto, shape
+#             - reshape, ravel
+#             - moveaxis, rollaxis, swapaxes, transpose
+#             - atleast_1d, atleast_2d, atleast_3d, broadcast, broadcast_to,
+#               expand_dims, squeeze
+#             - delete, insert, append, resize
+#             - flip, fliplr, flipud, roll, rot90m
+#             - round, trunc, ceil
+#             - sum, prod, nanprod, nansum, cumprod, cumsum, nancumprod,
+#             - nancumsum, diff, ediff1d, cross, square
+
+HANDLED_AFUNCS = {}
+HANDLED_UFUNCS = {}
 
 
-def implements(numpy_function):
+def implements_array_func(numpy_function):
     """Register an __array_function__ implementation for QFloat objects."""
-    def decorator(func):
-        HANDLED_FUNCTIONS[numpy_function] = func
+    def decorator_array_func(func):
+        HANDLED_AFUNCS[numpy_function] = func
         return func
-    return decorator
+    return decorator_array_func
+
+
+def implements_ufunc(numpy_ufunc):
+    """Register an ufunc implementation for QFloat objects."""
+    def decorator_ufunc(func):
+        HANDLED_UFUNCS[numpy_ufunc] = func
+        return func
+    return decorator_ufunc
 
 
 def unit_property(cls):
@@ -386,6 +419,8 @@ class QFloat():
         result : `~astropop.math.QFloat`
             Results of the ufunc, with the unit and uncertainty.
         """
+        if ufunc not in HANDLED_UFUNCS:
+            return NotImplemented
         raise NotImplementedError
 
     def __array_function__(self, func, types, args, kwargs):
@@ -403,13 +438,13 @@ class QFloat():
         kwargs: dict
             Keyword arguments directly passed on from the original call.
         """
-        if func not in HANDLED_FUNCTIONS:
+        if func not in HANDLED_AFUNCS:
             return NotImplemented
 
         if not all(issubclass(t, QFloat) for t in types):
             return NotImplemented
 
-        return HANDLED_FUNCTIONS[func](*args, **kwargs)
+        return HANDLED_AFUNCS[func](*args, **kwargs)
 
     def __eq__(self, other):
         try:

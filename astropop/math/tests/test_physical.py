@@ -1534,7 +1534,7 @@ def test_qfloat_math_truediv_inline():
                                                     1.699673171197595,
                                                     0.08498365855987974])
     check.equal(qf3.unit, units.kg/units.s)
-    check.equal(i, id(qf2))
+    check.equal(i, id(qf3))
     # array / array
     qf3 /= qf4
     npt.assert_array_almost_equal(qf3.nominal, [20, 5, 50])
@@ -1542,7 +1542,7 @@ def test_qfloat_math_truediv_inline():
                                                     0.13123346456686352,
                                                     5.071708018234312])
     check.equal(qf3.unit, units.kg/units.s)
-    check.equal(i, id(qf2))
+    check.equal(i, id(qf3))
     # array / number
     qf3 /= 5
     npt.assert_array_almost_equal(qf3.nominal, [4, 1, 10])
@@ -1550,7 +1550,7 @@ def test_qfloat_math_truediv_inline():
                                                     0.026246692913372706,
                                                     1.0143416036468624])
     check.equal(qf3.unit, units.kg/units.s)
-    check.equal(i, id(qf2))
+    check.equal(i, id(qf3))
     # array  / unit
     qf3 /= units.m
     npt.assert_array_almost_equal(qf3.nominal, [4, 1, 10])
@@ -1558,7 +1558,7 @@ def test_qfloat_math_truediv_inline():
                                                     0.026246692913372706,
                                                     1.0143416036468624])
     check.equal(qf3.unit, units.kg/(units.s*units.m))
-    check.equal(i, id(qf2))
+    check.equal(i, id(qf3))
     # array / string
     qf3 /= 's'
     npt.assert_array_almost_equal(qf3.nominal, [4, 1, 10])
@@ -1566,7 +1566,7 @@ def test_qfloat_math_truediv_inline():
                                                     0.026246692913372706,
                                                     1.0143416036468624])
     check.equal(qf3.unit, units.kg/(units.s*units.s*units.m))
-    check.equal(i, id(qf2))
+    check.equal(i, id(qf3))
     # array / quantity
     qf3 /= 1/units.kg
     npt.assert_array_almost_equal(qf3.nominal, [4, 1, 10])
@@ -1574,7 +1574,7 @@ def test_qfloat_math_truediv_inline():
                                                     0.026246692913372706,
                                                     1.0143416036468624])
     check.equal(qf3.unit, units.kg*units.kg/(units.s*units.s*units.m))
-    check.equal(i, id(qf2))
+    check.equal(i, id(qf3))
 
 
 def test_qfloat_math_floordiv_inline():
