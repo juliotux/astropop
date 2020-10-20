@@ -586,29 +586,9 @@ class QFloat():
         return QFloat(np.abs(self.nominal), self.uncertainty, self.unit)
 
     @require_qfloat
-    def __invert__(self):
-        raise NotImplementedError
-
-    @require_qfloat
     def __int__(self):
-        raise NotImplementedError
+        return np.int(self.nominal)
 
     @require_qfloat
     def __float__(self):
-        raise NotImplementedError
-
-    @require_qfloat
-    def __round__(self):
-        raise NotImplementedError
-
-    @require_qfloat
-    def __trunc__(self):
-        raise NotImplementedError
-
-    @require_qfloat
-    def __floor__(self):
-        raise NotImplementedError
-
-    @require_qfloat
-    def __ceil__(self):
-        raise NotImplementedError
+        return np.float(self.nominal)

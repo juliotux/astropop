@@ -1769,3 +1769,21 @@ def test_qfloat_math_abs():
     npt.assert_array_equal(qfn3.nominal, [2, 3, 5, 10])
     npt.assert_array_equal(qfn3.uncertainty, [0.1, 0.4, 0.3, 0.1])
     check.equal(qfn3.unit, units.m)
+
+
+def test_qfloat_math_float():
+    qf1 = QFloat(1.5, 0.4, 'm')
+    qf2 = QFloat([1.4, 2.5, 3.6], [0.2, 0.3, 0.4], 's')
+
+    check.equal(float(qf1), 1.5)
+    with pytest.raises(TypeError):
+        float(qf2)
+
+
+def test_qfloat_math_int():
+    qf1 = QFloat(1.5, 0.4, 'm')
+    qf2 = QFloat([1.4, 2.5, 3.6], [0.2, 0.3, 0.4], 's')
+
+    check.equal(int(qf1), 1)
+    with pytest.raises(TypeError):
+        int(qf2)
