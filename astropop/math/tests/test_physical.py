@@ -5,7 +5,7 @@ import numpy as np
 from numpy import testing as npt
 import pytest_check as check
 
-from uncertainties import UFloat, unumpy
+from uncertainties import UFloat, unumpy, ufloat
 
 from astropop.math.physical import QFloat, qfloat, unit_property, units, \
                                    same_unit, UnitsError, \
@@ -249,15 +249,23 @@ def test_qfloat_ufloat_or_uarray_array():
     npt.assert_array_equal(ns2, s2)
 
 
-# TODO: (UFloat(1.0, 0.1), QFloat(1.0, 0.1)) is failing because uncert. bug
 @pytest.mark.parametrize('value,expect', [(QFloat(1.0, 0.1, 'm'),
                                            QFloat(1.0, 0.1, 'm')),
                                           (1, QFloat(1.0, 0, None)),
                                           (np.array([1, 2, 3]),
                                            QFloat([1, 2, 3], unit=None)),
                                           ('string', 'raise'),
+                                          (None, 'raise'),
+                                          (UnitsError, 'raise'),
                                           (1.0*units.m,
-                                           QFloat(1.0, 0.0, 'm'))])
+                                           QFloat(1.0, 0.0, 'm')),
+                                          (unumpy.uarray([0, 0, 0],
+                                                         [0, 0, 0]),
+                                           QFloat([0, 0, 0], [0, 0, 0],
+                                                  None)),
+                                          (ufloat(1.0, 0.1),
+                                           QFloat(1.0, 0.1, None))
+                                          ])
 def test_qfloat_converttoqfloat(value, expect):
     if expect == 'raise':
         with pytest.raises(Exception):
