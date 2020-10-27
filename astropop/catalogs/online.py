@@ -13,7 +13,7 @@ from astropy import units as u
 from .base_catalog import _BasePhotometryCatalog, match_indexes
 from ..logger import logger
 from ..astrometry.coords_utils import guess_coordinates
-from ..py_utils import string_fix
+from ..py_utils import string_fix, process_list
 
 
 MAX_PARALLEL_QUERY = 30
@@ -36,6 +36,17 @@ def _timeout_retry(func, *args, **kwargs):
         return _timeout_retry(func, *args, **kwargs, _____retires=tried+1,
                               logger=log)
     return q
+
+
+def _wrap_query_table(func):
+    """This function wraps queries to return bytes columns as strings."""
+    def wrapper(*args, **kwargs):
+        table = func(*args, **kwargs)
+        for i in table.columns:
+            if table[i].dtype == np.dtype('O'):
+                table[i] = process_list(string_fix, table[i])
+        return table
+    return wrapper
 
 
 def get_center_radius(ra, dec, logger=logger):
@@ -301,7 +312,8 @@ class SimbadCatalogClass(_BasePhotometryCatalog):
         # center = self._get_center_object(center, logger=logger)
         if band is not None:
             s.add_votable_fields(f'fluxdata({band})')
-        return _timeout_retry(s.query_object, center, logger=logger, **kwargs)
+        return _timeout_retry(_wrap_query_table(s.query_object),
+                              center, logger=logger, **kwargs)
 
     def query_region(self, center, radius, band=None, logger=logger, **kwargs):
         query_info = {'radius': radius, 'center': center, 'band': band}
@@ -321,8 +333,9 @@ class SimbadCatalogClass(_BasePhotometryCatalog):
 
         center = self._get_center(center)
         radius = f"{self._get_radius(radius)}d"
-        self._last_query_table = _timeout_retry(s.query_region, center, radius,
-                                                logger=logger)
+        query = _timeout_retry(_wrap_query_table(s.query_region),
+                               center, radius, logger=logger)
+        self._last_query_table = query
         return copy.copy(self._last_query_table)
 
     def query_ra_dec(self, center, radius, logger=logger, **kwargs):
