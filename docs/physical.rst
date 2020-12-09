@@ -123,6 +123,7 @@ The current Numpy array functions supported for this class are:
 - `~numpy.insert`
 - `~numpy.moveaxis`
 - `~numpy.ravel`
+- `~numpy.repeat`
 - `~numpy.reshape`
 - `~numpy.resize`
 - `~numpy.roll`
@@ -132,6 +133,7 @@ The current Numpy array functions supported for this class are:
 - `~numpy.shape`
 - `~numpy.squeeze`
 - `~numpy.swapaxes`
+- `~numpy.tile`
 - `~numpy.transpose`
 
 Supported Numpy Universal Functions (UFuncs)
