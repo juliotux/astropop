@@ -110,6 +110,8 @@ Some `Numpy array functions <https://numpy.org/doc/1.19/reference/routines.array
     >>> np.shape(qf)
     (100, 100)
 
+One big difference from our compatibility to default Numpy is that for some functions, Numpy return the view of the array, for bigger performance. Our method, however, just return copies of the |QFloat|s with applied functions. The impact im performance is not so big and the memory usage will not be a problem, unless you use a very very large array.
+
 The current Numpy array functions supported for this class are:
 
 - `~numpy.append`
@@ -119,11 +121,16 @@ The current Numpy array functions supported for this class are:
 - `~numpy.fliplr`
 - `~numpy.flipud`
 - `~numpy.insert`
+- `~numpy.moveaxis`
 - `~numpy.ravel`
 - `~numpy.reshape`
 - `~numpy.resize`
+- `~numpy.roll`
+- `~numpy.rollaxis`
 - `~numpy.round`
+- `~numpy.rot90`
 - `~numpy.shape`
+- `~numpy.swapaxes`
 - `~numpy.transpose`
 
 Supported Numpy Universal Functions (UFuncs)

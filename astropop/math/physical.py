@@ -633,7 +633,6 @@ class QFloat():
 
     @require_qfloat
     def __rtruediv__(self, other):
-        # As the argument always enter here as a qfloat...
         return other.__truediv__(self)
 
     @require_qfloat
@@ -721,27 +720,15 @@ class QFloat():
 
 
 # TODO:
-# Numpy ufuncs:
-#             - add, subtract, multiply, divide, true_divide, floor_divide,
-#               negative, positive, power, float_power, remainder, mod, fmod,
-#               divmod, absolute, fabs, rint, sign, exp, exp2, log, log2,
-#               log10, expm1, log1p, sqrt, square, cbrt,
-#             - sin, cos, tan, arcsin, arccos, arctan, hypot, sinh, cosh,
-#               tanh, arcsinh, arccosh, arctanh, degrees, radians, deg2rad,
-#               rad2deg
-#             - maximum, minimum, fmax, fmin
-#             - isfinit, isinf, isnan, fabs, signbit, copysign, modf, fmod,
-#               floor, ceil, trunc
 # Array functions:
 #             - copyto,
-#             - moveaxis, rollaxis, swapaxes
 #             - atleast_1d, atleast_2d, atleast_3d, broadcast, broadcast_to,
 #               expand_dims, squeeze
-#             - insert, append, resize
-#             - flip, fliplr, flipud, roll, rot90m
 #             - trunc, ceil
 #             - sum, prod, nanprod, nansum, cumprod, cumsum, nancumprod,
 #             - nancumsum, diff, ediff1d, cross, square
+#             - tile, repeat
+#             - concatenate, stack, block, vstack, hstack, dstack, columnstack
 
 @implements_array_func(np.shape)
 def qfloat_shape(qf):
@@ -791,3 +778,110 @@ def qfloat_delete(qf, obj, axis=None):
     nominal = np.delete(qf.nominal, obj, axis)
     std = np.delete(qf.uncertainty, obj, axis)
     return QFloat(nominal, std, qf.unit)
+
+
+@implements_array_func(np.resize)
+def qfloat_resize(qf, new_shape):
+    """Implements np.resize for qfloats."""
+    nominal = np.resize(qf.nominal, new_shape)
+    std = np.resize(qf.uncertainty, new_shape)
+    return QFloat(nominal, std, qf.unit)
+
+
+@implements_array_func(np.flip)
+def qfloat_flip(qf, axis):
+    """Implements np.flip for qfloats."""
+    # We return a copy and not a view!
+    nominal = np.flip(qf.nominal, axis)
+    std = np.flip(qf.uncertainty, axis)
+    return QFloat(nominal, std, qf.unit)
+
+
+@implements_array_func(np.fliplr)
+def qfloat_fliplr(qf):
+    """Implements np.flip for qfloats."""
+    nominal = np.fliplr(qf.nominal)
+    std = np.fliplr(qf.uncertainty)
+    return QFloat(nominal, std, qf.unit)
+
+
+@implements_array_func(np.flipud)
+def qfloat_flipud(qf):
+    """Implements np.flip for qfloats."""
+    nominal = np.flipud(qf.nominal)
+    std = np.flipud(qf.uncertainty)
+    return QFloat(nominal, std, qf.unit)
+
+
+@implements_array_func(np.append)
+def qfloat_append(qf, values, axis):
+    """Implement np.append for qfloats."""
+    # First, convert to the same unit.
+    qf1, qf2 = same_unit(qf, values)
+    nominal = np.append(qf1.nominal, qf2.nominal, axis)
+    std = np.append(qf1.uncertainty, qf2.uncertainty, axis)
+    return QFloat(nominal, std, qf1.unit)
+
+
+@implements_array_func(np.insert)
+def qfloat_insert(qf, obj, values, axis):
+    """Implement np.insert for qfloats."""
+    # First, convert to the same unit.
+    qf1, qf2 = same_unit(qf, values)
+    nominal = np.insert(qf1.nominal, obj, qf2.nominal, axis)
+    std = np.insert(qf1.uncertainty, obj, qf2.uncertainty, axis)
+    return QFloat(nominal, std, qf1.unit)
+
+
+@implements_array_func(np.moveaxis)
+def qfloat_moveaxis(qf, source, destination):
+    """Implement np.moveaxis for qfloats."""
+    nominal = np.moveaxis(qf.nominal, source, destination)
+    std = np.moveaxis(qf.uncertainty, source, destination)
+    return QFloat(nominal, std, qf.unit)
+
+
+@implements_array_func(np.rollaxis)
+def qfloat_rollaxis(qf, axis, start=0):
+    """Implement np.rollaxis for qfloats."""
+    nominal = np.rollaxis(qf.nominal, axis, start)
+    std = np.rollaxis(qf.uncertainty, axis, start)
+    return QFloat(nominal, std, qf.unit)
+
+
+@implements_array_func(np.swapaxes)
+def qfloat_rollaxes(qf, axis1, axis2):
+    """Implement np.swapaxes for qfloats."""
+    nominal = np.swapaxes(qf.nominal, axis1, axis2)
+    std = np.swapaxes(qf.uncertainty, axis1, axis2)
+    return QFloat(nominal, std, qf.unit)
+
+
+@implements_array_func(np.roll)
+def qfloat_roll(qf, shift, axis=None):
+    """Implement np.roll for qfloats."""
+    nominal = np.roll(qf.nominal, shift, axis)
+    std = np.roll(qf.uncertainty, shift, axis)
+    return QFloat(nominal, std, qf.unit)
+
+
+@implements_array_func(np.rot90)
+def qfloat_rot90(qf, k=1, axes=(0, 1)):
+    """Implement np.rot90 for qfloats."""
+    nominal = np.rot90(qf.nominal, k, axes)
+    std = np.rot90(qf.uncertainty, k, axes)
+    return QFloat(nominal, std, qf.unit)
+
+
+# TODO:
+# Numpy ufuncs:
+#             - add, subtract, multiply, divide, true_divide, floor_divide,
+#               negative, positive, power, float_power, remainder, mod, fmod,
+#               divmod, absolute, fabs, rint, sign, exp, exp2, log, log2,
+#               log10, expm1, log1p, sqrt, square, cbrt,
+#             - sin, cos, tan, arcsin, arccos, arctan, hypot, sinh, cosh,
+#               tanh, arcsinh, arccosh, arctanh, degrees, radians, deg2rad,
+#               rad2deg
+#             - maximum, minimum, fmax, fmin
+#             - isfinit, isinf, isnan, fabs, signbit, copysign, modf, fmod,
+#               floor, ceil, trunc
