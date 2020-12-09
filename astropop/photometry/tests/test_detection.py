@@ -38,7 +38,6 @@ def test_background():
     npt.assert_array_almost_equal(bkg_1_global[0], 298, decimal=0)
     npt.assert_array_almost_equal(bkg_1_global[1], 24.9, decimal=1)
 
-
 # @pytest.mark.parametrize('r', [2, 3, 4])
 def test_sepfind():
     pass
