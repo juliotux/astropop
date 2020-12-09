@@ -52,7 +52,7 @@ During the creation, you can omit `uncertainty` or `unit` arguments, but not the
 
     >>> qf_nounit = QFloat(1.0, 0.1)
     >>> print(qf_nounit)
-    <QFloat 1.0+/-0.1 >
+    <QFloat 1.0+-0.1 >
 
 - `uncertainty`: setting uncertainties as `None`, or omiting it, the code consider automatically the uncertainty as 0.0.
 
@@ -64,7 +64,7 @@ You also can omit both, like converting a single dimensionless number to QFloat.
 
     >>> qf = QFloat(1.0)
     >>> print(qf)
-    <QFloat 1.0+/-0 >
+    <QFloat 1.0+-0.0 >
 
 Units and Conversion
 --------------------
