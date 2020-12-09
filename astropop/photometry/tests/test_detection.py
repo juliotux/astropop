@@ -8,7 +8,7 @@ import pytest_check as check
 
 from astropop.photometry import (background, sepfind, daofind, starfind, 
                                  calc_fwhm, recenter_sources)
-from astropop.polarimetry import (gen_image)
+from astropop.photometry.tests import (gen_image)
 
 # @pytest.mark.parametrize('r', [2, 3, 4])
 def test_gen_filter_kernel():
@@ -37,7 +37,6 @@ def test_background():
 
     npt.assert_array_almost_equal(bkg_1_global[0], 298, decimal=0)
     npt.assert_array_almost_equal(bkg_1_global[1], 24.9, decimal=1)
-
 
 # @pytest.mark.parametrize('r', [2, 3, 4])
 def test_sepfind():
