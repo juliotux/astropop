@@ -3,9 +3,11 @@
 Physical Quantities and Uncertanties
 ====================================
 
-|astropy| has a very useful module called `~astropy.units`, that handles physical units and |Quantity|. |uncertainties| is a Python package that handles numbers with standard errors, arrays with them and error propagation during math operations. Together, they could be a very powerful tool... But they don't work together.
+Any physical measurement is not a simple number. It is a number, but have a physical unit and an uncertainty related to it.
 
-To handle this and make the things a lot easier in ASTROPOP, we created a new class, called |QFloat| to handle both uncertainties and physical units at once. By |QFloat| we mean "Quantity Float", relating it to physical measurements. This class mainly wraps |uncertainties| and `~astropy.units` methods in a coherent way. This module is used in a lot of places inside ASTROPOP, mainly in `~astropop.image_processing` and |Framedata| to ensure correct processing in terms of units and errors propagation.
+|astropy| has a very useful module called `~astropy.units`, that handles physical units and |Quantity|, a container intended to store physical measurements with units.. But it doesn't perform any error propagation.
+
+To handle this and make the things a lot easier in ASTROPOP, we created a new class, called |QFloat| to handle both uncertainties and physical units at once. By |QFloat| we mean "Quantity Float", relating it to physical measurements. This class mainly wraps `~astropy.units` methods to handle units and perform error propagation in a coherent way. This module is used in a lot of places inside ASTROPOP, mainly in `~astropop.image_processing` and |Framedata| to ensure correct processing in terms of units and errors propagation.
 
 .. WARNING:: In the actual state, |QFloat| has a limited range of operations and functions. It also assumes all uncertainties are standard deviation errors, performing the standard error propagation method. The error propagation also assumes that the uncertainties are uncorelated. This is fine for our usage, but may present problems if used out of this context.
 
@@ -24,15 +26,25 @@ The |QFloat| class stores basically 3 variables: the nominal value, the uncertai
     >>> print(qf.unit) # astropy's physical unit, meter
     m
     >>> print(qf) # full representation.
-    <QFloat 1.0+/-0.001 m>
+    <QFloat 1.000+-0.001 m>
+
+Note that, for the full representation of the quantity, the nominal and the uncertainty values are rounded to the first non-zero error decimal. Internally, the number is stored with all the computed decimal places and this rounding just appears in the string representation.
+
+    >>> qf = QFloat(1.0583225, 0.0031495756, 'cm')
+    >>> print(qf.nominal)
+    1.0583225
+    >>> print(qf.uncertainty)
+    0.0031495756
+    >>> print(qf)
+    <QFloat 1.058+-0.003 cm>
 
 |QFloat| also can store arrays of data, using the exactly same behavior.
 
     >>> qf = QFloat([1.0, 2.0, 3.0], [0.1, 0.2, 0.3], 'm/s')
     >>> print(qf)
     <QFloat
-    array([1.0+/-0.1, 2.0+/-0.2, 3.0+/-0.3], dtype=object)
-          m / s>
+    array([1.0+-0.1, 2.0+-0.2, 3.0+-0.3], dtype=object)
+    unit=m / s>
 
 During the creation, you can omit `uncertainty` or `unit` arguments, but not the nominal value. We decided to don't make possible create empty |QFloat| instances. Omiting arguments, the code interprets it as:
 
@@ -46,7 +58,7 @@ During the creation, you can omit `uncertainty` or `unit` arguments, but not the
 
     >>> qf_nostd = QFloat(1.0, unit='m')
     >>> print(qf_nostd)
-    <QFloat 1.0+/-0 m>
+    <QFloat 1.0+-0.0 m>
 
 You also can omit both, like converting a single dimensionless number to QFloat.
 
@@ -66,9 +78,9 @@ Internal conversion of units for math operations are made automatically and don'
     >>> # One kilometer with 1 cm uncertainty
     >>> qf = QFloat(1000, 0.01, 'm')
     >>> qf << 'km'
-    <QFloat 1.0+/-1e-05 km>
+    <QFloat 1.00000+-0.00001 km>
     >>> qf << units.cm
-    <QFloat 100000.0+/-1.0 cm>
+    <QFloat 100000+-1 cm>
 
 If improper conversion (incompatible units), an `~astropy.units.UnitConversionError` is raised.
 

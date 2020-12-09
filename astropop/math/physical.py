@@ -393,9 +393,7 @@ class QFloat():
             ret = "<QFloat\n"
             ret2 = create_formater(self.nominal, self.std_dev)
             ret2 = np.array(ret2).__repr__()
-            ret2 = ret2.split('dtype=')[0]
-            ret2 = ret2.rstrip('\n ,')
-            ret2 += f')\n     unit={str(self.unit)}'
+            ret2 += f'\nunit={str(self.unit)}'
         # repr for single values
         else:
             ret = "<QFloat "
