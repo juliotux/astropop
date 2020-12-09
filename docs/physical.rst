@@ -130,6 +130,7 @@ The current Numpy array functions supported for this class are:
 - `~numpy.round`
 - `~numpy.rot90`
 - `~numpy.shape`
+- `~numpy.squeeze`
 - `~numpy.swapaxes`
 - `~numpy.transpose`
 

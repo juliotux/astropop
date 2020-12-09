@@ -722,13 +722,16 @@ class QFloat():
 # TODO:
 # Array functions:
 #             - copyto,
-#             - atleast_1d, atleast_2d, atleast_3d, broadcast, broadcast_to,
+#             -  broadcast, broadcast_to,
 #               expand_dims, squeeze
 #             - trunc, ceil
 #             - sum, prod, nanprod, nansum, cumprod, cumsum, nancumprod,
 #             - nancumsum, diff, ediff1d, cross, square
 #             - tile, repeat
 #             - concatenate, stack, block, vstack, hstack, dstack, columnstack
+# FIXME:
+# These array functions seems to not be viable in our work.
+# - atleast_1d, atleast_2d, atleast_3d
 
 @implements_array_func(np.shape)
 def qfloat_shape(qf):
@@ -736,28 +739,39 @@ def qfloat_shape(qf):
     return qf.shape
 
 
-@implements_array_func(np.reshape)
-def qfloat_reshape(qf, shape, order='C'):
-    """Implements np.reshape for qfloats."""
-    nominal = np.reshape(qf.nominal, shape, order)
-    std = np.reshape(qf.uncertainty, shape, order)
-    return QFloat(nominal, std, qf.unit)
+# Use a simple wrapper for general functions
+def array_func_simple_wrapper(numpy_func):
+    """Simple wrapper for fast wrapping simple array functions.
+
+    Notes
+    -----
+    - Functions elegible for these are that ones who applies for nominal and
+      std_dev values and return a new QFloat with the applied values.
+    - No conversion or special treatment is done in this wrapper.
+    - Only for one array ate once.
+    """
+    def wrapper(qf, *args, **kwargs):
+        nominal = numpy_func(qf.nominal, *args, **kwargs)
+        std = numpy_func(qf.uncertainty, *args, **kwargs)
+        return QFloat(nominal, std, qf.unit)
+    implements_array_func(numpy_func)(wrapper)
 
 
-@implements_array_func(np.ravel)
-def qfloat_ravel(qf, order='C'):
-    """Implements np.ravel for qfloats."""
-    nominal = np.ravel(qf.nominal, order)
-    std = np.ravel(qf.uncertainty, order)
-    return QFloat(nominal, std, qf.unit)
-
-
-@implements_array_func(np.transpose)
-def qfloat_transpose(qf, axes=None):
-    """Implements np.transpose for qfloats."""
-    nominal = np.transpose(qf.nominal, axes)
-    std = np.transpose(qf.uncertainty, axes)
-    return QFloat(nominal, std, qf.unit)
+array_func_simple_wrapper(np.delete)
+array_func_simple_wrapper(np.expand_dims)
+array_func_simple_wrapper(np.flip)
+array_func_simple_wrapper(np.fliplr)
+array_func_simple_wrapper(np.flipud)
+array_func_simple_wrapper(np.moveaxis)
+array_func_simple_wrapper(np.ravel)
+array_func_simple_wrapper(np.reshape)
+array_func_simple_wrapper(np.resize)
+array_func_simple_wrapper(np.roll)
+array_func_simple_wrapper(np.rollaxis)
+array_func_simple_wrapper(np.rot90)
+array_func_simple_wrapper(np.squeeze)
+array_func_simple_wrapper(np.swapaxes)
+array_func_simple_wrapper(np.transpose)
 
 
 @implements_array_func(np.round)
@@ -769,47 +783,6 @@ def qfloat_round(qf, decimals=0, out=None):
         raise ValueError('For QFloat, out is ignored.')
     nominal = np.round(qf.nominal, decimals)
     std = np.round(qf.uncertainty, decimals)
-    return QFloat(nominal, std, qf.unit)
-
-
-@implements_array_func(np.delete)
-def qfloat_delete(qf, obj, axis=None):
-    """Implements np.delete for qfloats."""
-    nominal = np.delete(qf.nominal, obj, axis)
-    std = np.delete(qf.uncertainty, obj, axis)
-    return QFloat(nominal, std, qf.unit)
-
-
-@implements_array_func(np.resize)
-def qfloat_resize(qf, new_shape):
-    """Implements np.resize for qfloats."""
-    nominal = np.resize(qf.nominal, new_shape)
-    std = np.resize(qf.uncertainty, new_shape)
-    return QFloat(nominal, std, qf.unit)
-
-
-@implements_array_func(np.flip)
-def qfloat_flip(qf, axis):
-    """Implements np.flip for qfloats."""
-    # We return a copy and not a view!
-    nominal = np.flip(qf.nominal, axis)
-    std = np.flip(qf.uncertainty, axis)
-    return QFloat(nominal, std, qf.unit)
-
-
-@implements_array_func(np.fliplr)
-def qfloat_fliplr(qf):
-    """Implements np.flip for qfloats."""
-    nominal = np.fliplr(qf.nominal)
-    std = np.fliplr(qf.uncertainty)
-    return QFloat(nominal, std, qf.unit)
-
-
-@implements_array_func(np.flipud)
-def qfloat_flipud(qf):
-    """Implements np.flip for qfloats."""
-    nominal = np.flipud(qf.nominal)
-    std = np.flipud(qf.uncertainty)
     return QFloat(nominal, std, qf.unit)
 
 
@@ -831,46 +804,6 @@ def qfloat_insert(qf, obj, values, axis):
     nominal = np.insert(qf1.nominal, obj, qf2.nominal, axis)
     std = np.insert(qf1.uncertainty, obj, qf2.uncertainty, axis)
     return QFloat(nominal, std, qf1.unit)
-
-
-@implements_array_func(np.moveaxis)
-def qfloat_moveaxis(qf, source, destination):
-    """Implement np.moveaxis for qfloats."""
-    nominal = np.moveaxis(qf.nominal, source, destination)
-    std = np.moveaxis(qf.uncertainty, source, destination)
-    return QFloat(nominal, std, qf.unit)
-
-
-@implements_array_func(np.rollaxis)
-def qfloat_rollaxis(qf, axis, start=0):
-    """Implement np.rollaxis for qfloats."""
-    nominal = np.rollaxis(qf.nominal, axis, start)
-    std = np.rollaxis(qf.uncertainty, axis, start)
-    return QFloat(nominal, std, qf.unit)
-
-
-@implements_array_func(np.swapaxes)
-def qfloat_rollaxes(qf, axis1, axis2):
-    """Implement np.swapaxes for qfloats."""
-    nominal = np.swapaxes(qf.nominal, axis1, axis2)
-    std = np.swapaxes(qf.uncertainty, axis1, axis2)
-    return QFloat(nominal, std, qf.unit)
-
-
-@implements_array_func(np.roll)
-def qfloat_roll(qf, shift, axis=None):
-    """Implement np.roll for qfloats."""
-    nominal = np.roll(qf.nominal, shift, axis)
-    std = np.roll(qf.uncertainty, shift, axis)
-    return QFloat(nominal, std, qf.unit)
-
-
-@implements_array_func(np.rot90)
-def qfloat_rot90(qf, k=1, axes=(0, 1)):
-    """Implement np.rot90 for qfloats."""
-    nominal = np.rot90(qf.nominal, k, axes)
-    std = np.rot90(qf.uncertainty, k, axes)
-    return QFloat(nominal, std, qf.unit)
 
 
 # TODO:
