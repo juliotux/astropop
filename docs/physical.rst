@@ -104,7 +104,40 @@ Supported Math Operations
 Supported Numpy Array Operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. TODO:: List numpy array operations
+Some `Numpy array functions <https://numpy.org/doc/1.19/reference/routines.array-manipulation.html>`_ are supported built-in by the |QFloat|, but not all of them. These functions are intended to perform array manipulations, like append, reshape, transpose, etc. With this compatibility you can use the Numpy functions directly with |QFloat| objects, like:
+
+    >>> qf = QFloat(np.zeros((100, 100)), np.zeros((100, 100)))
+    >>> np.shape(qf)
+    (100, 100)
+
+One big difference from our compatibility to default Numpy is that for some functions, Numpy return the view of the array, for bigger performance. Our method, however, just return copies of the |QFloat|s with applied functions. The impact im performance is not so big and the memory usage will not be a problem, unless you use a very very large array.
+
+The current Numpy array functions supported for this class are:
+
+- `~numpy.append`
+- `~numpy.around`
+- `~numpy.delete`
+- `~numpy.flip`
+- `~numpy.fliplr`
+- `~numpy.flipud`
+- `~numpy.insert`
+- `~numpy.moveaxis`
+- `~numpy.ravel`
+- `~numpy.repeat`
+- `~numpy.reshape`
+- `~numpy.resize`
+- `~numpy.roll`
+- `~numpy.rollaxis`
+- `~numpy.round`
+- `~numpy.rot90`
+- `~numpy.shape`
+- `~numpy.squeeze`
+- `~numpy.swapaxes`
+- `~numpy.tile`
+- `~numpy.transpose`
+
+Supported Numpy Universal Functions (UFuncs)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Trigonometric Math
 ^^^^^^^^^^^^^^^^^^

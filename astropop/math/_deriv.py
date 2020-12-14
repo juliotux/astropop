@@ -28,9 +28,10 @@ def _deriv_pow_1(x, y):
     if x == 0 and y > 0:
         return 0.0
     else:
-        return np.log(x)*x**y
+        return np.log(x)*np.pow(x, y)
 
 
+@np.vectorize
 def _deriv_mod_1(x, y):
     """Partial derivative of x%y in y."""
     # if x % y < STEP_SIZE:
@@ -38,6 +39,25 @@ def _deriv_mod_1(x, y):
     # else:
     #     return numerical_derivative(np.mod, 1)(x, y)
     return numerical_derivative(np.mod, 1)(x, y)
+
+
+@np.vectorize
+def _deriv_fabs(x):
+    if x >= 0:
+        return 1
+    else:
+        return -1
+
+
+@np.vectorize
+def _deriv_copysign(x, y):
+    if x >= 0:
+        return np.copysign(1, y)
+    else:
+        return -np.copysign(1, y)
+
+
+erf_coef = 2/np.sqrt(np.pi)
 
 
 # Function partial derivatives for x and y
@@ -57,11 +77,75 @@ derivatives = {
     'mul': (lambda x, y: y,
             lambda x, y: x),
     'pow': (_deriv_pow_0, _deriv_pow_1),
-    # 'abs': (lambda x: 1.0 if x >= 0 else -1.0),
-    # 'neg': (lambda x: -1.0),
-    # 'pos': (lambda x: 1.0),
-    # 'trunc': (lambda x: 0.0)
+    # numpy fixed derivatives
+    'arccos': (lambda x: -1/np.sqrt(1-x**2)),
+    'arccosh': (lambda x: 1/np.sqrt(x**2-1)),
+    'arcsin': (lambda x: 1/np.sqrt(1-x**2)),
+    'arcsinh': (lambda x: 1/np.sqrt(1+x**2)),
+    'arctan': (lambda x: 1/(1+x**2)),
+    'arctan2': (lambda y, x: x/(x**2+y**2),  # Correct for x == 0
+                lambda y, x: -y/(x**2+y**2)),  # Correct for x == 0
+    'arctanh': (lambda x: 1/(1-x**2)),
+    'copysign': (_deriv_copysign,
+                 lambda x, y: 0),
+    'cos': (lambda x: -np.sin(x)),
+    'cosh': (np.sinh),
+    'degrees': (lambda x: np.degrees(1)),
+    'exp': (np.exp),
+    'expm1': (np.exp),
+    'exp2': (lambda x: np.exp2(x)*np.log(2)),
+    'fabs': (_deriv_fabs),
+    'hypot': (lambda x, y: x/np.hypot(x, y),
+              lambda x, y: y/np.hypot(x, y)),
+    'log': (lambda x: 1/x),  # for np, log=ln
+    'log10': (lambda x: 1/x/np.log(10)),
+    'log2': (lambda x: 1/x/np.log(10)),
+    'log1p': (lambda x: 1/(1+x)),
+    'radians': [lambda x: np.radians(1)],
+    'sin': (np.cos),
+    'sinh': (np.cosh),
+    'sqrt': (lambda x: 0.5/np.sqrt(x)),
+    'tan': (lambda x: 1+np.tan(x)**2),
+    'tanh': (lambda x: 1-np.tanh(x)**2)
 }
+
+
+def propagate_1(func, fx, x, sx):
+    """Propagate errors using function derivatives.
+
+    Parameters
+    ----------
+    func: string
+        Function name to perform error propagation. Must be in derivatives
+        keys.
+    fxy: float or array_like
+        Numerical result of f(x, y).
+    x: float or array_like
+        Variable of the function.
+    sx: float or array_like
+        1-sigma errors of the function variable.
+
+    Returns
+    -------
+    sf: float or array_like
+        1-sigma uncorrelated error associated to the operation.
+    """
+    if func not in derivatives.keys():
+        raise ValueError(f'func {func} not in derivatives.')
+
+    if len(derivatives[func]) != 1:
+        raise ValueError(f'func {func} is not a 1 variable function.')
+
+    try:
+        deriv = derivatives[func](x)
+        sf = deriv*sx
+        return sf
+    except (ValueError, ZeroDivisionError, OverflowError):
+        shape = np.shape(fx)
+        if len(shape) == 0:
+            return np.nan
+        else:
+            return np.empty(shape).fill(np.nan)
 
 
 def propagate_2(func, fxy, x, y, sx, sy):
@@ -86,6 +170,9 @@ def propagate_2(func, fxy, x, y, sx, sy):
     """
     if func not in derivatives.keys():
         raise ValueError(f'func {func} not in derivatives.')
+
+    if len(derivatives[func]) != 2:
+        raise ValueError(f'func {func} is not a 2 variable function.')
 
     deriv_x, deriv_y = derivatives[func]
     try:
