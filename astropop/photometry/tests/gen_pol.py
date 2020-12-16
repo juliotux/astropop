@@ -47,6 +47,6 @@ def gen_image(scale, psi, p, theta):
         
         base_im += im_o
         base_im += im_e
-    
+
     return np.random.poisson(base_im).astype('uint16')
 
