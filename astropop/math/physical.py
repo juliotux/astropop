@@ -386,9 +386,12 @@ class QFloat():
         """
         other = units.Unit(unit, parse_strict='silent')
         (_, conv), unit = get_converters_and_unit(self.to, other, self.unit)
-        nvalue = conv(self.nominal)  # noqa
-        nstd = conv(self.uncertainty)  # noqa
-        return QFloat(nvalue, nstd, unit)
+        if conv is not None:
+            nvalue = conv(self.nominal)
+            nstd = conv(self.uncertainty)
+            return QFloat(nvalue, nstd, unit)
+        # None converter means no conversion
+        return QFloat(self.nominal, self.uncertainty, self.unit)
 
     def __repr__(self):
         # FIXME: repr can be very slow for mutch large arrays
@@ -465,22 +468,8 @@ class QFloat():
         inputs = [convert_to_qfloat(i) for i in inputs]
 
         out = kwargs.get('out', None)
-        # Avoid loop back by turning any Quantity output into array views.
         if out is not None:
-            # If any out is not a QFloat, must fail
-            for o in out:
-                if not isinstance(o, QFloat):
-                    raise TypeError('All outputs must be QFloats.')
-
-            # If pre-allocated output is used, check it is suitable.
-            # This also returns array view, to ensure we don't loop back.
-            if ufunc.nout == 1:
-                out = out[0]
-
-            # TODO: Check if this is ok
-            out_array = check_output(out, unit, inputs, function=ufunc)
-            # Ensure output argument remains a tuple.
-            kwargs['out'] = (out_array,) if ufunc.nout == 1 else out_array
+            raise NotImplementedError("`out` argument not supported yet.")
 
         result = HANDLED_UFUNCS[ufunc](*inputs, **kwargs)
 
