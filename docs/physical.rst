@@ -17,6 +17,7 @@ The |QFloat| Class
 The |QFloat| class stores basically 3 variables: the nominal value, the uncertainty and the physical unit. To create this class, just pass these values in the class constructor and you can access it using the proper properties.
 
     >>> from astropop.math import QFloat
+    >>> import numpy as np
     >>> # A physical measure of 1.000+/-0.001 meters
     >>> qf = QFloat(1.0, 0.001, 'm')
     >>> print(qf.nominal) # the nominal value, must be 1.0
