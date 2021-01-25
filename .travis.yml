@@ -59,11 +59,12 @@ matrix:
           stage: Cron tests
           env: PYTHON_VERSION=3.7 TOXENV=py37-test
 
-        - os: linux
-          python: 3.8
-          name: Python 3.8 with required dependencies and measure coverage
-          stage: Initial tests
-          env: TOXENV=py38-test-cov
+        # Coverage using github
+        #- os: linux
+        #  python: 3.8
+        #  name: Python 3.8 with required dependencies and measure coverage
+        #  stage: Initial tests
+        #  env: TOXENV=py38-test-cov
 
         - os: linux
           python: 3.8
@@ -96,18 +97,6 @@ matrix:
           env: TOXENV=py37-test-astropy40-numpy117
 
         - os: linux
-          python: 3.6
-          name: Python 3.6 astropy LTS and Numpy 1.17
-          stage: Comprehensive tests
-          env: TOXENV=py36-test-astropylts-numpy117
-
-        - os: linux
-          python: 3.8
-          name: Python 3.8 latest developer version of key dependencies
-          stage: Cron tests
-          env: TOXENV=py38-test-devdeps
-
-        - os: linux
           python: 3.8
           name: Python 3.8 astropy 4.0 and Numpy 1.19
           stage: Comprehensive tests
@@ -115,9 +104,9 @@ matrix:
 
         - os: linux
           python: 3.9
-          name: Python 3.9 astropy 4.0 and Numpy 1.19
+          name: Python 3.9 astropy 4.2 and Numpy 1.19
           stage: Comprehensive tests
-          env: TOXENV=py39-test-astropy40-numpy119
+          env: TOXENV=py39-test-astropy42-numpy119
 
     allow_failures:
         # Do a PEP8 test with flake8
