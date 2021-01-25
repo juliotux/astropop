@@ -20,17 +20,17 @@ jobs:
       matrix:
         include:
           - name: Python 3.7 with required dependencies
-            os: macos-latest
+            os: ubuntu-latest
             python-version: 3.7
             toxenv: py37-test
 
           - name: Python 3.8 with required dependencies
-            os: windows-latest
+            os: ubuntu-latest
             python-version: 3.8
             toxenv: py38-test
 
           - name: Python 3.9 with required dependencies
-            os: windows-latest
+            os: ubuntu-latest
             python-version: 3.9
             toxenv: py39-test
 
@@ -109,6 +109,6 @@ jobs:
     - name: Upload coverage to codecov
       if: "matrix.coverage"
       run: |
-        tox -v -e ${{ matrix.toxenv }} --cov-report=xml:${{ github.workspace }}/coverage.xml
+        tox -v -e ${{ matrix.toxenv }} -- --cov-report=xml:${{ github.workspace }}/coverage.xml
         pip install codecov
         codecov
