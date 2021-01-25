@@ -199,7 +199,7 @@ class TestQFloatNumpyArrayFuncs:
         assert_equal(res3.unit, qf.unit)
         assert_equal(res3.shape, (2, 1))
 
-        if version.parse(np.version) >= version.parse('1.18.0'):
+        if version.parse(np.version.full_version) >= version.parse('1.18.0'):
             res4 = np.expand_dims(qf, axis=(2, 0))
             assert_almost_equal(res4.nominal, [[[1.0], [2.0]]])
             assert_almost_equal(res4.std_dev, [[[0.1], [0.2]]])
