@@ -2,12 +2,15 @@
 import os
 import mmap
 import pytest
-import pytest_check as check
 from astropop.framedata import MemMapArray, create_array_memmap, \
                                delete_array_memmap, EmptyDataError
 import numpy as np
-import numpy.testing as npt
 import warnings
+
+from astropop.testing import assert_is_instance, assert_true, \
+                             assert_almost_equal, assert_equal, \
+                             assert_false, assert_is_not_instance, \
+                             assert_not_equal
 
 warnings.filterwarnings('ignore')
 
@@ -19,32 +22,32 @@ def test_create_and_delete_memmap(tmpdir):
     a = np.ones((30, 30), dtype='f8')
     b = create_array_memmap(f, a)
     c = create_array_memmap(g, a, dtype=bool)
-    check.is_instance(b, np.memmap)
-    check.is_instance(c, np.memmap)
-    npt.assert_array_equal(a, b)
-    npt.assert_allclose(a, c)
-    check.is_true(os.path.exists(f))
-    check.is_true(os.path.exists(g))
+    assert_is_instance(b, np.memmap)
+    assert_is_instance(c, np.memmap)
+    assert_equal(a, b)
+    assert_almost_equal(a, c)
+    assert_true(os.path.exists(f))
+    assert_true(os.path.exists(g))
 
     # Deletion
     # Since for the uses the object is overwritten, we do it here too
     d = delete_array_memmap(b, read=True, remove=False)
     e = delete_array_memmap(c, read=True, remove=False)
-    check.is_not_instance(d, np.memmap)
-    check.is_not_instance(e, np.memmap)
-    check.is_instance(d, np.ndarray)
-    check.is_instance(e, np.ndarray)
-    npt.assert_array_equal(a, d)
-    npt.assert_allclose(a, e)
-    check.is_true(os.path.exists(f))
-    check.is_true(os.path.exists(g))
+    assert_is_not_instance(d, np.memmap)
+    assert_is_not_instance(e, np.memmap)
+    assert_is_instance(d, np.ndarray)
+    assert_is_instance(e, np.ndarray)
+    assert_equal(a, d)
+    assert_almost_equal(a, e)
+    assert_true(os.path.exists(f))
+    assert_true(os.path.exists(g))
 
     d = delete_array_memmap(b, read=False, remove=True)
     e = delete_array_memmap(c, read=False, remove=True)
-    check.is_true(d is None)
-    check.is_true(e is None)
-    check.is_false(os.path.exists(f))
-    check.is_false(os.path.exists(g))
+    assert_true(d is None)
+    assert_true(e is None)
+    assert_false(os.path.exists(f))
+    assert_false(os.path.exists(g))
 
     # None should not raise errors
     create_array_memmap('dummy', None)
@@ -55,11 +58,11 @@ def test_create_and_delete_memmap(tmpdir):
 def test_create_empty_memmap(tmpdir, memmap):
     f = os.path.join(tmpdir, 'empty.npy')
     a = MemMapArray(None, filename=f, dtype=None, memmap=memmap)
-    check.equal(a.filename, f)
-    check.is_true(a._contained is None)
-    check.equal(a.memmap, memmap)
-    check.is_true(a.empty)
-    check.is_false(os.path.exists(f))
+    assert_equal(a.filename, f)
+    assert_true(a._contained is None)
+    assert_equal(a.memmap, memmap)
+    assert_true(a.empty)
+    assert_false(os.path.exists(f))
     with pytest.raises(EmptyDataError):
         # dtype whould rise
         a.dtype
@@ -79,48 +82,48 @@ def test_create_memmap(tmpdir, memmap):
     f = os.path.join(tmpdir, 'npn_empty.npy')
     arr = [[0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5]]
     a = MemMapArray(arr, filename=f, dtype=None, memmap=memmap)
-    check.equal(a.filename, f)
-    npt.assert_array_equal(a, arr)
-    check.is_false(a.empty)
-    check.equal(a.memmap, memmap)
-    check.equal(os.path.exists(f), memmap)
-    check.equal(a.dtype, np.int64)
+    assert_equal(a.filename, f)
+    assert_equal(a, arr)
+    assert_false(a.empty)
+    assert_equal(a.memmap, memmap)
+    assert_equal(os.path.exists(f), memmap)
+    assert_equal(a.dtype, np.int64)
 
     a[0][0] = 10
-    check.equal(a[0][0], 10)
+    assert_equal(a[0][0], 10)
 
     a[0][:] = 20
-    npt.assert_array_equal(a[0], [20, 20, 20, 20, 20, 20])
+    assert_equal(a[0], [20, 20, 20, 20, 20, 20])
 
 
 def test_enable_disable_memmap(tmpdir):
     f = os.path.join(tmpdir, 'npn_empty.npy')
     arr = [[0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5]]
     a = MemMapArray(arr, filename=f, dtype=None, memmap=False)
-    check.is_false(a.memmap)
-    check.is_false(os.path.exists(f))
+    assert_false(a.memmap)
+    assert_false(os.path.exists(f))
 
     a.enable_memmap()
-    check.is_true(a.memmap)
-    check.is_true(os.path.exists(f))
-    check.is_instance(a._contained, np.memmap)
+    assert_true(a.memmap)
+    assert_true(os.path.exists(f))
+    assert_is_instance(a._contained, np.memmap)
 
     # First keep the file
     a.disable_memmap(remove=False)
-    check.is_false(a.memmap)
-    check.is_true(os.path.exists(f))
-    check.is_not_instance(a._contained, np.memmap)
+    assert_false(a.memmap)
+    assert_true(os.path.exists(f))
+    assert_is_not_instance(a._contained, np.memmap)
 
     a.enable_memmap()
-    check.is_true(a.memmap)
-    check.is_true(os.path.exists(f))
-    check.is_instance(a._contained, np.memmap)
+    assert_true(a.memmap)
+    assert_true(os.path.exists(f))
+    assert_is_instance(a._contained, np.memmap)
 
     # Remove the file
     a.disable_memmap(remove=True)
-    check.is_false(a.memmap)
-    check.is_false(os.path.exists(f))
-    check.is_not_instance(a._contained, np.memmap)
+    assert_false(a.memmap)
+    assert_false(os.path.exists(f))
+    assert_is_not_instance(a._contained, np.memmap)
 
     with pytest.raises(ValueError):
         # raises error if name is locked
@@ -131,34 +134,34 @@ def test_reset_data(tmpdir):
     d1 = np.array([[1, 2], [3, 4]]).astype('float32')
     m = MemMapArray(d1, os.path.join(tmpdir, 'reset.npy'),
                     dtype='float64', memmap=True)
-    check.is_true(np.issubdtype(m.dtype, np.float64))
-    npt.assert_array_equal(m, d1)
-    check.is_false(m.empty)
-    check.is_true(m.memmap)
+    assert_true(np.issubdtype(m.dtype, np.float64))
+    assert_equal(m, d1)
+    assert_false(m.empty)
+    assert_true(m.memmap)
 
     m.reset_data(d1)
-    check.is_true(np.issubdtype(m.dtype, np.float32))
-    npt.assert_array_equal(m, d1)
-    check.is_false(m.empty)
-    check.is_true(m.memmap)
+    assert_true(np.issubdtype(m.dtype, np.float32))
+    assert_equal(m, d1)
+    assert_false(m.empty)
+    assert_true(m.memmap)
 
     m.reset_data(d1.astype('int16'))
-    check.is_true(np.issubdtype(m.dtype, np.int16))
-    npt.assert_array_equal(m, d1)
-    check.is_false(m.empty)
-    check.is_true(m.memmap)
+    assert_true(np.issubdtype(m.dtype, np.int16))
+    assert_equal(m, d1)
+    assert_false(m.empty)
+    assert_true(m.memmap)
 
     m.reset_data(None)
-    check.is_true(m.empty)
-    check.is_true(m._contained is None)
-    check.is_true(m.memmap)
+    assert_true(m.empty)
+    assert_true(m._contained is None)
+    assert_true(m.memmap)
     m.disable_memmap()
 
     m.reset_data(np.ones((10, 10)), dtype='float32')
-    check.is_true(np.issubdtype(m.dtype, np.float32))
-    npt.assert_array_equal(m, np.ones((10, 10)))
-    check.is_false(m.empty)
-    check.is_false(m.memmap)
+    assert_true(np.issubdtype(m.dtype, np.float32))
+    assert_equal(m, np.ones((10, 10)))
+    assert_false(m.empty)
+    assert_false(m.memmap)
 
 
 # TODO: flush
@@ -198,7 +201,7 @@ def test_memmap_lt(tmpdir, memmap, value, other):
             ap_v = a < other
     else:
         ap_v = a < other
-        npt.assert_array_equal(ap_v, np_v)
+        assert_equal(ap_v, np_v)
 
 
 @parametrize_matrice
@@ -213,7 +216,7 @@ def test_memmap_le(tmpdir, memmap, value, other):
             ap_v = a <= other
     else:
         ap_v = a <= other
-        npt.assert_array_equal(ap_v, np_v)
+        assert_equal(ap_v, np_v)
 
 
 @parametrize_matrice
@@ -228,7 +231,7 @@ def test_memmap_gt(tmpdir, memmap, value, other):
             ap_v = a > other
     else:
         ap_v = a > other
-        npt.assert_array_equal(ap_v, np_v)
+        assert_equal(ap_v, np_v)
 
 
 @parametrize_matrice
@@ -243,7 +246,7 @@ def test_memmap_ge(tmpdir, memmap, value, other):
             ap_v = a >= other
     else:
         ap_v = a >= other
-        npt.assert_array_equal(ap_v, np_v)
+        assert_equal(ap_v, np_v)
 
 
 @parametrize_matrice
@@ -258,7 +261,7 @@ def test_memmap_eq(tmpdir, memmap, value, other):
             ap_v = a == other
     else:
         ap_v = a == other
-        npt.assert_array_equal(ap_v, np_v)
+        assert_equal(ap_v, np_v)
 
 
 @parametrize_matrice
@@ -273,7 +276,7 @@ def test_memmap_ne(tmpdir, memmap, value, other):
             ap_v = a != other
     else:
         ap_v = a != other
-        npt.assert_array_equal(ap_v, np_v)
+        assert_equal(ap_v, np_v)
 
 
 @parametrize_matrice
@@ -288,7 +291,7 @@ def test_math_add(tmpdir, memmap, value, other):
             ap_v = a+other
     else:
         ap_v = a+other
-        npt.assert_array_equal(ap_v, np_v)
+        assert_equal(ap_v, np_v)
 
     try:
         arr += other
@@ -297,7 +300,7 @@ def test_math_add(tmpdir, memmap, value, other):
             a += other
     else:
         a += other
-        npt.assert_array_equal(a, arr)
+        assert_equal(a, arr)
 
 
 @parametrize_matrice
@@ -312,7 +315,7 @@ def test_math_sub(tmpdir, memmap, value, other):
             ap_v = a-other
     else:
         ap_v = a-other
-        npt.assert_array_equal(ap_v, np_v)
+        assert_equal(ap_v, np_v)
 
     try:
         arr -= other
@@ -321,7 +324,7 @@ def test_math_sub(tmpdir, memmap, value, other):
             a -= other
     else:
         a -= other
-        npt.assert_array_equal(a, arr)
+        assert_equal(a, arr)
 
 
 @parametrize_matrice
@@ -336,7 +339,7 @@ def test_math_pow(tmpdir, memmap, value, other):
             ap_v = a**other
     else:
         ap_v = a**other
-        npt.assert_array_equal(ap_v, np_v)
+        assert_equal(ap_v, np_v)
 
     try:
         arr **= other
@@ -345,7 +348,7 @@ def test_math_pow(tmpdir, memmap, value, other):
             a **= other
     else:
         a **= other
-        npt.assert_array_equal(a, arr)
+        assert_equal(a, arr)
 
 
 @parametrize_matrice
@@ -360,7 +363,7 @@ def test_math_truediv(tmpdir, memmap, value, other):
             ap_v = a/other
     else:
         ap_v = a/other
-        npt.assert_array_equal(ap_v, np_v)
+        assert_equal(ap_v, np_v)
 
     try:
         arr /= other
@@ -369,7 +372,7 @@ def test_math_truediv(tmpdir, memmap, value, other):
             a /= other
     else:
         a /= other
-        npt.assert_array_equal(a, arr)
+        assert_equal(a, arr)
 
 
 @parametrize_matrice
@@ -384,7 +387,7 @@ def test_math_floordiv(tmpdir, memmap, value, other):
             ap_v = a//other
     else:
         ap_v = a//other
-        npt.assert_array_equal(ap_v, np_v)
+        assert_equal(ap_v, np_v)
 
     try:
         arr //= other
@@ -393,7 +396,7 @@ def test_math_floordiv(tmpdir, memmap, value, other):
             a //= other
     else:
         a //= other
-        npt.assert_array_equal(a, arr)
+        assert_equal(a, arr)
 
 
 @parametrize_matrice
@@ -408,7 +411,7 @@ def test_math_mul(tmpdir, memmap, value, other):
             ap_v = a*other
     else:
         ap_v = a*other
-        npt.assert_array_equal(ap_v, np_v)
+        assert_equal(ap_v, np_v)
 
     try:
         arr *= other
@@ -417,7 +420,7 @@ def test_math_mul(tmpdir, memmap, value, other):
             a *= other
     else:
         a *= other
-        npt.assert_array_equal(a, arr)
+        assert_equal(a, arr)
 
 
 @parametrize_matrice
@@ -432,7 +435,7 @@ def test_math_mod(tmpdir, memmap, value, other):
             ap_v = a % other
     else:
         ap_v = a % other
-        npt.assert_array_equal(ap_v, np_v)
+        assert_equal(ap_v, np_v)
 
     try:
         arr %= other
@@ -441,7 +444,7 @@ def test_math_mod(tmpdir, memmap, value, other):
             a %= other
     else:
         a %= other
-        npt.assert_array_equal(a, arr)
+        assert_equal(a, arr)
 
 
 @parametrize_matrice
@@ -456,7 +459,7 @@ def test_math_lshift(tmpdir, memmap, value, other):
             ap_v = a << other
     else:
         ap_v = a << other
-        npt.assert_array_equal(ap_v, np_v)
+        assert_equal(ap_v, np_v)
 
     try:
         arr <<= other
@@ -465,9 +468,9 @@ def test_math_lshift(tmpdir, memmap, value, other):
             a <<= other
     else:
         a <<= other
-        npt.assert_array_equal(a, arr)
+        assert_equal(a, arr)
     # FIXME: why do this simply don't work like in numpy array???
-    # npt.assert_array_equal(other<<arr, other<<a)
+    # assert_equal(other<<arr, other<<a)
 
 
 @parametrize_matrice
@@ -482,7 +485,7 @@ def test_math_rshift(tmpdir, memmap, value, other):
             ap_v = a >> other
     else:
         ap_v = a >> other
-        npt.assert_array_equal(ap_v, np_v)
+        assert_equal(ap_v, np_v)
 
     try:
         arr >>= other
@@ -491,9 +494,9 @@ def test_math_rshift(tmpdir, memmap, value, other):
             a >>= other
     else:
         a >>= other
-        npt.assert_array_equal(a, arr)
+        assert_equal(a, arr)
     # FIXME: why do this simply don't work like in numpy array???
-    # npt.assert_array_equal(other>>arr, other>>a)
+    # assert_equal(other>>arr, other>>a)
 
 
 @parametrize_matrice
@@ -508,7 +511,7 @@ def test_math_and(tmpdir, memmap, value, other):
             ap_v = a & other
     else:
         ap_v = a & other
-        npt.assert_array_equal(ap_v, np_v)
+        assert_equal(ap_v, np_v)
 
     try:
         arr &= other
@@ -517,9 +520,9 @@ def test_math_and(tmpdir, memmap, value, other):
             a &= other
     else:
         a &= other
-        npt.assert_array_equal(a, arr)
+        assert_equal(a, arr)
     # FIXME: why do this simply don't work like in numpy array???
-    # npt.assert_array_equal(other & arr, other & a)
+    # assert_equal(other & arr, other & a)
 
 
 @parametrize_matrice
@@ -534,7 +537,7 @@ def test_math_or(tmpdir, memmap, value, other):
             ap_v = a | other
     else:
         ap_v = a | other
-        npt.assert_array_equal(ap_v, np_v)
+        assert_equal(ap_v, np_v)
 
     try:
         arr |= other
@@ -543,9 +546,9 @@ def test_math_or(tmpdir, memmap, value, other):
             a |= other
     else:
         a |= other
-        npt.assert_array_equal(a, arr)
+        assert_equal(a, arr)
     # FIXME: why do this simply don't work like in numpy array???
-    # npt.assert_array_equal(other | arr, other | a)
+    # assert_equal(other | arr, other | a)
 
 
 @parametrize_matrice
@@ -560,7 +563,7 @@ def test_math_xor(tmpdir, memmap, value, other):
             ap_v = a ^ other
     else:
         ap_v = a ^ other
-        npt.assert_array_equal(ap_v, np_v)
+        assert_equal(ap_v, np_v)
 
     try:
         arr ^= other
@@ -569,9 +572,9 @@ def test_math_xor(tmpdir, memmap, value, other):
             a ^= other
     else:
         a ^= other
-        npt.assert_array_equal(a, arr)
+        assert_equal(a, arr)
     # FIXME: why do this simply don't work like in numpy array???
-    # npt.assert_array_equal(other | arr, other | a)
+    # assert_equal(other | arr, other | a)
 
 
 @parametrize_matrice
@@ -586,7 +589,7 @@ def test_math_neg(tmpdir, memmap, value, other):
             ap_v = -a
     else:
         ap_v = -a
-        npt.assert_array_equal(ap_v, np_v)
+        assert_equal(ap_v, np_v)
 
 
 @parametrize_matrice
@@ -601,7 +604,7 @@ def test_math_pos(tmpdir, memmap, value, other):
             ap_v = +a
     else:
         ap_v = +a
-        npt.assert_array_equal(ap_v, np_v)
+        assert_equal(ap_v, np_v)
 
 
 @parametrize_matrice
@@ -616,7 +619,7 @@ def test_math_abs(tmpdir, memmap, value, other):
             ap_v = a.__abs__()
     else:
         ap_v = a.__abs__()
-        npt.assert_array_equal(ap_v, np_v)
+        assert_equal(ap_v, np_v)
 
 
 @parametrize_matrice
@@ -631,7 +634,7 @@ def test_math_invert(tmpdir, memmap, value, other):
             ap_v = ~a
     else:
         ap_v = ~a
-        npt.assert_array_equal(ap_v, np_v)
+        assert_equal(ap_v, np_v)
 
 
 @parametrize_matrice
@@ -647,7 +650,7 @@ def test_math_matmul(tmpdir, memmap, value, other):
             ap_v = a@other
     else:
         ap_v = a@other
-        npt.assert_array_equal(ap_v, np_v)
+        assert_equal(ap_v, np_v)
 
 
 @parametrize_matrice
@@ -657,18 +660,18 @@ def test_math_bool_all_any(tmpdir, memmap, value, other):
     a = MemMapArray(arr, filename=f, memmap=memmap)
     with pytest.raises(ValueError):
         bool(a)
-    check.is_false(a.all())
-    check.is_true(a.any())
+    assert_false(a.all())
+    assert_true(a.any())
 
     arr = np.array([0, 0, 0])
     a = MemMapArray(arr, filename=f+'1', memmap=memmap)
-    check.is_false(a.all())
-    check.is_false(a.any())
+    assert_false(a.all())
+    assert_false(a.any())
 
     arr = np.array([1, 1, 1])
     a = MemMapArray(arr, filename=f+'2', memmap=memmap)
-    check.is_true(a.all())
-    check.is_true(a.any())
+    assert_true(a.all())
+    assert_true(a.any())
 
 
 @parametrize_matrice
@@ -680,7 +683,7 @@ def test_math_float(tmpdir, memmap, value, other):
         float(a)
 
     a = MemMapArray([value], filename=f, memmap=memmap)
-    check.equal(float(value), float(a))
+    assert_equal(float(value), float(a))
 
 
 @parametrize_matrice
@@ -692,7 +695,7 @@ def test_math_int(tmpdir, memmap, value, other):
         int(a)
 
     a = MemMapArray([value], filename=f, memmap=memmap)
-    check.equal(int(value), int(a))
+    assert_equal(int(value), int(a))
 
 
 @parametrize_matrice
@@ -711,15 +714,15 @@ def test_math_complex(tmpdir, memmap, value, other):
             complex(a, other)
     else:
         try:
-            check.equal(complex(value), complex(arr))
-            check.equal(complex(value, other), complex(arr, other))
+            assert_equal(complex(value), complex(arr))
+            assert_equal(complex(value, other), complex(arr, other))
         except Exception as e:
             with pytest.raises(e.__class__):
-                check.equal(complex(value), complex(arr))
-                check.equal(complex(value, other), complex(arr, other))
+                assert_equal(complex(value), complex(arr))
+                assert_equal(complex(value, other), complex(arr, other))
         else:
-            check.equal(complex(value), complex(arr))
-            check.equal(complex(value, other), complex(arr, other))
+            assert_equal(complex(value), complex(arr))
+            assert_equal(complex(value, other), complex(arr, other))
 
 
 @pytest.mark.parametrize('memmap', [True, False])
@@ -736,7 +739,7 @@ def test_math_len(tmpdir, memmap):
                 ap_v = len(a)
         else:
             ap_v = len(a)
-            check.equal(np_v, ap_v)
+            assert_equal(np_v, ap_v)
 
 
 @pytest.mark.parametrize('memmap', [True, False])
@@ -749,82 +752,82 @@ def test_math_redirects(tmpdir, memmap):
         for i in ['C_CONTIGUOUS', 'F_CONTIGUOUS', 'WRITEABLE', 'ALIGNED',
                   'WRITEBACKIFCOPY', 'UPDATEIFCOPY', 'FNC', 'FORC',
                   'BEHAVED', 'CARRAY', 'FARRAY']:
-            check.equal(arr_flags[i], a_flags[i])
+            assert_equal(arr_flags[i], a_flags[i])
         for i in ['OWNDATA']:
             if memmap:
-                check.not_equal(arr_flags[i], a_flags[i])
+                assert_not_equal(arr_flags[i], a_flags[i])
             else:
-                check.equal(arr_flags[i], a_flags[i])
+                assert_equal(arr_flags[i], a_flags[i])
 
         if memmap:
-            check.is_instance(a.base, mmap.mmap)
+            assert_is_instance(a.base, mmap.mmap)
         else:
-            check.is_true(a.base is None)
+            assert_true(a.base is None)
 
-        check.equal(arr.shape, a.shape)
-        check.equal(arr.strides, a.strides)
-        check.equal(arr.ndim, a.ndim)
-        check.equal(arr.data, a.data)
-        check.equal(arr.size, a.size)
-        check.equal(arr.itemsize, a.itemsize)
-        check.equal(arr.nbytes, a.nbytes)
-        check.equal(arr.dtype, a.dtype)
+        assert_equal(arr.shape, a.shape)
+        assert_equal(arr.strides, a.strides)
+        assert_equal(arr.ndim, a.ndim)
+        assert_equal(arr.data, a.data)
+        assert_equal(arr.size, a.size)
+        assert_equal(arr.itemsize, a.itemsize)
+        assert_equal(arr.nbytes, a.nbytes)
+        assert_equal(arr.dtype, a.dtype)
 
-        check.is_instance(a.tolist(), list)
-        check.equal(arr.tolist(), a.tolist())
-        check.is_instance(a.tostring(), bytes)
-        check.equal(arr.tostring(), a.tostring())
-        check.is_instance(a.tobytes(), bytes)
-        check.equal(arr.tobytes(), a.tobytes())
-        check.is_instance(a.dumps(), bytes)
-        # FIXME: check.equal(arr.dumps(), a.dumps())
+        assert_is_instance(a.tolist(), list)
+        assert_equal(arr.tolist(), a.tolist())
+        assert_is_instance(a.tostring(), bytes)
+        assert_equal(arr.tostring(), a.tostring())
+        assert_is_instance(a.tobytes(), bytes)
+        assert_equal(arr.tobytes(), a.tobytes())
+        assert_is_instance(a.dumps(), bytes)
+        # FIXME: assert_equal(arr.dumps(), a.dumps())
 
-        npt.assert_array_equal(arr.T, a.T)
-        npt.assert_array_equal(arr.transpose(), a.transpose())
-        npt.assert_array_equal(arr.flatten(), a.flatten())
-        npt.assert_array_equal(arr.ravel(), a.ravel())
-        npt.assert_array_equal(arr.squeeze(), a.squeeze())
-        npt.assert_array_equal(arr.argsort(), a.argsort())
-        npt.assert_array_equal(arr.argpartition(1), a.argpartition(1))
-        npt.assert_array_equal(arr.nonzero(), a.nonzero())
-        check.equal(arr.max(), a.max())
-        check.equal(arr.argmax(), a.argmax())
-        check.equal(arr.min(), a.min())
-        check.equal(arr.argmin(), a.argmin())
-        npt.assert_array_equal(arr.max(axis=0), a.max(axis=0))
-        npt.assert_array_equal(arr.min(axis=0), a.min(axis=0))
-        npt.assert_array_equal(arr.argmax(axis=0), a.argmax(axis=0))
-        npt.assert_array_equal(arr.argmin(axis=0), a.argmin(axis=0))
-        npt.assert_array_equal(arr.real, a.real)
-        npt.assert_array_equal(arr.imag, a.imag)
-        npt.assert_array_equal(arr.round(), a.round())
-        check.equal(arr.sum(), a.sum())
-        npt.assert_array_equal(arr.sum(axis=0), a.sum(axis=0))
-        npt.assert_array_equal(arr.cumsum(), a.cumsum())
-        npt.assert_array_equal(arr.cumsum(axis=0), a.cumsum(axis=0))
-        check.equal(arr.mean(), a.mean())
-        npt.assert_array_equal(arr.mean(axis=0), a.mean(axis=0))
-        check.equal(arr.var(), a.var())
-        npt.assert_array_equal(arr.var(axis=0), a.var(axis=0))
-        check.equal(arr.std(), a.std())
-        npt.assert_array_equal(arr.std(axis=0), a.std(axis=0))
-        check.equal(arr.prod(), a.prod())
-        npt.assert_array_equal(arr.prod(axis=0), a.prod(axis=0))
-        npt.assert_array_equal(arr.cumprod(), a.cumprod())
-        npt.assert_array_equal(arr.cumprod(axis=0), a.cumprod(axis=0))
+        assert_equal(arr.T, a.T)
+        assert_equal(arr.transpose(), a.transpose())
+        assert_equal(arr.flatten(), a.flatten())
+        assert_equal(arr.ravel(), a.ravel())
+        assert_equal(arr.squeeze(), a.squeeze())
+        assert_equal(arr.argsort(), a.argsort())
+        assert_equal(arr.argpartition(1), a.argpartition(1))
+        assert_equal(arr.nonzero(), a.nonzero())
+        assert_equal(arr.max(), a.max())
+        assert_equal(arr.argmax(), a.argmax())
+        assert_equal(arr.min(), a.min())
+        assert_equal(arr.argmin(), a.argmin())
+        assert_equal(arr.max(axis=0), a.max(axis=0))
+        assert_equal(arr.min(axis=0), a.min(axis=0))
+        assert_equal(arr.argmax(axis=0), a.argmax(axis=0))
+        assert_equal(arr.argmin(axis=0), a.argmin(axis=0))
+        assert_equal(arr.real, a.real)
+        assert_equal(arr.imag, a.imag)
+        assert_equal(arr.round(), a.round())
+        assert_equal(arr.sum(), a.sum())
+        assert_equal(arr.sum(axis=0), a.sum(axis=0))
+        assert_equal(arr.cumsum(), a.cumsum())
+        assert_equal(arr.cumsum(axis=0), a.cumsum(axis=0))
+        assert_equal(arr.mean(), a.mean())
+        assert_equal(arr.mean(axis=0), a.mean(axis=0))
+        assert_equal(arr.var(), a.var())
+        assert_equal(arr.var(axis=0), a.var(axis=0))
+        assert_equal(arr.std(), a.std())
+        assert_equal(arr.std(axis=0), a.std(axis=0))
+        assert_equal(arr.prod(), a.prod())
+        assert_equal(arr.prod(axis=0), a.prod(axis=0))
+        assert_equal(arr.cumprod(), a.cumprod())
+        assert_equal(arr.cumprod(axis=0), a.cumprod(axis=0))
 
         for i, j in zip(arr.flat, a.flat):
-            check.equal(i, j)
+            assert_equal(i, j)
         for i in range(9):
-            check.equal(arr.item(i), a.item(i))
+            assert_equal(arr.item(i), a.item(i))
 
-        npt.assert_array_equal(arr.astype(bool), a.astype(bool))
-        npt.assert_array_equal(arr.astype(int), a.astype(int))
+        assert_equal(arr.astype(bool), a.astype(bool))
+        assert_equal(arr.astype(int), a.astype(int))
 
-        check.equal(arr.all(), a.all())
-        check.equal(arr.any(), a.any())
+        assert_equal(arr.all(), a.all())
+        assert_equal(arr.any(), a.any())
 
-        # FIXME: check.equal(arr.ctypes, a.ctypes)
+        # FIXME: assert_equal(arr.ctypes, a.ctypes)
 
         # TODO: itemset
         # TODO: tofile
