@@ -60,8 +60,8 @@ Documentation
 
 Documentation (not complete yet) can be found at `astropop.readthedocs.io <https://astropop.readthedocs.io>`_
 
-.. |Travis Status| image:: https://travis-ci.org/sparc4-dev/astropop.svg?branch=master
-    :target: https://travis-ci.org/sparc4-dev/astropop
+.. |Travis Status| image:: https://travis-ci.com/sparc4-dev/astropop.svg?branch=master
+    :target: https://travis-ci.com/sparc4-dev/astropop
     :alt: Astropop's Travis CI Status
 
 .. |Coverall Status| image:: https://coveralls.io/repos/github/sparc4-dev/astropop/badge.svg?branch=master
