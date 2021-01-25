@@ -54,6 +54,7 @@ def test_run_command_string():
 
 def test_process_list():
     def dummy_func(i):
+        i = 1
         return i
     a = np.zeros(20)
     b = np.ones(20)

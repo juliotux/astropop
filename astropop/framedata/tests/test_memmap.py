@@ -10,7 +10,7 @@ import warnings
 from astropop.testing import assert_is_instance, assert_true, \
                              assert_almost_equal, assert_equal, \
                              assert_false, assert_is_not_instance, \
-                             assert_not_equal
+                             assert_not_equal, assert_is
 
 warnings.filterwarnings('ignore')
 
@@ -87,7 +87,7 @@ def test_create_memmap(tmpdir, memmap):
     assert_false(a.empty)
     assert_equal(a.memmap, memmap)
     assert_equal(os.path.exists(f), memmap)
-    assert_equal(a.dtype, np.int64)
+    assert_true(a.dtype == np.int64)
 
     a[0][0] = 10
     assert_equal(a[0][0], 10)
