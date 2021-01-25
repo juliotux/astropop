@@ -6,30 +6,30 @@ import numpy as np
 import numpy.testing as npt
 import pytest_check as check
 
-from astropop.photometry import (background, sepfind, daofind, starfind, 
+from astropop.photometry import (background, sepfind, daofind, starfind,
                                  calc_fwhm, recenter_sources)
 from astropop.photometry.tests import (gen_image)
 
 # @pytest.mark.parametrize('r', [2, 3, 4])
 def test_gen_filter_kernel():
     pass
-    
+
 # @pytest.mark.parametrize('r', [2, 3, 4])
 def test_background():
-    
-    # im_e = np.random.poisson(im_e) criar uma distribuição de erro poissonico 
+
+    # im_e = np.random.poisson(im_e) criar uma distribuição de erro poissonico
     # Deve criar  um erro poissonico sobre uma distribuição gaussiana
 #%%
     scale = 1.0
     psi = 90
     p = 0.1
     theta = np.pi/2
-    
+
     image_test = gen_image(scale, psi, p, theta)
-    
+
     image_cols = len(image_test)
     image_rows = len(image_test[0])
-    
+
     box_size = image_cols
     filter_size = image_cols
 
@@ -38,10 +38,10 @@ def test_background():
 
 #%%
     npt.assert_array_almost_equal(bkg_1_global[0], 298, decimal=0)
-    npt.assert_array_almost_equal(bkg_1_global[1], 25, decimal=1)    
+    npt.assert_array_almost_equal(bkg_1_global[1], 25, decimal=0)
 
     npt.assert_array_equal(len(bkg_1), 2)
-    npt.assert_array_equal(len(bkg_1[0]), 256)    
+    npt.assert_array_equal(len(bkg_1[0]), 256)
     npt.assert_array_equal(len(bkg_1[0][0]), 256)
     npt.assert_array_almost_equal(bkg_1[0][0][0], 298, decimal=0)
     npt.assert_array_almost_equal(bkg_1[0][149][149], 298, decimal=0)
