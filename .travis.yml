@@ -133,8 +133,8 @@ before_install:
     - if [[ $TOXENV == *-cov ]]; then
         export TOXPOSARGS=$TOXPOSARGS" --cov-report=xml:"$TRAVIS_BUILD_DIR"/coverage.xml";
       fi
-    # # skip it for now
-    # - sudo apt-get update
+    - sudo apt-get update
+    - pip update cython
     # - sudo apt-get -y install astrometry.net # astrometry.net needed
 
 install:
@@ -151,6 +151,7 @@ install:
 
 script:
     - pip install tox
+    - cython --version
     - tox $TOXARGS -- $TOXPOSARGS
 
 after_success:
