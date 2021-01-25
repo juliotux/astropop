@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 from astropop.math.physical import QFloat, UnitsError, units
 from numpy.testing import assert_almost_equal, assert_equal
+from packaging import version
 
 # Testing qfloat compatibility with Numpy ufuncs and array functions.
 
@@ -197,11 +198,13 @@ class TestQFloatNumpyArrayFuncs:
         assert_almost_equal(res3.std_dev, [[0.1], [0.2]])
         assert_equal(res3.unit, qf.unit)
         assert_equal(res3.shape, (2, 1))
-        res4 = np.expand_dims(qf, axis=(2, 0))
-        assert_almost_equal(res4.nominal, [[[1.0], [2.0]]])
-        assert_almost_equal(res4.std_dev, [[[0.1], [0.2]]])
-        assert_equal(res4.unit, qf.unit)
-        assert_equal(res4.shape, (1, 2, 1))
+
+        if version.parse(np.version) >= version.parse('1.18.0'):
+            res4 = np.expand_dims(qf, axis=(2, 0))
+            assert_almost_equal(res4.nominal, [[[1.0], [2.0]]])
+            assert_almost_equal(res4.std_dev, [[[0.1], [0.2]]])
+            assert_equal(res4.unit, qf.unit)
+            assert_equal(res4.shape, (1, 2, 1))
 
     def test_qfloat_np_flip(self):
         a = np.arange(8).reshape((2, 2, 2))
