@@ -540,10 +540,6 @@ class TestQFloatNumpyArrayFuncs:
             qf = QFloat(np.ones(shp), np.ones(shp), "m")
             assert_equal(np.size(qf), np.prod(shp))
 
-    @pytest.mark.skip(reason="Not Implemented Yet")
-    def test_qfloat_np_square(self):
-        raise NotImplementedError
-
     def test_qfloat_np_squeeze(self):
         arr = np.array([[[0], [1], [2]]])
         qf = QFloat(arr, arr * 0.01, "m")
@@ -652,13 +648,58 @@ class TestQFloatNumpyArrayFuncs:
 class TestQFloatNumpyUfuncs:
     """Test numpy array functions for numpy comatibility."""
 
-    @pytest.mark.skip(reason="Not Implemented Yet")
-    def test_qfloat_np_absolute(self):
-        raise NotImplementedError
+    @pytest.mark.parametrize('func', [np.abs, np.absolute])
+    def test_qfloat_np_absolute(self, func):
+        qf1 = QFloat(1.0, 0.1, 'm')
+        qf2 = QFloat(-1.0, 0.1, 'm')
+        qf3 = QFloat(-5.0, 0.1)
+        qf4 = QFloat(-6)
+        qf5 = QFloat([1, -1, 2, -2])
 
-    @pytest.mark.skip(reason="Not Implemented Yet")
+        assert_equal(func(qf1), QFloat(1.0, 0.1, 'm'))
+        assert_equal(func(qf2), QFloat(1.0, 0.1, 'm'))
+        assert_equal(func(qf3), QFloat(5.0, 0.1))
+        assert_equal(func(qf4), QFloat(6))
+        assert_equal(func(qf5), [1, 1, 2, 2])
+
+        with pytest.raises(NotImplementedError):
+            # out argument should fail
+            func(qf1, out=[])
+
     def test_qfloat_np_add(self):
-        raise NotImplementedError
+        qf1 = QFloat(2.0, 0.2, 'm')
+        qf2 = QFloat(1.0, 0.1, 'm')
+        qf3 = QFloat([1, 2, 3], [0.1, 0.2, 0.3], 'm')
+        qf4 = QFloat(1.0, 0.1, 's')
+        qf5 = QFloat(1.0)
+
+        res = np.add(qf1, qf2)
+        assert_equal(res.nominal, 3.0)
+        assert_almost_equal(res.std_dev, 0.223606797749979)
+        assert_equal(res.unit, units.Unit('m'))
+
+        res = np.add(qf1, qf3)
+        assert_equal(res.nominal, [3, 4, 5])
+        assert_almost_equal(res.std_dev, [0.2236068, 0.28284271, 0.36055513])
+        assert_equal(res.unit, units.Unit('m'))
+
+        res = np.add(qf3, qf1)
+        assert_equal(res.nominal, [3, 4, 5])
+        assert_almost_equal(res.std_dev, [0.2236068, 0.28284271, 0.36055513])
+        assert_equal(res.unit, units.Unit('m'))
+
+        with pytest.raises(UnitsError):
+            np.add(qf1, qf4)
+
+        with pytest.raises(UnitsError):
+            np.add(qf1, qf5)
+
+        with pytest.raises(UnitsError):
+            np.add(qf1, 1.0)
+
+        with pytest.raises(NotImplementedError):
+            # out argument should fail
+            np.add(qf1, qf2, out=[])
 
     @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_cbrt(self):
@@ -672,9 +713,42 @@ class TestQFloatNumpyUfuncs:
     def test_qfloat_np_copysign(self):
         raise NotImplementedError
 
-    @pytest.mark.skip(reason="Not Implemented Yet")
-    def test_qfloat_np_divide(self):
-        raise NotImplementedError
+    @pytest.mark.parametrize('func', [np.divide, np.true_divide])
+    def test_qfloat_np_divide(self, func):
+        qf1 = QFloat(2.0, 0.2, 'm')
+        qf2 = QFloat(1.0, 0.1, 'm')
+        qf3 = QFloat([1, 2, 4], [0.1, 0.2, 0.4], 'cm')
+        qf4 = QFloat(1.0, 0.1, 's')
+        qf5 = QFloat(1.0)
+
+        res = func(qf1, qf2)
+        assert_equal(res.nominal, 2)
+        assert_almost_equal(res.std_dev, 0.28284271)
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
+        res = func(qf1, qf3)
+        assert_equal(res.nominal, [2, 1, 0.5])
+        assert_almost_equal(res.std_dev, [0.28284271, 0.14142136, 0.07071068])
+        assert_equal(res.unit, units.Unit('m/cm'))
+
+        res = func(qf3, qf1)
+        assert_equal(res.nominal, [0.5, 1, 2])
+        assert_almost_equal(res.std_dev, [0.0707107, 0.1414214, 0.2828427])
+        assert_equal(res.unit, units.Unit('cm/m'))
+
+        res = func(qf1, qf4)
+        assert_equal(res.nominal, 2.0)
+        assert_almost_equal(res.std_dev, 0.28284271247461906)
+        assert_equal(res.unit, units.Unit('m/s'))
+
+        res = func(qf1, qf5)
+        assert_equal(res.nominal, 2.0)
+        assert_almost_equal(res.std_dev, 0.2)
+        assert_equal(res.unit, units.Unit('m'))
+
+        with pytest.raises(NotImplementedError):
+            # out argument should fail
+            func(qf1, qf2, out=[])
 
     @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_divmod(self):
@@ -697,16 +771,44 @@ class TestQFloatNumpyUfuncs:
         raise NotImplementedError
 
     @pytest.mark.skip(reason="Not Implemented Yet")
-    def test_qfloat_np_float_power(self):
-        raise NotImplementedError
-
-    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_floor(self):
         raise NotImplementedError
 
-    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_floor_divide(self):
-        raise NotImplementedError
+        qf1 = QFloat(2.0, 0.2, 'm')
+        qf2 = QFloat(1.0, 0.1, 'm')
+        qf3 = QFloat([1, 2, 4], [0.1, 0.2, 0.4], 'cm')
+        qf4 = QFloat(1.0, 0.1, 's')
+        qf5 = QFloat(1.0)
+
+        res = np.floor_divide(qf1, qf2)
+        assert_equal(res.nominal, 2)
+        assert_almost_equal(res.std_dev, 0)
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
+        res = np.floor_divide(qf1, qf3)
+        assert_equal(res.nominal, [2, 1, 0])
+        assert_almost_equal(res.std_dev, [0, 0, 0])
+        assert_equal(res.unit, units.Unit('m/cm'))
+
+        res = np.floor_divide(qf3, qf1)
+        assert_equal(res.nominal, [0, 1, 2])
+        assert_almost_equal(res.std_dev, [0, 0, 0])
+        assert_equal(res.unit, units.Unit('cm/m'))
+
+        res = np.floor_divide(qf1, qf4)
+        assert_equal(res.nominal, 2)
+        assert_almost_equal(res.std_dev, 0)
+        assert_equal(res.unit, units.Unit('m/s'))
+
+        res = np.floor_divide(qf1, qf5)
+        assert_equal(res.nominal, 2)
+        assert_almost_equal(res.std_dev, 0)
+        assert_equal(res.unit, units.Unit('m'))
+
+        with pytest.raises(NotImplementedError):
+            # out argument should fail
+            np.floor_divide(qf1, qf2, out=[])
 
     @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_fmax(self):
@@ -720,9 +822,36 @@ class TestQFloatNumpyUfuncs:
     def test_qfloat_np_fmod(self):
         raise NotImplementedError
 
-    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_hypot(self):
-        raise NotImplementedError
+        qf1 = QFloat(3, 0.3, 'm')
+        qf2 = QFloat(4, 0.4, 'm')
+        qf3 = QFloat(3*np.ones((5, 5)), unit='m')
+        qf4 = QFloat(4*np.ones((5, 5)), unit='m')
+
+        res = np.hypot(qf1, qf2)
+        assert_equal(res.nominal, 5)
+        assert_almost_equal(res.std_dev, 0.36715119501371646)
+        assert_equal(res.unit, units.Unit('m'))
+
+        res = np.hypot(qf3, qf4)
+        assert_equal(res.nominal, 5*np.ones((5, 5)))
+        assert_almost_equal(res.std_dev, np.zeros((5, 5)))
+        assert_equal(res.unit, units.Unit('m'))
+
+        res = np.hypot(qf1, qf4)
+        assert_equal(res.nominal, 5*np.ones((5, 5)))
+        assert_almost_equal(res.std_dev, 0.18*np.ones((5, 5)))
+        assert_equal(res.unit, units.Unit('m'))
+
+        with pytest.raises(UnitsError):
+            np.hypot(qf1, 1)
+
+        with pytest.raises(UnitsError):
+            np.hypot(qf1, QFloat(1, unit='s'))
+
+        with pytest.raises(NotImplementedError):
+            # out argument should fail
+            np.multiply(qf1, qf2, out=[])
 
     @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_isfinit(self):
@@ -761,32 +890,147 @@ class TestQFloatNumpyUfuncs:
         raise NotImplementedError
 
     @pytest.mark.skip(reason="Not Implemented Yet")
-    def test_qfloat_np_mod(self):
-        raise NotImplementedError
-
-    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_modf(self):
         raise NotImplementedError
 
-    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_multiply(self):
-        raise NotImplementedError
+        qf1 = QFloat(2.0, 0.2, 'm')
+        qf2 = QFloat(1.2, 0.1, 'm')
+        qf3 = QFloat([1, 2, 4], [0.1, 0.2, 0.4], 'cm')
 
-    @pytest.mark.skip(reason="Not Implemented Yet")
+        res = np.multiply(qf1, 2)
+        assert_equal(res.nominal, 4)
+        assert_equal(res.std_dev, 0.4)
+        assert_equal(res.unit, units.Unit('m'))
+
+        res = np.multiply(qf1, qf2)
+        assert_equal(res.nominal, 2.4)
+        assert_almost_equal(res.std_dev, 0.3124099870362662)
+        assert_equal(res.unit, units.Unit('m2'))
+
+        res = np.multiply(qf1, qf3)
+        assert_equal(res.nominal, [2, 4, 8])
+        assert_almost_equal(res.std_dev, [0.28284271, 0.56568542, 1.13137085])
+        assert_equal(res.unit, units.Unit('m*cm'))
+
+        with pytest.raises(NotImplementedError):
+            # out argument should fail
+            np.multiply(qf1, qf2, out=[])
+
     def test_qfloat_np_negative(self):
-        raise NotImplementedError
+        qf1 = QFloat(1.0, 0.1, 'm')
+        qf2 = QFloat(-1.0, 0.1, 'm')
+        qf3 = QFloat(-5.0, 0.1)
+        qf4 = QFloat(6)
+        qf5 = QFloat([1, -1, 2, -2])
 
-    @pytest.mark.skip(reason="Not Implemented Yet")
+        assert_equal(np.negative(qf1), QFloat(-1.0, 0.1, 'm'))
+        assert_equal(np.negative(qf2), QFloat(1.0, 0.1, 'm'))
+        assert_equal(np.negative(qf3), QFloat(5.0, 0.1))
+        assert_equal(np.negative(qf4), QFloat(-6))
+        assert_equal(np.negative(qf5), QFloat([-1, 1, -2, 2]))
+
+        with pytest.raises(NotImplementedError):
+            # out argument should fail
+            np.negative(qf1, out=[])
+
     def test_qfloat_np_positive(self):
-        raise NotImplementedError
+        qf1 = QFloat(1.0, 0.1, 'm')
+        qf2 = QFloat(-1.0, 0.1, 'm')
+        qf3 = QFloat(-5.0, 0.1)
+        qf4 = QFloat(6)
+        qf5 = QFloat([1, -1, 2, -2])
 
-    @pytest.mark.skip(reason="Not Implemented Yet")
-    def test_qfloat_np_power(self):
-        raise NotImplementedError
+        assert_equal(np.positive(qf1), QFloat(1.0, 0.1, 'm'))
+        assert_equal(np.positive(qf2), QFloat(-1.0, 0.1, 'm'))
+        assert_equal(np.positive(qf3), QFloat(-5.0, 0.1))
+        assert_equal(np.positive(qf4), QFloat(6))
+        assert_equal(np.positive(qf5), QFloat([1, -1, 2, -2]))
 
-    @pytest.mark.skip(reason="Not Implemented Yet")
-    def test_qfloat_np_remainder(self):
-        raise NotImplementedError
+        with pytest.raises(NotImplementedError):
+            # out argument should fail
+            np.positive(qf1, out=[])
+
+    @pytest.mark.parametrize('func', [np.power, np.float_power])
+    def test_qfloat_np_power(self, func):
+        qf1 = QFloat(2.0, 0.1, 'm')
+        qf2 = QFloat([2, 3, 4], [0.1, 0.2, 0.3], 'm')
+        qf3 = QFloat(2.0, 0.1)
+        qf4 = QFloat([2, 3, 4])
+
+        res = func(qf1, 2)
+        assert_equal(res.nominal, 4)
+        assert_equal(res.std_dev, 0.4)
+        assert_equal(res.unit, units.Unit('m2'))
+
+        res = func(qf1, 1.5)
+        assert_almost_equal(res.nominal, 2.8284271247461903)
+        assert_almost_equal(res.std_dev, 0.2121320343559643)
+        assert_equal(res.unit, units.Unit('m(3/2)'))
+
+        res = func(qf2, 2)
+        assert_equal(res.nominal, [4, 9, 16])
+        assert_almost_equal(res.std_dev, [0.4, 1.2, 2.4])
+        assert_equal(res.unit, units.Unit('m2'))
+
+        res = func(qf2, 1.5)
+        assert_almost_equal(res.nominal, [2.82842712, 5.19615242, 8])
+        assert_almost_equal(res.std_dev, [0.21213203, 0.51961524, 0.9])
+        assert_equal(res.unit, units.Unit('m(3/2)'))
+
+        res = func(qf1, qf3)
+        assert_equal(res.nominal, 4)
+        assert_almost_equal(res.std_dev, 0.4866954717550927)
+        assert_equal(res.unit, units.Unit('m2'))
+
+        with pytest.raises(ValueError):
+            func(qf1, qf4)
+
+        with pytest.raises(ValueError):
+            func(qf2, qf4)
+
+        with pytest.raises(ValueError):
+            func(qf4, qf1)
+
+        with pytest.raises(NotImplementedError):
+            # out argument should fail
+            func(qf1, 2, out=[])
+
+    @pytest.mark.parametrize('func', [np.mod, np.remainder])
+    def test_qfloat_np_remainder(self, func):
+        qf1 = QFloat(5.0, 0.1, 'm')
+        qf2 = QFloat(3.5, 0.1, 'm')
+        qf3 = QFloat(1.0, 0.1, 's')
+        qf4 = QFloat([1, 2, 3])
+
+        res = func(qf1, 2)
+        assert_equal(res.nominal, 1)
+        assert_equal(res.std_dev, 0.1)
+        assert_equal(res.unit, units.Unit('m'))
+
+        res = func(qf1, qf2)
+        assert_equal(res.nominal, 1.5)
+        assert_equal(res.std_dev, 0.14142135623730953)
+        assert_equal(res.unit, units.Unit('m'))
+
+        res = func(qf1, qf3)
+        assert_equal(res.nominal, 0)
+        assert_equal(res.std_dev, np.inf)
+        assert_equal(res.unit, units.Unit('m'))
+
+        res = func(qf1, qf4)
+        assert_equal(res.nominal, [0, 1, 2])
+        assert_equal(res.std_dev, [np.nan, 0.1, 0.1])
+        assert_equal(res.unit, units.Unit('m'))
+
+        res = func(qf4, 1.5)
+        assert_equal(res.nominal, [1, 0.5, 0])
+        assert_equal(res.std_dev, [0, 0, np.nan])
+        assert_equal(res.unit, units.Unit(''))
+
+        with pytest.raises(NotImplementedError):
+            # out argument should fail
+            func(qf1, qf2, out=[])
 
     @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_rint(self):
@@ -800,21 +1044,76 @@ class TestQFloatNumpyUfuncs:
     def test_qfloat_np_signbit(self):
         raise NotImplementedError
 
-    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_sqrt(self):
-        raise NotImplementedError
+        qf1 = QFloat(4, 0.1, 'm2')
+        qf2 = QFloat([9, 100], [0.1, 0.1], 's2')
 
-    @pytest.mark.skip(reason="Not Implemented Yet")
-    def test_qfloat_np_squared(self):
-        raise NotImplementedError
+        res = np.sqrt(qf1)
+        assert_equal(res.nominal, 2)
+        assert_equal(res.std_dev, 0.025)
+        assert_equal(res.unit, units.Unit('m'))
 
-    @pytest.mark.skip(reason="Not Implemented Yet")
+        res = np.sqrt(qf2)
+        assert_equal(res.nominal, [3, 10])
+        assert_almost_equal(res.std_dev, [0.01666667, 0.005])
+        assert_equal(res.unit, units.Unit('s'))
+
+        with pytest.raises(NotImplementedError):
+            # out argument should fail
+            np.sqrt(qf1, out=[])
+
+    def test_qfloat_np_square(self):
+        qf1 = QFloat(2.0, 0.1, 'm')
+        qf2 = QFloat([1, 2, 3], [0.1, 0.2, 0.3], 'cm')
+
+        res = np.square(qf1)
+        assert_equal(res.nominal, 4)
+        assert_almost_equal(res.std_dev, 0.28284271247461906)
+        assert_equal(res.unit, units.Unit('m2'))
+
+        res = np.square(qf2)
+        assert_equal(res.nominal, [1, 4, 9])
+        assert_almost_equal(res.std_dev, [0.14142136, 0.56568542, 1.27279221])
+        assert_equal(res.unit, units.Unit('cm2'))
+
+        with pytest.raises(NotImplementedError):
+            # out argument should fail
+            np.square(qf1, out=[])
+
     def test_qfloat_np_subtract(self):
-        raise NotImplementedError
+        qf1 = QFloat(2.0, 0.2, 'm')
+        qf2 = QFloat(1.0, 0.1, 'm')
+        qf3 = QFloat([1, 2, 3], [0.1, 0.2, 0.3], 'm')
+        qf4 = QFloat(1.0, 0.1, 's')
+        qf5 = QFloat(1.0)
 
-    @pytest.mark.skip(reason="Not Implemented Yet")
-    def test_qfloat_np_true_divide(self):
-        raise NotImplementedError
+        res = np.subtract(qf1, qf2)
+        assert_equal(res.nominal, 1.0)
+        assert_almost_equal(res.std_dev, 0.223606797749979)
+        assert_equal(res.unit, units.Unit('m'))
+
+        res = np.subtract(qf1, qf3)
+        assert_equal(res.nominal, [1, 0, -1])
+        assert_almost_equal(res.std_dev, [0.2236068, 0.28284271, 0.36055513])
+        assert_equal(res.unit, units.Unit('m'))
+
+        res = np.subtract(qf3, qf1)
+        assert_equal(res.nominal, [-1, 0, 1])
+        assert_almost_equal(res.std_dev, [0.2236068, 0.28284271, 0.36055513])
+        assert_equal(res.unit, units.Unit('m'))
+
+        with pytest.raises(UnitsError):
+            np.subtract(qf1, qf4)
+
+        with pytest.raises(UnitsError):
+            np.subtract(qf1, qf5)
+
+        with pytest.raises(UnitsError):
+            np.subtract(qf1, 1.0)
+
+        with pytest.raises(NotImplementedError):
+            # out argument should fail
+            np.subtract(qf1, qf2, out=[])
 
     @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_trunc(self):
@@ -859,6 +1158,10 @@ class TestQFloatNumpyUfuncTrigonometric:
             with pytest.raises(UnitsError):
                 func(QFloat(1.0, 0.1, unit))
 
+        with pytest.raises(NotImplementedError):
+            # out argument should fail
+            func(qf, out=[])
+
     # Both degrees and rad2deg must work in the same way
     @pytest.mark.parametrize('func', [np.degrees, np.rad2deg])
     def test_qfloat_np_degrees(self, func):
@@ -894,6 +1197,10 @@ class TestQFloatNumpyUfuncTrigonometric:
             with pytest.raises(UnitsError):
                 func(QFloat(1.0, 0.1, unit))
 
+        with pytest.raises(NotImplementedError):
+            # out argument should fail
+            func(qf, out=[])
+
     def test_qfloat_np_sin(self):
         qf = QFloat(np.pi, 0.05, 'radian')
         res = np.sin(qf)
@@ -916,6 +1223,10 @@ class TestQFloatNumpyUfuncTrigonometric:
         for unit in ['m', 'm/s', None]:
             with pytest.raises(UnitsError):
                 np.sin(QFloat(1.0, unit=unit))
+
+        with pytest.raises(NotImplementedError):
+            # out argument should fail
+            np.sin(qf, out=[])
 
     def test_qfloat_np_cos(self):
         qf = QFloat(180, 0.05, 'deg')
@@ -940,6 +1251,10 @@ class TestQFloatNumpyUfuncTrigonometric:
             with pytest.raises(UnitsError):
                 np.cos(QFloat(1.0, unit=unit))
 
+        with pytest.raises(NotImplementedError):
+            # out argument should fail
+            np.cos(qf, out=[])
+
     def test_qfloat_np_tan(self):
         qf = QFloat(45, 0.05, 'deg')
         res = np.tan(qf)
@@ -962,6 +1277,10 @@ class TestQFloatNumpyUfuncTrigonometric:
         for unit in ['m', 'm/s', None]:
             with pytest.raises(UnitsError):
                 np.tan(QFloat(1.0, unit=unit))
+
+        with pytest.raises(NotImplementedError):
+            # out argument should fail
+            np.tan(qf, out=[])
 
     def test_qfloat_np_sinh(self):
         qf = QFloat(0, 0.05, 'radian')
@@ -992,6 +1311,10 @@ class TestQFloatNumpyUfuncTrigonometric:
             with pytest.raises(UnitsError):
                 np.sinh(QFloat(1.0, unit=unit))
 
+        with pytest.raises(NotImplementedError):
+            # out argument should fail
+            np.sinh(qf, out=[])
+
     def test_qfloat_np_cosh(self):
         qf = QFloat(0, 0.05, 'radian')
         res = np.cosh(qf)
@@ -1020,6 +1343,10 @@ class TestQFloatNumpyUfuncTrigonometric:
         for unit in ['m', 'm/s', None]:
             with pytest.raises(UnitsError):
                 np.cosh(QFloat(1.0, unit=unit))
+
+        with pytest.raises(NotImplementedError):
+            # out argument should fail
+            np.cosh(qf, out=[])
 
     def test_qfloat_np_tanh(self):
         qf = QFloat(0, 0.05, 'radian')
@@ -1050,6 +1377,10 @@ class TestQFloatNumpyUfuncTrigonometric:
             with pytest.raises(UnitsError):
                 np.tanh(QFloat(1.0, unit=unit))
 
+        with pytest.raises(NotImplementedError):
+            # out argument should fail
+            np.tanh(qf, out=[])
+
     def test_qfloat_np_arcsin(self):
         qf = QFloat(np.sqrt(2)/2, 0.01)
         res = np.arcsin(qf)
@@ -1067,6 +1398,10 @@ class TestQFloatNumpyUfuncTrigonometric:
         for unit in ['m', 'm/s', 'rad', 'deg']:
             with pytest.raises(UnitsError):
                 np.arcsin(QFloat(1.0, unit=unit))
+
+        with pytest.raises(NotImplementedError):
+            # out argument should fail
+            np.arcsin(qf, out=[])
 
     def test_qfloat_np_arccos(self):
         qf = QFloat(np.sqrt(2)/2, 0.01)
@@ -1086,6 +1421,10 @@ class TestQFloatNumpyUfuncTrigonometric:
             with pytest.raises(UnitsError):
                 np.arccos(QFloat(1.0, unit=unit))
 
+        with pytest.raises(NotImplementedError):
+            # out argument should fail
+            np.arccos(qf, out=[])
+
     def test_qfloat_np_arctan(self):
         qf = QFloat(1.0, 0.01)
         res = np.arctan(qf)
@@ -1103,6 +1442,10 @@ class TestQFloatNumpyUfuncTrigonometric:
         for unit in ['m', 'm/s', 'rad', 'deg']:
             with pytest.raises(UnitsError):
                 np.arctan(QFloat(1.0, unit=unit))
+
+        with pytest.raises(NotImplementedError):
+            # out argument should fail
+            np.arctan(qf, out=[])
 
     def test_qfloat_np_arcsinh(self):
         qf = QFloat(0.0, 0.01)
@@ -1122,6 +1465,10 @@ class TestQFloatNumpyUfuncTrigonometric:
             with pytest.raises(UnitsError):
                 np.arcsinh(QFloat(1.0, unit=unit))
 
+        with pytest.raises(NotImplementedError):
+            # out argument should fail
+            np.arcsinh(qf, out=[])
+
     def test_qfloat_np_arccosh(self):
         qf = QFloat(1.0, 0.01)
         res = np.arccosh(qf)
@@ -1140,6 +1487,10 @@ class TestQFloatNumpyUfuncTrigonometric:
             with pytest.raises(UnitsError):
                 np.arccosh(QFloat(1.0, unit=unit))
 
+        with pytest.raises(NotImplementedError):
+            # out argument should fail
+            np.arccosh(qf, out=[])
+
     def test_qfloat_np_arctanh(self):
         qf = QFloat(0.0, 0.01)
         res = np.arctanh(qf)
@@ -1157,3 +1508,7 @@ class TestQFloatNumpyUfuncTrigonometric:
         for unit in ['m', 'm/s', 'rad', 'deg']:
             with pytest.raises(UnitsError):
                 np.arctanh(QFloat(1.0, unit=unit))
+
+        with pytest.raises(NotImplementedError):
+            # out argument should fail
+            np.arctanh(qf, out=[])

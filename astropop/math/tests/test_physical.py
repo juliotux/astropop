@@ -1026,12 +1026,6 @@ def test_qfloat_math_mul_single():
     check.equal(res7.nominal, 30)
     check.equal(res7.uncertainty, 0.5)
     check.equal(res7.unit, units.m*units.s)
-    # TODO: needs numpy ufunc
-    # # same inverse
-    # res8 = units.m * qf1
-    # check.equal(res8.nominal, 30)
-    # check.equal(res8.uncertainty, 0.5)
-    # check.equal(res8.unit, units.m*units.s)
     # And with string!
     res9 = qf1 * 'm'
     check.equal(res9.nominal, 30)
@@ -1147,12 +1141,6 @@ def test_qfloat_math_mul_array():
     npt.assert_array_equal(res_a.nominal, qf1.nominal)
     npt.assert_array_equal(res_a.uncertainty, qf1.uncertainty)
     check.equal(res_a.unit, units.m*units.m)
-    # TODO: needs numpy ufunc
-    # # same inverse
-    # res_b = units.m * qf1
-    # npt.assert_array_equal(res_b.nominal, qf1.nominal)
-    # npt.assert_array_equal(res_b.uncertainty, qf1.uncertainty)
-    # check.equal(res_b.unit, units.m*units.m)
     # And with string!
     res_c = qf1 * 'm'
     npt.assert_array_equal(res_c.nominal, qf1.nominal)
@@ -1248,8 +1236,7 @@ def test_qfloat_math_divmod_single():
     check.equal(res1f.unit, units.m/units.s)
     res1m = qf2 % qf1
     check.equal(res1m.nominal, 0)
-    # this uncertainty is not continuous
-    # npt.assert_almost_equal(res1m.uncertainty, 16777213.75)
+    npt.assert_almost_equal(res1m.uncertainty, np.inf)
     check.equal(res1m.unit, units.m)
     # inverse inverse
     res2 = qf1 / qf2
@@ -1401,8 +1388,7 @@ def test_qfloat_math_divmod_array():
     check.equal(res5f.unit, units.s/units.min)
     res5m = qf2 % qf3
     npt.assert_array_equal(res5m.nominal, [1, 0, 1, 0])
-    # Some are not continuous
-    # npt.assert_almost_equal(res5m.uncertainty, np.zeros(4))
+    npt.assert_almost_equal(res5m.uncertainty, [0.01, np.inf, 0.1044031, np.inf])
     check.equal(res5m.unit, units.s)
     # inverse
     res6 = qf3 / qf2
@@ -1446,7 +1432,7 @@ def test_qfloat_math_divmod_array():
     check.equal(res9f.unit, units.m)
     res9m = qf1 % 4
     npt.assert_almost_equal(res9m.nominal, [2, 0, 2, 0])
-    npt.assert_almost_equal(res9m.uncertainty, np.arange(1, 5)*0.01)
+    npt.assert_almost_equal(res9m.uncertainty, [0.01, np.nan, 0.03, np.nan])
     check.equal(res9m.unit, units.m)
     res_a = 8 / qf1
     npt.assert_almost_equal(res_a.nominal, [4, 2, 4/3, 1])
@@ -1459,7 +1445,7 @@ def test_qfloat_math_divmod_array():
     check.equal(res_af.unit, 1/units.m)
     res_am = 8 % qf1
     npt.assert_almost_equal(res_am.nominal, [0, 0, 2, 0])
-    # npt.assert_almost_equal(res_am.uncertainty, [0.0, 0.0, 0.0, 0.0])
+    npt.assert_almost_equal(res_am.std_dev, [np.inf, np.inf, 0.03, np.inf])
     check.equal(res_am.unit, units.dimensionless_unscaled)
 
 

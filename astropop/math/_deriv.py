@@ -32,11 +32,10 @@ def _deriv_pow_1(x, y):
 @np.vectorize
 def _deriv_mod_1(x, y):
     """Partial derivative of x%y in y."""
-    # if x % y < STEP_SIZE:
-    #     return STEP_SIZE
-    # else:
-    #     return numerical_derivative(np.mod, 1)(x, y)
-    return numerical_derivative(np.mod, 1)(x, y)
+    if x % y < STEP_SIZE:
+        return np.inf
+    else:
+        return numerical_derivative(np.mod, 1)(x, y)
 
 
 @np.vectorize
