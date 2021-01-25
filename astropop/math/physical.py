@@ -471,7 +471,7 @@ class QFloat():
         if out is not None:
             raise NotImplementedError("`out` argument not supported yet.")
 
-        result = HANDLED_UFUNCS[ufunc](*inputs, **kwargs)
+        result = HANDLED_UFUNCS[ufunc](*inputs, out_unit=unit, **kwargs)
 
         return result
 

@@ -2,7 +2,7 @@
 
 import numpy as np
 import pytest
-from astropop.math.physical import QFloat, UnitsError
+from astropop.math.physical import QFloat, UnitsError, units
 from numpy.testing import assert_almost_equal, assert_equal
 
 # Testing qfloat compatibility with Numpy ufuncs and array functions.
@@ -779,44 +779,336 @@ class TestQFloatNumpyUfuncs:
 class TestQFloatNumpyUfuncTrigonometric:
     """Test the numpy trigonometric and inverse trigonometric functions."""
 
-    def test_qfloat_np_radians(self):
-        raise NotImplementedError
+    # Both radians and deg2rad must work in the same way
+    @pytest.mark.parametrize('func', [np.radians, np.deg2rad])
+    def test_qfloat_np_radians(self, func):
+        qf = QFloat(180, 0.1, 'degree')
+        res = func(qf)
+        assert_almost_equal(res.nominal, 3.141592653589793)
+        assert_almost_equal(res.std_dev, 0.001745329251994)
+        assert_equal(res.unit, units.Unit('rad'))
 
-    def test_qfloat_np_degrees(self):
-        raise NotImplementedError
+        qf = QFloat(-180, 0.1, 'degree')
+        res = func(qf)
+        assert_almost_equal(res.nominal, -3.141592653589793)
+        assert_almost_equal(res.std_dev, 0.001745329251994)
+        assert_equal(res.unit, units.Unit('rad'))
+
+        qf = QFloat([0, 30, 45, 60, 90], [0.1, 0.2, 0.3, 0.4, 0.5], 'degree')
+        res = func(qf)
+        assert_almost_equal(res.nominal, [0, 0.52359878, 0.78539816,
+                                          1.04719755, 1.57079633])
+        assert_almost_equal(res.std_dev, [0.00174533, 0.00349066, 0.00523599,
+                                          0.00698132, 0.00872665])
+        assert_equal(res.unit, units.Unit('rad'))
+
+        # radian should no change
+        qf = QFloat(1.0, 0.1, 'radian')
+        res = func(qf)
+        assert_equal(res.nominal, 1.0)
+        assert_equal(res.std_dev, 0.1)
+        assert_equal(res.unit, units.Unit('rad'))
+
+        # Invalid units
+        for unit in ('m', None, 'm/s'):
+            with pytest.raises(UnitsError):
+                func(QFloat(1.0, 0.1, unit))
+
+    # Both degrees and rad2deg must work in the same way
+    @pytest.mark.parametrize('func', [np.degrees, np.rad2deg])
+    def test_qfloat_np_degrees(self, func):
+        qf = QFloat(np.pi, 0.05, 'radian')
+        res = func(qf)
+        assert_almost_equal(res.nominal, 180.0)
+        assert_almost_equal(res.std_dev, 2.8647889756541165)
+        assert_equal(res.unit, units.Unit('deg'))
+
+        qf = QFloat(-np.pi, 0.05, 'radian')
+        res = func(qf)
+        assert_almost_equal(res.nominal, -180.0)
+        assert_almost_equal(res.std_dev, 2.8647889756541165)
+        assert_equal(res.unit, units.Unit('deg'))
+
+        qf = QFloat([np.pi, np.pi/2, np.pi/4, np.pi/6],
+                    [0.01, 0.02, 0.03, 0.04], 'rad')
+        res = func(qf)
+        assert_almost_equal(res.nominal, [180.0, 90.0, 45.0, 30.0])
+        assert_almost_equal(res.std_dev, [0.5729578 , 1.14591559,
+                                          1.71887339, 2.29183118])
+        assert_equal(res.unit, units.Unit('deg'))
+
+        # deg should no change
+        qf = QFloat(1.0, 0.1, 'deg')
+        res = func(qf)
+        assert_equal(res.nominal, 1.0)
+        assert_equal(res.std_dev, 0.1)
+        assert_equal(res.unit, units.Unit('deg'))
+
+        # Invalid units
+        for unit in ('m', None, 'm/s'):
+            with pytest.raises(UnitsError):
+                func(QFloat(1.0, 0.1, unit))
 
     def test_qfloat_np_sin(self):
-        raise NotImplementedError
+        qf = QFloat(np.pi, 0.05, 'radian')
+        res = np.sin(qf)
+        assert_almost_equal(res.nominal, 0.0)
+        assert_almost_equal(res.std_dev, 0.05)
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
+        qf = QFloat(90, 0.05, 'deg')
+        res = np.sin(qf)
+        assert_almost_equal(res.nominal, 1.0)
+        assert_almost_equal(res.std_dev, 0.0)
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
+        qf = QFloat([30, 45, 60], [0.1, 0.2, 0.3], 'deg')
+        res = np.sin(qf)
+        assert_almost_equal(res.nominal, [0.5, 0.70710678, 0.8660254])
+        assert_almost_equal(res.std_dev, [0.0015115, 0.00246827, 0.00261799])
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
+        for unit in ['m', 'm/s', None]:
+            with pytest.raises(UnitsError):
+                np.sin(QFloat(1.0, unit=unit))
 
     def test_qfloat_np_cos(self):
-        raise NotImplementedError
+        qf = QFloat(180, 0.05, 'deg')
+        res = np.cos(qf)
+        assert_almost_equal(res.nominal, -1.0)
+        assert_almost_equal(res.std_dev, 0.0)
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
+        qf = QFloat(np.pi/2, 0.05, 'rad')
+        res = np.cos(qf)
+        assert_almost_equal(res.nominal, 0.0)
+        assert_almost_equal(res.std_dev, 0.05)
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
+        qf = QFloat([30, 45, 60], [0.1, 0.2, 0.3], 'deg')
+        res = np.cos(qf)
+        assert_almost_equal(res.nominal, [0.8660254, 0.70710678, 0.5])
+        assert_almost_equal(res.std_dev, [0.00087266, 0.00246827, 0.0045345])
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
+        for unit in ['m', 'm/s', None]:
+            with pytest.raises(UnitsError):
+                np.cos(QFloat(1.0, unit=unit))
 
     def test_qfloat_np_tan(self):
-        raise NotImplementedError
+        qf = QFloat(45, 0.05, 'deg')
+        res = np.tan(qf)
+        assert_almost_equal(res.nominal, 1.0)
+        assert_almost_equal(res.std_dev, 0.0017453292519943294)
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
+        qf = QFloat(np.pi/4, 0.05, 'rad')
+        res = np.tan(qf)
+        assert_almost_equal(res.nominal, 1.0)
+        assert_almost_equal(res.std_dev, 0.1)
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
+        qf = QFloat([0, 30, 60], [0.1, 0.2, 0.3], 'deg')
+        res = np.tan(qf)
+        assert_almost_equal(res.nominal, [0, 0.57735027, 1.73205081])
+        assert_almost_equal(res.std_dev, [0.00174533, 0.00465421, 0.02094395])
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
+        for unit in ['m', 'm/s', None]:
+            with pytest.raises(UnitsError):
+                np.tan(QFloat(1.0, unit=unit))
 
     def test_qfloat_np_sinh(self):
-        raise NotImplementedError
+        qf = QFloat(0, 0.05, 'radian')
+        res = np.sinh(qf)
+        assert_almost_equal(res.nominal, 0.0)
+        assert_almost_equal(res.std_dev, 0.05)
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
+        qf = QFloat(np.pi, 0.05, 'radian')
+        res = np.sinh(qf)
+        assert_almost_equal(res.nominal, 11.548739357257748)
+        assert_almost_equal(res.std_dev, 0.5795976637760759)
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
+        qf = QFloat(90, 0.05, 'deg')
+        res = np.sinh(qf)
+        assert_almost_equal(res.nominal, 2.3012989023072947)
+        assert_almost_equal(res.std_dev, 0.002189671298638268)
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
+        qf = QFloat([30, 45, 60], [0.1, 0.2, 0.3], 'deg')
+        res = np.sinh(qf)
+        assert_almost_equal(res.nominal, [0.5478535, 0.86867096, 1.24936705])
+        assert_almost_equal(res.std_dev, [0.0019901, 0.0046238, 0.0083791])
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
+        for unit in ['m', 'm/s', None]:
+            with pytest.raises(UnitsError):
+                np.sinh(QFloat(1.0, unit=unit))
 
     def test_qfloat_np_cosh(self):
-        raise NotImplementedError
+        qf = QFloat(0, 0.05, 'radian')
+        res = np.cosh(qf)
+        assert_almost_equal(res.nominal, 1.0)
+        assert_almost_equal(res.std_dev, 0.0)
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
+        qf = QFloat(np.pi, 0.05, 'radian')
+        res = np.cosh(qf)
+        assert_almost_equal(res.nominal, 11.591953275521519)
+        assert_almost_equal(res.std_dev, 0.5774369678628875)
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
+        qf = QFloat(90, 0.05, 'deg')
+        res = np.cosh(qf)
+        assert_almost_equal(res.nominal, 2.5091784786580567)
+        assert_almost_equal(res.std_dev, 0.0020082621458896)
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
+        qf = QFloat([30, 45, 60], [0.1, 0.2, 0.3], 'deg')
+        res = np.cosh(qf)
+        assert_almost_equal(res.nominal, [1.14023832, 1.32460909, 1.60028686])
+        assert_almost_equal(res.std_dev, [0.00095618, 0.00303223, 0.00654167])
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
+        for unit in ['m', 'm/s', None]:
+            with pytest.raises(UnitsError):
+                np.cosh(QFloat(1.0, unit=unit))
 
     def test_qfloat_np_tanh(self):
-        raise NotImplementedError
+        qf = QFloat(0, 0.05, 'radian')
+        res = np.tanh(qf)
+        assert_almost_equal(res.nominal, 0.0)
+        assert_almost_equal(res.std_dev, 0.05)
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
+        qf = QFloat(np.pi, 0.05, 'radian')
+        res = np.tanh(qf)
+        assert_almost_equal(res.nominal, 0.99627207622075)
+        assert_almost_equal(res.std_dev, 0.00037209750714)
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
+        qf = QFloat(90, 0.05, 'deg')
+        res = np.tanh(qf)
+        assert_almost_equal(res.nominal, 0.9171523356672744)
+        assert_almost_equal(res.std_dev, 0.0001386067128590)
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
+        qf = QFloat([30, 45, 60], [0.1, 0.2, 0.3], 'deg')
+        res = np.tanh(qf)
+        assert_almost_equal(res.nominal, [0.48047278, 0.6557942, 0.78071444])
+        assert_almost_equal(res.std_dev, [0.00134241, 0.00198944, 0.00204457])
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
+        for unit in ['m', 'm/s', None]:
+            with pytest.raises(UnitsError):
+                np.tanh(QFloat(1.0, unit=unit))
 
     def test_qfloat_np_arcsin(self):
-        raise NotImplementedError
+        qf = QFloat(np.sqrt(2)/2, 0.01)
+        res = np.arcsin(qf)
+        assert_almost_equal(res.nominal, 0.7853981633974484)
+        assert_almost_equal(res.std_dev, 0.0141421356237309)
+        assert_equal(res.unit, units.Unit('rad'))
+
+        qf = QFloat([0, 0.5, 1], [0.01, 0.2, 0.3])
+        res = np.arcsin(qf)
+        assert_almost_equal(res.nominal, [0, 0.52359878, 1.57079633])
+        assert_almost_equal(res.std_dev, [0.01, 0.23094011, np.inf])
+        assert_equal(res.unit, units.Unit('rad'))
+
+        # Invalid units
+        for unit in ['m', 'm/s', 'rad', 'deg']:
+            with pytest.raises(UnitsError):
+                np.arcsin(QFloat(1.0, unit=unit))
 
     def test_qfloat_np_arccos(self):
-        raise NotImplementedError
+        qf = QFloat(np.sqrt(2)/2, 0.01)
+        res = np.arccos(qf)
+        assert_almost_equal(res.nominal, 0.7853981633974484)
+        assert_almost_equal(res.std_dev, 0.0141421356237309)
+        assert_equal(res.unit, units.Unit('rad'))
+
+        qf = QFloat([0, 0.5, 1], [0.01, 0.2, 0.3])
+        res = np.arccos(qf)
+        assert_almost_equal(res.nominal, [1.57079633, 1.04719755, 0])
+        assert_almost_equal(res.std_dev, [0.01, 0.23094011, np.inf])
+        assert_equal(res.unit, units.Unit('rad'))
+
+        # Invalid units
+        for unit in ['m', 'm/s', 'rad', 'deg']:
+            with pytest.raises(UnitsError):
+                np.arccos(QFloat(1.0, unit=unit))
 
     def test_qfloat_np_arctan(self):
-        raise NotImplementedError
+        qf = QFloat(1.0, 0.01)
+        res = np.arctan(qf)
+        assert_almost_equal(res.nominal, 0.7853981633974484)
+        assert_almost_equal(res.std_dev, 0.005)
+        assert_equal(res.unit, units.Unit('rad'))
+
+        qf = QFloat([0, 0.5, 1], [0.01, 0.2, 0.3])
+        res = np.arctan(qf)
+        assert_almost_equal(res.nominal, [0, 0.4636476, 0.7853982])
+        assert_almost_equal(res.std_dev, [0.01, 0.16, 0.15])
+        assert_equal(res.unit, units.Unit('rad'))
+
+        # Invalid units
+        for unit in ['m', 'm/s', 'rad', 'deg']:
+            with pytest.raises(UnitsError):
+                np.arctan(QFloat(1.0, unit=unit))
 
     def test_qfloat_np_arcsinh(self):
-        raise NotImplementedError
+        qf = QFloat(0.0, 0.01)
+        res = np.arcsinh(qf)
+        assert_almost_equal(res.nominal, 0.0)
+        assert_almost_equal(res.std_dev, 0.01)
+        assert_equal(res.unit, units.Unit('rad'))
+
+        qf = QFloat([0.5, 1.0, 10], [0.01, 0.2, 0.3])
+        res = np.arcsinh(qf)
+        assert_almost_equal(res.nominal, [0.4812118, 0.8813736, 2.998223])
+        assert_almost_equal(res.std_dev, [0.0089443, 0.1414214, 0.0298511])
+        assert_equal(res.unit, units.Unit('rad'))
+
+        # Invalid units
+        for unit in ['m', 'm/s', 'rad', 'deg']:
+            with pytest.raises(UnitsError):
+                np.arcsinh(QFloat(1.0, unit=unit))
 
     def test_qfloat_np_arccosh(self):
-        raise NotImplementedError
+        qf = QFloat(1.0, 0.01)
+        res = np.arccosh(qf)
+        assert_almost_equal(res.nominal, 0.0)
+        assert_almost_equal(res.std_dev, np.inf)
+        assert_equal(res.unit, units.Unit('rad'))
+
+        qf = QFloat([1.5, 5.0, 10], [0.01, 0.2, 0.3])
+        res = np.arccosh(qf)
+        assert_almost_equal(res.nominal, [0.9624237, 2.2924317, 2.9932228])
+        assert_almost_equal(res.std_dev, [0.0089443, 0.0408248, 0.0301511])
+        assert_equal(res.unit, units.Unit('rad'))
+
+        # Invalid units
+        for unit in ['m', 'm/s', 'rad', 'deg']:
+            with pytest.raises(UnitsError):
+                np.arccosh(QFloat(1.0, unit=unit))
 
     def test_qfloat_np_arctanh(self):
-        raise NotImplementedError
+        qf = QFloat(0.0, 0.01)
+        res = np.arctanh(qf)
+        assert_almost_equal(res.nominal, 0.0)
+        assert_almost_equal(res.std_dev, 0.01)
+        assert_equal(res.unit, units.Unit('rad'))
+
+        qf = QFloat([0.1, 0.5, 1.0], [0.01, 0.2, 0.3])
+        res = np.arctanh(qf)
+        assert_almost_equal(res.nominal, [0.1003353, 0.5493061, np.inf])
+        assert_almost_equal(res.std_dev, [0.010101 , 0.2666667, np.inf])
+        assert_equal(res.unit, units.Unit('rad'))
+
+        # Invalid units
+        for unit in ['m', 'm/s', 'rad', 'deg']:
+            with pytest.raises(UnitsError):
+                np.arctanh(QFloat(1.0, unit=unit))
