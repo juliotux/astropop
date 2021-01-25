@@ -24,6 +24,16 @@ jobs:
             python-version: 3.7
             toxenv: py37-test
 
+          - name: Python 3.8 with required dependencies
+            os: windows-latest
+            python-version: 3.8
+            toxenv: py38-test
+
+          - name: Python 3.9 with required dependencies
+            os: windows-latest
+            python-version: 3.9
+            toxenv: py39-test
+
           - name: Python 3.8 with required dependencies and measure coverage
             os: ubuntu-latest
             python-version: 3.8
@@ -50,25 +60,35 @@ jobs:
             python-version: 3.7
             toxenv: py37-test-astropy32-numpy117
 
-          - name: Python 3.8 with required dependencies
-            os: windows-latest
-            python-version: 3.8
-            toxenv: py38-test
+          - name: Python 3.7 with astropy LTS and Numpy 1.18
+            os: ubuntu-latest
+            python-version: 3.7
+            toxenv: py37-test-astropylts-numpy118
 
           - name: Python 3.7 with astropy 4.0 and Numpy 1.18
             os: ubuntu-latest
             python-version: 3.7
             toxenv: py37-test-astropy40-numpy118
 
-          - name: Python 3.9 with developer version of astropy and numpy nightly
-            os: ubuntu-latest
-            python-version: 3.9
-            toxenv: py39-test-devdeps
-
-          - name: Code style checks
+          - name: Python 3.8 with astropy 4.0 and Numpy 1.18
             os: ubuntu-latest
             python-version: 3.8
-            toxenv: codestyle
+            toxenv: py37-test-astropy40-numpy118
+
+          - name: Python 3.7 with astropy 4.2 and Numpy 1.19
+            os: ubuntu-latest
+            python-version: 3.7
+            toxenv: py37-test-astropy42-numpy119
+
+          - name: Python 3.8 with astropy 4.2 and Numpy 1.19
+            os: ubuntu-latest
+            python-version: 3.8
+            toxenv: py37-test-astropy42-numpy119
+
+          #- name: Code style checks
+          #  os: ubuntu-latest
+          #  python-version: 3.8
+          #  toxenv: codestyle
 
     steps:
     - uses: actions/checkout@v2
