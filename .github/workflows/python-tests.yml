@@ -73,17 +73,12 @@ jobs:
           - name: Python 3.8 with astropy 4.0 and Numpy 1.18
             os: ubuntu-latest
             python-version: 3.8
-            toxenv: py37-test-astropy40-numpy118
-
-          - name: Python 3.7 with astropy 4.2 and Numpy 1.19
-            os: ubuntu-latest
-            python-version: 3.7
-            toxenv: py37-test-astropy42-numpy119
+            toxenv: py38-test-astropy40-numpy118
 
           - name: Python 3.8 with astropy 4.2 and Numpy 1.19
             os: ubuntu-latest
             python-version: 3.8
-            toxenv: py37-test-astropy42-numpy119
+            toxenv: py38-test-astropy42-numpy119
 
           #- name: Code style checks
           #  os: ubuntu-latest
