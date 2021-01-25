@@ -6,6 +6,7 @@ from astropop.logger import logger, log_to_list, resolve_level_string, \
 from astropop.testing import assert_equal, assert_is_instance, assert_in, \
                              assert_not_in
 
+
 @pytest.mark.parametrize('level, expected', [('WARN', 2), ('INFO', 3),
                                              ('DEBUG', 4)])
 def test_logger_list_defaults(level, expected):
