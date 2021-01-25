@@ -5,7 +5,11 @@
 from astropop.framedata.compat import extract_header_wcs
 from astropy.io import fits
 from astropy.wcs import WCS
-import pytest_check as check
+
+from astropop.testing import assert_equal, assert_is_instance, \
+                             assert_is_none, assert_not_in, \
+                             assert_false, assert_in, \
+                             assert_not_equal
 
 
 _comon_wcs_keys = ('CTYPE', 'CRVAL', 'CRPIX', 'CD1_', 'CD2_', 'PC1_', 'PC2_')
@@ -109,42 +113,42 @@ RADECSYS= 'FK5     '           / The equatorial coordinate system
 def test_extract_header_nowcs():
     header = fits.Header.fromstring(_base_header, sep='\n')
     h, wcs = extract_header_wcs(header)
-    check.is_none(wcs)
-    check.is_instance(h, fits.Header)
-    check.equal(h, header)
-    check.is_false(h is header)
+    assert_is_none(wcs)
+    assert_is_instance(h, fits.Header)
+    assert_equal(h, header)
+    assert_false(h is header)
 
 
 def test_extract_header_nosip():
     header = fits.Header.fromstring(_base_header+_wcs_no_sip, sep='\n')
     h, wcs = extract_header_wcs(header)
-    check.is_instance(wcs, WCS)
-    check.equal(wcs.wcs.ctype[0], 'RA---TAN')
-    check.equal(wcs.wcs.ctype[1], 'DEC--TAN')
-    check.is_instance(h, fits.Header)
+    assert_is_instance(wcs, WCS)
+    assert_equal(wcs.wcs.ctype[0], 'RA---TAN')
+    assert_equal(wcs.wcs.ctype[1], 'DEC--TAN')
+    assert_is_instance(h, fits.Header)
     for i in _comon_wcs_keys:
-        check.is_not_in(f'{i}1', h.keys())
-        check.is_not_in(f'{i}2', h.keys())
-    check.is_in('DATE-OBS', h.keys())
-    check.is_false(h is header)
-    check.not_equal(h, header)
+        assert_not_in(f'{i}1', h.keys())
+        assert_not_in(f'{i}2', h.keys())
+    assert_in('DATE-OBS', h.keys())
+    assert_false(h is header)
+    assert_not_equal(h, header)
 
 
 def test_extract_header_sip():
     header = fits.Header.fromstring(_base_header+_wcs_sip, sep='\n')
     h, wcs = extract_header_wcs(header)
-    check.is_instance(wcs, WCS)
-    check.equal(wcs.wcs.ctype[0], 'RA---TAN-SIP')
-    check.equal(wcs.wcs.ctype[1], 'DEC--TAN-SIP')
-    check.is_instance(h, fits.Header)
+    assert_is_instance(wcs, WCS)
+    assert_equal(wcs.wcs.ctype[0], 'RA---TAN-SIP')
+    assert_equal(wcs.wcs.ctype[1], 'DEC--TAN-SIP')
+    assert_is_instance(h, fits.Header)
     for i in _comon_wcs_keys:
-        check.is_not_in(f'{i}1', h.keys())
-        check.is_not_in(f'{i}2', h.keys())
+        assert_not_in(f'{i}1', h.keys())
+        assert_not_in(f'{i}2', h.keys())
     for i in ('A_0_2', 'AP_2_0', 'BP_ORDER', 'A_DMAX'):
-        check.is_not_in(i, h.keys())
-    check.is_in('DATE-OBS', h.keys())
-    check.is_false(h is header)
-    check.not_equal(h, header)
+        assert_not_in(i, h.keys())
+    assert_in('DATE-OBS', h.keys())
+    assert_false(h is header)
+    assert_not_equal(h, header)
 
 
 def test_extract_invalid_wcs_header():
@@ -152,7 +156,7 @@ def test_extract_invalid_wcs_header():
     # No header change too
     header = fits.Header.fromstring(_base_header+_invalid_wcs, sep='\n')
     h, wcs = extract_header_wcs(header)
-    check.is_none(wcs)
-    check.is_instance(h, fits.Header)
-    check.equal(h, header)
-    check.is_false(h is header)
+    assert_is_none(wcs)
+    assert_is_instance(h, fits.Header)
+    assert_equal(h, header)
+    assert_false(h is header)
