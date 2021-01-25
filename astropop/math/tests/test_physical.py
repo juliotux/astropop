@@ -215,6 +215,11 @@ def test_qfloat_properties_getset():
     npt.assert_array_almost_equal(qf.std_dev, [0, 0, 0])
     npt.assert_array_almost_equal(qf.uncertainty, [0, 0, 0])
 
+    # test value readonly property
+    npt.assert_array_equal(qf.value, [4, 5, 6])
+    with pytest.raises(AttributeError):
+        qf.value = 0
+
 
 def test_qfloat_properties_reset():
     qf = QFloat(5.0, 0.025, 'm')

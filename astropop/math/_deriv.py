@@ -85,21 +85,16 @@ derivatives = {
                  lambda x, y: 0),
     'cos': (lambda x: -np.sin(x)),
     'cosh': (np.sinh),
-    'degrees': (lambda x: np.degrees(1)),
     'exp': (np.exp),
     'expm1': (np.exp),
     'exp2': (lambda x: np.exp2(x)*np.log(2)),
     'fabs': (_deriv_fabs),
-    'hypot': (lambda x, y: x/np.hypot(x, y),
-              lambda x, y: y/np.hypot(x, y)),
     'log': (lambda x: 1/x),  # for np, log=ln
     'log10': (lambda x: 1/x/np.log(10)),
     'log2': (lambda x: 1/x/np.log(10)),
     'log1p': (lambda x: 1/(1+x)),
-    'radians': [lambda x: np.radians(1)],
     'sin': (np.cos),
     'sinh': (np.cosh),
-    'sqrt': (lambda x: 0.5/np.sqrt(x)),
     'tan': (lambda x: 1+np.tan(x)**2),
     'tanh': (lambda x: 1-np.tanh(x)**2)
 }
