@@ -661,6 +661,7 @@ class TestQFloatNumpyUfuncs:
     def test_qfloat_np_cbrt(self):
         raise NotImplementedError
 
+    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_ceil(self):
         raise NotImplementedError
 

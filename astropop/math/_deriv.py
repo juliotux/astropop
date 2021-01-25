@@ -18,7 +18,7 @@ def _deriv_pow_0(x, y):
         return 0.0
     if x != 0 or y % 1 == 0:
         return y*x**(y-1)
-    return numerical_derivative(np.pow, 0)(x, y)
+    return numerical_derivative(np.power, 0)(x, y)
 
 
 @np.vectorize
@@ -26,7 +26,7 @@ def _deriv_pow_1(x, y):
     """Partial derivative of x**y in y."""
     if x == 0 and y > 0:
         return 0.0
-    return np.log(x)*np.pow(x, y)
+    return np.log(x)*np.power(x, y)
 
 
 @np.vectorize
