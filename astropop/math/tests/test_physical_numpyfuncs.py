@@ -135,7 +135,7 @@ class TestQFloatNumpyArrayFuncs:
     def test_qfloat_np_delete(self):
         a = np.array([[1.0, 2.0, 3.0, 4.0],
                       [5.0, 6.0, 7.0, 8.0],
-                      [9.0, 10.0, 11.0, 12.0]]        )
+                      [9.0, 10.0, 11.0, 12.0]])
         qf = QFloat(a, a * 0.1, "m")
         res1 = np.delete(qf, 1, axis=0)
         assert_almost_equal(res1.nominal, [[1.0, 2.0, 3.0, 4.0],
@@ -466,7 +466,7 @@ class TestQFloatNumpyArrayFuncs:
 
         # just check array too
         qf = np.round(QFloat([1.03256, 2.108645], [0.01456, 0.594324]),
-                             decimals=2)
+                      decimals=2)
         assert_equal(qf.nominal, [1.03, 2.11])
         assert_equal(qf.std_dev, [0.01, 0.59])
 
@@ -878,7 +878,7 @@ class TestQFloatNumpyUfuncTrigonometric:
                     [0.01, 0.02, 0.03, 0.04], 'rad')
         res = func(qf)
         assert_almost_equal(res.nominal, [180.0, 90.0, 45.0, 30.0])
-        assert_almost_equal(res.std_dev, [0.5729578 , 1.14591559,
+        assert_almost_equal(res.std_dev, [0.5729578, 1.14591559,
                                           1.71887339, 2.29183118])
         assert_equal(res.unit, units.Unit('deg'))
 
@@ -1150,7 +1150,7 @@ class TestQFloatNumpyUfuncTrigonometric:
         qf = QFloat([0.1, 0.5, 1.0], [0.01, 0.2, 0.3])
         res = np.arctanh(qf)
         assert_almost_equal(res.nominal, [0.1003353, 0.5493061, np.inf])
-        assert_almost_equal(res.std_dev, [0.010101 , 0.2666667, np.inf])
+        assert_almost_equal(res.std_dev, [0.010101, 0.2666667, np.inf])
         assert_equal(res.unit, units.Unit('rad'))
 
         # Invalid units
