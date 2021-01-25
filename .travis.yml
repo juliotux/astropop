@@ -72,8 +72,8 @@ matrix:
           env: TOXENV=build_docs
 
         - os: linux
-          python: 3.8
-          name: Python 3.8 with developer version of astropy and numpy nightly
+          python: 3.9
+          name: Python 3.9 with developer version of astropy and numpy nightly
           stage: Comprehensive tests
           env: TOXENV=py38-test-devdeps
 
@@ -112,6 +112,12 @@ matrix:
           name: Python 3.8 astropy 4.0 and Numpy 1.19
           stage: Comprehensive tests
           env: TOXENV=py38-test-astropy40-numpy119
+
+        - os: linux
+          python: 3.9
+          name: Python 3.9 astropy 4.0 and Numpy 1.19
+          stage: Comprehensive tests
+          env: TOXENV=py39-test-astropy40-numpy119
 
     allow_failures:
         # Do a PEP8 test with flake8
