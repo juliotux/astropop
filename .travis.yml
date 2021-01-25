@@ -135,6 +135,7 @@ before_install:
       fi
     - sudo apt-get update
     - pip update cython
+    - cython --version
     # - sudo apt-get -y install astrometry.net # astrometry.net needed
 
 install:
@@ -151,7 +152,6 @@ install:
 
 script:
     - pip install tox
-    - cython --version
     - tox $TOXARGS -- $TOXPOSARGS
 
 after_success:
