@@ -649,129 +649,170 @@ class TestQFloatNumpyArrayFuncs:
 class TestQFloatNumpyUfuncs:
     """Test numpy array functions for numpy comatibility."""
 
+    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_absolute(self):
         raise NotImplementedError
 
+    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_add(self):
         raise NotImplementedError
 
+    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_cbrt(self):
         raise NotImplementedError
 
     def test_qfloat_np_ceil(self):
         raise NotImplementedError
 
+    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_copysign(self):
         raise NotImplementedError
 
+    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_divide(self):
         raise NotImplementedError
 
+    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_divmod(self):
         raise NotImplementedError
 
+    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_exp(self):
         raise NotImplementedError
 
+    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_exp2(self):
         raise NotImplementedError
 
+    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_expm1(self):
         raise NotImplementedError
 
+    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_fabs(self):
         raise NotImplementedError
 
+    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_float_power(self):
         raise NotImplementedError
 
+    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_floor(self):
         raise NotImplementedError
 
+    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_floor_divide(self):
         raise NotImplementedError
 
+    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_fmax(self):
         raise NotImplementedError
 
+    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_fmin(self):
         raise NotImplementedError
 
+    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_fmod(self):
         raise NotImplementedError
 
+    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_hypot(self):
         raise NotImplementedError
 
+    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_isfinit(self):
         raise NotImplementedError
 
+    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_isinf(self):
         raise NotImplementedError
 
+    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_isnan(self):
         raise NotImplementedError
 
+    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_log(self):
         raise NotImplementedError
 
+    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_log2(self):
         raise NotImplementedError
 
+    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_log10(self):
         raise NotImplementedError
 
+    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_log1p(self):
         raise NotImplementedError
 
+    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_maximum(self):
         raise NotImplementedError
 
+    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_minimum(self):
         raise NotImplementedError
 
+    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_mod(self):
         raise NotImplementedError
 
+    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_modf(self):
         raise NotImplementedError
 
+    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_multiply(self):
         raise NotImplementedError
 
+    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_negative(self):
         raise NotImplementedError
 
+    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_positive(self):
         raise NotImplementedError
 
+    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_power(self):
         raise NotImplementedError
 
+    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_remainder(self):
         raise NotImplementedError
 
+    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_rint(self):
         raise NotImplementedError
 
+    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_sign(self):
         raise NotImplementedError
 
+    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_signbit(self):
         raise NotImplementedError
 
+    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_sqrt(self):
         raise NotImplementedError
 
-    def test_qfloat_np_square(self):
+    @pytest.mark.skip(reason="Not Implemented Yet")
+    def test_qfloat_np_squared(self):
         raise NotImplementedError
 
+    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_subtract(self):
         raise NotImplementedError
 
+    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_true_divide(self):
         raise NotImplementedError
 
+    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_trunc(self):
         raise NotImplementedError
 
