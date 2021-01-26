@@ -123,8 +123,8 @@ Incorrect dimensionality in operations will raise |UnitsError|.
 
     >>> qf1 = QFloat(3.0, 0.01, 'kg')
     >>> qf2 = QFloat(5.0, 0.2, 'K')
-    >>> qf1 + qf2
-    UnitConversionError: Can only apply 'decorator' function to quantities with compatible dimensions
+    >>> qf1 + qf2   # doctest: +SKIP
+    UnitConversionError:
 
 Supported Numpy Array Operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

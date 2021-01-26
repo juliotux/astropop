@@ -11,10 +11,11 @@ They are simple functions that will raise `AssertionError` if the condition they
 
     >>> from astropop.testing import assert_true, assert_equal
     >>> assert_true(True, 'true is true, so not raised')
-    >>> assert_true(1 == 2, 'one is not equal to two')
+    >>> assert_true(1 == 2, 'one is not equal to two')   # doctest: +SKIP
     AssertionError: one is not equal to two
     >>> assert_equal(1, 1, 'one is equal to one, so not raised')
-    >>> assert_equal(1, 2, 'one is not equal to two')
+    >>> assert_equal(1, 2, 'one is not equal to two')   # doctest: +SKIP
+    AssertionError: one is not equal to two
 
 For all the functions, check the API.
 
