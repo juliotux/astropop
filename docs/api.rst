@@ -111,3 +111,12 @@ Polarimetry Processing
 
    astropop.polarimetry
    astropop.polarimetry.dualbeam
+
+
+Testing Helpers
+---------------
+
+.. autosummary::
+   :toctree: _api
+
+   astropop.testing

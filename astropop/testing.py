@@ -23,10 +23,12 @@ __all__ = ['assert_equal', 'assert_not_equal', 'assert_almost_equal',
            'assert_warns', 'assert_not_warnings']
 
 
-def func_wrapper(func):
+def func_wrapper(func, docstring=None):
     """Warp the function, if needed. Now, its dummy."""
     # The idea here is to, in future, continue the tests and log all
     # failures at once. Like pytest_check.
+    if docstring is not None:
+        func.__doc__ = docstring
     return func
 
 
@@ -52,8 +54,13 @@ def assert_false(a, msg=''):
     assert not a, msg
 
 
-assert_equal = func_wrapper(npt.assert_array_equal)
-assert_almost_equal = func_wrapper(npt.assert_array_almost_equal)
+assert_equal = func_wrapper(npt.assert_array_equal,
+                            'Check if two objects are equal. Arrays supported.'
+                            '\nImported from Numpy.')
+assert_almost_equal = func_wrapper(npt.assert_array_almost_equal,
+                                   'Check if two objects are almost equal. '
+                                   'Arrays supported.'
+                                   '\nImported from Numpy.')
 
 
 @func_wrapper
@@ -69,49 +76,49 @@ def assert_not_equal(a, b, msg=''):
 
 @func_wrapper
 def assert_is(a, b, msg=''):
-    """Raise assertion error if a is not b."""
+    """Raise assertion error if `a is not b`."""
     assert a is b, msg
 
 
 @func_wrapper
 def assert_is_not(a, b, msg=''):
-    """Raise assertion error if a is b."""
+    """Raise assertion error if `a is b`."""
     assert a is not b, msg
 
 
 @func_wrapper
 def assert_is_none(a, msg=''):
-    """Raise assertion error if a is not None."""
+    """Raise assertion error if `a is not None`."""
     assert a is None, msg
 
 
 @func_wrapper
 def assert_is_not_none(a, msg=''):
-    """Raise assertion error if a is None."""
+    """Raise assertion error if `a is None`."""
     assert a is not None, msg
 
 
 @func_wrapper
 def assert_in(a, b, msg=''):
-    """Raise assertion error if a in b."""
+    """Raise assertion error if `a in b`."""
     assert a in b, msg
 
 
 @func_wrapper
 def assert_not_in(a, b, msg=''):
-    """Raise assertion error if a in b."""
+    """Raise assertion error if `a not in b`."""
     assert a not in b, msg
 
 
 @func_wrapper
 def assert_is_instance(a, b, msg=''):
-    """Raise assertion error if a is instance of b."""
+    """Raise assertion error if not `isinstance(a, b)`."""
     assert isinstance(a, b), msg
 
 
 @func_wrapper
 def assert_is_not_instance(a, b, msg=''):
-    """Raise assertion error if a is not instance of b."""
+    """Raise assertion error if `isinstance(a, b)`."""
     assert not isinstance(a, b), msg
 
 
