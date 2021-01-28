@@ -9,14 +9,15 @@ Any physical measurement is not a simple number. It is a number, but have a phys
 
 To handle this and make the things a lot easier in ASTROPOP, we created a new class, called |QFloat| to handle both uncertainties and physical units at once. By |QFloat| we mean "Quantity Float", relating it to physical measurements. This class mainly wraps `~astropy.units` methods to handle units and perform error propagation in a coherent way. This module is used in a lot of places inside ASTROPOP, mainly in `~astropop.image_processing` and |Framedata| to ensure correct processing in terms of units and errors propagation.
 
-.. WARNING:: In the actual state, |QFloat| has a limited range of operations and functions. It also assumes all uncertainties are standard deviation errors, performing the standard error propagation method. The error propagation also assumes that the uncertainties are uncorelated. This is fine for our usage, but may present problems if used out of this context.
+.. WARNING:: In the actual state, |QFloat| assumes all uncertainties are standard deviation errors, performing the standard error propagation method. The error propagation also assumes that the uncertainties are uncorelated. This is fine for our usage, but may present problems if used out of this context.
 
 The |QFloat| Class
----------------------------------
+------------------
 
 The |QFloat| class stores basically 3 variables: the nominal value, the uncertainty and the physical unit. To create this class, just pass these values in the class constructor and you can access it using the proper properties.
 
     >>> from astropop.math import QFloat
+    >>> import numpy as np
     >>> # A physical measure of 1.000+/-0.001 meters
     >>> qf = QFloat(1.0, 0.001, 'm')
     >>> print(qf.nominal) # the nominal value, must be 1.0
@@ -99,7 +100,31 @@ Note that, for this simplyfied version of the error propagation equation, all va
 Supported Math Operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. TODO: List supported math operations
+Since the math operations are the main reason of the |QFloat| to exist, they have a special focus in the implementation. All builtin Python math operations, with the exception of matrix multiplication, is implemented for |QFloat|. This makes possible to perform direct math operations with |QFloat|.
+
+As example, to sum two |QFloat|, you just need to use the ``+`` operator.
+
+    >>> qf1 = QFloat(1.0, 0.1, 'm')
+    >>> qf2 = QFloat(2.0, 0.1, 'm')
+    >>> qf1 + qf2
+    <QFloat 3.0+-0.1 m>
+
+ASTROPOP handles all the needed units checking and conversions and the result is dimensionality correct. For example:
+
+    >>> qf1 = QFloat(60, 0.5, 'km')
+    >>> qf2 = QFloat(7000, 700, 'm')
+    >>> qf1 + qf2
+    <QFloat 67.0+-0.9 km>
+    >>> t = QFloat(2.0, 0.1, 'h')
+    >>> qf1/t
+    <QFloat 30+-2 km / h>
+
+Incorrect dimensionality in operations will raise |UnitsError|.
+
+    >>> qf1 = QFloat(3.0, 0.01, 'kg')
+    >>> qf2 = QFloat(5.0, 0.2, 'K')
+    >>> qf1 + qf2   # doctest: +SKIP
+    UnitConversionError:
 
 Supported Numpy Array Operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -116,7 +141,9 @@ The current Numpy array functions supported for this class are:
 
 - `~numpy.append`
 - `~numpy.around`
+- `~numpy.clip`
 - `~numpy.delete`
+- `~numpy.expand_dims`
 - `~numpy.flip`
 - `~numpy.fliplr`
 - `~numpy.flipud`
@@ -131,22 +158,71 @@ The current Numpy array functions supported for this class are:
 - `~numpy.round`
 - `~numpy.rot90`
 - `~numpy.shape`
+- `~numpy.size`
 - `~numpy.squeeze`
 - `~numpy.swapaxes`
+- `~numpy.take`
 - `~numpy.tile`
 - `~numpy.transpose`
 
 Supported Numpy Universal Functions (UFuncs)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+To simplify the way we perform some math operations, we also support some important `Numpy Universal Functions <https://numpy.org/doc/stable/reference/ufuncs.html>`_, also named `~numpy.ufunc`. However, we had to simplify the implementation to get it running properly. So, the traditional ``kwargs`` passed to the `~numpy.ufunc`, like ``out``, ``where`` and others are ignored in our implementation.
+
+The current supported ufuncs are:
+
+- `~numpy.absolute` (`~numpy.abs`)
+- `~numpy.add`
+- `~numpy.arccos`
+- `~numpy.arccosh`
+- `~numpy.arcsin`
+- `~numpy.arcsinh`
+- `~numpy.arctan`
+- `~numpy.arctanh`
+- `~numpy.cos`
+- `~numpy.cosh`
+- `~numpy.deg2rad`
+- `~numpy.degrees`
+- `~numpy.divide` (`~numpy.true_divide`)
+- `~numpy.floor_divide`
+- `~numpy.hypot`
+- `~numpy.negative`
+- `~numpy.positive`
+- `~numpy.power` (`~numpy.float_power`)
+- `~numpy.rad2deg`
+- `~numpy.radians`
+- `~numpy.remainder` (`~numpy.mod`)
+- `~numpy.sin`
+- `~numpy.sinh`
+- `~numpy.square`
+- `~numpy.sqrt`
+- `~numpy.subtract`
+- `~numpy.tan`
+- `~numpy.tanh`
+
+All the units checking is automatically performed by ASTROPOP. In fact, most of these functions just wrap standart operations of |QFloat|, since this class perform the operations in a way very similar to the `~numpy.ufunc`.
+
 Trigonometric Math
 ^^^^^^^^^^^^^^^^^^
 
 For trigonometric functions, like sines, cosines and tangents, the code is able to check the dimensionality of the numbers before perform the operation. So, only dimensionless numbers are accepted, being `~astropy.units.dimensionless_unscaled` or `~astropy.units.dimensionless_angles`. Any number with pyshical dimension don't make any sense inside trigonometric operations, which will raise an |UnitsError|.
 
-The default behavior considers any number passed as angle to the functions as radians, being them `~astropy.units.dimensionless_unscaled` or `~astropy.units.radians`. However, if the measurement is in `~astropy.units.degree`, the proper conversion to radians is made in the process.
+To avoid an additional module containing trigonometric functions inside ASTROPOP, these operations are performed using the `~numpy.ufunc`s described earlier. The main difference here is the unit checking performed by ASTROPOP.
 
-.. TODO:: Continue
+    >>> qf = QFloat(30, 0.1, 'deg')
+    >>> np.cos(qf)
+    <QFloat 0.8660+-0.0009 >
+    >>> np.sin(qf)
+    <QFloat 0.500+-0.002 >
+
+For trionometric (and hyperbolic) functions, like `~numpy.sin` and `~numpy.sinh`, only angle are accepted. So, only |QFloat| with `~astropy.units.degree` or `~astropy.units.radians` will not raise |UnitsError|. Also, all these functions will result in `~astropy.units.dimensionless_unscaled` values.
+
+For inverse trigonometric functions, like `~numpy.arcsin`, the inverse happens. The input must be a `~astropy.units.dimensionless_unscaled` |QFloat|, and output will be in units of `~astropy.units.radians`.
+
+    >>> qf = QFloat(0.5, 0.01)
+    >>> np.arcsin(qf)
+    <QFloat 0.52+-0.01 rad>
 
 Comparisons Notes
 -----------------

@@ -12,8 +12,8 @@ extensions = [
     'sphinxcontrib.napoleon',  # use napoleon to compatibility
     'sphinx.ext.intersphinx',
     'sphinx.ext.coverage',
-    'sphinx.ext.doctest',
     'sphinx.ext.autosummary',
+    'sphinx.ext.doctest',
     'sphinx.ext.graphviz',
     'sphinx.ext.ifconfig',
     'sphinx.ext.todo',
@@ -35,7 +35,7 @@ master_doc = 'index'
 
 # Project info
 project = 'astropop'
-copyright = '2018-2020, Julio Campagnolo and contributors'
+copyright = '2018-2021, Julio Campagnolo and contributors'
 import astropop
 version = astropop.__version__.split('-', 1)[0]
 # The full version, including alpha/beta/rc tags.
@@ -59,6 +59,5 @@ intersphinx_mapping = {
     "numpy": ("https://docs.scipy.org/doc/numpy/", None),
     "scipy": ("https://docs.scipy.org/doc/scipy/reference", None),
     "matplotlib": ("https://matplotlib.org/", None),
-    "astropy": ('http://docs.astropy.org/en/latest/', None),
-    "uncertainties": ("https://uncertainties-python-package.readthedocs.io/en/latest/", None)
+    "astropy": ('http://docs.astropy.org/en/latest/', None)
 }

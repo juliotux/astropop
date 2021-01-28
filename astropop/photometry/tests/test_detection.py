@@ -16,7 +16,12 @@ def test_gen_filter_kernel():
     
 # @pytest.mark.parametrize('r', [2, 3, 4])
 def test_background():
+<<<<<<< HEAD
     # im_e = np.random.poisson(im_e) criar uma distribuição de erro poissonico 
+=======
+
+    # im_e = np.random.poisson(im_e) criar uma distribuição de erro poissonico
+>>>>>>> 26b1e16e5918d27d46c2819be310b069f7a4c2fe
     # Deve criar  um erro poissonico sobre uma distribuição gaussiana
 
     scale = 1.0
@@ -37,7 +42,7 @@ def test_background():
 
 
     npt.assert_array_almost_equal(bkg_1_global[0], 298, decimal=0)
-    npt.assert_array_almost_equal(bkg_1_global[1], 25, decimal=1)    
+    npt.assert_array_almost_equal(bkg_1_global[1], 25, decimal=0)
 
     npt.assert_array_equal(len(bkg_1), 2)
     npt.assert_array_equal(len(bkg_1[0]), 256)    

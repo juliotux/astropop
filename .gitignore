@@ -1,6 +1,3 @@
-# Remove for github actions
-.github
-
 examples
 .vscode
 .pytest_cache

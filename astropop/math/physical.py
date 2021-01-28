@@ -26,7 +26,7 @@ HANDLED_AFUNCS = {}
 HANDLED_UFUNCS = {}  # must be func(method, *inputs, **kwargs)
 
 
-def implements_array_func(numpy_function):
+def _implements_array_func(numpy_function):
     """Register an __array_function__ implementation for QFloat objects."""
     def decorator_array_func(func):
         HANDLED_AFUNCS[numpy_function] = func
@@ -34,7 +34,7 @@ def implements_array_func(numpy_function):
     return decorator_array_func
 
 
-def implements_ufunc(numpy_ufunc):
+def _implements_ufunc(numpy_ufunc):
     """Register an ufunc implementation for QFloat objects."""
     def decorator_ufunc(func):
         HANDLED_UFUNCS[numpy_ufunc] = func
@@ -164,8 +164,8 @@ class _QFloatFormatter():
                 n_part = f"{nominal:.0f}"
                 s_part = f"{std:.0f}"
             return f"{n_part}+-{s_part}"
-        else:
-            return f"{nominal}+-{std}"
+
+        return f"{nominal}+-{std}"
 
     def __repr__(self):
         return f"{self}"
@@ -174,12 +174,12 @@ class _QFloatFormatter():
         return f"{self}"
 
 
-def create_formater(nominal, std):
+def _create_formater(nominal, std):
     """Create _QFloatFormater handling lists."""
     if np.shape(nominal) != np.shape(std):
         raise ValueError('nominal and std values are incompatilbe.')
     if check_iterable(nominal):
-        return [create_formater(n, s) for n, s in zip(nominal, std)]
+        return [_create_formater(n, s) for n, s in zip(nominal, std)]
     return _QFloatFormatter(nominal, std)
 
 
@@ -350,6 +350,10 @@ class QFloat():
     def shape(self):
         return np.shape(self.nominal)
 
+    @property
+    def size(self):
+        return np.size(self.nominal)
+
     def reset(self, value, uncertainty=None, unit=None):
         """Reset all the data.
 
@@ -382,16 +386,24 @@ class QFloat():
         """
         other = units.Unit(unit, parse_strict='silent')
         (_, conv), unit = get_converters_and_unit(self.to, other, self.unit)
-        nvalue = conv(self.nominal)  # noqa
-        nstd = conv(self.uncertainty)  # noqa
-        return QFloat(nvalue, nstd, unit)
+        if conv is not None:
+            nvalue = conv(self.nominal)
+            nstd = conv(self.uncertainty)
+            return QFloat(nvalue, nstd, unit)
+        # None converter means no conversion
+        return QFloat(self.nominal, self.uncertainty, self.unit)
+
+    @property
+    def value(self):
+        """Same as nominal. For Astropy compatibility."""
+        return self.nominal
 
     def __repr__(self):
         # FIXME: repr can be very slow for mutch large arrays
         # repr for arrays
         if check_iterable(self.nominal):
             ret = "<QFloat\n"
-            ret2 = create_formater(self.nominal, self.std_dev)
+            ret2 = _create_formater(self.nominal, self.std_dev)
             ret2 = np.array(ret2).__repr__()
             ret2 += f'\nunit={str(self.unit)}'
         # repr for single values
@@ -441,10 +453,6 @@ class QFloat():
         -------
         result : `~astropop.math.QFloat`
             Results of the ufunc, with the unit and uncertainty.
-
-        Notes
-        -----
-        - Based partially in Astropy's Quantity implementation.
         """
         # Only call supported now
         if method != '__call__':
@@ -453,32 +461,14 @@ class QFloat():
         if ufunc not in HANDLED_UFUNCS:
             return NotImplemented
 
-        # Get conversion functions to put the inputs in the correct
-        # unit
-        _, unit = converters_and_unit(ufunc, method, *inputs)
-
         # put all inputs as QFloats, a local "require_qfloat"
         inputs = [convert_to_qfloat(i) for i in inputs]
 
         out = kwargs.get('out', None)
-        # Avoid loop back by turning any Quantity output into array views.
         if out is not None:
-            # If any out is not a QFloat, must fail
-            for o in out:
-                if not isinstance(o, QFloat):
-                    raise TypeError('All outputs must be QFloats.')
+            raise NotImplementedError("`out` argument not supported yet.")
 
-            # If pre-allocated output is used, check it is suitable.
-            # This also returns array view, to ensure we don't loop back.
-            if ufunc.nout == 1:
-                out = out[0]
-
-            # TODO: Check if this is ok
-            out_array = check_output(out, unit, inputs, function=ufunc)
-            # Ensure output argument remains a tuple.
-            kwargs['out'] = (out_array,) if ufunc.nout == 1 else out_array
-
-        result = HANDLED_UFUNCS[ufunc](method, *inputs, **kwargs)
+        result = HANDLED_UFUNCS[ufunc](*inputs, **kwargs)
 
         return result
 
@@ -510,8 +500,8 @@ class QFloat():
             # Incompatible types are different
             return False
 
-        if this.nominal != other.nominal or \
-           this.uncertainty != other.uncertainty:
+        if np.any(this.nominal != other.nominal) or \
+           np.any(this.uncertainty != other.uncertainty):
             return False
         return True
 
@@ -667,6 +657,9 @@ class QFloat():
 
     @require_qfloat
     def __pow__(self, other):
+        # Important: different from normal arrays, QFloat cannot be raises
+        # to an array due to inconsistencies in unit. Each element will
+        # have it's own unit.
         if other.unit != units.dimensionless_unscaled or \
            not np.isscalar(other.nominal):
             raise ValueError('Power operation size-1 require dimensionless'
@@ -711,9 +704,7 @@ class QFloat():
 
 # TODO:
 # Array functions:
-#             - copyto,
-#             -  broadcast, broadcast_to,
-#               expand_dims, squeeze
+#             - copyto, broadcast, broadcast_to
 #             - trunc, ceil
 #             - sum, prod, nanprod, nansum, cumprod, cumsum, nancumprod,
 #             - nancumsum, diff, ediff1d, cross, square
@@ -722,15 +713,27 @@ class QFloat():
 # These array functions seems to not be viable in our work.
 # - atleast_1d, atleast_2d, atleast_3d
 
-@implements_array_func(np.shape)
-def qfloat_shape(qf):
-    """Implements np.shape for qfloats."""
+@_implements_array_func(np.shape)
+def _qfloat_shape(qf):
+    """Implement np.shape for qfloats."""
     return qf.shape
 
 
+@_implements_array_func(np.size)
+def _qfloat_size(qf):
+    return qf.size
+
+
+@_implements_array_func(np.clip)
+def _qfloat_clip(qf, a_min, a_max, **kwargs):
+    # we mantain the original errors
+    nominal = np.clip(qf.nominal, a_min, a_max)
+    return QFloat(nominal, qf.std_dev, qf.unit)
+
+
 # Use a simple wrapper for general functions
-def array_func_simple_wrapper(numpy_func):
-    """Simple wrapper for fast wrapping simple array functions.
+def _array_func_simple_wrapper(numpy_func):
+    """Wraps simple array functions.
 
     Notes
     -----
@@ -743,32 +746,33 @@ def array_func_simple_wrapper(numpy_func):
         nominal = numpy_func(qf.nominal, *args, **kwargs)
         std = numpy_func(qf.uncertainty, *args, **kwargs)
         return QFloat(nominal, std, qf.unit)
-    implements_array_func(numpy_func)(wrapper)
+    _implements_array_func(numpy_func)(wrapper)
 
 
-array_func_simple_wrapper(np.delete)
-array_func_simple_wrapper(np.expand_dims)
-array_func_simple_wrapper(np.flip)
-array_func_simple_wrapper(np.fliplr)
-array_func_simple_wrapper(np.flipud)
-array_func_simple_wrapper(np.moveaxis)
-array_func_simple_wrapper(np.ravel)
-array_func_simple_wrapper(np.repeat)
-array_func_simple_wrapper(np.reshape)
-array_func_simple_wrapper(np.resize)
-array_func_simple_wrapper(np.roll)
-array_func_simple_wrapper(np.rollaxis)
-array_func_simple_wrapper(np.rot90)
-array_func_simple_wrapper(np.squeeze)
-array_func_simple_wrapper(np.swapaxes)
-array_func_simple_wrapper(np.tile)
-array_func_simple_wrapper(np.transpose)
+_array_func_simple_wrapper(np.delete)
+_array_func_simple_wrapper(np.expand_dims)
+_array_func_simple_wrapper(np.flip)
+_array_func_simple_wrapper(np.fliplr)
+_array_func_simple_wrapper(np.flipud)
+_array_func_simple_wrapper(np.moveaxis)
+_array_func_simple_wrapper(np.ravel)
+_array_func_simple_wrapper(np.repeat)
+_array_func_simple_wrapper(np.reshape)
+_array_func_simple_wrapper(np.resize)
+_array_func_simple_wrapper(np.roll)
+_array_func_simple_wrapper(np.rollaxis)
+_array_func_simple_wrapper(np.rot90)
+_array_func_simple_wrapper(np.squeeze)
+_array_func_simple_wrapper(np.swapaxes)
+_array_func_simple_wrapper(np.take)
+_array_func_simple_wrapper(np.tile)
+_array_func_simple_wrapper(np.transpose)
 
 
-@implements_array_func(np.round)
-@implements_array_func(np.around)
-def qfloat_round(qf, decimals=0, out=None):
-    """Implements np.round for qfloats."""
+@_implements_array_func(np.round)
+@_implements_array_func(np.around)
+def _qfloat_round(qf, decimals=0, out=None):
+    """Implement np.round for qfloats."""
     # out is ignored
     if out is not None:
         raise ValueError('For QFloat, out is ignored.')
@@ -777,21 +781,21 @@ def qfloat_round(qf, decimals=0, out=None):
     return QFloat(nominal, std, qf.unit)
 
 
-@implements_array_func(np.append)
-def qfloat_append(qf, values, axis):
+@_implements_array_func(np.append)
+def _qfloat_append(qf, values, axis=None):
     """Implement np.append for qfloats."""
     # First, convert to the same unit.
-    qf1, qf2 = same_unit(qf, values)
+    qf1, qf2 = same_unit(qf, values, func=np.append)
     nominal = np.append(qf1.nominal, qf2.nominal, axis)
     std = np.append(qf1.uncertainty, qf2.uncertainty, axis)
     return QFloat(nominal, std, qf1.unit)
 
 
-@implements_array_func(np.insert)
-def qfloat_insert(qf, obj, values, axis):
+@_implements_array_func(np.insert)
+def _qfloat_insert(qf, obj, values, axis=None):
     """Implement np.insert for qfloats."""
-    # First, convert to the same unit.
-    qf1, qf2 = same_unit(qf, values)
+    # Same unit needed too
+    qf1, qf2 = same_unit(qf, values, func=np.insert)
     nominal = np.insert(qf1.nominal, obj, qf2.nominal, axis)
     std = np.insert(qf1.uncertainty, obj, qf2.uncertainty, axis)
     return QFloat(nominal, std, qf1.unit)
@@ -799,36 +803,28 @@ def qfloat_insert(qf, obj, values, axis):
 
 # TODO:
 # Numpy ufuncs:
-#             - add, subtract, multiply, divide, true_divide, floor_divide,
-#               negative, positive, power, float_power, remainder, mod, fmod,
-#               divmod, absolute, fabs, rint, sign, exp, exp2, log, log2,
+#             - fmod, divmod, fabs, rint, sign, exp, exp2, log, log2,
 #               log10, expm1, log1p, sqrt, square, cbrt,
 #             - hypot, maximum, minimum, fmax, fmin
-#             - isfinit, isinf, isnan, fabs, signbit, copysign, modf, fmod,
+#             - isfinit, isinf, isnan, signbit, copysign, modf,
 #               floor, ceil, trunc
 
 
-@implements_ufunc(np.radians)
-@implements_ufunc(np.deg2rad)
-def qfloat_radians(method, qf, *args, **kwargs):
-    """Convert any qfloat angle to radian"""
-    #TODO
-    return NotImplemented
+@_implements_ufunc(np.radians)
+@_implements_ufunc(np.deg2rad)
+def _qfloat_radians(qf, *args, **kwargs):
+    """Convert any qfloat angle to radian."""
     return qf.to(units.radian)
 
 
-@implements_ufunc(np.degrees)
-@implements_ufunc(np.rad2deg)
-def qfloat_degrees(method, qf, *args, **kwargs):
-    #TODO
-    return NotImplemented
+@_implements_ufunc(np.degrees)
+@_implements_ufunc(np.rad2deg)
+def _qfloat_degrees(qf, *args, **kwargs):
     return qf.to(units.degree)
 
 
-def trigonometric_simple_wrapper(numpy_ufunc, inverse=False):
-    def trig_wrapper(method, qf, *args, **kwargs):
-        #TODO
-        return NotImplemented
+def _trigonometric_simple_wrapper(numpy_ufunc):
+    def trig_wrapper(qf, *args, **kwargs):
         # check if qf is angle
         if qf.unit not in (units.degree, units.radian):
             raise UnitsError('qfloat unit is not degree or radian.')
@@ -841,34 +837,94 @@ def trigonometric_simple_wrapper(numpy_ufunc, inverse=False):
         std = propagate_1(numpy_ufunc.__name__, nominal,
                           qf.nominal, qf.std_dev)
         return QFloat(nominal, std, units.dimensionless_unscaled)
-    implements_ufunc(numpy_ufunc)(trig_wrapper)
+    _implements_ufunc(numpy_ufunc)(trig_wrapper)
 
 
-def inverse_trigonometric_simple_wrapper(numpy_ufunc, inverse=False):
-    def inv_wrapper(method, qf, *args, **kwargs):
-        #TODO
-        return NotImplemented
+def _inverse_trigonometric_simple_wrapper(numpy_ufunc):
+    def inv_wrapper(qf, *args, **kwargs):
         if qf.unit != units.dimensionless_unscaled:
             raise UnitsError('inverse trigonometric functions require '
-                             'dimensionless variables.')
+                             'dimensionless unscaled variables.')
 
         nominal = numpy_ufunc(qf.nominal)
         std = propagate_1(numpy_ufunc.__name__, nominal,
                           qf.nominal, qf.std_dev)
 
         return QFloat(nominal, std, units.radian)
-    implements_ufunc(numpy_ufunc)(inv_wrapper)
+    _implements_ufunc(numpy_ufunc)(inv_wrapper)
 
 
-trigonometric_simple_wrapper(np.sin)
-trigonometric_simple_wrapper(np.cos)
-trigonometric_simple_wrapper(np.tan)
-trigonometric_simple_wrapper(np.sinh)
-trigonometric_simple_wrapper(np.cosh)
-trigonometric_simple_wrapper(np.tanh)
-inverse_trigonometric_simple_wrapper(np.arcsin)
-inverse_trigonometric_simple_wrapper(np.arccos)
-inverse_trigonometric_simple_wrapper(np.arctan)
-inverse_trigonometric_simple_wrapper(np.arcsinh)
-inverse_trigonometric_simple_wrapper(np.arccosh)
-inverse_trigonometric_simple_wrapper(np.arctanh)
+_trigonometric_simple_wrapper(np.sin)
+_trigonometric_simple_wrapper(np.cos)
+_trigonometric_simple_wrapper(np.tan)
+_trigonometric_simple_wrapper(np.sinh)
+_trigonometric_simple_wrapper(np.cosh)
+_trigonometric_simple_wrapper(np.tanh)
+_inverse_trigonometric_simple_wrapper(np.arcsin)
+_inverse_trigonometric_simple_wrapper(np.arccos)
+_inverse_trigonometric_simple_wrapper(np.arctan)
+_inverse_trigonometric_simple_wrapper(np.arcsinh)
+_inverse_trigonometric_simple_wrapper(np.arccosh)
+_inverse_trigonometric_simple_wrapper(np.arctanh)
+
+
+_ufunc_translate = {
+    'add': QFloat.__add__,
+    'absolute': QFloat.__abs__,
+    'divide': QFloat.__truediv__,
+    'float_power': QFloat.__pow__,
+    'floor_divide': QFloat.__floordiv__,
+    'multiply': QFloat.__mul__,
+    'negative': QFloat.__neg__,
+    'positive': QFloat.__pos__,
+    'power': QFloat.__pow__,
+    'remainder': QFloat.__mod__,
+    'subtract': QFloat.__sub__,
+    'true_divide': QFloat.__truediv__,
+}
+
+
+def _general_ufunc_wrapper(numpy_ufunc):
+    """Implement ufuncs for general math operations.
+
+    Notes
+    -----
+    - These functions will not operate with kwarg.
+    - These functions will just wrap QFloat math methods.
+    """
+    ufunc_name = numpy_ufunc.__name__
+    true_func = _ufunc_translate[ufunc_name]
+
+    def ufunc_wrapper(*inputs, **kwargs):
+        return true_func(*inputs)
+    _implements_ufunc(numpy_ufunc)(ufunc_wrapper)
+
+
+_general_ufunc_wrapper(np.add)
+_general_ufunc_wrapper(np.absolute)
+_general_ufunc_wrapper(np.divide)
+_general_ufunc_wrapper(np.float_power)
+_general_ufunc_wrapper(np.floor_divide)
+_general_ufunc_wrapper(np.mod)
+_general_ufunc_wrapper(np.multiply)
+_general_ufunc_wrapper(np.negative)
+_general_ufunc_wrapper(np.positive)
+_general_ufunc_wrapper(np.power)
+_general_ufunc_wrapper(np.remainder)
+_general_ufunc_wrapper(np.subtract)
+_general_ufunc_wrapper(np.true_divide)
+
+
+@_implements_ufunc(np.square)
+def _qfloat_square(qf, *args, **kwargs):
+    return qf * qf
+
+
+@_implements_ufunc(np.sqrt)
+def _qfloat_sqrt(qf, *args, **kwargs):
+    return qf**0.5
+
+
+@_implements_ufunc(np.hypot)
+def _qfloat_hypot(qf1, qf2, *args, **kwargs):
+    return np.sqrt(qf1**2 + qf2**2)

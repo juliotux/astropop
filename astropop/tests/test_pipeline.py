@@ -1,10 +1,10 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
 import pytest
-import pytest_check as check
 
 from astropop.pipelines import Manager, Config, Instrument, Stage, Product
 from astropop.pipelines import FrozenError
+from astropop.testing import assert_equal
 
 string_store = []
 
@@ -116,8 +116,8 @@ def test_pipeline_complete_flow():
     m.show_products()
     m.run()
     m.run(index=0, target='sum')
-    check.equal(string_store, [('c=3', 'a+b=3 b*d=16'),
-                               ('c=3', 'a+b=3 b*d=16')])
+    assert_equal(string_store, [('c=3', 'a+b=3 b*d=16'),
+                                ('c=3', 'a+b=3 b*d=16')])
 
 
 def test_config_item_freezing():

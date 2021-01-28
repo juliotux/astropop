@@ -59,11 +59,12 @@ matrix:
           stage: Cron tests
           env: PYTHON_VERSION=3.7 TOXENV=py37-test
 
-        - os: linux
-          python: 3.8
-          name: Python 3.8 with required dependencies and measure coverage
-          stage: Initial tests
-          env: TOXENV=py38-test-cov
+        # Coverage using github
+        #- os: linux
+        #  python: 3.8
+        #  name: Python 3.8 with required dependencies and measure coverage
+        #  stage: Initial tests
+        #  env: TOXENV=py38-test-cov
 
         - os: linux
           python: 3.8
@@ -72,10 +73,10 @@ matrix:
           env: TOXENV=build_docs
 
         - os: linux
-          python: 3.8
-          name: Python 3.8 with developer version of astropy and numpy nightly
+          python: 3.9
+          name: Python 3.9 with developer version of astropy and numpy nightly
           stage: Comprehensive tests
-          env: TOXENV=py38-test-devdeps
+          env: TOXENV=py39-test-devdeps
 
         - os: linux
           python: 3.7
@@ -96,22 +97,16 @@ matrix:
           env: TOXENV=py37-test-astropy40-numpy117
 
         - os: linux
-          python: 3.6
-          name: Python 3.6 astropy LTS and Numpy 1.17
-          stage: Comprehensive tests
-          env: TOXENV=py36-test-astropylts-numpy117
-
-        - os: linux
-          python: 3.8
-          name: Python 3.8 latest developer version of key dependencies
-          stage: Cron tests
-          env: TOXENV=py38-test-devdeps
-
-        - os: linux
           python: 3.8
           name: Python 3.8 astropy 4.0 and Numpy 1.19
           stage: Comprehensive tests
           env: TOXENV=py38-test-astropy40-numpy119
+
+        - os: linux
+          python: 3.9
+          name: Python 3.9 astropy 4.2 and Numpy 1.19
+          stage: Comprehensive tests
+          env: TOXENV=py39-test-astropy42-numpy119
 
     allow_failures:
         # Do a PEP8 test with flake8
@@ -127,8 +122,9 @@ before_install:
     - if [[ $TOXENV == *-cov ]]; then
         export TOXPOSARGS=$TOXPOSARGS" --cov-report=xml:"$TRAVIS_BUILD_DIR"/coverage.xml";
       fi
-    # # skip it for now
-    # - sudo apt-get update
+    - sudo apt-get update
+    - pip install -U cython
+    - cython --version
     # - sudo apt-get -y install astrometry.net # astrometry.net needed
 
 install:

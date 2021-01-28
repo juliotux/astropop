@@ -5,7 +5,7 @@ import numpy as np
 import copy
 
 
-__all__ = ['derivatives', 'propagate_2']
+__all__ = ['derivatives', 'propagate_1', 'propagate_2']
 
 
 STEP_SIZE = np.sqrt(sys.float_info.epsilon)
@@ -16,10 +16,9 @@ def _deriv_pow_0(x, y):
     """Partial derivative of x**y in x."""
     if y == 0:
         return 0.0
-    elif x != 0 or y % 1 == 0:
+    if x != 0 or y % 1 == 0:
         return y*x**(y-1)
-    else:
-        return numerical_derivative(np.pow, 0)(x, y)
+    return numerical_derivative(np.power, 0)(x, y)
 
 
 @np.vectorize
@@ -27,34 +26,30 @@ def _deriv_pow_1(x, y):
     """Partial derivative of x**y in y."""
     if x == 0 and y > 0:
         return 0.0
-    else:
-        return np.log(x)*np.pow(x, y)
+    return np.log(x)*np.power(x, y)
 
 
 @np.vectorize
 def _deriv_mod_1(x, y):
     """Partial derivative of x%y in y."""
-    # if x % y < STEP_SIZE:
-    #     return STEP_SIZE
-    # else:
-    #     return numerical_derivative(np.mod, 1)(x, y)
-    return numerical_derivative(np.mod, 1)(x, y)
+    if x % y < STEP_SIZE:
+        return np.inf
+    else:
+        return numerical_derivative(np.mod, 1)(x, y)
 
 
 @np.vectorize
 def _deriv_fabs(x):
     if x >= 0:
         return 1
-    else:
-        return -1
+    return -1
 
 
 @np.vectorize
 def _deriv_copysign(x, y):
     if x >= 0:
         return np.copysign(1, y)
-    else:
-        return -np.copysign(1, y)
+    return -np.copysign(1, y)
 
 
 erf_coef = 2/np.sqrt(np.pi)
@@ -90,21 +85,16 @@ derivatives = {
                  lambda x, y: 0),
     'cos': (lambda x: -np.sin(x)),
     'cosh': (np.sinh),
-    'degrees': (lambda x: np.degrees(1)),
     'exp': (np.exp),
     'expm1': (np.exp),
     'exp2': (lambda x: np.exp2(x)*np.log(2)),
     'fabs': (_deriv_fabs),
-    'hypot': (lambda x, y: x/np.hypot(x, y),
-              lambda x, y: y/np.hypot(x, y)),
     'log': (lambda x: 1/x),  # for np, log=ln
     'log10': (lambda x: 1/x/np.log(10)),
     'log2': (lambda x: 1/x/np.log(10)),
     'log1p': (lambda x: 1/(1+x)),
-    'radians': [lambda x: np.radians(1)],
     'sin': (np.cos),
     'sinh': (np.cosh),
-    'sqrt': (lambda x: 0.5/np.sqrt(x)),
     'tan': (lambda x: 1+np.tan(x)**2),
     'tanh': (lambda x: 1-np.tanh(x)**2)
 }
@@ -133,7 +123,7 @@ def propagate_1(func, fx, x, sx):
     if func not in derivatives.keys():
         raise ValueError(f'func {func} not in derivatives.')
 
-    if len(derivatives[func]) != 1:
+    if hasattr(derivatives[func], '__len__'):
         raise ValueError(f'func {func} is not a 1 variable function.')
 
     try:
