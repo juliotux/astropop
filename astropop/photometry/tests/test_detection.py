@@ -68,7 +68,7 @@ def test_global_background():
     print(bkg_1_global)
 #%%
     npt.assert_array_almost_equal(bkg_1_global[0], 298, decimal=0)
-    npt.assert_array_almost_equal(bkg_1_global[1], 25, decimal=1)    
+    npt.assert_array_almost_equal(bkg_1_global[1], 25, decimal=0)    
 
 
 #%%
