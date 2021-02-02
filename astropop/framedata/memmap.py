@@ -137,8 +137,8 @@ class MemMapArray:
     - This is just a numeric storing array. No unit is assigned and it behaves
       like any dimensionless number in operations.
     """
-
     # TODO: __copy__
+
     _filename = None  # filename of memmap
     _file_lock = False  # lock filename
     _contained = None  # Data contained: numpy ndarray or memmap
@@ -295,7 +295,7 @@ class MemMapArray:
             elif isinstance(attr, np.ndarray):
                 attr = MemMapArray(attr, memmap=False)
             return attr
-        elif item in redirects and self.empty:
+        if item in redirects and self.empty:
             raise EmptyDataError('Empty data container')
 
         return object.__getattribute__(self, item)
@@ -307,9 +307,8 @@ class MemMapArray:
     def __array__(self, dtype=None):
         if self.empty:
             return np.array(None)
-        else:
-            # Ignore memmapping
-            return np.array(self._contained, dtype=dtype)
+        # Ignore memmapping
+        return np.array(self._contained, dtype=dtype)
 
     __lt__ = to_memmap_operator('__lt__')
     __le__ = to_memmap_operator('__le__')

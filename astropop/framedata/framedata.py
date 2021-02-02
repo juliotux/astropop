@@ -16,7 +16,7 @@ from astropy.nddata import StdDevUncertainty
 from ..py_utils import mkdir_p
 from .memmap import MemMapArray
 from .compat import extract_header_wcs
-from ..math.physical import unit_property
+from ..math.physical import unit_property, QFloat
 
 
 __all__ = ['FrameData']
@@ -79,7 +79,39 @@ def extract_units(data, unit):
         if dunit is not unit:
             raise ValueError(f"Unit {unit} cannot be set for a data with"
                              f" unit {dunit}")
+
+    # if dunit is None, assign unit to it.
+    if dunit is None:
+        dunit = unit
+
     return dunit
+
+
+def uncertainty_unit_consistency(unit, uncertainty):
+    """Check if an uncertainty can be set based on its unit.
+
+    Parameters
+    ----------
+    unit: string or `~astropy.units.Unit`
+        Target uncertainty unit. Mainly, this is the FrameData unit.
+    uncertainty: array_like
+        Uncertainty object. If it has units, it will be converted to the
+        target.
+
+    Returns
+    -------
+    uncertainty: `numpy.ndarray`
+        Uncertainty converted to the target unit.
+    """
+    # Assume a plain array uncertainty if no unit.
+    if not hasattr(uncertainty, 'unit'):
+        return np.array(uncertainty)
+
+    u_unit = uncertainty.unit
+    if u_unit == unit:
+        return np.array(uncertainty)
+
+    return QFloat(uncertainty).to(unit).nominal
 
 
 def setup_filename(frame, cache_folder=None, filename=None):
@@ -153,20 +185,22 @@ class FrameData:
     - The physical unit is assumed to be the same for data and uncertainty.
       So, we droped the support for data with data with different uncertainty
       unit, like `~astropy.nddata.ccddata.CCDData` does.
+    - As this is intended to be a safe container for data, it do not handle
+      builtin math operations. For math operations using FrameData, check
+      `~astropop.ccd_processing.imarith` module.
     """
-
     # TODO: Complete reimplement the initialize
     # TODO: __copy__
-    # TODO: Direct implement math operations
+
     _memmapping = False
     _unit = None
     _data = None
     _mask = None
     _unct = None
     _wcs = None
-    _meta = None
+    _meta = {}
     _origin = None
-    _history = None
+    _history = []
 
     def __init__(self, data, unit=None, dtype=None,
                  uncertainty=None, u_dtype=None,
@@ -311,6 +345,7 @@ class FrameData:
             self._unct.reset_data(value)
         else:
             _, value, _ = shape_consistency(self.data, value, None)
+            value = uncertainty_unit_consistency(self.unit, value)
             self._unct.reset_data(value)
 
     @property
@@ -385,12 +420,13 @@ class FrameData:
         hdul = fits.HDUList(fits.PrimaryHDU(data, header=header))
 
         if hdu_uncertainty is not None and self.uncertainty is not None:
-            uncert = self.uncertainty
-            uncert_unit = self.unit.to_string()
-            uncert_h = fits.Header()
-            uncert_h[unit_key] = uncert_unit
-            hdul.append(fits.ImageHDU(uncert, header=uncert_h,
-                                      name=hdu_uncertainty))
+            if not self.uncertainty.empty:
+                uncert = self.uncertainty
+                uncert_unit = self.unit.to_string()
+                uncert_h = fits.Header()
+                uncert_h[unit_key] = uncert_unit
+                hdul.append(fits.ImageHDU(uncert, header=uncert_h,
+                                          name=hdu_uncertainty))
 
         if hdu_mask is not None and self.mask is not None:
             mask = self.mask

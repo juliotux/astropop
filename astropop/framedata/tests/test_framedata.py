@@ -6,8 +6,6 @@ import pytest
 import tempfile
 import os
 import numpy as np
-import numpy.testing as npt
-import pytest_check as check
 from astropop.framedata.framedata import FrameData, setup_filename, \
                                          extract_units
 from astropy.io import fits
@@ -15,11 +13,12 @@ from astropy.utils import NumpyRNGContext
 from astropy import units as u
 from astropy.wcs import WCS, FITSFixedWarning
 from astropy.tests.helper import catch_warnings
+from astropop.testing import assert_almost_equal, assert_equal, assert_true, \
+                             assert_false, assert_is_instance, assert_in, \
+                             assert_not_in, assert_is
 
 
 # TODO: test history
-
-pytestmark = pytest.mark.skip
 
 
 DEFAULT_DATA_SIZE = 100
@@ -55,7 +54,7 @@ def test_extract_units(dunit, unit, expected):
         eunit = extract_units(d, unit)
         if expected is not None:
             expected = u.Unit(expected)
-        check.is_true(eunit == expected)
+        assert_equal(eunit, expected)
 
 
 def test_setup_filename(tmpdir):
@@ -65,25 +64,25 @@ def test_setup_filename(tmpdir):
                          cache_filename='test_filename.npy',
                          cache_folder=temp)
 
-    check.equal(setup_filename(test_obj), os.path.join(temp, fname))
-    check.is_true(tmpdir.exists())
+    assert_equal(setup_filename(test_obj), os.path.join(temp, fname))
+    assert_true(tmpdir.exists())
     # Manual set filename
     ntemp = tempfile.mkstemp(suffix='.npy')[1]
     # with obj and manual filename, keep object
-    check.equal(setup_filename(test_obj, filename=ntemp),
-                os.path.join(temp, fname))
+    assert_equal(setup_filename(test_obj, filename=ntemp),
+                 os.path.join(temp, fname))
     test_obj.cache_filename = None
-    check.equal(setup_filename(test_obj, filename=ntemp),
-                os.path.join(temp, os.path.basename(ntemp)))
+    assert_equal(setup_filename(test_obj, filename=ntemp),
+                 os.path.join(temp, os.path.basename(ntemp)))
     # same for cache folder
     test_obj.cache_filename = fname
-    check.equal(setup_filename(test_obj, filename=ntemp),
-                os.path.join(temp, fname))
+    assert_equal(setup_filename(test_obj, filename=ntemp),
+                 os.path.join(temp, fname))
     test_obj.cache_folder = None
     cache = os.path.join(tmpdir, 'astropop_testing')
-    check.equal(setup_filename(test_obj, cache_folder=cache),
-                os.path.join(cache, fname))
-    check.is_true(os.path.isdir(cache))
+    assert_equal(setup_filename(test_obj, cache_folder=cache),
+                 os.path.join(cache, fname))
+    assert_true(os.path.isdir(cache))
     os.removedirs(cache)
 
     # now, with full random
@@ -92,9 +91,9 @@ def test_setup_filename(tmpdir):
     sfile = setup_filename(test_obj)
     dirname = os.path.dirname(sfile)
     filename = os.path.basename(sfile)
-    check.equal(dirname, test_obj.cache_folder)
-    check.equal(filename, test_obj.cache_filename)
-    check.is_true(os.path.exists(dirname))
+    assert_equal(dirname, test_obj.cache_folder)
+    assert_equal(filename, test_obj.cache_filename)
+    assert_true(os.path.exists(dirname))
 
 
 def test_framedata_cration_array():
@@ -102,11 +101,11 @@ def test_framedata_cration_array():
     meta = DEFAULT_HEADER.copy()
     unit = 'adu'
     f = FrameData(a, unit=unit, meta=meta, dtype='float64')
-    npt.assert_array_almost_equal(a, f.data)
-    check.is_true(f.unit is u.adu)
-    check.is_true(np.issubdtype(f.dtype, np.float64))
-    check.equal(f.meta['observer'], meta['observer'])
-    check.equal(f.meta['very long key'], meta['very long key'])
+    assert_almost_equal(a, f.data)
+    assert_true(f.unit is u.adu)
+    assert_true(np.issubdtype(f.dtype, np.float64))
+    assert_equal(f.meta['observer'], meta['observer'])
+    assert_equal(f.meta['very long key'], meta['very long key'])
 
 
 def test_framedata_cration_array_uncertainty():
@@ -115,13 +114,12 @@ def test_framedata_cration_array_uncertainty():
     meta = DEFAULT_HEADER.copy()
     unit = 'adu'
     f = FrameData(a, unit=unit, meta=meta, uncertainty=b, u_dtype='float32')
-    npt.assert_array_almost_equal(a, f.data)
-    npt.assert_array_almost_equal(b, f.uncertainty)
-    check.is_true(f.unit is u.adu)
-    check.is_true(f.uncertainty.unit is u.adu)
-    check.is_true(np.issubdtype(f.uncertainty.dtype, np.float32))
-    check.equal(f.meta['observer'], meta['observer'])
-    check.equal(f.meta['very long key'], meta['very long key'])
+    assert_almost_equal(a, f.data)
+    assert_almost_equal(b, f.uncertainty)
+    assert_equal(f.unit, u.adu)
+    assert_true(np.issubdtype(f.uncertainty.dtype, np.float32))
+    assert_equal(f.meta['observer'], meta['observer'])
+    assert_equal(f.meta['very long key'], meta['very long key'])
 
 
 def test_framedata_cration_array_mask():
@@ -130,12 +128,12 @@ def test_framedata_cration_array_mask():
     meta = DEFAULT_HEADER.copy()
     unit = 'adu'
     f = FrameData(a, unit=unit, meta=meta, mask=b, m_dtype='bool')
-    npt.assert_array_almost_equal(a, f.data)
-    npt.assert_array_almost_equal(b, f.mask)
-    check.is_true(f.unit is u.adu)
-    check.is_true(np.issubdtype(f.mask.dtype, np.bool))
-    check.equal(f.meta['observer'], meta['observer'])
-    check.equal(f.meta['very long key'], meta['very long key'])
+    assert_almost_equal(a, f.data)
+    assert_almost_equal(b, f.mask)
+    assert_equal(f.unit, u.adu)
+    assert_true(np.issubdtype(f.mask.dtype, np.bool))
+    assert_equal(f.meta['observer'], meta['observer'])
+    assert_equal(f.meta['very long key'], meta['very long key'])
 
 
 def test_framedata_cration_array_mask_flags():
@@ -146,12 +144,12 @@ def test_framedata_cration_array_mask_flags():
     meta = DEFAULT_HEADER.copy()
     unit = 'adu'
     f = FrameData(a, unit=unit, meta=meta, mask=b, m_dtype='uint8')
-    npt.assert_array_almost_equal(a, f.data)
-    npt.assert_array_almost_equal(b, f.mask)
-    check.is_true(f.unit is u.adu)
-    check.is_true(np.issubdtype(f.mask.dtype, np.uint8))
-    check.equal(f.meta['observer'], meta['observer'])
-    check.equal(f.meta['very long key'], meta['very long key'])
+    assert_almost_equal(a, f.data)
+    assert_almost_equal(b, f.mask)
+    assert_equal(f.unit, u.adu)
+    assert_true(np.issubdtype(f.mask.dtype, np.uint8))
+    assert_equal(f.meta['observer'], meta['observer'])
+    assert_equal(f.meta['very long key'], meta['very long key'])
 
 
 def test_framedata_empty():
@@ -166,27 +164,27 @@ def test_framedata_meta_header():
     header.update({'testing1': 'c'})
 
     a = FrameData([1, 2, 3], unit='', meta=meta, header=header)
-    check.equal(type(a.meta), dict)
-    check.equal(type(a.header), dict)
-    check.equal(a.meta['testing1'], 'c')  # Header priority
-    check.equal(a.meta['testing2'], 'b')
-    check.equal(a.header['testing1'], 'c')  # Header priority
-    check.equal(a.header['testing2'], 'b')
+    assert_equal(type(a.meta), dict)
+    assert_equal(type(a.header), dict)
+    assert_equal(a.meta['testing1'], 'c')  # Header priority
+    assert_equal(a.meta['testing2'], 'b')
+    assert_equal(a.header['testing1'], 'c')  # Header priority
+    assert_equal(a.header['testing2'], 'b')
     for k in DEFAULT_HEADER.keys():
-        check.equal(a.header[k], DEFAULT_HEADER[k])
-        check.equal(a.meta[k], DEFAULT_HEADER[k])
+        assert_equal(a.header[k], DEFAULT_HEADER[k])
+        assert_equal(a.meta[k], DEFAULT_HEADER[k])
 
 
 def test_frame_simple():
     framedata = create_framedata()
-    check.equal(framedata.shape, (DEFAULT_DATA_SIZE, DEFAULT_DATA_SIZE))
-    check.equal(framedata.size, DEFAULT_DATA_SIZE * DEFAULT_DATA_SIZE)
-    check.is_true(framedata.dtype is np.dtype(float))
+    assert_equal(framedata.shape, (DEFAULT_DATA_SIZE, DEFAULT_DATA_SIZE))
+    assert_equal(framedata.size, DEFAULT_DATA_SIZE * DEFAULT_DATA_SIZE)
+    assert_is(framedata.dtype, np.dtype(float))
 
 
 def test_frame_init_with_string_electron_unit():
     framedata = FrameData(np.zeros([2, 2]), unit="electron")
-    check.is_true(framedata.unit is u.electron)
+    assert_true(framedata.unit is u.electron)
 
 
 def test_framedata_meta_is_case_sensitive():
@@ -195,9 +193,9 @@ def test_framedata_meta_is_case_sensitive():
     lkey = key.lower()
     ukey = key.upper()
     frame.meta[key] = 10
-    check.is_true(lkey not in frame.meta)
-    check.is_true(ukey not in frame.meta)
-    check.is_true(key in frame.meta)
+    assert_not_in(lkey, frame.meta)
+    assert_not_in(ukey, frame.meta)
+    assert_in(key, frame.meta)
 
 
 def test_metafromheader():
@@ -206,14 +204,14 @@ def test_metafromheader():
     hdr['exptime'] = '3600'
 
     d1 = FrameData(np.ones((5, 5)), meta=hdr, unit=u.electron)
-    check.equal(d1.meta['OBSERVER'], 'Edwin Hubble')
-    check.equal(d1.header['OBSERVER'], 'Edwin Hubble')
+    assert_equal(d1.meta['OBSERVER'], 'Edwin Hubble')
+    assert_equal(d1.header['OBSERVER'], 'Edwin Hubble')
 
 
 def test_metafromdict():
     dic = {'OBSERVER': 'Edwin Hubble', 'EXPTIME': 3600}
     d1 = FrameData(np.ones((5, 5)), meta=dic, unit=u.electron)
-    check.equal(d1.meta['OBSERVER'], 'Edwin Hubble')
+    assert_equal(d1.meta['OBSERVER'], 'Edwin Hubble')
 
 
 def test_header2meta():
@@ -223,8 +221,8 @@ def test_header2meta():
 
     d1 = FrameData(np.ones((5, 5)), unit=u.electron)
     d1.header = hdr
-    check.equal(d1.meta['OBSERVER'], 'Edwin Hubble')
-    check.equal(d1.header['OBSERVER'], 'Edwin Hubble')
+    assert_equal(d1.meta['OBSERVER'], 'Edwin Hubble')
+    assert_equal(d1.header['OBSERVER'], 'Edwin Hubble')
 
 
 def test_metafromstring_fail():
@@ -236,7 +234,7 @@ def test_metafromstring_fail():
 def test_framedata_meta_is_not_fits_header():
     frame = create_framedata()
     frame.meta = {'OBSERVER': 'Edwin Hubble'}
-    check.is_false(isinstance(frame.meta, fits.Header))
+    assert_false(isinstance(frame.meta, fits.Header))
 
 
 def test_setting_uncertainty_with_array():
@@ -244,8 +242,8 @@ def test_setting_uncertainty_with_array():
     frame.uncertainty = None
     fake_uncertainty = np.sqrt(np.abs(frame.data))
     frame.uncertainty = fake_uncertainty.copy()
-    np.testing.assert_array_equal(frame.uncertainty, fake_uncertainty)
-    check.is_true(frame.uncertainty.unit is u.adu)
+    assert_equal(frame.uncertainty, fake_uncertainty)
+    assert_equal(frame.unit, u.adu)
 
 
 def test_setting_uncertainty_with_scalar():
@@ -255,8 +253,8 @@ def test_setting_uncertainty_with_scalar():
     frame.uncertainty = uncertainty
     fake_uncertainty = np.zeros_like(frame.data)
     fake_uncertainty[:] = uncertainty
-    np.testing.assert_array_equal(frame.uncertainty, fake_uncertainty)
-    check.is_true(frame.uncertainty.unit is u.adu)
+    assert_equal(frame.uncertainty, fake_uncertainty)
+    assert_equal(frame.unit, u.adu)
 
 
 def test_setting_uncertainty_with_quantity():
@@ -266,8 +264,8 @@ def test_setting_uncertainty_with_quantity():
     frame.uncertainty = uncertainty
     fake_uncertainty = np.zeros_like(frame.data)
     fake_uncertainty[:] = uncertainty.value
-    np.testing.assert_array_equal(frame.uncertainty, fake_uncertainty)
-    check.is_true(frame.uncertainty.unit is u.adu)
+    assert_equal(frame.uncertainty, fake_uncertainty)
+    assert_equal(frame.unit, u.adu)
 
 
 def test_setting_uncertainty_wrong_shape_raises_error():
@@ -279,34 +277,34 @@ def test_setting_uncertainty_wrong_shape_raises_error():
 def test_to_hdu_defaults():
     frame = create_framedata()
     frame.meta = {'observer': 'Edwin Hubble'}
-    frame.uncertaint = np.random.rand(*frame.shape)
+    frame.uncertainty = np.random.rand(*frame.shape)
     frame.mask = np.zeros(frame.shape)
     fits_hdulist = frame.to_hdu()
-    check.is_instance(fits_hdulist, fits.HDUList)
+    assert_is_instance(fits_hdulist, fits.HDUList)
     for k, v in frame.meta.items():
-        check.equal(fits_hdulist[0].header[k], v)
-    np.testing.assert_array_equal(fits_hdulist[0].data, frame.data)
-    np.testing.assert_array_equal(fits_hdulist["UNCERT"].data,
-                                  frame.uncertainty)
-    np.testing.assert_array_equal(fits_hdulist["MASK"].data, frame.mask)
-    check.equal(fits_hdulist[0].header['BUNIT'], 'adu')
+        assert_equal(fits_hdulist[0].header[k], v)
+    assert_equal(fits_hdulist[0].data, frame.data)
+    assert_equal(fits_hdulist["UNCERT"].data,
+                 frame.uncertainty)
+    assert_equal(fits_hdulist["MASK"].data, frame.mask)
+    assert_equal(fits_hdulist[0].header['BUNIT'], 'adu')
 
 
-def test_to_hdu_no_uncert_no_mask():
+def test_to_hdu_no_uncert_no_mask_names():
     frame = create_framedata()
     frame.meta = {'observer': 'Edwin Hubble'}
-    frame.uncertaint = np.random.rand(*frame.shape)
+    frame.uncertainty = np.random.rand(*frame.shape)
     frame.mask = np.zeros(frame.shape)
     fits_hdulist = frame.to_hdu(hdu_uncertainty=None, hdu_mask=None)
-    check.is_instance(fits_hdulist, fits.HDUList)
+    assert_is_instance(fits_hdulist, fits.HDUList)
     for k, v in frame.meta.items():
-        check.equal(fits_hdulist[0].header[k], v)
-    np.testing.assert_array_equal(fits_hdulist[0].data, frame.data)
+        assert_equal(fits_hdulist[0].header[k], v)
+    assert_equal(fits_hdulist[0].data, frame.data)
     with pytest.raises(KeyError):
         fits_hdulist['UNCERT']
     with pytest.raises(KeyError):
         fits_hdulist['MASK']
-    check.equal(fits_hdulist[0].header['BUNIT'], 'adu')
+    assert_equal(fits_hdulist[0].header['BUNIT'], 'adu')
 
 
 # TODO:
@@ -318,11 +316,11 @@ def test_initialize_from_FITS(tmpdir):
     filename = tmpdir.join('afile.fits').strpath
     hdulist.writeto(filename)
     cd = FrameData.read_fits(filename, unit=u.electron)
-    check.equal(cd.shape, (DEFAULT_DATA_SIZE, DEFAULT_DATA_SIZE))
-    check.equal(cd.size, DEFAULT_DATA_SIZE * DEFAULT_DATA_SIZE)
-    check.is_true(np.issubdtype(cd.data.dtype, np.floating))
+    assert_equal(cd.shape, (DEFAULT_DATA_SIZE, DEFAULT_DATA_SIZE))
+    assert_equal(cd.size, DEFAULT_DATA_SIZE * DEFAULT_DATA_SIZE)
+    assert_true(np.issubdtype(cd.data.dtype, np.floating))
     for k, v in hdu.header.items():
-        check.equal(cd.meta[k], v)
+        assert_equal(cd.meta[k], v)
 
 
 # TODO:
@@ -336,12 +334,12 @@ def test_initialize_from_FITS_memmap(tmpdir):
     # Same with memmap
     cd1 = FrameData.read_fits(filename, unit=u.electron,
                               use_memmap_backend=True)
-    check.equal(cd1.shape, (DEFAULT_DATA_SIZE, DEFAULT_DATA_SIZE))
-    check.equal(cd1.size, DEFAULT_DATA_SIZE * DEFAULT_DATA_SIZE)
-    check.is_true(np.issubdtype(cd1.data.dtype, np.floating))
+    assert_equal(cd1.shape, (DEFAULT_DATA_SIZE, DEFAULT_DATA_SIZE))
+    assert_equal(cd1.size, DEFAULT_DATA_SIZE * DEFAULT_DATA_SIZE)
+    assert_true(np.issubdtype(cd1.data.dtype, np.floating))
     for k, v in hdu.header.items():
-        check.equal(cd1.meta[k], v)
-    check.is_instance(cd1.data, np.memmap)
+        assert_equal(cd1.meta[k], v)
+    assert_is_instance(cd1.data, np.memmap)
 
 
 # TODO:
@@ -354,11 +352,11 @@ def test_initialize_from_fits_with_unit_in_header(tmpdir):
     hdu.writeto(filename)
     ccd = FrameData.read_fits(filename)
     # ccd should pick up the unit adu from the fits header...did it?
-    check.is_true(ccd.unit is u.adu)
+    assert_true(ccd.unit is u.adu)
 
     # An explicit unit in the read overrides any unit in the FITS file
     ccd2 = FrameData.read_fits(filename, unit="photon")
-    check.is_true(ccd2.unit is u.photon)
+    assert_true(ccd2.unit is u.photon)
 
 
 # TODO:
@@ -371,7 +369,7 @@ def test_initialize_from_fits_with_ADU_in_header(tmpdir):
     hdu.writeto(filename)
     ccd = FrameData.read_fits(filename)
     # ccd should pick up the unit adu from the fits header...did it?
-    check.is_true(ccd.unit is u.adu)
+    assert_true(ccd.unit is u.adu)
 
 
 # TODO:
@@ -396,10 +394,10 @@ def test_initialize_from_fits_with_data_in_different_extension(tmpdir):
     hdus.writeto(filename)
     with catch_warnings(FITSFixedWarning) as w:
         ccd = FrameData.read_fits(filename, unit='adu')
-    check.equal(len(w), 0)
-    np.testing.assert_array_equal(ccd.data, fake_img)
+    assert_equal(len(w), 0)
+    assert_equal(ccd.data, fake_img)
     # FIXME: why?
-    # check.equal(hdu2.header + hdu1.header, ccd.header)
+    # assert_equal(hdu2.header + hdu1.header, ccd.header)
 
 
 # TODO:
@@ -414,15 +412,15 @@ def test_initialize_from_fits_with_extension(tmpdir):
     filename = tmpdir.join('afile.fits').strpath
     hdus.writeto(filename)
     ccd = FrameData.read_fits(filename, hdu=2, unit='adu')
-    np.testing.assert_array_equal(ccd.data, fake_img2)
+    assert_equal(ccd.data, fake_img2)
 
 
 def test_write_unit_to_hdu():
     frame = create_framedata()
     ccd_unit = frame.unit
     hdulist = frame.to_hdu()
-    check.is_true('bunit' in hdulist[0].header)
-    check.equal(hdulist[0].header['bunit'].strip(), ccd_unit.to_string())
+    assert_true('bunit' in hdulist[0].header)
+    assert_equal(hdulist[0].header['bunit'].strip(), ccd_unit.to_string())
 
 
 # TODO:
@@ -447,7 +445,7 @@ def test_framedata_writer(tmpdir):
     filename = tmpdir.join('test.fits').strpath
     frame.write_fits(filename)
     ccd_disk = FrameData.read_fits(filename)
-    np.testing.assert_array_equal(frame.data, ccd_disk.data)
+    assert_equal(frame.data, ccd_disk.data)
 
 
 # TODO:
@@ -462,10 +460,10 @@ def test_fromMEF(tmpdir):
     hdulist.writeto(filename)
     # by default, we reading from the first extension
     cd = FrameData.read_fits(filename, unit=u.electron)
-    np.testing.assert_array_equal(cd.data, frame.data)
+    assert_equal(cd.data, frame.data)
     # but reading from the second should work too
     cd = FrameData.read_fits(filename, hdu=1, unit=u.electron)
-    np.testing.assert_array_equal(cd.data, 2 * frame.data)
+    assert_equal(cd.data, 2 * frame.data)
 
 
 # TODO:
@@ -482,9 +480,9 @@ def test_setting_bad_uncertainty_raises_error():
 def test_copy():
     frame = create_framedata()
     ccd_copy = frame.copy()
-    np.testing.assert_array_equal(ccd_copy.data, frame.data)
-    check.equal(ccd_copy.unit, frame.unit)
-    check.equal(ccd_copy.meta, frame.meta)
+    assert_equal(ccd_copy.data, frame.data)
+    assert_equal(ccd_copy.unit, frame.unit)
+    assert_equal(ccd_copy.meta, frame.meta)
 
 
 def test_wcs_invalid():
@@ -497,4 +495,4 @@ def test_wcs_assign():
     frame = create_framedata()
     wcs = WCS(naxis=2)
     frame.wcs = wcs
-    check.equal(frame.wcs, wcs)
+    assert_equal(frame.wcs, wcs)
