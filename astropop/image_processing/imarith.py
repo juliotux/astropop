@@ -5,7 +5,7 @@
 import numpy as np
 
 from ..framedata import FrameData, check_framedata, EmptyDataError
-from ..math.physical import QFloat, convert_to_qfloat, units
+from ..math.physical import QFloat, convert_to_qfloat
 from ..logger import logger, log_to_list
 
 __all__ = ['imarith', 'imcombine']
