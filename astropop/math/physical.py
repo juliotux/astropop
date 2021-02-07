@@ -9,12 +9,11 @@ Simplified version of `uncertainties` python package with some
 import numbers
 from astropy import units
 from astropy.units.quantity_helper.helpers import get_converters_and_unit
-from astropy.units.quantity_helper import converters_and_unit, \
-                                          check_output
 from astropy.units import UnitsError, Quantity
 import numpy as np
 
 from ..py_utils import check_iterable
+from ..framedata import FrameData, unit_property
 from ._deriv import propagate_2, propagate_1
 
 
@@ -40,25 +39,6 @@ def _implements_ufunc(numpy_ufunc):
         HANDLED_UFUNCS[numpy_ufunc] = func
         return func
     return decorator_ufunc
-
-
-def unit_property(cls):
-    """Add a `unit` property to a class."""
-    def _unit_getter(self):
-        if self._unit is None:
-            return units.dimensionless_unscaled
-        return self._unit
-
-    def _unit_setter(self, value):
-        if value is None or units.Unit(value) == units.dimensionless_unscaled:
-            self._unit = None
-        else:
-            self._unit = units.Unit(value)
-
-    cls._unit = None
-    cls.unit = property(_unit_getter, _unit_setter,
-                        doc="Physical unit of the data.")
-    return cls
 
 
 def convert_to_qfloat(value):
@@ -91,6 +71,10 @@ def convert_to_qfloat(value):
             return QFloat(value.value, None, value.unit)
         # Everithing else is considered numbers.
         return QFloat(value, None, unit)
+
+    # FrameData support
+    if isinstance(value, FrameData):
+        return QFloat(value.data, value.uncertainty, value.unit)
 
     # Handle Astropy units to multuply
     if isinstance(value, (units.UnitBase, str)):

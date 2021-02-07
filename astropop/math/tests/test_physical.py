@@ -5,8 +5,8 @@ import numpy as np
 from astropop.testing import (assert_equal, assert_almost_equal,
                               assert_is_instance, assert_is_none,
                               assert_false, assert_true)
-
-from astropop.math.physical import QFloat, qfloat, unit_property, units, \
+from astropop.framedata import FrameData
+from astropop.math.physical import QFloat, qfloat, units, \
                                    same_unit, UnitsError, \
                                    equal_within_errors, \
                                    convert_to_qfloat
@@ -115,27 +115,6 @@ def test_qfloat_same_unit_array():
     assert_equal(qf_4.unit, units.s)
 
 
-@unit_property
-class DummyClass():
-    def __init__(self, unit):
-        self.unit = unit
-
-
-@pytest.mark.parametrize('unit,expect', [('meter', units.m),
-                                         (units.adu, units.adu),
-                                         (None, units.dimensionless_unscaled),
-                                         ('', units.dimensionless_unscaled)])
-def test_qfloat_unit_property(unit, expect):
-    # Getter test
-    c = DummyClass(unit)
-    assert_equal(c.unit, expect)
-
-    # Setter test
-    c = DummyClass(None)
-    c.unit = unit
-    assert_equal(c.unit, expect)
-
-
 def test_qfloat_repr():
     assert_equal(repr(QFloat(1.0, 0.1, 'm')), '<QFloat 1.0+-0.1 m>')
     assert_equal(repr(QFloat(1, 0.1, 'm')), '<QFloat 1.0+-0.1 m>')
@@ -234,19 +213,6 @@ def test_qfloat_properties_reset():
     assert_equal(qf, QFloat([1, 2, 3], [0.1, 0.2, 0.3], 'm'))
 
 
-def test_qfloat_unit_property_none():
-    # Check None and dimensionless_unscaled
-    c = DummyClass(None)
-    assert_is_none(c._unit)
-    assert_equal(c.unit, units.dimensionless_unscaled)
-
-
-@pytest.mark.parametrize('unit', ['None', 'Invalid'])
-def test_qfloat_unit_property_invalid(unit):
-    with pytest.raises(ValueError):
-        DummyClass(unit)
-
-
 def test_qfloat_creation():
     def _create(*args, **kwargs):
         assert_is_instance(qfloat(*args, **kwargs), QFloat)
@@ -296,7 +262,9 @@ def test_qfloat_always_positive_uncertainty():
                                           (None, 'raise'),
                                           (UnitsError, 'raise'),
                                           (1.0*units.m,
-                                           QFloat(1.0, 0.0, 'm'))
+                                           QFloat(1.0, 0.0, 'm')),
+                                          (FrameData(1.0, 'm', 'f8', 0.1),
+                                           QFloat(1.0, 0.1, 'm'))
                                           ])
 def test_qfloat_converttoqfloat(value, expect):
     if expect == 'raise':

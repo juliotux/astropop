@@ -3,9 +3,9 @@
 # TODO: reimplement imcombine
 
 import numpy as np
-from astropy import units as u
 
 from ..framedata import FrameData, check_framedata, EmptyDataError
+from ..math.physical import QFloat, convert_to_qfloat, units
 from ..logger import logger, log_to_list
 
 __all__ = ['imarith', 'imcombine']
@@ -20,56 +20,19 @@ _arith_funcs = {'+': np.add,
                 '%': np.remainder}
 
 
-def _arith_data(operand1, operand2, operation):
-    """Handle the arithmatics of the data."""
-    data1 = u.Quantity(operand1.data)
-    data2 = u.Quantity(operand2.data)
-
-    try:
-        return _arith_funcs[operation](data1, data2)
-    except Exception as e:
-        raise ValueError(f'Could not process the operation {operation} between'
-                         f'{operand1} and {operand2}. Error: {e}')
-
-
-def _arith_unct(result, operand1, operand2, operation):
-    """Handle the arithmatics of the uncertainties."""
-    def _extract(operand):
-        # Supose data is FrameData always
-        # Transform to quantity auto handles units
-        d = u.Quantity(operand.data)
-        du = operand.uncertainty
-        try:
-            du = u.Quantity(du)
-        except TypeError:
-            du = 0.0*d.unit
-        return d, du
-
-    def _error_propagation(f, a, b, sa, sb):
-        # only deal with uncorrelated errors
-        if operation in {'+', '-'}:
-            return np.sqrt(sa**2 + sb**2)
-        elif operation in {'*', '/', '//'}:
-            return f*np.sqrt((sa/a)**2 + (sb/b)**2)
-        elif operation == '**':
-            return f*b*sa/a
-
-    data1, unct1 = _extract(operand1)
-    data2, unct2 = _extract(operand2)
-    resd, _ = _extract(result)
-
-    # Only propagate if operand1 has no empty uncertainty
-    nunct = _error_propagation(resd, data1, data2, unct1, unct2)
-    return nunct
+def _qf_or_framedata(data, alternative=QFloat):
+    """Check if the data is QFloat or FrameData. Else, convert it."""
+    if isinstance(data, (QFloat, FrameData)):
+        return data
+    return alternative(data)
 
 
 def _arith_mask(operand1, operand2, logger):
     """Handle the arithmatics of the masks."""
     def _extract(operand):
-        # Supose FrameData always
-        # Transform to quantity auto handles units
-        d = operand.mask
-        return d
+        if hasattr(operand, 'mask'):
+            return operand.mask
+        return False
 
     mask1 = operand1.mask
     mask2 = operand2.mask
@@ -82,6 +45,15 @@ def _arith_mask(operand1, operand2, logger):
     return nmask
 
 
+def _arith(operand1, operand2, operation):
+    """Perform the math operation itself using QFloats."""
+    qf1 = convert_to_qfloat(operand1)
+    qf2 = convert_to_qfloat(operand2)
+
+    res = _arith_funcs[operation](qf1, qf2)
+    return res.nominal, res.std_dev
+
+
 def _join_headers(operand1, operand2, operation, logger):  # noqa
     """Join the headers to result."""
     # TODO: Think if this is the best behavior
@@ -89,7 +61,7 @@ def _join_headers(operand1, operand2, operation, logger):  # noqa
 
 
 def imarith(operand1, operand2, operation, inplace=False,
-            propagate_errors=False, handle_mask=False, logger=logger):
+            join_masks=False, logger=logger):
     """Perform arithmetic operations using `~astropop.framedata.FrameData`.
 
     Notes
@@ -112,15 +84,14 @@ def imarith(operand1, operand2, operation, inplace=False,
     Parameters
     ----------
     operand1, operand2 : `~astropop.framedata.FrameData` compatible
-        Values to perform the operation. `~astropy.units.Quantity`, numerical
-        values and `~astropy.nddata.CCDData` are also suported.
+        Values to perform the operation. `~astropop.math.physical.QFloat`
+        `~astropy.units.Quantity`, numerical values and
+        `~astropy.nddata.CCDData` are also suported.
     operation : {``+``, ``-``, ``*``, ``/``, ``**``, ``%``, ``//``}
         Math operation.
     inplace : bool, optional
         If True, the operations will be performed inplace in the operand 1.
-    propagate_errors : bool, optional
-        Propagate the uncertainties during the math process.
-    handle_mask : bool, optional
+    join_masks : bool, optional
         Join masks in the end of the operation.
     logger : `logging.Logger`
         Python logger to log the actions.
@@ -131,41 +102,37 @@ def imarith(operand1, operand2, operation, inplace=False,
         new `FrameData` instance if not ``inplace``, else the ``operand1``
         `~astropop.framedata.FrameData` instance.
     """
+    # TODO: handle WCS
     if operation not in _arith_funcs.keys():
         raise ValueError(f"Operation {operation} not supported.")
 
-    operand1 = check_framedata(operand1)
-    operand2 = check_framedata(operand2)
-    if operand1.data.empty or operand2.data.empty:
-        raise EmptyDataError(f'Operation {operation} not permited with empty'
-                             f' data containers.')
-
-    if inplace:
+    if isinstance(operand1, FrameData) and inplace:
         ccd = operand1
     else:
         ccd = FrameData(None)
 
-    lh = log_to_list(logger, ccd.history, full_record=True)
-    # TODO: rewrite debug for better infos
+    operand1 = _qf_or_framedata(operand1)
+    operand2 = _qf_or_framedata(operand2)
+    if operand1.data.empty or operand2.data.empty:
+        raise EmptyDataError(f'Operation {operation} not permited with empty'
+                             f' data containers.')
+
+    # Add the operation entry to the ccd history.
+    lh = log_to_list(logger, ccd.history)
     logger.debug(f'Operation {operation} between {operand1} and {operand2}')
 
     # Perform data, mask and uncertainty operations
-    ccd.data = _arith_data(operand1, operand2, operation)
-    if handle_mask:
+    ccd.data, ccd.uncertainty = _arith(operand1, operand2, operation)
+
+    if join_masks:
         ccd.mask = _arith_mask(operand1, operand2, logger)
     else:
         ccd.mask = False
 
-    if propagate_errors:
-        ccd.uncertainty = _arith_unct(ccd, operand1, operand2,
-                                      operation)
-    else:
-        ccd.uncertainty = None
-
     ccd.meta = _join_headers(operand1, operand2, operation, logger)
-    # TODO: handle WCS
 
     logger.removeHandler(lh)
+
     return ccd
 
 

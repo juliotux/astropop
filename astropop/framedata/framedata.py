@@ -16,7 +16,7 @@ from astropy.nddata import StdDevUncertainty
 from ..py_utils import mkdir_p
 from .memmap import MemMapArray
 from .compat import extract_header_wcs
-from ..math.physical import unit_property, QFloat
+from ._unit_property import unit_property
 
 
 __all__ = ['FrameData']
@@ -111,7 +111,7 @@ def uncertainty_unit_consistency(unit, uncertainty):
     if u_unit == unit:
         return np.array(uncertainty)
 
-    return QFloat(uncertainty).to(unit).nominal
+    return u.Quantity(uncertainty, u_unit).to(unit).value
 
 
 def setup_filename(frame, cache_folder=None, filename=None):
