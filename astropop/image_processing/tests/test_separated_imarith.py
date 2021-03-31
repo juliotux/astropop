@@ -34,17 +34,6 @@ from astropop.testing import assert_equal, assert_is, assert_is_not, \
                                   'f2': {'v': 10, 'u': 4},
                                   'r': {'v': 10, 'u': 5}})])
 def test_separated_sum_imarith_ops_frames(vs, inplace, handle_mask):
-    def gen_frame(v):
-        # Gen frames with {'v', 'u'} dict
-        shape = (10, 10)
-        if v['u'] is None:
-            frame = FrameData(np.ones(shape, dtype='f8'), unit='adu')
-        else:
-            frame = FrameData(np.ones(shape, dtype='f8'), unit='adu',
-                              uncertainty=v['u'])
-        frame.data[:] = v['v']
-        return frame
-
     frame1 = gen_frame(vs['f1'])
     frame2 = gen_frame(vs['f2'])
     exp_res = gen_frame(vs['r'])
@@ -88,3 +77,14 @@ def test_invalid_shapes():
     frame2 = FrameData(np.zeros((5, 5)), unit='')
     with pytest.raises(ValueError):
         imarith(frame1, frame2, '+')
+
+def gen_frame(v):
+    # Gen frames with {'v', 'u'} dict
+    shape = (10, 10)
+    if v['u'] is None:
+        frame = FrameData(np.ones(shape, dtype='f8'), unit='adu')
+    else:
+        frame = FrameData(np.ones(shape, dtype='f8'), unit='adu',
+                          uncertainty=v['u'])
+    frame.data[:] = v['v']
+    return frame
