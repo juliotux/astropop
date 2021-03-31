@@ -27,12 +27,12 @@ from astropop.testing import assert_equal, assert_is, assert_is_not, \
 
 @pytest.mark.parametrize('handle_mask', [True, False])
 @pytest.mark.parametrize('inplace', [True, False])
-@pytest.mark.parametrize('vs', [({'f1': {'v': 30, 'u': None},
-                                  'f2': {'v': 00, 'u': None},
-                                  'r': {'v': 30, 'u': None}}),
-                                ({'f1': {'v': 00, 'u': None},
-                                  'f2': {'v': 10, 'u': None},
-                                  'r': {'v': 10, 'u': None}})])
+@pytest.mark.parametrize('vs', [({'f1': {'v': 30, 'u': 0},
+                                  'f2': {'v': 0, 'u': 0},
+                                  'r': {'v': 30, 'u': 0}}),
+                                ({'f1': {'v': 0, 'u': 3},
+                                  'f2': {'v': 10, 'u': 4},
+                                  'r': {'v': 10, 'u': 5}})])
 def test_separated_sum_imarith_ops_frames(vs, inplace, handle_mask):
     def gen_frame(v):
         # Gen frames with {'v', 'u'} dict
