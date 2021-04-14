@@ -6,7 +6,7 @@ import pytest
 from astropop.image_processing.imarith import imarith
 from astropop.framedata import FrameData
 from astropop.testing import assert_equal, assert_is, assert_is_not, \
-                             assert_in
+                             assert_in, assert_almost_equal
 
 # TODO: Test with None FrameData
 # TODO: Test with None scalar values
@@ -30,7 +30,7 @@ pars = pytest.mark.parametrize('op,vs', [('+', {'f1': {'v': 30, 'u': 0},
                                          ('*', {'f1': {'v': 5, 'u': 0.3},
                                                 'f2': {'v': 6, 'u': 0.4},
                                                 'r': {'v': 30,
-                                                      'u': 2.022375}}),
+                                                      'u': 2.690725}}),
                                          ('/', {'f1': {'v': 10, 'u': 0},
                                                 'f2': {'v': 3, 'u': 0},
                                                 'r': {'v': 3.33333333,
@@ -46,7 +46,7 @@ pars = pytest.mark.parametrize('op,vs', [('+', {'f1': {'v': 30, 'u': 0},
                                          ('//', {'f1': {'v': 10, 'u': 1},
                                                  'f2': {'v': 3, 'u': 0.3},
                                                  'r': {'v': 3.000000,
-                                                       'u': 0.424264}})])
+                                                       'u': 0.000000}})])
 
 
 @pytest.mark.parametrize('handle_mask', [True, False])
@@ -82,8 +82,8 @@ def test_imarith_ops_frames(op, vs, inplace, handle_mask):
     res = imarith(frame1, frame2, op, inplace=inplace,
                   join_masks=handle_mask)
 
-    assert_equal(res.data, exp_res.data)
-    assert_equal(res.uncertainty, exp_res.uncertainty)
+    assert_almost_equal(res.data, exp_res.data)
+    assert_almost_equal(res.uncertainty, exp_res.uncertainty)
     if handle_mask:
         assert_equal(res.mask, exp_res.mask)
 

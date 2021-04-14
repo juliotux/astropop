@@ -6,24 +6,7 @@ import pytest
 from astropop.image_processing.imarith import imarith
 from astropop.framedata import FrameData
 from astropop.testing import assert_equal, assert_is, assert_is_not, \
-                             assert_in
-
-# TODO: Test with None FrameData
-# TODO: Test with None scalar values
-
-# TODO: '%' and '**' functions
-# pars = pytest.mark.parametrize('vs', [({'f1': {'v': 30, 'u': None},
-#                                                 'f2': {'v': 00, 'u': None},
-#                                                 'r': {'v': 30, 'u': None}}),
-#                                           ({'f1': {'v': 30, 'u': 3},
-#                                                  'f2': {'v': 10, 'u': 4},
-#                                                  'r': {'v': 40, 'u': 5}}),
-#                                           ({'f1': {'v': 30, 'u': 3},
-#                                                  'f2': {'v': 00, 'u': 4},
-#                                                  'r': {'v': 30, 'u': 5}}),
-#                                          ({'f1': {'v': 00, 'u': None},
-#                                                 'f2': {'v': 10, 'u': None},
-#                                                 'r': {'v': 10, 'u': None}})])                                    
+                             assert_in, assert_almost_equal                                 
 
 @pytest.mark.parametrize('handle_mask', [True, False])
 @pytest.mark.parametrize('inplace', [True, False])
@@ -53,8 +36,8 @@ def test_separated_sum_imarith_ops_frames(vs, inplace, handle_mask):
     res = imarith(frame1, frame2, op, inplace=inplace,
                   join_masks=handle_mask)
 
-    assert_equal(res.data, exp_res.data)
-    assert_equal(res.uncertainty, exp_res.uncertainty)
+    assert_almost_equal(res.data, exp_res.data)
+    assert_almost_equal(res.uncertainty, exp_res.uncertainty)
     if handle_mask:
         assert_equal(res.mask, exp_res.mask)
 
