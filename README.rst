@@ -1,7 +1,7 @@
-AstroPoP  
+AstroPoP
 ========
 
-|Travis Status| |GHAction Status| |Codecov Status| |RTD Status| |CODACY| |GITPOD|
+|GHAction Status| |Codecov Status| |RTD Status| |CODACY| |GITPOD|
 
 The (non) famous ASTROnomical POlarimetry and Photometry pipeline. Developed for work with IAGPOL polarimeter at Observatório Pico dos Dias (Brazil), but suitable to be used in other image polarimeters around the world.
 
@@ -59,10 +59,6 @@ Documentation
 ^^^^^^^^^^^^^
 
 Documentation (not complete yet) can be found at `astropop.readthedocs.io <https://astropop.readthedocs.io>`_
-
-.. |Travis Status| image:: https://travis-ci.com/sparc4-dev/astropop.svg?branch=master
-    :target: https://travis-ci.com/sparc4-dev/astropop
-    :alt: Astropop's Travis CI Status
 
 .. |GHAction Status| image:: https://github.com/sparc4-dev/astropop/workflows/Unit%20Tests/badge.svg
     :target: https://github.com/sparc4-dev/astropop/actions
