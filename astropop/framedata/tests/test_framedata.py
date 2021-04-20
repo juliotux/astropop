@@ -96,387 +96,8 @@ def test_setup_filename(tmpdir):
     assert_true(os.path.exists(dirname))
 
 
-def test_framedata_cration_array():
-    a = _random_array.copy()
-    meta = DEFAULT_HEADER.copy()
-    unit = 'adu'
-    f = FrameData(a, unit=unit, meta=meta, dtype='float64')
-    assert_almost_equal(a, f.data)
-    assert_true(f.unit is u.adu)
-    assert_true(np.issubdtype(f.dtype, np.float64))
-    assert_equal(f.meta['observer'], meta['observer'])
-    assert_equal(f.meta['very long key'], meta['very long key'])
-
-
-def test_framedata_cration_array_uncertainty():
-    a = _random_array.copy()
-    b = _random_array.copy()
-    meta = DEFAULT_HEADER.copy()
-    unit = 'adu'
-    f = FrameData(a, unit=unit, meta=meta, uncertainty=b, u_dtype='float32')
-    assert_almost_equal(a, f.data)
-    assert_almost_equal(b, f.uncertainty)
-    assert_equal(f.unit, u.adu)
-    assert_true(np.issubdtype(f.uncertainty.dtype, np.float32))
-    assert_equal(f.meta['observer'], meta['observer'])
-    assert_equal(f.meta['very long key'], meta['very long key'])
-
-
-def test_framedata_cration_array_mask():
-    a = _random_array.copy()
-    b = np.zeros(_random_array.shape)
-    meta = DEFAULT_HEADER.copy()
-    unit = 'adu'
-    f = FrameData(a, unit=unit, meta=meta, mask=b, m_dtype='bool')
-    assert_almost_equal(a, f.data)
-    assert_almost_equal(b, f.mask)
-    assert_equal(f.unit, u.adu)
-    assert_true(np.issubdtype(f.mask.dtype, np.bool))
-    assert_equal(f.meta['observer'], meta['observer'])
-    assert_equal(f.meta['very long key'], meta['very long key'])
-
-
-def test_framedata_cration_array_mask_flags():
-    a = _random_array.copy()
-    b = np.zeros(_random_array.shape).astype('int16')
-    for i in range(8):
-        b[i, i] = 1 << i
-    meta = DEFAULT_HEADER.copy()
-    unit = 'adu'
-    f = FrameData(a, unit=unit, meta=meta, mask=b, m_dtype='uint8')
-    assert_almost_equal(a, f.data)
-    assert_almost_equal(b, f.mask)
-    assert_equal(f.unit, u.adu)
-    assert_true(np.issubdtype(f.mask.dtype, np.uint8))
-    assert_equal(f.meta['observer'], meta['observer'])
-    assert_equal(f.meta['very long key'], meta['very long key'])
-
-
-def test_framedata_empty():
-    with pytest.raises(TypeError):
-        # empty initializer should fail
-        FrameData()  # noqa
-
-
-def test_framedata_meta_header():
-    header = DEFAULT_HEADER.copy()
-    meta = {'testing1': 'a', 'testing2': 'b'}
-    header.update({'testing1': 'c'})
-
-    a = FrameData([1, 2, 3], unit='', meta=meta, header=header)
-    assert_equal(type(a.meta), dict)
-    assert_equal(type(a.header), dict)
-    assert_equal(a.meta['testing1'], 'c')  # Header priority
-    assert_equal(a.meta['testing2'], 'b')
-    assert_equal(a.header['testing1'], 'c')  # Header priority
-    assert_equal(a.header['testing2'], 'b')
-    for k in DEFAULT_HEADER.keys():
-        assert_equal(a.header[k], DEFAULT_HEADER[k])
-        assert_equal(a.meta[k], DEFAULT_HEADER[k])
-
-
-def test_frame_simple():
-    framedata = create_framedata()
-    assert_equal(framedata.shape, (DEFAULT_DATA_SIZE, DEFAULT_DATA_SIZE))
-    assert_equal(framedata.size, DEFAULT_DATA_SIZE * DEFAULT_DATA_SIZE)
-    assert_is(framedata.dtype, np.dtype(float))
-
-
-def test_frame_init_with_string_electron_unit():
-    framedata = FrameData(np.zeros([2, 2]), unit="electron")
-    assert_true(framedata.unit is u.electron)
-
-
-def test_framedata_meta_is_case_sensitive():
-    frame = create_framedata()
-    key = 'SoMeKEY'
-    lkey = key.lower()
-    ukey = key.upper()
-    frame.meta[key] = 10
-    assert_not_in(lkey, frame.meta)
-    assert_not_in(ukey, frame.meta)
-    assert_in(key, frame.meta)
-
-
-def test_metafromheader():
-    hdr = fits.header.Header()
-    hdr['observer'] = 'Edwin Hubble'
-    hdr['exptime'] = '3600'
-
-    d1 = FrameData(np.ones((5, 5)), meta=hdr, unit=u.electron)
-    assert_equal(d1.meta['OBSERVER'], 'Edwin Hubble')
-    assert_equal(d1.header['OBSERVER'], 'Edwin Hubble')
-
-
-def test_metafromdict():
-    dic = {'OBSERVER': 'Edwin Hubble', 'EXPTIME': 3600}
-    d1 = FrameData(np.ones((5, 5)), meta=dic, unit=u.electron)
-    assert_equal(d1.meta['OBSERVER'], 'Edwin Hubble')
-
-
-def test_header2meta():
-    hdr = fits.header.Header()
-    hdr['observer'] = 'Edwin Hubble'
-    hdr['exptime'] = '3600'
-
-    d1 = FrameData(np.ones((5, 5)), unit=u.electron)
-    d1.header = hdr
-    assert_equal(d1.meta['OBSERVER'], 'Edwin Hubble')
-    assert_equal(d1.header['OBSERVER'], 'Edwin Hubble')
-
-
-def test_metafromstring_fail():
-    hdr = 'this is not a valid header'
-    with pytest.raises(ValueError):
-        FrameData(np.ones((5, 5)), meta=hdr, unit=u.adu)
-
-
-def test_framedata_meta_is_not_fits_header():
-    frame = create_framedata()
-    frame.meta = {'OBSERVER': 'Edwin Hubble'}
-    assert_false(isinstance(frame.meta, fits.Header))
-
-
-def test_setting_uncertainty_with_array():
-    frame = create_framedata()
-    frame.uncertainty = None
-    fake_uncertainty = np.sqrt(np.abs(frame.data))
-    frame.uncertainty = fake_uncertainty.copy()
-    assert_equal(frame.uncertainty, fake_uncertainty)
-    assert_equal(frame.unit, u.adu)
-
-
-def test_setting_uncertainty_with_scalar():
-    uncertainty = 10
-    frame = create_framedata()
-    frame.uncertainty = None
-    frame.uncertainty = uncertainty
-    fake_uncertainty = np.zeros_like(frame.data)
-    fake_uncertainty[:] = uncertainty
-    assert_equal(frame.uncertainty, fake_uncertainty)
-    assert_equal(frame.unit, u.adu)
-
-
-def test_setting_uncertainty_with_quantity():
-    uncertainty = 10*u.adu
-    frame = create_framedata()
-    frame.uncertainty = None
-    frame.uncertainty = uncertainty
-    fake_uncertainty = np.zeros_like(frame.data)
-    fake_uncertainty[:] = uncertainty.value
-    assert_equal(frame.uncertainty, fake_uncertainty)
-    assert_equal(frame.unit, u.adu)
-
-
-def test_setting_uncertainty_wrong_shape_raises_error():
-    frame = create_framedata()
-    with pytest.raises(ValueError):
-        frame.uncertainty = np.zeros([3, 4])
-
-
-def test_to_hdu_defaults():
-    frame = create_framedata()
-    frame.meta = {'observer': 'Edwin Hubble'}
-    frame.uncertainty = np.random.rand(*frame.shape)
-    frame.mask = np.zeros(frame.shape)
-    fits_hdulist = frame.to_hdu()
-    assert_is_instance(fits_hdulist, fits.HDUList)
-    for k, v in frame.meta.items():
-        assert_equal(fits_hdulist[0].header[k], v)
-    assert_equal(fits_hdulist[0].data, frame.data)
-    assert_equal(fits_hdulist["UNCERT"].data,
-                 frame.uncertainty)
-    assert_equal(fits_hdulist["MASK"].data, frame.mask)
-    assert_equal(fits_hdulist[0].header['BUNIT'], 'adu')
-
-
-def test_to_hdu_no_uncert_no_mask_names():
-    frame = create_framedata()
-    frame.meta = {'observer': 'Edwin Hubble'}
-    frame.uncertainty = np.random.rand(*frame.shape)
-    frame.mask = np.zeros(frame.shape)
-    fits_hdulist = frame.to_hdu(hdu_uncertainty=None, hdu_mask=None)
-    assert_is_instance(fits_hdulist, fits.HDUList)
-    for k, v in frame.meta.items():
-        assert_equal(fits_hdulist[0].header[k], v)
-    assert_equal(fits_hdulist[0].data, frame.data)
-    with pytest.raises(KeyError):
-        fits_hdulist['UNCERT']
-    with pytest.raises(KeyError):
-        fits_hdulist['MASK']
-    assert_equal(fits_hdulist[0].header['BUNIT'], 'adu')
-
-
 # TODO:
-@pytest.mark.skip('Wait Fits Implementation')
-def test_initialize_from_FITS(tmpdir):
-    frame = create_framedata()
-    hdu = fits.PrimaryHDU(frame.data, header=fits.Header(frame.header))
-    hdulist = fits.HDUList([hdu])
-    filename = tmpdir.join('afile.fits').strpath
-    hdulist.writeto(filename)
-    cd = FrameData.read_fits(filename, unit=u.electron)
-    assert_equal(cd.shape, (DEFAULT_DATA_SIZE, DEFAULT_DATA_SIZE))
-    assert_equal(cd.size, DEFAULT_DATA_SIZE * DEFAULT_DATA_SIZE)
-    assert_true(np.issubdtype(cd.data.dtype, np.floating))
-    for k, v in hdu.header.items():
-        assert_equal(cd.meta[k], v)
-
-
-# TODO:
-@pytest.mark.skip('Wait Fits Implementation')
-def test_initialize_from_FITS_memmap(tmpdir):
-    frame = create_framedata()
-    hdu = fits.PrimaryHDU(frame.data, header=fits.Header(frame.header))
-    hdulist = fits.HDUList([hdu])
-    filename = tmpdir.join('afile.fits').strpath
-    hdulist.writeto(filename)
-    # Same with memmap
-    cd1 = FrameData.read_fits(filename, unit=u.electron,
-                              use_memmap_backend=True)
-    assert_equal(cd1.shape, (DEFAULT_DATA_SIZE, DEFAULT_DATA_SIZE))
-    assert_equal(cd1.size, DEFAULT_DATA_SIZE * DEFAULT_DATA_SIZE)
-    assert_true(np.issubdtype(cd1.data.dtype, np.floating))
-    for k, v in hdu.header.items():
-        assert_equal(cd1.meta[k], v)
-    assert_is_instance(cd1.data, np.memmap)
-
-
-# TODO:
-@pytest.mark.skip('Wait Fits Implementation')
-def test_initialize_from_fits_with_unit_in_header(tmpdir):
-    fake_img = np.zeros([2, 2])
-    hdu = fits.PrimaryHDU(fake_img)
-    hdu.header['bunit'] = u.adu.to_string()
-    filename = tmpdir.join('afile.fits').strpath
-    hdu.writeto(filename)
-    ccd = FrameData.read_fits(filename)
-    # ccd should pick up the unit adu from the fits header...did it?
-    assert_true(ccd.unit is u.adu)
-
-    # An explicit unit in the read overrides any unit in the FITS file
-    ccd2 = FrameData.read_fits(filename, unit="photon")
-    assert_true(ccd2.unit is u.photon)
-
-
-# TODO:
-@pytest.mark.skip('Wait Fits Implementation')
-def test_initialize_from_fits_with_ADU_in_header(tmpdir):
-    fake_img = np.zeros([2, 2])
-    hdu = fits.PrimaryHDU(fake_img)
-    hdu.header['bunit'] = 'ADU'
-    filename = tmpdir.join('afile.fits').strpath
-    hdu.writeto(filename)
-    ccd = FrameData.read_fits(filename)
-    # ccd should pick up the unit adu from the fits header...did it?
-    assert_true(ccd.unit is u.adu)
-
-
-# TODO:
-@pytest.mark.skip('Wait Fits Implementation')
-def test_initialize_from_fits_with_invalid_unit_in_header(tmpdir):
-    hdu = fits.PrimaryHDU(np.ones((2, 2)))
-    hdu.header['bunit'] = 'definetely-not-a-unit'
-    filename = tmpdir.join('afile.fits').strpath
-    hdu.writeto(filename)
-    with pytest.raises(ValueError):
-        FrameData.read_fits(filename)
-
-
-# TODO:
-@pytest.mark.skip('Wait Fits Implementation')
-def test_initialize_from_fits_with_data_in_different_extension(tmpdir):
-    fake_img = np.arange(4).reshape(2, 2)
-    hdu1 = fits.PrimaryHDU()
-    hdu2 = fits.ImageHDU(fake_img)
-    hdus = fits.HDUList([hdu1, hdu2])
-    filename = tmpdir.join('afile.fits').strpath
-    hdus.writeto(filename)
-    with catch_warnings(FITSFixedWarning) as w:
-        ccd = FrameData.read_fits(filename, unit='adu')
-    assert_equal(len(w), 0)
-    assert_equal(ccd.data, fake_img)
-    # FIXME: why?
-    # assert_equal(hdu2.header + hdu1.header, ccd.header)
-
-
-# TODO:
-@pytest.mark.skip('Wait Fits Implementation')
-def test_initialize_from_fits_with_extension(tmpdir):
-    fake_img1 = np.zeros([2, 2])
-    fake_img2 = np.arange(4).reshape(2, 2)
-    hdu0 = fits.PrimaryHDU()
-    hdu1 = fits.ImageHDU(fake_img1)
-    hdu2 = fits.ImageHDU(fake_img2)
-    hdus = fits.HDUList([hdu0, hdu1, hdu2])
-    filename = tmpdir.join('afile.fits').strpath
-    hdus.writeto(filename)
-    ccd = FrameData.read_fits(filename, hdu=2, unit='adu')
-    assert_equal(ccd.data, fake_img2)
-
-
-def test_write_unit_to_hdu():
-    frame = create_framedata()
-    ccd_unit = frame.unit
-    hdulist = frame.to_hdu()
-    assert_true('bunit' in hdulist[0].header)
-    assert_equal(hdulist[0].header['bunit'].strip(), ccd_unit.to_string())
-
-
-# TODO:
-@pytest.mark.skip('Wait Fits Implementation')
-def test_initialize_from_FITS_bad_keyword_raises_error(tmpdir):
-    # There are two fits.open keywords that are not permitted in ccdproc:
-    #     do_not_scale_image_data and scale_back
-    frame = create_framedata()
-    filename = tmpdir.join('test.fits').strpath
-    frame.write_fits(filename)
-    with pytest.raises(TypeError):
-        FrameData.read_fits(filename, unit=frame.unit,
-                            do_not_scale_image_data=True)
-    with pytest.raises(TypeError):
-        FrameData.read_fits(filename, unit=frame.unit, scale_back=True)
-
-
-# TODO:
-@pytest.mark.skip('Wait Fits Implementation')
-def test_framedata_writer(tmpdir):
-    frame = create_framedata()
-    filename = tmpdir.join('test.fits').strpath
-    frame.write_fits(filename)
-    ccd_disk = FrameData.read_fits(filename)
-    assert_equal(frame.data, ccd_disk.data)
-
-
-# TODO:
-@pytest.mark.skip('Wait Fits Implementation')
-def test_fromMEF(tmpdir):
-    frame = create_framedata()
-    hdu = frame.to_hdu()[0]
-    hdu2 = fits.PrimaryHDU(2 * frame.data)
-    hdulist = fits.HDUList(hdu)
-    hdulist.append(hdu2)
-    filename = tmpdir.join('afile.fits').strpath
-    hdulist.writeto(filename)
-    # by default, we reading from the first extension
-    cd = FrameData.read_fits(filename, unit=u.electron)
-    assert_equal(cd.data, frame.data)
-    # but reading from the second should work too
-    cd = FrameData.read_fits(filename, hdu=1, unit=u.electron)
-    assert_equal(cd.data, 2 * frame.data)
-
-
-# TODO:
-@pytest.mark.skip('Wait Fits Implementation')
-def test_setting_bad_uncertainty_raises_error():
-    frame = create_framedata()
-    with pytest.raises(TypeError):
-        # Uncertainty is supposed to be an instance of NDUncertainty
-        frame.uncertainty = 'not a uncertainty'
-
-
-# TODO:
-@pytest.mark.skip('Wait Fits Implementation')
+@pytest.mark.skip('Copy not implemented.')
 def test_copy():
     frame = create_framedata()
     ccd_copy = frame.copy()
@@ -485,14 +106,374 @@ def test_copy():
     assert_equal(ccd_copy.meta, frame.meta)
 
 
-def test_wcs_invalid():
-    frame = create_framedata()
-    with pytest.raises(TypeError):
-        frame.wcs = 5
+class Test_FrameData_Creation():
+    def test_framedata_cration_array(self):
+        a = _random_array.copy()
+        meta = DEFAULT_HEADER.copy()
+        unit = 'adu'
+        f = FrameData(a, unit=unit, meta=meta, dtype='float64')
+        assert_almost_equal(a, f.data)
+        assert_true(f.unit is u.adu)
+        assert_true(np.issubdtype(f.dtype, np.float64))
+        assert_equal(f.meta['observer'], meta['observer'])
+        assert_equal(f.meta['very long key'], meta['very long key'])
+
+    def test_framedata_cration_array_uncertainty(self):
+        a = _random_array.copy()
+        b = _random_array.copy()
+        meta = DEFAULT_HEADER.copy()
+        unit = 'adu'
+        f = FrameData(a, unit=unit, meta=meta, uncertainty=b, u_dtype='float32')
+        assert_almost_equal(a, f.data)
+        assert_almost_equal(b, f.uncertainty)
+        assert_equal(f.unit, u.adu)
+        assert_true(np.issubdtype(f.uncertainty.dtype, np.float32))
+        assert_equal(f.meta['observer'], meta['observer'])
+        assert_equal(f.meta['very long key'], meta['very long key'])
 
 
-def test_wcs_assign():
-    frame = create_framedata()
-    wcs = WCS(naxis=2)
-    frame.wcs = wcs
-    assert_equal(frame.wcs, wcs)
+    def test_framedata_cration_array_mask(self):
+        a = _random_array.copy()
+        b = np.zeros(_random_array.shape)
+        meta = DEFAULT_HEADER.copy()
+        unit = 'adu'
+        f = FrameData(a, unit=unit, meta=meta, mask=b, m_dtype='bool')
+        assert_almost_equal(a, f.data)
+        assert_almost_equal(b, f.mask)
+        assert_equal(f.unit, u.adu)
+        assert_true(np.issubdtype(f.mask.dtype, np.bool))
+        assert_equal(f.meta['observer'], meta['observer'])
+        assert_equal(f.meta['very long key'], meta['very long key'])
+
+    def test_framedata_cration_array_mask_flags(self):
+        a = _random_array.copy()
+        b = np.zeros(_random_array.shape).astype('int16')
+        for i in range(8):
+            b[i, i] = 1 << i
+        meta = DEFAULT_HEADER.copy()
+        unit = 'adu'
+        f = FrameData(a, unit=unit, meta=meta, mask=b, m_dtype='uint8')
+        assert_almost_equal(a, f.data)
+        assert_almost_equal(b, f.mask)
+        assert_equal(f.unit, u.adu)
+        assert_true(np.issubdtype(f.mask.dtype, np.uint8))
+        assert_equal(f.meta['observer'], meta['observer'])
+        assert_equal(f.meta['very long key'], meta['very long key'])
+
+    def test_framedata_empty(self):
+        with pytest.raises(TypeError):
+            # empty initializer should fail
+            FrameData()
+
+    def test_frame_simple(self):
+        framedata = create_framedata()
+        assert_equal(framedata.shape, (DEFAULT_DATA_SIZE, DEFAULT_DATA_SIZE))
+        assert_equal(framedata.size, DEFAULT_DATA_SIZE * DEFAULT_DATA_SIZE)
+        assert_is(framedata.dtype, np.dtype(float))
+
+    def test_frame_init_with_string_electron_unit(self):
+        framedata = FrameData(np.zeros([2, 2]), unit="electron")
+        assert_is(framedata.unit, u.electron)
+
+
+class Test_FrameData_WCS():
+    def test_wcs_invalid(self):
+        frame = create_framedata()
+        with pytest.raises(TypeError):
+            frame.wcs = 5
+
+    def test_wcs_assign(self):
+        frame = create_framedata()
+        wcs = WCS(naxis=2)
+        frame.wcs = wcs
+        assert_equal(frame.wcs, wcs)
+
+
+class Test_FrameData_Meta():
+    def test_framedata_meta_header(self):
+        header = DEFAULT_HEADER.copy()
+        meta = {'testing1': 'a', 'testing2': 'b'}
+        header.update({'testing1': 'c'})
+
+        a = FrameData([1, 2, 3], unit='', meta=meta, header=header)
+        assert_equal(type(a.meta), dict)
+        assert_equal(type(a.header), dict)
+        assert_equal(a.meta['testing1'], 'c')  # Header priority
+        assert_equal(a.meta['testing2'], 'b')
+        assert_equal(a.header['testing1'], 'c')  # Header priority
+        assert_equal(a.header['testing2'], 'b')
+        for k in DEFAULT_HEADER.keys():
+            assert_equal(a.header[k], DEFAULT_HEADER[k])
+            assert_equal(a.meta[k], DEFAULT_HEADER[k])
+
+    def test_framedata_meta_is_case_sensitive(self):
+        frame = create_framedata()
+        key = 'SoMeKEY'
+        lkey = key.lower()
+        ukey = key.upper()
+        frame.meta[key] = 10
+        assert_not_in(lkey, frame.meta)
+        assert_not_in(ukey, frame.meta)
+        assert_in(key, frame.meta)
+
+    def test_metafromheader(self):
+        hdr = fits.header.Header()
+        hdr['observer'] = 'Edwin Hubble'
+        hdr['exptime'] = '3600'
+
+        d1 = FrameData(np.ones((5, 5)), meta=hdr, unit=u.electron)
+        assert_equal(d1.meta['OBSERVER'], 'Edwin Hubble')
+        assert_equal(d1.header['OBSERVER'], 'Edwin Hubble')
+
+    def test_metafromdict(self):
+        dic = {'OBSERVER': 'Edwin Hubble', 'EXPTIME': 3600}
+        d1 = FrameData(np.ones((5, 5)), meta=dic, unit=u.electron)
+        assert_equal(d1.meta['OBSERVER'], 'Edwin Hubble')
+
+    def test_header2meta(self):
+        hdr = fits.header.Header()
+        hdr['observer'] = 'Edwin Hubble'
+        hdr['exptime'] = '3600'
+
+        d1 = FrameData(np.ones((5, 5)), unit=u.electron)
+        d1.header = hdr
+        assert_equal(d1.meta['OBSERVER'], 'Edwin Hubble')
+        assert_equal(d1.header['OBSERVER'], 'Edwin Hubble')
+
+    def test_metafromstring_fail(self):
+        hdr = 'this is not a valid header'
+        with pytest.raises(ValueError):
+            FrameData(np.ones((5, 5)), meta=hdr, unit=u.adu)
+
+    def test_framedata_meta_is_not_fits_header(self):
+        frame = create_framedata()
+        frame.meta = {'OBSERVER': 'Edwin Hubble'}
+        assert_false(isinstance(frame.meta, fits.Header))
+
+
+class Test_FrameData_Uncertainty():
+    def test_setting_uncertainty_with_array(self):
+        frame = create_framedata()
+        frame.uncertainty = None
+        fake_uncertainty = np.sqrt(np.abs(frame.data))
+        frame.uncertainty = fake_uncertainty.copy()
+        assert_equal(frame.uncertainty, fake_uncertainty)
+        assert_equal(frame.unit, u.adu)
+
+    def test_setting_uncertainty_with_scalar(self):
+        uncertainty = 10
+        frame = create_framedata()
+        frame.uncertainty = None
+        frame.uncertainty = uncertainty
+        fake_uncertainty = np.zeros_like(frame.data)
+        fake_uncertainty[:] = uncertainty
+        assert_equal(frame.uncertainty, fake_uncertainty)
+        assert_equal(frame.unit, u.adu)
+
+    def test_setting_uncertainty_with_quantity(self):
+        uncertainty = 10*u.adu
+        frame = create_framedata()
+        frame.uncertainty = None
+        frame.uncertainty = uncertainty
+        fake_uncertainty = np.zeros_like(frame.data)
+        fake_uncertainty[:] = uncertainty.value
+        assert_equal(frame.uncertainty, fake_uncertainty)
+        assert_equal(frame.unit, u.adu)
+
+    def test_setting_uncertainty_wrong_shape_raises_error(self):
+        frame = create_framedata()
+        with pytest.raises(ValueError):
+            frame.uncertainty = np.zeros([3, 4])
+
+    def test_setting_bad_uncertainty_raises_error(self):
+        frame = create_framedata()
+        with pytest.raises(TypeError):
+            # Uncertainty is supposed to be an instance of NDUncertainty
+            frame.uncertainty = 'not a uncertainty'
+
+    def test_none_uncertainty_returns_zeros(self):
+        frame = create_framedata()
+        assert_equal(frame.uncertainty, np.zeros((DEFAULT_DATA_SIZE,
+                                                  DEFAULT_DATA_SIZE)))
+
+
+class Test_FrameData_FITS():
+    def test_to_hdu_defaults(self):
+        frame = create_framedata()
+        frame.meta = {'observer': 'Edwin Hubble'}
+        frame.uncertainty = np.random.rand(*frame.shape)
+        frame.mask = np.zeros(frame.shape)
+        fits_hdulist = frame.to_hdu()
+        assert_is_instance(fits_hdulist, fits.HDUList)
+        for k, v in frame.meta.items():
+            assert_equal(fits_hdulist[0].header[k], v)
+        assert_equal(fits_hdulist[0].data, frame.data)
+        assert_equal(fits_hdulist["UNCERT"].data,
+                    frame.uncertainty)
+        assert_equal(fits_hdulist["MASK"].data, frame.mask)
+        assert_equal(fits_hdulist[0].header['BUNIT'], 'adu')
+
+    def test_to_hdu_no_uncert_no_mask_names(self):
+        frame = create_framedata()
+        frame.meta = {'observer': 'Edwin Hubble'}
+        frame.uncertainty = np.random.rand(*frame.shape)
+        frame.mask = np.zeros(frame.shape)
+        fits_hdulist = frame.to_hdu(hdu_uncertainty=None, hdu_mask=None)
+        assert_is_instance(fits_hdulist, fits.HDUList)
+        for k, v in frame.meta.items():
+            assert_equal(fits_hdulist[0].header[k], v)
+        assert_equal(fits_hdulist[0].data, frame.data)
+        with pytest.raises(KeyError):
+            fits_hdulist['UNCERT']
+        with pytest.raises(KeyError):
+            fits_hdulist['MASK']
+        assert_equal(fits_hdulist[0].header['BUNIT'], 'adu')
+
+
+    # TODO:
+    @pytest.mark.skip('Wait Fits Implementation')
+    def test_initialize_from_FITS(self, tmpdir):
+        frame = create_framedata()
+        hdu = fits.PrimaryHDU(frame.data, header=fits.Header(frame.header))
+        hdulist = fits.HDUList([hdu])
+        filename = tmpdir.join('afile.fits').strpath
+        hdulist.writeto(filename)
+        cd = FrameData.read_fits(filename, unit=u.electron)
+        assert_equal(cd.shape, (DEFAULT_DATA_SIZE, DEFAULT_DATA_SIZE))
+        assert_equal(cd.size, DEFAULT_DATA_SIZE * DEFAULT_DATA_SIZE)
+        assert_true(np.issubdtype(cd.data.dtype, np.floating))
+        for k, v in hdu.header.items():
+            assert_equal(cd.meta[k], v)
+
+    # TODO:
+    @pytest.mark.skip('Wait Fits Implementation')
+    def test_initialize_from_FITS_memmap(self, tmpdir):
+        frame = create_framedata()
+        hdu = fits.PrimaryHDU(frame.data, header=fits.Header(frame.header))
+        hdulist = fits.HDUList([hdu])
+        filename = tmpdir.join('afile.fits').strpath
+        hdulist.writeto(filename)
+        # Same with memmap
+        cd1 = FrameData.read_fits(filename, unit=u.electron,
+                                use_memmap_backend=True)
+        assert_equal(cd1.shape, (DEFAULT_DATA_SIZE, DEFAULT_DATA_SIZE))
+        assert_equal(cd1.size, DEFAULT_DATA_SIZE * DEFAULT_DATA_SIZE)
+        assert_true(np.issubdtype(cd1.data.dtype, np.floating))
+        for k, v in hdu.header.items():
+            assert_equal(cd1.meta[k], v)
+        assert_is_instance(cd1.data, np.memmap)
+
+    # TODO:
+    @pytest.mark.skip('Wait Fits Implementation')
+    def test_initialize_from_fits_with_unit_in_header(self, tmpdir):
+        fake_img = np.zeros([2, 2])
+        hdu = fits.PrimaryHDU(fake_img)
+        hdu.header['bunit'] = u.adu.to_string()
+        filename = tmpdir.join('afile.fits').strpath
+        hdu.writeto(filename)
+        ccd = FrameData.read_fits(filename)
+        # ccd should pick up the unit adu from the fits header...did it?
+        assert_true(ccd.unit is u.adu)
+
+        # An explicit unit in the read overrides any unit in the FITS file
+        ccd2 = FrameData.read_fits(filename, unit="photon")
+        assert_true(ccd2.unit is u.photon)
+
+    # TODO:
+    @pytest.mark.skip('Wait Fits Implementation')
+    def test_initialize_from_fits_with_ADU_in_header(self, tmpdir):
+        fake_img = np.zeros([2, 2])
+        hdu = fits.PrimaryHDU(fake_img)
+        hdu.header['bunit'] = 'ADU'
+        filename = tmpdir.join('afile.fits').strpath
+        hdu.writeto(filename)
+        ccd = FrameData.read_fits(filename)
+        # ccd should pick up the unit adu from the fits header...did it?
+        assert_true(ccd.unit is u.adu)
+
+    # TODO:
+    @pytest.mark.skip('Wait Fits Implementation')
+    def test_initialize_from_fits_with_invalid_unit_in_header(self, tmpdir):
+        hdu = fits.PrimaryHDU(np.ones((2, 2)))
+        hdu.header['bunit'] = 'definetely-not-a-unit'
+        filename = tmpdir.join('afile.fits').strpath
+        hdu.writeto(filename)
+        with pytest.raises(ValueError):
+            FrameData.read_fits(filename)
+
+    # TODO:
+    @pytest.mark.skip('Wait Fits Implementation')
+    def test_initialize_from_fits_with_data_other_extension(self, tmpdir):
+        fake_img = np.arange(4).reshape(2, 2)
+        hdu1 = fits.PrimaryHDU()
+        hdu2 = fits.ImageHDU(fake_img)
+        hdus = fits.HDUList([hdu1, hdu2])
+        filename = tmpdir.join('afile.fits').strpath
+        hdus.writeto(filename)
+        with catch_warnings(FITSFixedWarning) as w:
+            ccd = FrameData.read_fits(filename, unit='adu')
+        assert_equal(len(w), 0)
+        assert_equal(ccd.data, fake_img)
+        # FIXME: why?
+        # assert_equal(hdu2.header + hdu1.header, ccd.header)
+
+    # TODO:
+    @pytest.mark.skip('Wait Fits Implementation')
+    def test_initialize_from_fits_with_extension(self, tmpdir):
+        fake_img1 = np.zeros([2, 2])
+        fake_img2 = np.arange(4).reshape(2, 2)
+        hdu0 = fits.PrimaryHDU()
+        hdu1 = fits.ImageHDU(fake_img1)
+        hdu2 = fits.ImageHDU(fake_img2)
+        hdus = fits.HDUList([hdu0, hdu1, hdu2])
+        filename = tmpdir.join('afile.fits').strpath
+        hdus.writeto(filename)
+        ccd = FrameData.read_fits(filename, hdu=2, unit='adu')
+        assert_equal(ccd.data, fake_img2)
+
+    def test_write_unit_to_hdu(self):
+        frame = create_framedata()
+        ccd_unit = frame.unit
+        hdulist = frame.to_hdu()
+        assert_true('bunit' in hdulist[0].header)
+        assert_equal(hdulist[0].header['bunit'].strip(), ccd_unit.to_string())
+
+    # TODO:
+    @pytest.mark.skip('Wait Fits Implementation')
+    def test_initialize_from_FITS_bad_keyword_raises_error(self, tmpdir):
+        # There are two fits.open keywords that are not permitted in ccdproc:
+        #     do_not_scale_image_data and scale_back
+        frame = create_framedata()
+        filename = tmpdir.join('test.fits').strpath
+        frame.write_fits(filename)
+        with pytest.raises(TypeError):
+            FrameData.read_fits(filename, unit=frame.unit,
+                                do_not_scale_image_data=True)
+        with pytest.raises(TypeError):
+            FrameData.read_fits(filename, unit=frame.unit, scale_back=True)
+
+    # TODO:
+    @pytest.mark.skip('Wait Fits Implementation')
+    def test_framedata_writer(self, tmpdir):
+        frame = create_framedata()
+        filename = tmpdir.join('test.fits').strpath
+        frame.write_fits(filename)
+        ccd_disk = FrameData.read_fits(filename)
+        assert_equal(frame.data, ccd_disk.data)
+
+    # TODO:
+    @pytest.mark.skip('Wait Fits Implementation')
+    def test_fromMEF(self, tmpdir):
+        frame = create_framedata()
+        hdu = frame.to_hdu()[0]
+        hdu2 = fits.PrimaryHDU(2 * frame.data)
+        hdulist = fits.HDUList(hdu)
+        hdulist.append(hdu2)
+        filename = tmpdir.join('afile.fits').strpath
+        hdulist.writeto(filename)
+        # by default, we reading from the first extension
+        cd = FrameData.read_fits(filename, unit=u.electron)
+        assert_equal(cd.data, frame.data)
+        # but reading from the second should work too
+        cd = FrameData.read_fits(filename, hdu=1, unit=u.electron)
+        assert_equal(cd.data, 2 * frame.data)

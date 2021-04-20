@@ -8,7 +8,6 @@ from packaging import version
 
 # Testing qfloat compatibility with Numpy ufuncs and array functions.
 
-
 class TestQFloatNumpyArrayFuncs:
     """Test numpy array functions for numpy comatibility."""
 

@@ -265,32 +265,32 @@ class FrameData:
 
     @property
     def history(self):
-        """FrameData stored history."""
+        """Return the FrameData stored history."""
         return self._history
 
     @property
     def origin_filename(self):
-        """Original filename of the data."""
+        """Return the original filename of the data."""
         return self._origin
 
     @property
     def shape(self):
-        """Data shape following numpy. Same as `FrameData.data.shape`"""
+        """Return the data shape following numpy. `FrameData.data.shape`"""
         return self._data.shape
 
     @property
     def dtype(self):
-        """Data type of the data. Same as `FrameData.data.dtype`"""
+        """Return the dta type of the data. `FrameData.data.dtype`"""
         return self._data.dtype
 
     @property
     def size(self):
-        """Size of the data. Same as `FrameData.data.size`"""
+        """ Return the size of the data. `FrameData.data.size`"""
         return self._data.size
 
     @property
     def wcs(self):
-        """Data World Coordinate System."""
+        """Return the World Coordinate System."""
         return self._wcs
 
     @wcs.setter
@@ -302,7 +302,7 @@ class FrameData:
 
     @property
     def meta(self):
-        """Metadata (header) of the frame."""
+        """Return the metadata (header) of the frame."""
         return self._meta
 
     @meta.setter
@@ -311,7 +311,7 @@ class FrameData:
 
     @property
     def header(self):
-        """Header (metadata) of the frame."""
+        """Return the header (metadata) of the frame."""
         return self._meta
 
     @header.setter
@@ -324,7 +324,7 @@ class FrameData:
 
     @property
     def data(self):
-        """Main data array."""
+        """Return the main data container."""
         return self._data
 
     @data.setter
@@ -336,7 +336,15 @@ class FrameData:
 
     @property
     def uncertainty(self):
-        """Data uncertainty."""
+        """Return the uncertainty.
+
+        Note
+        ----
+        - If the uncertainty is an empty container, this property returns
+          an `~numpy.zeros_like` array with the same shape of the data.
+        """
+        if self._unct.empty:
+            return np.zeros_like(self._data)
         return self._unct
 
     @uncertainty.setter
@@ -350,7 +358,7 @@ class FrameData:
 
     @property
     def mask(self):
-        """Data mask."""
+        """Access mask data."""
         return self._mask
 
     @mask.setter
@@ -420,7 +428,7 @@ class FrameData:
         hdul = fits.HDUList(fits.PrimaryHDU(data, header=header))
 
         if hdu_uncertainty is not None and self.uncertainty is not None:
-            if not self.uncertainty.empty:
+            if not self._unct.empty:
                 uncert = self.uncertainty
                 uncert_unit = self.unit.to_string()
                 uncert_h = fits.Header()

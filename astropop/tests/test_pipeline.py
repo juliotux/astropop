@@ -41,7 +41,7 @@ class SumStage(Stage):
         c = config.get('c')
         d = variables.get('d')
 
-        logger.warn('Testing Warnings')
+        logger.warning('Testing Warnings')
 
         s = instrument.sum_numbers(a, b)
         m = instrument.multiply_numbers(b, d)
