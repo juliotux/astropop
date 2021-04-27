@@ -5,7 +5,7 @@ import os
 import pytest
 from astropop.py_utils import mkdir_p, string_fix, process_list, \
                               check_iterable, batch_key_replace, \
-                              run_command, IndexedDict
+                              run_command, IndexedDict, check_number
 import numpy as np
 
 from astropop.testing import assert_true, assert_equal, assert_in, \
@@ -18,6 +18,23 @@ def test_mkdir(tmpdir):
     assert_true(os.path.isdir(p))
     # mkdir a existent dir should not raise error
     mkdir_p(p)
+
+
+def test_check_number():
+    assert_true(check_number(1))
+    assert_true(check_number(1.5))
+    assert_false(check_number('2'))
+    assert_false(check_number('2.5'))
+    assert_false(check_number(1+3j))
+    assert_false(check_number(5j))
+    assert_false(check_number('A'))
+    assert_false(check_number('AB'))
+    assert_false(check_number([1, 2, 3]))
+    assert_false(check_number(np.array([1, 2])))
+    assert_true(check_number(np.float(3)))
+    assert_true(check_number(np.int('3')))
+    assert_false(check_number(False))
+    assert_false(check_number((1, 2, 3)))
 
 
 def test_mkdir_oserror():
