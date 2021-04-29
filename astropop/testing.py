@@ -42,16 +42,21 @@ assert_warns = func_wrapper(npt.assert_warns)
 assert_not_warnings = func_wrapper(npt.assert_no_warnings)
 
 
+def __assert(condition, msg):
+    """Assert wrapper to avoid security problems."""
+    if not condition:
+        raise AssertionError(msg)
+
 @func_wrapper
 def assert_true(a, msg=''):
     """Raise assertion error if a is not True."""
-    assert a, msg
+    __assert(a, msg)
 
 
 @func_wrapper
 def assert_false(a, msg=''):
     """Raise assertion error if condition is not False."""
-    assert not a, msg
+    __assert(not a, msg)
 
 
 assert_equal = func_wrapper(npt.assert_array_equal,
@@ -77,70 +82,70 @@ def assert_not_equal(a, b, msg=''):
 @func_wrapper
 def assert_is(a, b, msg=''):
     """Raise assertion error if `a is not b`."""
-    assert a is b, msg
+    __assert(a is b, msg)
 
 
 @func_wrapper
 def assert_is_not(a, b, msg=''):
     """Raise assertion error if `a is b`."""
-    assert a is not b, msg
+    __assert(a is not b, msg)
 
 
 @func_wrapper
 def assert_is_none(a, msg=''):
     """Raise assertion error if `a is not None`."""
-    assert a is None, msg
+    __assert(a is None, msg)
 
 
 @func_wrapper
 def assert_is_not_none(a, msg=''):
     """Raise assertion error if `a is None`."""
-    assert a is not None, msg
+    __assert(a is not None, msg)
 
 
 @func_wrapper
 def assert_in(a, b, msg=''):
     """Raise assertion error if `a in b`."""
-    assert a in b, msg
+    __assert(a in b, msg)
 
 
 @func_wrapper
 def assert_not_in(a, b, msg=''):
     """Raise assertion error if `a not in b`."""
-    assert a not in b, msg
+    __assert(a not in b, msg)
 
 
 @func_wrapper
 def assert_is_instance(a, b, msg=''):
     """Raise assertion error if not `isinstance(a, b)`."""
-    assert isinstance(a, b), msg
+    __assert(isinstance(a, b), msg)
 
 
 @func_wrapper
 def assert_is_not_instance(a, b, msg=''):
     """Raise assertion error if `isinstance(a, b)`."""
-    assert not isinstance(a, b), msg
+    __assert(not isinstance(a, b), msg)
 
 
 @func_wrapper
 def assert_greater(a, b, msg=""):
     """Raise assertion error if a is not greater then b."""
-    assert a > b, msg
+    __assert(a > b, msg)
 
 
 @func_wrapper
 def assert_greater_equal(a, b, msg=""):
     """Raise assertion error if a is not greater or equal then b."""
-    assert a >= b, msg
+    __assert(a >= b, msg)
 
 
 @func_wrapper
 def assert_less(a, b, msg=""):
     """Raise assertion error if a is not less b."""
-    assert a < b, msg
+    __assert(a < b, msg)
 
 
 @func_wrapper
 def assert_less_equal(a, b, msg=""):
     """Raise assertion error if a is not less or equal then b."""
-    assert a <= b, msg
+    __assert(a <= b, msg)

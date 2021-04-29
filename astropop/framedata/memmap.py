@@ -95,8 +95,7 @@ def to_memmap_operator(item):
             func = self._contained.__getattribute__(item)
             func = to_memmap_attr(func)
             return func(*args, **kwargs)
-        else:
-            raise EmptyDataError('Empty data container.')
+        raise EmptyDataError('Empty data container.')
     return wrapper
 
 

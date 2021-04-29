@@ -5,14 +5,11 @@ import pytest
 from astropop.framedata import MemMapArray, create_array_memmap, \
                                delete_array_memmap, EmptyDataError
 import numpy as np
-import warnings
 
 from astropop.testing import assert_is_instance, assert_true, \
                              assert_almost_equal, assert_equal, \
                              assert_false, assert_is_not_instance, \
                              assert_not_equal, assert_is
-
-warnings.filterwarnings('ignore')
 
 
 def test_create_and_delete_memmap(tmpdir):

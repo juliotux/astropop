@@ -3,9 +3,10 @@
 # TODO: reimplement imcombine
 
 import numpy as np
+from astropy.units.core import UnitConversionError
 
-from ..framedata import FrameData, check_framedata, EmptyDataError
-from ..math.physical import QFloat, convert_to_qfloat
+from ..framedata import FrameData
+from ..math.physical import QFloat, convert_to_qfloat, UnitsError
 from ..logger import logger, log_to_list
 
 __all__ = ['imarith', 'imcombine']
@@ -20,7 +21,7 @@ _arith_funcs = {'+': np.add,
                 '%': np.remainder}
 
 
-def _qf_or_framedata(data, alternative=QFloat):
+def _qf_or_framedata(data, alternative=convert_to_qfloat):
     """Check if the data is QFloat or FrameData. Else, convert it."""
     if isinstance(data, (QFloat, FrameData)):
         return data
@@ -34,14 +35,14 @@ def _arith_mask(operand1, operand2, logger):
             return operand.mask
         return False
 
-    mask1 = operand1.mask
-    mask2 = operand2.mask
+    mask1 = _extract(operand1)
+    mask2 = _extract(operand2)
 
     old_n = np.count_nonzero(mask1)
     nmask = np.logical_or(mask1, mask2)
     new_n = np.count_nonzero(nmask)
-    logger.debug(f'Updating mask in math operation. '
-                 f'From {old_n} to {new_n} masked elements.')
+    logger.debug('Updating mask in math operation. '
+                 'From %i to %i masked elements.', old_n, new_n)
     return nmask
 
 
@@ -113,16 +114,18 @@ def imarith(operand1, operand2, operation, inplace=False,
 
     operand1 = _qf_or_framedata(operand1)
     operand2 = _qf_or_framedata(operand2)
-    if operand1.data.empty or operand2.data.empty:
-        raise EmptyDataError(f'Operation {operation} not permited with empty'
-                             f' data containers.')
 
     # Add the operation entry to the ccd history.
     lh = log_to_list(logger, ccd.history)
-    logger.debug(f'Operation {operation} between {operand1} and {operand2}')
+    logger.debug('Operation %s between %s and %s',
+                 operation, operand1, operand2)
 
     # Perform data, mask and uncertainty operations
-    ccd.data, ccd.uncertainty = _arith(operand1, operand2, operation)
+    try:
+        ccd.data, ccd.uncertainty = _arith(operand1, operand2, operation)
+    except UnitConversionError:
+        raise UnitsError(f'Units {operand1.unit} and {operand2.unit} are'
+                         f' incompatible for {operation} operation.')
 
     if join_masks:
         ccd.mask = _arith_mask(operand1, operand2, logger)

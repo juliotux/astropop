@@ -91,18 +91,3 @@ def test_imarith_ops_frames(op, vs, inplace, handle_mask):
         assert_is(res,frame1)
     else:
         assert_is_not(res,frame1)
-
-
-def test_invalid_op():
-    frame1 = FrameData(np.zeros((10, 10)), unit='')
-    frame2 = FrameData(np.zeros((10, 10)), unit='')
-    with pytest.raises(ValueError) as exc:
-        imarith(frame1, frame2, 'not an op')
-        assert_in('not supported', str(exc.value))
-
-
-def test_invalid_shapes():
-    frame1 = FrameData(np.zeros((10, 10)), unit='')
-    frame2 = FrameData(np.zeros((5, 5)), unit='')
-    with pytest.raises(ValueError):
-        imarith(frame1, frame2, '+')

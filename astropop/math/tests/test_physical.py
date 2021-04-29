@@ -13,7 +13,6 @@ from astropop.math.physical import QFloat, qfloat, units, \
 
 # pylint: disable=no-member, pointless-statement
 
-
 # Test units handling --------------------------------------------------------
 def test_qfloat_same_unit():
     qf1 = QFloat(1.0, 0.1, 'm')
