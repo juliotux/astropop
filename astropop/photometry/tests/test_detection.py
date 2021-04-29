@@ -15,6 +15,43 @@ def test_gen_filter_kernel():
     pass
 
 # @pytest.mark.parametrize('r', [2, 3, 4])
+def test_cosmicrayed_background():
+    # im_e = np.random.poisson(im_e) criar uma distribuição de erro poissonico 
+    # Deve criar  um erro poissonico sobre uma distribuição gaussiana
+
+    scale = 1.0
+    psi = 90
+    p = 0.1
+    theta = np.pi/2
+    cosmicray_mag_mult = 100
+
+    image_test = gen_image(scale, psi, p, theta)
+
+    image_cols = len(image_test)
+    image_rows = len(image_test[0])
+
+    box_size = image_cols
+    filter_size = image_cols
+    
+    image_test[image_cols//4 + 1][image_rows//4] = cosmicray_mag_mult*psi
+    image_test[image_cols//4 + 2][image_rows//4] = cosmicray_mag_mult*psi
+    image_test[image_cols//4 + 2][image_rows//4 + 1] = cosmicray_mag_mult*psi
+    image_test[image_cols//4 + 2][image_rows//4 + 2] = cosmicray_mag_mult*psi
+
+    bkg_1_global = background(image_test, box_size, filter_size, mask=None, global_bkg=True)
+    bkg_1 = background(image_test, box_size, filter_size, mask=None, global_bkg=False)
+
+
+    npt.assert_array_almost_equal(bkg_1_global[0], 298, decimal=0)
+    npt.assert_array_almost_equal(bkg_1_global[1], 25, decimal=0)
+
+    npt.assert_array_equal(len(bkg_1), 2)
+    npt.assert_array_equal(len(bkg_1[0]), 256)
+    npt.assert_array_equal(len(bkg_1[0][0]), 256)
+    npt.assert_array_almost_equal(bkg_1[0][0][0], 298, decimal=0)
+    npt.assert_array_almost_equal(bkg_1[0][149][149], 298, decimal=0)
+
+# @pytest.mark.parametrize('r', [2, 3, 4])
 def test_background():
     # im_e = np.random.poisson(im_e) criar uma distribuição de erro poissonico 
     # Deve criar  um erro poissonico sobre uma distribuição gaussiana
@@ -49,7 +86,7 @@ def test_global_background():
     
     # im_e = np.random.poisson(im_e) criar uma distribuição de erro poissonico 
     # Deve criar  um erro poissonico sobre uma distribuição gaussiana
-#%%
+
     scale = 1
     psi = 120
     p = 0.1
@@ -66,12 +103,9 @@ def test_global_background():
     bkg_1_global = background(image_test, box_size, filter_size, mask=None, global_bkg=True)
 
     print(bkg_1_global)
-#%%
+
     npt.assert_array_almost_equal(bkg_1_global[0], 298, decimal=0)
     npt.assert_array_almost_equal(bkg_1_global[1], 25, decimal=0)    
-
-
-#%%
 
 # @pytest.mark.parametrize('r', [2, 3, 4])
 def test_sepfind():
