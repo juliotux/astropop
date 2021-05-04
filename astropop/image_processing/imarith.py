@@ -148,7 +148,7 @@ def imarith(operand1, operand2, operation, inplace=False,
 
 
 def _sigma_clip(data, threshold=3, cen_func=np.nanmedian, dev_func=np.nanstd,
-               axis=None):
+                axis=None):
     """Create a mask of the sigma clipped pixels.ccdclip.
 
     It uses the `~astropy.stats.sigma_clip` to perform sigmaclipping on the
@@ -186,7 +186,7 @@ def _sigma_clip(data, threshold=3, cen_func=np.nanmedian, dev_func=np.nanstd,
     elif check_iterable(threshold):
         slow, shigh = threshold
     else:
-        raise TypeError(f'Sigma clipping threshold {sigma_clip} not'
+        raise TypeError(f'Sigma clipping threshold {threshold} not'
                         ' recognized.')
 
     mask = sc(data, sigma_lower=slow, sigma_upper=shigh, maxiters=1,

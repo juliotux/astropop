@@ -143,7 +143,9 @@ def test_batch_key_replace_list():
 def test_string_fix(inp, enc, res):
     if enc is not None:
         inp = inp.encode(enc)
-    assert_equal(string_fix(inp, enc), res)
+        assert_equal(string_fix(inp, enc), res)
+    else:
+        assert_equal(string_fix(inp), res)
 
 
 def test_indexeddict_create():
