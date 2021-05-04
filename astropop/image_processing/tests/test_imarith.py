@@ -9,8 +9,7 @@ from astropop.math.physical import UnitsError, units, QFloat
 from astropop.testing import assert_equal, assert_is, assert_is_not, \
                              assert_in, assert_almost_equal
 
-# TODO: Test with None FrameData
-# TODO: Test with None scalar values
+
 # TODO: % and ** functions
 
 
@@ -414,7 +413,6 @@ class Test_Imartih_OPs_div:
         frame2 = QFloat(2, unit='electron/adu')
         std_test_frame(self.op, frame1, frame2, result,
                        inplace=inplace, handle_mask=handle_mask)
-
 
 
 @pytest.mark.parametrize('handle_mask', [True, False])

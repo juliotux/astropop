@@ -2,6 +2,9 @@
 .. |FrameData| replace:: :class:`~astropop.framedata.FrameData`
 .. |MemMapArray| replace:: :class:`~astropop.framedata.MemMapArray`
 .. |QFloat| replace:: :class:`~astropop.math.physical.QFloat`
+.. |imcombine| replace:: :function:`~astropop.image_processing.imarith.imcombine`
+.. |ImCombiner| replace:: :class:`~astropop.image_processing.imarith.ImCombiner`
+.. |imarith| replace:: :function:`~astropop.image_processing.imarith.imarith`
 
 .. |astropy| replace:: Astropy
 .. |CCDData| replace:: :class:`~astropy.nddata.ccddata.CCDData`
