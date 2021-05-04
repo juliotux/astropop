@@ -35,8 +35,7 @@ class _LocalCatalog(_BasePhotometryCatalog, abc.ABC):
                                      self._table[self.dec_key],
                                      skycoord=False)
             return SkyCoord(tabs[0], tabs[1], unit=('degree', 'degree'))
-        else:
-            return None
+        return None
 
     @property
     def id(self):
@@ -87,9 +86,8 @@ class _LocalCatalog(_BasePhotometryCatalog, abc.ABC):
         return self.id[filt]
 
     def match_objects(self, ra, dec, limit_angle='2 arcsec'):
-        '''Query the informations in the catalog from a list of ra and dec
-        coordinates, matching the stars by a limit_angle.
-        '''
+        """Query the informations in the catalog from a list of ra and dec
+        coordinates, matching the stars by a limit_angle."""
         rac, decc = self.query_ra_dec()
 
         indx = match_indexes(ra, dec, rac, decc, limit_angle)
@@ -125,7 +123,7 @@ class _LocalCatalog(_BasePhotometryCatalog, abc.ABC):
 
 class TableCatalog(_LocalCatalog):
     """Local catalog loaded from anything that can be converted directly to
-    an ``astropy.table.Table``."""
+    an `~astropy.table.Table`."""
     type = 'local'
 
     def __init__(self, table, id_key=None, ra_key=None, dec_key=None,

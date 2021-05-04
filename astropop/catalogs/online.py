@@ -68,9 +68,7 @@ def get_center_skycoord(center, logger=logger):
             if len(t) == 0:
                 raise ValueError(f'Coordinates {center} could not be'
                                  ' resolved.')
-            else:
-                return guess_coordinates(t['RA'][0], t['DEC'][0],
-                                         skycoord=True)
+            guess_coordinates(t['RA'][0], t['DEC'][0], skycoord=True)
     elif isinstance(center, (tuple, list, np.ndarray)) and len(center) == 2:
         return guess_coordinates(center[0], center[1], skycoord=True)
     elif isinstance(center, SkyCoord):
@@ -134,8 +132,9 @@ class VizierCatalogClass(_BasePhotometryCatalog):
         if table is None:
             raise ValueError("No Vizier table was defined.")
 
-        logger.info(f"Performing Vizier query with: center:{center} "
-                    "radius:{radius} vizier_table:{table}")
+        logger.info("Performing Vizier query with: center:%s "
+                    "radius:%s vizier_table:%s",
+                    center, radius, table)
 
         self._last_query_info = query_info
         self._last_query_table = None
@@ -185,16 +184,16 @@ class VizierCatalogClass(_BasePhotometryCatalog):
         if self.id_key == -1:
             return np.array(['']*len(self._last_query_table))
 
-        id = self._last_query_table[self.id_key].data
+        idn = self._last_query_table[self.id_key].data
         if self.prepend_id_key:
             if isinstance(self.prepend_id_key, six.string_types):
                 id_key = self.prepend_id_key
             else:
                 id_key = self.id_key
-            id = [f"{id_key} {i}" for i in id]
-            id = np.array(id)
+            idn = [f"{id_key} {i}" for i in idn]
+            idn = np.array(idn)
 
-        return string_fix(id)
+        return string_fix(idn)
 
     def query_flux(self, center, radius, band, logger=logger, **kwargs):
         self.check_filter(band)
@@ -321,8 +320,9 @@ class SimbadCatalogClass(_BasePhotometryCatalog):
             logger.debug("Loading cached query.")
             return copy.copy(self._last_query_table)
 
-        logger.info(f"Performing Simbad query with: center:{center} "
-                    "radius:{radius} band:{band}")
+        logger.info("Performing Simbad query with: center: %s"
+                    "radius:%s band:%s",
+                    center, radius, band)
 
         self._last_query_info = query_info
         self._last_query_table = None

@@ -1,10 +1,9 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
-'''
-Astrometry.net
+"""Astrometry.net wrapper.
 
 This module wraps the astrometry.net solve-field routine, with automatic
 improvements.
-'''
+"""
 
 
 import os
@@ -33,7 +32,8 @@ _solve_field = shutil.which('solve-field')
 
 
 class AstrometryNetUnsolvedField(CalledProcessError):
-    """ Raised if Astrometry.net could not solve the field """
+    """Raised if Astrometry.net could not solve the field."""
+
     def __init__(self, path):
         self.path = path
 
@@ -77,9 +77,7 @@ class AstrometrySolver():
         self.logger = logger
 
     def _guess_coordinates(self, header, ra_key='RA', dec_key='DEC'):
-        '''
-        Guess the center coordinates of field based in header keys.
-        '''
+        """Guess the field center based in header keys."""
         ra = header.get(ra_key)
         dec = header.get(dec_key)
         return guess_coordinates(ra, dec)
@@ -97,12 +95,14 @@ class AstrometrySolver():
             try:
                 ra = float(image_params.get('ra'))
                 dec = float(image_params.get('dec'))
-                self.logger.info(f"Usign given field coordinates: {ra} {dec}")
+                self.logger.info("Usign given field coordinates: %s %s",
+                                 ra, dec)
                 options['ra'] = ra
                 options['dec'] = dec
             except ValueError:
-                self.logger.warn(f'Could not convert field coordinates to'
-                                 ' decimal degrees. Ignoring it: {ra} {dec}')
+                self.logger.warning('Could not convert field coordinates to'
+                                    ' decimal degrees. Ignoring it: %s %s',
+                                    ra, dec)
         elif 'ra_key' in keys and 'dec_key' in keys:
             self.logger.info("Figuring out field center coordinates")
             try:
@@ -112,11 +112,11 @@ class AstrometrySolver():
                 options['ra'] = coords.ra.degree
                 options['dec'] = coords.dec.degree
             except KeyError:
-                self.logger.warn("Cannot understand coordinates in"
-                                 " FITS header")
+                self.logger.warning("Cannot understand coordinates in"
+                                    " FITS header")
         else:
-            self.logger.warn("Astrometry.net will try to solve without the"
-                             " field center")
+            self.logger.warning("Astrometry.net will try to solve without the"
+                                " field center")
 
         if 'pltscl' in keys:
             try:
@@ -127,24 +127,25 @@ class AstrometrySolver():
                     pltscl = float(image_params.get('pltscl'))
                     pltscl = [0.8*pltscl, 1.2*pltscl]
                 pltscl = np.array(sorted(pltscl))
-                self.logger.info(f"Usign given plate scale: {pltscl}")
+                self.logger.info("Usign given plate scale: %s", pltscl)
             except ValueError:
-                self.logger.warn('Plate scale value not recognized.'
-                                 f' Ignoring it. {pltscl}')
+                self.logger.warning('Plate scale value not recognized.'
+                                    ' Ignoring it. %s', pltscl)
         elif 'pltscl_key' in keys:
             self.logger.info("Figuring out the plate scale from FITS header")
             try:
                 pltscl = header[image_params.get('pltscl_key')]
                 pltscl = float(solve_decimal(pltscl))
             except KeyError:
-                self.logger.warn("Cannot understand plate scale in FITS"
-                                 " header")
+                self.logger.warning("Cannot understand plate scale in FITS"
+                                    " header")
         try:
             options['scale-high'] = pltscl[1]
             options['scale-low'] = pltscl[0]
             options['scale-units'] = 'arcsecperpix'
         except NameError:
-            self.logger.warn('Astrometry.net will be run without plate scale.')
+            self.logger.warning('Astrometry.net will be run without plate'
+                                ' scale.')
 
         if 'ra' in options.keys():
             if 'radius' in keys:
@@ -203,8 +204,8 @@ class AstrometrySolver():
             field_params = self._guess_field_params(fits.getheader(filename),
                                                     image_params=image_params)
         except (OSError, IOError):
-            self.logger.warn('Could not guess field center and plate scale. '
-                             'Running in slow mode.')
+            self.logger.warning('Could not guess field center and plate scale.'
+                                ' Running in slow mode.')
             field_params = {}
         options.update(field_params)
 
@@ -247,7 +248,7 @@ class AstrometrySolver():
                 if ord(fd.read()) != 1:
                     raise AstrometryNetUnsolvedField(filename)
             solved_wcs_file = os.path.join(output_dir, root + '.wcs')
-            self.logger.info('Loading solved header from %s' % solved_wcs_file)
+            self.logger.info('Loading solved header from %s', solved_wcs_file)
             solved_header = fits.getheader(solved_wcs_file, 0)
 
             # remove the tree if the file is temporary and not set to keep
@@ -298,23 +299,26 @@ def create_xyls(fname, x, y, flux, imagew, imageh, header=None, dtype='f8',
     f = fits.HDUList([fits.PrimaryHDU(header=header),
                       fits.BinTableHDU(xyls[sort[::-1]],
                                        header=fits.Header(head))])
-    logger.debug('Saving .xyls to ' + fname)
+    logger.debug('Saving .xyls to %s', fname)
     f.writeto(fname)
 
 
 def solve_astrometry_xy(x, y, flux, image_header, image_width, image_height,
                         return_wcs=False, logger=logger, image_params=None,
                         **kwargs):
-    '''
-    image_params are:
-        pltscl: plate scale (arcsec/px)
-        ra: right ascension (decimal degrees)
-        dec: declination (decimal degrees)
-        pltscl_key: header key for plate scale
-        ra_key: header key for right ascension
-        dec_key: header key for declination
-        radius: maximum search radius
-    '''
+    """Solve astrometry from a (x,y) sources list.
+
+    Notes
+    -----
+    - image_params are:
+      * pltscl: plate scale (arcsec/px)
+      * ra: right ascension (decimal degrees)
+      * dec: declination (decimal degrees)
+      * pltscl_key: header key for plate scale
+      * ra_key: header key for right ascension
+      * dec_key: header key for declination
+      * radius: maximum search radius
+    """
     if image_params is None:
         image_params = {}
     image_header = clean_previous_wcs(image_header)
@@ -382,7 +386,7 @@ def fit_wcs(x, y, ra, dec, image_width, image_height, sip=False,
                               ('INDEX_RA', 'f8'), ('INDEX_DEC', 'f8')]))
     f = fits.HDUList([fits.PrimaryHDU(),
                       fits.BinTableHDU(xyrd)])
-    logger.debug('Saving xyrd to ' + tmp_table.name)
+    logger.debug('Saving xyrd to %s', tmp_table.name)
     f.writeto(tmp_table.name)
 
     args = [command]
@@ -397,7 +401,7 @@ def fit_wcs(x, y, ra, dec, image_width, image_height, sip=False,
         process, _, _ = run_command(args, logger=logger, **kwargs)
         if process.returncode != 0:
             raise CalledProcessError(process.returncode, args)
-        logger.info(f'Loading solved header from {solved_wcs_file.name}')
+        logger.info('Loading solved header from %s', solved_wcs_file.name)
         solved_header = fits.getheader(solved_wcs_file.name, 0)
     except Exception as e:
         raise AstrometryNetUnsolvedField("Could not fit wcs to this lists."
