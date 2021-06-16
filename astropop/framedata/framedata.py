@@ -10,11 +10,13 @@ import copy as cp
 from tempfile import mkdtemp, mkstemp
 from astropy import units as u
 from astropy.wcs import WCS
+from astropy.io import fits
+from astropy.nddata import CCDData
 
 from ..py_utils import mkdir_p
 from .memmap import MemMapArray
 from .compat import extract_header_wcs, _to_ccddata, _to_hdu, \
-                    _extract_ccddata, CCDData
+                    _extract_ccddata, _extract_fits, imhdus
 from ._unit_property import unit_property
 
 
@@ -53,15 +55,25 @@ def read_framedata(obj, copy=False):
     - If obj is `~astropy.io.fits.HDUList`, `~astropy.io.fits.HDUList` or
       `~astropy.nddata.CCDData`, they will be properly translated to
       `FrameData`.
-    - If numbers or `~astropop.math.physical.QFloat`, they will be translated
-      to a `FrameData` withou metadata.
+    - If numbers or `~astropop.math.physical.QFloat`,
+      `~astropy.units.Quantity`, they will be translated to a `FrameData`
+      without metadata.
     """
     if isinstance(obj, FrameData):
         if copy:
-            return cp.deepcopy(obj)
-        return obj
+            obj = cp.deepcopy(obj)
     elif isinstance(obj, CCDData):
-        return FrameData(**_extract_ccddata(obj))
+        obj = FrameData(**_extract_ccddata(obj))
+    elif isinstance(obj, (str, bytes, os.PathLike)):
+        obj = FrameData(**_extract_fits(obj))
+    elif isinstance(obj, (fits.HDUList)+imhdus):
+        obj = FrameData(**_extract_fits(obj))
+    else:
+        raise ValueError(f'Object {obj} is not compatible with FrameData.')
+
+    # TODO: numbers, np.array, QFloat, Quantity
+
+    return obj
 
 
 check_framedata = read_framedata
@@ -229,6 +241,7 @@ class FrameData:
 
     # TODO: Complete reimplement the initialize
     # TODO: __copy__
+    # TODO: write_fits
 
     _memmapping = False
     _unit = None
@@ -382,6 +395,7 @@ class FrameData:
           an `~numpy.zeros_like` array with the same shape of the data.
         """
         if self._unct.empty:
+            # FIXME: this should be None, but conflicts with qfloat.
             return np.zeros_like(self._data)
         return self._unct
 
