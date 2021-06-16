@@ -6,20 +6,19 @@
 
 import os
 import numpy as np
+import copy as cp
 from tempfile import mkdtemp, mkstemp
 from astropy import units as u
-from astropy.io import fits
 from astropy.wcs import WCS
-from astropy.nddata.ccddata import CCDData
-from astropy.nddata import StdDevUncertainty
 
 from ..py_utils import mkdir_p
 from .memmap import MemMapArray
-from .compat import extract_header_wcs
+from .compat import extract_header_wcs, _to_ccddata, _to_hdu, \
+                    _extract_ccddata, CCDData
 from ._unit_property import unit_property
 
 
-__all__ = ['FrameData']
+__all__ = ['FrameData', 'read_framedata', 'check_framedata']
 
 
 def _get_shape(d):
@@ -28,6 +27,44 @@ def _get_shape(d):
     else:
         ds = np.array(d).shape
     return ds
+
+
+def read_framedata(obj, copy=False):
+    """Read an object to a FrameData container.
+
+    Parameters
+    ----------
+    - obj: any compatible, see notes
+      Object that will be readed to the FrameData.
+    - copy: bool (optional)
+      If the object is already a FrameData, return a copy instead of the
+      original one.
+      Default: False
+
+    Returns
+    -------
+    - frame: `FrameData`
+      The readed FrameData object.
+
+    Notes
+    -----
+    - If obj is a string or `~pathlib.Path`, it will be interpreted as a file.
+      File types will be checked. Just FITS format supported now.
+    - If obj is `~astropy.io.fits.HDUList`, `~astropy.io.fits.HDUList` or
+      `~astropy.nddata.CCDData`, they will be properly translated to
+      `FrameData`.
+    - If numbers or `~astropop.math.physical.QFloat`, they will be translated
+      to a `FrameData` withou metadata.
+    """
+    if isinstance(obj, FrameData):
+        if copy:
+            return cp.deepcopy(obj)
+        return obj
+    elif isinstance(obj, CCDData):
+        return FrameData(**_extract_ccddata(obj))
+
+
+check_framedata = read_framedata
 
 
 def shape_consistency(data=None, uncertainty=None, mask=None):
@@ -189,6 +226,7 @@ class FrameData:
       builtin math operations. For math operations using FrameData, check
       `~astropop.ccd_processing.imarith` module.
     """
+
     # TODO: Complete reimplement the initialize
     # TODO: __copy__
 
@@ -265,32 +303,32 @@ class FrameData:
 
     @property
     def history(self):
-        """Return the FrameData stored history."""
+        """Get the FrameData stored history."""
         return self._history
 
     @property
     def origin_filename(self):
-        """Return the original filename of the data."""
+        """Get the original filename of the data."""
         return self._origin
 
     @property
     def shape(self):
-        """Return the data shape following numpy. `FrameData.data.shape`"""
+        """Get the data shape following numpy. `FrameData.data.shape`."""
         return self._data.shape
 
     @property
     def dtype(self):
-        """Return the dta type of the data. `FrameData.data.dtype`"""
+        """Get the dta type of the data. `FrameData.data.dtype`."""
         return self._data.dtype
 
     @property
     def size(self):
-        """ Return the size of the data. `FrameData.data.size`"""
+        """Get the size of the data. `FrameData.data.size`."""
         return self._data.size
 
     @property
     def wcs(self):
-        """Return the World Coordinate System."""
+        """Get the World Coordinate System."""
         return self._wcs
 
     @wcs.setter
@@ -302,7 +340,7 @@ class FrameData:
 
     @property
     def meta(self):
-        """Return the metadata (header) of the frame."""
+        """Get the metadata (header) of the frame."""
         return self._meta
 
     @meta.setter
@@ -311,7 +349,7 @@ class FrameData:
 
     @property
     def header(self):
-        """Return the header (metadata) of the frame."""
+        """Get the header (metadata) of the frame."""
         return self._meta
 
     @header.setter
@@ -324,7 +362,7 @@ class FrameData:
 
     @property
     def data(self):
-        """Return the main data container."""
+        """Get the main data container."""
         return self._data
 
     @data.setter
@@ -394,9 +432,7 @@ class FrameData:
         self._unct.disable_memmap(remove=True)
         self._memmapping = False
 
-    def to_hdu(self, hdu_uncertainty='UNCERT',
-               hdu_mask='MASK', unit_key='BUNIT',
-               wcs_relax=True):
+    def to_hdu(self, **kwargs):
         """Generate an HDUList from this FrameData.
 
         Parameters
@@ -417,33 +453,7 @@ class FrameData:
         `~astropy.fits.HDUList` :
             HDU storing all FrameData informations.
         """
-        data = self.data.copy()
-        header = fits.Header(self.header)
-        if self.wcs is not None:
-            header.extend(self.wcs.to_header(relax=wcs_relax),
-                          useblanks=False, update=True)
-        header[unit_key] = self.unit.to_string()
-        for i in self.history:
-            header['history'] = i
-        hdul = fits.HDUList(fits.PrimaryHDU(data, header=header))
-
-        if hdu_uncertainty is not None and self.uncertainty is not None:
-            if not self._unct.empty:
-                uncert = self.uncertainty
-                uncert_unit = self.unit.to_string()
-                uncert_h = fits.Header()
-                uncert_h[unit_key] = uncert_unit
-                hdul.append(fits.ImageHDU(uncert, header=uncert_h,
-                                          name=hdu_uncertainty))
-
-        if hdu_mask is not None and self.mask is not None:
-            mask = self.mask
-            if np.issubdtype(mask.dtype, np.bool):
-                # Fits do not support bool
-                mask = mask.astype('uint8')
-            hdul.append(fits.ImageHDU(mask, name=hdu_mask))
-
-        return hdul
+        return _to_hdu(self, **kwargs)
 
     def to_ccddata(self):
         """Convert actual FrameData to CCDData.
@@ -453,14 +463,4 @@ class FrameData:
         `~astropy.nddata.CCDData` :
             CCDData instance with actual FrameData informations.
         """
-        data = np.array(self.data)
-        unit = self.unit
-        meta = self.header
-        wcs = self.wcs
-        uncertainty = self.uncertainty
-        if not uncertainty.empty:
-            uncertainty = StdDevUncertainty(uncertainty, unit=unit)
-        mask = np.array(self.mask)
-
-        return CCDData(data, unit=unit, meta=meta, wcs=wcs,
-                       uncertainty=uncertainty, mask=mask)
+        return _to_ccddata(self)

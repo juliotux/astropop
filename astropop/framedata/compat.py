@@ -2,21 +2,21 @@
 """Handle compatibility between FrameData and other data formats."""
 
 import itertools
+from os import PathLike
+import copy as cp
+import numpy as np
 from astropy.io import fits
 from astropy.wcs import WCS
+from astropy.nddata.ccddata import CCDData
+from astropy.nddata import StdDevUncertainty, VarianceUncertainty, \
+                           InverseVariance
+from astropy import units as u
 
 
 from ..logger import logger
 
 
-__all__ = ['_unsupport_fits_open_keywords', 'imhdus', 'EmptyDataError',
-           'extract_header_wcs']
-
-
-_unsupport_fits_open_keywords = {
-    'do_not_scale_image_data': 'Image data must be scaled.',
-    'scale_back': 'Scale information is not preserved.'
-}
+__all__ = ['imhdus', 'EmptyDataError']
 
 
 imhdus = (fits.ImageHDU, fits.PrimaryHDU, fits.CompImageHDU,
@@ -26,10 +26,13 @@ imhdus = (fits.ImageHDU, fits.PrimaryHDU, fits.CompImageHDU,
 _PCs = set(['PC1_1', 'PC1_2', 'PC2_1', 'PC2_2'])
 _CDs = set(['CD1_1', 'CD1_2', 'CD2_1', 'CD2_2'])
 _KEEP = set(['JD-OBS', 'MJD-OBS', 'DATE-OBS'])
+_HDU_UNCERT = 'UNCERT'
+_HDU_MASK = 'MASK'
+_UNIT_KEY = 'BUNIT'
 
 
 def _remove_sip_keys(header, wcs):
-    """Just remove the SIP keys. (Too complex fixing)"""
+    """Remove the SIP keys. (Too complex fixing)."""
     kwd = '{}_{}_{}'
     pol = ['A', 'B', 'AP', 'BP']
     for poly in pol:
@@ -47,16 +50,16 @@ def extract_header_wcs(header, logger=logger):
 
     Parameters
     ----------
-    header : `~astropy.fits.Header` or dict_like
+    header: `~astropy.fits.Header` or dict_like
         Header to extract the WCS.
-    logger : `~logging.Logger` (optional)
+    logger: `~logging.Logger` (optional)
         Logger instance to log warnings.
 
     Returns
     -------
-    header : `~astropy.fits.Header`
+    header: `~astropy.fits.Header`
         Header cleaned from WCS keys.
-    wcs : `~astropy.wcs.WCS` os `None`
+    wcs: `~astropy.wcs.WCS` os `None`
         World Coordinate Sistem extracted from the header.
     """
     header = header.copy()  # Ensure original header will not be modified
@@ -90,5 +93,145 @@ def extract_header_wcs(header, logger=logger):
 
 
 class EmptyDataError(ValueError):
-    """Error raised when try to operate things not handled
-    by empty MemMapArray containers."""
+    """
+    Error raised when try to operate things not handled
+    by empty MemMapArray containers.
+    """
+
+
+def _extract_fits(obj, hdu=0, unit=None, hdu_uncertainty=_HDU_UNCERT,
+                  hdu_mask=_HDU_MASK, unit_key=_UNIT_KEY):
+    """Extract data and meta from FITS files and HDUs."""
+    if isinstance(obj, (str, bytes, PathLike)):
+        hdul = fits.open(obj)
+    elif isinstance(obj, imhdus):
+        hdul = fits.HDUList([obj])
+    elif isinstance(obj, fits.HDUList):
+        hdul = obj
+    else:
+        raise ValueError(f'Object {obj} not recognized.')
+
+    # from now, assumes obj is HDUList
+    # Check if the data HDU contain data
+    if hdul[hdu].data is None and isinstance(hdul[hdu], imhdus):
+        if hdu == 0:
+            hdu_data = None
+        else:
+            raise ValueError('Informed data HDU do not contain any data.')
+    else:
+        hdu_data = hdu
+
+    # scan hdus for the first with image data if the first hdu don't
+    for ind in range(len(hdul)):
+        hdu_i = hdul[ind]
+        if not isinstance(hdu_i, imhdus) or hdu_i.data is None:
+            continue
+        hdu_data = ind
+        logger.info('First hdu with image data: %i', ind)
+        break
+
+    hdu_data = hdul[hdu_data]
+    res = {}
+    res['data'] = hdu_data.data
+    res['meta'] = hdu_data.header
+
+    unit_h = res['meta'].get(unit_key, None)
+    if unit_h is None:
+        res['unit'] = unit
+    else:
+        unit_h = u.format.Fits.parse(unit_h)
+        if unit_h != unit and unit is not None:
+            raise ValueError('unit and unit_key got incompatible results.')
+        res['unit'] = unit_h
+
+    if hdu_uncertainty in hdul:
+        hdu_unct = hdul[hdu_uncertainty]
+        logger.debug('Uncertainty hdu found. Assuming standard uncertainty.')
+        res['uncertainty'] = hdu_unct.data
+
+    if hdu_mask in hdul:
+        hdu_mask = hdul[hdu_mask]
+        res['mask'] = hdu_mask.data
+
+    if isinstance(obj, (str, bytes, PathLike)):
+        hdul.close()
+
+    return res
+
+
+def _extract_ccddata(ccd):
+    """Extract data and meta from CCDData objects."""
+    res = {}
+    for i in ('data', 'unit', 'meta', 'mask'):
+        res[i] = cp.copy(getattr(ccd, i))
+
+    uunit = None
+    uncert = ccd.uncertainty
+    if uncert is None:
+        uncert = None
+    elif isinstance(uncert, StdDevUncertainty):
+        uunit = uncert.unit
+        uncert = uncert.array
+    elif isinstance(uncert, VarianceUncertainty):
+        uunit = uncert.unit**0.5
+        uncert = np.sqrt(uncert.array)
+    elif isinstance(uncert, InverseVariance):
+        uunit = uncert.unit**(-0.5)
+        uncert = np.sqrt(1/uncert.array)
+    else:
+        raise TypeError(f'Unrecognized uncertainty type {uncert.__class__}.')
+
+    if uunit != res['unit'] and uunit is not None:
+        raise ValueError(f'Uncertainty with unit {uunit} different from the '
+                         f'data {res["unit"]}')
+    res['uncertainty'] = uncert
+
+    return res
+
+
+def _to_ccddata(frame):
+    """Translate a FrameData to a CCDData."""
+    data = np.array(frame.data)
+    unit = frame.unit
+    meta = frame.header
+    wcs = frame.wcs
+    uncertainty = frame._unct
+    if uncertainty.empty:
+        uncertainty = None
+    else:
+        uncertainty = StdDevUncertainty(uncertainty, unit=unit)
+    mask = np.array(frame.mask)
+
+    return CCDData(data, unit=unit, meta=meta, wcs=wcs,
+                   uncertainty=uncertainty, mask=mask)
+
+
+def _to_hdu(frame, hdu_uncertainty=_HDU_UNCERT, hdu_mask=_HDU_MASK,
+            unit_key=_UNIT_KEY, wcs_relax=True):
+    """Translate a FrameData to an HDUList."""
+    data = frame.data.copy()
+    header = fits.Header(frame.header)
+    if frame.wcs is not None:
+        header.extend(frame.wcs.to_header(relax=wcs_relax),
+                      useblanks=False, update=True)
+    header[unit_key] = frame.unit.to_string()
+    for i in frame.history:
+        header['history'] = i
+    hdul = fits.HDUList(fits.PrimaryHDU(data, header=header))
+
+    if hdu_uncertainty and not frame._unct.empty:
+        uncert = frame.uncertainty
+        uncert_unit = u.format.Fits.to_string(frame.unit)
+        uncert_h = fits.Header()
+        uncert_h[unit_key] = uncert_unit
+        hdul.append(fits.ImageHDU(uncert, header=uncert_h,
+                                  name=hdu_uncertainty))
+
+    if hdu_mask is not None and not frame._mask.empty:
+        mask = frame.mask
+        if np.issubdtype(mask.dtype, np.bool):
+            # Fits do not support bool
+            mask = mask.astype('uint8')
+        hdul.append(fits.ImageHDU(mask, name=hdu_mask))
+
+    return hdul

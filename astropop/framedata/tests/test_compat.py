@@ -2,9 +2,18 @@
 
 # Some parts stolen from Astropy CCDData testing bench
 
-from astropop.framedata.compat import extract_header_wcs
+import copy
+import pytest
+import numpy as np
+from astropop.framedata.compat import extract_header_wcs, _extract_ccddata, \
+                                      _to_ccddata, _extract_fits
+from astropop.framedata import FrameData
 from astropy.io import fits
 from astropy.wcs import WCS
+from astropy.table import Table
+from astropy.nddata import StdDevUncertainty, InverseVariance, \
+                           VarianceUncertainty, UnknownUncertainty, \
+                           CCDData
 
 from astropop.testing import assert_equal, assert_is_instance, \
                              assert_is_none, assert_not_in, \
@@ -110,53 +119,313 @@ RADECSYS= 'FK5     '           / The equatorial coordinate system
 """
 
 
-def test_extract_header_nowcs():
-    header = fits.Header.fromstring(_base_header, sep='\n')
-    h, wcs = extract_header_wcs(header)
-    assert_is_none(wcs)
-    assert_is_instance(h, fits.Header)
-    assert_equal(h, header)
-    assert_false(h is header)
+class Test_ExtractHeader():
+
+    def test_extract_header_nowcs(self):
+        header = fits.Header.fromstring(_base_header, sep='\n')
+        h, wcs = extract_header_wcs(header)
+        assert_is_none(wcs)
+        assert_is_instance(h, fits.Header)
+        assert_equal(h, header)
+        assert_false(h is header)
 
 
-def test_extract_header_nosip():
-    header = fits.Header.fromstring(_base_header+_wcs_no_sip, sep='\n')
-    h, wcs = extract_header_wcs(header)
-    assert_is_instance(wcs, WCS)
-    assert_equal(wcs.wcs.ctype[0], 'RA---TAN')
-    assert_equal(wcs.wcs.ctype[1], 'DEC--TAN')
-    assert_is_instance(h, fits.Header)
-    for i in _comon_wcs_keys:
-        assert_not_in(f'{i}1', h.keys())
-        assert_not_in(f'{i}2', h.keys())
-    assert_in('DATE-OBS', h.keys())
-    assert_false(h is header)
-    assert_not_equal(h, header)
+    def test_extract_header_nosip(self):
+        header = fits.Header.fromstring(_base_header+_wcs_no_sip, sep='\n')
+        h, wcs = extract_header_wcs(header)
+        assert_is_instance(wcs, WCS)
+        assert_equal(wcs.wcs.ctype[0], 'RA---TAN')
+        assert_equal(wcs.wcs.ctype[1], 'DEC--TAN')
+        assert_is_instance(h, fits.Header)
+        for i in _comon_wcs_keys:
+            assert_not_in(f'{i}1', h.keys())
+            assert_not_in(f'{i}2', h.keys())
+        assert_in('DATE-OBS', h.keys())
+        assert_false(h is header)
+        assert_not_equal(h, header)
 
 
-def test_extract_header_sip():
-    header = fits.Header.fromstring(_base_header+_wcs_sip, sep='\n')
-    h, wcs = extract_header_wcs(header)
-    assert_is_instance(wcs, WCS)
-    assert_equal(wcs.wcs.ctype[0], 'RA---TAN-SIP')
-    assert_equal(wcs.wcs.ctype[1], 'DEC--TAN-SIP')
-    assert_is_instance(h, fits.Header)
-    for i in _comon_wcs_keys:
-        assert_not_in(f'{i}1', h.keys())
-        assert_not_in(f'{i}2', h.keys())
-    for i in ('A_0_2', 'AP_2_0', 'BP_ORDER', 'A_DMAX'):
-        assert_not_in(i, h.keys())
-    assert_in('DATE-OBS', h.keys())
-    assert_false(h is header)
-    assert_not_equal(h, header)
+    def test_extract_header_sip(self):
+        header = fits.Header.fromstring(_base_header+_wcs_sip, sep='\n')
+        h, wcs = extract_header_wcs(header)
+        assert_is_instance(wcs, WCS)
+        assert_equal(wcs.wcs.ctype[0], 'RA---TAN-SIP')
+        assert_equal(wcs.wcs.ctype[1], 'DEC--TAN-SIP')
+        assert_is_instance(h, fits.Header)
+        for i in _comon_wcs_keys:
+            assert_not_in(f'{i}1', h.keys())
+            assert_not_in(f'{i}2', h.keys())
+        for i in ('A_0_2', 'AP_2_0', 'BP_ORDER', 'A_DMAX'):
+            assert_not_in(i, h.keys())
+        assert_in('DATE-OBS', h.keys())
+        assert_false(h is header)
+        assert_not_equal(h, header)
 
 
-def test_extract_invalid_wcs_header():
-    # It should no raise, just return empty wcs
-    # No header change too
-    header = fits.Header.fromstring(_base_header+_invalid_wcs, sep='\n')
-    h, wcs = extract_header_wcs(header)
-    assert_is_none(wcs)
-    assert_is_instance(h, fits.Header)
-    assert_equal(h, header)
-    assert_false(h is header)
+    def test_extract_invalid_wcs_header(self):
+        # It should no raise, just return empty wcs
+        # No header change too
+        header = fits.Header.fromstring(_base_header+_invalid_wcs, sep='\n')
+        h, wcs = extract_header_wcs(header)
+        assert_is_none(wcs)
+        assert_is_instance(h, fits.Header)
+        assert_equal(h, header)
+        assert_false(h is header)
+
+
+class Test_Extract_CCDData():
+    shape = (10, 10)
+    meta = {'observer': 'testing', 'very long keyword': 1}
+    unit = 'adu'
+
+    @property
+    def mask(self):
+        mask = np.zeros(self.shape, dtype=bool)
+        mask[1:3, 1:3] = 1
+        return mask
+
+    @property
+    def ccd(self):
+        data = 100*np.ones(self.shape)
+        uncert = StdDevUncertainty(np.sqrt(data), unit=self.unit)
+        unit = self.unit
+        return CCDData(data, uncertainty=uncert, mask=self.mask,
+                       unit=unit, meta=self.meta)
+
+    def test_simple_import(self):
+        ccd = self.ccd
+        f = _extract_ccddata(ccd)
+        assert_equal(f['data'], 100*np.ones(self.shape))
+        assert_equal(f['mask'], self.mask)
+        assert_equal(f['unit'], self.unit)
+        assert_equal(f['meta'], self.meta)
+        assert_equal(f['uncertainty'], 10*np.ones(self.shape))
+
+    def test_variance_uncert(self):
+        ccd = self.ccd
+        uncert = VarianceUncertainty(100*np.ones(self.shape),
+                                     unit=self.unit+'2')
+        ccd.uncertainty = uncert
+
+        f = _extract_ccddata(ccd)
+        assert_equal(f['data'], 100*np.ones(self.shape))
+        assert_equal(f['mask'], self.mask)
+        assert_equal(f['unit'], self.unit)
+        assert_equal(f['meta'], self.meta)
+        assert_equal(f['uncertainty'], 10*np.ones(self.shape))
+
+    def test_inverse_variance_uncert(self):
+        ccd = self.ccd
+        uncert = InverseVariance(0.01*np.ones(self.shape),
+                                 unit=self.unit+'-2')
+        ccd.uncertainty = uncert
+
+        f = _extract_ccddata(ccd)
+        assert_equal(f['data'], 100*np.ones(self.shape))
+        assert_equal(f['mask'], self.mask)
+        assert_equal(f['unit'], self.unit)
+        assert_equal(f['meta'], self.meta)
+        assert_equal(f['uncertainty'], 10*np.ones(self.shape))
+
+    def test_no_mask(self):
+        ccd = self.ccd
+        ccd.mask = None
+        f = _extract_ccddata(ccd)
+        assert_is_none(f['mask'])
+
+    def test_no_uncertainty(self):
+        ccd = self.ccd
+        ccd.uncertainty = None
+        f = _extract_ccddata(ccd)
+        assert_is_none(f['uncertainty'])
+
+    def test_invalid_uncert(self):
+        ccd = self.ccd
+        ccd.uncertainty = UnknownUncertainty(np.ones(self.shape))
+
+        with pytest.raises(TypeError):
+            _extract_ccddata(ccd)
+
+
+class Test_To_CCDData():
+    shape = (10, 10)
+    meta = {'observer': 'testing', 'very long keyword': 1}
+    unit = 'adu'
+    # TODO: test with WCS
+    # TODO: history
+
+    @property
+    def mask(self):
+        mask = np.zeros(self.shape, dtype=bool)
+        mask[1:3, 1:3] = 1
+        return mask
+
+    @property
+    def frame(self):
+        data = 100*np.ones(self.shape)
+        return FrameData(data, unit=self.unit, meta=self.meta)
+
+    def test_simple_export(self):
+        frame = self.frame
+        ccd = _to_ccddata(frame)
+
+        assert_equal(ccd.data, 100*np.ones(self.shape))
+        assert_equal(ccd.unit, self.unit)
+        assert_equal(ccd.meta, self.meta)
+        assert_equal(ccd.mask, np.zeros(self.shape, dtype=bool))
+        assert_is_none(ccd.uncertainty)
+
+    def test_export_with_mask(self):
+        frame = self.frame
+        frame.mask = self.mask
+
+        ccd = _to_ccddata(frame)
+        assert_equal(ccd.data, 100*np.ones(self.shape))
+        assert_equal(ccd.unit, self.unit)
+        assert_equal(ccd.meta, self.meta)
+        assert_equal(ccd.mask, self.mask)
+        assert_is_none(ccd.uncertainty, str(ccd.uncertainty))
+
+    def test_export_with_uncertainty(self):
+        frame = self.frame
+        frame.uncertainty = 1
+
+        ccd = _to_ccddata(frame)
+        assert_equal(ccd.data, 100*np.ones(self.shape))
+        assert_equal(ccd.unit, self.unit)
+        assert_equal(ccd.meta, self.meta)
+        assert_equal(ccd.mask, np.zeros(self.shape, dtype=bool))
+        assert_equal(ccd.uncertainty.array, np.ones(self.shape))
+        assert_equal(ccd.uncertainty.unit, self.unit)
+        assert_equal(ccd.uncertainty.uncertainty_type, 'std')
+
+    def test_export_full(self):
+        frame = self.frame
+        frame.uncertainty = 1
+        frame.mask = self.mask
+
+        ccd = _to_ccddata(frame)
+        assert_equal(ccd.data, 100*np.ones(self.shape))
+        assert_equal(ccd.unit, self.unit)
+        assert_equal(ccd.meta, self.meta)
+        assert_equal(ccd.mask, self.mask)
+        assert_equal(ccd.uncertainty.array, np.ones(self.shape))
+        assert_equal(ccd.uncertainty.unit, self.unit)
+        assert_equal(ccd.uncertainty.uncertainty_type, 'std')
+
+
+class Test_Fits_Extract():
+    shape = (10, 10)
+
+    @property
+    def mask(self):
+        mask = np.zeros(self.shape, dtype=bool)
+        mask[1:3, 1:3] = 1
+        return mask
+
+    def create_hdu(self, uncert=False, mask=False,
+                   unit='adu', unit_key='BUNIT'):
+        l = []
+        data = 100*np.ones(self.shape)
+        header = self.create_header(unit=unit, unit_key=unit_key)
+        data_hdu = fits.PrimaryHDU(data, header=header)
+        l.append(data_hdu)
+
+        if uncert:
+            uncert_hdu = fits.ImageHDU(np.ones(self.shape), name='UNCERT')
+            l.append(uncert_hdu)
+
+        if mask:
+            mask_hdu = fits.ImageHDU(self.mask.astype('uint8'), name='MASK')
+            l.append(mask_hdu)
+
+        hdul = fits.HDUList(l)
+        return hdul
+
+    def create_header(self, unit=None, unit_key=None):
+        header = fits.Header()
+        if unit is not None:
+            header[unit_key] = unit
+        return header
+
+    def test_simple_hdu(self):
+        hdu = self.create_hdu()[0]
+        header = self.create_header('adu', 'BUNIT')
+        f = _extract_fits(hdu)
+        assert_equal(f['data'], 100*np.ones(self.shape))
+        for i in header:
+            assert_equal(f['meta'][i], header[i])
+        assert_equal(f['unit'], 'adu')
+
+    def test_simple_hdulist(self):
+        hdu = self.create_hdu()
+        header = self.create_header('adu', 'BUNIT')
+        f = _extract_fits(hdu)
+        assert_equal(f['data'], 100*np.ones(self.shape))
+        for i in header:
+            assert_equal(f['meta'][i], header[i])
+        assert_equal(f['unit'], 'adu')
+
+    def test_hdulist_with_uncertainty(self):
+        hdu = self.create_hdu(uncert=True)
+        header = self.create_header('adu', 'BUNIT')
+        f = _extract_fits(hdu, hdu_uncertainty='UNCERT')
+        assert_equal(f['data'], 100*np.ones(self.shape))
+        for i in header:
+            assert_equal(f['meta'][i], header[i])
+        assert_equal(f['unit'], 'adu')
+        assert_equal(f['uncertainty'], np.ones(self.shape))
+
+    def test_hdulist_with_mask(self):
+        hdu = self.create_hdu(mask=True)
+        header = self.create_header('adu', 'BUNIT')
+        f = _extract_fits(hdu, hdu_mask='MASK')
+        assert_equal(f['data'], 100*np.ones(self.shape))
+        for i in header:
+            assert_equal(f['meta'][i], header[i])
+        assert_equal(f['unit'], 'adu')
+        assert_equal(f['mask'], self.mask.astype('uint8'))
+
+    def test_hdulist_full(self):
+        hdu = self.create_hdu(uncert=True, mask=True)
+        header = self.create_header('adu', 'BUNIT')
+        f = _extract_fits(hdu, hdu_mask='MASK')
+        assert_equal(f['data'], 100*np.ones(self.shape))
+        for i in header:
+            assert_equal(f['meta'][i], header[i])
+        assert_equal(f['unit'], 'adu')
+        assert_equal(f['uncertainty'], np.ones(self.shape))
+        assert_equal(f['mask'], self.mask.astype('uint8'))
+
+    def test_invalid_unit(self):
+        hdu = self.create_hdu(unit='invalid')
+        with pytest.raises(ValueError):
+            _extract_fits(hdu)
+
+    def test_file(self, tmpdir):
+        hdu = self.create_hdu(uncert=True, mask=True)
+        header = self.create_header('adu', 'BUNIT')
+        fname = tmpdir.join('test_file.fits').strpath
+        hdu.writeto(fname)
+
+        f = _extract_fits(fname)
+
+        assert_equal(f['data'], 100*np.ones(self.shape))
+        for i in header:
+            assert_equal(f['meta'][i], header[i])
+        assert_equal(f['unit'], 'adu')
+        assert_equal(f['uncertainty'], np.ones(self.shape))
+        assert_equal(f['mask'], self.mask.astype('uint8'))
+
+    def test_data_in_other_hdu(self, tmpdir):
+        tbl = Table(np.ones(10).reshape(5, 2))
+        data = 100*np.ones(self.shape)
+        hdul = fits.HDUList(hdus=[fits.PrimaryHDU(),
+                                  fits.TableHDU(tbl.as_array()),
+                                  fits.ImageHDU(data)])
+        fname = tmpdir.join('test_table.fits').strpath
+        hdul.writeto(fname)
+
+        f = _extract_fits(fname)
+        assert_equal(f['data'], 100*np.ones(self.shape))
+        assert_equal(f['unit'], None)
