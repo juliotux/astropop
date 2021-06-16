@@ -13,7 +13,7 @@ from astropy.wcs import WCS
 from astropy.io import fits
 from astropy.nddata import CCDData
 
-from ..py_utils import mkdir_p
+from ..py_utils import mkdir_p, check_iterable
 from .memmap import MemMapArray
 from .compat import extract_header_wcs, _to_ccddata, _to_hdu, \
                     _extract_ccddata, _extract_fits, imhdus
@@ -31,7 +31,7 @@ def _get_shape(d):
     return ds
 
 
-def read_framedata(obj, copy=False):
+def read_framedata(obj, copy=False, **kwargs):
     """Read an object to a FrameData container.
 
     Parameters
@@ -63,11 +63,11 @@ def read_framedata(obj, copy=False):
         if copy:
             obj = cp.deepcopy(obj)
     elif isinstance(obj, CCDData):
-        obj = FrameData(**_extract_ccddata(obj))
+        obj = FrameData(**_extract_ccddata(obj, **kwargs))
     elif isinstance(obj, (str, bytes, os.PathLike)):
-        obj = FrameData(**_extract_fits(obj))
-    elif isinstance(obj, (fits.HDUList)+imhdus):
-        obj = FrameData(**_extract_fits(obj))
+        obj = FrameData(**_extract_fits(obj, **kwargs))
+    elif isinstance(obj, (fits.HDUList, *imhdus)):
+        obj = FrameData(**_extract_fits(obj, **kwargs))
     else:
         raise ValueError(f'Object {obj} is not compatible with FrameData.')
 
@@ -240,7 +240,6 @@ class FrameData:
     """
 
     # TODO: Complete reimplement the initialize
-    # TODO: __copy__
     # TODO: write_fits
 
     _memmapping = False
@@ -249,9 +248,10 @@ class FrameData:
     _mask = None
     _unct = None
     _wcs = None
-    _meta = {}
+    _meta = None
     _origin = None
-    _history = []
+    _history = None
+    _comments = None
 
     def __init__(self, data, unit=None, dtype=None,
                  uncertainty=None, u_dtype=None,
@@ -295,29 +295,47 @@ class FrameData:
         self._unct.reset_data(uncertainty, u_dtype)
         # Masks can also be flags (uint8)
         self._mask.reset_data(mask, m_dtype)
+
+        # avoiding security problems
+        self._history = []
+        self._meta = {}
         self._header_update(header, meta, wcs)
 
-        self._history = []
+    def _header_update(self, header, meta=None, wcs=None):
+        # merge header and meta. meta with higher priority
+        if header is not None:
+            header = dict(header)
+        else:
+            header = {}
+        if meta is not None:
+            meta = dict(meta)
+        else:
+            meta = {}
+        meta.update(header)
 
-    def _header_update(self, header, meta, wcs):
+        # extract wcs from header
+        meta, wcs_ = extract_header_wcs(meta)
+        wcs = wcs_ if wcs is None else wcs
         if wcs is not None:
             self.wcs = wcs
-        if meta is not None and header is not None:
-            header = dict(header)
-            meta = dict(meta)
-            self._meta = meta
-            self._meta.update(header)
-        elif meta is not None:
-            self._meta = dict(meta)
-        elif header is not None:
-            self._meta = dict(meta)
-        else:
-            self._meta = dict()
+        # extract history from meta
+        for i in ('history', 'HISTORY'):
+            if i in meta:
+                self.history = meta.pop('history')
+
+        self._meta = meta
 
     @property
     def history(self):
         """Get the FrameData stored history."""
         return self._history
+
+    @history.setter
+    def history(self, value):
+        if check_iterable(value):
+            self._history = self._history + list(value)
+        else:
+            self._history.append(value)
 
     @property
     def origin_filename(self):
@@ -358,20 +376,12 @@ class FrameData:
 
     @meta.setter
     def meta(self, value):
-        self.header = value
+        self._header_update(value)
 
     @property
     def header(self):
         """Get the header (metadata) of the frame."""
         return self._meta
-
-    @header.setter
-    def header(self, value):
-        value, wcs = extract_header_wcs(value)
-        if wcs is not None:
-            # If a WCS is found, overriding framedata WCS.
-            self.wcs = wcs
-        self._meta = dict(value)
 
     @property
     def data(self):
@@ -417,6 +427,9 @@ class FrameData:
     def mask(self, value):
         _, _, value = shape_consistency(self.data, None, value)
         self._mask.reset_data(value)
+
+    def copy(self):
+        return self.__copy__()
 
     def enable_memmap(self, filename=None, cache_folder=None):
         """Enable array file memmapping.
@@ -478,3 +491,26 @@ class FrameData:
             CCDData instance with actual FrameData informations.
         """
         return _to_ccddata(self)
+
+    def __copy__(self):
+        """Copy the current instance to a new one."""
+        data = np.array(self._data) if not self._data.empty else None
+        mask = np.array(self._mask) if not self._mask.empty else None
+        unct = np.array(self._unct) if not self._unct.empty else None
+        unit = self._unit
+        wcs = cp.copy(self._wcs)
+        meta = cp.copy(self._meta)
+        hist = cp.copy(self._history)
+        fname = self._origin
+        cache_folder = self.cache_folder
+        cache_fname = self.cache_filename
+
+        if cache_fname is not None:
+            cache_fname = cache_fname + '_copy'
+
+        if len(hist) > 0:
+            meta['history'] = hist
+
+        return FrameData(data, unit=unit, mask=mask, uncertainty=unct,
+                         wcs=wcs, meta=meta, cache_folder=cache_folder,
+                         cache_filename=cache_fname, origin_filename=fname)
