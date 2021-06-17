@@ -613,6 +613,25 @@ class Test_FrameData_Creation():
         assert_false(f._unct.memmap)
         assert_false(f._mask.memmap)
 
+    def test_init_with_masked_data(self):
+        a = _random_array.copy()
+        mask = np.zeros_like(a, dtype=bool)
+        mask[1:2, 3:4] = 1
+        a = np.ma.array(a, mask=mask)
+        unit = 'adu'
+        wcs = WCS(naxis=2)
+        f = FrameData(a, unit=unit, wcs=wcs)
+        assert_equal(f.mask, mask)
+
+        # setting mask too
+        mask2 = np.zeros_like(a, dtype=bool)
+        mask2[3:4, 3:4] = 1
+        expect = np.zeros_like(a, dtype=bool)
+        expect[1:2, 3:4] = 1
+        expect[3:4, 3:4] = 1
+        f = FrameData(a, unit=unit, wcs=wcs, mask=mask2)
+        assert_equal(f.mask, expect)
+
 
 class Test_FrameData_WCS():
     def test_wcs_invalid(self):
