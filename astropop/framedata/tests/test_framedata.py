@@ -150,6 +150,10 @@ class Test_FrameData_Setup_Filename():
                          cache_filename=self.fname,
                          cache_folder=temp)
 
+    def test_not_framedata(self):
+        with pytest.raises(ValueError):
+            setup_filename(np.array(None))
+
     def test_simple(self, tmpdir):
         temp = tmpdir.strpath
         frame = self.frame(temp)

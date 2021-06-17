@@ -114,15 +114,11 @@ def uncertainty_unit_consistency(unit, uncertainty):
 
 def setup_filename(frame, cache_folder=None, filename=None):
     """Handle filename and cache folder to a frame."""
-    if hasattr(frame, 'cache_folder'):
-        cache_folder_ccd = frame.cache_folder
-    else:
-        cache_folder_ccd = None
+    if not isinstance(frame, FrameData):
+        raise ValueError('Only FrameData accepted.')
 
-    if hasattr(frame, 'cache_filename'):
-        filename_ccd = frame.cache_filename
-    else:
-        filename_ccd = None
+    cache_folder_ccd = frame.cache_folder
+    filename_ccd = frame.cache_filename
 
     # explicit set must be over defult
     filename = filename or filename_ccd
