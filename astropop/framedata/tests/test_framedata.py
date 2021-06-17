@@ -856,3 +856,17 @@ class Test_FrameData_MemMap():
         assert_false(frame._unct.memmap)
         assert_false(frame._mask.memmap)
         assert_false(frame._memmapping)
+
+
+class Test_FrameData_GetSet():
+    def test_set_data_no_unit(self):
+        frame = create_framedata()
+        frame.data = 1
+        assert_equal(frame.data, 1)
+        assert_equal(frame.unit, 'adu')
+
+    def test_set_data_with_unit(self):
+        frame = create_framedata()
+        frame.data = 1*u.Unit('s')
+        assert_equal(frame.data, 1)
+        assert_equal(frame.unit, 's')
