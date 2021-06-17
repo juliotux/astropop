@@ -88,6 +88,6 @@ def test_imarith_ops_frames(op, vs, inplace, handle_mask):
         assert_equal(res.mask, exp_res.mask)
 
     if inplace:
-        assert_is(res,frame1)
+        assert_is(res, frame1)
     else:
-        assert_is_not(res,frame1)
+        assert_is_not(res, frame1)
