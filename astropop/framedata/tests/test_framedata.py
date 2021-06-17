@@ -6,7 +6,8 @@ import pytest
 import tempfile
 import os
 import numpy as np
-from astropop.framedata.framedata import setup_filename, extract_units
+from astropop.framedata.framedata import setup_filename, extract_units, \
+                                         shape_consistency
 from astropop.framedata import FrameData, check_framedata, read_framedata
 from astropop.math import QFloat
 from astropy.io import fits
@@ -54,6 +55,78 @@ def test_extract_units(dunit, unit, expected):
         if expected is not None:
             expected = u.Unit(expected)
         assert_equal(eunit, expected)
+
+
+class Test_FrameData_Shape_Consistency():
+    shape = (12, 15)
+
+    def test_all_ok(self):
+        data = np.zeros(self.shape)
+        unct = np.ones(self.shape)*0.1
+        mask = np.zeros(self.shape)
+        mask[1:2, 3:4] = 1
+        d, u, m = shape_consistency(data, unct, mask)
+        assert_equal(d, data)
+        assert_equal(u, unct)
+        assert_equal(m, mask)
+
+    def test_only_unct(self):
+        data = np.zeros(self.shape)
+        unct = np.ones(self.shape)*0.1
+        d, u, m = shape_consistency(data, unct, mask=None)
+        assert_equal(d, data)
+        assert_equal(u, unct)
+        assert_is_none(m)
+
+    def test_only_mask(self):
+        data = np.zeros(self.shape)
+        mask = np.zeros(self.shape)
+        mask[1:2, 3:4] = 1
+        d, u, m = shape_consistency(data, None, mask)
+        assert_equal(d, data)
+        assert_is_none(u)
+        assert_equal(m, mask)
+
+    def test_no_data(self):
+        # raises with uncertainty
+        with pytest.raises(ValueError):
+            shape_consistency(None, 1, None)
+        # raises with mask
+        with pytest.raises(ValueError):
+            shape_consistency(None, None, 1)
+
+    def test_all_none(self):
+        # all none must return all none
+        d, u, m = shape_consistency()
+        assert_is_none(d)
+        assert_is_none(u)
+        assert_is_none(m)
+
+        # same for only mask=False
+        d, u, m = shape_consistency(mask=False)
+        assert_is_none(d)
+        assert_is_none(u)
+        assert_false(m)
+
+    def test_single_value_uncert(self):
+        data = np.zeros(self.shape)
+        unct = 0.1
+        d, u, m = shape_consistency(data, unct)
+        assert_equal(d, data)
+        assert_equal(u, np.ones(self.shape)*unct)
+        assert_is_none(m)
+
+    def test_single_value_mask(self):
+        data = np.zeros(self.shape)
+        d, u, m = shape_consistency(data, None, False)
+        assert_equal(d, data)
+        assert_is_none(u)
+        assert_equal(m, np.zeros(self.shape, dtype=bool))
+
+        d, u, m = shape_consistency(data, None, True)
+        assert_equal(d, data)
+        assert_is_none(u)
+        assert_equal(m, np.ones(self.shape, dtype=bool))
 
 
 class Test_FrameData_Setup_Filename():
