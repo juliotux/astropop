@@ -7,7 +7,8 @@ import tempfile
 import os
 import numpy as np
 from astropop.framedata.framedata import setup_filename, extract_units, \
-                                         shape_consistency
+                                         shape_consistency, \
+                                         uncertainty_unit_consistency
 from astropop.framedata import FrameData, check_framedata, read_framedata
 from astropop.math import QFloat
 from astropy.io import fits
@@ -139,6 +140,33 @@ class Test_FrameData_Shape_Consistency():
         mask = np.ones((2, 2))
         with pytest.raises(ValueError):
             shape_consistency(data, None, mask)
+
+
+class Test_Uncertainty_Unit_Consitency():
+    def test_all_ok_quantity(self):
+        unit = 'adu'
+        unct = 0.1*u.Unit('adu')
+        un = uncertainty_unit_consistency(unit, unct)
+        assert_equal(un, np.array(0.1))
+
+    def test_all_ok_number(self):
+        # if uncertainty has no unit, it is returned
+        unit = 'adu'
+        unct = 0.1
+        un = uncertainty_unit_consistency(unit, unct)
+        assert_equal(un, np.array(0.1))
+
+    def test_convert_unit(self):
+        unit = 'm'
+        unct = 1000*u.Unit('cm')
+        un = uncertainty_unit_consistency(unit, unct)
+        assert_equal(un, np.array(10))
+
+    def test_incompatible_units(self):
+        unit = 'm'
+        unct = 1000*u.Unit('adu')
+        with pytest.raises(u.UnitConversionError):
+            uncertainty_unit_consistency(unit, unct)
 
 
 class Test_FrameData_Setup_Filename():
@@ -463,7 +491,6 @@ class Test_FrameData_Copy():
 
 
 class Test_FrameData_History():
-
     def test_framedata_set_history(self):
         frame = create_framedata()
         frame.history = 'once upon a time'
@@ -760,7 +787,6 @@ class Test_FrameData_FITS():
 
 
 class Test_FrameData_MemMap():
-
     def test_framedata_memmap_default(self):
         frame = create_framedata()
         assert_false(frame._data.memmap)
@@ -811,4 +837,3 @@ class Test_FrameData_MemMap():
         assert_false(frame._unct.memmap)
         assert_false(frame._mask.memmap)
         assert_false(frame._memmapping)
-
