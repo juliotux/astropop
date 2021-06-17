@@ -128,6 +128,18 @@ class Test_FrameData_Shape_Consistency():
         assert_is_none(u)
         assert_equal(m, np.ones(self.shape, dtype=bool))
 
+    def test_worng_shape_uncertainty(self):
+        data = np.zeros(self.shape)
+        unct = 0.1*np.ones((2, 2))
+        with pytest.raises(ValueError):
+            shape_consistency(data, unct)
+
+    def test_worng_shape_mask(self):
+        data = np.zeros(self.shape)
+        mask = np.ones((2, 2))
+        with pytest.raises(ValueError):
+            shape_consistency(data, None, mask)
+
 
 class Test_FrameData_Setup_Filename():
     fname = 'test_filename.npy'
