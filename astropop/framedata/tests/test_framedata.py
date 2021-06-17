@@ -805,6 +805,71 @@ class Test_FrameData_FITS():
         assert_equal(hdulist[0].header['bunit'].strip(), ccd_unit.to_string())
 
 
+class Test_FrameData_CCDData():
+    shape = (10, 10)
+    meta = {'observer': 'testing', 'very long keyword': 1}
+    unit = 'adu'
+
+    @property
+    def mask(self):
+        mask = np.zeros(self.shape, dtype=bool)
+        mask[1:3, 1:3] = 1
+        return mask
+
+    @property
+    def frame(self):
+        data = 100*np.ones(self.shape)
+        return FrameData(data, unit=self.unit, meta=self.meta)
+
+    def test_simple_export(self):
+        frame = self.frame
+        ccd = frame.to_ccddata()
+
+        assert_equal(ccd.data, 100*np.ones(self.shape))
+        assert_equal(ccd.unit, self.unit)
+        assert_equal(ccd.meta, self.meta)
+        assert_equal(ccd.mask, np.zeros(self.shape, dtype=bool))
+        assert_is_none(ccd.uncertainty)
+
+    def test_export_with_mask(self):
+        frame = self.frame
+        frame.mask = self.mask
+
+        ccd = frame.to_ccddata()
+        assert_equal(ccd.data, 100*np.ones(self.shape))
+        assert_equal(ccd.unit, self.unit)
+        assert_equal(ccd.meta, self.meta)
+        assert_equal(ccd.mask, self.mask)
+        assert_is_none(ccd.uncertainty, str(ccd.uncertainty))
+
+    def test_export_with_uncertainty(self):
+        frame = self.frame
+        frame.uncertainty = 1
+
+        ccd = frame.to_ccddata()
+        assert_equal(ccd.data, 100*np.ones(self.shape))
+        assert_equal(ccd.unit, self.unit)
+        assert_equal(ccd.meta, self.meta)
+        assert_equal(ccd.mask, np.zeros(self.shape, dtype=bool))
+        assert_equal(ccd.uncertainty.array, np.ones(self.shape))
+        assert_equal(ccd.uncertainty.unit, self.unit)
+        assert_equal(ccd.uncertainty.uncertainty_type, 'std')
+
+    def test_export_full(self):
+        frame = self.frame
+        frame.uncertainty = 1
+        frame.mask = self.mask
+
+        ccd = frame.to_ccddata()
+        assert_equal(ccd.data, 100*np.ones(self.shape))
+        assert_equal(ccd.unit, self.unit)
+        assert_equal(ccd.meta, self.meta)
+        assert_equal(ccd.mask, self.mask)
+        assert_equal(ccd.uncertainty.array, np.ones(self.shape))
+        assert_equal(ccd.uncertainty.unit, self.unit)
+        assert_equal(ccd.uncertainty.uncertainty_type, 'std')
+
+
 class Test_FrameData_MemMap():
     def test_framedata_memmap_default(self):
         frame = create_framedata()
