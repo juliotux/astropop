@@ -56,43 +56,49 @@ def test_extract_units(dunit, unit, expected):
         assert_equal(eunit, expected)
 
 
-def test_setup_filename(tmpdir):
-    temp = os.path.abspath(tmpdir)
+class Test_FrameData_Setup_Filename():
     fname = 'test_filename.npy'
-    test_obj = FrameData(np.zeros(2), unit='adu',
-                         cache_filename='test_filename.npy',
+
+    def frame(self, path):
+        temp = os.path.abspath(path)
+        return FrameData(np.zeros(2), unit='adu',
+                         cache_filename=self.fname,
                          cache_folder=temp)
 
-    assert_equal(setup_filename(test_obj), os.path.join(temp, fname))
-    assert_true(tmpdir.exists())
-    # Manual set filename
-    ntemp = tempfile.mkstemp(suffix='.npy')[1]
-    # with obj and manual filename, keep object
-    assert_equal(setup_filename(test_obj, filename=ntemp),
-                 os.path.join(temp, fname))
-    test_obj.cache_filename = None
-    assert_equal(setup_filename(test_obj, filename=ntemp),
-                 os.path.join(temp, os.path.basename(ntemp)))
-    # same for cache folder
-    test_obj.cache_filename = fname
-    assert_equal(setup_filename(test_obj, filename=ntemp),
-                 os.path.join(temp, fname))
-    test_obj.cache_folder = None
-    cache = os.path.join(tmpdir, 'astropop_testing')
-    assert_equal(setup_filename(test_obj, cache_folder=cache),
-                 os.path.join(cache, fname))
-    assert_true(os.path.isdir(cache))
-    os.removedirs(cache)
+    def test_simple(self, tmpdir):
+        temp = tmpdir.strpath
+        frame = self.frame(temp)
+        cache_file = os.path.join(temp, self.fname)
+        assert_equal(setup_filename(frame), cache_file)
 
-    # now, with full random
-    test_obj.cache_filename = None
-    test_obj.cache_folder = None
-    sfile = setup_filename(test_obj)
-    dirname = os.path.dirname(sfile)
-    filename = os.path.basename(sfile)
-    assert_equal(dirname, test_obj.cache_folder)
-    assert_equal(filename, test_obj.cache_filename)
-    assert_true(os.path.exists(dirname))
+    def test_manual_filename_with_full_path(self, tmpdir):
+        temp = tmpdir.strpath
+        frame = self.frame(temp)
+        ntemp = tempfile.mkstemp(suffix='.npy')[1]
+        assert_equal(setup_filename(frame, filename=ntemp), ntemp)
+
+    def test_manual_filename_without_full_path(self, tmpdir):
+        temp = tmpdir.strpath
+        frame = self.frame(temp)
+        ntemp = 'testing.npy'
+        cache_file = os.path.join(tmpdir, ntemp)
+        assert_equal(setup_filename(frame, filename=ntemp), cache_file)
+
+    def test_manual_cache_folder_without_file(self, tmpdir):
+        temp = tmpdir.strpath
+        frame = self.frame(temp)
+        ntemp = os.path.dirname(tempfile.mkstemp(suffix='.npy')[1])
+        cache_file = os.path.join(ntemp, self.fname)
+        assert_equal(setup_filename(frame, cache_folder=ntemp), cache_file)
+
+    def test_manual_folder_and_file(self, tmpdir):
+        temp = tmpdir.strpath
+        frame = self.frame(temp)
+        nfile = '/no-existing/testing.file.npy'
+        ndir = os.path.dirname(tempfile.mkstemp(suffix='.npy')[1])
+        cache_file = os.path.join(ndir, os.path.basename(nfile))
+        assert_equal(setup_filename(frame, cache_folder=ndir, filename=nfile),
+                     cache_file)
 
 
 class Test_CheckRead_FrameData():
@@ -465,6 +471,32 @@ class Test_FrameData_Creation():
             assert_not_in(i, f.meta)
             assert_equal(f.wcs.to_header()[i], wcs.to_header()[i])
 
+    def test_frame_init_memmap(self):
+        a = _random_array.copy()
+        unit = 'adu'
+        wcs = WCS(naxis=2)
+
+        # default is not memmapped
+        f = FrameData(a, unit=unit, wcs=wcs)
+        assert_false(f._memmapping)
+        assert_false(f._data.memmap)
+        assert_false(f._unct.memmap)
+        assert_false(f._mask.memmap)
+
+        # with true, shuold be
+        f = FrameData(a, unit=unit, wcs=wcs, use_memmap_backend=True)
+        assert_true(f._memmapping)
+        assert_true(f._data.memmap)
+        assert_true(f._unct.memmap)
+        assert_true(f._mask.memmap)
+
+        # with explicit false, should not be
+        f = FrameData(a, unit=unit, wcs=wcs, use_memmap_backend=False)
+        assert_false(f._memmapping)
+        assert_false(f._data.memmap)
+        assert_false(f._unct.memmap)
+        assert_false(f._mask.memmap)
+
 
 class Test_FrameData_WCS():
     def test_wcs_invalid(self):
@@ -636,3 +668,58 @@ class Test_FrameData_FITS():
         hdulist = frame.to_hdu()
         assert_true('bunit' in hdulist[0].header)
         assert_equal(hdulist[0].header['bunit'].strip(), ccd_unit.to_string())
+
+
+class Test_FrameData_MemMap():
+
+    def test_framedata_memmap_default(self):
+        frame = create_framedata()
+        assert_false(frame._data.memmap)
+        assert_false(frame._unct.memmap)
+        assert_false(frame._mask.memmap)
+        assert_false(frame._memmapping)
+        frame.enable_memmap()
+        fname = os.path.join(frame.cache_folder, frame.cache_filename)
+        assert_true(frame._data.memmap)
+        assert_true(frame._unct.memmap)
+        assert_true(frame._mask.memmap)
+        assert_true(frame._memmapping)
+        assert_equal(frame._data.filename, fname+'.data')
+        assert_equal(frame._unct.filename, fname+'.unct')
+        assert_equal(frame._mask.filename, fname+'.mask')
+
+    def test_framedata_memmap_setname(self, tmpdir):
+        frame = create_framedata()
+        assert_false(frame._data.memmap)
+        assert_false(frame._unct.memmap)
+        assert_false(frame._mask.memmap)
+        assert_false(frame._memmapping)
+        c_folder = tmpdir.strpath
+        c_file = 'test'
+        frame.enable_memmap(filename=c_file, cache_folder=c_folder)
+        fname = os.path.join(c_folder, c_file)
+        assert_true(frame._data.memmap)
+        assert_true(frame._unct.memmap)
+        assert_true(frame._mask.memmap)
+        assert_true(frame._memmapping)
+        assert_equal(frame._data.filename, fname+'.data')
+        assert_equal(frame._unct.filename, fname+'.unct')
+        assert_equal(frame._mask.filename, fname+'.mask')
+
+    def test_framedata_disable_memmap(self):
+        frame = create_framedata()
+        assert_false(frame._data.memmap)
+        assert_false(frame._unct.memmap)
+        assert_false(frame._mask.memmap)
+        assert_false(frame._memmapping)
+        frame.enable_memmap()
+        assert_true(frame._data.memmap)
+        assert_true(frame._unct.memmap)
+        assert_true(frame._mask.memmap)
+        assert_true(frame._memmapping)
+        frame.disable_memmap()
+        assert_false(frame._data.memmap)
+        assert_false(frame._unct.memmap)
+        assert_false(frame._mask.memmap)
+        assert_false(frame._memmapping)
+

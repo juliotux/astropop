@@ -124,13 +124,17 @@ def setup_filename(frame, cache_folder=None, filename=None):
     else:
         filename_ccd = None
 
-    filename = filename_ccd or filename
+    # explicit set must be over defult
+    filename = filename or filename_ccd
     filename = filename or mkstemp(suffix='.npy')[1]
-    filename = os.path.basename(filename)
+
     if cache_folder is None and os.path.dirname(filename) != '':
         cache_folder = os.path.dirname(filename)
+    # we need filename dir for cache_folder
+    filename = os.path.basename(filename)
 
-    cache_folder = cache_folder_ccd or cache_folder
+    # explicit set must be over defult
+    cache_folder = cache_folder or cache_folder_ccd
     cache_folder = cache_folder or mkdtemp(prefix='astropop')
 
     frame.cache_folder = cache_folder
@@ -216,9 +220,7 @@ class FrameData:
         # Setup MemMapArray instances
         cache_file = setup_filename(self, self.cache_folder,
                                     self.cache_filename)
-        self._data = MemMapArray(None, filename=cache_file + '.data')
-        self._unct = MemMapArray(None, filename=cache_file + '.unct')
-        self._mask = MemMapArray(None, filename=cache_file + '.mask')
+        self._update_cache_files(cache_file)
 
         # Check for memmapping.
         self._memmapping = False
@@ -273,6 +275,27 @@ class FrameData:
                 self.history = meta.pop('history')
 
         self._meta = meta
+
+    def _update_cache_files(self, cache_file):
+        if self._data is not None:
+            self._data.disable_memmap(remove=True)
+            nd = self._data._contained
+        else:
+            nd = None
+        if self._unct is not None:
+            self._unct.disable_memmap(remove=True)
+            nu = self._unct._contained
+        else:
+            nu = None
+        if self._mask is not None:
+            self._mask.disable_memmap(remove=True)
+            nm = self._mask._contained
+        else:
+            nm = None
+
+        self._data = MemMapArray(nd, filename=cache_file + '.data')
+        self._unct = MemMapArray(nu, filename=cache_file + '.unct')
+        self._mask = MemMapArray(nm, filename=cache_file + '.mask')
 
     @property
     def history(self):
@@ -397,6 +420,7 @@ class FrameData:
             self._mask.enable_memmap()
         else:
             cache_file = setup_filename(self, cache_folder, filename)
+            self._update_cache_files(cache_file)
             self._data.enable_memmap(cache_file + '.data')
             self._mask.enable_memmap(cache_file + '.mask')
             self._unct.enable_memmap(cache_file + '.unct')

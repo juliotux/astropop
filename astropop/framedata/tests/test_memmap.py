@@ -51,114 +51,114 @@ def test_create_and_delete_memmap(tmpdir):
     delete_array_memmap(None)
 
 
-@pytest.mark.parametrize('memmap', [True, False])
-def test_create_empty_memmap(tmpdir, memmap):
-    f = os.path.join(tmpdir, 'empty.npy')
-    a = MemMapArray(None, filename=f, dtype=None, memmap=memmap)
-    assert_equal(a.filename, f)
-    assert_true(a._contained is None)
-    assert_equal(a.memmap, memmap)
-    assert_true(a.empty)
-    assert_false(os.path.exists(f))
-    with pytest.raises(EmptyDataError):
-        # dtype whould rise
-        a.dtype
-    with pytest.raises(EmptyDataError):
-        # shape whould rise
-        a.shape
-    with pytest.raises(EmptyDataError):
-        # item whould rise
-        a[0]
-    with pytest.raises(EmptyDataError):
-        # set item whould rise
-        a[0] = 1
+class Test_MemMapArray:
+    @pytest.mark.parametrize('memmap', [True, False])
+    def test_create_empty_memmap(self, tmpdir, memmap):
+        f = os.path.join(tmpdir, 'empty.npy')
+        a = MemMapArray(None, filename=f, dtype=None, memmap=memmap)
+        assert_equal(a.filename, f)
+        assert_true(a._contained is None)
+        assert_equal(a.memmap, memmap)
+        assert_true(a.empty)
+        assert_false(os.path.exists(f))
+        with pytest.raises(EmptyDataError):
+            # dtype whould rise
+            a.dtype
+        with pytest.raises(EmptyDataError):
+            # shape whould rise
+            a.shape
+        with pytest.raises(EmptyDataError):
+            # item whould rise
+            a[0]
+        with pytest.raises(EmptyDataError):
+            # set item whould rise
+            a[0] = 1
 
 
-@pytest.mark.parametrize('memmap', [True, False])
-def test_create_memmap(tmpdir, memmap):
-    f = os.path.join(tmpdir, 'npn_empty.npy')
-    arr = [[0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5]]
-    a = MemMapArray(arr, filename=f, dtype=None, memmap=memmap)
-    assert_equal(a.filename, f)
-    assert_equal(a, arr)
-    assert_false(a.empty)
-    assert_equal(a.memmap, memmap)
-    assert_equal(os.path.exists(f), memmap)
-    assert_true(a.dtype == np.int64)
+    @pytest.mark.parametrize('memmap', [True, False])
+    def test_create_memmap(self, tmpdir, memmap):
+        f = os.path.join(tmpdir, 'npn_empty.npy')
+        arr = [[0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5]]
+        a = MemMapArray(arr, filename=f, dtype=None, memmap=memmap)
+        assert_equal(a.filename, f)
+        assert_equal(a, arr)
+        assert_false(a.empty)
+        assert_equal(a.memmap, memmap)
+        assert_equal(os.path.exists(f), memmap)
+        assert_true(a.dtype == np.int64)
 
-    a[0][0] = 10
-    assert_equal(a[0][0], 10)
+        a[0][0] = 10
+        assert_equal(a[0][0], 10)
 
-    a[0][:] = 20
-    assert_equal(a[0], [20, 20, 20, 20, 20, 20])
-
-
-def test_enable_disable_memmap(tmpdir):
-    f = os.path.join(tmpdir, 'npn_empty.npy')
-    arr = [[0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5]]
-    a = MemMapArray(arr, filename=f, dtype=None, memmap=False)
-    assert_false(a.memmap)
-    assert_false(os.path.exists(f))
-
-    a.enable_memmap()
-    assert_true(a.memmap)
-    assert_true(os.path.exists(f))
-    assert_is_instance(a._contained, np.memmap)
-
-    # First keep the file
-    a.disable_memmap(remove=False)
-    assert_false(a.memmap)
-    assert_true(os.path.exists(f))
-    assert_is_not_instance(a._contained, np.memmap)
-
-    a.enable_memmap()
-    assert_true(a.memmap)
-    assert_true(os.path.exists(f))
-    assert_is_instance(a._contained, np.memmap)
-
-    # Remove the file
-    a.disable_memmap(remove=True)
-    assert_false(a.memmap)
-    assert_false(os.path.exists(f))
-    assert_is_not_instance(a._contained, np.memmap)
-
-    with pytest.raises(ValueError):
-        # raises error if name is locked
-        a.enable_memmap('not_the_same_name.npy')
+        a[0][:] = 20
+        assert_equal(a[0], [20, 20, 20, 20, 20, 20])
 
 
-def test_reset_data(tmpdir):
-    d1 = np.array([[1, 2], [3, 4]]).astype('float32')
-    m = MemMapArray(d1, os.path.join(tmpdir, 'reset.npy'),
-                    dtype='float64', memmap=True)
-    assert_true(np.issubdtype(m.dtype, np.float64))
-    assert_equal(m, d1)
-    assert_false(m.empty)
-    assert_true(m.memmap)
+    def test_enable_disable_memmap(self, tmpdir):
+        f = os.path.join(tmpdir, 'npn_empty.npy')
+        arr = [[0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5]]
+        a = MemMapArray(arr, filename=f, dtype=None, memmap=False)
+        assert_false(a.memmap)
+        assert_false(os.path.exists(f))
 
-    m.reset_data(d1)
-    assert_true(np.issubdtype(m.dtype, np.float32))
-    assert_equal(m, d1)
-    assert_false(m.empty)
-    assert_true(m.memmap)
+        a.enable_memmap()
+        assert_true(a.memmap)
+        assert_true(os.path.exists(f))
+        assert_is_instance(a._contained, np.memmap)
 
-    m.reset_data(d1.astype('int16'))
-    assert_true(np.issubdtype(m.dtype, np.int16))
-    assert_equal(m, d1)
-    assert_false(m.empty)
-    assert_true(m.memmap)
+        # First keep the file
+        a.disable_memmap(remove=False)
+        assert_false(a.memmap)
+        assert_true(os.path.exists(f))
+        assert_is_not_instance(a._contained, np.memmap)
 
-    m.reset_data(None)
-    assert_true(m.empty)
-    assert_true(m._contained is None)
-    assert_true(m.memmap)
-    m.disable_memmap()
+        a.enable_memmap()
+        assert_true(a.memmap)
+        assert_true(os.path.exists(f))
+        assert_is_instance(a._contained, np.memmap)
 
-    m.reset_data(np.ones((10, 10)), dtype='float32')
-    assert_true(np.issubdtype(m.dtype, np.float32))
-    assert_equal(m, np.ones((10, 10)))
-    assert_false(m.empty)
-    assert_false(m.memmap)
+        # Remove the file
+        a.disable_memmap(remove=True)
+        assert_false(a.memmap)
+        assert_false(os.path.exists(f))
+        assert_is_not_instance(a._contained, np.memmap)
+
+        with pytest.raises(ValueError):
+            # raises error if name is locked
+            a.enable_memmap('not_the_same_name.npy')
+
+    def test_reset_data(self, tmpdir):
+        d1 = np.array([[1, 2], [3, 4]]).astype('float32')
+        m = MemMapArray(d1, os.path.join(tmpdir, 'reset.npy'),
+                        dtype='float64', memmap=True)
+        assert_true(np.issubdtype(m.dtype, np.float64))
+        assert_equal(m, d1)
+        assert_false(m.empty)
+        assert_true(m.memmap)
+
+        m.reset_data(d1)
+        assert_true(np.issubdtype(m.dtype, np.float32))
+        assert_equal(m, d1)
+        assert_false(m.empty)
+        assert_true(m.memmap)
+
+        m.reset_data(d1.astype('int16'))
+        assert_true(np.issubdtype(m.dtype, np.int16))
+        assert_equal(m, d1)
+        assert_false(m.empty)
+        assert_true(m.memmap)
+
+        m.reset_data(None)
+        assert_true(m.empty)
+        assert_true(m._contained is None)
+        assert_true(m.memmap)
+        m.disable_memmap()
+
+        m.reset_data(np.ones((10, 10)), dtype='float32')
+        assert_true(np.issubdtype(m.dtype, np.float32))
+        assert_equal(m, np.ones((10, 10)))
+        assert_false(m.empty)
+        assert_false(m.memmap)
 
 
 # TODO: flush
