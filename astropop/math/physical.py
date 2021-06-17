@@ -13,7 +13,7 @@ from astropy.units import UnitsError, Quantity
 import numpy as np
 
 from ..py_utils import check_iterable
-from ..framedata import FrameData, unit_property
+from .._unit_property import unit_property
 from ._deriv import propagate_2, propagate_1
 
 
@@ -73,7 +73,8 @@ def convert_to_qfloat(value):
         return QFloat(value, None, unit)
 
     # FrameData support
-    if isinstance(value, FrameData):
+    if value.__class__.__name__ == 'FrameData':
+        # avoid breaking the code due to cyclic imports
         return QFloat(value.data, value.uncertainty, value.unit)
 
     # Handle Astropy units to multuply

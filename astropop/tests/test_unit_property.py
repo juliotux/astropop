@@ -2,7 +2,7 @@
 
 import pytest
 from astropop.math.physical import units
-from astropop.framedata import unit_property
+from astropop._unit_property import unit_property
 from astropop.testing import assert_equal, assert_is_none
 
 

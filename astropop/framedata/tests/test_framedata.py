@@ -6,9 +6,9 @@ import pytest
 import tempfile
 import os
 import numpy as np
-from astropop.framedata.framedata import FrameData, setup_filename, \
-                                         extract_units, check_framedata, \
-                                         read_framedata
+from astropop.framedata.framedata import setup_filename, extract_units
+from astropop.framedata import FrameData, check_framedata, read_framedata
+from astropop.math import QFloat
 from astropy.io import fits
 from astropy.utils import NumpyRNGContext
 from astropy import units as u
@@ -272,6 +272,49 @@ class Test_CheckRead_FrameData():
             assert_equal(f.uncertainty, uncert)
             assert_equal(f.mask, mask)
 
+    def test_check_framedata_quantity(self):
+        data = _random_array.copy()*u.Unit('adu')
+        fc = check_framedata(data)
+        fr = read_framedata(data)
+        for f in (fc, fr):
+            assert_is_instance(f, FrameData)
+            assert_equal(f.data, _random_array)
+            assert_equal(f.unit, 'adu')
+            assert_true(f._unct.empty)
+            assert_false(np.any(f._mask))
+            assert_equal(f.meta, {})
+            assert_is_none(f.wcs)
+
+    def test_check_framedata_nparray(self):
+        data = _random_array.copy()
+        fc = check_framedata(data)
+        fr = read_framedata(data)
+        for f in (fc, fr):
+            assert_is_instance(f, FrameData)
+            assert_equal(f.data, _random_array)
+            assert_equal(f.unit, u.dimensionless_unscaled)
+            assert_true(f._unct.empty)
+            assert_false(np.any(f._mask))
+            assert_equal(f.meta, {})
+            assert_is_none(f.wcs)
+
+    def test_check_framedata_qfloat(self):
+        data = _random_array.copy()
+        unit = 'adu'
+        uncert = 0.1*np.ones_like(_random_array)
+        qf = QFloat(data, uncert, unit)
+
+        fc = check_framedata(qf)
+        fr = read_framedata(qf)
+        for f in (fc, fr):
+            assert_is_instance(f, FrameData)
+            assert_equal(f.data, data)
+            assert_equal(f.unit, unit)
+            assert_equal(f._unct, uncert)
+            assert_false(np.any(f._mask))
+            assert_equal(f.meta, {})
+            assert_is_none(f.wcs)
+
 
 class Test_FrameData_Copy():
     def test_copy_simple(self):
@@ -359,7 +402,8 @@ class Test_FrameData_Creation():
         b = _random_array.copy()
         meta = DEFAULT_HEADER.copy()
         unit = 'adu'
-        f = FrameData(a, unit=unit, meta=meta, uncertainty=b, u_dtype='float32')
+        f = FrameData(a, unit=unit, meta=meta, uncertainty=b,
+                      u_dtype='float32')
         assert_almost_equal(a, f.data)
         assert_almost_equal(b, f.uncertainty)
         assert_equal(f.unit, u.adu)
@@ -448,7 +492,7 @@ class Test_FrameData_Meta():
         assert_equal(a.meta['testing2'], 'b')
         assert_equal(a.header['testing1'], 'c')  # Header priority
         assert_equal(a.header['testing2'], 'b')
-        for k in DEFAULT_HEADER.keys():
+        for k in DEFAULT_HEADER:
             assert_equal(a.header[k], DEFAULT_HEADER[k])
             assert_equal(a.meta[k], DEFAULT_HEADER[k])
 
@@ -566,7 +610,7 @@ class Test_FrameData_FITS():
             assert_equal(fits_hdulist[0].header[k], v)
         assert_equal(fits_hdulist[0].data, frame.data)
         assert_equal(fits_hdulist["UNCERT"].data,
-                    frame.uncertainty)
+                     frame.uncertainty)
         assert_equal(fits_hdulist["MASK"].data, frame.mask)
         assert_equal(fits_hdulist[0].header['BUNIT'], 'adu')
 

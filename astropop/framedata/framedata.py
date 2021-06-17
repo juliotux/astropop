@@ -10,17 +10,14 @@ import copy as cp
 from tempfile import mkdtemp, mkstemp
 from astropy import units as u
 from astropy.wcs import WCS
-from astropy.io import fits
-from astropy.nddata import CCDData
 
 from ..py_utils import mkdir_p, check_iterable
 from .memmap import MemMapArray
-from .compat import extract_header_wcs, _to_ccddata, _to_hdu, \
-                    _extract_ccddata, _extract_fits, imhdus
-from ._unit_property import unit_property
+from .compat import extract_header_wcs, _to_ccddata, _to_hdu
+from .._unit_property import unit_property
 
 
-__all__ = ['FrameData', 'read_framedata', 'check_framedata']
+__all__ = ['FrameData']
 
 
 def _get_shape(d):
@@ -29,54 +26,6 @@ def _get_shape(d):
     else:
         ds = np.array(d).shape
     return ds
-
-
-def read_framedata(obj, copy=False, **kwargs):
-    """Read an object to a FrameData container.
-
-    Parameters
-    ----------
-    - obj: any compatible, see notes
-      Object that will be readed to the FrameData.
-    - copy: bool (optional)
-      If the object is already a FrameData, return a copy instead of the
-      original one.
-      Default: False
-
-    Returns
-    -------
-    - frame: `FrameData`
-      The readed FrameData object.
-
-    Notes
-    -----
-    - If obj is a string or `~pathlib.Path`, it will be interpreted as a file.
-      File types will be checked. Just FITS format supported now.
-    - If obj is `~astropy.io.fits.HDUList`, `~astropy.io.fits.HDUList` or
-      `~astropy.nddata.CCDData`, they will be properly translated to
-      `FrameData`.
-    - If numbers or `~astropop.math.physical.QFloat`,
-      `~astropy.units.Quantity`, they will be translated to a `FrameData`
-      without metadata.
-    """
-    if isinstance(obj, FrameData):
-        if copy:
-            obj = cp.deepcopy(obj)
-    elif isinstance(obj, CCDData):
-        obj = FrameData(**_extract_ccddata(obj, **kwargs))
-    elif isinstance(obj, (str, bytes, os.PathLike)):
-        obj = FrameData(**_extract_fits(obj, **kwargs))
-    elif isinstance(obj, (fits.HDUList, *imhdus)):
-        obj = FrameData(**_extract_fits(obj, **kwargs))
-    else:
-        raise ValueError(f'Object {obj} is not compatible with FrameData.')
-
-    # TODO: numbers, np.array, QFloat, Quantity
-
-    return obj
-
-
-check_framedata = read_framedata
 
 
 def shape_consistency(data=None, uncertainty=None, mask=None):
@@ -429,6 +378,7 @@ class FrameData:
         self._mask.reset_data(value)
 
     def copy(self):
+        """Copy the current FrameData to a new instance."""
         return self.__copy__()
 
     def enable_memmap(self, filename=None, cache_folder=None):
