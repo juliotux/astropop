@@ -1,4 +1,4 @@
-name: Unit Tests (Anaconda)
+name: Unit Tests
 
 on:
   pull_request:
