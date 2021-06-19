@@ -362,3 +362,26 @@ class Test_Fits_Extract():
         f = _extract_fits(fname)
         assert_equal(f['data'], 100*np.ones(self.shape))
         assert_equal(f['unit'], None)
+
+    def test_invalid_type(self):
+        with pytest.raises(TypeError):
+            _extract_fits(None)
+
+        with pytest.raises(TypeError):
+            _extract_fits(np.array([1, 2, 3]))
+
+        with pytest.raises(TypeError):
+            _extract_fits(CCDData([1, 2, 3], unit='adu'))
+
+    def test_no_data_in_hdu(self):
+        hdul = fits.HDUList([fits.PrimaryHDU(), fits.ImageHDU()])
+        with pytest.raises(ValueError):
+            _extract_fits(hdul, hdu=1)
+
+    def test_unit_incompatible(self):
+        hdul = self.create_hdu(uncert=True, mask=True)
+        hdul[0].header['BUNIT'] = 'm'
+
+        with pytest.raises(ValueError):
+            _extract_fits(hdul, hdu_uncertainty='UNCERT',
+                          unit_key='BUNIT', unit='adu')

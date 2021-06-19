@@ -109,7 +109,7 @@ def _extract_fits(obj, hdu=0, unit=None, hdu_uncertainty=_HDU_UNCERT,
     elif isinstance(obj, fits.HDUList):
         hdul = obj
     else:
-        raise ValueError(f'Object {obj} not recognized.')
+        raise TypeError(f'Object {obj} not recognized.')
 
     # from now, assumes obj is HDUList
     # Check if the data HDU contain data
