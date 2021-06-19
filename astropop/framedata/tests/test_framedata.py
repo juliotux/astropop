@@ -804,6 +804,25 @@ class Test_FrameData_FITS():
             fits_hdulist['MASK']
         assert_equal(fits_hdulist[0].header['BUNIT'], 'adu')
 
+    def test_to_hdu_wcs(self):
+        frame = create_framedata()
+        wcs = WCS(naxis=2)
+        wcsh = wcs.to_header(relax=True)
+        frame.wcs = wcs
+        hdul = frame.to_hdu()
+        assert_is_instance(hdul, fits.HDUList)
+        for k in wcsh:
+            assert_equal(hdul[0].header[k], wcsh[k])
+
+    def test_to_hdu_history(self):
+        frame = create_framedata()
+        frame.history = 'test 1'
+        frame.history = ['test 2', 'test']
+
+        hdul = frame.to_hdu()
+        assert_is_instance(hdul, fits.HDUList)
+        assert_equal(hdul[0].header['history'], ['test 1', 'test 2', 'test'])
+
     def test_write_unit_to_hdu(self):
         frame = create_framedata()
         ccd_unit = frame.unit
