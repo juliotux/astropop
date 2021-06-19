@@ -19,55 +19,54 @@ jobs:
       fail-fast: false
       matrix:
         include:
-#           - name: Python 3.7 with required dependencies
-#             python-version: 3.7
-#             toxenv: py37-test
+          - name: Python 3.7 with required dependencies
+            python-version: 3.7
+            toxenv: py37-test
 
-#           - name: Python 3.8 with required dependencies
-#             python-version: 3.8
-#             toxenv: py38-test
+          - name: Python 3.8 with required dependencies
+            python-version: 3.8
+            toxenv: py38-test
 
-#           - name: Python 3.9 with required dependencies
-#             python-version: 3.9
-#             toxenv: py39-test
+          - name: Python 3.9 with required dependencies
+            python-version: 3.9
+            toxenv: py39-test
 
-#           - name: Python 3.8 with required dependencies and measure coverage
-#             python-version: 3.8
-#             toxenv: py38-test-cov
-#             coverage: true
-#             astrometry: true
+          - name: Python 3.8 with required dependencies and measure coverage
+            python-version: 3.8
+            toxenv: py38-test-cov-ast
+            coverage: true
 
-#           - name: Documentation build
-#             python-version: 3.8
-#             toxenv: build_docs
+          - name: Documentation build
+            python-version: 3.8
+            toxenv: build_docs
 
-#           - name: Python 3.9 with developer version of astropy and numpy
-#             python-version: 3.9
-#             toxenv: py39-test-devdeps
+          - name: Python 3.9 with developer version of astropy and numpy
+            python-version: 3.9
+            toxenv: py39-test-devdeps-ast
 
-#           - name: Python 3.6 with astropy 3.2 and Numpy 1.17
-#             python-version: 3.6
-#             toxenv: py36-test-astropy32-numpy117
+          - name: Python 3.6 with astropy 3.2 and Numpy 1.17
+            python-version: 3.6
+            toxenv: py36-test-astropy32-numpy117
 
-#           - name: Python 3.7 with astropy 3.2 and Numpy 1.17
-#             python-version: 3.7
-#             toxenv: py37-test-astropy32-numpy117
+          - name: Python 3.7 with astropy 3.2 and Numpy 1.17
+            python-version: 3.7
+            toxenv: py37-test-astropy32-numpy117
 
-#           - name: Python 3.7 with astropy LTS and Numpy 1.18
-#             python-version: 3.7
-#             toxenv: py37-test-astropylts-numpy118
+          - name: Python 3.7 with astropy LTS and Numpy 1.18
+            python-version: 3.7
+            toxenv: py37-test-astropylts-numpy118
 
-#           - name: Python 3.7 with astropy 4.0 and Numpy 1.18
-#             python-version: 3.7
-#             toxenv: py37-test-astropy40-numpy118
+          - name: Python 3.7 with astropy 4.0 and Numpy 1.18
+            python-version: 3.7
+            toxenv: py37-test-astropy40-numpy118
 
-#           - name: Python 3.8 with astropy 4.0 and Numpy 1.18
-#             python-version: 3.8
-#             toxenv: py38-test-astropy40-numpy118
+          - name: Python 3.8 with astropy 4.0 and Numpy 1.18
+            python-version: 3.8
+            toxenv: py38-test-astropy40-numpy118
 
-#           - name: Python 3.8 with astropy 4.2 and Numpy 1.19
-#             python-version: 3.8
-#             toxenv: py38-test-astropy42-numpy119
+          - name: Python 3.8 with astropy 4.2 and Numpy 1.19
+            python-version: 3.8
+            toxenv: py38-test-astropy42-numpy119
           
           - name: Python 3.8 with astrometry
             python-version: 3.8
