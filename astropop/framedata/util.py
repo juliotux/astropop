@@ -53,9 +53,10 @@ def read_framedata(obj, copy=False, **kwargs):
     elif isinstance(obj, (fits.HDUList, *imhdus)):
         obj = FrameData(**_extract_fits(obj, **kwargs))
     elif isinstance(obj, (np.ndarray, MemMapArray)):
-        obj = FrameData(obj)
-    elif isinstance(obj, u.Quantity):
-        obj = FrameData(obj.values, unit=obj.unit)
+        if isinstance(obj, u.Quantity):
+            obj = FrameData(obj.values, unit=obj.unit)
+        else:
+            obj = FrameData(obj)
     elif obj.__class__.__name__ == "QFloat":
         # if not do this, a cyclic dependency breaks the code.
         obj = FrameData(obj.nominal, unit=obj.unit,
