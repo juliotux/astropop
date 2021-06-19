@@ -246,6 +246,16 @@ class Test_Extract_CCDData():
         with pytest.raises(TypeError):
             _extract_ccddata(ccd)
 
+    def test_invalid_uncert_unit(self):
+        ccd = self.ccd
+        # we must do this to avoid ccddata self protection
+        uncert = StdDevUncertainty(np.sqrt(ccd.data), unit='m')
+        ccd._uncertainty = uncert
+        ccd._uncertainty._parent_nddata = ccd
+
+        with pytest.raises(ValueError):
+            _extract_ccddata(ccd)
+
 
 class Test_Fits_Extract():
     shape = (10, 10)
