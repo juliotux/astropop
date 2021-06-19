@@ -3,6 +3,7 @@
 
 from astropy import units
 
+
 def unit_property(cls):
     """Add a `unit` property to a class."""
     def _unit_getter(self):
