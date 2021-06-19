@@ -54,7 +54,7 @@ def read_framedata(obj, copy=False, **kwargs):
         obj = FrameData(**_extract_fits(obj, **kwargs))
     elif isinstance(obj, (np.ndarray, MemMapArray)):
         if isinstance(obj, u.Quantity):
-            obj = FrameData(obj.values, unit=obj.unit)
+            obj = FrameData(obj.value, unit=obj.unit)
         else:
             obj = FrameData(obj)
     elif obj.__class__.__name__ == "QFloat":
