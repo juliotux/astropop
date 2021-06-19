@@ -25,7 +25,7 @@ class IncompatibleHeadersError(ValueError):
     """When 2 image header are not compatible."""
 
 
-def check_header_keys(image1, image2, keywords=None, logger=logger):
+def check_header_keys(image1, image2, keywords=None):
     """Compare header keys from 2 images to check if the have equal values."""
     keywords = keywords or []
     header1 = {}
@@ -59,7 +59,7 @@ def check_header_keys(image1, image2, keywords=None, logger=logger):
 
 
 def fits_yielder(return_type, file_list, ext=0, append_to_name=None,
-                 save_to=None, overwrite=True, logger=logger):
+                 save_to=None, overwrite=True):
     """Create a generator object that iterates over file_list.
 
     return_type : str
@@ -149,7 +149,7 @@ def fits_yielder(return_type, file_list, ext=0, append_to_name=None,
 
 
 def headers_to_table(headers, filenames=None, keywords=None, empty_value=None,
-                     lower_keywords=False, logger=logger):
+                     lower_keywords=False):
     """Read a bunch of headers and return a table with the values."""
     # TODO: Refactor to better performance
     hlist = []

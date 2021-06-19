@@ -73,7 +73,7 @@ def check_shapes(func):
     return wrapper
 
 
-def reduced_chi2(psi, z, z_err, q, u, v=None, retarder='half', logger=logger):
+def reduced_chi2(psi, z, z_err, q, u, v=None, retarder='half'):
     """Compute the reduced chi-square for a given model."""
     if retarder == 'quarter' and v is None:
         raise ValueError('missing value `v` of circular polarimetry.')
@@ -101,8 +101,7 @@ def compute_theta(q, u):
     return theta
 
 
-def estimate_dxdy(x, y, steps=[100, 30, 5, 3], bins=30, dist_limit=100,
-                  logger=logger):
+def estimate_dxdy(x, y, steps=[100, 30, 5, 3], bins=30, dist_limit=100):
     """Estimate the displacement between the two beams.
 
     To compute the displacement between the ordinary and extraordinary
@@ -140,7 +139,7 @@ def estimate_dxdy(x, y, steps=[100, 30, 5, 3], bins=30, dist_limit=100,
     return (_find_max(dx), _find_max(dy))
 
 
-def match_pairs(x, y, dx, dy, tolerance=1.0, logger=logger):
+def match_pairs(x, y, dx, dy, tolerance=1.0):
     """Match the pairs of ordinary/extraordinary points (x, y)."""
     kd = cKDTree(list(zip(x, y)))
 
@@ -203,7 +202,7 @@ class DualBeamPolarimetryBase(abc.ABC):
     """Base class for polarimetry computation."""
 
     def __init__(self, retarder, normalize=True, positions=None, min_snr=None,
-                 filter_negative=True, global_k=None, logger=logger):
+                 filter_negative=True, global_k=None):
         self._retarder = retarder
         self._min_snr = min_snr
         self._normalize = normalize
@@ -299,11 +298,10 @@ class SLSDualBeamPolarimetry(DualBeamPolarimetryBase):
     """
 
     def __init__(self, retarder, normalize=True, positions=None, min_snr=None,
-                 filter_negative=True, global_k=None, logger=logger, **kwargs):
+                 filter_negative=True, global_k=None, **kwargs):
         super(SLSDualBeamPolarimetry, self).__init__(retarder, normalize,
                                                      positions, min_snr,
-                                                     filter_negative, global_k,
-                                                     logger=logger)
+                                                     filter_negative, global_k)
         if self.retarder == 'half':
             self._model = HalfWaveModel
         elif self.retarder == 'quarter':
@@ -391,11 +389,10 @@ class MBR84DualBeamPolarimetry(DualBeamPolarimetryBase):
     """
 
     def __init__(self, retarder, normalize=True, positions=None, min_snr=None,
-                 filter_negative=True, global_k=None, logger=logger, **kwargs):
+                 filter_negative=True, global_k=None, **kwargs):
         super(SLSDualBeamPolarimetry, self).__init__(retarder, normalize,
                                                      positions, min_snr,
-                                                     filter_negative, global_k,
-                                                     logger=logger)
+                                                     filter_negative, global_k)
 
     @check_shapes
     def compute(self, psi, ford, fext, ford_err=None, fext_err=None,

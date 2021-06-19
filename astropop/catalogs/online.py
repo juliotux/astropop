@@ -164,8 +164,7 @@ class VizierCatalogClass(_BasePhotometryCatalog):
         """Query coordinates in a region of the catalog."""
         if self.ra_key is None or self.dec_key is None:
             raise ValueError("Invalid RA or Dec keys.")
-        self._query_vizier(center, radius, table=self.vizier_table,
-                           logger=logger)
+        self._query_vizier(center, radius, table=self.vizier_table)
         ra = self._last_query_table[self.ra_key].data
         dec = self._last_query_table[self.dec_key].data
 
@@ -240,8 +239,7 @@ class VizierCatalogClass(_BasePhotometryCatalog):
                                         ('flux_error', m_flue.dtype)]))
 
 
-def simbad_query_id(ra, dec, limit_angle, logger=logger,
-                    name_order=None):
+def simbad_query_id(ra, dec, limit_angle, name_order=None):
     """Query a single id from Simbad."""
     if name_order is None:
         name_order = ['NAME', 'HD', 'HR', 'HYP', 'TYC', 'AAVSO']
@@ -313,7 +311,7 @@ class SimbadCatalogClass(_BasePhotometryCatalog):
         """Query a single object in the catalog."""
         s = self._get_simbad()
         # query object should not need this
-        # center = self._get_center_object(center, logger=logger)
+        # center = self._get_center_object(center)
         if band is not None:
             s.add_votable_fields(f'fluxdata({band})')
         return _timeout_retry(_wrap_query_table(s.query_object),
@@ -348,7 +346,7 @@ class SimbadCatalogClass(_BasePhotometryCatalog):
         """Query coordinates in a region of the catalog."""
         if self.ra_key is None or self.dec_key is None:
             raise ValueError("Invalid RA or Dec keys.")
-        self.query_region(center, radius, logger=logger)
+        self.query_region(center, radius)
         ra = self._last_query_table[self.ra_key].data
         dec = self._last_query_table[self.dec_key].data
 

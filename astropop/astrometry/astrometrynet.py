@@ -64,7 +64,7 @@ class AstrometrySolver():
     _defaults = None
 
     def __init__(self, astrometry_command=_solve_field,
-                 defaults=None, keep_files=False, logger=logger):
+                 defaults=None, keep_files=False):
         # declare the defaults here to be safer
         self._defaults = {'no-plot': None, 'overwrite': None}
         if defaults is None:
