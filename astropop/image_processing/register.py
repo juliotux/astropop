@@ -125,7 +125,7 @@ def apply_shift_list(image_list, shift_list, method='fft'):
 
     Return a new image_list with the shifted images.
     """
-    return [apply_shift(i, s, method=method, logger=logger)
+    return [apply_shift(i, s)
             for i, s in zip(image_list, shift_list)]
 
 
