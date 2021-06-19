@@ -56,14 +56,6 @@ jobs:
             python-version: 3.7
             toxenv: py37-test-astropylts-numpy118
 
-          - name: Python 3.7 with astropy 4.0 and Numpy 1.18
-            python-version: 3.7
-            toxenv: py37-test-astropy40-numpy118
-
-          - name: Python 3.8 with astropy 4.0 and Numpy 1.18
-            python-version: 3.8
-            toxenv: py38-test-astropy40-numpy118
-
           - name: Python 3.8 with astropy 4.2 and Numpy 1.19
             python-version: 3.8
             toxenv: py38-test-astropy42-numpy119
