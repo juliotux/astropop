@@ -438,6 +438,19 @@ class Test_CheckRead_FrameData():
             assert_equal(f.meta, {})
             assert_is_none(f.wcs)
 
+    def test_check_framedata_invalid(self):
+        # A simple string should be invalid.
+        with pytest.raises(TypeError):
+            check_framedata('testing string')
+        with pytest.raises(TypeError):
+            read_framedata('testing string')
+
+        # Also None
+        with pytest.raises(TypeError):
+            check_framedata(None)
+        with pytest.raises(TypeError):
+            read_framedata(None)
+
 
 class Test_FrameData_Copy():
     def test_copy_simple(self):

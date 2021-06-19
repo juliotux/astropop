@@ -62,7 +62,7 @@ def read_framedata(obj, copy=False, **kwargs):
         obj = FrameData(obj.nominal, unit=obj.unit,
                         uncertainty=obj.uncertainty)
     else:
-        raise ValueError(f'Object {obj} is not compatible with FrameData.')
+        raise TypeError(f'Object {obj} is not compatible with FrameData.')
 
     return obj
 
