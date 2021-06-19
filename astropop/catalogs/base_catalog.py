@@ -8,7 +8,7 @@ from astropy.coordinates import Angle, SkyCoord, match_coordinates_sky
 from ..logger import logger
 
 
-def match_indexes(ra, dec, cat_ra, cat_dec, limit_angle, logger=logger):
+def match_indexes(ra, dec, cat_ra, cat_dec, limit_angle):
     """Match list of coordinates with a calatog.
 
     Parameters
@@ -97,15 +97,15 @@ class _BaseCatalog(abc.ABC):
             raise ValueError(f"Radius value {radius} not understood.")
 
     @abc.abstractmethod
-    def _get_center(self, center, logger=logger):
+    def _get_center(self, center):
         """Get the center of a field."""
 
     @abc.abstractmethod
-    def query_object(self, center, logger=logger, **kwargs):
+    def query_object(self, center, **kwargs):
         """Query a single object in the catalog."""
 
     @abc.abstractmethod
-    def query_region(self, center, radius, logger=logger, **kwargs):
+    def query_region(self, center, radius, **kwargs):
         """Query all objects in a region."""
 
     def flush(self):
@@ -144,17 +144,17 @@ class _BasePhotometryCatalog(_BaseCatalog, abc.ABC):
                          f' {self.available_filters}')
 
     @abc.abstractmethod
-    def query_ra_dec(self, center, radius, logger=logger, **kwargs):
+    def query_ra_dec(self, center, radius, **kwargs):
         """Query coordinates in a region of the catalog."""
 
     @abc.abstractmethod
-    def query_flux(self, center, radius, logger=logger, **kwargs):
+    def query_flux(self, center, radius, **kwargs):
         """Query the flux data in a region of the catalog."""
 
     @abc.abstractmethod
-    def query_id(self, center, radius, logger=logger, **kwargs):
+    def query_id(self, center, radius, **kwargs):
         """Query coordinates in a region of the catalog."""
 
     @abc.abstractmethod
-    def match_objects(self, ra, dec, limit_angle='2 arcsec', logger=logger):
+    def match_objects(self, ra, dec, limit_angle='2 arcsec'):
         """Match objects from RA DEC list with this catalog."""

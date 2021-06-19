@@ -1,8 +1,6 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
 import os
-import six
-import numpy as np
 from astropy.io import fits
 from astropy.io.fits.hdu.base import _ValidHDU
 from astropy.table import Table, hstack
@@ -13,7 +11,7 @@ from .py_utils import check_iterable, process_list
 from .framedata import imhdus
 from .logger import logger
 
-__all__ = ['imhdus', 'check_header_keys', 'check_image_hdu', 'fits_yielder',
+__all__ = ['imhdus', 'check_header_keys', 'fits_yielder',
            'headers_to_table']
 
 
@@ -30,75 +28,34 @@ class IncompatibleHeadersError(ValueError):
 def check_header_keys(image1, image2, keywords=None, logger=logger):
     """Compare header keys from 2 images to check if the have equal values."""
     keywords = keywords or []
+    header1 = {}
+    header2 = {}
 
     # Compatibility with fits HDU and FrameData
     if hasattr(image1, 'header'):
-        hk1 = 'header'
+        header1 = image1.header
     elif hasattr(image1, 'meta'):
-        hk1 = 'meta'
-    if hasattr(image2, 'header'):
-        hk2 = 'header'
-    elif hasattr(image2, 'meta'):
-        hk2 = 'meta'
+        header1 = image1.meta
 
-    image1 = check_image_hdu(image1)[hk1]
-    image2 = check_image_hdu(image2)[hk2]
+    if hasattr(image2, 'header'):
+        header2 = image2.header
+    elif hasattr(image2, 'meta'):
+        header2 = image2.header
+
     for i in keywords:
-        if i in image1.keys() and i in image2.keys():
-            v1 = image1[i]
-            v2 = image2[i]
+        if i in header1 and i in header2:
+            v1 = header1[i]
+            v2 = header2[i]
             if v1 != v2:
                 raise IncompatibleHeadersError(f'Keyword `{i}` have different '
                                                'values for images 1 and 2:'
                                                '`{v1}`  `{v2}`')
-        elif i in image1.header.keys() or i in image2.header.keys():
+        elif i in header1 or i in header2:
             raise IncompatibleHeadersError("Headers have inconsisten presence "
                                            f"of {i} Keyword")
         else:
             logger.debug("The images do not have the %s keyword", i)
     return True
-
-
-def check_image_hdu(data, ext=0, logger=logger):
-    """Check if a data is a valid ImageHDU type or convert it."""
-    if not isinstance(data, imhdus):
-        if isinstance(data, fits.HDUList):
-            logger.debug("Extracting HDU from ext %s of HDUList", str(ext))
-            data = data[ext]
-        elif isinstance(data, six.string_types):
-            data = fits.open(data)[ext]
-        elif isinstance(data, np.ndarray):
-            data = fits.PrimaryHDU(data)
-        else:
-            raise ValueError('The given data is not a valid CCDData type.')
-    return data
-
-
-def save_image_hdu(hdu, filename, overwrite=False, logger=logger):
-    """Save simple HDU to a fits file."""
-    base, ext = os.path.splitext(filename)
-    if ext in _compresses:
-        ext2 = ext
-        base, ext = os.path.splitext(base)
-    elif ext not in _supported_formats:
-        # TODO: think its better to save fits or raise error.
-        ext = ".fits"
-    else:
-        ext2 = None
-
-    if ext2 is not None:
-        ext += ext2
-
-    filename = base + ext
-    logger.debug('Saving fits file to: %s', filename)
-
-    if ext == '.fz':
-        p = fits.PrimaryHDU()
-        c = fits.CompImageHDU(hdu.data, header=hdu.header,
-                              compression_type='RICE_1')
-        fits.HDUList([p, c]).writeto(filename, overwrite=overwrite)
-    else:
-        hdu.writeto(filename, overwrite=overwrite)
 
 
 def fits_yielder(return_type, file_list, ext=0, append_to_name=None,
@@ -119,6 +76,10 @@ def fits_yielder(return_type, file_list, ext=0, append_to_name=None,
     overwrite : bool
         If overwrite existing files.
     """
+    def _read(f):
+        """Read just one hdu."""
+        return fits.open(f)[ext]
+
     if save_to:
         if not os.path.exists(save_to):
             os.makedirs(save_to)
@@ -130,9 +91,9 @@ def fits_yielder(return_type, file_list, ext=0, append_to_name=None,
     elif return_type == 'data':
         func = functools.partial(fits.getdata, ext=ext)
     elif return_type == 'hdu':
-        func = functools.partial(check_image_hdu, ext=ext)
+        func = _read
     else:
-        raise ValueError('Generator not recognized.')
+        raise ValueError(f'Generator {return_type} not recognized.')
 
     # if the image list contain hdus, re-yield them
     def _reyield(ver_obj):

@@ -20,7 +20,7 @@ __all__ = ['list_fits_files', 'filter_fg', 'group_fg', 'FileManager',
 def list_fits_files(directory, fits_extensions=['.fts', '.fits', '.fit'],
                     compression_extensions=['.gz', '.bz2', '.Z', '.zip',
                                             '.fz'],
-                    exclude=None, logger=logger):
+                    exclude=None):
     """List all fist files in a directory, if compressed or not."""
     # all_files = os.listdir(directory)
 
@@ -119,7 +119,7 @@ def group_fg(filegroup, keywords):
 class FileGroup():
     """Easy handle groups of fits files."""
 
-    def __init__(self, files, ext, summary, logger=logger):
+    def __init__(self, files, ext, summary):
         """Easy handle groups of fits files."""
         self.files = np.array(files)
         if len(self.files) > 0:
@@ -130,8 +130,6 @@ class FileGroup():
         if len(self.files) != len(self.summary):
             raise ValueError('Files and summary do not have same sizes.')
         self.ext = ext
-
-        self.logger = logger
 
     def __len__(self):
         return len(self.files)
@@ -220,7 +218,7 @@ class FileManager():
     """Handle and organize fits files in a simple way."""
 
     def __init__(self, ext=0, fits_extensions=['.fits', '.fts', '.fit', '.fz'],
-                 compression=True, logger=logger):
+                 compression=True):
         """Handle and organize fits files in a simple way.
         """
         self.ext = ext
@@ -229,8 +227,6 @@ class FileManager():
             self.compression = ['.gz', '.bz2', '.Z', '.zip']
         else:
             self.compression = []
-
-        self.logger = logger
 
     def group_by(self, filegroup, keywords):
         """Group the files by a list of keywords in multiple FileGroups."""

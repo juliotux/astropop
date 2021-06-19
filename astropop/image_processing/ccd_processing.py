@@ -27,7 +27,7 @@ __all__ = ['cosmics_lacosmic', 'gain_correct', 'subtract_bias',
 ###############################################################################
 
 
-def cosmics_lacosmic(ccddata, inplace=False, logger=logger, **lacosmic_kwargs):
+def cosmics_lacosmic(ccddata, inplace=False, **lacosmic_kwargs):
     """
     Remove cosmic rays with LAcosmic. From astroscrappy package.
 
@@ -75,8 +75,7 @@ def cosmics_lacosmic(ccddata, inplace=False, logger=logger, **lacosmic_kwargs):
     return ccd
 
 
-def gain_correct(image, gain, gain_unit=None, inplace=False,
-                 logger=logger):
+def gain_correct(image, gain, gain_unit=None, inplace=False):
     """
     Process the gain correction of an image.
 
@@ -123,8 +122,7 @@ def gain_correct(image, gain, gain_unit=None, inplace=False,
     return nim
 
 
-def subtract_bias(image, master_bias, inplace=False,
-                  logger=logger):
+def subtract_bias(image, master_bias, inplace=False):
     """
     Subtract a master_bias frame from a FrameData.
 
@@ -174,7 +172,7 @@ def subtract_bias(image, master_bias, inplace=False,
 
 
 def subtract_dark(image, master_dark, dark_exposure, image_exposure,
-                  inplace=False, logger=logger):
+                  inplace=False):
     """
     Subtract master_dark frame from a FrameData.
 
@@ -235,7 +233,7 @@ def subtract_dark(image, master_dark, dark_exposure, image_exposure,
 
 
 def flat_correct(image, master_flat, min_value=None, norm_value=None,
-                 inplace=False, logger=logger):
+                 inplace=False):
     """
     Divide the image by a flat field frame.
 
@@ -290,7 +288,6 @@ def process_image(framedata, master_bias=None, master_dark=None,
                   dark_exposure=None, trim=None,
                   lacosmic=False, rebin_func=np.sum,
                   rebin_size=None, readnoise=None, badpixmask=None,
-                  overscan=None,
-                  logger=logger):
+                  overscan=None):
     """Process all the default steps of CCD calibration."""
     raise NotImplementedError

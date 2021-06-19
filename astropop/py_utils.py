@@ -172,7 +172,7 @@ def batch_key_replace(dictionary, key=None):
 
 
 def run_command(args, stdout=None, stderr=None, stdout_loglevel='DEBUG',
-                stderr_loglevel='ERROR', logger=logger, **kwargs):
+                stderr_loglevel='ERROR', **kwargs):
     """Run a command in command line with logging."""
     if isinstance(args, six.string_types):
         logger.debug('Converting string using shlex')

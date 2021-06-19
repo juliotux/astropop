@@ -17,7 +17,7 @@ from ..logger import logger
 
 def translate(image, shift, subpixel=True, cval=0):
     """Translate an image by (dy, dx) using Scikit AffineTransform.
-    
+
     Parameters
     ----------
     image : `~nnumpy.ndarray`
@@ -30,7 +30,7 @@ def translate(image, shift, subpixel=True, cval=0):
     cval : `float (optional)`
         Value to fill empty pixels after shift.
         Default = 0
-        
+
     Returns
     -------
     image_new : `~nnumpy.ndarray`
@@ -73,7 +73,7 @@ def create_chi2_shift_list(image_list):
     return shifts
 
 
-def apply_shift(image, shiftxy, subpixel=True, footprint=False, logger=logger):
+def apply_shift(image, shiftxy, subpixel=True, footprint=False):
     """Apply a shifts of (dx, dy) to a list of images.
 
     Parameters:
@@ -85,18 +85,22 @@ def apply_shift(image, shiftxy, subpixel=True, footprint=False, logger=logger):
 
     Return the shifted images.
     """
-    
+
     dx, dy = shiftxy
     shift_col_lin = (dy, dx)
-    
+
     nimage = translate(image, shift_col_lin, subpixel=subpixel, cval=0)
-    
+
     masks = np.full(nimage.shape, False)
-    if dx < 0: masks[dx:] = True
-    else: masks[:dx] = True
-    if dy < 0: masks[:,dy:] = True
-    else: masks[:,:dy] = True
-    
+    if dx < 0:
+        masks[dx:] = True
+    else:
+        masks[:dx] = True
+    if dy < 0:
+        masks[:, dy:] = True
+    else:
+        masks[:, :dy] = True
+
     if footprint:
         foot = np.ones(nimage.shape)
         foot = translate(foot, shift_col_lin, subpixel=subpixel, cval=0)
@@ -104,11 +108,8 @@ def apply_shift(image, shiftxy, subpixel=True, footprint=False, logger=logger):
     else:
         return [nimage, masks]
 
-    # raise ValueError('Unrecognized shift image method.')
 
-
-def apply_shift_list(image_list, shift_list, method='fft',
-                     logger=logger):
+def apply_shift_list(image_list, shift_list, method='fft'):
     """Apply a list of (x, y) shifts to a list of images.
 
     Parameters:
@@ -129,7 +130,7 @@ def apply_shift_list(image_list, shift_list, method='fft',
 
 
 def hdu_shift_images(hdu_list, method='fft', register_method='asterism',
-                     footprint=False, logger=logger):
+                     footprint=False):
     """Calculate and apply shifts in a set of ccddata images.
 
     The function process the list inplace. Original data altered.
@@ -158,25 +159,15 @@ def hdu_shift_images(hdu_list, method='fft', register_method='asterism',
             shifts = create_chi2_shift_list([ccd.data for ccd in hdu_list])
         else:
             shifts = create_fft_shift_list([ccd.data for ccd in hdu_list])
-        logger.info(f"Aligning CCDData with shifts: {shifts}")
+        logger.info("Aligning CCDData with shifts: %s", shifts)
         for ccd, shift in zip(hdu_list, shifts):
-            # if method == 'fft':
-            #     s_method = method
-            # else:
-            #     s_method = 'simple'
-            # ccd.data = apply_shift(ccd.data, shift, method=s_method,
-            #                        logger=logger)
-            #     s_method = 'simple'
-            ccd.data, ccd.masks = apply_shift(ccd.data, shift, logger=logger)
-            sh_string = [str(i) for i in shift]
-            ccd.header['hierarch astropop register_shift'] = ",".join(sh_string)
-            # if footprint:
-            #     ccd.footprint = apply_shift(np.ones_like(ccd.data, dtype=bool),
-            #                                 shift, method='simple',
-            #                                 logger=logger)
+            ccd.data, ccd.masks = apply_shift(ccd.data, shift)
+            shift_s = [str(i) for i in shift]
+            ccd.header['hierarch astropop register_shift'] = ",".join(shift_s)
             if footprint:
-                [],[],ccd.footprint = apply_shift(np.ones_like(ccd.data, dtype=bool),
-                                            shift, logger=logger)
+                _, _, ccd.footprint = apply_shift(np.ones_like(ccd.data,
+                                                               dtype=bool),
+                                                  shift)
     for i in hdu_list:
         i.header['hierarch astropop registered'] = True
         # i.header['hierarch astropop register_method'] = method

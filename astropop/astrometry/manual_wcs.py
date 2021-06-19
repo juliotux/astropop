@@ -17,8 +17,7 @@ _angles = {
 }
 
 
-def wcs_from_coords(x, y, ra, dec, plate_scale, north, flip=None,
-                    logger=logger):
+def wcs_from_coords(x, y, ra, dec, plate_scale, north, flip=None):
     """Giving coordinates and plate scale, creates a WCS.
 
     x, y: float, pixel coordinates in image

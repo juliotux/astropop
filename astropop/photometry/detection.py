@@ -39,8 +39,7 @@ def gen_filter_kernel(size):
                          [1, 2, 3, 4, 3, 2, 1]])
 
 
-def background(data, box_size, filter_size, mask=None, global_bkg=True,
-               logger=logger):
+def background(data, box_size, filter_size, mask=None, global_bkg=True):
     """Estimate the image background using SExtractor algorithm.
 
     If global_bkg, return a single value for background and rms, else, a 2D
@@ -58,7 +57,7 @@ def background(data, box_size, filter_size, mask=None, global_bkg=True,
 
 
 def sepfind(data, snr, background, noise, recenter=False,
-            mask=None, fwhm=None, filter_kernel=3, logger=logger,
+            mask=None, fwhm=None, filter_kernel=3,
             **sep_kwargs):
     """Find sources using SExtractor segmentation algorithm.
 
@@ -87,9 +86,7 @@ def sepfind(data, snr, background, noise, recenter=False,
 
 
 def daofind(data, snr, background, noise, fwhm, mask=None,
-            sharp_limit=(0.2, 1.0),
-            round_limit=(-1.0, 1.0),
-            logger=logger):
+            sharp_limit=(0.2, 1.0), round_limit=(-1.0, 1.0)):
     """Find sources using DAOfind algorithm.
 
     Translated from IDL Astro package by D. Jones. Original function available
@@ -209,7 +206,7 @@ def daofind(data, snr, background, noise, fwhm, mask=None,
     logger.debug(f'{nfound} pixels above threshold')
 
     if nfound == 0:  # Any maxima found?
-        logger.warn(f'No maxima exceed input threshold of {hmin}')
+        logger.warning(f'No maxima exceed input threshold of {hmin}')
         return
 
     for i in range(pixels):
@@ -220,7 +217,7 @@ def daofind(data, snr, background, noise, fwhm, mask=None,
                                           h[hy[hgood], hx[hgood]]))
         nfound = len(stars)
         if nfound == 0:  # Do valid local maxima exist?
-            logger.warn(f'No maxima exceed input threshold of {hmin}')
+            logger.warning(f'No maxima exceed input threshold of {hmin}')
             return
         index = np.array([index[0][hgood][stars], index[1][hgood][stars]])
 
@@ -337,8 +334,7 @@ def daofind(data, snr, background, noise, fwhm, mask=None,
 
 
 def starfind(data, snr, background, noise, fwhm, mask=None, box_size=35,
-             sharp_limit=(0.2, 1.0), round_limit=(-1.0, 1.0),
-             logger=logger):
+             sharp_limit=(0.2, 1.0), round_limit=(-1.0, 1.0)):
     """Find stars using daofind AND sexfind."""
     # First, we identify the sources with sepfind (fwhm independent)
     sources = sepfind(data, snr, background, noise, mask=mask,
@@ -353,8 +349,7 @@ def starfind(data, snr, background, noise, fwhm, mask=None, box_size=35,
     return sources
 
 
-def sources_mask(shape, x, y, a, b, theta, mask=None, scale=1.0,
-                 logger=logger):
+def sources_mask(shape, x, y, a, b, theta, mask=None, scale=1.0):
     """Create a mask to cover all sources."""
     image = np.zeros(shape, dtype=bool)
     sep.mask_ellipse(image, x, y, a, b, theta, r=scale)
@@ -384,8 +379,7 @@ def _fwhm_loop(model, data, x, y, xc, yc):
         return np.nan
 
 
-def calc_fwhm(data, x, y, box_size=25, model='gaussian', min_fwhm=3.0,
-              logger=logger):
+def calc_fwhm(data, x, y, box_size=25, model='gaussian', min_fwhm=3.0):
     """Calculate the median FWHM of the image with Gaussian or Moffat fit."""
     indices = np.indices(data.shape)
     rects = [trim_array(data, box_size, (xi, yi), indices=indices)
@@ -410,8 +404,7 @@ def _recenter_loop(fitter, model, data, x, y, xc, yc):
     return m_fit.x_0.value, m_fit.y_0.value
 
 
-def recenter_sources(data, x, y, box_size=25, model='gaussian',
-                     logger=logger):
+def recenter_sources(data, x, y, box_size=25, model='gaussian'):
     """Recenter teh sources using a PSF model."""
     indices = np.indices(data.shape)
     rects = [trim_array(data, box_size, (xi, yi), indices=indices)

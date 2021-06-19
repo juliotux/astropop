@@ -45,7 +45,7 @@ def _remove_sip_keys(header, wcs):
     return header
 
 
-def extract_header_wcs(header, logger=logger):
+def extract_header_wcs(header):
     """Get a header (or dict) and extract a WCS based on the keys.
 
     Parameters

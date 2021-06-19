@@ -12,7 +12,7 @@ from ..logger import logger
 from ..fits_utils import imhdus
 
 
-def sky_annulus(data, x, y, r_ann, algorithm='mmm', mask=None, logger=logger):
+def sky_annulus(data, x, y, r_ann, algorithm='mmm', mask=None):
     """Determine the sky value of a single pixel based on a sky annulus.
 
     Parameters
@@ -91,8 +91,7 @@ def sky_annulus(data, x, y, r_ann, algorithm='mmm', mask=None, logger=logger):
 
 
 def aperture_photometry(data, x, y, r='auto', r_ann='auto', gain=1.0,
-                        readnoise=None, mask=None, sky_algorithm='mmm',
-                        logger=logger):
+                        readnoise=None, mask=None, sky_algorithm='mmm'):
     """Perform aperture photometry using sep.
 
     Parameters

@@ -26,16 +26,14 @@ __all__ = ['VizierCatalogClass', 'SimbadCatalogClass', 'UCAC5Catalog',
 
 def _timeout_retry(func, *args, **kwargs):
     tried = kwargs.pop('_____retires', 0)
-    log = kwargs.pop('logger', logger)
     try:
         q = func(*args, **kwargs)
     except TimeoutError:
         if tried >= MAX_RETRIES_TIMEOUT:
-            log.warning('TimeOut obtained in %s tries, aborting.',
+            logger.warning('TimeOut obtained in %s tries, aborting.',
                         MAX_RETRIES_TIMEOUT)
             return
-        return _timeout_retry(func, *args, **kwargs, _____retires=tried+1,
-                              logger=log)
+        return _timeout_retry(func, *args, **kwargs, _____retires=tried+1)
     return q
 
 
@@ -50,7 +48,7 @@ def _wrap_query_table(func):
     return wrapper
 
 
-def get_center_radius(ra, dec, logger=logger):
+def get_center_radius(ra, dec):
     """Get the center of a list RA and DEC."""
     center_ra = (np.max(ra) + np.min(ra))/2
     center_dec = (np.max(dec) + np.min(dec))/2
@@ -59,7 +57,7 @@ def get_center_radius(ra, dec, logger=logger):
     return center_ra, center_dec, radius
 
 
-def get_center_skycoord(center, logger=logger):
+def get_center_skycoord(center):
     if isinstance(center, six.string_types):
         try:
             return SkyCoord(center)
@@ -110,7 +108,7 @@ class VizierCatalogClass(_BasePhotometryCatalog):
                 raise ValueError('Invalid parameter {} passed to'
                                  ' VizierCatalogClass')
 
-    def _flux_keys(self, band, logger=logger):
+    def _flux_keys(self, band):
         flux_key = self.flux_key.format(band=band)
         if self.flux_error_key is not None:
             flux_error_key = self.flux_error_key.format(band=band)
@@ -118,10 +116,10 @@ class VizierCatalogClass(_BasePhotometryCatalog):
             flux_error_key = None
         return flux_key, flux_error_key
 
-    def _get_center(self, center, logger=logger):
+    def _get_center(self, center):
         return get_center_skycoord(center, logger)
 
-    def _query_vizier(self, center, radius, table, logger=logger):
+    def _query_vizier(self, center, radius, table):
         """Query in vizier site."""
         # check if the new query is equal to previous one. Only perform a new
         # query if it is not redundant
@@ -154,17 +152,15 @@ class VizierCatalogClass(_BasePhotometryCatalog):
         self._last_query_table = query[0]
         return copy.copy(self._last_query_table)
 
-    def query_object(self, center, logger=logger, **kwargs):
+    def query_object(self, center, **kwargs):
         """Query a single object in the catalog."""
-        return self._query_vizier(center, radius=None, table=self.vizier_table,
-                                  logger=logger)
+        return self._query_vizier(center, radius=None, table=self.vizier_table)
 
-    def query_region(self, center, radius, logger=logger, **kwargs):
+    def query_region(self, center, radius, **kwargs):
         """Query all objects in a region."""
-        return self._query_vizier(center, radius, table=self.vizier_table,
-                                  logger=logger)
+        return self._query_vizier(center, radius, table=self.vizier_table)
 
-    def query_ra_dec(self, center, radius, logger=logger, **kwargs):
+    def query_ra_dec(self, center, radius, **kwargs):
         """Query coordinates in a region of the catalog."""
         if self.ra_key is None or self.dec_key is None:
             raise ValueError("Invalid RA or Dec keys.")
@@ -180,7 +176,7 @@ class VizierCatalogClass(_BasePhotometryCatalog):
 
         return ra, dec
 
-    def query_id(self, center, radius, logger=logger, **kwargs):
+    def query_id(self, center, radius, **kwargs):
         """Query the object name in a region of the catalog."""
         if self.id_key is None:
             raise ValueError("Invalid ID key.")
@@ -200,12 +196,11 @@ class VizierCatalogClass(_BasePhotometryCatalog):
 
         return string_fix(idn)
 
-    def query_flux(self, center, radius, band, logger=logger, **kwargs):
+    def query_flux(self, center, radius, band, **kwargs):
         """Query the flux data in a region of the catalog."""
         self.check_filter(band)
         flux_key, flux_error_key = self._flux_keys(band)
-        self._query_vizier(center, radius, table=self.vizier_table,
-                           logger=logger)
+        self._query_vizier(center, radius, table=self.vizier_table,)
 
         flux = np.array(self._last_query_table[flux_key].data)
         try:
@@ -215,8 +210,7 @@ class VizierCatalogClass(_BasePhotometryCatalog):
 
         return flux, flux_error
 
-    def match_objects(self, ra, dec, filter=None, limit_angle='2 arcsec',
-                      logger=logger):
+    def match_objects(self, ra, dec, filter=None, limit_angle='2 arcsec'):
         """Match objects from RA DEC list with this catalog."""
         c_ra, c_dec, radius = get_center_radius(ra, dec)
         center = (c_ra, c_dec)
@@ -293,11 +287,11 @@ class SimbadCatalogClass(_BasePhotometryCatalog):
         s.ROW_LIMIT = 0
         return s
 
-    def _get_center(self, center, logger=logger):
+    def _get_center(self, center):
         c = get_center_skycoord(center)
         return c
 
-    def _get_center_object(self, center, logger=logger):
+    def _get_center_object(self, center):
         # we assume that every string not skycoord is a name...
         try:
             self._get_center(center)
@@ -308,14 +302,14 @@ class SimbadCatalogClass(_BasePhotometryCatalog):
         raise ValueError(f'Center {center} is not a object center name'
                          ' for Simbad!')
 
-    def _flux_keys(self, band, logger=logger):
+    def _flux_keys(self, band):
         flux_key = self.flux_key.format(band=band)
         flux_error_key = self.flux_error_key.format(band=band)
         flux_bibcode_key = self.flux_bibcode_key.format(band=band)
         flux_unit_key = self.flux_unit_key.format(band=band)
         return flux_key, flux_error_key, flux_unit_key, flux_bibcode_key
 
-    def query_object(self, center, band=None, logger=logger, **kwargs):
+    def query_object(self, center, band=None, **kwargs):
         """Query a single object in the catalog."""
         s = self._get_simbad()
         # query object should not need this
@@ -323,9 +317,9 @@ class SimbadCatalogClass(_BasePhotometryCatalog):
         if band is not None:
             s.add_votable_fields(f'fluxdata({band})')
         return _timeout_retry(_wrap_query_table(s.query_object),
-                              center, logger=logger, **kwargs)
+                              center, **kwargs)
 
-    def query_region(self, center, radius, band=None, logger=logger, **kwargs):
+    def query_region(self, center, radius, band=None, **kwargs):
         """Query all objects in a region."""
         query_info = {'radius': radius, 'center': center, 'band': band}
         if query_info == self._last_query_info:
@@ -346,11 +340,11 @@ class SimbadCatalogClass(_BasePhotometryCatalog):
         center = self._get_center(center)
         radius = f"{self._get_radius(radius)}d"
         query = _timeout_retry(_wrap_query_table(s.query_region),
-                               center, radius, logger=logger)
+                               center, radius)
         self._last_query_table = query
         return copy.copy(self._last_query_table)
 
-    def query_ra_dec(self, center, radius, logger=logger, **kwargs):
+    def query_ra_dec(self, center, radius, **kwargs):
         """Query coordinates in a region of the catalog."""
         if self.ra_key is None or self.dec_key is None:
             raise ValueError("Invalid RA or Dec keys.")
@@ -365,11 +359,11 @@ class SimbadCatalogClass(_BasePhotometryCatalog):
 
         return ra, dec
 
-    def query_id(self, center, radius, logger=logger, **kwargs):
+    def query_id(self, center, radius, **kwargs):
         """Query object names in a region of the catalog."""
         if self.id_key is None:
             raise ValueError("Invalid ID key.")
-        self.query_region(center, radius, band=None, logger=logger)
+        self.query_region(center, radius, band=None)
 
         if self.id_key == -1:
             return np.array(['']*len(self._last_query_table))
@@ -381,12 +375,12 @@ class SimbadCatalogClass(_BasePhotometryCatalog):
 
         return string_fix(idn)
 
-    def query_flux(self, center, radius, band, logger=logger,
+    def query_flux(self, center, radius, band,
                    return_bibcode=False, **kwargs):
         """Query the flux data in a region of the catalog."""
         self.check_filter(band)
         flux_key, error_key, unit_key, bibcode_key = self._flux_keys(band)
-        self.query_region(center, radius, band=band, logger=logger)
+        self.query_region(center, radius, band=band)
 
         flux = np.array(self._last_query_table[flux_key].data)
         if error_key is not None:
@@ -406,17 +400,15 @@ class SimbadCatalogClass(_BasePhotometryCatalog):
             return flux, flux_error, unit, bibcode
         return flux, flux_error, unit
 
-    def match_objects(self, ra, dec, band=None, limit_angle='2 arcsec',
-                      logger=logger):
+    def match_objects(self, ra, dec, band=None, limit_angle='2 arcsec'):
         """Match objects from RA DEC list with this catalog."""
-        c_ra, c_dec, radius = get_center_radius(ra, dec, logger=logger)
+        c_ra, c_dec, radius = get_center_radius(ra, dec)
         center = (c_ra, c_dec)
         c_id = self.query_id(center, radius)
-        c_ra, c_dec = self.query_ra_dec(center, radius, logger=logger)
+        c_ra, c_dec = self.query_ra_dec(center, radius)
         if band is not None:
             c_flux, c_flue, c_unit, c_flub = self.query_flux(center, radius,
-                                                             band, True,
-                                                             logger=logger)
+                                                             band, True)
         else:
             c_flux = np.zeros(len(c_ra))
             c_flue = np.zeros(len(c_ra))
@@ -425,8 +417,7 @@ class SimbadCatalogClass(_BasePhotometryCatalog):
             c_flux.fill(np.nan)
             c_flue.fill(np.nan)
 
-        indexes = match_indexes(ra, dec, c_ra, c_dec, limit_angle,
-                                logger=logger)
+        indexes = match_indexes(ra, dec, c_ra, c_dec, limit_angle)
 
         m_id = np.array([c_id[i] if i != -1 else '' for i in indexes])
         m_ra = np.array([c_ra[i] if i != -1 else np.nan for i in indexes])
@@ -446,7 +437,7 @@ class SimbadCatalogClass(_BasePhotometryCatalog):
                                         ('flux_unit', m_unit.dtype),
                                         ('flux_bibcode', m_flub.dtype)]))
 
-    def match_object_ids(self, ra, dec, limit_angle='2 arcsec', logger=logger,
+    def match_object_ids(self, ra, dec, limit_angle='2 arcsec',
                          name_order=['NAME', 'HD', 'HR', 'HYP', 'TYC',
                                      'AAVSO']):
         """Get the id from Simbad for every object in a RA, Dec list."""

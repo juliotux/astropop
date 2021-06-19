@@ -141,11 +141,11 @@ def test_apply_shift(shift2, test_result2):
                      [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
                      [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.]])
 
-    calculated_fft_nofootprint = apply_shift(dat1, shift2, 'fft', True, False)[0]
+    calculated_fft_nofootprint = apply_shift(dat1, shift2, True, False)[0]
     assert_almost_equal(calculated_fft_nofootprint, test_result2)
 
-    calculated_fft = apply_shift(dat1, shift2, 'fft', True, True)[0]
-    foot = apply_shift(dat1, shift2, 'fft', True, True)[2]
+    calculated_fft = apply_shift(dat1, shift2, True, True)[0]
+    foot = apply_shift(dat1, shift2, True, True)[2]
     assert_almost_equal(calculated_fft, test_result2)
 
 

@@ -238,7 +238,7 @@ class AstrometrySolver():
                 args.append(str(v))
 
         try:
-            process, _, _ = run_command(args, logger=self.logger, **kwargs)
+            process, _, _ = run_command(args, **kwargs)
             if process.returncode != 0:
                 raise CalledProcessError(process.returncode, self._command)
 
@@ -268,8 +268,7 @@ class AstrometrySolver():
             raise AstrometryNetUnsolvedField(filename)
 
 
-def create_xyls(fname, x, y, flux, imagew, imageh, header=None, dtype='f8',
-                logger=logger):
+def create_xyls(fname, x, y, flux, imagew, imageh, header=None, dtype='f8'):
     '''
     Create and save the xyls file to run in astrometry.net
 
@@ -303,7 +302,7 @@ def create_xyls(fname, x, y, flux, imagew, imageh, header=None, dtype='f8',
 
 
 def solve_astrometry_xy(x, y, flux, image_header, image_width, image_height,
-                        return_wcs=False, logger=logger, image_params=None,
+                        return_wcs=False, image_params=None,
                         **kwargs):
     """Solve astrometry from a (x,y) sources list.
 
@@ -324,13 +323,13 @@ def solve_astrometry_xy(x, y, flux, image_header, image_width, image_height,
     f = NamedTemporaryFile(suffix='.xyls')
     create_xyls(f.name, x, y, flux, image_width, image_height,
                 header=image_header)
-    solver = AstrometrySolver(logger=logger)
+    solver = AstrometrySolver()
     return solver.solve_field(f.name, wcs=return_wcs,
                               image_params=image_params, **kwargs)
 
 
 def solve_astrometry_image(filename, return_wcs=False, image_params=None,
-                           logger=logger, **kwargs):
+                           **kwargs):
     """
     image_params are:
         pltscl: plate scale (arcsec/px)
@@ -343,13 +342,13 @@ def solve_astrometry_image(filename, return_wcs=False, image_params=None,
     """
     if image_params is None:
         image_params = {}
-    solver = AstrometrySolver(logger=logger)
+    solver = AstrometrySolver()
     return solver.solve_field(filename, wcs=return_wcs,
                               image_params=image_params, **kwargs)
 
 
 def solve_astrometry_hdu(hdu, return_wcs=False, image_params=None,
-                         logger=logger, **kwargs):
+                         **kwargs):
     """
     image_params are:
         pltscl: plate scale (arcsec/px)
@@ -366,13 +365,13 @@ def solve_astrometry_hdu(hdu, return_wcs=False, image_params=None,
     f = NamedTemporaryFile(suffix='.fits')
     hdu = fits.PrimaryHDU(hdu.data, header=hdu.header)
     hdu.writeto(f.name)
-    solver = AstrometrySolver(logger=logger)
+    solver = AstrometrySolver()
     return solver.solve_field(f.name, wcs=return_wcs,
                               image_params=image_params, **kwargs)
 
 
 def fit_wcs(x, y, ra, dec, image_width, image_height, sip=False,
-            command=_fit_wcs, logger=logger, **kwargs):
+            command=_fit_wcs, **kwargs):
     """Run astrometry.net fit-wcs command
 
     sip is sip order, int
@@ -397,7 +396,7 @@ def fit_wcs(x, y, ra, dec, image_width, image_height, sip=False,
     args += ['-o', solved_wcs_file.name]
 
     try:
-        process, _, _ = run_command(args, logger=logger, **kwargs)
+        process, _, _ = run_command(args, **kwargs)
         if process.returncode != 0:
             raise CalledProcessError(process.returncode, args)
         logger.info('Loading solved header from %s', solved_wcs_file.name)
