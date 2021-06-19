@@ -18,7 +18,7 @@ from ._deriv import propagate_2, propagate_1
 
 
 __all__ = ['unit_property', 'QFloat', 'qfloat', 'units', 'UnitsError',
-           'equal_within_errors']
+           'equal_within_errors', 'UnitsError']
 
 
 HANDLED_AFUNCS = {}
