@@ -127,7 +127,8 @@ def _extract_fits(obj, hdu=0, unit=None, hdu_uncertainty=_HDU_UNCERT,
         if not isinstance(hdu_i, imhdus) or hdu_i.data is None:
             continue
         hdu_data = ind
-        logger.info('First hdu with image data: %i', ind)
+        if hdu_data != hdu:
+            logger.info('First hdu with image data: %i', ind)
         break
 
     hdu_data = hdul[hdu_data]

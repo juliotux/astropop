@@ -15,6 +15,7 @@ from astropy.nddata import StdDevUncertainty, InverseVariance, \
                            VarianceUncertainty, UnknownUncertainty, \
                            CCDData
 
+from astropop.logger import logger, log_to_list
 from astropop.testing import assert_equal, assert_is_instance, \
                              assert_is_none, assert_not_in, \
                              assert_false, assert_in, \
@@ -369,9 +370,18 @@ class Test_Fits_Extract():
         fname = tmpdir.join('test_table.fits').strpath
         hdul.writeto(fname)
 
+        logs = []
+        lh = log_to_list(logger, logs, full_record=True)
         f = _extract_fits(fname)
         assert_equal(f['data'], 100*np.ones(self.shape))
         assert_equal(f['unit'], None)
+
+        # ensure log emitting
+        logs = [i for i in logs if i.message == 'First hdu with image data: 2']
+        assert_equal(len(logs), 1)
+        assert_equal(logs[0].levelname, 'INFO')
+
+        logger.removeHandler(lh)
 
     def test_invalid_type(self):
         with pytest.raises(TypeError):
