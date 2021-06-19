@@ -19,7 +19,6 @@ from astropy.wcs import WCS
 
 from .coords_utils import guess_coordinates
 from ..logger import logger
-from ..math.opd_utils import solve_decimal
 from ..py_utils import check_iterable, run_command
 
 
@@ -135,7 +134,7 @@ class AstrometrySolver():
             self.logger.info("Figuring out the plate scale from FITS header")
             try:
                 pltscl = header[image_params.get('pltscl_key')]
-                pltscl = float(solve_decimal(pltscl))
+                pltscl = float(pltscl)
             except KeyError:
                 self.logger.warning("Cannot understand plate scale in FITS"
                                     " header")
