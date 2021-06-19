@@ -1,4 +1,4 @@
-name: Unit Tests
+name: Unit Tests (Anaconda)
 
 on:
   pull_request:
@@ -13,75 +13,58 @@ on:
 jobs:
   tests:
     name: ${{ matrix.name }} (${{ matrix.os }}, ${{ matrix.toxenv }})
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     if: "!(contains(github.event.head_commit.message, '[skip ci]') || contains(github.event.head_commit.message, '[ci skip]'))"
     strategy:
       fail-fast: false
       matrix:
         include:
           - name: Python 3.7 with required dependencies
-            os: ubuntu-latest
             python-version: 3.7
             toxenv: py37-test
 
           - name: Python 3.8 with required dependencies
-            os: ubuntu-latest
             python-version: 3.8
             toxenv: py38-test
 
           - name: Python 3.9 with required dependencies
-            os: ubuntu-latest
             python-version: 3.9
             toxenv: py39-test
 
           - name: Python 3.8 with required dependencies and measure coverage
-            os: ubuntu-latest
             python-version: 3.8
-            toxenv: py38-test-cov
+            toxenv: py38-test-cov-ast
             coverage: true
 
           - name: Documentation build
-            os: ubuntu-latest
             python-version: 3.8
             toxenv: build_docs
 
           - name: Python 3.9 with developer version of astropy and numpy
-            os: ubuntu-latest
             python-version: 3.9
             toxenv: py39-test-devdeps
 
           - name: Python 3.6 with astropy 3.2 and Numpy 1.17
-            os: ubuntu-latest
             python-version: 3.6
             toxenv: py36-test-astropy32-numpy117
 
           - name: Python 3.7 with astropy 3.2 and Numpy 1.17
-            os: ubuntu-latest
             python-version: 3.7
             toxenv: py37-test-astropy32-numpy117
 
           - name: Python 3.7 with astropy LTS and Numpy 1.18
-            os: ubuntu-latest
             python-version: 3.7
             toxenv: py37-test-astropylts-numpy118
 
-          - name: Python 3.7 with astropy 4.0 and Numpy 1.18
-            os: ubuntu-latest
-            python-version: 3.7
-            toxenv: py37-test-astropy40-numpy118
-
-          - name: Python 3.8 with astropy 4.0 and Numpy 1.18
-            os: ubuntu-latest
-            python-version: 3.8
-            toxenv: py38-test-astropy40-numpy118
-
           - name: Python 3.8 with astropy 4.2 and Numpy 1.19
-            os: ubuntu-latest
             python-version: 3.8
             toxenv: py38-test-astropy42-numpy119
 
+          - name: Python 3.8 with astrometry
+            python-version: 3.8
+            toxenv: py38-test-ast
+
           #- name: Code style checks
-          #  os: ubuntu-latest
           #  python-version: 3.8
           #  toxenv: codestyle
 
@@ -89,12 +72,14 @@ jobs:
     - uses: actions/checkout@v2
       with:
         fetch-depth: 0
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+    - uses: conda-incubator/setup-miniconda@v2
       with:
+        auto-activate-base: false
+        activate-environment: "astropop"
+        channels: conda-forge
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
-      run: python -m pip install tox
+      run: python -m pip install tox-conda
     - name: Install graphviz dependency
       if: "endsWith(matrix.toxenv, 'build_docs')"
       run: sudo apt-get -y install graphviz

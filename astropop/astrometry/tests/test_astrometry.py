@@ -48,7 +48,7 @@ def compare_wcs(wcs, nwcs):
     for i in [(100, 100), (1000, 1500), (357.5, 948.2), (2015.1, 403.7)]:
         res1 = np.array(wcs.all_pix2world(*i, 0))
         res2 = np.array(nwcs.all_pix2world(*i, 0))
-        assert_almost_equal(res1, res2)
+        assert_almost_equal(res1, res2, decimal=3)
 
 
 skip_astrometry = pytest.mark.skipif("_solve_field is None or "
