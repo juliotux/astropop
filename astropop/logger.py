@@ -46,7 +46,7 @@ class ListHandler(logging.Handler):
         if self.full_record:
             self.log_list.append(record)
         else:
-            self.log_list.append(record.msg)
+            self.log_list.append(record.getMessage())
 
 
 def log_to_list(logger, log_list=None, full_record=False):

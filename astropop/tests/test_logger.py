@@ -7,65 +7,63 @@ from astropop.testing import assert_equal, assert_is_instance, assert_in, \
                              assert_not_in
 
 
-@pytest.mark.parametrize('level, expected', [('WARN', 2), ('INFO', 3),
-                                             ('DEBUG', 4)])
-def test_logger_list_defaults(level, expected):
-    mylog = logger.getChild('testing')
-    logs = []
-    log_to_list(mylog, logs)
-    mylog.setLevel(level)
-    mylog.error('Error test')
-    mylog.warning('Warning test')
-    mylog.info('Info test')
-    mylog.debug('Debug test')
-    assert_equal(mylog.name, 'astropop.testing')
-    assert_equal(len(logs), expected)
-    for i, k in zip(['Error test', 'Warning test', 'Info test',
-                     'Debug test'][0:expected],
-                    logs):
-        assert_equal(i, k)
+class Test_Logger_To_List():
+    @pytest.mark.parametrize('level, expected', [('WARN', 2), ('INFO', 3),
+                                                ('DEBUG', 4)])
+    def test_logger_list_defaults(self, level, expected):
+        mylog = logger.getChild('testing')
+        logs = []
+        log_to_list(mylog, logs)
+        mylog.setLevel(level)
+        mylog.error('Error test')
+        mylog.warning('Warning test')
+        mylog.info('Info test')
+        mylog.debug('Debug test')
+        assert_equal(mylog.name, 'astropop.testing')
+        assert_equal(len(logs), expected)
+        for i, k in zip(['Error test', 'Warning test', 'Info test',
+                        'Debug test'][0:expected],
+                        logs):
+            assert_equal(i, k)
 
+    @pytest.mark.parametrize('level, expected', [('WARN', 2), ('INFO', 3),
+                                                ('DEBUG', 4)])
+    def test_logger_list_only_messagens(self, level, expected):
+        mylog = logger.getChild('testing')
+        logs = []
+        log_to_list(mylog, logs, full_record=False)
+        mylog.setLevel(level)
+        mylog.error('Error test %i', 40)
+        mylog.warning('Warning test %i', 30)
+        mylog.info('Info test %i', 20)
+        mylog.debug('Debug test %i', 10)
+        assert_equal(mylog.name, 'astropop.testing')
+        assert_equal(len(logs), expected)
+        for i, k in zip(['Error test 40', 'Warning test 30', 'Info test 20',
+                         'Debug test 10'][0:expected], logs):
+            assert_equal(i, k)
 
-@pytest.mark.parametrize('level, expected', [('WARN', 2), ('INFO', 3),
-                                             ('DEBUG', 4)])
-def test_logger_list_only_messagens(level, expected):
-    mylog = logger.getChild('testing')
-    logs = []
-    log_to_list(mylog, logs, full_record=False)
-    mylog.setLevel(level)
-    mylog.error('Error test')
-    mylog.warning('Warning test')
-    mylog.info('Info test')
-    mylog.debug('Debug test')
-    assert_equal(mylog.name, 'astropop.testing')
-    assert_equal(len(logs), expected)
-    for i, k in zip(['Error test', 'Warning test', 'Info test',
-                     'Debug test'][0:expected],
-                    logs):
-        assert_equal(i, k)
-
-
-@pytest.mark.parametrize('level, expected', [('WARN', 2), ('INFO', 3),
-                                             ('DEBUG', 4)])
-def test_logger_list_full_record(level, expected):
-    mylog = logger.getChild('testing')
-    logs = []
-    log_to_list(mylog, logs, full_record=True)
-    mylog.setLevel(level)
-    mylog.error('Error test')
-    mylog.warning('Warning test')
-    mylog.info('Info test')
-    mylog.debug('Debug test')
-    assert_equal(mylog.name, 'astropop.testing')
-    assert_equal(len(logs), expected)
-    for i, k, n in zip(['Error', 'Warning', 'Info',
-                        'Debug'][0:expected],
-                       logs,
-                       [40, 30, 20, 10][0:expected]):
-        assert_equal(f'{i} test', k.msg)
-        assert_equal(k.name, 'astropop.testing')
-        assert_equal(k.levelno, n)
-        assert_equal(k.levelname, i.upper())
+    @pytest.mark.parametrize('level, expected', [('WARN', 2), ('INFO', 3),
+                                                ('DEBUG', 4)])
+    def test_logger_list_full_record(self, level, expected):
+        mylog = logger.getChild('testing')
+        logs = []
+        log_to_list(mylog, logs, full_record=True)
+        mylog.setLevel(level)
+        mylog.error('Error test')
+        mylog.warning('Warning test')
+        mylog.info('Info test')
+        mylog.debug('Debug test')
+        assert_equal(mylog.name, 'astropop.testing')
+        assert_equal(len(logs), expected)
+        for i, k, n in zip(['Error', 'Warning', 'Info',
+                            'Debug'][0:expected],
+                        logs,
+                        [40, 30, 20, 10][0:expected]):
+            assert_equal(f'{i} test', k.msg)
+            assert_equal(k.name, 'astropop.testing')
+            assert_equal(k.levelno, n)
+            assert_equal(k.levelname, i.upper())
 
 
 def test_logger_remove_handler():
