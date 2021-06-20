@@ -29,7 +29,7 @@ class Test_MinMaxClip():
         arr = np.arange(10).reshape((2, 5))
         low, high = (2, 6)
         expect = np.array([1, 1, 0, 0, 0, 0, 0, 1, 1, 1],
-                           dtype=bool).reshape((2, 5))
+                          dtype=bool).reshape((2, 5))
 
         mask = _minmax_clip(arr, low, high)
         assert_equal(mask, expect)
@@ -458,3 +458,87 @@ class Test_ImCombiner_Combine():
         with pytest.raises(ValueError, match='hulk-smash is not a valid '
                            'combining method.'):
             comb.combine(l, method='hulk-smash')
+
+    def test_chunk_yielder(self):
+        n = 100
+        d = np.random.random((100, 100)).astype(np.float64)
+        l = [FrameData(d, unit='adu') for i in range(n)]
+        # data size = 8 000 000 = 8 bytes * 100 * 100 * 100
+        # mask size = 1 000 000 = 1 bytes * 100 * 100 * 100
+        # total size = 9 000 000
+
+        comb = ImCombiner(max_memory=1e6)
+        comb._load_images(l)
+
+        logs = []
+        lh = log_to_list(logger, logs, False)
+        level = logger.getEffectiveLevel()
+        logger.setLevel('DEBUG')
+
+        # for median, tot_size=9*4.5=41
+        # xstep = 2, so n_chuks=50
+        i = 0
+        for chunk, slc in comb._chunk_yielder(method='median'):
+            i += 1
+            for k in chunk:
+                assert_equal(k.shape, (2, 100))
+                assert_equal(k, d[slc])
+                assert_is_instance(k, np.ma.MaskedArray)
+        assert_equal(i, 50)
+        assert_in('Splitting the images into 50 chunks.', logs)
+        logs.clear()
+
+        # for mean and sum, tot_size=9*3=27
+        # xstep = 3, so n_chunks=33+1
+        i = 0
+        for chunk, slc in comb._chunk_yielder(method='mean'):
+            i += 1
+            for k in chunk:
+                assert_true(k.shape == (3, 100) or k.shape == (1, 100))
+                assert_equal(k, d[slc])
+                assert_is_instance(k, np.ma.MaskedArray)
+        assert_equal(i, 34)
+        assert_in('Splitting the images into 34 chunks.', logs)
+        logs.clear()
+
+        i = 0
+        for chunk, slc in comb._chunk_yielder(method='sum'):
+            i += 1
+            for k in chunk:
+                assert_true(k.shape == (3, 100) or k.shape == (1, 100))
+                assert_equal(k, d[slc])
+                assert_is_instance(k, np.ma.MaskedArray)
+        assert_equal(i, 34)
+        assert_in('Splitting the images into 34 chunks.', logs)
+        logs.clear()
+
+        # this should not split into chunks
+        comb = ImCombiner(max_memory=1e8)
+        comb._load_images(l)
+        i = 0
+        for chunk, slc in comb._chunk_yielder(method='median'):
+            i += 1
+            for k in chunk:
+                assert_true(k.shape == (100, 100))
+                assert_equal(k, d)
+                assert_is_instance(k, np.ma.MaskedArray)
+        assert_equal(i, 1)
+        assert_equal(len(logs), 0)
+        logs.clear()
+
+        # this should split in 400 chunks!
+        comb = ImCombiner(max_memory=1e5)
+        comb._load_images(l)
+        i = 0
+        for chunk, slc in comb._chunk_yielder(method='median'):
+            i += 1
+            for k in chunk:
+                assert_equal(k.shape, (1, 25))
+                assert_equal(k, d[slc])
+                assert_is_instance(k, np.ma.MaskedArray)
+        assert_equal(i, 400)
+        assert_in('Splitting the images into 400 chunks.', logs)
+        logs.clear()
+
+        logger.setLevel(level)
+        logger.removeHandler(lh)

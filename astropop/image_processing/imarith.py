@@ -10,6 +10,20 @@ from ..math.physical import QFloat, convert_to_qfloat, UnitsError
 from ..py_utils import check_iterable, check_number
 from ..logger import logger, log_to_list
 
+# if bottleneck is available, use it
+try:
+    import bottleneck as bn
+except ImportError:
+    HAS_BOTTLENECK = False
+else:
+    HAS_BOTTLENECK = True
+
+_median = bn.nanmedian if HAS_BOTTLENECK else np.nanmedian
+_mean = bn.nanmean if HAS_BOTTLENECK else np.nanmean
+_std = bn.nanstd if HAS_BOTTLENECK else np.nanstd
+_sum = bn.nansum if HAS_BOTTLENECK else np.nansum
+
+
 __all__ = ['imarith', 'imcombine', 'ImCombiner']
 
 
@@ -141,7 +155,9 @@ def imarith(operand1, operand2, operation, inplace=False,
     return ccd
 
 
+###############################################################################
 # imcombine related functions
+###############################################################################
 
 
 def _sigma_clip(data, threshold=3, cen_func=np.nanmedian, dev_func=np.nanstd,
@@ -370,7 +386,48 @@ class ImCombiner:
                 raise ValueError(f"Image {i} has a unit incompatible with "
                                  "the others")
 
-    def combine(self, image_list, method):
+    def _chunk_yielder(self, method):
+        """Split the data in chuncks according to the method."""
+        n = len(self._images)
+        shape = self._images[0].shape
+
+        imsize = self._images[0].data.nbytes
+        imsize += self._images[0].mask.nbytes
+        # uncertainty is ignored
+
+        tot_size = n*imsize
+        # adjust memory usage for numpy and bottleneck
+        if method == 'median':
+            tot_size *= 4.5
+        else:
+            tot_size *= 3
+
+        n_chunks = np.ceil(tot_size/self._max_memory)
+
+        # compute x and y steps
+        xstep = max(1, int(shape[0]/n_chunks))
+        if shape[0] >= n_chunks:
+            ystep = shape[1]
+        else:
+            ystep = max(1, int(shape[1]/int(n_chunks/shape[0])))
+
+        n_chunks = np.ceil(shape[0]/xstep)*np.ceil(shape[1]/ystep)
+        if n_chunks == 1:
+            result = [np.ma.MaskedArray(i.data, i.mask) for i in self._images]
+            yield result, (slice(0, shape[0]), slice(0, shape[1]))
+        else:
+            logger.debug('Splitting the images into %i chunks.', n_chunks)
+            # return the sliced data and the slice
+            for x in range(0, shape[0], xstep):
+                for y in range(0, shape[1], ystep):
+                    slc_x = slice(x, min(x+xstep, shape[0]))
+                    slc_y = slice(y, min(y+ystep, shape[1]))
+                    l = [np.ma.MaskedArray(i.data[slc_x, slc_y],
+                                        mask=i.mask[slc_x, slc_y])
+                        for i in self._images]
+                    yield l, (slc_x, slc_y)
+
+    def combine(self, image_list, method, weights=None, scale=None, **kwargs):
         """Perform the image combining.
 
         Parameters
@@ -403,7 +460,13 @@ class ImCombiner:
         if method not in self._methods:
             raise ValueError(f'{method} is not a valid combining method.')
 
-        # Do the stuff
+        # TODO: check consistency with weitghts and scale
+
+        # TODO: perform the masking
+
+        # TODO: split the chuncks and combine
+        for chunk, slc in self._chunk_yielder(method):
+            logger.debug(slc)
 
         # after, clear all buffers
         self._clear()
