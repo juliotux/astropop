@@ -379,8 +379,8 @@ class Test_ImCombiner_Combine():
         # check if the logging is properly being emitted.
         log = [i for i in logs if i.msg == 'The images to combine are not '
                'FrameData. Some features may be disabled.']
-        assert_equal(len(logs),  1)
-        assert_equal(logs[0].levelname, 'WARNING')
+        assert_equal(len(log),  1)
+        assert_equal(log[0].levelname, 'WARNING')
 
         assert_equal(len(comb._images), n)
         assert_is_none(comb._buffer)
@@ -406,8 +406,8 @@ class Test_ImCombiner_Combine():
         # check if the logging is properly being emitted.
         log = [i for i in logs if i.msg == 'The images to combine are not '
                'FrameData. Some features may be disabled.']
-        assert_equal(len(logs),  1)
-        assert_equal(logs[0].levelname, 'WARNING')
+        assert_equal(len(log),  1)
+        assert_equal(log[0].levelname, 'WARNING')
         logger.removeHandler(lh)
 
         assert_equal(len(comb._images), n)
