@@ -494,7 +494,7 @@ class Test_ImCombiner_Combine():
         for chunk, slc in comb._chunk_yielder(method='mean'):
             i += 1
             for k in chunk:
-                assert_true(k.shape == (3, 100) or k.shape == (1, 100))
+                assert_in(k.shape, [(3, 100), (1, 100)])
                 assert_equal(k, d[slc])
                 assert_is_instance(k, np.ma.MaskedArray)
         assert_equal(i, 34)
@@ -505,7 +505,7 @@ class Test_ImCombiner_Combine():
         for chunk, slc in comb._chunk_yielder(method='sum'):
             i += 1
             for k in chunk:
-                assert_true(k.shape == (3, 100) or k.shape == (1, 100))
+                assert_in(k.shape, [(3, 100), (1, 100)])
                 assert_equal(k, d[slc])
                 assert_is_instance(k, np.ma.MaskedArray)
         assert_equal(i, 34)
@@ -519,7 +519,7 @@ class Test_ImCombiner_Combine():
         for chunk, slc in comb._chunk_yielder(method='median'):
             i += 1
             for k in chunk:
-                assert_true(k.shape == (100, 100))
+                assert_equal(k.shape, (100, 100))
                 assert_equal(k, d)
                 assert_is_instance(k, np.ma.MaskedArray)
         assert_equal(i, 1)
