@@ -2,12 +2,10 @@
 
 # Some parts stolen from Astropy CCDData testing bench
 
-import copy
 import pytest
 import numpy as np
 from astropop.framedata.compat import extract_header_wcs, _extract_ccddata, \
-                                      _to_ccddata, _extract_fits
-from astropop.framedata import FrameData
+                                      _extract_fits
 from astropy.io import fits
 from astropy.wcs import WCS
 from astropy.table import Table
@@ -130,7 +128,6 @@ class Test_ExtractHeader():
         assert_equal(h, header)
         assert_false(h is header)
 
-
     def test_extract_header_nosip(self):
         header = fits.Header.fromstring(_base_header+_wcs_no_sip, sep='\n')
         h, wcs = extract_header_wcs(header)
@@ -144,7 +141,6 @@ class Test_ExtractHeader():
         assert_in('DATE-OBS', h.keys())
         assert_false(h is header)
         assert_not_equal(h, header)
-
 
     def test_extract_header_sip(self):
         header = fits.Header.fromstring(_base_header+_wcs_sip, sep='\n')
@@ -161,7 +157,6 @@ class Test_ExtractHeader():
         assert_in('DATE-OBS', h.keys())
         assert_false(h is header)
         assert_not_equal(h, header)
-
 
     def test_extract_invalid_wcs_header(self):
         # It should no raise, just return empty wcs
