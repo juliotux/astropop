@@ -7,6 +7,7 @@ import astropy
 
 from astropy.io import fits
 
+from astropy.utils import NumpyRNGContext
 from astropop.framedata import FrameData
 from astropop.logger import logger, log_to_list
 from astropop.image_processing.imarith import imcombine, _sigma_clip, \
@@ -393,7 +394,6 @@ class Test_ImCombiner_Combine():
         assert_is_none(comb._buffer)
 
     def test_image_loading_fitshdu(self, tmpdir):
-        tmp = tmpdir.strpath
         n = 10
         d = np.ones((10, 10))
         l = [fits.PrimaryHDU(d) for i in range(n)]
@@ -542,3 +542,122 @@ class Test_ImCombiner_Combine():
 
         logger.setLevel(level)
         logger.removeHandler(lh)
+
+    def test_apply_minmax_clip(self):
+        _min, _max = (0, 20)
+        outliers = ((1, 2), (6, 2), (2, 9), (5, 2))
+        outvalues = [1e6, -2e3, 5e3, -7e2]
+        expect = np.zeros((10, 10))
+        with NumpyRNGContext(123):
+            data = np.ma.MaskedArray(np.random.normal(loc=10, scale=1,
+                                                      size=[10, 10]),
+                                     mask=np.zeros((10, 10)))
+
+        for p, v in zip(outliers, outvalues):
+            data[p] = v
+            expect[p] = 1
+        data[0:2, 0:3].mask = 1
+        expect[0:2, 0:3] = 1
+
+        # force assign the buffer
+        comb = ImCombiner()
+        comb._buffer = data
+        # with these limits, only the outliers must be masked
+        comb.set_minmax_clip(_min, _max)
+        comb._apply_minmax_clip()
+        # original mask must be kept
+        assert_equal(comb._buffer.mask, expect)
+
+    def test_apply_minmax_clip_only_lower(self):
+        _min, _max = (0, None)
+        outliers = ((1, 2), (6, 2), (2, 9), (5, 2))
+        outvalues = [1e6, -2e3, 5e3, -7e2]
+        expect = np.zeros((10, 10))
+        with NumpyRNGContext(123):
+            data = np.ma.MaskedArray(np.random.normal(loc=10, scale=1,
+                                                      size=[10, 10]),
+                                     mask=np.zeros((10, 10)))
+
+        for p, v in zip(outliers, outvalues):
+            data[p] = v
+            if v < _min:
+                expect[p] = 1
+        data[0:2, 0:3].mask = 1
+        expect[0:2, 0:3] = 1
+
+        comb = ImCombiner()
+        comb._buffer = data
+        comb.set_minmax_clip(_min, _max)
+        comb._apply_minmax_clip()
+        assert_equal(comb._buffer.mask, expect)
+
+    def test_apply_minmax_clip_only_higher(self):
+        _min, _max = (None, 20)
+        outliers = ((1, 2), (6, 2), (2, 9), (5, 2))
+        outvalues = [-1e6, 2e3, 5e3, -7e2]
+        expect = np.zeros((10, 10))
+        with NumpyRNGContext(123):
+            data = np.ma.MaskedArray(np.random.normal(loc=10, scale=1,
+                                                      size=[10, 10]),
+                                     mask=np.zeros((10, 10)))
+
+        for p, v in zip(outliers, outvalues):
+            data[p] = v
+            if v > _max:
+                expect[p] = 1
+        data[0:2, 0:3].mask = 1
+        expect[0:2, 0:3] = 1
+
+        comb = ImCombiner()
+        comb._buffer = data
+        comb.set_minmax_clip(_min, _max)
+        comb._apply_minmax_clip()
+        assert_equal(comb._buffer.mask, expect)
+
+    def test_apply_sigmaclip(self):
+        data = np.ma.MaskedArray([1, -1, 1, -1, 65000], mask=np.zeros(5))
+        comb = ImCombiner()
+
+        # if threshold=1, only 65000 must be masked.
+        comb._buffer = data.copy()
+        comb.set_sigma_clip(1)
+        expect = [0, 0, 0, 0, 1]
+        comb._apply_sigma_clip()
+        assert_equal(comb._buffer.mask, expect)
+
+        # if threshold=3, all pass.
+        comb._buffer = data.copy()
+        comb.set_sigma_clip(3)
+        expect = [0, 0, 0, 0, 0]
+        comb._apply_sigma_clip()
+        assert_equal(comb._buffer.mask, expect)
+
+        # if threshold=3 and a mask, the mask must be preserved.
+        comb._buffer = data.copy()
+        comb._buffer.mask[1] = 1
+        comb.set_sigma_clip(3)
+        expect = [0, 1, 0, 0, 0]
+        comb._apply_sigma_clip()
+        assert_equal(comb._buffer.mask, expect)
+
+    def test_apply_sigmaclip_only_lower(self):
+        data = np.ma.MaskedArray([1, -1, 1, -1, 65000], mask=np.zeros(5))
+        comb = ImCombiner()
+
+        # 65000 must not be masked
+        comb._buffer = data.copy()
+        comb.set_sigma_clip((1, None))
+        expect = [0, 0, 0, 0, 0]
+        comb._apply_sigma_clip()
+        assert_equal(comb._buffer.mask, expect)
+
+    def test_apply_sigmaclip_only_higher(self):
+        data = np.ma.MaskedArray([1, -1, 1, -1, -65000], mask=np.zeros(5))
+        comb = ImCombiner()
+
+        # -65000 must not be masked
+        comb._buffer = data.copy()
+        comb.set_sigma_clip((None, 1))
+        expect = [0, 0, 0, 0, 0]
+        comb._apply_sigma_clip()
+        assert_equal(comb._buffer.mask, expect)

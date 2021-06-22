@@ -422,10 +422,34 @@ class ImCombiner:
                 for y in range(0, shape[1], ystep):
                     slc_x = slice(x, min(x+xstep, shape[0]))
                     slc_y = slice(y, min(y+ystep, shape[1]))
-                    l = [np.ma.MaskedArray(i.data[slc_x, slc_y],
-                                        mask=i.mask[slc_x, slc_y])
-                        for i in self._images]
-                    yield l, (slc_x, slc_y)
+                    lst = [np.ma.MaskedArray(i.data[slc_x, slc_y],
+                                             mask=i.mask[slc_x, slc_y])
+                           for i in self._images]
+                    yield lst, (slc_x, slc_y)
+
+    def _apply_minmax_clip(self):
+        """Apply minmax clip in the current buffer."""
+        if self._minmax is None:
+            # if minmax is disabled, just pass
+            return
+
+        # compute the mask and join it
+        _min, _max = self._minmax
+        mask = _minmax_clip(self._buffer, _min, _max)
+        self._buffer.mask = np.logical_or(self._buffer.mask, mask)
+
+    def _apply_sigma_clip(self):
+        if self._sigma_clip is None:
+            # if sigmaclip is disabled, just pass
+            return
+
+        # compute the mask and join it
+        mask = _sigma_clip(self._buffer, threshold=self._sigma_clip,
+                           cen_func=self._sigma_cen_func,
+                           dev_func=self._sigma_dev_func,
+                           axis=0)
+        self._buffer.mask = np.logical_or(self._buffer.mask, mask)
+
 
     def combine(self, image_list, method, weights=None, scale=None, **kwargs):
         """Perform the image combining.
@@ -462,10 +486,13 @@ class ImCombiner:
 
         # TODO: check consistency with weitghts and scale
 
-        # TODO: perform the masking
+        for self._buffer, slc in self._chunk_yielder(method):
+            # perform the masking: first with minmax, after sigma_clip
+            # the clippings interfere in each other.
+            self._apply_minmax_clip()
+            self._apply_sigma_clip()
 
-        # TODO: split the chuncks and combine
-        for chunk, slc in self._chunk_yielder(method):
+            # TODO: combine
             logger.debug(slc)
 
         # after, clear all buffers
