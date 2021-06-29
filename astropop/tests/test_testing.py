@@ -1,5 +1,6 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
+import tempfile
 from astropop.testing import (assert_equal, assert_not_equal,
                               assert_almost_equal,
                               assert_true, assert_false,
@@ -8,7 +9,8 @@ from astropop.testing import (assert_equal, assert_not_equal,
                               assert_is_none, assert_is_not_none,
                               assert_greater, assert_greater_equal,
                               assert_less, assert_less_equal,
-                              assert_is_instance, assert_is_not_instance)
+                              assert_is_instance, assert_is_not_instance,
+                              assert_path_exists, assert_path_not_exists)
 import numpy as np
 import pytest
 
@@ -130,3 +132,11 @@ class TestTestingHelpers():
         assert_less_equal(3, 3)
         with pytest.raises(AssertionError):
             assert_less_equal(4, 3)
+
+    def test_assert_path_exists(self):
+        f = tempfile.mkstemp()[1]
+        assert_path_exists(f)
+
+    def test_assert_path_not_exists(self):
+        f = 'this_path_do_not_exists_c1234123@3412341233456efsccdwwefxsd'
+        assert_path_not_exists(f)

@@ -8,6 +8,7 @@ Notes
 - Lots of functions imported directly from numpy.testing
 """
 
+from os.path import exists
 from numpy import testing as npt
 
 
@@ -157,4 +158,18 @@ def assert_less(a, b, msg=""):
 def assert_less_equal(a, b, msg=""):
     """Raise assertion error if a is not less or equal then b."""
     if not a <= b:
+        raise AssertionError(msg)
+
+
+@func_wrapper
+def assert_path_exists(a, msg=""):
+    """Raise assertion error if path a do not exists."""
+    if not exists(a):
+        raise AssertionError(msg)
+
+
+@func_wrapper
+def assert_path_not_exists(a, msg=""):
+    """Raise assertion error if path a do exists."""
+    if exists(a):
         raise AssertionError(msg)
