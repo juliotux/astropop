@@ -19,7 +19,8 @@ from astropy.nddata import CCDData, StdDevUncertainty
 from astropop.testing import assert_almost_equal, assert_equal, assert_true, \
                              assert_false, assert_is_instance, assert_in, \
                              assert_not_in, assert_is, assert_is_none, \
-                             assert_is_not_none, assert_is_not
+                             assert_is_not_none, assert_is_not, \
+                             assert_path_exists
 
 
 DEFAULT_DATA_SIZE = 100
@@ -535,6 +536,16 @@ class Test_FrameData_Copy():
         assert_equal(f.data.dtype, np.float32)
         assert_equal(f.uncertainty.dtype, np.float32)
 
+    def test_copy_filenames(self, tmpdir):
+        tmp = tmpdir.strpath
+        frame = create_framedata(cache_folder=tmp, cache_filename='testcopy')
+        frame.uncertainty = 1.0
+        f = frame.copy()
+        f.enable_memmap()
+        expect = os.path.join(tmp, 'testcopy'+'_copy')
+        assert_path_exists(expect+'.data')
+        assert_path_exists(expect+'.unct')
+        assert_path_exists(expect+'.mask')
 
 class Test_FrameData_History():
     def test_framedata_set_history(self):
