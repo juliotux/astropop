@@ -45,7 +45,7 @@ def read_framedata(obj, copy=False, **kwargs):
     """
     if isinstance(obj, FrameData):
         if copy:
-            obj = cp.deepcopy(obj)
+            obj = obj.copy(**kwargs)
     elif isinstance(obj, CCDData):
         obj = FrameData(**_extract_ccddata(obj, **kwargs))
     elif isinstance(obj, (str, bytes, os.PathLike)):
