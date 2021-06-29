@@ -13,7 +13,9 @@ from astropop.logger import logger, log_to_list
 from astropop.image_processing.imarith import imcombine, _sigma_clip, \
                                               _minmax_clip, ImCombiner
 from astropop.testing import assert_equal, assert_true, assert_false, \
-                             assert_is_instance, assert_is_none, assert_in
+                             assert_is_instance, assert_is_none, assert_in, \
+                             assert_path_exists, assert_path_not_exists, \
+                             assert_almost_equal
 
 
 class Test_MinMaxClip():
@@ -203,11 +205,47 @@ class Test_SigmaClip():
 class Test_ImCombineConformance():
 
     def test_class_creation(self):
+        # defaults
         c = ImCombiner()
         assert_is_instance(c, ImCombiner)
+        assert_equal(c._max_memory, 1e9)
+        assert_equal(c._dtype, np.float64)
 
         d = ImCombiner(max_memory=2e10)
         assert_equal(d._max_memory, 2e10)
+
+        e = ImCombiner(dtype=np.float16)
+        assert_equal(e._dtype, np.float16)
+
+        f = ImCombiner(dtype=np.float32)
+        assert_equal(f._dtype, np.float32)
+
+    def test_creation_error_dtype(self):
+        msg = "Only float dtypes are allowed in ImCombiner."
+        with pytest.raises(ValueError, match=msg):
+            ImCombiner(dtype=np.int)
+        with pytest.raises(ValueError, match=msg):
+            ImCombiner(dtype=np.int16)
+
+        with pytest.raises(ValueError, match=msg):
+            ImCombiner(dtype=np.int32)
+
+        with pytest.raises(ValueError, match=msg):
+            ImCombiner(dtype=np.complex64)
+
+        with pytest.raises(ValueError, match=msg):
+            ImCombiner(dtype=np.complex128)
+
+    def test_creation_default_dtypes(self):
+        c = ImCombiner(dtype=float)
+        assert_equal(c._dtype, float)
+
+        msg = "Only float dtypes are allowed in ImCombiner."
+        with pytest.raises(ValueError, match=msg):
+            ImCombiner(dtype=int)
+
+        with pytest.raises(ValueError, match=msg):
+            ImCombiner(dtype=complex)
 
     def test_class_set_sigmaclip(self):
         # empty must disable clipping
@@ -327,105 +365,6 @@ class Test_ImCombineConformance():
         with pytest.raises(ValueError):
             c.set_minmax_clip(0, [1, 2])
 
-
-class Test_ImCombiner_Combine():
-    def test_image_loading_framedata(self, tmpdir):
-        tmp = tmpdir.strpath
-        n = 10
-        d = np.ones((10, 10))
-        l = [FrameData(d, unit='adu', uncertainty=d, cache_folder=tmp,
-                       cache_filename=f'test{i}') for i in range(n)]
-
-        comb = ImCombiner()
-        # must start empty
-        assert_equal(len(comb._images), 0)
-        assert_is_none(comb._buffer)
-        comb._load_images(l)
-        assert_equal(len(comb._images), n)
-        assert_is_none(comb._buffer)
-        for i, v in enumerate(comb._images):
-            fil = os.path.join(tmp, f'test{i}')
-            assert_is_instance(v, FrameData)
-            assert_true(v._memmapping)
-            assert_true(os.path.exists(fil+'.data'))
-            assert_true(os.path.exists(fil+'.unct'))
-            assert_true(os.path.exists(fil+'.mask'))
-
-        comb._clear()
-        # must start empty
-        assert_equal(len(comb._images), 0)
-        assert_is_none(comb._buffer)
-
-        # ensure tmp files cleaned
-        for i in range(n):
-            fil = os.path.join(tmp, f'test{i}')
-            assert_false(os.path.exists(fil+'.data'))
-            assert_false(os.path.exists(fil+'.unct'))
-            assert_false(os.path.exists(fil+'.mask'))
-
-    def test_image_loading_fitsfile(self, tmpdir):
-        tmp = tmpdir.strpath
-        n = 10
-        d = np.ones((10, 10))
-        l = [os.path.join(tmp, f'fits_test{i}') for i in range(n)]
-        for f in l:
-            fits.PrimaryHDU(d).writeto(f)
-
-        logs = []
-        lh = log_to_list(logger, logs, full_record=True)
-        comb = ImCombiner()
-        comb._load_images(l)
-
-        # check if the logging is properly being emitted.
-        log = [i for i in logs if i.msg == 'The images to combine are not '
-               'FrameData. Some features may be disabled.']
-        assert_equal(len(log),  1)
-        assert_equal(log[0].levelname, 'WARNING')
-
-        assert_equal(len(comb._images), n)
-        assert_is_none(comb._buffer)
-        for i, v in enumerate(comb._images):
-            assert_is_instance(v, FrameData)
-            assert_true(v._memmapping)
-
-        comb._clear()
-        # must start empty
-        assert_equal(len(comb._images), 0)
-        assert_is_none(comb._buffer)
-
-    def test_image_loading_fitshdu(self, tmpdir):
-        n = 10
-        d = np.ones((10, 10))
-        l = [fits.PrimaryHDU(d) for i in range(n)]
-
-        logs = []
-        lh = log_to_list(logger, logs, full_record=True)
-        comb = ImCombiner()
-        comb._load_images(l)
-
-        # check if the logging is properly being emitted.
-        log = [i for i in logs if i.msg == 'The images to combine are not '
-               'FrameData. Some features may be disabled.']
-        assert_equal(len(log),  1)
-        assert_equal(log[0].levelname, 'WARNING')
-        logger.removeHandler(lh)
-
-        assert_equal(len(comb._images), n)
-        assert_is_none(comb._buffer)
-        for i, v in enumerate(comb._images):
-            assert_is_instance(v, FrameData)
-            assert_true(v._memmapping)
-
-        comb._clear()
-        # must start empty
-        assert_equal(len(comb._images), 0)
-        assert_is_none(comb._buffer)
-
-    def test_image_loading_empty(self):
-        comb = ImCombiner()
-        with pytest.raises(ValueError, match='Image list is empty.'):
-            comb._load_images([])
-
     def test_check_consistency(self):
         n = 10
         d = np.ones((10, 10))
@@ -467,7 +406,7 @@ class Test_ImCombiner_Combine():
         # mask size = 1 000 000 = 1 bytes * 100 * 100 * 100
         # total size = 9 000 000
 
-        comb = ImCombiner(max_memory=1e6)
+        comb = ImCombiner(max_memory=1e6, dtype=np.float64)
         comb._load_images(l)
 
         logs = []
@@ -542,6 +481,197 @@ class Test_ImCombiner_Combine():
 
         logger.setLevel(level)
         logger.removeHandler(lh)
+
+    def test_chunk_yielder_f32(self):
+        # using float32, the number of chunks are almost halved
+        n = 100
+        d = np.random.random((100, 100)).astype(np.float64)
+        l = [FrameData(d, unit='adu') for i in range(n)]
+        # data size = 4 000 000 = 4 bytes * 100 * 100 * 100
+        # mask size = 1 000 000 = 1 bytes * 100 * 100 * 100
+        # total size = 5 000 000
+
+        comb = ImCombiner(max_memory=1e6, dtype=np.float32)
+        comb._load_images(l)
+
+        logs = []
+        lh = log_to_list(logger, logs, False)
+        level = logger.getEffectiveLevel()
+        logger.setLevel('DEBUG')
+
+        # for median, tot_size=5*4.5=22.5
+        # xstep = 4, so n_chuks=25
+        i = 0
+        for chunk, slc in comb._chunk_yielder(method='median'):
+            i += 1
+            for k in chunk:
+                assert_equal(k.shape, (4, 100))
+                assert_almost_equal(k, d[slc])
+                assert_is_instance(k, np.ma.MaskedArray)
+        assert_equal(i, 25)
+        assert_in('Splitting the images into 25 chunks.', logs)
+        logs.clear()
+
+        # for mean and sum, tot_size=5*3=15
+        # xstep = 6, so n_chunks=16+1
+        i = 0
+        for chunk, slc in comb._chunk_yielder(method='mean'):
+            i += 1
+            for k in chunk:
+                assert_in(k.shape, [(6, 100), (4, 100)])
+                assert_almost_equal(k, d[slc])
+                assert_is_instance(k, np.ma.MaskedArray)
+        assert_equal(i, 17)
+        assert_in('Splitting the images into 17 chunks.', logs)
+        logs.clear()
+
+        i = 0
+        for chunk, slc in comb._chunk_yielder(method='sum'):
+            i += 1
+            for k in chunk:
+                assert_in(k.shape, [(6, 100), (4, 100)])
+                assert_almost_equal(k, d[slc])
+                assert_is_instance(k, np.ma.MaskedArray)
+        assert_equal(i, 17)
+        assert_in('Splitting the images into 17 chunks.', logs)
+        logs.clear()
+
+        # this should not split into chunks
+        comb = ImCombiner(max_memory=1e8, dtype=np.float32)
+        comb._load_images(l)
+        i = 0
+        for chunk, slc in comb._chunk_yielder(method='median'):
+            i += 1
+            for k in chunk:
+                assert_equal(k.shape, (100, 100))
+                assert_almost_equal(k, d)
+                assert_is_instance(k, np.ma.MaskedArray)
+        assert_equal(i, 1)
+        assert_equal(len(logs), 0)
+        logs.clear()
+
+        # this should split in 300 chunks!
+        # total_size = 4.5*5e6=22.5e6 = 225 chunks
+        # x_step = 1
+        # y_step = 45
+        comb = ImCombiner(max_memory=1e5, dtype=np.float32)
+        comb._load_images(l)
+        i = 0
+        for chunk, slc in comb._chunk_yielder(method='median'):
+            i += 1
+            for k in chunk:
+                assert_in(k.shape, ((1, 45), (1, 10)))
+                assert_almost_equal(k, d[slc])
+                assert_is_instance(k, np.ma.MaskedArray)
+        assert_equal(i, 300)
+        assert_in('Splitting the images into 300 chunks.', logs)
+        logs.clear()
+
+        logger.setLevel(level)
+        logger.removeHandler(lh)
+
+
+class Test_ImCombiner_LoadImages():
+
+    def test_image_loading_framedata(self, tmpdir):
+        tmp = tmpdir.strpath
+        n = 10
+        d = np.ones((10, 10))
+        l = [FrameData(d, unit='adu', uncertainty=d, cache_folder=tmp,
+                       cache_filename=f'test{i}') for i in range(n)]
+
+        comb = ImCombiner()
+        # must start empty
+        assert_equal(len(comb._images), 0)
+        assert_is_none(comb._buffer)
+        comb._load_images(l)
+        assert_equal(len(comb._images), n)
+        assert_is_none(comb._buffer)
+        for i, v in enumerate(comb._images):
+            fil = os.path.join(tmp, f'test{i}')
+            assert_is_instance(v, FrameData)
+            assert_true(v._memmapping)
+            assert_path_exists(fil+'_copy_copy.data')
+            assert_path_exists(fil+'_copy_copy.unct')
+            assert_path_exists(fil+'_copy_copy.mask')
+
+        comb._clear()
+        # must start empty
+        assert_equal(len(comb._images), 0)
+        assert_is_none(comb._buffer)
+
+        # ensure tmp files cleaned
+        for i in range(n):
+            fil = os.path.join(tmp, f'test{i}')
+            assert_path_not_exists(fil+'_copy_copy.data')
+            assert_path_not_exists(fil+'_copy_copy.unct')
+            assert_path_not_exists(fil+'_copy_copy.mask')
+
+    def test_image_loading_fitsfile(self, tmpdir):
+        tmp = tmpdir.strpath
+        n = 10
+        d = np.ones((10, 10))
+        l = [os.path.join(tmp, f'fits_test{i}') for i in range(n)]
+        for f in l:
+            fits.PrimaryHDU(d).writeto(f)
+
+        logs = []
+        lh = log_to_list(logger, logs, full_record=True)
+        comb = ImCombiner()
+        comb._load_images(l)
+
+        # check if the logging is properly being emitted.
+        log = [i for i in logs if i.msg == 'The images to combine are not '
+               'FrameData. Some features may be disabled.']
+        assert_equal(len(log),  1)
+        assert_equal(log[0].levelname, 'WARNING')
+
+        assert_equal(len(comb._images), n)
+        assert_is_none(comb._buffer)
+        for i, v in enumerate(comb._images):
+            assert_is_instance(v, FrameData)
+            assert_true(v._memmapping)
+
+        comb._clear()
+        # must start empty
+        assert_equal(len(comb._images), 0)
+        assert_is_none(comb._buffer)
+
+    def test_image_loading_fitshdu(self):
+        n = 10
+        d = np.ones((10, 10))
+        l = [fits.PrimaryHDU(d) for i in range(n)]
+
+        logs = []
+        lh = log_to_list(logger, logs, full_record=True)
+        comb = ImCombiner()
+        comb._load_images(l)
+
+        # check if the logging is properly being emitted.
+        log = [i for i in logs if i.msg == 'The images to combine are not '
+               'FrameData. Some features may be disabled.']
+        assert_equal(len(log),  1)
+        assert_equal(log[0].levelname, 'WARNING')
+        logger.removeHandler(lh)
+
+        assert_equal(len(comb._images), n)
+        assert_is_none(comb._buffer)
+        for i, v in enumerate(comb._images):
+            assert_is_instance(v, FrameData)
+            assert_true(v._memmapping)
+
+        comb._clear()
+        # must start empty
+        assert_equal(len(comb._images), 0)
+        assert_is_none(comb._buffer)
+
+    def test_image_loading_empty(self):
+        comb = ImCombiner()
+        with pytest.raises(ValueError, match='Image list is empty.'):
+            comb._load_images([])
+
+
+class Test_ImCombiner_Combine():
 
     def test_apply_minmax_clip(self):
         _min, _max = (0, 20)

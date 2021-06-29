@@ -10,19 +10,6 @@ from ..math.physical import QFloat, convert_to_qfloat, UnitsError
 from ..py_utils import check_iterable, check_number
 from ..logger import logger, log_to_list
 
-# if bottleneck is available, use it
-try:
-    import bottleneck as bn
-except ImportError:
-    HAS_BOTTLENECK = False
-else:
-    HAS_BOTTLENECK = True
-
-_median = bn.nanmedian if HAS_BOTTLENECK else np.nanmedian
-_mean = bn.nanmean if HAS_BOTTLENECK else np.nanmean
-_std = bn.nanstd if HAS_BOTTLENECK else np.nanstd
-_sum = bn.nansum if HAS_BOTTLENECK else np.nansum
-
 
 __all__ = ['imarith', 'imcombine', 'ImCombiner']
 
@@ -253,10 +240,10 @@ class ImCombiner:
     _max_memory = 1e8
     _buffer = None
     _images = None
-
     _methods = {'median', 'mean', 'sum'}
+    _dtype = np.float64
 
-    def __init__(self, max_memory=1e9):
+    def __init__(self, max_memory=1e9, dtype=np.float64):
         """Combine images using various algorithms.
 
         Parameters
@@ -264,8 +251,15 @@ class ImCombiner:
         - max_memory: int (optional)
           Maximum memory to be used during median and mean combining.
           In bytes.
-          Default: 1e9
+          Default: 1e9 (1GB)
+        - dtype: `~numpy.dtype` (optional)
+          Data type to be used during the operations and the final result.
+          Defualt: `~numpy.float64`
         """
+        # workaround to check dtype
+        if not isinstance(dtype(0), (float, np.floating)):
+            raise ValueError("Only float dtypes are allowed in ImCombiner.")
+        self._dtype = dtype
         self._max_memory = max_memory
         # initialize empty image list
         self._images = []
@@ -365,6 +359,7 @@ class ImCombiner:
                                'Some features may be disabled.')
                 is_not_framedata = True
             ic = check_framedata(i, copy=True)
+            ic = ic.astype(self._dtype)
             ic.enable_memmap()
             self._images.append(ic)
 
@@ -409,11 +404,12 @@ class ImCombiner:
         if shape[0] >= n_chunks:
             ystep = shape[1]
         else:
-            ystep = max(1, int(shape[1]/int(n_chunks/shape[0])))
+            ystep = max(1, int(np.ceil(shape[1]/(n_chunks/shape[0]))))
 
         n_chunks = np.ceil(shape[0]/xstep)*np.ceil(shape[1]/ystep)
         if n_chunks == 1:
-            result = [np.ma.MaskedArray(i.data, i.mask) for i in self._images]
+            result = [np.ma.MaskedArray(i.data, i.mask, fill_value=np.nan)
+                      for i in self._images]
             yield result, (slice(0, shape[0]), slice(0, shape[1]))
         else:
             logger.debug('Splitting the images into %i chunks.', n_chunks)
@@ -423,7 +419,8 @@ class ImCombiner:
                     slc_x = slice(x, min(x+xstep, shape[0]))
                     slc_y = slice(y, min(y+ystep, shape[1]))
                     lst = [np.ma.MaskedArray(i.data[slc_x, slc_y],
-                                             mask=i.mask[slc_x, slc_y])
+                                             mask=i.mask[slc_x, slc_y],
+                                             fill_value=np.nan)
                            for i in self._images]
                     yield lst, (slc_x, slc_y)
 
@@ -449,7 +446,6 @@ class ImCombiner:
                            dev_func=self._sigma_dev_func,
                            axis=0)
         self._buffer.mask = np.logical_or(self._buffer.mask, mask)
-
 
     def combine(self, image_list, method, weights=None, scale=None, **kwargs):
         """Perform the image combining.
