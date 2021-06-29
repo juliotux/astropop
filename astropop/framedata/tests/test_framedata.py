@@ -28,6 +28,7 @@ DEFAULT_HEADER = {'observer': 'astropop', 'very long key': 2}
 with NumpyRNGContext(123):
     _random_array = np.random.normal(size=[DEFAULT_DATA_SIZE,
                                            DEFAULT_DATA_SIZE])
+    _random_array = _random_array.astype(np.float64)
 
 
 def create_framedata(**kwargs):
@@ -244,6 +245,25 @@ class Test_CheckRead_FrameData():
             assert_equal(f.unit, frame.unit)
             assert_equal(f.history, frame.history)
             assert_equal(f.wcs, frame.wcs)
+
+    def test_check_framedata_framedata_copy_with_dtype(self):
+        frame = create_framedata()  # default is float64
+        fc = check_framedata(frame, copy=True, dtype=np.float32)
+        fr = read_framedata(frame, copy=True, dtype=np.float32)
+
+        for f in (fc, fr):
+            assert_is_not(f, frame)
+            assert_is_instance(f, FrameData)
+            assert_almost_equal(f.data, frame.data)
+            assert_equal(f.meta, frame.meta)
+            assert_almost_equal(f.uncertainty, frame.uncertainty)
+            assert_equal(f.mask, frame.mask)
+            assert_equal(f.unit, frame.unit)
+            assert_equal(f.history, frame.history)
+            assert_equal(f.wcs, frame.wcs)
+            assert_equal(f.data.dtype, np.float32)
+            assert_equal(f.uncertainty.dtype, np.float32)
+
 
     def test_check_framedata_fits_hdu(self):
         # meta is messed by fits

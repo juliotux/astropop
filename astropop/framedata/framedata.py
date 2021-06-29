@@ -396,9 +396,40 @@ class FrameData:
         _, _, value = shape_consistency(self.data, None, value)
         self._mask.reset_data(value)
 
-    def copy(self):
-        """Copy the current FrameData to a new instance."""
-        return self.__copy__()
+    def copy(self, dtype=None):
+        """Copy the current FrameData to a new instance.
+
+        Parameters
+        ----------
+        - dtype: `~numpy.dtype` (optional)
+            Data type for the copied FrameData. If `None`, the data type will
+            be the same as the original Framedata.
+            Default: `None`
+        """
+        data = np.array(self._data) if not self._data.empty else None
+        mask = np.array(self._mask) if not self._mask.empty else None
+        unct = np.array(self._unct) if not self._unct.empty else None
+        unit = self._unit
+        wcs = cp.copy(self._wcs)
+        meta = cp.copy(self._meta)
+        hist = cp.copy(self._history)
+        fname = self._origin
+        cache_folder = self.cache_folder
+        cache_fname = self.cache_filename
+
+        if dtype is not None:
+            data = data.astype(dtype) if data is not None else data
+            unct = unct.astype(dtype) if unct is not None else unct
+
+        if cache_fname is not None:
+            cache_fname = cache_fname + '_copy'
+
+        if len(hist) > 0:
+            meta['history'] = hist
+
+        return FrameData(data, unit=unit, mask=mask, uncertainty=unct,
+                         wcs=wcs, meta=meta, cache_folder=cache_folder,
+                         cache_filename=cache_fname, origin_filename=fname)
 
     def enable_memmap(self, filename=None, cache_folder=None):
         """Enable array file memmapping.
@@ -464,23 +495,4 @@ class FrameData:
 
     def __copy__(self):
         """Copy the current instance to a new one."""
-        data = np.array(self._data) if not self._data.empty else None
-        mask = np.array(self._mask) if not self._mask.empty else None
-        unct = np.array(self._unct) if not self._unct.empty else None
-        unit = self._unit
-        wcs = cp.copy(self._wcs)
-        meta = cp.copy(self._meta)
-        hist = cp.copy(self._history)
-        fname = self._origin
-        cache_folder = self.cache_folder
-        cache_fname = self.cache_filename
-
-        if cache_fname is not None:
-            cache_fname = cache_fname + '_copy'
-
-        if len(hist) > 0:
-            meta['history'] = hist
-
-        return FrameData(data, unit=unit, mask=mask, uncertainty=unct,
-                         wcs=wcs, meta=meta, cache_folder=cache_folder,
-                         cache_filename=cache_fname, origin_filename=fname)
+        return self.copy()
