@@ -516,6 +516,25 @@ class Test_FrameData_Copy():
             assert_not_in(i, ccd_copy.meta)
             assert_equal(ccd_copy.wcs.to_header()[i], wcs.to_header()[i])
 
+    def test_copy_with_dtype(self):
+        frame = create_framedata()  # default is float64
+        f = frame.copy(np.float32)
+        assert_is_not(f, frame)
+        assert_almost_equal(f.data, frame.data)
+        assert_almost_equal(f.uncertainty, frame.uncertainty)
+        assert_equal(f.data.dtype, np.float32)
+        assert_equal(f.uncertainty.dtype, np.float32)
+
+    def test_copy_astype(self):
+        # copy using astype
+        frame = create_framedata()  # default is float64
+        f = frame.astype(np.float32)
+        assert_is_not(f, frame)
+        assert_almost_equal(f.data, frame.data)
+        assert_almost_equal(f.uncertainty, frame.uncertainty)
+        assert_equal(f.data.dtype, np.float32)
+        assert_equal(f.uncertainty.dtype, np.float32)
+
 
 class Test_FrameData_History():
     def test_framedata_set_history(self):

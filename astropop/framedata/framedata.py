@@ -396,6 +396,10 @@ class FrameData:
         _, _, value = shape_consistency(self.data, None, value)
         self._mask.reset_data(value)
 
+    def astype(self, dtype):
+        """Return a copy of the current FrameData with new dtype in data."""
+        return self.copy(dtype)
+
     def copy(self, dtype=None):
         """Copy the current FrameData to a new instance.
 
