@@ -1,7 +1,7 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
-import subprocess  # nosec
-import select
+import asyncio
+from asyncio.subprocess import PIPE
 import shlex
 import six
 import errno
@@ -174,44 +174,51 @@ def batch_key_replace(dictionary, key=None):
 def run_command(args, stdout=None, stderr=None, stdout_loglevel='DEBUG',
                 stderr_loglevel='ERROR', **kwargs):
     """Run a command in command line with logging."""
+    # Based on async buffer streaming from
+    # https://stackoverflow.com/a/53323746
+
+    # Put the cmd in python list, required
     if isinstance(args, six.string_types):
         logger.debug('Converting string using shlex')
         args = shlex.split(args)
 
-    stdout_loglevel = resolve_level_string(stdout_loglevel)
-    stderr_loglevel = resolve_level_string(stderr_loglevel)
+    ps = {
+        'out': {'log': resolve_level_string(stdout_loglevel), 'list': stdout},
+        'err': {'log': resolve_level_string(stderr_loglevel), 'list': stderr}
+    }
 
-    logger.log(stdout_loglevel, 'Runing: %s', " ".join(args))
+    logger.log(ps['out']['log'], 'Runing: %s', " ".join(args))
 
-    process = subprocess.Popen(args, stdout=subprocess.PIPE,  # nosec
-                               stderr=subprocess.PIPE, **kwargs)
+    # Read line callback
+    async def _read_stream(stream, typ):
+        store = ps[typ]['list']
+        # ensure stream is not None,for safety
+        while stream is not None:
+            line = await stream.readline()
+            if line:
+                # string fix avoiding bytes
+                line = string_fix(string_fix(line).strip('\n'))
+                logger.log(ps[typ]['log'], line)
+                if store is not None:
+                    store.append(line)
+            else:
+                break
 
-    log_level = {process.stdout: stdout_loglevel,
-                 process.stderr: stderr_loglevel}
+    # Create the process as async subprocess
+    async def _run():
+        p = await asyncio.create_subprocess_exec(*args,
+                                                 stderr=PIPE, stdout=PIPE,
+                                                 **kwargs)
+        await asyncio.wait([_read_stream(p.stdout, 'out'),
+                            _read_stream(p.stderr, 'err')])
+        await p.wait()
+        return p
 
-    store = {process.stdout: stdout,
-             process.stderr: stderr}
+    loop = asyncio.get_event_loop()
+    process = loop.run_until_complete(_run())
 
-    def check_io():
-        ready_to_read = select.select([process.stdout,
-                                       process.stderr],
-                                      [], [], 1000)[0]
-        for io in ready_to_read:
-            line = str(io.readline().decode()).strip('\n')
-            if line != "":
-                if store[io] is not None:  # only stores the desired io
-                    store[io].append(line)
-                logger.log(log_level[io], line[:-1])
+    logger.log(ps['out']['log'], "Done with process: %s", " ".join(args))
 
-    # keep checking stdout/stderr until the process exits
-    while process.poll() is None:
-        check_io()
-
-    check_io()  # check again to catch anything after the process exits
-
-    logger.log(stdout_loglevel, "Done with process: %s", " ".join(args))
-
-    process.wait()
     return process, stdout, stderr
 
 
