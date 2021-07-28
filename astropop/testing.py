@@ -10,6 +10,7 @@ Notes
 
 from os.path import exists
 from numpy import testing as npt
+from .py_utils import check_iterable
 
 
 __all__ = ['assert_equal', 'assert_not_equal', 'assert_almost_equal',
@@ -57,13 +58,25 @@ def assert_false(a, msg=''):
         raise AssertionError(msg)
 
 
-assert_equal = func_wrapper(npt.assert_array_equal,
-                            'Check if two objects are equal. Arrays supported.'
-                            '\nImported from Numpy.')
-assert_almost_equal = func_wrapper(npt.assert_array_almost_equal,
-                                   'Check if two objects are almost equal. '
-                                   'Arrays supported.'
-                                   '\nImported from Numpy.')
+@func_wrapper
+def assert_equal(a, b, msg=''):
+    """Check if two objects are equal. Arrays supported."""
+    if check_iterable(a) or check_iterable(b):
+        npt.assert_array_equal(a, b, err_msg=msg, verbose=True)
+    else:
+        if not a == b:
+            raise AssertionError(msg)
+
+
+@func_wrapper
+def assert_almost_equal(a, b, decimal=6, msg=''):
+    """Check if two objects are almost equal. Arrays supported."""
+    if check_iterable(a) or check_iterable(b):
+        npt.assert_array_almost_equal(a, b, decimal=decimal,
+                                      err_msg=msg, verbose=True)
+    else:
+        if not abs(a-b) < 1.5 * 10**(-decimal):
+            raise AssertionError(msg)
 
 
 @func_wrapper
