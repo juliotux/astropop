@@ -2,8 +2,6 @@
 
 import pytest
 import numpy as np
-import numpy.testing as npt
-import pytest_check as check
 
 from astropy import units as u
 from astropop.image_processing.ccd_processing import cosmics_lacosmic, \

@@ -23,11 +23,7 @@ if not _ASTROPY_SETUP_:  # noqa
         ConfigurationDefaultMissingError,
         ConfigurationDefaultMissingWarning)
 
-    # Create the test function for self test
-    from astropy.tests.runner import TestRunner
-    test = TestRunner.make_test_runner_in(os.path.dirname(__file__))
-    test.__test__ = False
-    __all__ += ['test']
+    # removed astropop.test function generation
 
     # add these here so we only need to cleanup the namespace at the end
     config_dir = None
