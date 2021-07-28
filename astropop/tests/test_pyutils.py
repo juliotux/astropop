@@ -62,8 +62,8 @@ def test_string_fix(inp, enc, res):
 
 
 class Test_RunCommand():
-    com = (["sh", "-c", 'for i in {1..10}; do echo "$i"; sleep 0.1; done'],
-           "sh -c 'for i in {1..10}; do echo \"$i\"; sleep 0.1; done'")
+    com = (["bash", "-c", 'for i in {1..10}; do echo "$i"; sleep 0.1; done'],
+           "bash -c 'for i in {1..10}; do echo \"$i\"; sleep 0.1; done'")
     com2 = ("bash -c 'echo \"this is an error\" 1>&2'",
             ["bash", "-c", 'echo "this is an error" 1>&2'])
 
