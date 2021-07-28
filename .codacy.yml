@@ -6,3 +6,4 @@ exclude_paths:
     - 'astropop/_astropy_init.py'
     - 'docs/**'
     - .*
+    - tests/**
