@@ -44,9 +44,9 @@ jobs:
             python-version: 3.9
             toxenv: py39-test-devdeps
 
-          # - name: Python 3.6 with astropy 3.2 and Numpy 1.17
-          #   python-version: 3.6
-          #   toxenv: py36-test-astropy32-numpy117
+          - name: Python 3.6 with astropy 3.2 and Numpy 1.17
+            python-version: 3.6
+            toxenv: py36-test-astropy32-numpy117
 
           - name: Python 3.7 with astropy 3.2 and Numpy 1.17
             python-version: 3.7
