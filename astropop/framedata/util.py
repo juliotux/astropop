@@ -3,7 +3,6 @@
 
 import os
 import numpy as np
-import copy as cp
 from astropy.io import fits
 from astropy.nddata import CCDData
 from astropy import units as u
