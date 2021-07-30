@@ -49,7 +49,8 @@ def std_test_frame(op, frame1, frame2, result, inplace, handle_mask):
                   join_masks=handle_mask)
 
     assert_equal(res.data, result.data)
-    assert_almost_equal(res.uncertainty, result.uncertainty)
+    assert_almost_equal(res.get_uncertainty(False),
+                        result.get_uncertainty(False))
     if handle_mask:
         assert_equal(res.mask, result.mask)
 

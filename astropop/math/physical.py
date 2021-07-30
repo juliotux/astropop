@@ -75,7 +75,7 @@ def convert_to_qfloat(value):
     # FrameData support
     if value.__class__.__name__ == 'FrameData':
         # avoid breaking the code due to cyclic imports
-        return QFloat(value.data, value.uncertainty, value.unit)
+        return QFloat(value.data, value.get_uncertainty(False), value.unit)
 
     # Handle Astropy units to multuply
     if isinstance(value, (units.UnitBase, str)):

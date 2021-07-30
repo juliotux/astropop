@@ -365,16 +365,7 @@ class FrameData:
 
     @property
     def uncertainty(self):
-        """Return the uncertainty.
-
-        Note
-        ----
-        - If the uncertainty is an empty container, this property returns
-          an `~numpy.zeros_like` array with the same shape of the data.
-        """
-        if self._unct.empty:
-            # FIXME: this should be None, but conflicts with qfloat.
-            return np.zeros_like(self._data)
+        """Get the uncertainty frame container."""
         return self._unct
 
     @uncertainty.setter
@@ -385,6 +376,30 @@ class FrameData:
             _, value, _ = shape_consistency(self.data, value, None)
             value = uncertainty_unit_consistency(self.unit, value)
             self._unct.reset_data(value)
+
+    def get_uncertainty(self, return_none=True):
+        """Get the uncertainty frame in a safer way.
+
+        In some cases, like interfacing with QFloat, the uncertainty cannot be
+        None or an empty container. So, in cases like this, is prefered to get
+        a whole matrix containing zeroes. This method is responsible for this
+        special returns. For non-empty containers, a copy in `~numpy.ndarray`
+        container will be returned.
+
+        Parameters
+        ----------
+        - return_none: bool (optional)
+          If True, an empty uncertainty frame will return only None. Else, a
+          matrix filled with zeroes will be returned.
+          Default: True
+        """
+        if self._unct.empty and return_none:
+            unct = None
+        elif self._unct.empty:
+            unct = np.zeros_like(self._data)
+        else:
+            unct = np.array(self._unct)
+        return unct
 
     @property
     def mask(self):
