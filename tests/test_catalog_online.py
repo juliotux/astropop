@@ -1,5 +1,6 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
+import os
 import time
 import pytest
 from astropop.catalogs.online import SimbadCatalog
@@ -13,10 +14,13 @@ def delay_rerun(*args):
 
 flaky_rerun = pytest.mark.flaky(max_runs=10, min_passes=1,
                                 rerun_filter=delay_rerun)
+catalog_skip = pytest.mark.skipif(not os.environ.get('ASTROPOP_TEST_CATALOGS'),
+                                  reason='avoid servers errors.')
 
 
 # @pytest.mark.remote_data
 @flaky_rerun
+@catalog_skip
 class TestSimbadCatalog():
     def test_simbad_catalog_query_object(self):
         cat = SimbadCatalog

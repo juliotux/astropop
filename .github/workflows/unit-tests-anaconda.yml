@@ -20,20 +20,20 @@ jobs:
         include:
           - name: Python 3.9 with astrometry and coverage
             python-version: 3.9
-            toxenv: py39-test-numpystable-astropystable-cov-ast
+            toxenv: py39-test-numpystable-astropystable-cov-ast-cat
             coverage: true
 
           - name: Documentation build
             python-version: 3.9
             toxenv: build_docs
 
-          - name: Python 3.9 with developer version of astropy and numpy
+          - name: Python 3.9 with devdeps and online catalogs
             python-version: 3.9
-            toxenv: py39-test-devdeps
+            toxenv: py39-test-devdeps-cat
 
-          - name: Python 3.6 with old astropy and Numpy
+          - name: Python 3.6 with old astropy and Numpy and online catalogs
             python-version: 3.6
-            toxenv: py36-test-astropyold-numpyold
+            toxenv: py36-test-astropyold-numpyold-cat
 
           - name: Python 3.7 with LTS astropy and Numpy
             python-version: 3.7
