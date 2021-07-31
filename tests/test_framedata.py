@@ -248,7 +248,7 @@ class Test_CheckRead_FrameData():
             assert_equal(f.wcs, frame.wcs)
 
     def test_check_framedata_framedata_copy_with_dtype(self):
-        frame = create_framedata()  # default is float64
+        frame = create_framedata(uncertainty=1)  # default is float64
         fc = check_framedata(frame, copy=True, dtype=np.float32)
         fr = read_framedata(frame, copy=True, dtype=np.float32)
 
@@ -257,7 +257,7 @@ class Test_CheckRead_FrameData():
             assert_is_instance(f, FrameData)
             assert_almost_equal(f.data, frame.data)
             assert_equal(f.meta, frame.meta)
-            assert_almost_equal(f.uncertainty, frame.uncertainty)
+            assert_equal(f.uncertainty, frame.uncertainty)
             assert_equal(f.mask, frame.mask)
             assert_equal(f.unit, frame.unit)
             assert_equal(f.history, frame.history)
@@ -518,21 +518,21 @@ class Test_FrameData_Copy():
             assert_equal(ccd_copy.wcs.to_header()[i], wcs.to_header()[i])
 
     def test_copy_with_dtype(self):
-        frame = create_framedata()  # default is float64
+        frame = create_framedata(uncertainty=0.5)  # default is float64
         f = frame.copy(np.float32)
         assert_is_not(f, frame)
         assert_almost_equal(f.data, frame.data)
-        assert_almost_equal(f.uncertainty, frame.uncertainty)
+        assert_equal(f.uncertainty, frame.uncertainty)
         assert_equal(f.data.dtype, np.float32)
         assert_equal(f.uncertainty.dtype, np.float32)
 
     def test_copy_astype(self):
         # copy using astype
-        frame = create_framedata()  # default is float64
+        frame = create_framedata(uncertainty=0.5)  # default is float64
         f = frame.astype(np.float32)
         assert_is_not(f, frame)
         assert_almost_equal(f.data, frame.data)
-        assert_almost_equal(f.uncertainty, frame.uncertainty)
+        assert_equal(f.uncertainty, frame.uncertainty)
         assert_equal(f.data.dtype, np.float32)
         assert_equal(f.uncertainty.dtype, np.float32)
 
@@ -816,10 +816,33 @@ class Test_FrameData_Uncertainty():
             # Uncertainty is supposed to be an instance of NDUncertainty
             frame.uncertainty = 'not a uncertainty'
 
-    def test_none_uncertainty_returns_zeros(self):
+    def test_none_uncertainty_returns_empty(self):
         frame = create_framedata()
-        assert_equal(frame.uncertainty, np.zeros((DEFAULT_DATA_SIZE,
-                                                  DEFAULT_DATA_SIZE)))
+        assert_equal(frame.uncertainty, np.array(None))
+        assert_true(frame.uncertainty.empty)
+
+    def test_get_uncertainty_empty_return_none(self):
+        # test the get_uncertainty method with return_none=True
+        frame = create_framedata()
+        assert_is_none(frame.get_uncertainty(True), None)
+
+    def test_get_uncertainty_empty_return_zero(self):
+        # test the get_uncertainty method with return_none=False
+        frame = create_framedata()
+        shp = (DEFAULT_DATA_SIZE, DEFAULT_DATA_SIZE)
+        assert_equal(frame.get_uncertainty(False), np.zeros(shp))
+
+    def test_get_uncertainty_non_empty_return_none(self):
+        # test the get_uncertainty method with return_none=True
+        shp = (DEFAULT_DATA_SIZE, DEFAULT_DATA_SIZE)
+        frame = create_framedata(uncertainty=np.ones(shp))
+        assert_equal(frame.get_uncertainty(True), np.ones(shp))
+
+    def test_get_uncertainty_non_empty_return_zero(self):
+        # test the get_uncertainty method with return_none=False
+        shp = (DEFAULT_DATA_SIZE, DEFAULT_DATA_SIZE)
+        frame = create_framedata(uncertainty=np.ones(shp))
+        assert_equal(frame.get_uncertainty(False), np.ones(shp))
 
 
 class Test_FrameData_FITS():
