@@ -7,11 +7,11 @@ from astropop.testing import assert_equal, assert_almost_equal
 
 
 def delay_rerun(*args):
-    time.sleep(1)
+    time.sleep(10)
     return True
 
 
-flaky_rerun = pytest.mark.flaky(max_runs=5, min_passes=1,
+flaky_rerun = pytest.mark.flaky(max_runs=10, min_passes=1,
                                 rerun_filter=delay_rerun)
 
 
