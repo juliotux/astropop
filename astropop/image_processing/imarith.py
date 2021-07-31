@@ -214,6 +214,9 @@ def _sigma_clip(data, threshold=3, cen_func='median', dev_func='mad_std',
     if shigh is not None:
         mask |= data > cen+(shigh*dev)
 
+    logger.debug('Rejected %i pixels by sigmaclip method.',
+                 np.sum(mask))
+
     return mask
 
 
@@ -248,24 +251,27 @@ def _minmax_clip(data, min_clip=None, max_clip=None):
     if max_clip is not None:
         mask[np.where(data > max_clip)] = True
 
+    logger.debug('Rejected %i pixels by minmax method.',
+                 np.sum(mask))
+
     return mask
 
 
 class ImCombiner:
     """Process the combining operation of images, like the IRAF imcombine."""
 
-    _sigma_clip = None
-    _sigma_cen_func = None
-    _sigma_dev_func = None
-    _minmax = None
-    _max_memory = 1e8
+    _sigma_clip = None  # sigmaclip thresholds
+    _sigma_cen_func = None  # sigmaclip central function
+    _sigma_dev_func = None  # sigmaclip deviation function
+    _minmax = None  # minmax clipping parameters
+    _max_memory = 1e8  # max memory to be used by the combiner
     _buffer = None  # Temporary buffer to store the image
     _unct_bf = None  # Temporary buffer to store the uncertainties
-    _images = None
+    _images = None  # List containing the loaded images
     _methods = {'median', 'mean', 'sum'}
-    _dtype = np.float64
-    _unit = None
-    _shape = None
+    _dtype = np.float64  # Internal dtype used by the combiner
+    _unit = None  # Result unit
+    _shape = None  # Full image shape
 
     def __init__(self, max_memory=1e9, dtype=np.float64):
         """Combine images using various algorithms.
@@ -602,9 +608,7 @@ class ImCombiner:
         return combined
 
 
-def imcombine(frames, method='median', sigma_clip=None,
-              sigma_cen_func='median', sigma_dev_func='std',
-              minmax_clip=None, memory_limit=1e9):
+def imcombine(frames, method='median', memory_limit=1e9, **kwargs):
     """Combine a list of images or frames in a single one.
 
     Parameters
