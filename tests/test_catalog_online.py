@@ -1,11 +1,22 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
+import time
 import pytest
 from astropop.catalogs.online import SimbadCatalog
 from astropop.testing import assert_equal, assert_almost_equal
 
 
-@pytest.mark.remote_data
+def delay_rerun(*args):
+    time.sleep(1)
+    return True
+
+
+flaky_rerun = pytest.mark.flaky(max_runs=5, min_passes=1,
+                                rerun_filter=delay_rerun)
+
+
+# @pytest.mark.remote_data
+@flaky_rerun
 class TestSimbadCatalog():
     def test_simbad_catalog_query_object(self):
         cat = SimbadCatalog
