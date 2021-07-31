@@ -1,11 +1,12 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
+import pytest
 from astropop.catalogs.online import SimbadCatalog
 from astropop.testing import assert_equal, assert_almost_equal
 
 
+@pytest.mark.remote_data
 class TestSimbadCatalog():
-
     def test_simbad_catalog_query_object(self):
         cat = SimbadCatalog
         obj = cat.query_object('Sirius', band='V')
