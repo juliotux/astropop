@@ -1,14 +1,25 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 """Handle the IRAF's imarith and imcombine functions."""
 
+import functools
 import numpy as np
+from numpy.ma import MaskedArray as marr
 from astropy.units.core import UnitConversionError
-from astropy.stats import sigma_clip as sc
+from astropy.stats import mad_std
 
 from ..framedata import FrameData, check_framedata
 from ..math.physical import QFloat, convert_to_qfloat, UnitsError
 from ..py_utils import check_iterable, check_number
 from ..logger import logger, log_to_list
+
+
+_funcs = {
+    'median': np.nanmedian,
+    'mean': np.nanmean,
+    'sum': np.nansum,
+    'std': np.nanstd,
+    'mad_std': functools.partial(mad_std, ignore_nan=True)
+}
 
 
 __all__ = ['imarith', 'imcombine', 'ImCombiner']
@@ -147,12 +158,11 @@ def imarith(operand1, operand2, operation, inplace=False,
 ###############################################################################
 
 
-def _sigma_clip(data, threshold=3, cen_func=np.nanmedian, dev_func=np.nanstd,
+def _sigma_clip(data, threshold=3, cen_func='median', dev_func='mad_std',
                 axis=None):
-    """Create a mask of the sigma clipped pixels.ccdclip.
+    """Create a mask of the sigma clipped pixels.
 
-    It uses the `~astropy.stats.sigma_clip` to perform sigmaclipping on the
-    data. This function will not change the array, instead, just output a
+    This function will not change the array, instead, just output a
     mask for the masked elements.
 
     Parameters
@@ -167,9 +177,9 @@ def _sigma_clip(data, threshold=3, cen_func=np.nanmedian, dev_func=np.nanstd,
     cen_func: callable or {'mean', 'median'} (optional)
         Function to compute the center value used for sigma clipping.
         Default: 'median'
-    def_func: callable or {'std'} (optional)
+    dev_func: callable or {'std', 'mad_std'} (optional)
         Function to compute the base deviation value used for sigma clipping.
-        Default: 'std'
+        Default: 'mad_std'
     axis: int
         The axis to perform the clipping and masking.
 
@@ -189,9 +199,20 @@ def _sigma_clip(data, threshold=3, cen_func=np.nanmedian, dev_func=np.nanstd,
         raise TypeError(f'Sigma clipping threshold {threshold} not'
                         ' recognized.')
 
-    mask = sc(data, sigma_lower=slow, sigma_upper=shigh, maxiters=1,
-              axis=axis, cenfunc=cen_func, stdfunc=dev_func, copy=True,
-              masked=True).mask
+    if not callable(cen_func):
+        cen_func = _funcs[cen_func]
+    if not callable(dev_func):
+        dev_func = _funcs[dev_func]
+
+    cen = cen_func(data, axis=axis)
+    dev = dev_func(data, axis=axis)
+
+    # also mask nans and infs
+    mask = ~np.isfinite(data)
+    if slow is not None:
+        mask |= data < cen-(slow*dev)
+    if shigh is not None:
+        mask |= data > cen+(shigh*dev)
 
     return mask
 
@@ -238,10 +259,13 @@ class ImCombiner:
     _sigma_dev_func = None
     _minmax = None
     _max_memory = 1e8
-    _buffer = None
+    _buffer = None  # Temporary buffer to store the image
+    _unct_bf = None  # Temporary buffer to store the uncertainties
     _images = None
     _methods = {'median', 'mean', 'sum'}
     _dtype = np.float64
+    _unit = None
+    _shape = None
 
     def __init__(self, max_memory=1e9, dtype=np.float64):
         """Combine images using various algorithms.
@@ -265,7 +289,7 @@ class ImCombiner:
         self._images = []
 
     def set_sigma_clip(self, sigma_limits=None,
-                       center_func='median', dev_func='std'):
+                       center_func='median', dev_func='mad_std'):
         """Enable sigma clipping during the combine.
 
         Parameters
@@ -280,7 +304,12 @@ class ImCombiner:
           Default: 'median'
         - dev_func: callable or {'std', 'mad_std'} (optional)
           Function to compute the deviation sigma for clipping.
-          Defautl: 'std'
+          Defautl: 'mad_std'
+
+        Notes
+        -----
+        - 'median' and 'mad_std' gives a much better sigma clipping than
+          'mean' and 'std'.
         """
         if sigma_limits is None:
             # None simply disables sigma clipping
@@ -342,6 +371,8 @@ class ImCombiner:
             i.disable_memmap()
             i.data = None
         self._images = []
+        self._shape = None
+        self._unit = None
 
     def _load_images(self, image_list):
         """Read images to FrameData and enable memmap."""
@@ -380,18 +411,27 @@ class ImCombiner:
             elif v.unit != base_unit:
                 raise ValueError(f"Image {i} has a unit incompatible with "
                                  "the others")
+        self._shape = base_shape
+        self._unit = base_unit
 
     def _chunk_yielder(self, method):
         """Split the data in chuncks according to the method."""
-        n = len(self._images)
-        shape = self._images[0].shape
+        # sum needs uncertainties
+        unct = None
+        if method == 'sum':
+            if not np.any([i.uncertainty.empty for i in self._images]):
+                unct = True
+            else:
+                logger.info('One or more frames have empty uncertainty. '
+                            'Some features are disabled.')
 
-        imsize = self._images[0].data.nbytes
-        imsize += self._images[0].mask.nbytes
+        shape = self._images[0].shape
+        tot_size = self._images[0].data.nbytes
+        tot_size += self._images[0].mask.nbytes
+        tot_size *= len(self._images)
         # uncertainty is ignored
 
-        tot_size = n*imsize
-        # adjust memory usage for numpy and bottleneck
+        # adjust memory usage for numpy and bottleneck, based on ccdproc
         if method == 'median':
             tot_size *= 4.5
         else:
@@ -408,9 +448,10 @@ class ImCombiner:
 
         n_chunks = np.ceil(shape[0]/xstep)*np.ceil(shape[1]/ystep)
         if n_chunks == 1:
-            result = [np.ma.MaskedArray(i.data, i.mask, fill_value=np.nan)
+            result = [marr(i.data, i.mask, fill_value=np.nan,
+                           dtype=self._dtype)
                       for i in self._images]
-            yield result, (slice(0, shape[0]), slice(0, shape[1]))
+            yield result, None, (slice(0, shape[0]), slice(0, shape[1]))
         else:
             logger.debug('Splitting the images into %i chunks.', n_chunks)
             # return the sliced data and the slice
@@ -418,11 +459,20 @@ class ImCombiner:
                 for y in range(0, shape[1], ystep):
                     slc_x = slice(x, min(x+xstep, shape[0]))
                     slc_y = slice(y, min(y+ystep, shape[1]))
-                    lst = [np.ma.MaskedArray(i.data[slc_x, slc_y],
-                                             mask=i.mask[slc_x, slc_y],
-                                             fill_value=np.nan)
+                    lst = [marr(i.data[slc_x, slc_y],
+                                mask=i.mask[slc_x, slc_y],
+                                fill_value=np.nan,
+                                dtype=self._dtype)
                            for i in self._images]
-                    yield lst, (slc_x, slc_y)
+
+                    if unct:
+                        unct = [marr(i.uncertainty[slc_x, slc_y],
+                                     mask=i.mask[slc_x, slc_y],
+                                     fill_value=np.nan,
+                                     dtype=self._dtype)
+                                for i in self._images]
+
+                    yield lst, unct, (slc_x, slc_y)
 
     def _apply_minmax_clip(self):
         """Apply minmax clip in the current buffer."""
@@ -447,7 +497,44 @@ class ImCombiner:
                            axis=0)
         self._buffer.mask = np.logical_or(self._buffer.mask, mask)
 
-    def combine(self, image_list, method, weights=None, scale=None, **kwargs):
+    def _combine(self, method, **kwargs):
+        """Process the combine and compute the uncertainty."""
+        # number of masked pixels for each position
+        n_masked = np.sum([i.mask for i in self._buffer], axis=0)
+        # number of images
+        n = float(len(self._buffer))
+        # number of not masked pixels for each position
+        n_no_mask = n - n_masked
+
+        if method == 'sum':
+            data = _funcs['sum'](self._buffer, axis=0)
+            if self._unct_bf is None:
+                logger.info('Data with no uncertainties. Using the std dev'
+                            ' approximation to compute the sum uncertainty.')
+                # we consider, here, that the deviation in each pixel (x, y) is
+                # the error of each image in that position. So
+                # unct = stddev*sqrt(n)
+                unct = _funcs['std'](self._buffer, axis=0)*np.sqrt(n_no_mask)
+            else:
+                # direct propagate the errors in the sum
+                # unct = sqrt(sigma1^2 + sigma2^2 + ...)
+                unct = _funcs['sum'](np.square(self._unct_bf), axis=0)
+                unct = np.sqrt(unct)
+
+            if kwargs.get('sum_normalize', True):
+                norm = n/(n - n_masked)
+                data *= norm
+                unct *= norm
+
+        elif method in ('median', 'mean'):
+            data = _funcs[method](self._buffer, axis=0)
+            # uncertainty = sigma/sqrt(n)
+            unct = _funcs['std'](self._buffer, axis=0)
+            unct /= np.sqrt(n_no_mask)
+
+        return data, unct
+
+    def combine(self, image_list, method, **kwargs):
         """Perform the image combining.
 
         Parameters
@@ -458,6 +545,12 @@ class ImCombiner:
           supported.
         - method: {'mean', 'median', 'sum'}
           Combining method.
+        - sum_normalize: bool (optional)
+          If True, the imaged will be multiplied, pixel by pixel, by the
+          number of images divided by the number of non-masked pixels. This
+          will avoid discrepancies by different numbers of masked pixels
+          across the image. If False, the raw sum of images will be returned.
+          Default: True
 
         Returns
         -------
@@ -471,28 +564,42 @@ class ImCombiner:
         - Clipping parameters are set using class functions.
         - If the images exceed the maximum memory allowed, they are splited
           to perform the median and mean combine.
-        - Masked elements are skiped.
+        - Masked elements are skiped. Result pixels will be masked if all the
+          source pixels combined in it are also masked.
         """
+        if method not in self._methods:
+            raise ValueError(f'{method} is not a valid combining method.')
+
         # first of all, load the images to FrameData and check the consistency
         self._load_images(image_list)
         self._check_consistency()
 
-        if method not in self._methods:
-            raise ValueError(f'{method} is not a valid combining method.')
+        # temp combined data, mask and uncertainty
+        data = np.zeros(self._shape, dtype=self._dtype)
+        data.fill(np.nan)
+        mask = np.zeros(self._shape, dtype=bool)
+        unct = np.zeros(self._shape, dtype=self._dtype)
 
-        # TODO: check consistency with weitghts and scale
-
-        for self._buffer, slc in self._chunk_yielder(method):
+        for self._buffer, self._unct_bf, slc in self._chunk_yielder(method):
             # perform the masking: first with minmax, after sigma_clip
             # the clippings interfere in each other.
             self._apply_minmax_clip()
             self._apply_sigma_clip()
 
-            # TODO: combine
-            logger.debug(slc)
+            # combine the images and compute the uncertainty
+            data[slc], unct[slc] = self._combine(method, **kwargs)
+
+            # combine masks
+            mask[slc] = np.all([i.mask for i in self._buffer], axis=0)
+
+        combined = FrameData(data, unit=self._unit, mask=mask,
+                             uncertainty=unct)
+        combined.meta['astropop imcombine nimages'] = len(self._images)
+        combined.meta['astropop imcombine method'] = method
 
         # after, clear all buffers
         self._clear()
+        return combined
 
 
 def imcombine(frames, method='median', sigma_clip=None,
