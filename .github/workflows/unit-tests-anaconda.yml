@@ -7,7 +7,6 @@ on:
     tags:
   workflow_dispatch:
   schedule:
-    # Run every Sunday at 03:53 UTC
     - cron: 11 2 * * 0
 
 jobs:
@@ -19,50 +18,38 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: Python 3.7 with required dependencies
-            python-version: 3.7
-            toxenv: py37-test
-
-          - name: Python 3.8 with required dependencies
-            python-version: 3.8
-            toxenv: py38-test
-
-          - name: Python 3.9 with required dependencies
+          - name: Python 3.9 with astrometry and coverage
             python-version: 3.9
-            toxenv: py39-test
-
-          - name: Python 3.8 with required dependencies and measure coverage
-            python-version: 3.8
-            toxenv: py38-test-cov-ast
+            toxenv: py39-test-numpystable-astropystable-cov-ast
             coverage: true
 
           - name: Documentation build
-            python-version: 3.8
+            python-version: 3.9
             toxenv: build_docs
 
           - name: Python 3.9 with developer version of astropy and numpy
             python-version: 3.9
             toxenv: py39-test-devdeps
 
-          - name: Python 3.6 with astropy 3.2 and Numpy 1.17
+          - name: Python 3.6 with old astropy and Numpy
             python-version: 3.6
-            toxenv: py36-test-astropy32-numpy117
+            toxenv: py36-test-astropyold-numpyold
 
-          - name: Python 3.7 with astropy 3.2 and Numpy 1.17
+          - name: Python 3.7 with LTS astropy and Numpy
             python-version: 3.7
-            toxenv: py37-test-astropy32-numpy117
+            toxenv: py37-test-astropylts-numpylts
 
-          - name: Python 3.7 with astropy LTS and Numpy 1.18
+          - name: Python 3.8 with LTS astropy and Numpy
+            python-version: 3.8
+            toxenv: py38-test-astropylts-numpylts
+
+          - name: Python 3.9 with stable astropy and numpy
+            python-version: 3.9
+            toxenv: py38-test-astropystable-numpystable
+
+          - name: Python 3.7 with astrometry (stable)
             python-version: 3.7
-            toxenv: py37-test-astropylts-numpy118
-
-          - name: Python 3.8 with astropy 4.2 and Numpy 1.19
-            python-version: 3.8
-            toxenv: py38-test-astropy42-numpy119
-
-          - name: Python 3.8 with astrometry
-            python-version: 3.8
-            toxenv: py38-test-ast
+            toxenv: py37-test-ast-numpystable-astropystable
 
           #- name: Code style checks
           #  python-version: 3.8
