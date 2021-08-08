@@ -4,11 +4,11 @@ import pytest
 import numpy as np
 
 from astropy import units as u
-from astropop.image_processing.ccd_processing import cosmics_lacosmic, \
-                                                     gain_correct, \
-                                                     subtract_bias, \
-                                                     subtract_dark, \
-                                                     flat_correct
+from astropop.image.calibration import cosmics_lacosmic, \
+                                       gain_correct, \
+                                       subtract_bias, \
+                                       subtract_dark, \
+                                       flat_correct
 from astropop.framedata import FrameData
 
 

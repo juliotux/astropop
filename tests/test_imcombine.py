@@ -10,8 +10,8 @@ from astropy.io import fits
 from astropy.utils import NumpyRNGContext
 from astropop.framedata import FrameData
 from astropop.logger import logger, log_to_list
-from astropop.image_processing.imarith import imcombine, _sigma_clip, \
-                                              _minmax_clip, ImCombiner
+from astropop.image.imarith import imcombine, _sigma_clip, \
+                                   _minmax_clip, ImCombiner
 from astropop.testing import assert_equal, assert_true, assert_false, \
                              assert_is_instance, assert_is_none, assert_in, \
                              assert_path_exists, assert_path_not_exists, \

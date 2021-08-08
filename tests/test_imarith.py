@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from astropop.image_processing.imarith import imarith
+from astropop.image.imarith import imarith
 from astropop.framedata import FrameData
 from astropop.math.physical import UnitsError, units, QFloat
 from astropop.testing import assert_equal, assert_is, assert_is_not, \

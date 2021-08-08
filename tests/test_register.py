@@ -3,12 +3,12 @@
 import pytest
 import numpy as np
 
-from astropop.image_processing.register import translate, \
-                                               create_fft_shift_list, \
-                                               create_chi2_shift_list, \
-                                               apply_shift, \
-                                               apply_shift_list, \
-                                               hdu_shift_images
+from astropop.image.register import translate, \
+                                    create_fft_shift_list, \
+                                    create_chi2_shift_list, \
+                                    apply_shift, \
+                                    apply_shift_list, \
+                                    hdu_shift_images
 
 from astropop.testing import assert_equal, assert_almost_equal
 

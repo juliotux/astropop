@@ -1,6 +1,6 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
-from .ccd_processing import *
+from .calibration import *
 from .imarith import *
 from . import register
 

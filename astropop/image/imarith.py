@@ -2,6 +2,7 @@
 """Handle the IRAF's imarith and imcombine functions."""
 
 import functools
+from tempfile import mkdtemp
 import numpy as np
 from numpy.ma import MaskedArray as marr
 from astropy.units.core import UnitConversionError
@@ -272,8 +273,9 @@ class ImCombiner:
     _dtype = np.float64  # Internal dtype used by the combiner
     _unit = None  # Result unit
     _shape = None  # Full image shape
+    _tmpdir = None  # Directory to store temporary files
 
-    def __init__(self, max_memory=1e9, dtype=np.float64):
+    def __init__(self, max_memory=1e9, dtype=np.float64, tmp_dir=None):
         """Combine images using various algorithms.
 
         Parameters
@@ -289,6 +291,9 @@ class ImCombiner:
         # workaround to check dtype
         if not isinstance(dtype(0), (float, np.floating)):
             raise ValueError("Only float dtypes are allowed in ImCombiner.")
+        self._tmpdir = tmp_dir
+        if self._tmpdir is None:
+            self._tmpdir = mkdtemp(prefix='astropop')
         self._dtype = dtype
         self._max_memory = max_memory
         # initialize empty image list
@@ -389,7 +394,7 @@ class ImCombiner:
             raise ValueError('Image list is empty.')
 
         is_not_framedata = False
-        for i in image_list:
+        for indx, i in enumerate(image_list):
             # before combine, copy everything to memmaped FrameData
             if not isinstance(i, FrameData) and not is_not_framedata:
                 logger.warning('The images to combine are not FrameData. '
@@ -397,7 +402,8 @@ class ImCombiner:
                 is_not_framedata = True
             ic = check_framedata(i, copy=True)
             ic = ic.astype(self._dtype)
-            ic.enable_memmap()
+            ic.enable_memmap(filename=f'image_{indx}',
+                             cache_folder=self._tmpdir)
             self._images.append(ic)
 
     def _check_consistency(self):
