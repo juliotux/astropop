@@ -31,19 +31,19 @@ jobs:
             python-version: 3.9
             toxenv: py39-test-devdeps-cat
 
-          - name: Python 3.6 with old astropy and Numpy and online catalogs
+          - name: Python 3.6 with old deps and online catalogs
             python-version: 3.6
             toxenv: py36-test-astropyold-numpyold-cat
 
-          - name: Python 3.7 with LTS astropy and Numpy
+          - name: Python 3.7 with LTS deps
             python-version: 3.7
             toxenv: py37-test-astropylts-numpylts
 
-          - name: Python 3.8 with LTS astropy and Numpy
+          - name: Python 3.8 with deps
             python-version: 3.8
             toxenv: py38-test-astropylts-numpylts
 
-          - name: Python 3.9 with stable astropy and numpy
+          - name: Python 3.9 with stable deps
             python-version: 3.9
             toxenv: py38-test-astropystable-numpystable
 
