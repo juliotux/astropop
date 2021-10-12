@@ -3,15 +3,14 @@
 import os
 import numpy as np
 import pytest
-import astropy
 
 from astropy.io import fits
 
 from astropy.utils import NumpyRNGContext
 from astropop.framedata import FrameData
 from astropop.logger import logger, log_to_list
-from astropop.image.imarith import imcombine, _sigma_clip, \
-                                   _minmax_clip, ImCombiner
+from astropop.image.imcombine import imcombine, _sigma_clip, \
+                                     _minmax_clip, ImCombiner
 from astropop.testing import assert_equal, assert_true, assert_false, \
                              assert_is_instance, assert_is_none, assert_in, \
                              assert_path_exists, assert_path_not_exists, \
@@ -750,7 +749,7 @@ class Test_ImCombiner_Rejection():
         comb._buffer = data
         # with these limits, only the outliers must be masked
         comb.set_minmax_clip(_min, _max)
-        comb._apply_minmax_clip()
+        comb._apply_rejection()
         # original mask must be kept
         assert_equal(comb._buffer.mask, expect)
 
@@ -774,7 +773,7 @@ class Test_ImCombiner_Rejection():
         comb = ImCombiner()
         comb._buffer = data
         comb.set_minmax_clip(_min, _max)
-        comb._apply_minmax_clip()
+        comb._apply_rejection()
         assert_equal(comb._buffer.mask, expect)
 
     def test_apply_minmax_clip_only_higher(self):
@@ -797,7 +796,7 @@ class Test_ImCombiner_Rejection():
         comb = ImCombiner()
         comb._buffer = data
         comb.set_minmax_clip(_min, _max)
-        comb._apply_minmax_clip()
+        comb._apply_rejection()
         assert_equal(comb._buffer.mask, expect)
 
     def test_apply_sigmaclip(self):
@@ -808,14 +807,14 @@ class Test_ImCombiner_Rejection():
         comb._buffer = data.copy()
         comb.set_sigma_clip(1)
         expect = [0, 0, 0, 0, 1]
-        comb._apply_sigma_clip()
+        comb._apply_rejection()
         assert_equal(comb._buffer.mask, expect)
 
         # if threshold=3, 65000 must be masked too using mad_std.
         comb._buffer = data.copy()
         comb.set_sigma_clip(3)
         expect = [0, 0, 0, 0, 1]
-        comb._apply_sigma_clip()
+        comb._apply_rejection()
         assert_equal(comb._buffer.mask, expect)
 
         # if threshold=3 and a mask, the mask must be preserved.
@@ -823,7 +822,7 @@ class Test_ImCombiner_Rejection():
         comb._buffer.mask[1] = 1
         comb.set_sigma_clip(3)
         expect = [0, 1, 0, 0, 1]
-        comb._apply_sigma_clip()
+        comb._apply_rejection()
         assert_equal(comb._buffer.mask, expect)
 
     def test_apply_sigmaclip_only_lower(self):
@@ -834,7 +833,7 @@ class Test_ImCombiner_Rejection():
         comb._buffer = data.copy()
         comb.set_sigma_clip((1, None))
         expect = [0, 0, 0, 0, 0]
-        comb._apply_sigma_clip()
+        comb._apply_rejection()
         assert_equal(comb._buffer.mask, expect)
 
     def test_apply_sigmaclip_only_higher(self):
@@ -845,11 +844,24 @@ class Test_ImCombiner_Rejection():
         comb._buffer = data.copy()
         comb.set_sigma_clip((None, 1))
         expect = [0, 0, 0, 0, 0]
-        comb._apply_sigma_clip()
+        comb._apply_rejection()
         assert_equal(comb._buffer.mask, expect)
 
 
 class Test_ImCombiner_Combine():
+    def create_framedata_array(self, values, size=(100, 100), unct=None):
+        # values is an array containing the scale factor for each image
+
+        with NumpyRNGContext(123):
+            data = np.random.normal(loc=100, scale=20, size=size)
+
+        arr = [None]*len(values)
+        for i, k in enumerate(values):
+            u = unct*data*k if unct is not None else unct
+            arr[i] = FrameData(data*k, uncertainty=u, unit='adu')
+
+        return arr, data
+
     def test_combine_mask_median(self):
         comb = ImCombiner()
         images = [None]*10
@@ -906,3 +918,26 @@ class Test_ImCombiner_Combine():
 
         res = comb.combine(images, 'mean')
         assert_equal(res.mask, expect)
+
+    def test_combine_median_simple(self):
+        arr, base = self.create_framedata_array([0.8, 1.0, 1.2, 1.0, 1.2],
+                                                size=[1024, 1024],
+                                                unct=0.1)
+
+        comb = ImCombiner()
+
+        # the unclipped median of [0.8, 1.0, 1.2, 1.0, 1.2] is 1.0
+        # std([0.8, 1.0, 1.2, 1.0, 1.2])/sqrt(5) = 0.06693280212272602
+        res = comb.combine(arr, method='median')
+        assert_equal(res.data, base)
+        assert_almost_equal(res.uncertainty, 0.06693280212272602*base)
+        assert_equal(res.meta['astropop imcombine nimages'], 5)
+        assert_equal(res.meta['astropop imcombine method'], 'median')
+
+        # same for 3 sigma clipping
+        comb.set_sigma_clip(3, 'median', 'mad_std')
+        res = comb.combine(arr, method='median')
+        assert_equal(res.data, base)
+        assert_almost_equal(res.uncertainty, 0.06693280212272602*base)
+        assert_equal(res.meta['astropop imcombine nimages'], 5)
+        assert_equal(res.meta['astropop imcombine method'], 'median')
