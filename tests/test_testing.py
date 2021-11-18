@@ -18,6 +18,17 @@ import pytest
 class TestTestingHelpers():
     """Test the testing helpers."""
 
+    def test_numpy_err_msg(self):
+        # Ensure compatibility with numpy testing
+        with pytest.raises(AssertionError):
+            assert_almost_equal([1, 2], [3, 4], 0, None)
+        with pytest.raises(AssertionError):
+            assert_equal([1, 2], [3, 4], None)
+        with pytest.raises(AssertionError):
+            assert_almost_equal([1, 2], [3, 4], 0, '')
+        with pytest.raises(AssertionError):
+            assert_equal([1, 2], [3, 4], '')
+
     def test_assert_equal(self):
         assert_equal(1, 1)
         assert_equal(np.arange(4), [0, 1, 2, 3])
@@ -25,7 +36,9 @@ class TestTestingHelpers():
 
         with pytest.raises(AssertionError):
             assert_equal(1, 2)
+        with pytest.raises(AssertionError):
             assert_equal(np.arange(5), [0, 1, 2, 3])
+        with pytest.raises(AssertionError):
             assert_equal([np.nan, 0, 1], [0, 0, 1])
 
     def test_assert_not_equal(self):
@@ -35,7 +48,9 @@ class TestTestingHelpers():
 
         with pytest.raises(AssertionError):
             assert_not_equal(1, 1)
+        with pytest.raises(AssertionError):
             assert_not_equal(np.arange(4), [0, 1, 2, 3])
+        with pytest.raises(AssertionError):
             assert_not_equal([np.nan, np.inf, 0, 1], [np.nan, np.inf, 0, 1])
 
     def test_assert_almost_equal(self):
@@ -125,6 +140,7 @@ class TestTestingHelpers():
         assert_less(1, 2)
         with pytest.raises(AssertionError):
             assert_less(3, 3)
+        with pytest.raises(AssertionError):
             assert_less(4, 3)
 
     def test_assert_less_equal(self):
