@@ -23,6 +23,11 @@ jobs:
             toxenv: py39-test-numpystable-astropystable-cov-ast-cat
             coverage: true
 
+          # - name: Python 3.10 with astrometry and coverage
+          #   python-version: 3.10
+          #   toxenv: py310-test-numpystable-astropystable-cov-ast-cat
+          #   coverage: true
+
           - name: Documentation build
             python-version: 3.9
             toxenv: build_docs
@@ -30,6 +35,10 @@ jobs:
           - name: Python 3.9 with devdeps and online catalogs
             python-version: 3.9
             toxenv: py39-test-devdeps-cat
+
+          # - name: Python 3.10 with devdeps and online catalogs
+          #   python-version: 3.10
+          #   toxenv: py310-test-devdeps-cat
 
           - name: Python 3.7 with old deps and online catalogs
             python-version: 3.7
@@ -45,7 +54,11 @@ jobs:
 
           - name: Python 3.9 with stable deps
             python-version: 3.9
-            toxenv: py38-test-astropystable-numpystable
+            toxenv: py39-test-astropystable-numpystable
+
+          # - name: Python 3.10 with stable deps
+          #   python-version: 3.10
+          #   toxenv: py310-test-astropystable-numpystable
 
           - name: Python 3.7 with astrometry (stable)
             python-version: 3.7
