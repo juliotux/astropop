@@ -7,8 +7,10 @@ import numpy as np
 from astropop.photometry import (background, sepfind, daofind, starfind,
                                  calc_fwhm, recenter_sources)
 from astropop.photometry.detection import gen_filter_kernel
-from astropop.testing import assert_almost_equal, assert_equal
+from astropop.testing import assert_almost_equal, assert_equal, assert_true
 from astropop.math.moffat import moffat_2d
+from astropop.math.gaussian import gaussian_2d
+from astropop.py_utils import check_number
 from astropy.utils import NumpyRNGContext
 
 
@@ -46,6 +48,47 @@ def gen_stars_moffat(size, x, y, flux, fwhm, rng_seed=123):
     for xi, yi, fi in zip(x, y, flux):
         im += moffat_2d(grid_x, grid_y, xi, yi, alpha, beta, fi, 0)
 
+    return im
+
+
+def gen_stars_gaussian(size, x, y, flux, sigma, theta, rng_seed=123):
+    """Generate stars image to add to background."""
+    im = np.zeros(size)
+    grid_y, grid_x = np.indices(size)
+
+    try:
+        sigma_x, sigma_y = sigma
+    except:
+        sigma_x = sigma_y = sigma
+
+    if check_number(sigma_x):
+        sigma_x = [sigma_x]*len(x)
+
+    if check_number(sigma_y):
+        sigma_y = [sigma_y]*len(x)
+
+    if check_number(theta):
+        theta = [theta]*len(x)
+
+    for xi, yi, fi, sxi, syi, ti in zip(x, y, flux, sigma_x, sigma_y, theta):
+        im += gaussian_2d(grid_x, grid_y, xi, yi, sxi, syi, ti, fi, 0)
+
+    return im
+
+
+def gen_image(size, x, y, flux, sky, rdnoise, model='gaussian', **kwargs):
+    """Generate a full image of stars with noise."""
+    im = gen_bkg(size, sky, rdnoise)
+
+    if model == 'moffat':
+        fwhm = kwargs.pop('fwhm')
+        im += gen_stars_moffat(size, x, y, flux, fwhm)
+    if model == 'gaussian':
+        sigma = kwargs.pop('sigma', 2.0)
+        theta = kwargs.pop('theta', 0)
+        im += gen_stars_gaussian(size, x, y, flux, sigma, theta)
+
+    im = np.random.poisson(im)
     return im
 
 
@@ -91,7 +134,7 @@ class Test_Background():
 
         assert_equal(type(global_bkg), float)
         assert_equal(type(global_rms), float)
-        assert_almost_equal(global_bkg, level, decimal=0)
+        assert_almost_equal(global_bkg, 800, decimal=0)
         assert_almost_equal(global_rms, rdnoise, decimal=0)
 
         assert_equal(bkg.shape, size)
@@ -231,11 +274,25 @@ class Test_Background():
         # here the rms goes bigger with the level
         # assert_almost_equal(rms, np.ones(size)*rdnoise, decimal=-1)
 
-@pytest.mark.skip
+
 class Test_SEP_Detection():
     # segmentation detection. Must detect all shapes of sources
     def test_sepfind_one_star(self):
-        pass
+        size = (128, 128)
+        pos = (64, 64)
+        sky = 800
+        rdnoise = 20
+        flux = 32000
+        sigma = 3
+        theta = 0
+        im = gen_image(size, [pos[0]], [pos[1]], [flux], sky, rdnoise,
+                       model='gaussian', sigma=sigma, theta=theta)
+
+        sources = sepfind(im, 10, sky, rdnoise)
+
+        assert_equal(len(sources), 1)
+        assert_almost_equal(sources['x'][0], 64, decimal=2)
+        assert_almost_equal(sources['y'][0], 64, decimal=2)
 
     def test_sepfind_strong_and_weak(self):
         pass
