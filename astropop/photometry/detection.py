@@ -39,11 +39,27 @@ def gen_filter_kernel(size):
                          [1, 2, 3, 4, 3, 2, 1]])
 
 
-def background(data, box_size, filter_size, mask=None, global_bkg=True):
+def background(data, box_size=64, filter_size=3, mask=None,
+                   global_bkg=True):
     """Estimate the image background using SExtractor algorithm.
 
-    If global_bkg, return a single value for background and rms, else, a 2D
-    image with local values.
+    Parameters
+    ----------
+    data: array_like
+        2D array containing the image to extract the background.
+    box_size: `int` (optional)
+        Size of background boxes in pixels.
+        Default: 64
+    filter_size: `int` (optional)
+        Filter size in boxes unit.
+        Default: 3
+    mask: array_like (optional)
+        Boolean mask where 1 pixels are masked out in the background
+        calculation.
+        Default: `None`
+    global_bkg: `bool`
+        If True, the algorithm returns a single value for background
+        and rms, else, a 2D image with local values will be returned.
     """
     d = _sep_fix_byte_order(data)
     bkg = sep.Background(d, bw=box_size, bh=box_size,
@@ -335,7 +351,7 @@ def daofind(data, snr, background, noise, fwhm, mask=None,
 
 def starfind(data, snr, background, noise, fwhm, mask=None, box_size=35,
              sharp_limit=(0.2, 1.0), round_limit=(-1.0, 1.0)):
-    """Find stars using daofind AND sexfind."""
+    """Find stars using daofind AND sepfind."""
     # First, we identify the sources with sepfind (fwhm independent)
     sources = sepfind(data, snr, background, noise, mask=mask,
                       fwhm=fwhm)
