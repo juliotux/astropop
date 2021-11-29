@@ -289,7 +289,7 @@ class Test_SEP_Detection():
     def test_sepfind_one_star(self):
         size = (128, 128)
         pos = (64, 64)
-        sky = 10 # entre 15 e 999
+        sky = 800 # maior que 15
         rdnoise = 20
         flux = 32000
         sigma = 3
@@ -333,7 +333,7 @@ class Test_SEP_Detection():
     def test_sepfind_four_stars_fixed_position(self):
         size = (1024, 1024)
         posx = (10, 120, 500, 1000)
-        posy = (10, 120, 400, 800)
+        posy = (20, 200, 600, 800)
         sky = 800
         rdnoise = 20
         flux = (15000, 1500, 1500, 35000)
@@ -395,23 +395,46 @@ class Test_SEP_Detection():
         im = gen_image(size, x, y, f, sky, rdnoise,
                        model='gaussian', sigma=sigma, theta=theta)
 
-        segm = detect_sources(data, threshold, npixels=5, kernel=kernel)
-        sources, segmap = sepfind(data, 20, sky, rdnoise, segmentation_map = 1)
+        
+        bkg = sep.Background(data, bw=64, bh=64, fw=3, fh=3)
+        bkg.subfrom(data)
+
+        objects, segmap = sep.extract(data, 1.5*bkg.globalrms, segmentation_map=True)
+
+
 
         assert_equal(len(im), size)
         assert_equal(type(im), np.ndarray)
-        assert_equal(type(segm), photutils.segmentation.core.SegmentationImage)
+        #assert_equal(type(segm), photutils.segmentation.core.SegmentationImage)
 
         #assert_equal(len(sources), 1024)
         #assert_almost_equal(sources['x'], x, decimal = 0)
         #assert_almost_equal(sources['y'], y, decimal = 0)
 
 
-@pytest.mark.skip
+#@pytest.mark.skip
 class Test_DAOFind_Detection():
     # DAOFind detection. Only round unsturaded stars
     def test_daofind_one_star(self):
-        pass
+        size = (128, 128)
+        pos = (64, 64)
+        sky = 800
+        rdnoise = 20
+        flux = 32000
+        sigma = 3
+        theta = 0
+        fwhm = 3
+        threshold= 5
+        
+        im = gen_image(size, [pos[0]], [pos[1]], [flux], sky, rdnoise,
+                       model='gaussian', sigma=sigma, theta=theta)
+
+        sources = daofind(im, rdnoise, sky, 10, fwhm, mask=None,
+            sharp_limit=(0.2, 1.0), round_limit=(-1.0, 1.0))
+
+        assert_equal(len(sources), 1)
+        #assert_almost_equal(sources['x'][0], 64, decimal=2)
+        #assert_almost_equal(sources['y'][0], 64, decimal=2)
         
 
     def test_daofind_strong_and_weak(self):
