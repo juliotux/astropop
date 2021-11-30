@@ -378,15 +378,13 @@ class Test_SEP_Detection():
         #assert_almost_equal(sources['y'], y, decimal=2)
 
     def test_sepfind_segmentation_map(self):
-        data = make_100gaussians_image()
-        threshold = detect_threshold(data, nsigma=2.)
         sigma = 3.0 * gaussian_fwhm_to_sigma  # FWHM = 3.
         kernel = Gaussian2DKernel(sigma, x_size=3, y_size=3)
         kernel.normalize()
         sky = 800
         rdnoise = 20
         size = (1024, 1024)
-        number = 15
+        number = 18
         low = 500
         high = 15000
         theta = 0
@@ -394,20 +392,21 @@ class Test_SEP_Detection():
         x, y, f = gen_position_flux(size, number, low, high, rng_seed=123)
         im = gen_image(size, x, y, f, sky, rdnoise,
                        model='gaussian', sigma=sigma, theta=theta)
-
         
-        bkg = sep.Background(data, bw=64, bh=64, fw=3, fh=3)
-        bkg.subfrom(data)
+        bkg, rms = background(im, 64, 3,
+                              mask=None, global_bkg=False)
 
-        objects, segmap = sep.extract(data, 1.5*bkg.globalrms, segmentation_map=True)
-
-
+        sources, segmap = sepfind(im, 20, sky, rdnoise, segmentation_map=True)
 
         assert_equal(len(im), size)
+        assert_equal(len(sources), number)
+        assert_equal(len(segmap), size)
+        
         assert_equal(type(im), np.ndarray)
-        #assert_equal(type(segm), photutils.segmentation.core.SegmentationImage)
+        assert_equal(type(segmap), np.ndarray)
+        assert_equal(type(bkg), np.ndarray)
+        assert_equal(type(rms), np.ndarray)
 
-        #assert_equal(len(sources), 1024)
         #assert_almost_equal(sources['x'], x, decimal = 0)
         #assert_almost_equal(sources['y'], y, decimal = 0)
 
@@ -424,7 +423,6 @@ class Test_DAOFind_Detection():
         sigma = 3
         theta = 0
         fwhm = 3
-        threshold= 5
         
         im = gen_image(size, [pos[0]], [pos[1]], [flux], sky, rdnoise,
                        model='gaussian', sigma=sigma, theta=theta)
@@ -433,15 +431,55 @@ class Test_DAOFind_Detection():
             sharp_limit=(0.2, 1.0), round_limit=(-1.0, 1.0))
 
         assert_equal(len(sources), 1)
-        #assert_almost_equal(sources['x'][0], 64, decimal=2)
-        #assert_almost_equal(sources['y'][0], 64, decimal=2)
+        assert_almost_equal(sources['x'][0], 64, decimal=1)
+        assert_almost_equal(sources['y'][0], 64, decimal=1)
         
 
     def test_daofind_strong_and_weak(self):
-        pass
+        size = (512, 512)
+        posx = (60, 90)
+        posy = (20, 90)
+        sky = 800
+        rdnoise = 20
+        flux = (32000, 600)
+        sigma = 3
+        theta = 0
+        fwhm = 3
+        im = gen_image(size, posx, posy, flux, sky, rdnoise,
+                       model='gaussian', sigma=sigma, theta=theta)
+
+        sources = daofind(im, rdnoise, sky, 10, fwhm, mask=None,
+            sharp_limit=(0.2, 1.0), round_limit=(-1.0, 1.0))
+
+        assert_equal(len(im), size)
+        assert_equal(type(im), np.ndarray)
+        assert_equal(len(sources), 2)
+        #assert_almost_equal(sources['x'], posx, decimal=2)
+        #assert_almost_equal(sources['y'], posy, decimal=0)
 
     def test_daofind_four_stars_fixed_position(self):
-        pass
+        size = (1100, 1100)
+        posx = (10, 120, 500, 1000)
+        posy = (20, 200, 600, 800)
+        sky = 800
+        rdnoise = 20
+        flux = (15000, 1500, 1500, 35000)
+        sigma = 3
+        theta = 0
+        fwhm = 3
+        im = gen_image(size, posx, posy, flux, sky, rdnoise,
+                       model='gaussian', sigma=sigma, theta=theta)
+
+        sources = daofind(im, rdnoise, sky, 10, fwhm, mask=None,
+            sharp_limit=(0.2, 1.0), round_limit=(-1.0, 1.0))
+
+        assert_equal(len(im), size)
+        assert_equal(type(im), np.ndarray)
+        assert_equal(len(sources), 4)
+        #assert_almost_equal(sources['x'], posx, decimal = 0)
+        #assert_almost_equal(sources['y'], posy, decimal = 0)
+        
+
 
     def test_daofind_multiple_stars(self):
         pass
