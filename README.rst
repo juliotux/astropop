@@ -28,11 +28,12 @@ This software is intended to provide a full pipeline to reduce raw polarimetry a
 
 - Automatic photometry calibration using online catalogs.
 
-Requiriments
+Requirements 
 ^^^^^^^^
 Astropop needs gcc. Install using:
 
 .. code-block::
+    
     sudo apt install build-essential
 
 Astropop was developed for python with a version equal or bigger than 3.6. 
@@ -42,21 +43,35 @@ Dependencies
 
 Bellow we list all the necessary dependencies for the good working of the code. Note that this can be changed with the time.
 
-astroalign
-astropy>=3.2
-astroquery
-astroscrappy
-ccdproc
-cython
-matplotlib
-numpy>=1.17
-photutils
-pytz
-pyyaml
-reproject
-scikit-image
-scipy
-sep
+- astroalign;
+
+- astropy >= 3.2;
+
+- astroquery;
+
+- astroscrappy;
+
+- ccdproc;
+
+- cython;
+
+- matplotlib;
+
+- numpy >= 1.17;
+
+- photutils;
+
+- pytz;
+
+- pyyaml;
+
+- reproject;
+
+- scikit-image;
+
+- scipy;
+
+- sep.
 
 Installation
 ^^^^^^^^
