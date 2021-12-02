@@ -28,6 +28,67 @@ This software is intended to provide a full pipeline to reduce raw polarimetry a
 
 - Automatic photometry calibration using online catalogs.
 
+Requiriments
+^^^^^^^^
+Astropop needs gcc. Install using:
+
+.. code-block::
+    sudo apt install build-essential
+
+Astropop was developed for python with a version equal or bigger than 3.6. 
+
+Dependencies
+^^^^^^^^
+
+Bellow we list all the necessary dependencies for the good working of the code. Note that this can be changed with the time.
+
+astroalign
+astropy>=3.2
+astroquery
+astroscrappy
+ccdproc
+cython
+matplotlib
+numpy>=1.17
+photutils
+pytz
+pyyaml
+reproject
+scikit-image
+scipy
+sep
+
+Installation
+^^^^^^^^
+Astropop can be downloaded from https://github.com/sparc4-dev/astropop. For this, type in the terminal: 
+
+.. code-block::
+    
+    git clone https://github.com/sparc4-dev/astropop
+
+To install Astropop, you should go to the directory where Astropop was cloned, open the terminal in the Astropop directory and follow one of the options bellow:
+
+1 – Install using pip:  
+
+.. code-block::
+
+    python setup.py build
+    pip install -U .
+
+2 – Or, without the pip packet control: 
+
+.. code-block::
+
+    python setup.py install
+
+3 – Install using anaconda:
+
+If you do not have anaconda, please visit https://www.anaconda.com/.
+Once the anaconda is installed you can create an Astropop enviroment using:
+
+.. code-block::
+
+    conda create -n <environment name> -c conda-forge python=3.9 astroalign astropy astroquery astroscrappy ccdproc cython	matplotlib numpy photutils pytz pyyaml reproject scikit-image scipy sep
 
 Citating
 ^^^^^^^^
