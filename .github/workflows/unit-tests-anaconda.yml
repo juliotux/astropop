@@ -18,51 +18,42 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: Python 3.9 with astrometry and coverage
-            python-version: 3.9
-            toxenv: py39-test-numpystable-astropystable-cov-ast-cat
+          - name: Python 3.10 with astrometry and coverage
+            python-version: 3.10
+            toxenv: py310-test-numpystable-astropystable-cov-ast-cat
             coverage: true
 
-          # - name: Python 3.10 with astrometry and coverage
-          #   python-version: 3.10
-          #   toxenv: py310-test-numpystable-astropystable-cov-ast-cat
-          #   coverage: true
-
           - name: Documentation build
-            python-version: 3.9
+            python-version: 3.10
             toxenv: build_docs
 
-          - name: Python 3.9 with devdeps and online catalogs
-            python-version: 3.9
-            toxenv: py39-test-devdeps-cat
-
-          # - name: Python 3.10 with devdeps and online catalogs
-          #   python-version: 3.10
-          #   toxenv: py310-test-devdeps-cat
+          - name: Python 3.10 with devdeps and online catalogs
+            python-version: 3.10
+            toxenv: py310-test-devdeps-cat-ast
 
           - name: Python 3.7 with old deps and online catalogs
             python-version: 3.7
-            toxenv: py37-test-astropyold-numpyold-cat
+            toxenv: py37-test-astropylts-numpylts-cat
 
-          - name: Python 3.7 with LTS deps
+          - name: Python 3.7 with astrometry (stable)
             python-version: 3.7
-            toxenv: py37-test-astropylts-numpylts
+            toxenv: py37-test-ast-numpystable-astropystable
 
-          - name: Python 3.8 with deps
+          - name: Python 3.8 with lts deps
             python-version: 3.8
             toxenv: py38-test-astropylts-numpylts
+
+          - name: Python 3.8 with stable deps
+            python-version: 3.8
+            toxenv: py38-test-astropystable-numpystable
 
           - name: Python 3.9 with stable deps
             python-version: 3.9
             toxenv: py39-test-astropystable-numpystable
 
-          # - name: Python 3.10 with stable deps
-          #   python-version: 3.10
-          #   toxenv: py310-test-astropystable-numpystable
-
-          - name: Python 3.7 with astrometry (stable)
-            python-version: 3.7
-            toxenv: py37-test-ast-numpystable-astropystable
+          - name: Python 3.10 with stable deps
+            python-version: 3.10
+            toxenv: py310-test-astropystable-numpystable
 
           #- name: Code style checks
           #  python-version: 3.8
