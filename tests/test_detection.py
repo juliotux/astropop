@@ -289,7 +289,7 @@ class Test_SEP_Detection():
     def test_sepfind_one_star(self):
         size = (128, 128)
         pos = (64, 64)
-        sky = 800 # maior que 15
+        sky = 10 # maior que 15
         rdnoise = 20
         flux = 32000
         sigma = 3
@@ -304,8 +304,7 @@ class Test_SEP_Detection():
         assert_equal(len(sources), 1)
         assert_almost_equal(sources['x'][0], 64, decimal=0)
         assert_almost_equal(sources['y'][0], 64, decimal=0)
-        assert_greater(sky, 15)
-        #assert_less(sky, 999)
+
         
     def test_sepfind_strong_and_weak(self):
         size = (128, 128)
@@ -417,7 +416,7 @@ class Test_DAOFind_Detection():
     def test_daofind_one_star(self):
         size = (128, 128)
         pos = (64, 64)
-        sky = 800
+        sky = 70
         rdnoise = 20
         flux = 32000
         sigma = 3
@@ -458,15 +457,15 @@ class Test_DAOFind_Detection():
         #assert_almost_equal(sources['y'], posy, decimal=0)
 
     def test_daofind_four_stars_fixed_position(self):
-        size = (1100, 1100)
+        size = (1024, 1024)
         posx = (10, 120, 500, 1000)
         posy = (20, 200, 600, 800)
         sky = 800
         rdnoise = 20
-        flux = (15000, 1500, 1500, 35000)
+        flux = (15000, 3000, 5000, 35000)
         sigma = 3
         theta = 0
-        fwhm = 3
+        fwhm = 5
         im = gen_image(size, posx, posy, flux, sky, rdnoise,
                        model='gaussian', sigma=sigma, theta=theta)
 
@@ -476,8 +475,8 @@ class Test_DAOFind_Detection():
         assert_equal(len(im), size)
         assert_equal(type(im), np.ndarray)
         assert_equal(len(sources), 4)
-        #assert_almost_equal(sources['x'], posx, decimal = 0)
-        #assert_almost_equal(sources['y'], posy, decimal = 0)
+        assert_almost_equal(sources['x'], posx, decimal = 0)
+        assert_almost_equal(sources['y'], posy, decimal = 0)
         
 
 
