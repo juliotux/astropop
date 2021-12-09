@@ -1,4 +1,4 @@
-name: coverage
+name: Coverage With Conda-Forge
 # Run a single test to determine and upload coverage.
 # Using conda to include astrometry
 
@@ -32,7 +32,8 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        conda install astropy numpy scipy astroquery scikit-image pytz pyyaml astroscrappy asctroalign sep reproject
+        conda install astropy numpy scipy astroquery scikit-image pytz pyyaml astroscrappy astroalign sep reproject
+        conda install pytest pytest-astropy pytest-remotedata flaky
     - name: Print versions
       run: |
         conda info
