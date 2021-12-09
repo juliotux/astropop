@@ -12,7 +12,7 @@ on:
 
 jobs:
   tests:
-    name: ${{ matrix.toxenv }})
+    name: ${{ matrix.toxenv }}
     runs-on: ubuntu-latest
     if: "!(contains(github.event.head_commit.message, '[skip ci]') || contains(github.event.head_commit.message, '[ci skip]'))"
     strategy:
