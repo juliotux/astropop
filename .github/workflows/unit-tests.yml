@@ -29,35 +29,35 @@ jobs:
 
           - name: Python 3.7 with old deps
             python: '3.7'
-            toxenv: py37-test-astropyold-numpyold
+            toxenv: py37-test-olddeps
 
           - name: Python 3.7 with lts deps
             python: '3.7'
-            toxenv: py37-test-astropylts-numpylts
+            toxenv: py37-test-ltsdeps
 
           - name: Python 3.7 with astrometry (stable)
             python: '3.7'
-            toxenv: py37-test-numpystable-astropystable
+            toxenv: py37-test-stabledeps
 
           - name: Python 3.8 with lts deps
             python: '3.8'
-            toxenv: py38-test-astropylts-numpylts
+            toxenv: py38-test-ltsdeps
 
           - name: Python 3.8 with stable deps
             python: '3.8'
-            toxenv: py38-test-astropystable-numpystable
+            toxenv: py38-test-stabledeps
 
           - name: Python 3.9 with lts deps
             python: '3.9'
-            toxenv: py39-test-astropylts-numpylts-cat
+            toxenv: py39-test-ltsdeps-cat
 
           - name: Python 3.9 with stable deps
             python: '3.9'
-            toxenv: py39-test-astropystable-numpystable-cat
+            toxenv: py39-test-stabledeps-cat
 
           - name: Python 3.10 with stable deps
             python: '3.10'
-            toxenv: py310-test-astropystable-numpystable
+            toxenv: py310-test-stabledeps
 
           #- name: Code style checks
           #  python: 3.8
