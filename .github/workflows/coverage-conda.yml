@@ -36,14 +36,17 @@ jobs:
         conda install -y -q pytest pytest-astropy pytest-remotedata flaky
     - name: Print versions
       run: |
+        conda activate
         conda info
         conda list
     - name: Install astropop
       run: |
+        conda activate
         python setup.py build
-        pip install -U .
+        pip install -U --no-deps .
     - name: Run Pytest and generate coverage
       run: |
+        conda activate
         pytest --pyargs ./tests ./docs --remote-data --cov astropop --cov-config=./setup.cfg
         coverage xml -o ./coverage.xml
     - name: Upload coverage to Codecov
