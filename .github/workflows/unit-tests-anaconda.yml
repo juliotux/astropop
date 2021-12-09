@@ -18,18 +18,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: Python 3.10 with astrometry and coverage
-            python-version: 3.10
-            toxenv: py310-test-numpystable-astropystable-cov-ast-cat
-            coverage: true
-
           - name: Documentation build
             python-version: 3.10
             toxenv: build_docs
 
           - name: Python 3.10 with devdeps and online catalogs
             python-version: 3.10
-            toxenv: py310-test-devdeps-cat-ast
+            toxenv: py310-test-devdeps-cat
 
           - name: Python 3.7 with old deps and online catalogs
             python-version: 3.7
@@ -63,7 +58,7 @@ jobs:
     - uses: actions/checkout@v2
       with:
         fetch-depth: 0
-    - run: python -m pip install --upgrade tox tox-conda
+    - run: python -m pip install --upgrade tox
     - uses: conda-incubator/setup-miniconda@v2
       with:
         auto-activate-base: false
