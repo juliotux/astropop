@@ -19,35 +19,35 @@ jobs:
       matrix:
         include:
           - name: Documentation build
-            python: 3.10
+            python: '3.10'
             toxenv: build_docs
 
           - name: Python 3.10 with devdeps and online catalogs
-            python: 3.10
+            python: '3.10'
             toxenv: py310-test-devdeps-cat
 
           - name: Python 3.7 with old deps and online catalogs
-            python: 3.7
+            python: '3.7'
             toxenv: py37-test-astropylts-numpylts-cat
 
           - name: Python 3.7 with astrometry (stable)
-            python: 3.7
+            python: '3.7'
             toxenv: py37-test-numpystable-astropystable
 
           - name: Python 3.8 with lts deps
-            python: 3.8
+            python: '3.8'
             toxenv: py38-test-astropylts-numpylts
 
           - name: Python 3.8 with stable deps
-            python: 3.8
+            python: '3.8'
             toxenv: py38-test-astropystable-numpystable
 
           - name: Python 3.9 with stable deps
-            python: 3.9
+            python: '3.9'
             toxenv: py39-test-astropystable-numpystable
 
           - name: Python 3.10 with stable deps
-            python: 3.10
+            python: '3.10'
             toxenv: py310-test-astropystable-numpystable
 
           #- name: Code style checks
