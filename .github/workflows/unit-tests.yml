@@ -1,4 +1,5 @@
 name: Unit Tests
+# Not running coverage on this workflow, unit tests only
 
 on:
   pull_request:
@@ -11,7 +12,7 @@ on:
 
 jobs:
   tests:
-    name: ${{ matrix.name }} (${{ matrix.os }}, ${{ matrix.toxenv }})
+    name: ${{ matrix.toxenv }})
     runs-on: ubuntu-latest
     if: "!(contains(github.event.head_commit.message, '[skip ci]') || contains(github.event.head_commit.message, '[ci skip]'))"
     strategy:
@@ -58,16 +59,22 @@ jobs:
     - uses: actions/checkout@v2
       with:
         fetch-depth: 0
-    - run: python -m pip install --upgrade tox
+    - name: Set up Python ${{ matrix.python }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python }}
+    - name: Install base dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install tox
+    - name: Print Python, pip, setuptools, and tox versions
+      run: |
+        python -c "import sys; print(f'Python {sys.version}')"
+        python -c "import pip; print(f'pip {pip.__version__}')"
+        python -c "import setuptools; print(f'setuptools {setuptools.__version__}')"
+        python -c "import tox; print(f'tox {tox.__version__}')"
     - name: Install graphviz dependency
       if: "endsWith(matrix.toxenv, 'build_docs')"
       run: sudo apt-get -y install graphviz
     - name: Run tests
-      if: "! matrix.coverage"
       run: tox -v -e ${{ matrix.toxenv }}
-    - name: Upload coverage to codecov
-      if: "matrix.coverage"
-      run: |
-        tox -v -e ${{ matrix.toxenv }} -- --cov-report=xml:${{ github.workspace }}/coverage.xml
-        pip install codecov
-        codecov
