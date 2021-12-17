@@ -1,26 +1,17 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
 import pytest
-import sep
 import numpy as np
-import photutils
 
 from astropop.photometry import (background, sepfind, daofind, starfind,
                                  calc_fwhm, recenter_sources)
 from astropop.photometry.detection import gen_filter_kernel
-from astropop.testing import (assert_almost_equal, assert_equal, assert_true, 
+from astropop.testing import (assert_almost_equal, assert_equal, assert_true,
                               assert_greater, assert_less)
 from astropop.math.moffat import moffat_2d
 from astropop.math.gaussian import gaussian_2d
 from astropop.py_utils import check_number
 from astropy.utils import NumpyRNGContext
-from photutils.datasets import make_100gaussians_image
-from photutils.segmentation import detect_threshold
-from astropy.convolution import Gaussian2DKernel
-from astropy.stats import gaussian_fwhm_to_sigma
-from photutils.segmentation import detect_sources
-
-
 
 
 def gen_bkg(size, level, rdnoise, rng_seed=123, dtype='f8'):
@@ -97,7 +88,11 @@ def gen_image(size, x, y, flux, sky, rdnoise, model='gaussian', **kwargs):
         theta = kwargs.pop('theta', 0)
         im += gen_stars_gaussian(size, x, y, flux, sigma, theta)
 
-    im = np.random.poisson(im)
+    # prevent negative number error
+    negatives = np.where(im < 0)
+    im = np.random.poisson(np.absolute(im))
+    # restore the negatives
+    im[negatives] = -im[negatives]
     return im
 
 
@@ -143,7 +138,30 @@ class Test_Background():
 
         assert_equal(type(global_bkg), float)
         assert_equal(type(global_rms), float)
-        assert_almost_equal(global_bkg, 800, decimal=0)
+        assert_almost_equal(global_bkg, level, decimal=0)
+        assert_almost_equal(global_rms, rdnoise, decimal=0)
+
+        assert_equal(bkg.shape, size)
+        assert_equal(rms.shape, size)
+        assert_almost_equal(bkg, np.ones(size)*level, decimal=0)
+        assert_almost_equal(rms, np.ones(size)*rdnoise, decimal=0)
+
+    def test_background_simple_negative_sky(self):
+        size = (2048, 2048)
+        level = -100
+        rdnoise = 20
+        image_test = gen_bkg(size, level, rdnoise)
+
+        box_size = 64
+        filter_size = 3
+        global_bkg, global_rms = background(image_test, box_size, filter_size,
+                                            mask=None, global_bkg=True)
+        bkg, rms = background(image_test, box_size, filter_size,
+                              mask=None, global_bkg=False)
+
+        assert_equal(type(global_bkg), float)
+        assert_equal(type(global_rms), float)
+        assert_almost_equal(global_bkg, level, decimal=0)
         assert_almost_equal(global_rms, rdnoise, decimal=0)
 
         assert_equal(bkg.shape, size)
@@ -286,10 +304,18 @@ class Test_Background():
 
 class Test_SEP_Detection():
     # segmentation detection. Must detect all shapes of sources
+
+    def resort_sources(self, x, y, f):
+        """Random sources are random. We must resort to compare."""
+        # For SEP, resort using x order
+        order = np.argsort(y)
+        return x[order], y[order], f[order]
+
     def test_sepfind_one_star(self):
         size = (128, 128)
         pos = (64, 64)
         sky = 10 # maior que 15
+        sky = 800
         rdnoise = 20
         flux = 32000
         sigma = 3
@@ -299,13 +325,29 @@ class Test_SEP_Detection():
 
         sources = sepfind(im, 10, sky, rdnoise)
 
-        assert_equal(len(im), size)
-        assert_equal(type(im), np.ndarray)
+        assert_equal(len(sources), 1)
+        assert_almost_equal(sources['x'][0], 64, decimal=0)
+        assert_almost_equal(sources['y'][0], 64, decimal=0)
+
+    def test_sepfind_negative_sky(self):
+        size = (128, 128)
+        pos = (64, 64)
+        sky = 0
+        rdnoise = 20
+        flux = 32000
+        sigma = 3
+        theta = 0
+        im = gen_image(size, [pos[0]], [pos[1]], [flux], sky, rdnoise,
+                       model='gaussian', sigma=sigma, theta=theta)
+
+        sources = sepfind(im, 10, sky, rdnoise)
+
         assert_equal(len(sources), 1)
         assert_almost_equal(sources['x'][0], 64, decimal=0)
         assert_almost_equal(sources['y'][0], 64, decimal=0)
 
         
+
     def test_sepfind_strong_and_weak(self):
         size = (128, 128)
         posx = (60, 90)
@@ -320,14 +362,9 @@ class Test_SEP_Detection():
 
         sources = sepfind(im, 3, sky, rdnoise)
 
-        assert_equal(len(im), size)
-        assert_equal(type(im), np.ndarray)
         assert_equal(len(sources), 2)
         assert_almost_equal(sources['x'], posx, decimal=0)
         assert_almost_equal(sources['y'], posy, decimal=0)
-        assert_almost_equal(sky, 800, decimal=1)
-        assert_almost_equal(rdnoise, 20, decimal=0)
-    
 
     def test_sepfind_four_stars_fixed_position(self):
         size = (1024, 1024)
@@ -343,43 +380,34 @@ class Test_SEP_Detection():
 
         sources = sepfind(im, 3, sky, rdnoise)
 
-        assert_equal(len(im), size)
-        assert_equal(type(im), np.ndarray)
         assert_equal(len(sources), 4)
-        assert_almost_equal(sources['x'], posx, decimal = 0)
-        assert_almost_equal(sources['y'], posy, decimal = 0)
-        assert_almost_equal(sky, 800, decimal=1)
-        assert_almost_equal(rdnoise, 20, decimal=0)
+        assert_almost_equal(sources['x'], posx, decimal=0)
+        assert_almost_equal(sources['y'], posy, decimal=0)
 
     def test_sepfind_multiple_stars(self):
         size = (1024, 1024)
         number = 15
-        low = 500
-        high = 15000
+        low = 2000
+        high = 30000
         sky = 800
         rdnoise = 20
         sigma = 3
         theta = 0
-       
-        x, y, f = gen_position_flux(size, number, low, high, rng_seed=123)
+
+        x, y, f = gen_position_flux(size, number, low, high, rng_seed=456)
         im = gen_image(size, x, y, f, sky, rdnoise,
                        model='gaussian', sigma=sigma, theta=theta)
 
-        sources = sepfind(im, 20, sky, rdnoise)
+        sources = sepfind(im, 5, sky, rdnoise)
 
-        assert_equal(len(im), size)
-        assert_equal(type(im), np.ndarray)
-        assert_almost_equal(len(sources), 13, decimal=2) 
-        assert_almost_equal(sky, 800, decimal=1)
-        assert_almost_equal(rdnoise, 20, decimal=0)
-       
-        #assert_almost_equal(sources['x'], x, decimal=2)
-        #assert_almost_equal(sources['y'], y, decimal=2)
+        x, y, f = self.resort_sources(x, y, f)
+
+        assert_equal(len(sources), number)
+        assert_almost_equal(sources['x'], x, decimal=0)
+        assert_almost_equal(sources['y'], y, decimal=0)
 
     def test_sepfind_segmentation_map(self):
-        sigma = 3.0 * gaussian_fwhm_to_sigma  # FWHM = 3.
-        kernel = Gaussian2DKernel(sigma, x_size=3, y_size=3)
-        kernel.normalize()
+        sigma = 3.0
         sky = 800
         rdnoise = 20
         size = (1024, 1024)
@@ -387,32 +415,36 @@ class Test_SEP_Detection():
         low = 500
         high = 15000
         theta = 0
-       
+
         x, y, f = gen_position_flux(size, number, low, high, rng_seed=123)
         im = gen_image(size, x, y, f, sky, rdnoise,
                        model='gaussian', sigma=sigma, theta=theta)
-        
+
         bkg, rms = background(im, 64, 3,
                               mask=None, global_bkg=False)
 
-        sources, segmap = sepfind(im, 20, sky, rdnoise, segmentation_map=True)
+        sources, segmap = sepfind(im, 3, sky, rdnoise, segmentation_map=True)
 
-        assert_equal(len(im), size)
         assert_equal(len(sources), number)
         assert_equal(len(segmap), size)
-        
-        assert_equal(type(im), np.ndarray)
+
         assert_equal(type(segmap), np.ndarray)
         assert_equal(type(bkg), np.ndarray)
         assert_equal(type(rms), np.ndarray)
 
-        #assert_almost_equal(sources['x'], x, decimal = 0)
-        #assert_almost_equal(sources['y'], y, decimal = 0)
+        assert_almost_equal(sources['x'], x, decimal = 0)
+        assert_almost_equal(sources['y'], y, decimal = 0)
 
 
-#@pytest.mark.skip
 class Test_DAOFind_Detection():
     # DAOFind detection. Only round unsturaded stars
+
+    def resort_sources(self, x, y, f):
+        """Random sources are random. We must resort to compare."""
+        # For SEP, resort using x order
+        order = np.argsort(y)
+        return x[order], y[order], f[order]
+        
     def test_daofind_one_star(self):
         size = (128, 128)
         pos = (64, 64)
@@ -422,25 +454,24 @@ class Test_DAOFind_Detection():
         sigma = 3
         theta = 0
         fwhm = 3
-        
+
         im = gen_image(size, [pos[0]], [pos[1]], [flux], sky, rdnoise,
                        model='gaussian', sigma=sigma, theta=theta)
 
         sources = daofind(im, rdnoise, sky, 10, fwhm, mask=None,
-            sharp_limit=(0.2, 1.0), round_limit=(-1.0, 1.0))
+                          sharp_limit=(0.2, 1.0), round_limit=(-1.0, 1.0))
 
         assert_equal(len(sources), 1)
         assert_almost_equal(sources['x'][0], 64, decimal=1)
         assert_almost_equal(sources['y'][0], 64, decimal=1)
-        
 
     def test_daofind_strong_and_weak(self):
         size = (512, 512)
-        posx = (60, 90)
-        posy = (20, 90)
+        posx = (60, 400)
+        posy = (100, 300)
         sky = 800
         rdnoise = 20
-        flux = (32000, 600)
+        flux = (32000, 16000)
         sigma = 3
         theta = 0
         fwhm = 3
@@ -448,13 +479,11 @@ class Test_DAOFind_Detection():
                        model='gaussian', sigma=sigma, theta=theta)
 
         sources = daofind(im, rdnoise, sky, 10, fwhm, mask=None,
-            sharp_limit=(0.2, 1.0), round_limit=(-1.0, 1.0))
+                          sharp_limit=(0.2, 1.0), round_limit=(-1.0, 1.0))
 
-        assert_equal(len(im), size)
-        assert_equal(type(im), np.ndarray)
         assert_equal(len(sources), 2)
-        #assert_almost_equal(sources['x'], posx, decimal=2)
-        #assert_almost_equal(sources['y'], posy, decimal=0)
+        assert_almost_equal(sources['x'], posx, decimal=2)
+        assert_almost_equal(sources['y'], posy, decimal=0)
 
     def test_daofind_four_stars_fixed_position(self):
         size = (1024, 1024)
@@ -470,18 +499,36 @@ class Test_DAOFind_Detection():
                        model='gaussian', sigma=sigma, theta=theta)
 
         sources = daofind(im, rdnoise, sky, 10, fwhm, mask=None,
-            sharp_limit=(0.2, 1.0), round_limit=(-1.0, 1.0))
+                          sharp_limit=(0.2, 1.0), round_limit=(-1.0, 1.0))
 
-        assert_equal(len(im), size)
-        assert_equal(type(im), np.ndarray)
         assert_equal(len(sources), 4)
         assert_almost_equal(sources['x'], posx, decimal = 0)
         assert_almost_equal(sources['y'], posy, decimal = 0)
-        
 
 
     def test_daofind_multiple_stars(self):
-        pass
+        size = (1024, 1024)
+        number = 15
+        low = 2000
+        high = 30000
+        sky = 800
+        rdnoise = 20
+        sigma = 3
+        theta = 0
+        fwhm = 5
+        x, y, f = gen_position_flux(size, number, low, high, rng_seed=456)
+        im = gen_image(size, x, y, f, sky, rdnoise,
+                       model='gaussian', sigma=sigma, theta=theta)
+
+        sources = daofind(im, rdnoise, sky, 10, fwhm, mask=None,
+                          sharp_limit=(0.2, 1.0), round_limit=(-1.0, 1.0))
+
+
+        x, y, f = self.resort_sources(x, y, f)
+
+        assert_equal(len(sources), number)
+        assert_almost_equal(sources['x'], x, decimal=0)
+        assert_almost_equal(sources['y'], y, decimal=0)
 
     def test_daofind_reject_sharpness_roundness(self):
         pass

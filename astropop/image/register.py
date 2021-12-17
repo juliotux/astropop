@@ -1,6 +1,6 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
-from skimage.feature import register_translation
+from skimage.registration import phase_cross_correlation
 from skimage import transform
 # from scipy.ndimage import fourier_shift
 import numpy as np
@@ -50,8 +50,8 @@ def create_fft_shift_list(image_list):
     """
     shifts = [(0.0, 0.0)]*len(image_list)
     for i in range(len(image_list)-1):
-        shifts[i+1], _, _ = register_translation(image_list[0].data,
-                                                 image_list[i+1].data)
+        shifts[i+1], _, _ = phase_cross_correlation(image_list[0].data,
+                                                    image_list[i+1].data)
 
     return shifts
 
