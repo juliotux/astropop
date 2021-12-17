@@ -72,10 +72,35 @@ def background(data, box_size=64, filter_size=3, mask=None,
         return bkg.back(), bkg.rms()
 
 
-def sepfind(data, snr, background, noise, recenter=False,
+def sepfind(data, threshold, background, noise, recenter=False,
             mask=None, fwhm=None, filter_kernel=3,
             **sep_kwargs):
     """Find sources using SExtractor segmentation algorithm.
+
+    Parameters
+    ----------
+    data: array_like
+        2D array containing the image to extract the source.
+    threshold: `int`
+    	Minimum signal noise desired. 
+    background: `int`
+    	Background estimation.
+    noise: `int`
+    	Root-mean-square at each point.
+    recenter: `bool` (optional)
+    	Centers the image again.
+    	Default: `False`
+    mask: array_like (optional)
+        Boolean mask where 1 pixels are masked out in the background 
+        calculation.
+        Default: `None`
+    fwhm: `int` (optional)
+    	Full width at half maximum, fwhm = 2.35*sigma
+    	Default: `None`
+    filter_kernel: `int` (optional)
+    	Combined filter, which can provide optimal signal-to-noise 
+    	detection for objects with some known shape 
+    	Default: `3`
 
     sep_kwargs can be any kwargs to be passed to sep.extract function.
     """
@@ -91,7 +116,7 @@ def sepfind(data, snr, background, noise, recenter=False,
     if 'minarea' not in sep_kwargs.keys() and fwhm is not None:
         sep_kwargs['minarea'] = int((3.14*fwhm**2)/4)
 
-    sources = sep.extract(d-background, snr, err=noise, mask=mask,
+    sources = sep.extract(d-background, threshold, err=noise, mask=mask,
                           **sep_kwargs)
 
     if sep_kwargs.get('segmentation_map', False):
@@ -101,16 +126,39 @@ def sepfind(data, snr, background, noise, recenter=False,
         return Table(sources)
 
 
-def daofind(data, snr, background, noise, fwhm, mask=None,
+def daofind(data, threshold, background, noise, fwhm, mask=None,
             sharp_limit=(0.2, 1.0), round_limit=(-1.0, 1.0)):
     """Find sources using DAOfind algorithm.
+
+    Parameters
+    ----------
+    data: array_like
+        2D array containing the image to extract the source.
+    threshold: `int`
+    	Minimum signal noise desired. 
+    background: `int`
+    	Background estimation.
+    noise: `int`
+    	Root-mean-square at each point.
+    fwhm: `int` 
+    	Full width at half maximum: to be used in the convolve filter.
+    mask: array_like (optional)
+        Boolean mask where 1 pixels are masked out in the background
+        calculation.
+        Default: `None`
+    sharp_limit: array_like (optional)
+    	Low and high cutoff for the sharpness statistic.
+    	Default: (0.2, 1.0)
+    round_limit : array_like (optional)
+    	Low and high cutoff for the roundness statistic.
+    	Default: (-1.0,1.0)
 
     Translated from IDL Astro package by D. Jones. Original function available
     at PythonPhot package. https://github.com/djones1040/PythonPhot
     The function recieved some improvements to work better
     """
-    # Compute hmin based on snr, background and noise
-    hmin = np.median(snr*noise)
+    # Compute hmin based on threshold, background and noise
+    hmin = np.median(threshold*noise)
 
     image = data.astype(np.float64) - background
     maxbox = 13  # Maximum size of convolution box in pixels
@@ -349,17 +397,46 @@ def daofind(data, snr, background, noise, fwhm, mask=None,
     return t
 
 
-def starfind(data, snr, background, noise, fwhm, mask=None, box_size=35,
+def starfind(data, threshold, background, noise, fwhm, mask=None, box_size=35,
              sharp_limit=(0.2, 1.0), round_limit=(-1.0, 1.0)):
-    """Find stars using daofind AND sepfind."""
+    """Find stars using daofind AND sepfind.
+    
+     Parameters
+    ----------
+    data: array_like
+        2D array containing the image to extract the source.
+    threshold: `int`
+    	Minimum signal noise desired. 
+    background: `int`
+    	Background estimation.
+    noise: `int`
+    	Root-mean-square at each point.
+    fwhm: `int` 
+    	Full width at half maximum: to be used in the convolve filter.
+    mask: array_like (optional)
+        Boolean mask where 1 pixels are masked out in the background calculation.
+        Default: `None`
+    box_size: `int` (optional)
+        Size of background boxes in pixels.
+        Default: 35
+     sharp_limit: array_like (optional)
+    	Low and high cutoff for the sharpness statistic.
+    	Default: (0.2, 1.0)
+    round_limit : array_like (optional)
+    	Low and high cutoff for the roundness statistic.
+    	Default: (-1.0,1.0)
+    
+    
+    
+    """
     # First, we identify the sources with sepfind (fwhm independent)
-    sources = sepfind(data, snr, background, noise, mask=mask,
+    sources = sepfind(data, threshold, background, noise, mask=mask,
                       fwhm=fwhm)
     # We compute the median FWHM and perform a optimum daofind extraction
     fwhm = calc_fwhm(data, sources['x'], sources['y'], box_size=box_size,
                      model='gaussian', min_fwhm=fwhm) or fwhm
 
-    sources = daofind(data, snr, background, noise, fwhm, mask=mask,
+    sources = daofind(data, threshold, background, noise, fwhm, mask=mask,
                       sharp_limit=sharp_limit, round_limit=round_limit)
     sources.meta['astropop fwhm'] = fwhm
     return sources
