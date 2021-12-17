@@ -1,0 +1,90 @@
+name: Unit Tests
+# Not running coverage on this workflow, unit tests only
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+    tags:
+  workflow_dispatch:
+  schedule:
+    - cron: 11 2 * * 0
+
+jobs:
+  tests:
+    name: ${{ matrix.toxenv }}
+    runs-on: ubuntu-latest
+    if: "!(contains(github.event.head_commit.message, '[skip ci]') || contains(github.event.head_commit.message, '[ci skip]'))"
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Documentation build
+            python: '3.9'
+            toxenv: build_docs
+
+          - name: Python 3.10 with devdeps and online catalogs
+            python: '3.10'
+            toxenv: py310-test-devdeps-cat
+
+          - name: Python 3.7 with old deps
+            python: '3.7'
+            toxenv: py37-test-olddeps
+
+          - name: Python 3.7 with lts deps
+            python: '3.7'
+            toxenv: py37-test-ltsdeps
+
+          - name: Python 3.7 with astrometry (stable)
+            python: '3.7'
+            toxenv: py37-test-stabledeps
+
+          - name: Python 3.8 with lts deps
+            python: '3.8'
+            toxenv: py38-test-ltsdeps
+
+          - name: Python 3.8 with stable deps
+            python: '3.8'
+            toxenv: py38-test-stabledeps
+
+          - name: Python 3.9 with lts deps
+            python: '3.9'
+            toxenv: py39-test-ltsdeps-cat
+
+          - name: Python 3.9 with stable deps
+            python: '3.9'
+            toxenv: py39-test-stabledeps-cat
+
+          - name: Python 3.10 with stable deps
+            python: '3.10'
+            toxenv: py310-test-stabledeps
+
+          #- name: Code style checks
+          #  python: 3.8
+          #  toxenv: codestyle
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: Set up Python ${{ matrix.python }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python }}
+    - name: Install base dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install tox
+    - name: Print Python, pip, setuptools, and tox versions
+      run: |
+        python -c "import sys; print(f'Python {sys.version}')"
+        python -c "import pip; print(f'pip {pip.__version__}')"
+        python -c "import setuptools; print(f'setuptools {setuptools.__version__}')"
+        python -c "import tox; print(f'tox {tox.__version__}')"
+    - name: Install graphviz dependency
+      if: "endsWith(matrix.toxenv, 'build_docs')"
+      run: sudo apt-get -y install graphviz
+    - name: Print package versions
+      run: pip list
+    - name: Run tests
+      run: tox -v -e ${{ matrix.toxenv }}
