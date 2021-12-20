@@ -531,7 +531,25 @@ class Test_DAOFind_Detection():
         assert_almost_equal(sources['y'], y, decimal=0)
 
     def test_daofind_reject_sharpness_roundness(self):
-        pass
+        size = (128, 128)
+        pos = (64, 64)
+        sky = 70
+        rdnoise = 20
+        flux = 32000
+        sigma = (8,16)
+        theta = 0
+        fwhm = 3
+
+        im = gen_image(size, [pos[0]], [pos[1]], [flux], sky, rdnoise,
+                       model='gaussian', sigma=sigma, theta=theta)
+
+        sources = daofind(im, rdnoise, sky, 10, fwhm, mask=None,
+                          sharp_limit=(0.2, 1.0), round_limit=(-1.0, 1.0))
+
+
+        assert_equal(len(sources), 1)
+        assert_almost_equal(sources['x'][0], 64, decimal=2)
+        assert_almost_equal(sources['y'][0], 64, decimal=2)
 
 @pytest.mark.skip
 class Test_StarFind():
@@ -543,10 +561,47 @@ class Test_StarFind():
         pass
 
     def test_starfind_one_star(self):
-        pass
+        size = (128, 128)
+        pos = (64, 64)
+        sky = 70
+        rdnoise = 20
+        flux = 32000
+        sigma = (8,16)
+        theta = 0
+        fwhm = 3
+
+        im = gen_image(size, [pos[0]], [pos[1]], [flux], sky, rdnoise,
+                       model='gaussian', sigma=sigma, theta=theta)
+
+        sources = starfind(im, rdnoise, sky, 10, fwhm, mask=None,
+                          boxsize=35, sharp_limit=(0.2, 1.0), 
+                          round_limit=(-1.0, 1.0))
+
+
+        assert_equal(len(sources), 1)
+        assert_almost_equal(sources['x'][0], 64, decimal=2)
+        assert_almost_equal(sources['y'][0], 64, decimal=2)
 
     def test_starfind_strong_weak(self):
-        pass
+        size = (512, 512)
+        posx = (60, 400)
+        posy = (100, 300)
+        sky = 800
+        rdnoise = 20
+        flux = (32000, 16000)
+        sigma = 3
+        theta = 0
+        fwhm = 3
+        im = gen_image(size, posx, posy, flux, sky, rdnoise,
+                       model='gaussian', sigma=sigma, theta=theta)
+
+        sources = starfind(im, rdnoise, sky, 10, fwhm, mask=None, 
+                          boxsize=35, sharp_limit=(0.2, 1.0), 
+                          round_limit=(-1.0, 1.0))
+
+        assert_equal(len(sources), 2)
+        assert_almost_equal(sources['x'], posx, decimal=2)
+        assert_almost_equal(sources['y'], posy, decimal=0)
 
     def test_starfind_blind_fwhm(self):
         pass
