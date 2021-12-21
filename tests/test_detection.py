@@ -536,51 +536,122 @@ class Test_DAOFind_Detection():
         sky = 70
         rdnoise = 20
         flux = 32000
-        sigma = (8,16)
-        theta = 0
+        sigma_x = (8,16,24,32,40,48,56,64)
+        sigma_y = (2,4,6,8,10,12,14,16)
+        theta_x = (0,15,30,45,60,90,120,150)
+        theta_y = (0.5,10.2,20.1,27,50,50.5,80.8,100)
         fwhm = 3
 
         im = gen_image(size, [pos[0]], [pos[1]], [flux], sky, rdnoise,
-                       model='gaussian', sigma=sigma, theta=theta)
+                       model='gaussian', sigma_x=sigma_x, sigma_y=sigma_y,
+                        theta_x=theta_x, theta_y=theta_y)
 
         sources = daofind(im, rdnoise, sky, 10, fwhm, mask=None,
                           sharp_limit=(0.2, 1.0), round_limit=(-1.0, 1.0))
 
 
         assert_equal(len(sources), 1)
-        assert_almost_equal(sources['x'][0], 64, decimal=2)
-        assert_almost_equal(sources['y'][0], 64, decimal=2)
+        assert_almost_equal(sources['x'][0], 64, decimal=0)
+        assert_almost_equal(sources['y'][0], 64, decimal=0)
 
-@pytest.mark.skip
+
 class Test_StarFind():
     # Our combined iterative method
+
+    def resort_sources(self, x, y, f):
+        """Random sources are random. We must resort to compare."""
+        # For SEP, resort using x order
+        order = np.argsort(y)
+        return x[order], y[order], f[order]
+
     def test_starfind_calc_fwhm(self):
-        pass
-
-    def test_starfind_recenter_sources(self):
-        pass
-
-    def test_starfind_one_star(self):
-        size = (128, 128)
-        pos = (64, 64)
+        size = (512, 512)
+        number = 15
         sky = 70
         rdnoise = 20
-        flux = 32000
-        sigma = (8,16)
+        low = 120000
+        high = 320000
+        sigma = 5
         theta = 0
-        fwhm = 3
 
-        im = gen_image(size, [pos[0]], [pos[1]], [flux], sky, rdnoise,
+        x, y, f = gen_position_flux(size, number, low, high, rng_seed=456)
+
+        im = gen_image(size, x, y, f, sky, rdnoise,
                        model='gaussian', sigma=sigma, theta=theta)
 
+        
+        fwhm = calc_fwhm(im, x, y, box_size=25, model='gaussian', min_fwhm=3.0)
+
+        x, y, f = self.resort_sources(x, y, f)
+
         sources = starfind(im, rdnoise, sky, 10, fwhm, mask=None,
-                          boxsize=35, sharp_limit=(0.2, 1.0), 
+                          box_size=35, sharp_limit=(0.2, 1.0), 
+                          round_limit=(-1.0, 1.0))
+
+
+        assert_equal(len(sources), number)
+        assert_almost_equal(sources['x'], x, decimal=0)
+        assert_almost_equal(sources['y'], y, decimal=0)
+
+    def test_starfind_recenter_sources(self):
+        size = (128, 128)
+        number = 1
+        sky = 70
+        rdnoise = 20
+        low = 120000
+        high = 320000
+        sigma = 5
+        theta = 0
+        
+        x, y, f = gen_position_flux(size, number, low, high, rng_seed=456)
+
+        im = gen_image(size, x, y, f, sky, rdnoise,
+                       model='gaussian', sigma=sigma, theta=theta)
+
+        recenter = recenter_sources(im, x, y, box_size=25, model='gaussian')
+
+        fwhm = calc_fwhm(im, x, y, box_size=25, model='gaussian', min_fwhm=3.0)
+
+        x, y, f = self.resort_sources(x, y, f)
+
+        sources = starfind(im, rdnoise, sky, 10, fwhm, mask=None,
+                          box_size=35, sharp_limit=(0.2, 1.0), 
                           round_limit=(-1.0, 1.0))
 
 
         assert_equal(len(sources), 1)
-        assert_almost_equal(sources['x'][0], 64, decimal=2)
-        assert_almost_equal(sources['y'][0], 64, decimal=2)
+        assert_almost_equal(sources['x'], x, decimal=0)
+        assert_almost_equal(sources['y'], y, decimal=0)
+
+
+    def test_starfind_one_star(self):
+        size = (128, 128)
+        number = 1
+        sky = 70
+        rdnoise = 20
+        low = 120000
+        high = 320000
+        sigma = 5
+        theta = 0
+        
+        x, y, f = gen_position_flux(size, number, low, high, rng_seed=456)
+
+        im = gen_image(size, x, y, f, sky, rdnoise,
+                       model='gaussian', sigma=sigma, theta=theta)
+
+        
+        fwhm = calc_fwhm(im, x, y, box_size=25, model='gaussian', min_fwhm=3.0)
+
+        x, y, f = self.resort_sources(x, y, f)
+
+        sources = starfind(im, rdnoise, sky, 10, fwhm, mask=None,
+                          box_size=35, sharp_limit=(0.2, 1.0), 
+                          round_limit=(-1.0, 1.0))
+
+
+        assert_equal(len(sources), 1)
+        assert_almost_equal(sources['x'], x, decimal=0)
+        assert_almost_equal(sources['y'], y, decimal=0)
 
     def test_starfind_strong_weak(self):
         size = (512, 512)
@@ -604,7 +675,47 @@ class Test_StarFind():
         assert_almost_equal(sources['y'], posy, decimal=0)
 
     def test_starfind_blind_fwhm(self):
-        pass
+        size = (128, 128)
+        pos = (64, 64)
+        sky = 70
+        rdnoise = 20
+        flux = 32000
+        sigma = 3
+        theta = 0
+        
+
+        im = gen_image(size, [pos[0]], [pos[1]], [flux], sky, rdnoise,
+                       model='gaussian', sigma=sigma, theta=theta)
+
+        sources = starfind(im, rdnoise, sky, 10, mask=None,
+                          box_size=35, sharp_limit=(0.2, 1.0), 
+                          round_limit=(-1.0, 1.0))
+
+        assert_equal(len(sources), 1)
+        assert_almost_equal(sources['x'][0], 64, decimal=1)
+        assert_almost_equal(sources['y'][0], 64, decimal=1)
 
     def test_starfind_rejection(self):
-        pass
+        size = (128, 128)
+        pos = (64, 64)
+        sky = 70
+        rdnoise = 20
+        flux = 32000
+        sigma_x = (8,16,24,32,40,48,56,64)
+        sigma_y = (2,4,6,8,10,12,14,16)
+        theta_x = (0,15,30,45,60,90,120,150)
+        theta_y = (0.5,10.2,20.1,27,50,50.5,80.8,100)
+        fwhm = 3
+
+        im = gen_image(size, [pos[0]], [pos[1]], [flux], sky, rdnoise,
+                       model='gaussian', sigma_x=sigma_x, sigma_y=sigma_y,
+                        theta_x=theta_x, theta_y=theta_y)
+
+        sources = starfind(im, rdnoise, sky, 10, fwhm, mask=None,
+                          box_size=35, sharp_limit=(0.2, 1.0), 
+                          round_limit=(-1.0, 1.0))
+
+
+        assert_equal(len(sources), 1)
+        assert_almost_equal(sources['x'][0], 64, decimal=0)
+        assert_almost_equal(sources['y'][0], 64, decimal=0)
