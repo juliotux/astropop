@@ -82,11 +82,11 @@ def sepfind(data, threshold, background, noise, recenter=False,
     data: array_like
         2D array containing the image to extract the source.
     threshold: `int`
-    	Minimum signal noise desired. 
+        Minimum signal noise desired. 
     background: `int`
-    	Background estimation.
+        Background estimation.
     noise: `int`
-    	Root-mean-square at each point.
+        Root-mean-square at each point.
     recenter: `bool` (optional)
     	Centers the image again.
     	Default: `False`
@@ -401,7 +401,7 @@ def starfind(data, threshold, background, noise, fwhm, mask=None, box_size=35,
              sharp_limit=(0.2, 1.0), round_limit=(-1.0, 1.0)):
     """Find stars using daofind AND sepfind.
     
-     Parameters
+    Parameters
     ----------
     data: array_like
         2D array containing the image to extract the source.
@@ -411,23 +411,20 @@ def starfind(data, threshold, background, noise, fwhm, mask=None, box_size=35,
     	Background estimation.
     noise: `int`
     	Root-mean-square at each point.
-    fwhm: `int` 
+    fwhm: `float` 
     	Full width at half maximum: to be used in the convolve filter.
-    mask: array_like (optional)
+    mask: `bool` (optional)
         Boolean mask where 1 pixels are masked out in the background calculation.
         Default: `None`
     box_size: `int` (optional)
         Size of background boxes in pixels.
         Default: 35
-     sharp_limit: array_like (optional)
+    sharp_limit: array_like (optional)
     	Low and high cutoff for the sharpness statistic.
     	Default: (0.2, 1.0)
     round_limit : array_like (optional)
     	Low and high cutoff for the roundness statistic.
-    	Default: (-1.0,1.0)
-    
-    
-    
+    	Default: (-1.0,1.0)    
     """
     # First, we identify the sources with sepfind (fwhm independent)
     sources = sepfind(data, threshold, background, noise, mask=mask,
@@ -443,7 +440,23 @@ def starfind(data, threshold, background, noise, fwhm, mask=None, box_size=35,
 
 
 def sources_mask(shape, x, y, a, b, theta, mask=None, scale=1.0):
-    """Create a mask to cover all sources."""
+    """Create a mask to cover all sources.
+
+    Parameters
+    ----------
+    shape: int or tuple of ints
+    	Shape of the new array. 
+    x,y: array_like
+    	Center of ellipse(s).
+    a, b, theta: array_like (optional)
+    	Parameters defining the extent of the ellipe(s).
+    mask: numpy.ndarray (optional)
+    	An optional mask.
+    	Default: `None`
+    scale: array_like (optional)
+    	Scale factor of ellipse(s).
+    	Default: 1.0
+    """
     image = np.zeros(shape, dtype=bool)
     sep.mask_ellipse(image, x, y, a, b, theta, r=scale)
     if mask is not None:
@@ -453,6 +466,18 @@ def sources_mask(shape, x, y, a, b, theta, mask=None, scale=1.0):
 
 def _fwhm_loop(model, data, x, y, xc, yc):
     # FIXME: with curve fitting, gaussian model goes crazy
+    """
+    Parameters
+    ----------
+    model: `str`
+        Choose a Gaussian or Moffat model.
+    data: array_like
+        2D array containing the image to extract the source.
+    x, y: array_like
+    	x, y centroid position.    
+    xc, yc: array_like (optional)
+    	New positions for (x, y) values.
+    """
     if model == 'gaussian':
         model = gaussian_r
         mfwhm = gaussian_fwhm
@@ -473,7 +498,24 @@ def _fwhm_loop(model, data, x, y, xc, yc):
 
 
 def calc_fwhm(data, x, y, box_size=25, model='gaussian', min_fwhm=3.0):
-    """Calculate the median FWHM of the image with Gaussian or Moffat fit."""
+    """Calculate the median FWHM of the image with Gaussian or Moffat fit.
+    
+    Parameters
+    ----------
+    data: array_like
+        2D array containing the image to extract the source.
+    x, y: array_like
+    	x, y centroid position.
+    box_size: `int` (optional)
+        Size of background boxes in pixels.
+        Default: 25
+    model: `str`
+        Choose a Gaussian or Moffat model.
+        Default: `gausiann`
+    min_fwhm: float
+        Minimum value for FWHM.
+        Default: 3.0
+    """
     indices = np.indices(data.shape)
     rects = [trim_array(data, box_size, (xi, yi), indices=indices)
              for xi, yi in zip(x, y)]
@@ -487,6 +529,20 @@ def calc_fwhm(data, x, y, box_size=25, model='gaussian', min_fwhm=3.0):
 
 
 def _recenter_loop(fitter, model, data, x, y, xc, yc):
+    """
+    Parameters
+    ----------
+    fitter
+    	Fitter based on the Levenberg-Marquardt algorithm and least squares statistic. 
+    model: `str`
+        Choose a Gaussian or Moffat model.
+    data: array_like
+        2D array containing the image to extract the source.
+    x, y: array_like
+    	x, y centroid position.    
+    xc, yc: array_like (optional)
+    	New positions for (x, y) values. 
+    """
     if model == 'gaussian':
         model = PSFGaussian2D(x_0=xc, y_0=yc)
     elif model == 'moffat':
@@ -498,7 +554,21 @@ def _recenter_loop(fitter, model, data, x, y, xc, yc):
 
 
 def recenter_sources(data, x, y, box_size=25, model='gaussian'):
-    """Recenter teh sources using a PSF model."""
+    """Recenter teh sources using a PSF model.
+    
+    Parameters
+    ----------
+    data: array_like
+        2D array containing the image to extract the source.
+    x, y: array_like
+    	x, y centroid position. 
+    box_size: `int` (optional)
+        Size of background boxes in pixels.
+        Default: 25
+    model: `str`
+        Choose a Gaussian or Moffat model.
+        Default: `gausiann`
+    """
     indices = np.indices(data.shape)
     rects = [trim_array(data, box_size, (xi, yi), indices=indices)
              for xi, yi in zip(x, y)]
