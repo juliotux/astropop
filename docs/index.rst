@@ -5,21 +5,22 @@ Astropop Documentation
 .. warning::
     Documentation outdated. Do not use it. We are rewriting it!
 
-
-***************
-Developer Docs
-***************
-
-.. toctree::
-    :maxdepth: 1
-
-    dev/pixel_convention
+.. TODO::
+    Insert detailed install instructions here
 
 ***************
 For Users
 ***************
 
-Astropop has several useful modules, to make simple to implement your pipeline. The main modules are described at:
+For end users that just want to reduce their data using ASTROPOP, you can follow our reduction examples on this documentations:
+
+.. toctree::
+    :maxdepth: 1
+
+    examples/diy_reduction_script.ipynb
+
+
+API level documentation and technical details for each module you can find in specific documentation listed bellow.
 
 .. toctree::
     :maxdepth: 1
@@ -33,18 +34,22 @@ Astropop has several useful modules, to make simple to implement your pipeline. 
     catalogs
     physical
     testing
-
-The main astronomical processing tasks can be found in:
-
-.. toctree::
-    :maxdepth: 1
-
     imarith
     ccdprocessing
     registering
     photometry
     polarimetry
     astrometry
+
+
+***************
+Developer Docs
+***************
+
+.. toctree::
+    :maxdepth: 1
+
+    dev/pixel_convention
 
 ***************
 API
