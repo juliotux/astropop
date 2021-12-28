@@ -27,6 +27,10 @@ extensions = [
 napoleon_use_rtype = False
 napoleon_use_ivar = True
 
+nbsphinx_allow_errors = True
+nbsphinx_execute = 'never'
+nbsphinx_kernel_name = 'python3'
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 # The suffix of source filenames.

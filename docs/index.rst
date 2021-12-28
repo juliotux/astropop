@@ -17,7 +17,7 @@ For end users that just want to reduce their data using ASTROPOP, you can follow
 .. toctree::
     :maxdepth: 1
 
-    examples/diy_reduction_script.ipynb
+    ipynb/diy_reduction_script.ipynb
 
 
 API level documentation and technical details for each module you can find in specific documentation listed bellow.
