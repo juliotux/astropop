@@ -50,7 +50,7 @@ def list_fits_files(directory, fits_extensions=['.fts', '.fits', '.fit'],
     return files
 
 
-def gen_mask(table, **kwargs):
+def gen_mask(table, keywords):
     """Generate a mask to be applyed in the filtering."""
     if len(table) == 0:
         return []
@@ -58,7 +58,7 @@ def gen_mask(table, **kwargs):
     t = Table(table)
 
     mask = np.ones(len(t), dtype=bool)
-    for k, v in kwargs.items():
+    for k, v in keywords.items():
         if not check_iterable(v):
             v = [v]
         k = k.lower()
@@ -80,21 +80,17 @@ def row_to_header(row):
     return fits.Header(rdict)
 
 
-def filter_fg(filegroup, **kwargs):
+def filter_fg(filegroup, keywords):
     """Filter a FileGroup with fits keywords.
 
     Arguments:
-        **kwargs :
-            keywords to filter from fits header. Keywords with spaces,
-            dashes or other things not allowed in python arguments
-            can be put in a dict and be unpacked in the function.
-            Ex:
-            filtered(observer='Nobody', **{'space key' : 1.0})
+        keywords :
+            keywords to filter from fits header.
 
     Return:
         A new FileGroup instance with only filtered files.
     """
-    where = np.where(gen_mask(filegroup.summary, **kwargs))[0]
+    where = np.where(gen_mask(filegroup.summary, keywords))[0]
     files = np.array([filegroup.files[i] for i in where])
     if len(files) > 0:
         summ = Table(filegroup.summary[where])
@@ -113,7 +109,7 @@ def group_fg(filegroup, keywords):
 
     for i in range(len(keys)):
         fk = dict((k, keys[i][k]) for k in keys.colnames)
-        yield filter_fg(filegroup, **fk)
+        yield filter_fg(filegroup, fk)
 
 
 class FileGroup():
@@ -134,9 +130,9 @@ class FileGroup():
     def __len__(self):
         return len(self.files)
 
-    def filterd(self, **kwargs):
+    def filtered(self, keywords=None):
         """Create a new FileGroup with only filtered files."""
-        return filter_fg(self, **kwargs)
+        return filter_fg(self, keywords)
 
     def group_by(self, keywords):
         """Group the files into multiple file groups, according keywords."""
@@ -219,8 +215,7 @@ class FileManager():
 
     def __init__(self, ext=0, fits_extensions=['.fits', '.fts', '.fit', '.fz'],
                  compression=True):
-        """Handle and organize fits files in a simple way.
-        """
+        """Handle and organize fits files in a simple way."""
         self.ext = ext
         self.extensions = fits_extensions
         if compression:
@@ -232,9 +227,9 @@ class FileManager():
         """Group the files by a list of keywords in multiple FileGroups."""
         group_fg(filegroup, keywords)
 
-    def filtered(self, filegroup, **kwargs):
+    def filtered(self, filegroup, keywords):
         """Filter only files that match specific keywords."""
-        return filter_fg(filegroup, **kwargs)
+        return filter_fg(filegroup, keywords)
 
     def create_filegroup(self, path=None, files=None, ext=None, exclude=None):
         """Create a file group from a directory or specified files."""
