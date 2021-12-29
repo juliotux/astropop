@@ -3,22 +3,22 @@
 import os
 from astropy.io import fits
 from astropy.io.fits.hdu.base import _ValidHDU
-from astropy.table import Table, hstack
-from collections import OrderedDict
 import functools
 
-from .py_utils import check_iterable, process_list
 from .framedata import imhdus
 from .logger import logger
 
-__all__ = ['imhdus', 'check_header_keys', 'fits_yielder',
-           'headers_to_table']
+__all__ = ['imhdus', 'check_header_keys', 'fits_yielder']
 
 
-_supported_formats = [".fts", ".fit", ".fz", ".fits"]
-_compresses = [".gz", ".bz2", ".zip"]
-for k in _compresses:
-    _supported_formats.extend([i+k for i in _supported_formats])
+_fits_extensions = ['.fits', '.fts', '.fit', '.fz']
+_fits_compression = ['.gz', '.zip', '.bz2', '.Z']
+_fits_extensions_with_compress = _fits_extensions.copy()
+
+for k in _fits_compression:
+    _fits_extensions_with_compress.extend(
+        [i+k for i in _fits_extensions_with_compress]
+    )
 
 
 class IncompatibleHeadersError(ValueError):
@@ -40,7 +40,7 @@ def check_header_keys(image1, image2, keywords=None):
     if hasattr(image2, 'header'):
         header2 = image2.header
     elif hasattr(image2, 'meta'):
-        header2 = image2.header
+        header2 = image2.meta
 
     for i in keywords:
         if i in header1 and i in header2:
@@ -71,7 +71,7 @@ def fits_yielder(return_type, file_list, ext=0, append_to_name=None,
     append_to_name : str
         string to be appended to the file name when saving the new object
     save_to : str
-        path to save a copy of the files, with the modified object
+        path to save a copy of the files with the modified object
         (header, data, hdu)
     overwrite : bool
         If overwrite existing files.
@@ -146,57 +146,3 @@ def fits_yielder(return_type, file_list, ext=0, append_to_name=None,
             save_fname = os.path.join(save_to, basename)
 
             _save(i, save_fname, obj)
-
-
-def headers_to_table(headers, filenames=None, keywords=None, empty_value=None,
-                     lower_keywords=False):
-    """Read a bunch of headers and return a table with the values."""
-    # TODO: Refactor to better performance
-    hlist = []
-    actual = 0
-    for head in headers:
-        hlist.append(head)
-        actual += 1
-        logger.debug("Reading header %d", actual)
-
-    n = len(hlist)
-
-    if keywords is None or keywords == '*' or keywords == 'all':
-        keywords = []
-        logger.debug('Reading keywords.')
-        for head in hlist:
-            for k in head.keys():
-                if k not in keywords:
-                    keywords.append(k.lower() if lower_keywords else k)
-
-    # Clean history and comment keywords. file wont be copied
-    keywords = [k for k in keywords if k.lower() not in ('history', 'comment',
-                                                         '', 'file')]
-
-    headict = OrderedDict()
-    for k in keywords:
-        headict[k] = [empty_value]*n
-
-    for i in range(n):
-        logger.debug("Processing header %d from %d", i, n)
-        for key, val in hlist[i].items():
-            key = key.lower()
-            if key in keywords:
-                headict[key][i] = val
-
-    if n == 0:
-        if len(keywords) > 0:
-            t = Table(names=keywords)
-        else:
-            t = Table()
-    else:
-        t = Table(headict, masked=True)
-
-    if check_iterable(filenames):
-        c = Table()
-        c['file'] = process_list(os.path.basename, filenames)
-        t = hstack([c, t])
-
-    for k in keywords:
-        t[k].mask = [v is empty_value for v in headict[k]]
-    return t

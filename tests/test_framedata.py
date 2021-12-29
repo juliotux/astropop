@@ -265,7 +265,6 @@ class Test_CheckRead_FrameData():
             assert_equal(f.data.dtype, np.float32)
             assert_equal(f.uncertainty.dtype, np.float32)
 
-
     def test_check_framedata_fits_hdu(self):
         # meta is messed by fits
         data = _random_array.copy()
