@@ -12,6 +12,7 @@ from astropop.math.moffat import moffat_2d
 from astropop.math.gaussian import gaussian_2d
 from astropop.py_utils import check_number
 from astropy.utils import NumpyRNGContext
+from astropy.stats import gaussian_fwhm_to_sigma
 
 
 def gen_bkg(size, level, rdnoise, rng_seed=123, dtype='f8'):
@@ -206,7 +207,7 @@ class Test_Background():
     def test_background_variablelevel_cosmics(self):
         size = (1024, 1024)
         y_i, x_i = np.indices(size)
-        level = x_i*y_i/500 # level from 0 to 2000
+        level = x_i*y_i/500  # level from 0 to 2000
         rdnoise = 20
         image_test = gen_bkg(size, level, rdnoise)
 
@@ -276,7 +277,7 @@ class Test_Background():
         flux_high = 25000
         fwhm = 5
         y_i, x_i = np.indices(size)
-        level = x_i*y_i/500 # level from 0 to 2000
+        level = x_i*y_i/500  # level from 0 to 2000
         rdnoise = 20
         x, y, f = gen_position_flux(size, stars_n, flux_low, flux_high)
         image_test = gen_bkg(size, level, rdnoise)
@@ -314,16 +315,17 @@ class Test_SEP_Detection():
     def test_sepfind_one_star(self):
         size = (128, 128)
         pos = (64, 64)
-        sky = 10 # maior que 15
+        sky = 20
         sky = 800
         rdnoise = 20
         flux = 32000
         sigma = 3
         theta = 0
+        threshold = 10
         im = gen_image(size, [pos[0]], [pos[1]], [flux], sky, rdnoise,
                        model='gaussian', sigma=sigma, theta=theta)
 
-        sources = sepfind(im, 10, sky, rdnoise)
+        sources = sepfind(im, threshold, sky, rdnoise)
 
         assert_equal(len(sources), 1)
         assert_almost_equal(sources['x'][0], 64, decimal=0)
@@ -337,16 +339,16 @@ class Test_SEP_Detection():
         flux = 32000
         sigma = 3
         theta = 0
+        threshold = 10
+
         im = gen_image(size, [pos[0]], [pos[1]], [flux], sky, rdnoise,
                        model='gaussian', sigma=sigma, theta=theta)
 
-        sources = sepfind(im, 10, sky, rdnoise)
+        sources = sepfind(im, threshold, sky, rdnoise)
 
         assert_equal(len(sources), 1)
         assert_almost_equal(sources['x'][0], 64, decimal=0)
         assert_almost_equal(sources['y'][0], 64, decimal=0)
-
-        
 
     def test_sepfind_strong_and_weak(self):
         size = (128, 128)
@@ -432,8 +434,8 @@ class Test_SEP_Detection():
         assert_equal(type(bkg), np.ndarray)
         assert_equal(type(rms), np.ndarray)
 
-        assert_almost_equal(sources['x'], x, decimal = 0)
-        assert_almost_equal(sources['y'], y, decimal = 0)
+        assert_almost_equal(sources['x'], x, decimal=0)
+        assert_almost_equal(sources['y'], y, decimal=0)
 
 
 class Test_DAOFind_Detection():
@@ -444,16 +446,16 @@ class Test_DAOFind_Detection():
         # For SEP, resort using x order
         order = np.argsort(y)
         return x[order], y[order], f[order]
-        
+
     def test_daofind_one_star(self):
         size = (128, 128)
         pos = (64, 64)
         sky = 70
         rdnoise = 20
         flux = 32000
-        sigma = 3
         theta = 0
         fwhm = 3
+        sigma = fwhm*gaussian_fwhm_to_sigma
 
         im = gen_image(size, [pos[0]], [pos[1]], [flux], sky, rdnoise,
                        model='gaussian', sigma=sigma, theta=theta)
@@ -472,9 +474,9 @@ class Test_DAOFind_Detection():
         sky = 800
         rdnoise = 20
         flux = (32000, 16000)
-        sigma = 3
-        theta = 0
         fwhm = 3
+        sigma = fwhm*gaussian_fwhm_to_sigma
+        theta = 0
         im = gen_image(size, posx, posy, flux, sky, rdnoise,
                        model='gaussian', sigma=sigma, theta=theta)
 
@@ -492,9 +494,9 @@ class Test_DAOFind_Detection():
         sky = 800
         rdnoise = 20
         flux = (15000, 3000, 5000, 35000)
-        sigma = 3
+        fwhm = 3
+        sigma = fwhm*gaussian_fwhm_to_sigma
         theta = 0
-        fwhm = 5
         im = gen_image(size, posx, posy, flux, sky, rdnoise,
                        model='gaussian', sigma=sigma, theta=theta)
 
@@ -502,9 +504,8 @@ class Test_DAOFind_Detection():
                           sharp_limit=(0.2, 1.0), round_limit=(-1.0, 1.0))
 
         assert_equal(len(sources), 4)
-        assert_almost_equal(sources['x'], posx, decimal = 0)
-        assert_almost_equal(sources['y'], posy, decimal = 0)
-
+        assert_almost_equal(sources['x'], posx, decimal=0)
+        assert_almost_equal(sources['y'], posy, decimal=0)
 
     def test_daofind_multiple_stars(self):
         size = (1024, 1024)
@@ -513,16 +514,15 @@ class Test_DAOFind_Detection():
         high = 30000
         sky = 800
         rdnoise = 20
-        sigma = 3
+        fwhm = 3
+        sigma = fwhm*gaussian_fwhm_to_sigma
         theta = 0
-        fwhm = 5
         x, y, f = gen_position_flux(size, number, low, high, rng_seed=456)
         im = gen_image(size, x, y, f, sky, rdnoise,
                        model='gaussian', sigma=sigma, theta=theta)
 
         sources = daofind(im, rdnoise, sky, 10, fwhm, mask=None,
                           sharp_limit=(0.2, 1.0), round_limit=(-1.0, 1.0))
-
 
         x, y, f = self.resort_sources(x, y, f)
 
@@ -532,27 +532,29 @@ class Test_DAOFind_Detection():
 
     def test_daofind_reject_sharpness_roundness(self):
         size = (128, 128)
-        pos = (64, 64)
+        pos_x = [20, 60, 100, 40, 80]
+        pos_y = [20, 30, 40, 50, 60]
         sky = 70
         rdnoise = 20
-        flux = 32000
-        sigma_x = (8,16,24,32,40,48,56,64)
-        sigma_y = (2,4,6,8,10,12,14,16)
-        theta_x = (0,15,30,45,60,90,120,150)
-        theta_y = (0.5,10.2,20.1,27,50,50.5,80.8,100)
+        flux = [30000]*5
+        theta = (0, 30, 0, 60, 120, 150)
         fwhm = 3
+        sigma_x = np.array([1, 0.5, 1, 2.0, 2, 1])*gaussian_fwhm_to_sigma*fwhm
+        sigma_y = np.array([1, 1.0, 1, 0.5, 2, 1])*gaussian_fwhm_to_sigma*fwhm
+        # stars 0, 2, 5 -> passed
+        # stars 1, 3 -> rejected by roundness
+        # star 4 -> rejected by shaprness
 
-        im = gen_image(size, [pos[0]], [pos[1]], [flux], sky, rdnoise,
+        im = gen_image(size, pos_x, pos_y, flux, sky, rdnoise,
                        model='gaussian', sigma_x=sigma_x, sigma_y=sigma_y,
-                        theta_x=theta_x, theta_y=theta_y)
+                       theta=theta)
 
         sources = daofind(im, rdnoise, sky, 10, fwhm, mask=None,
-                          sharp_limit=(0.2, 1.0), round_limit=(-1.0, 1.0))
+                          sharp_limit=(0.8, 1.0), round_limit=(-0.5, 0.5))
 
-
-        assert_equal(len(sources), 1)
-        assert_almost_equal(sources['x'][0], 64, decimal=0)
-        assert_almost_equal(sources['y'][0], 64, decimal=0)
+        assert_equal(len(sources), 3)
+        assert_almost_equal(sources['x'], [20, 100, 80], decimal=0)
+        assert_almost_equal(sources['y'], [20, 40, 60], decimal=0)
 
 
 class Test_StarFind():
@@ -573,18 +575,17 @@ class Test_StarFind():
         high = 320000
         sigma = 5
         theta = 0
-        
 
         x, y, f = gen_position_flux(size, number, low, high, rng_seed=456)
 
         im = gen_image(size, x, y, f, sky, rdnoise,
                        model='gaussian', sigma=sigma, theta=theta)
 
-        
+
         fwhm = calc_fwhm(im, x, y, box_size=25, model='gaussian', min_fwhm=3.0)
 
         x, y, f = self.resort_sources(x, y, f)
- 
+
         assert_almost_equal(fwhm, 2.35*sigma, decimal=0)
         #assert_equal(len(sources), number)
         #assert_almost_equal(sources['x'], x, decimal=0)
@@ -599,7 +600,7 @@ class Test_StarFind():
         high = 320000
         sigma = 5
         theta = 0
-        
+
         x, y, f = gen_position_flux(size, number, low, high, rng_seed=456)
 
         im = gen_image(size, x, y, f, sky, rdnoise,
@@ -612,15 +613,13 @@ class Test_StarFind():
         x, y, f = self.resort_sources(x, y, f)
 
         sources = starfind(im, rdnoise, sky, 10, fwhm, mask=None,
-                          box_size=35, sharp_limit=(0.2, 1.0), 
-                          round_limit=(-1.0, 1.0))
+                           box_size=35, sharp_limit=(0.2, 1.0),
+                           round_limit=(-1.0, 1.0))
 
 
         assert_equal(len(sources), 1)
         assert_almost_equal(sources['x'], x, decimal=0)
         assert_almost_equal(sources['y'], y, decimal=0)
-        
-
 
     def test_starfind_one_star(self):
         size = (128, 128)
@@ -631,21 +630,20 @@ class Test_StarFind():
         high = 320000
         sigma = 5
         theta = 0
-        
+
         x, y, f = gen_position_flux(size, number, low, high, rng_seed=456)
 
         im = gen_image(size, x, y, f, sky, rdnoise,
                        model='gaussian', sigma=sigma, theta=theta)
 
-        
+
         fwhm = calc_fwhm(im, x, y, box_size=25, model='gaussian', min_fwhm=3.0)
 
         x, y, f = self.resort_sources(x, y, f)
 
         sources = starfind(im, rdnoise, sky, 10, fwhm, mask=None,
-                          box_size=35, sharp_limit=(0.2, 1.0), 
+                          box_size=35, sharp_limit=(0.2, 1.0),
                           round_limit=(-1.0, 1.0))
-
 
         assert_equal(len(sources), 1)
         assert_almost_equal(sources['x'], x, decimal=0)
@@ -664,8 +662,8 @@ class Test_StarFind():
         im = gen_image(size, posx, posy, flux, sky, rdnoise,
                        model='gaussian', sigma=sigma, theta=theta)
 
-        sources = starfind(im, rdnoise, sky, 10, fwhm, mask=None, 
-                          boxsize=35, sharp_limit=(0.2, 1.0), 
+        sources = starfind(im, rdnoise, sky, 10, fwhm, mask=None,
+                          boxsize=35, sharp_limit=(0.2, 1.0),
                           round_limit=(-1.0, 1.0))
 
         assert_equal(len(sources), 2)
@@ -686,7 +684,7 @@ class Test_StarFind():
                        model='gaussian', sigma=sigma, theta=theta)
 
         sources = starfind(im, rdnoise, sky, 10, fwhm, mask=None,
-                          box_size=35, sharp_limit=(0.2, 1.0), 
+                          box_size=35, sharp_limit=(0.2, 1.0),
                           round_limit=(-1.0, 1.0))
 
         assert_equal(len(sources), 1)
@@ -710,7 +708,7 @@ class Test_StarFind():
                         theta_x=theta_x, theta_y=theta_y)
 
         sources = starfind(im, rdnoise, sky, 10, fwhm, mask=None,
-                          box_size=35, sharp_limit=(0.2, 1.0), 
+                          box_size=35, sharp_limit=(0.2, 1.0),
                           round_limit=(-1.0, 1.0))
 
 

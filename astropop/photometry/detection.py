@@ -40,7 +40,7 @@ def gen_filter_kernel(size):
 
 
 def background(data, box_size=64, filter_size=3, mask=None,
-                   global_bkg=True):
+               global_bkg=True):
     """Estimate the image background using SExtractor algorithm.
 
     Parameters
@@ -82,25 +82,25 @@ def sepfind(data, threshold, background, noise, recenter=False,
     data: array_like
         2D array containing the image to extract the source.
     threshold: `int`
-        Minimum signal noise desired. 
+        Minimum signal noise desired.
     background: `int`
         Background estimation.
     noise: `int`
         Root-mean-square at each point.
     recenter: `bool` (optional)
-    	Centers the image again.
-    	Default: `False`
+        Centers the image again.
+        Default: `False`
     mask: array_like (optional)
-        Boolean mask where 1 pixels are masked out in the background 
+        Boolean mask where 1 pixels are masked out in the background
         calculation.
         Default: `None`
     fwhm: `int` (optional)
-    	Full width at half maximum, fwhm = 2.35*sigma
-    	Default: `None`
+        Full width at half maximum, fwhm = 2.35*sigma
+        Default: `None`
     filter_kernel: `int` (optional)
-    	Combined filter, which can provide optimal signal-to-noise 
-    	detection for objects with some known shape 
-    	Default: `3`
+        Combined filter, which can provide optimal signal-to-noise
+        detection for objects with some known shape
+        Default: `3`
 
     sep_kwargs can be any kwargs to be passed to sep.extract function.
     """
@@ -126,6 +126,298 @@ def sepfind(data, threshold, background, noise, recenter=False,
         return Table(sources)
 
 
+class DAOFind:
+    """Use DAOFind method to detect punctual sources.
+
+    Parameters
+    ----------
+    fwhm: `int` or `float`
+        Default gaussian FWHM for convolution kernel
+    sharp_limit: array_like or `None` (optional)
+        Low and high cutoff for the sharpness statistic.
+        `None` will disable the sharpness filtering.
+        Default: (0.2, 1.0)
+    round_limit : array_like or `None` (optional)
+        Low and high cutoff for the roundness statistic.
+        `None` will disable the roundness filtering.
+        Default: (-1.0,1.0)
+
+    Notes
+    -----
+    Adapted from IDL Astro package by D. Jones. Original function available
+    at PythonPhot package. https://github.com/djones1040/PythonPhot
+    The function recieved some improvements to work better
+    """
+    _maxbox = 13  # Maximum convolution box
+
+    def __init__(self, fwhm, sharp_limit=(0.2, 1.0), round_limit=(-1.0, 1.0)):
+        if fwhm < 0.5:
+            raise ValueError('Supplied FWHM must be at least 0.5 pixels')
+        # fhwm and related stuff
+        self._fwhm = fwhm
+        self._sharp_limit = sharp_limit
+        self._round_limit = round_limit
+
+        self._compute_convolution_kernel()
+        self._compute_constants()
+
+    def _compute_convolution_kernel(self):
+        """Generate the proper gaussian kernel."""
+        self._sigma2 = (self._fwhm*gaussian_fwhm_to_sigma)**2
+        # radius=1.5*sigma, greater then 2
+        self._radius = np.max([0.637*self._fwhm, 2.001])
+        # index of the center of convolution box
+        self._nhalf = np.min([int(self._radius),
+                              int((self._maxbox-1)/2.)])
+        # size of convolution box. Automatic less or equal maxbox
+        self._nbox = 2*self._nhalf + 1
+        shape = (self._nbox, self._nbox)
+
+        # valid pixels in convolution kernel, Stetson 'mask'
+        self._conv_mask = np.zeros(shape, dtype='int8')
+
+        y, x = np.indices(shape)
+        rsq = (x-self._nhalf)**2 + (y-self._nhalf)**2
+        self._good = np.where(rsq <= self._radius**2)
+        pixels = len(self._good[0])
+        self._conv_mask[self._good] = 1
+        # convolution kernel, Stetson 'g'
+        self._g = np.exp(-0.5*rsq/self._sigma2)
+        self._kernel = self._g*self._conv_mask
+
+        # Normalize the convolution kernel and zero not good pixels
+        sumc = np.sum(self._kernel)
+        sumcsq = np.sum(self._kernel**2) - sumc**2/pixels
+        sumc = sumc/pixels
+        self._kernel[self._good] = (self._kernel[self._good] - sumc)/sumcsq
+
+        logger.debug('Relative error computed from FWHM: %f',
+                     np.sqrt(np.sum(self._kernel[self._good]**2)))
+
+    def _compute_constants(self):
+        """Compute some constants needed for statistics."""
+        y, x = np.indices((self._nbox, self._nbox))
+
+        self._wt = self._nhalf - np.abs(np.arange(self._nbox)-self._nhalf) + 1
+        self._vec = self._nhalf - np.arange(self._nbox)
+        self._p = np.sum(self._wt)
+
+        self._c1 = np.exp(-0.5*x[0]/self._sigma2)
+        sumc1 = np.sum(self._c1)/self._nbox
+        self._c1 = (self._c1-sumc1)/(np.sum(self._c1**2) - sumc1)
+
+        self._xwt = self._nhalf - np.abs(x-self._nhalf) + 1
+        self._ywt = np.transpose(self._xwt)
+
+        self._sgx = np.sum(self._g*self._xwt, 1)
+        self._sgy = np.sum(self._g*self._ywt, 0)
+
+        self._dgdx = self._sgy*self._vec
+        self._dgdy = self._sgx*self._vec
+
+        self._sumgx = np.sum(self._wt*self._sgy)
+        self._sumgy = np.sum(self._wt*self._sgx)
+
+        self._sumgsqx = np.sum(self._wt*self._sgx*self._sgx)
+        self._sumgsqy = np.sum(self._wt*self._sgy*self._sgy)
+
+        self._sdgdx = np.sum(self._wt*self._dgdx)
+        self._sdgdy = np.sum(self._wt*self._dgdy)
+
+        self._sdgdxs = np.sum(self._wt*self._dgdx**2)
+        self._sdgdys = np.sum(self._wt*self._dgdy**2)
+
+        self._sgdgdx = np.sum(self._wt*self._sgy*self._dgdx)
+        self._sgdgdy = np.sum(self._wt*self._sgx*self._dgdy)
+
+    def _convolve_image(self, image, n_x, n_y):
+        """Convolve image with gaussian kernel"""
+        h = convolve(image, self._kernel)
+
+        minh = np.min(h)
+        nhalf = self._nhalf
+
+        # Fix borders
+        h[:, 0:nhalf] = minh
+        h[:, n_x-nhalf:n_x] = minh
+        h[0:nhalf, :] = minh
+        h[n_y-nhalf:n_y - 1, :] = minh
+
+        return h
+
+    def _find_peaks(self, image, index, n_x, n_y):
+        """Find peaks above threshold."""
+        mask = self._conv_mask.copy()
+        mask[self._nhalf, self._nhalf] = 0  # exclude central pixel
+        pixels = np.sum(mask)
+        good = np.where(mask)
+        xx = good[1] - self._nhalf
+        yy = good[0] - self._nhalf
+
+        for i in range(pixels):
+            hy = index[0]+yy[i]
+            hx = index[1]+xx[i]
+            # only inside image
+            hgood = np.where((hy < n_y) & (hy >= 0) &
+                             (hx < n_x) & (hx >= 0))[0]
+            stars = np.where(np.greater_equal(image[index[0][hgood],
+                                                    index[1][hgood]],
+                                              image[hy[hgood],
+                                                    hx[hgood]]))
+            if len(stars) == 0:
+                logger.error('No maxima exceed input threshold.')
+                return
+            index = np.array([index[0][hgood][stars],
+                              index[1][hgood][stars]])
+
+        logger.debug('%i localmaxima located above threshold.',
+                     len(index[0]))
+        return index
+
+    def _compute_statistics(self, image, image_convolved, index):
+        """Compute source statistics for each star."""
+        h = image_convolved
+        ngood = len(index[0])
+        iy, ix = index
+        nhalf = self._nhalf
+        mask = self._conv_mask.copy()
+        mask[nhalf, nhalf] = 0  # exclude central pixel
+
+        x = np.empty(ngood, dtype='f4')  # x centroid of all peaks
+        x[:] = np.nan
+        y = np.empty(ngood, dtype='f4')  # y centroid of all peaks
+        y[:] = np.nan
+        flux = np.empty(ngood, dtype='f4')  # estimated flux of all peaks
+        flux[:] = np.nan
+        sharp = np.empty(ngood, dtype='f4')  # sharpness of all peaks
+        sharp[:] = np.nan
+        round = np.empty(ngood, dtype='f4')  # roundness of all peaks
+        round[:] = np.nan
+
+        # loop over all stars
+        for i in range(ngood):
+            # original image chunk
+            temp = image[iy[i]-nhalf:iy[i]+nhalf+1,
+                         ix[i]-nhalf:ix[i]+nhalf+1]
+            # convolved central pixel intensity
+            d = h[iy[i], ix[i]]
+
+            # compute sharpness
+            sharp[i] = (temp[nhalf, nhalf]-(np.sum(mask*temp)/np.sum(mask)))
+            sharp[i] /= d
+
+            # compute roundness
+            dx = np.sum(np.sum(temp, axis=0)*self._c1)
+            dy = np.sum(np.sum(temp, axis=1)*self._c1)
+            if dx <= 0 or dy <= 0:  # invalid roundness
+                continue
+            round[i] = 2*(dx-dy)/(dx+dy)
+
+            # compute centroid
+            # Notes from D.Jones:
+            # Modified version in Mar 2008 that differ from original DAOPHOT,
+            # which multiplies the correction dx by 1/(1+abs(dx)).
+            # DAOPHOT method is more robust (e.g. two different sources will
+            # not merge).
+            # This method is more accurate and do not introduce biases in the
+            # centroid histogram.
+            # The change was also applyed in IRAF DAFIND routine.
+            # (see http://iraf.net/article.php?story=7211;query=daofind)
+
+            # x centroid
+            sd = np.sum(temp*self._ywt, axis=0)
+            sumgd = np.sum(self._wt*self._sgy*sd)
+            sumd = np.sum(self._wt*sd)
+            sddgdx = np.sum(self._wt*sd*self._dgdx)
+            # hx is the height of the best-fitting marginal gaussian
+            hx = (sumgd-self._sumgx*sumd/self._p)
+            hx /= (self._sumgsqy-self._sumgx**2/self._p)
+            if hx <= 0:
+                continue
+            skylvl = (sumd - hx*self._sumgx)/self._p
+            dx = sddgdx-self._sdgdx*(hx*self._sumgx + skylvl*self._p)
+            dx = (self._sgdgdx-dx)/(hx*self._sdgdxs/self._sigma2)
+            if np.abs(dx) >= nhalf:
+                continue
+
+            # y centroid
+            sd = np.sum(temp*self._xwt, axis=1)
+            sumgd = np.sum(self._wt*self._sgx*sd)
+            sumd = np.sum(self._wt*sd)
+            sddgdy = np.sum(self._wt*sd*self._dgdy)
+            hy = (sumgd - self._sumgy*sumd/self._p)
+            hy /= (self._sumgsqx - self._sumgy**2/self._p)
+            if hy <= 0:
+                continue
+            skylvl = (sumd - hy*self._sumgy)/self._p
+            dy = sddgdy-self._sdgdy*(hy*self._sumgy + skylvl*self._p)
+            dy = (self._sgdgdy-dy)/(hy*self._sdgdys/self._sigma2)
+            if np.abs(dy) >= nhalf:
+                continue
+
+            x[i] = ix[i] + dx
+            y[i] = iy[i] + dy
+
+        return Table({'x': x, 'y': y, 'flux': flux,
+                      'sharp': sharp, 'round': round})
+
+    def _filter_sources(self, sources):
+        """Perform roundness, sharpness and centroid filtering."""
+        # filter stars by sharpness
+        sharp_rejected = 0
+        sharpmask = False
+        if self._sharp_limit is not None:
+            sharp_limit = sorted(self._sharp_limit)
+            sharpmask = np.isnan(sources['sharp'])
+            sharpmask |= sources['sharp'] < sharp_limit[0]
+            sharpmask |= sources['sharp'] > sharp_limit[1]
+            sharp_rej = np.sum(sharpmask)
+            logger.debug('%i sources rejected by sharpness',
+                         sharp_rej)
+
+        # filter by roundness
+        round_rej = 0
+        roundmask = False
+        if self._round_limit is not None:
+            round_limit = sorted(self._round_limit)
+            roundmask = np.isnan(sources['round'])
+            roundmask |= sources['round'] < round_limit[0]
+            roundmask |= sources['round'] > round_limit[1]
+            round_rej = np.sum(roundmask) - sharp_rej
+            logger.debug('%i sources rejected by roundness',
+                         round_rej)
+
+        centroidmask = np.isnan(sources['x'])
+        centroidmask |= np.isnan(sources['y'])
+        logger.debug('%i sources rejected by invalid centroid',
+                     np.sum(centroidmask) - round_rej - sharp_rej)
+
+        mask = ~sharpmask & ~roundmask & ~centroidmask
+        return sources[mask]
+
+    def find_stars(self, data, threshold, background, noise):
+        """Find stars in a single image using daofind."""
+        if len(np.shape(data)) != 2:
+            raise ValueError('Data array must be 2 dimensional.')
+
+        n_y, n_x = np.shape(data)
+        # TODO: Check if median is really needeed
+        hmin = np.median(threshold*noise)
+        image = np.array(data, dtype=np.float64) - background
+
+        h = self._convolve_image(image, n_x, n_y)
+
+        index = np.where(h >= hmin)
+        if len(index[0]) == 0:
+            logger.error('No maxima exceed input threshold of %f', hmin)
+            return
+        logger.debug('Found %i pixels above threshold', len(index[0]))
+
+        index = self._find_peaks(h, index, n_x, n_y)
+        t = self._compute_statistics(image, h, index)
+        return self._filter_sources(t)
+
+
 def daofind(data, threshold, background, noise, fwhm, mask=None,
             sharp_limit=(0.2, 1.0), round_limit=(-1.0, 1.0)):
     """Find sources using DAOfind algorithm.
@@ -135,284 +427,48 @@ def daofind(data, threshold, background, noise, fwhm, mask=None,
     data: array_like
         2D array containing the image to extract the source.
     threshold: `int`
-    	Minimum signal noise desired. 
+        Minimum signal noise desired.
     background: `int`
-    	Background estimation.
+        Background estimation.
     noise: `int`
-    	Root-mean-square at each point.
-    fwhm: `int` 
-    	Full width at half maximum: to be used in the convolve filter.
+        Root-mean-square at each point.
+    fwhm: `int`
+        Full width at half maximum: to be used in the convolve filter.
     mask: array_like (optional)
         Boolean mask where 1 pixels are masked out in the background
         calculation.
         Default: `None`
-    sharp_limit: array_like (optional)
-    	Low and high cutoff for the sharpness statistic.
-    	Default: (0.2, 1.0)
-    round_limit : array_like (optional)
-    	Low and high cutoff for the roundness statistic.
-    	Default: (-1.0,1.0)
-
-    Translated from IDL Astro package by D. Jones. Original function available
-    at PythonPhot package. https://github.com/djones1040/PythonPhot
-    The function recieved some improvements to work better
+    sharp_limit: array_like or `None` (optional)
+        Low and high cutoff for the sharpness statistic.
+        `None` will disable the sharpness filtering.
+        Default: (0.2, 1.0)
+    round_limit : array_like or `None` (optional)
+        Low and high cutoff for the roundness statistic.
+        `None` will disable the roundness filtering.
+        Default: (-1.0,1.0)
     """
-    # Compute hmin based on threshold, background and noise
-    hmin = np.median(threshold*noise)
-
-    image = data.astype(np.float64) - background
-    maxbox = 13  # Maximum size of convolution box in pixels
-
-    # Get information about the input image
-    type = np.shape(image)
-    if len(type) != 2:
-        raise ValueError('data array must be 2 dimensional')
-    n_x = type[1]
-    n_y = type[0]
-    logger.debug(f'Input Image Size is {n_x}x{n_y}')
-
-    if fwhm < 0.5:
-        raise ValueError('Supplied FWHM must be at least 0.5 pixels')
-
-    radius = np.max([0.637*fwhm, 2.001])
-    radsq = radius**2
-    nhalf = np.min([int(radius), int((maxbox-1)/2.)])
-    nbox = 2*nhalf + 1  # number of pixels in side of convolution box
-    middle = nhalf  # Index of central pixel
-    # lastro = n_x - nhalf
-    # lastcl = n_y - nhalf
-
-    sigsq = (fwhm*gaussian_fwhm_to_sigma)**2
-    # Mask identifies valid pixels in convolution box
-    mask = np.zeros([nbox, nbox], dtype='int8')
-    g = np.zeros([nbox, nbox])  # Gaussian convolution kernel
-
-    row2 = (np.arange(nbox)-nhalf)**2
-    for i in range(nhalf+1):
-        temp = row2 + i**2
-        g[nhalf-i, :] = temp
-        g[nhalf+i, :] = temp
-
-    g_row = np.where(g <= radsq)
-    # MASK is complementary to SKIP in Stetson's Fortran
-    mask[g_row[0], g_row[1]] = 1
-    good = np.where(mask)  # Value of c are now equal to distance to center
-    pixels = len(good[0])
-
-    # Compute quantities for centroid computations that can be used for all
-    # stars
-    g = np.exp(-0.5*g/sigsq)
-
-    # In fitting Gaussians to the marginal sums, pixels will arbitrarily be
-    # assigned weights ranging from unity at the corners of the box to
-    # NHALF^2 at the center (e.g. if NBOX = 5 or 7, the weights will be
-    #
-    #                                 1   2   3   4   3   2   1
-    #      1   2   3   2   1          2   4   6   8   6   4   2
-    #      2   4   6   4   2          3   6   9  12   9   6   3
-    #      3   6   9   6   3          4   8  12  16  12   8   4
-    #      2   4   6   4   2          3   6   9  12   9   6   3
-    #      1   2   3   2   1          2   4   6   8   6   4   2
-    #                                 1   2   3   4   3   2   1
-    #
-    # respectively).  This is done to desensitize the derived parameters to
-    # possible neighboring, brighter stars.
-    xwt = np.zeros([nbox, nbox])
-    wt = nhalf - np.abs(np.arange(nbox)-nhalf) + 1
-    for i in range(nbox):
-        xwt[i, :] = wt
-    ywt = np.transpose(xwt)
-    sgx = np.sum(g*xwt, 1)
-    p = np.sum(wt)
-    sgy = np.sum(g*ywt, 0)
-    sumgx = np.sum(wt*sgy)
-    sumgy = np.sum(wt*sgx)
-    sumgsqy = np.sum(wt*sgy*sgy)
-    sumgsqx = np.sum(wt*sgx*sgx)
-    vec = nhalf - np.arange(nbox)
-    dgdx = sgy*vec
-    dgdy = sgx*vec
-    sdgdxs = np.sum(wt*dgdx**2)
-    sdgdx = np.sum(wt*dgdx)
-    sdgdys = np.sum(wt*dgdy**2)
-    sdgdy = np.sum(wt*dgdy)
-    sgdgdx = np.sum(wt*sgy*dgdx)
-    sgdgdy = np.sum(wt*sgx*dgdy)
-
-    c = g*mask  # Convolution kernel now in c
-    sumc = np.sum(c)
-    sumcsq = np.sum(c**2) - sumc**2/pixels
-    sumc = sumc/pixels
-    c[good[0], good[1]] = (c[good[0], good[1]] - sumc)/sumcsq
-    c1 = np.exp(-.5*row2/sigsq)
-    sumc1 = np.sum(c1)/nbox
-    sumc1sq = np.sum(c1**2) - sumc1
-    c1 = (c1-sumc1)/sumc1sq
-
-    logger.debug('RELATIVE ERROR computed from FWHM '
-                 f'{np.sqrt(np.sum(c[good[0],good[1]]**2))}')
-
-    h = convolve(image, c)  # Convolve image with kernel "c"
-
-    minh = np.min(h)
-    h[:, 0:nhalf] = minh
-    h[:, n_x-nhalf:n_x] = minh
-    h[0:nhalf, :] = minh
-    h[n_y - nhalf: n_y - 1, :] = minh
-
-    mask[middle, middle] = 0  # From now on we exclude the central pixel
-    pixels = pixels - 1  # so the number of valid pixels is reduced by 1
-    good = np.where(mask)  # "good" identifies position of valid pixels
-    xx = good[1] - middle  # x and y coordinate of valid pixels
-    yy = good[0] - middle  # relative to the center
-    index = np.where(h >= hmin)  # Valid image pixels are greater than hmin
-    nfound = len(index)
-    logger.debug(f'{nfound} pixels above threshold')
-
-    if nfound == 0:  # Any maxima found?
-        logger.warning(f'No maxima exceed input threshold of {hmin}')
-        return
-
-    for i in range(pixels):
-        hy = index[0]+yy[i]
-        hx = index[1]+xx[i]
-        hgood = np.where((hy < n_y) & (hx < n_x) & (hy >= 0) & (hx >= 0))[0]
-        stars = np.where(np.greater_equal(h[index[0][hgood], index[1][hgood]],
-                                          h[hy[hgood], hx[hgood]]))
-        nfound = len(stars)
-        if nfound == 0:  # Do valid local maxima exist?
-            logger.warning(f'No maxima exceed input threshold of {hmin}')
-            return
-        index = np.array([index[0][hgood][stars], index[1][hgood][stars]])
-
-    ix = index[1]  # X index of local maxima
-    iy = index[0]  # Y index of local maxima
-    ngood = len(index[0])
-    logger.debug(f'{ngood} local maxima located above threshold')
-
-    nstar = 0  # NSTAR counts all stars meeting selection criteria
-    badround = 0
-    badsharp = 0
-    badcntrd = 0
-
-    x = np.zeros(ngood)
-    y = np.zeros(ngood)
-    flux = np.zeros(ngood)
-    sharp = np.zeros(ngood)
-    roundness = np.zeros(ngood)
-
-    #  Loop over star positions# compute statistics
-    for i in range(ngood):
-        temp = image[iy[i]-nhalf:iy[i]+nhalf+1,
-                     ix[i]-nhalf:ix[i]+nhalf+1]
-        d = h[iy[i], ix[i]]  # "d" is actual pixel intensity
-
-        #  Compute Sharpness statistic
-        sharp_limit = sorted(sharp_limit)
-        sharp1 = (temp[middle, middle] - (np.sum(mask*temp))/pixels)/d
-        if (sharp1 < sharp_limit[0]) or (sharp1 > sharp_limit[1]):
-            badsharp = badsharp + 1
-            continue  # Does not meet sharpness criteria
-
-        #   Compute Roundness statistic
-        dx = np.sum(np.sum(temp, axis=0)*c1)
-        dy = np.sum(np.sum(temp, axis=1)*c1)
-        if (dx <= 0) or (dy <= 0):
-            badround = badround + 1
-            continue     # Cannot compute roundness
-        round_limit = sorted(round_limit)
-        around = 2*(dx-dy) / (dx + dy)  # Roundness statistic
-        if (around < round_limit[0]) or (around > round_limit[1]):
-            badround = badround + 1
-            continue     # Does not meet roundness criteria
-
-        # Centroid computation: The centroid computation was modified in
-        # Mar 2008 and now differs from DAOPHOT which multiplies the
-        # correction dx by 1/(1+abs(dx)). The DAOPHOT method is more robust
-        # (e.g. two different sources will not merge) especially in a package
-        # where the centroid will be subsequently be redetermined using PSF
-        # fitting. However, it is less accurate, and introduces biases in the
-        # centroid histogram. The change here is the same made in the
-        # IRAF DAOFIND routine
-        # (see http://iraf.net/article.php?story=7211;query=daofind )
-        sd = np.sum(temp*ywt, axis=0)
-        sumgd = np.sum(wt*sgy*sd)
-        sumd = np.sum(wt*sd)
-        sddgdx = np.sum(wt*sd*dgdx)
-        hx = (sumgd - sumgx*sumd/p) / (sumgsqy - sumgx**2/p)
-
-        # HX is the height of the best-fitting marginal Gaussian. If this is
-        # not positive then the centroid does not make sense
-        if (hx <= 0):
-            badcntrd = badcntrd + 1
-            continue
-        skylvl = (sumd - hx*sumgx)/p
-        dx = (sgdgdx - (sddgdx-sdgdx*(hx*sumgx + skylvl*p)))/(hx*sdgdxs/sigsq)
-        if np.abs(dx) >= nhalf:
-            badcntrd = badcntrd + 1
-            continue
-        xcen = ix[i] + dx  # X centroid in original array
-        # Find Y centroid
-        sd = np.sum(temp*xwt, axis=1)
-        sumgd = np.sum(wt*sgx*sd)
-        sumd = np.sum(wt*sd)
-        sddgdy = np.sum(wt*sd*dgdy)
-        hy = (sumgd - sumgy*sumd/p) / (sumgsqx - sumgy**2/p)
-        if (hy <= 0):
-            badcntrd = badcntrd + 1
-            continue
-
-        skylvl = (sumd - hy*sumgy)/p
-        dy = (sgdgdy - (sddgdy-sdgdy*(hy*sumgy + skylvl*p)))/(hy*sdgdys/sigsq)
-        if np.abs(dy) >= nhalf:
-            badcntrd = badcntrd + 1
-            continue
-        ycen = iy[i] + dy  # Y centroid in original array
-        #  This star has met all selection criteria.  Print out and save
-        x[nstar] = xcen
-        y[nstar] = ycen
-        flux[nstar] = d
-        sharp[nstar] = sharp1
-        roundness[nstar] = around
-        nstar = nstar+1
-
-    nstar = nstar-1	 # NSTAR is now the index of last star found
-
-    logger.debug(f'{badsharp} sources rejected by SHARPNESS criteria')
-    logger.debug(f'{badround} sources rejected by ROUNDNESS criteria')
-    logger.debug(f'{badcntrd} sources rejected by CENTROID  criteria')
-
-    if nstar < 0:
-        return
-
-    x = x[0:nstar+1]
-    y = y[0:nstar+1]
-    flux = flux[0:nstar+1]
-    sharp = sharp[0:nstar+1]
-    roundness = roundness[0:nstar+1]
-
-    t = Table([x, y, flux, sharp, roundness],
-              names=('x', 'y', 'flux', 'sharpness', 'roundness'))
-
-    return t
+    # TODO: mask is getting ignored in the original algorith
+    # Find a way to use it
+    d = DAOFind(fwhm, sharp_limit, round_limit)
+    return d.find_stars(data, threshold, background, noise)
 
 
 def starfind(data, threshold, background, noise, fwhm, mask=None, box_size=35,
              sharp_limit=(0.2, 1.0), round_limit=(-1.0, 1.0)):
     """Find stars using daofind AND sepfind.
-    
+
     Parameters
     ----------
     data: array_like
         2D array containing the image to extract the source.
     threshold: `int`
-    	Minimum signal noise desired. 
+    Minimum signal noise desired.
     background: `int`
-    	Background estimation.
+    Background estimation.
     noise: `int`
-    	Root-mean-square at each point.
-    fwhm: `float` 
-    	Full width at half maximum: to be used in the convolve filter.
+    Root-mean-square at each point.
+    fwhm: `float`
+    Full width at half maximum: to be used in the convolve filter.
     mask: `bool` (optional)
         Boolean mask where 1 pixels are masked out in the background calculation.
         Default: `None`
@@ -420,11 +476,11 @@ def starfind(data, threshold, background, noise, fwhm, mask=None, box_size=35,
         Size of background boxes in pixels.
         Default: 35
     sharp_limit: array_like (optional)
-    	Low and high cutoff for the sharpness statistic.
-    	Default: (0.2, 1.0)
+    Low and high cutoff for the sharpness statistic.
+    Default: (0.2, 1.0)
     round_limit : array_like (optional)
-    	Low and high cutoff for the roundness statistic.
-    	Default: (-1.0,1.0)    
+    Low and high cutoff for the roundness statistic.
+    Default: (-1.0,1.0)
     """
     # First, we identify the sources with sepfind (fwhm independent)
     sources = sepfind(data, threshold, background, noise, mask=mask,
@@ -445,17 +501,17 @@ def sources_mask(shape, x, y, a, b, theta, mask=None, scale=1.0):
     Parameters
     ----------
     shape: int or tuple of ints
-    	Shape of the new array. 
+    Shape of the new array.
     x,y: array_like
-    	Center of ellipse(s).
+    Center of ellipse(s).
     a, b, theta: array_like (optional)
-    	Parameters defining the extent of the ellipe(s).
+    Parameters defining the extent of the ellipe(s).
     mask: numpy.ndarray (optional)
-    	An optional mask.
-    	Default: `None`
+    An optional mask.
+    Default: `None`
     scale: array_like (optional)
-    	Scale factor of ellipse(s).
-    	Default: 1.0
+    Scale factor of ellipse(s).
+    Default: 1.0
     """
     image = np.zeros(shape, dtype=bool)
     sep.mask_ellipse(image, x, y, a, b, theta, r=scale)
@@ -474,9 +530,9 @@ def _fwhm_loop(model, data, x, y, xc, yc):
     data: array_like
         2D array containing the image to extract the source.
     x, y: array_like
-    	x, y centroid position.    
+    x, y centroid position.
     xc, yc: array_like (optional)
-    	New positions for (x, y) values.
+    New positions for (x, y) values.
     """
     if model == 'gaussian':
         model = gaussian_r
@@ -499,13 +555,13 @@ def _fwhm_loop(model, data, x, y, xc, yc):
 
 def calc_fwhm(data, x, y, box_size=25, model='gaussian', min_fwhm=3.0):
     """Calculate the median FWHM of the image with Gaussian or Moffat fit.
-    
+
     Parameters
     ----------
     data: array_like
         2D array containing the image to extract the source.
     x, y: array_like
-    	x, y centroid position.
+    x, y centroid position.
     box_size: `int` (optional)
         Size of background boxes in pixels.
         Default: 25
@@ -533,15 +589,15 @@ def _recenter_loop(fitter, model, data, x, y, xc, yc):
     Parameters
     ----------
     fitter
-    	Fitter based on the Levenberg-Marquardt algorithm and least squares statistic. 
+    Fitter based on the Levenberg-Marquardt algorithm and least squares statistic.
     model: `str`
         Choose a Gaussian or Moffat model.
     data: array_like
         2D array containing the image to extract the source.
     x, y: array_like
-    	x, y centroid position.    
+    x, y centroid position.
     xc, yc: array_like (optional)
-    	New positions for (x, y) values. 
+    New positions for (x, y) values.
     """
     if model == 'gaussian':
         model = PSFGaussian2D(x_0=xc, y_0=yc)
@@ -555,13 +611,13 @@ def _recenter_loop(fitter, model, data, x, y, xc, yc):
 
 def recenter_sources(data, x, y, box_size=25, model='gaussian'):
     """Recenter teh sources using a PSF model.
-    
+
     Parameters
     ----------
     data: array_like
         2D array containing the image to extract the source.
     x, y: array_like
-    	x, y centroid position. 
+        x, y centroid position.
     box_size: `int` (optional)
         Size of background boxes in pixels.
         Default: 25
