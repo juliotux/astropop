@@ -18,18 +18,17 @@ from ..logger import logger
 
 def gen_filter_kernel(size):
     """Generate sextractor like filter kernels."""
-    # TODO: better implement
     if size == 3:
         return np.array([[0, 1, 0],
                          [1, 4, 1],
                          [0, 1, 0]])
-    elif size == 5:
+    if size == 5:
         return np.array([[1, 2, 3, 2, 1],
                          [2, 4, 6, 4, 2],
                          [3, 6, 9, 6, 3],
                          [2, 4, 6, 4, 2],
                          [1, 2, 3, 2, 1]])
-    elif size == 7:
+    if size == 7:
         return np.array([[1, 2, 3, 4, 3, 2, 1],
                          [2, 4, 6, 8, 6, 4, 2],
                          [3, 6, 9, 12, 9, 6, 3],
@@ -72,7 +71,7 @@ def background(data, box_size=64, filter_size=3, mask=None,
         return bkg.back(), bkg.rms()
 
 
-def sepfind(data, threshold, background, noise, recenter=False,
+def sepfind(data, threshold, background, noise,
             mask=None, fwhm=None, filter_kernel=3,
             **sep_kwargs):
     """Find sources using SExtractor segmentation algorithm.
@@ -81,15 +80,12 @@ def sepfind(data, threshold, background, noise, recenter=False,
     ----------
     data: array_like
         2D array containing the image to extract the source.
-    threshold: `int`
+    threshold: `float`
         Minimum signal noise desired.
-    background: `int`
+    background: `float`
         Background estimation.
-    noise: `int`
+    noise: `float`
         Root-mean-square at each point.
-    recenter: `bool` (optional)
-        Centers the image again.
-        Default: `False`
     mask: array_like (optional)
         Boolean mask where 1 pixels are masked out in the background
         calculation.
@@ -202,7 +198,8 @@ class DAOFind:
         self._vec = self._nhalf - np.arange(self._nbox)
         self._p = np.sum(self._wt)
 
-        self._c1 = np.exp(-0.5*x[0]/self._sigma2)
+        self._c1 = (np.arange(self._nbox)-self._nhalf)**2
+        self._c1 = np.exp(-0.5*self._c1/self._sigma2)
         sumc1 = np.sum(self._c1)/self._nbox
         self._c1 = (self._c1-sumc1)/(np.sum(self._c1**2) - sumc1)
 
@@ -283,16 +280,16 @@ class DAOFind:
         mask = self._conv_mask.copy()
         mask[nhalf, nhalf] = 0  # exclude central pixel
 
-        x = np.empty(ngood, dtype='f4')  # x centroid of all peaks
+        x = np.empty(ngood, dtype='f8')  # x centroid of all peaks
         x[:] = np.nan
-        y = np.empty(ngood, dtype='f4')  # y centroid of all peaks
+        y = np.empty(ngood, dtype='f8')  # y centroid of all peaks
         y[:] = np.nan
-        flux = np.empty(ngood, dtype='f4')  # estimated flux of all peaks
+        flux = np.empty(ngood, dtype='f8')  # estimated flux of all peaks
         flux[:] = np.nan
-        sharp = np.empty(ngood, dtype='f4')  # sharpness of all peaks
-        sharp[:] = np.nan
-        round = np.empty(ngood, dtype='f4')  # roundness of all peaks
-        round[:] = np.nan
+        sharpness = np.empty(ngood, dtype='f8')  # sharpness of all peaks
+        sharpness[:] = np.nan
+        roundness = np.empty(ngood, dtype='f8')  # roundness of all peaks
+        roundness[:] = np.nan
 
         # loop over all stars
         for i in range(ngood):
@@ -303,15 +300,15 @@ class DAOFind:
             d = h[iy[i], ix[i]]
 
             # compute sharpness
-            sharp[i] = (temp[nhalf, nhalf]-(np.sum(mask*temp)/np.sum(mask)))
-            sharp[i] /= d
+            sharpness[i] = temp[nhalf, nhalf]-(np.sum(mask*temp)/np.sum(mask))
+            sharpness[i] /= d
 
             # compute roundness
             dx = np.sum(np.sum(temp, axis=0)*self._c1)
             dy = np.sum(np.sum(temp, axis=1)*self._c1)
             if dx <= 0 or dy <= 0:  # invalid roundness
                 continue
-            round[i] = 2*(dx-dy)/(dx+dy)
+            roundness[i] = 2*(dx-dy)/(dx+dy)
 
             # compute centroid
             # Notes from D.Jones:
@@ -359,7 +356,7 @@ class DAOFind:
             y[i] = iy[i] + dy
 
         return Table({'x': x, 'y': y, 'flux': flux,
-                      'sharp': sharp, 'round': round})
+                      'sharp': sharpness, 'round': roundness})
 
     def _filter_sources(self, sources):
         """Perform roundness, sharpness and centroid filtering."""
@@ -462,25 +459,26 @@ def starfind(data, threshold, background, noise, fwhm, mask=None, box_size=35,
     data: array_like
         2D array containing the image to extract the source.
     threshold: `int`
-    Minimum signal noise desired.
+        Minimum signal noise desired.
     background: `int`
-    Background estimation.
+        Background estimation.
     noise: `int`
-    Root-mean-square at each point.
+        Root-mean-square at each point.
     fwhm: `float`
-    Full width at half maximum: to be used in the convolve filter.
+        Full width at half maximum: to be used in the convolve filter.
     mask: `bool` (optional)
-        Boolean mask where 1 pixels are masked out in the background calculation.
+        Boolean mask where 1 pixels are masked out in the background
+        calculation.
         Default: `None`
     box_size: `int` (optional)
         Size of background boxes in pixels.
         Default: 35
     sharp_limit: array_like (optional)
-    Low and high cutoff for the sharpness statistic.
-    Default: (0.2, 1.0)
+        Low and high cutoff for the sharpness statistic.
+        Default: (0.2, 1.0)
     round_limit : array_like (optional)
-    Low and high cutoff for the roundness statistic.
-    Default: (-1.0,1.0)
+        Low and high cutoff for the roundness statistic.
+        Default: (-1.0,1.0)
     """
     # First, we identify the sources with sepfind (fwhm independent)
     sources = sepfind(data, threshold, background, noise, mask=mask,
@@ -501,17 +499,17 @@ def sources_mask(shape, x, y, a, b, theta, mask=None, scale=1.0):
     Parameters
     ----------
     shape: int or tuple of ints
-    Shape of the new array.
+        Shape of the new array.
     x,y: array_like
-    Center of ellipse(s).
+        Center of ellipse(s).
     a, b, theta: array_like (optional)
-    Parameters defining the extent of the ellipe(s).
+        Parameters defining the extent of the ellipe(s).
     mask: numpy.ndarray (optional)
-    An optional mask.
-    Default: `None`
+        An optional mask.
+        Default: `None`
     scale: array_like (optional)
-    Scale factor of ellipse(s).
-    Default: 1.0
+        Scale factor of ellipse(s).
+        Default: 1.0
     """
     image = np.zeros(shape, dtype=bool)
     sep.mask_ellipse(image, x, y, a, b, theta, r=scale)
@@ -530,9 +528,9 @@ def _fwhm_loop(model, data, x, y, xc, yc):
     data: array_like
         2D array containing the image to extract the source.
     x, y: array_like
-    x, y centroid position.
-    xc, yc: array_like (optional)
-    New positions for (x, y) values.
+        x and y indexes ofthe pixels in the image.
+    xc, yc: array_like
+        x and y initial guess positions ofthe source.
     """
     if model == 'gaussian':
         model = gaussian_r
@@ -561,7 +559,7 @@ def calc_fwhm(data, x, y, box_size=25, model='gaussian', min_fwhm=3.0):
     data: array_like
         2D array containing the image to extract the source.
     x, y: array_like
-    x, y centroid position.
+        x, y centroid position.
     box_size: `int` (optional)
         Size of background boxes in pixels.
         Default: 25
@@ -588,16 +586,17 @@ def _recenter_loop(fitter, model, data, x, y, xc, yc):
     """
     Parameters
     ----------
-    fitter
-    Fitter based on the Levenberg-Marquardt algorithm and least squares statistic.
+    fitter: `~astropy.modeling.fitting.Fitter`
+        Fitter based on the Levenberg-Marquardt algorithm and
+        least squares statistic.
     model: `str`
         Choose a Gaussian or Moffat model.
     data: array_like
         2D array containing the image to extract the source.
     x, y: array_like
-    x, y centroid position.
-    xc, yc: array_like (optional)
-    New positions for (x, y) values.
+        x and y indexes ofthe pixels in the image.
+    xc, yc: array_like
+        x and y initial guess positions ofthe source.
     """
     if model == 'gaussian':
         model = PSFGaussian2D(x_0=xc, y_0=yc)
