@@ -2,6 +2,7 @@
 
 import sep
 import numpy as np
+import warnings
 
 from astropy.modeling.fitting import LevMarLSQFitter
 from astropy.stats import gaussian_fwhm_to_sigma
@@ -36,6 +37,7 @@ def gen_filter_kernel(size):
                          [3, 6, 9, 12, 9, 6, 3],
                          [2, 4, 6, 8, 6, 4, 2],
                          [1, 2, 3, 4, 3, 2, 1]])
+    return
 
 
 def background(data, box_size=64, filter_size=3, mask=None,
@@ -67,8 +69,7 @@ def background(data, box_size=64, filter_size=3, mask=None,
 
     if global_bkg:
         return bkg.globalback, bkg.globalrms
-    else:
-        return bkg.back(), bkg.rms()
+    return bkg.back(), bkg.rms()
 
 
 def sepfind(data, threshold, background, noise,
@@ -118,8 +119,8 @@ def sepfind(data, threshold, background, noise,
     if sep_kwargs.get('segmentation_map', False):
         sources, smap = sources
         return Table(sources), smap
-    else:
-        return Table(sources)
+
+    return Table(sources)
 
 
 class DAOFind:
@@ -140,9 +141,13 @@ class DAOFind:
 
     Notes
     -----
-    Adapted from IDL Astro package by D. Jones. Original function available
-    at PythonPhot package. https://github.com/djones1040/PythonPhot
-    The function recieved some improvements to work better
+    - Adapted from IDL Astro package by D. Jones. Original function available
+      at PythonPhot package. https://github.com/djones1040/PythonPhot
+      The function recieved some improvements to work better.
+    - For our roundness statistics, we use themaximum value between the
+      symmetry based roundness (`SROUND` in IRAF DAOFIND) and the marginal
+      gaussian fit roundness (`GROUND` in IRAF DAOFIND), allowing better
+      identification of assymetric sources in diagonal.
     """
     _maxbox = 13  # Maximum convolution box
 
@@ -192,7 +197,7 @@ class DAOFind:
 
     def _compute_constants(self):
         """Compute some constants needed for statistics."""
-        y, x = np.indices((self._nbox, self._nbox))
+        _, x = np.indices((self._nbox, self._nbox))
 
         self._wt = self._nhalf - np.abs(np.arange(self._nbox)-self._nhalf) + 1
         self._vec = self._nhalf - np.arange(self._nbox)
@@ -228,7 +233,7 @@ class DAOFind:
         self._sgdgdy = np.sum(self._wt*self._sgx*self._dgdy)
 
     def _convolve_image(self, image, n_x, n_y):
-        """Convolve image with gaussian kernel"""
+        """Convolve image with gaussian kernel."""
         h = convolve(image, self._kernel)
 
         minh = np.min(h)
@@ -271,6 +276,90 @@ class DAOFind:
                      len(index[0]))
         return index
 
+    def _calc_ground(self, chunk):
+        """Compute the gaussian marginal fit roundness."""
+        dx = np.sum(np.sum(chunk, axis=0)*self._c1)
+        dy = np.sum(np.sum(chunk, axis=1)*self._c1)
+        if dx <= 0 or dy <= 0:  # invalid roundness
+            return np.nan
+        return 2*(dx-dy)/(dx+dy)
+
+    def _calc_sround(self, chunk):
+        """Compute the folding roundness."""
+        # Quads
+        # 3 3 4 4 4
+        # 3 3 4 4 4
+        # 3 3 x 1 1
+        # 2 2 2 1 1
+        # 2 2 2 1 1
+        nhalf = self._nhalf
+        chunk = np.array(chunk)
+        chunk[nhalf, nhalf] = 0  # copy and setcentral pixel to 0
+
+        quad1 = chunk[nhalf:, nhalf+1:]
+        quad2 = chunk[nhalf+1:, :nhalf+1]
+        quad3 = chunk[:nhalf+1, :nhalf]
+        quad4 = chunk[:nhalf, nhalf:]
+
+        sum2 = -quad1.sum()+quad2.sum()-quad3.sum()+quad4.sum()
+        sum4 = chunk.sum()
+
+        # ignore divide-by-zero RuntimeWarning
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', RuntimeWarning)
+            sround = 2.0 * sum2 / sum4
+        return sround
+
+    def _calc_sharp(self, chunk, d, mask):
+        """Compute the sharpness."""
+        center = chunk[self._nhalf, self._nhalf]
+        sides = (np.sum(mask*chunk)/np.sum(mask))
+        return (center-sides)/d
+
+    def _calc_centroid(self, chunk, ix, iy):
+        """Compute the centroid"""
+        # Notes from D.Jones:
+        # Modified version in Mar 2008 that differ from original DAOPHOT,
+        # which multiplies the correction dx by 1/(1+abs(dx)).
+        # DAOPHOT method is more robust (e.g. two different sources will
+        # not merge).
+        # This method is more accurate and do not introduce biases in the
+        # centroid histogram.
+        # The change was also applyed in IRAF DAFIND routine.
+        # (see http://iraf.net/article.php?story=7211;query=daofind)
+        # x centroid
+        sd = np.sum(chunk*self._ywt, axis=0)
+        sumgd = np.sum(self._wt*self._sgy*sd)
+        sumd = np.sum(self._wt*sd)
+        sddgdx = np.sum(self._wt*sd*self._dgdx)
+        # hx is the height of the best-fitting marginal gaussian
+        hx = (sumgd-self._sumgx*sumd/self._p)
+        hx /= (self._sumgsqy-self._sumgx**2/self._p)
+        if hx <= 0:
+            return
+        skylvl = (sumd - hx*self._sumgx)/self._p
+        dx = sddgdx-self._sdgdx*(hx*self._sumgx + skylvl*self._p)
+        dx = (self._sgdgdx-dx)/(hx*self._sdgdxs/self._sigma2)
+        if np.abs(dx) >= self._nhalf:
+            return
+
+        # y centroid
+        sd = np.sum(chunk*self._xwt, axis=1)
+        sumgd = np.sum(self._wt*self._sgx*sd)
+        sumd = np.sum(self._wt*sd)
+        sddgdy = np.sum(self._wt*sd*self._dgdy)
+        hy = (sumgd - self._sumgy*sumd/self._p)
+        hy /= (self._sumgsqx - self._sumgy**2/self._p)
+        if hy <= 0:
+            return
+        skylvl = (sumd - hy*self._sumgy)/self._p
+        dy = sddgdy-self._sdgdy*(hy*self._sumgy + skylvl*self._p)
+        dy = (self._sgdgdy-dy)/(hy*self._sdgdys/self._sigma2)
+        if np.abs(dy) >= self._nhalf:
+            return
+
+        return ix+dx, iy+dy
+
     def _compute_statistics(self, image, image_convolved, index):
         """Compute source statistics for each star."""
         h = image_convolved
@@ -280,80 +369,37 @@ class DAOFind:
         mask = self._conv_mask.copy()
         mask[nhalf, nhalf] = 0  # exclude central pixel
 
-        x = np.empty(ngood, dtype='f8')  # x centroid of all peaks
-        x[:] = np.nan
-        y = np.empty(ngood, dtype='f8')  # y centroid of all peaks
-        y[:] = np.nan
-        flux = np.empty(ngood, dtype='f8')  # estimated flux of all peaks
-        flux[:] = np.nan
-        sharpness = np.empty(ngood, dtype='f8')  # sharpness of all peaks
-        sharpness[:] = np.nan
-        roundness = np.empty(ngood, dtype='f8')  # roundness of all peaks
-        roundness[:] = np.nan
+        x = np.full(ngood, fill_value=np.nan, dtype='f8')
+        y = np.full(ngood, fill_value=np.nan, dtype='f8')
+        flux = np.full(ngood, fill_value=np.nan, dtype='f8')
+        sharpness = np.full(ngood, fill_value=np.nan, dtype='f8')
+        roundness = np.full(ngood, fill_value=np.nan, dtype='f8')
 
         # loop over all stars
         for i in range(ngood):
             # original image chunk
             temp = image[iy[i]-nhalf:iy[i]+nhalf+1,
                          ix[i]-nhalf:ix[i]+nhalf+1]
+            # convolved image chunk
+            temp_conv = h[iy[i]-nhalf:iy[i]+nhalf+1,
+                          ix[i]-nhalf:ix[i]+nhalf+1]
             # convolved central pixel intensity
             d = h[iy[i], ix[i]]
 
             # compute sharpness
-            sharpness[i] = temp[nhalf, nhalf]-(np.sum(mask*temp)/np.sum(mask))
-            sharpness[i] /= d
+            sharpness[i] = self._calc_sharp(temp, d, mask)
 
             # compute roundness
-            dx = np.sum(np.sum(temp, axis=0)*self._c1)
-            dy = np.sum(np.sum(temp, axis=1)*self._c1)
-            if dx <= 0 or dy <= 0:  # invalid roundness
-                continue
-            roundness[i] = 2*(dx-dy)/(dx+dy)
+            # maximum value between symmetry and fit roundness
+            roundness[i] = np.max([self._calc_ground(temp),
+                                   self._calc_sround(temp_conv)])
+            if roundness[i] == np.nan:
+                continue  # invalid source
 
             # compute centroid
-            # Notes from D.Jones:
-            # Modified version in Mar 2008 that differ from original DAOPHOT,
-            # which multiplies the correction dx by 1/(1+abs(dx)).
-            # DAOPHOT method is more robust (e.g. two different sources will
-            # not merge).
-            # This method is more accurate and do not introduce biases in the
-            # centroid histogram.
-            # The change was also applyed in IRAF DAFIND routine.
-            # (see http://iraf.net/article.php?story=7211;query=daofind)
-
-            # x centroid
-            sd = np.sum(temp*self._ywt, axis=0)
-            sumgd = np.sum(self._wt*self._sgy*sd)
-            sumd = np.sum(self._wt*sd)
-            sddgdx = np.sum(self._wt*sd*self._dgdx)
-            # hx is the height of the best-fitting marginal gaussian
-            hx = (sumgd-self._sumgx*sumd/self._p)
-            hx /= (self._sumgsqy-self._sumgx**2/self._p)
-            if hx <= 0:
-                continue
-            skylvl = (sumd - hx*self._sumgx)/self._p
-            dx = sddgdx-self._sdgdx*(hx*self._sumgx + skylvl*self._p)
-            dx = (self._sgdgdx-dx)/(hx*self._sdgdxs/self._sigma2)
-            if np.abs(dx) >= nhalf:
-                continue
-
-            # y centroid
-            sd = np.sum(temp*self._xwt, axis=1)
-            sumgd = np.sum(self._wt*self._sgx*sd)
-            sumd = np.sum(self._wt*sd)
-            sddgdy = np.sum(self._wt*sd*self._dgdy)
-            hy = (sumgd - self._sumgy*sumd/self._p)
-            hy /= (self._sumgsqx - self._sumgy**2/self._p)
-            if hy <= 0:
-                continue
-            skylvl = (sumd - hy*self._sumgy)/self._p
-            dy = sddgdy-self._sdgdy*(hy*self._sumgy + skylvl*self._p)
-            dy = (self._sgdgdy-dy)/(hy*self._sdgdys/self._sigma2)
-            if np.abs(dy) >= nhalf:
-                continue
-
-            x[i] = ix[i] + dx
-            y[i] = iy[i] + dy
+            centroids = self._calc_centroid(temp, ix[i], iy[i])
+            if centroids is not None:
+                x[i], y[i] = centroids
 
         return Table({'x': x, 'y': y, 'flux': flux,
                       'sharp': sharpness, 'round': roundness})
@@ -361,7 +407,7 @@ class DAOFind:
     def _filter_sources(self, sources):
         """Perform roundness, sharpness and centroid filtering."""
         # filter stars by sharpness
-        sharp_rejected = 0
+        sharp_rej = 0
         sharpmask = False
         if self._sharp_limit is not None:
             sharp_limit = sorted(self._sharp_limit)
@@ -389,8 +435,8 @@ class DAOFind:
         logger.debug('%i sources rejected by invalid centroid',
                      np.sum(centroidmask) - round_rej - sharp_rej)
 
-        mask = ~sharpmask & ~roundmask & ~centroidmask
-        return sources[mask]
+        mask = sharpmask & roundmask & centroidmask
+        return sources[~mask]
 
     def find_stars(self, data, threshold, background, noise):
         """Find stars in a single image using daofind."""
@@ -398,7 +444,6 @@ class DAOFind:
             raise ValueError('Data array must be 2 dimensional.')
 
         n_y, n_x = np.shape(data)
-        # TODO: Check if median is really needeed
         hmin = np.median(threshold*noise)
         image = np.array(data, dtype=np.float64) - background
 
@@ -444,7 +489,7 @@ def daofind(data, threshold, background, noise, fwhm, mask=None,
         `None` will disable the roundness filtering.
         Default: (-1.0,1.0)
     """
-    # TODO: mask is getting ignored in the original algorith
+    # TODO: mask is ignored in the original algorith
     # Find a way to use it
     d = DAOFind(fwhm, sharp_limit, round_limit)
     return d.find_stars(data, threshold, background, noise)
@@ -530,7 +575,7 @@ def _fwhm_loop(model, data, x, y, xc, yc):
     x, y: array_like
         x and y indexes ofthe pixels in the image.
     xc, yc: array_like
-        x and y initial guess positions ofthe source.
+        x and y initial guess positions of the source.
     """
     if model == 'gaussian':
         model = gaussian_r
@@ -563,7 +608,7 @@ def calc_fwhm(data, x, y, box_size=25, model='gaussian', min_fwhm=3.0):
     box_size: `int` (optional)
         Size of background boxes in pixels.
         Default: 25
-    model: `str`
+    model: {`gaussian`, `moffat`}
         Choose a Gaussian or Moffat model.
         Default: `gausiann`
     min_fwhm: float
@@ -589,14 +634,14 @@ def _recenter_loop(fitter, model, data, x, y, xc, yc):
     fitter: `~astropy.modeling.fitting.Fitter`
         Fitter based on the Levenberg-Marquardt algorithm and
         least squares statistic.
-    model: `str`
+    model: {`gaussian`, `moffat`}
         Choose a Gaussian or Moffat model.
     data: array_like
         2D array containing the image to extract the source.
     x, y: array_like
         x and y indexes ofthe pixels in the image.
     xc, yc: array_like
-        x and y initial guess positions ofthe source.
+        x and y initial guess positions of the source.
     """
     if model == 'gaussian':
         model = PSFGaussian2D(x_0=xc, y_0=yc)
