@@ -73,7 +73,7 @@ def background(data, box_size=64, filter_size=3, mask=None,
 
 
 def sepfind(data, threshold, background, noise,
-            mask=None, fwhm=None, filter_kernel=3,
+            mask=None, filter_kernel=3,
             **sep_kwargs):
     """Find sources using SExtractor segmentation algorithm.
 
@@ -91,9 +91,6 @@ def sepfind(data, threshold, background, noise,
         Boolean mask where 1 pixels are masked out in the background
         calculation.
         Default: `None`
-    fwhm: `int` (optional)
-        Full width at half maximum, fwhm = 2.35*sigma
-        Default: `None`
     filter_kernel: `int` (optional)
         Combined filter, which can provide optimal signal-to-noise
         detection for objects with some known shape
@@ -109,16 +106,11 @@ def sepfind(data, threshold, background, noise,
 
     sep_kwargs['filter_kernel'] = filter_kernel
 
-    # Compute min area based on FWHM
-    if 'minarea' not in sep_kwargs.keys() and fwhm is not None:
-        sep_kwargs['minarea'] = int((3.14*fwhm**2)/4)
-
     sources = sep.extract(d-background, threshold, err=noise, mask=mask,
                           **sep_kwargs)
 
     if sep_kwargs.get('segmentation_map', False):
-        sources, smap = sources
-        return Table(sources), smap
+        sources = sources[0]  # ignore smap
 
     return Table(sources)
 
@@ -134,10 +126,14 @@ class DAOFind:
         Low and high cutoff for the sharpness statistic.
         `None` will disable the sharpness filtering.
         Default: (0.2, 1.0)
-    round_limit : array_like or `None` (optional)
+    round_limit: array_like or `None` (optional)
         Low and high cutoff for the roundness statistic.
         `None` will disable the roundness filtering.
         Default: (-1.0,1.0)
+    min_sep: `float` or `None` (optional)
+        Minimum separation between sources. None implies it will be
+        1.5*sigma.
+        Default: None
 
     Notes
     -----
@@ -149,7 +145,6 @@ class DAOFind:
       gaussian fit roundness (`GROUND` in IRAF DAOFIND), allowing better
       identification of assymetric sources in diagonal.
     """
-    _maxbox = 13  # Maximum convolution box
 
     def __init__(self, fwhm, sharp_limit=(0.2, 1.0), round_limit=(-1.0, 1.0)):
         if fwhm < 0.5:
@@ -158,6 +153,7 @@ class DAOFind:
         self._fwhm = fwhm
         self._sharp_limit = sharp_limit
         self._round_limit = round_limit
+        self._maxbox = 13
 
         self._compute_convolution_kernel()
         self._compute_constants()
@@ -296,13 +292,13 @@ class DAOFind:
         chunk = np.array(chunk)
         chunk[nhalf, nhalf] = 0  # copy and setcentral pixel to 0
 
-        quad1 = chunk[nhalf:, nhalf+1:]
-        quad2 = chunk[nhalf+1:, :nhalf+1]
-        quad3 = chunk[:nhalf+1, :nhalf]
-        quad4 = chunk[:nhalf, nhalf:]
+        q1 = chunk[nhalf:, nhalf+1:].sum()
+        q2 = chunk[nhalf+1:, :nhalf+1].sum()
+        q3 = chunk[:nhalf+1, :nhalf].sum()
+        q4 = chunk[:nhalf, nhalf:].sum()
 
-        sum2 = -quad1.sum()+quad2.sum()-quad3.sum()+quad4.sum()
-        sum4 = chunk.sum()
+        sum2 = -q1+q2-q3+q4
+        sum4 = q1+q2+q3+q4
 
         # ignore divide-by-zero RuntimeWarning
         with warnings.catch_warnings():
@@ -314,10 +310,13 @@ class DAOFind:
         """Compute the sharpness."""
         center = chunk[self._nhalf, self._nhalf]
         sides = (np.sum(mask*chunk)/np.sum(mask))
-        return (center-sides)/d
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', RuntimeWarning)
+            sharp = (center-sides)/d
+        return sharp
 
     def _calc_centroid(self, chunk, ix, iy):
-        """Compute the centroid"""
+        """Compute the sources centroid with gaussian fit."""
         # Notes from D.Jones:
         # Modified version in Mar 2008 that differ from original DAOPHOT,
         # which multiplies the correction dx by 1/(1+abs(dx)).
@@ -391,15 +390,21 @@ class DAOFind:
 
             # compute roundness
             # maximum value between symmetry and fit roundness
-            roundness[i] = np.max([self._calc_ground(temp),
-                                   self._calc_sround(temp_conv)])
-            if roundness[i] == np.nan:
+            ground = self._calc_ground(temp)
+            sround = self._calc_sround(temp_conv)
+            if ground == np.nan:
                 continue  # invalid source
+            if abs(ground) >= abs(sround):
+                roundness[i] = ground
+            else:
+                roundness[i] = sround
 
             # compute centroid
             centroids = self._calc_centroid(temp, ix[i], iy[i])
             if centroids is not None:
                 x[i], y[i] = centroids
+
+            flux[i] = d
 
         return Table({'x': x, 'y': y, 'flux': flux,
                       'sharp': sharpness, 'round': roundness})
@@ -435,7 +440,7 @@ class DAOFind:
         logger.debug('%i sources rejected by invalid centroid',
                      np.sum(centroidmask) - round_rej - sharp_rej)
 
-        mask = sharpmask & roundmask & centroidmask
+        mask = sharpmask | roundmask | centroidmask
         return sources[~mask]
 
     def find_stars(self, data, threshold, background, noise):
@@ -495,8 +500,9 @@ def daofind(data, threshold, background, noise, fwhm, mask=None,
     return d.find_stars(data, threshold, background, noise)
 
 
-def starfind(data, threshold, background, noise, fwhm, mask=None, box_size=35,
-             sharp_limit=(0.2, 1.0), round_limit=(-1.0, 1.0)):
+def starfind(data, threshold, background, noise, fwhm=None,
+             mask=None, sharp_limit=(0.2, 1.0),
+             round_limit=(-1.0, 1.0)):
     """Find stars using daofind AND sepfind.
 
     Parameters
@@ -509,15 +515,14 @@ def starfind(data, threshold, background, noise, fwhm, mask=None, box_size=35,
         Background estimation.
     noise: `int`
         Root-mean-square at each point.
-    fwhm: `float`
-        Full width at half maximum: to be used in the convolve filter.
+    fwhm: `float` (optional)
+        Full width at half maximum to be used in the convolve filter.
+        No need to be precise and will be recomputed in the function.
+        Default: `None`
     mask: `bool` (optional)
         Boolean mask where 1 pixels are masked out in the background
         calculation.
         Default: `None`
-    box_size: `int` (optional)
-        Size of background boxes in pixels.
-        Default: 35
     sharp_limit: array_like (optional)
         Low and high cutoff for the sharpness statistic.
         Default: (0.2, 1.0)
@@ -526,11 +531,13 @@ def starfind(data, threshold, background, noise, fwhm, mask=None, box_size=35,
         Default: (-1.0,1.0)
     """
     # First, we identify the sources with sepfind (fwhm independent)
-    sources = sepfind(data, threshold, background, noise, mask=mask,
-                      fwhm=fwhm)
+    sources = sepfind(data, threshold, background, noise, mask=mask)
+
     # We compute the median FWHM and perform a optimum daofind extraction
+    box_size = 3*fwhm if fwhm is not None else 15  # 3xFWHM seems to be enough
+    min_fwhm = fwhm or 2.0  # hardcoded 3.0 seems to be ok for stars
     fwhm = calc_fwhm(data, sources['x'], sources['y'], box_size=box_size,
-                     model='gaussian', min_fwhm=fwhm) or fwhm
+                     model='gaussian', min_fwhm=min_fwhm)
 
     sources = daofind(data, threshold, background, noise, fwhm, mask=mask,
                       sharp_limit=sharp_limit, round_limit=round_limit)
@@ -628,21 +635,7 @@ def calc_fwhm(data, x, y, box_size=25, model='gaussian', min_fwhm=3.0):
 
 
 def _recenter_loop(fitter, model, data, x, y, xc, yc):
-    """
-    Parameters
-    ----------
-    fitter: `~astropy.modeling.fitting.Fitter`
-        Fitter based on the Levenberg-Marquardt algorithm and
-        least squares statistic.
-    model: {`gaussian`, `moffat`}
-        Choose a Gaussian or Moffat model.
-    data: array_like
-        2D array containing the image to extract the source.
-    x, y: array_like
-        x and y indexes ofthe pixels in the image.
-    xc, yc: array_like
-        x and y initial guess positions of the source.
-    """
+    """ Fit a model in the data to find a new center. Internal only."""
     if model == 'gaussian':
         model = PSFGaussian2D(x_0=xc, y_0=yc)
     elif model == 'moffat':
@@ -669,6 +662,7 @@ def recenter_sources(data, x, y, box_size=25, model='gaussian'):
         Choose a Gaussian or Moffat model.
         Default: `gausiann`
     """
+    # TODO: Failing in tests. Investigate it.
     indices = np.indices(data.shape)
     rects = [trim_array(data, box_size, (xi, yi), indices=indices)
              for xi, yi in zip(x, y)]
