@@ -18,6 +18,10 @@ from ..math.array import trim_array, xy2r
 from ..logger import logger
 
 
+_default_sharp = (0.2, 1.0)
+_default_round = (-1.0, 1.0)
+
+
 def gen_filter_kernel(size):
     """Generate sextractor like filter kernels."""
     if size == 3:
@@ -135,6 +139,10 @@ class DAOFind:
         Minimum separation between sources. None implies it will be
         1.5*sigma.
         Default: None
+    skip_invalid_centroid: `bool`
+        If `True`, the code will skip the invalid centroid verification and
+        include sources with wrong centroid in the final list.
+        Default: `False`
 
     Notes
     -----
@@ -149,13 +157,16 @@ class DAOFind:
       distance between them is equal to FWHM.
     """
 
-    def __init__(self, fwhm, sharp_limit=(0.2, 1.0), round_limit=(-1.0, 1.0)):
+    def __init__(self, fwhm, sharp_limit=_default_sharp,
+                 round_limit=_default_round,
+                 skip_invalid_centroid=False):
         if fwhm < 0.5:
             raise ValueError('Supplied FWHM must be at least 0.5 pixels')
         # fhwm and related stuff
         self._fwhm = fwhm
         self._sharp_limit = sharp_limit
         self._round_limit = round_limit
+        self._skip_invalid_centroid = skip_invalid_centroid
         self._maxbox = 13
 
         self._compute_convolution_kernel()
@@ -338,12 +349,14 @@ class DAOFind:
         hx = (sumgd-self._sumgx*sumd/self._p)
         hx /= (self._sumgsqy-self._sumgx**2/self._p)
         if hx <= 0:
-            return
+            if not self._skip_invalid_centroid:
+                return
         skylvl = (sumd - hx*self._sumgx)/self._p
         dx = sddgdx-self._sdgdx*(hx*self._sumgx + skylvl*self._p)
         dx = (self._sgdgdx-dx)/(hx*self._sdgdxs/self._sigma2)
         if np.abs(dx) >= self._nhalf:
-            return
+            if not self._skip_invalid_centroid:
+                return
 
         # y centroid
         sd = np.sum(chunk*self._xwt, axis=1)
@@ -353,64 +366,69 @@ class DAOFind:
         hy = (sumgd - self._sumgy*sumd/self._p)
         hy /= (self._sumgsqx - self._sumgy**2/self._p)
         if hy <= 0:
-            return
+            if not self._skip_invalid_centroid:
+                return
         skylvl = (sumd - hy*self._sumgy)/self._p
         dy = sddgdy-self._sdgdy*(hy*self._sumgy + skylvl*self._p)
         dy = (self._sgdgdy-dy)/(hy*self._sdgdys/self._sigma2)
         if np.abs(dy) >= self._nhalf:
-            return
+            if not self._skip_invalid_centroid:
+                return
 
         return ix+dx, iy+dy
 
-    def _compute_statistics(self, image, image_convolved, index):
-        """Compute source statistics for each star."""
-        h = image_convolved
-        ngood = len(index[0])
-        iy, ix = index
+    def _compute(self, image, h, xc, yc):
+        """Compute statistics of a single source."""
         nhalf = self._nhalf
         mask = self._conv_mask.copy()
         mask[nhalf, nhalf] = 0  # exclude central pixel
 
-        x = np.full(ngood, fill_value=np.nan, dtype='f8')
-        y = np.full(ngood, fill_value=np.nan, dtype='f8')
-        flux = np.full(ngood, fill_value=np.nan, dtype='f8')
-        sharpness = np.full(ngood, fill_value=np.nan, dtype='f8')
-        roundness = np.full(ngood, fill_value=np.nan, dtype='f8')
+        # original image chunk
+        temp = image[yc-nhalf:yc+nhalf+1,
+                     xc-nhalf:xc+nhalf+1]
+        # convolved image chunk
+        temp_conv = h[yc-nhalf:yc+nhalf+1,
+                      xc-nhalf:xc+nhalf+1]
+        # convolved central pixel intensity
+        d = h[yc, xc]
+
+        # compute sharpness
+        sh = self._calc_sharp(temp, d, mask)
+
+        # compute roundness
+        # maximum value between symmetry and fit roundness
+        ground = self._calc_ground(temp)
+        sround = self._calc_sround(temp_conv)
+        if ground == np.nan:
+            return  # invalid source
+        rd = ground if abs(ground) >= abs(sround) else sround
+
+        # compute centroid
+        centroids = self._calc_centroid(temp, xc, yc)
+        xcent = ycent = np.nan
+        if centroids is not None:
+            xcent, ycent = centroids
+
+        f = d
+
+        return sh, rd, f, xcent, ycent
+
+    def _compute_statistics(self, image, image_convolved, index):
+        """Compute source statistics for each star."""
+        ngood = len(index[0])
+        iy, ix = index
+
+        sources = np.full(ngood, fill_value=np.nan,
+                          dtype=[('x', 'f8'), ('y', 'f8'), ('flux', 'f8'),
+                                 ('round', 'f4'), ('sharp', 'f4')])
 
         # loop over all stars
         for i in range(ngood):
-            # original image chunk
-            temp = image[iy[i]-nhalf:iy[i]+nhalf+1,
-                         ix[i]-nhalf:ix[i]+nhalf+1]
-            # convolved image chunk
-            temp_conv = h[iy[i]-nhalf:iy[i]+nhalf+1,
-                          ix[i]-nhalf:ix[i]+nhalf+1]
-            # convolved central pixel intensity
-            d = h[iy[i], ix[i]]
+            s, r, f, x, y = self._compute(image, image_convolved,
+                                          ix[i], iy[i])
+            sources[i] = (x, y, f, r, s)
 
-            # compute sharpness
-            sharpness[i] = self._calc_sharp(temp, d, mask)
-
-            # compute roundness
-            # maximum value between symmetry and fit roundness
-            ground = self._calc_ground(temp)
-            sround = self._calc_sround(temp_conv)
-            if ground == np.nan:
-                continue  # invalid source
-            if abs(ground) >= abs(sround):
-                roundness[i] = ground
-            else:
-                roundness[i] = sround
-
-            # compute centroid
-            centroids = self._calc_centroid(temp, ix[i], iy[i])
-            if centroids is not None:
-                x[i], y[i] = centroids
-
-            flux[i] = d
-
-        return Table({'x': x, 'y': y, 'flux': flux,
-                      'sharp': sharpness, 'round': roundness})
+        return sources
 
     def _filter_sources(self, sources):
         """Perform roundness, sharpness and centroid filtering."""
@@ -444,29 +462,47 @@ class DAOFind:
                      np.sum(centroidmask))
 
         mask = sharpmask | roundmask | centroidmask
-        return sources[~mask]
+        return sources[np.where(~mask)]
 
-    def _group_and_merge(self, index, iters=2):
-        """use dbscan from sklearn to group and merge close points."""
-        iy, ix = index
-        arr = np.transpose(index)
-        # cluster points closer than fwhm
-        fitted = DBSCAN(eps=self._fwhm, min_samples=1).fit(arr)
+    def _group_and_merge(self, sources, image, image_conv, iters=2):
+        """Use DBSCAN from sklearn to group and merge close points."""
+        # Filter nans
+        mask = np.logical_or(np.isnan(sources['x']), np.isnan(sources['y']))
+        sources = sources[np.where(~mask)]
+
+        ix = sources['x'].ravel()
+        iy = sources['y'].ravel()
+        arr = np.transpose([ix, iy])
+        # cluster points closer than sigma
+        fitted = DBSCAN(eps=self._fwhm/2.355, min_samples=1).fit(arr)
         labels = fitted.labels_
         ngroups = labels.max()+1
-        n_ind = np.zeros((2, ngroups), dtype=int)
+        n_sources = np.full(ngroups, dtype=[('x', 'f8'), ('y', 'f8'),
+                                            ('flux', 'f8'),
+                                            ('round', 'f4'),
+                                            ('sharp', 'f8')],
+                            fill_value=np.nan)
         n_merged = 0
         for group in range(ngroups):
-            g = np.argwhere(labels == group)
+            g = np.where(labels == group)
             n_merged += len(g)
-            n_ind[1][group] = int(np.mean(ix[g]))
-            n_ind[0][group] = int(np.mean(iy[g]))
+            if len(g) > 1:
+                xc = int(round(np.mean(ix[g]), 0))
+                yc = int(round(np.mean(iy[g]), 0))
+                # need to recompute the statistics for the merged source
+                sh, rd, f, xcent, ycent = self._compute(image, image_conv,
+                                                        xc, yc)
+                n_sources[group] = (xcent, ycent, f, rd, sh)
+            else:
+                n_sources[group] = sources[g]
+
         logger.debug('merging %i close stars in %i sources',
                      n_merged, ngroups)
         iters -= 1
         if iters:
-            n_ind = self._group_and_merge(n_ind, iters)
-        return n_ind
+            n_sources = self._group_and_merge(n_sources, image,
+                                              image_conv, iters)
+        return n_sources
 
     def find_stars(self, data, threshold, background, noise):
         """Find stars in a single image using daofind."""
@@ -486,13 +522,14 @@ class DAOFind:
         logger.debug('Found %i pixels above threshold', len(index[0]))
 
         index = self._find_peaks(h, index, n_x, n_y)
-        index = self._group_and_merge(index)
         t = self._compute_statistics(image, h, index)
-        return self._filter_sources(t)
+        t = self._group_and_merge(t, image, h)
+        t = self._filter_sources(t)
+        return Table(t)
 
 
-def daofind(data, threshold, background, noise, fwhm, mask=None,
-            sharp_limit=(0.2, 1.0), round_limit=(-1.0, 1.0)):
+def daofind(data, threshold, background, noise, fwhm,
+            mask=None, **kwargs):
     """Find sources using DAOfind algorithm.
 
     Parameters
@@ -507,10 +544,6 @@ def daofind(data, threshold, background, noise, fwhm, mask=None,
         Root-mean-square at each point.
     fwhm: `int`
         Full width at half maximum: to be used in the convolve filter.
-    mask: array_like (optional)
-        Boolean mask where 1 pixels are masked out in the background
-        calculation.
-        Default: `None`
     sharp_limit: array_like or `None` (optional)
         Low and high cutoff for the sharpness statistic.
         `None` will disable the sharpness filtering.
@@ -519,16 +552,19 @@ def daofind(data, threshold, background, noise, fwhm, mask=None,
         Low and high cutoff for the roundness statistic.
         `None` will disable the roundness filtering.
         Default: (-1.0,1.0)
+    skip_invalid_centroid: `bool`
+        If `True`, the code will skip the invalid centroid verification and
+        include sources with wrong centroid in the final list.
+        Default: `False`
     """
     # TODO: mask is ignored in the original algorith
     # Find a way to use it
-    d = DAOFind(fwhm, sharp_limit, round_limit)
+    d = DAOFind(fwhm, **kwargs)
     return d.find_stars(data, threshold, background, noise)
 
 
 def starfind(data, threshold, background, noise, fwhm=None,
-             mask=None, sharp_limit=(0.2, 1.0),
-             round_limit=(-1.0, 1.0)):
+             **kwargs):
     """Find stars using daofind AND sepfind.
 
     Parameters
@@ -555,8 +591,13 @@ def starfind(data, threshold, background, noise, fwhm=None,
     round_limit : array_like (optional)
         Low and high cutoff for the roundness statistic.
         Default: (-1.0,1.0)
+    skip_invalid_centroid: `bool`
+        If `True`, the code will skip the invalid centroid verification and
+        include sources with wrong centroid in the final list.
+        Default: `False`
     """
     # First, we identify the sources with sepfind (fwhm independent)
+    mask = kwargs.get('mask')
     sources = sepfind(data, threshold, background, noise, mask=mask)
 
     # We compute the median FWHM and perform a optimum daofind extraction
@@ -565,10 +606,12 @@ def starfind(data, threshold, background, noise, fwhm=None,
     fwhm = calc_fwhm(data, sources['x'], sources['y'], box_size=box_size,
                      model='gaussian', min_fwhm=min_fwhm)
 
-    sources = daofind(data, threshold, background, noise, fwhm, mask=mask,
-                      sharp_limit=sharp_limit, round_limit=round_limit)
-    sources.meta['astropop fwhm'] = fwhm
-    return sources
+    s = daofind(data, threshold, background, noise, fwhm, mask=mask,
+                sharp_limit=kwargs.get('sharp_limit', _default_sharp),
+                round_limit=kwargs.get('round_limit', _default_round),
+                skip_invalid_centroid=kwargs.get('skip_invalid_centroid', 0))
+    s.meta['astropop fwhm'] = fwhm
+    return s
 
 
 def sources_mask(shape, x, y, a, b, theta, mask=None, scale=1.0):
