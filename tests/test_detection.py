@@ -6,8 +6,7 @@ import numpy as np
 from astropop.photometry import (background, sepfind, daofind, starfind,
                                  calc_fwhm, recenter_sources)
 from astropop.photometry.detection import gen_filter_kernel, DAOFind
-from astropop.testing import (assert_almost_equal, assert_equal, assert_true,
-                              assert_greater, assert_less)
+from astropop.testing import (assert_almost_equal, assert_equal)
 from astropop.math.moffat import moffat_2d
 from astropop.math.gaussian import gaussian_2d
 from astropop.py_utils import check_number

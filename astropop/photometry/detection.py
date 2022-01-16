@@ -9,6 +9,7 @@ from astropy.stats import gaussian_fwhm_to_sigma
 from astropy.table import Table
 from scipy.optimize import curve_fit
 from scipy.ndimage.filters import convolve
+from sklearn.cluster import DBSCAN
 
 from ._utils import _sep_fix_byte_order
 from ..math.moffat import moffat_r, moffat_fwhm, PSFMoffat2D
@@ -144,6 +145,8 @@ class DAOFind:
       symmetry based roundness (`SROUND` in IRAF DAOFIND) and the marginal
       gaussian fit roundness (`GROUND` in IRAF DAOFIND), allowing better
       identification of assymetric sources in diagonal.
+    - Sources are grouped and merged using the DBSCAN algorithm. The minimum
+      distance between them is equal to FWHM.
     """
 
     def __init__(self, fwhm, sharp_limit=(0.2, 1.0), round_limit=(-1.0, 1.0)):
@@ -431,17 +434,39 @@ class DAOFind:
             roundmask = np.isnan(sources['round'])
             roundmask |= sources['round'] < round_limit[0]
             roundmask |= sources['round'] > round_limit[1]
-            round_rej = np.sum(roundmask) - sharp_rej
+            round_rej = np.sum(roundmask)
             logger.debug('%i sources rejected by roundness',
                          round_rej)
 
         centroidmask = np.isnan(sources['x'])
         centroidmask |= np.isnan(sources['y'])
         logger.debug('%i sources rejected by invalid centroid',
-                     np.sum(centroidmask) - round_rej - sharp_rej)
+                     np.sum(centroidmask))
 
         mask = sharpmask | roundmask | centroidmask
         return sources[~mask]
+
+    def _group_and_merge(self, index, iters=2):
+        """use dbscan from sklearn to group and merge close points."""
+        iy, ix = index
+        arr = np.transpose(index)
+        # cluster points closer than fwhm
+        fitted = DBSCAN(eps=self._fwhm, min_samples=1).fit(arr)
+        labels = fitted.labels_
+        ngroups = labels.max()+1
+        n_ind = np.zeros((2, ngroups), dtype=int)
+        n_merged = 0
+        for group in range(ngroups):
+            g = np.argwhere(labels == group)
+            n_merged += len(g)
+            n_ind[1][group] = int(np.mean(ix[g]))
+            n_ind[0][group] = int(np.mean(iy[g]))
+        logger.debug('merging %i close stars in %i sources',
+                     n_merged, ngroups)
+        iters -= 1
+        if iters:
+            n_ind = self._group_and_merge(n_ind, iters)
+        return n_ind
 
     def find_stars(self, data, threshold, background, noise):
         """Find stars in a single image using daofind."""
@@ -449,7 +474,7 @@ class DAOFind:
             raise ValueError('Data array must be 2 dimensional.')
 
         n_y, n_x = np.shape(data)
-        hmin = np.median(threshold*noise)
+        hmin = threshold*np.median(noise)
         image = np.array(data, dtype=np.float64) - background
 
         h = self._convolve_image(image, n_x, n_y)
@@ -461,6 +486,7 @@ class DAOFind:
         logger.debug('Found %i pixels above threshold', len(index[0]))
 
         index = self._find_peaks(h, index, n_x, n_y)
+        index = self._group_and_merge(index)
         t = self._compute_statistics(image, h, index)
         return self._filter_sources(t)
 
