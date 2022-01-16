@@ -358,7 +358,7 @@ class Test_SEP_Detection():
         sky = 800
         rdnoise = 20
         flux = (32000, 600)
-        sigma = 3
+        sigma = 1.5
         theta = 0
         im = gen_image(size, posx, posy, flux, sky, rdnoise,
                        model='gaussian', sigma=sigma, theta=theta)
@@ -642,7 +642,7 @@ class Test_DAOFind_Detection():
         high = 30000
         sky = 800
         rdnoise = 20
-        fwhm = 3
+        fwhm = 5
         sigma = fwhm*gaussian_fwhm_to_sigma
         theta = 0
         threshold = 10

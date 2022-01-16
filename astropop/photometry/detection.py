@@ -484,17 +484,18 @@ class DAOFind:
                             fill_value=np.nan)
         n_merged = 0
         for group in range(ngroups):
-            g = np.where(labels == group)
-            n_merged += len(g)
-            if len(g) > 1:
-                xc = int(round(np.mean(ix[g]), 0))
-                yc = int(round(np.mean(iy[g]), 0))
+            rows = sources[np.where(labels == group)]
+            n_merged += len(rows)
+            if len(rows) > 1:
+                xc = int(round(np.mean(rows['x']), 0))
+                yc = int(round(np.mean(rows['y']), 0))
                 # need to recompute the statistics for the merged source
                 sh, rd, f, xcent, ycent = self._compute(image, image_conv,
                                                         xc, yc)
                 n_sources[group] = (xcent, ycent, f, rd, sh)
             else:
-                n_sources[group] = sources[g]
+                n_sources[group] = (rows['x'], rows['y'], rows['flux'],
+                                    rows['round'], rows['sharp'])
 
         logger.debug('merging %i close stars in %i sources',
                      n_merged, ngroups)
