@@ -714,7 +714,7 @@ class Test_StarFind():
         fwhm = calc_fwhm(im, x, y, box_size=25, model='gaussian', min_fwhm=3.0)
         assert_almost_equal(fwhm, 2.35*sigma, decimal=0)
 
-    # pytest.mark.skip('Strange behavior')
+    pytest.mark.skip('Wrong new centers?')
     def test_starfind_recenter_sources(self):
         size = (256, 256)
         number = 10
