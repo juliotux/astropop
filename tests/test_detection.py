@@ -304,6 +304,7 @@ class Test_Background():
         # assert_almost_equal(rms, np.ones(size)*rdnoise, decimal=-1)
 
 
+@pytest.mark.flaky(max_runs=10, min_passes=1)
 class Test_SEP_Detection():
     # segmentation detection. Must detect all shapes of sources
 
@@ -410,6 +411,7 @@ class Test_SEP_Detection():
         assert_almost_equal(sources['y'], y, decimal=0)
 
 
+@pytest.mark.flaky(max_runs=10, min_passes=1)
 class Test_DAOFind_Detection():
     # DAOFind detection. Only round unsturaded stars
 
@@ -687,6 +689,7 @@ class Test_DAOFind_Detection():
         assert_almost_equal(sources['y'], [20, 40], decimal=0)
 
 
+@pytest.mark.flaky(max_runs=10, min_passes=1)
 class Test_StarFind():
     # Our combined iterative method
 
