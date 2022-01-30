@@ -8,7 +8,7 @@ import functools
 from .framedata import imhdus
 from .logger import logger
 
-__all__ = ['imhdus', 'check_header_keys', 'fits_yielder']
+__all__ = ['imhdus', 'check_header_keys']
 
 
 _fits_extensions = ['.fits', '.fts', '.fit', '.fz']
@@ -56,93 +56,3 @@ def check_header_keys(image1, image2, keywords=None):
         else:
             logger.debug("The images do not have the %s keyword", i)
     return True
-
-
-def fits_yielder(return_type, file_list, ext=0, append_to_name=None,
-                 save_to=None, overwrite=True):
-    """Create a generator object that iterates over file_list.
-
-    return_type : str
-        'header', 'data' or 'hdu'
-    file_list : list-like
-        list of file names to be iterated
-    ext : int or str
-        fits extension to load the data
-    append_to_name : str
-        string to be appended to the file name when saving the new object
-    save_to : str
-        path to save a copy of the files with the modified object
-        (header, data, hdu)
-    overwrite : bool
-        If overwrite existing files.
-    """
-    def _read(f):
-        """Read just one hdu."""
-        return fits.open(f)[ext]
-
-    if save_to:
-        if not os.path.exists(save_to):
-            os.makedirs(save_to)
-        elif not os.path.isdir(save_to):
-            raise ValueError('Saving location is not a valid directory!')
-
-    if return_type == 'header':
-        func = functools.partial(fits.getheader, ext=ext)
-    elif return_type == 'data':
-        func = functools.partial(fits.getdata, ext=ext)
-    elif return_type == 'hdu':
-        func = _read
-    else:
-        raise ValueError(f'Generator {return_type} not recognized.')
-
-    # if the image list contain hdus, re-yield them
-    def _reyield(ver_obj):
-        ret = None
-        if return_type == 'header':
-            ret = ver_obj.header
-        elif return_type == 'data':
-            ret = ver_obj.data
-        elif return_type == 'hdu':
-            ret = ver_obj
-        return ret
-
-    def _save(old, new, yielded):
-        hdul = fits.open(old)
-        index = hdul.index_of(ext)
-        if return_type == 'header':
-            hdul[index].header = yielded
-        elif return_type == 'data':
-            hdul[index].data = yielded
-        elif return_type == 'hdu':
-            hdul[index] = yielded
-
-        hdul.writeto(new, overwrite=overwrite)
-
-    for i in file_list:
-        if isinstance(i, _ValidHDU):
-            obj = _reyield(i)
-        else:
-            obj = func(i)
-
-        yield obj
-
-        if save_to:
-            basename = os.path.basename(i)
-            if append_to_name is not None:
-                base, extf = os.path.splitext(basename)
-                basename = f"{base}{append_to_name}.{extf}"
-
-            base, extf = os.path.splitext(basename)
-            if extf not in ['fits', 'fts', 'fit', 'gz', 'bz2', 'fz']:
-                logger.warning('%s extension not supported for writing. '
-                               'Changing to fits', str(extf))
-                subext = os.path.splitext(base)[1]
-                if subext in ['fits', 'fts', 'fit', 'fz']:
-                    nextf = ''
-                else:
-                    nextf = 'fits'
-                basename = f"{base}.{nextf}"
-
-            save_fname = os.path.join(save_to, basename)
-
-            _save(i, save_fname, obj)

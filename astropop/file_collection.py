@@ -6,9 +6,11 @@ import glob
 import numpy as np
 
 from astropy.table import Table
+from astropy.io import fits
 
-from .fits_utils import fits_yielder, _fits_extensions, \
+from .fits_utils import _fits_extensions, \
                         _fits_extensions_with_compress
+from .framedata import check_framedata
 from .py_utils import check_iterable
 from .logger import logger
 
@@ -194,17 +196,33 @@ class FitsFileGroup():
         self.summary[name] = values
         self.summary[name].mask = mask
 
-    def _intern_yielder(self, return_type, save_to=None, append_to_name=None,
-                        overwrite=False):
-        return fits_yielder(return_type, self.files, self._ext,
-                            append_to_name=append_to_name,
-                            save_to=save_to, overwrite=overwrite)
+    def _intern_yelder(self, files=None, ext=None, ret_type=None,
+                       **kwargs):
+        """Iter over files."""
+        ext = ext if ext is not None else self._ext
+        files = files if files is not None else self._files
+        for i in files:
+            if ret_type == 'header':
+                yield fits.open(i, **kwargs)[ext].header
+            if ret_type == 'data':
+                yield fits.open(i, **kwargs)[ext].data
+            if ret_type == 'hdu':
+                yield fits.open(i, **kwargs)[ext]
+            if ret_type == 'framedata':
+                yield check_framedata(i, hdu=ext, **kwargs)
 
-    def hdus(self, **kwargs):
-        return self._intern_yielder(return_type='hdu', **kwargs)
+    def hdus(self, ext=None, **kwargs):
+        """Read the files and iterate over their HDUs."""
+        return self._intern_yelder(ext=ext, ret_type='hdu', **kwargs)
 
-    def headers(self, **kwargs):
-        return self._intern_yielder(return_type='header', **kwargs)
+    def headers(self, ext=None, **kwargs):
+        """Read the files and iterate over their headers."""
+        return self._intern_yelder(ext=ext, ret_type='header', **kwargs)
 
-    def data(self, **kwargs):
-        return self._intern_yielder(return_type='data', **kwargs)
+    def data(self, ext=None, **kwargs):
+        """Read the files and iterate over their data."""
+        return self._intern_yelder(ext=ext, ret_type='data', **kwargs)
+
+    def framedata(self, ext=None, **kwargs):
+        """Read the files and iterate over their data."""
+        return self._intern_yelder(ext=ext, ret_type='framedata', **kwargs)
