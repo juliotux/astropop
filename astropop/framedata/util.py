@@ -11,7 +11,12 @@ from .framedata import FrameData
 from .compat import _extract_ccddata, _extract_fits, imhdus
 from .memmap import MemMapArray
 
+
 __all__ = ['check_framedata', 'read_framedata']
+
+
+_fits_kwargs = ['hdu', 'unit', 'hdu_uncertainty',
+                'hdu_mask', 'unit_key']
 
 
 def read_framedata(obj, copy=False, **kwargs):
@@ -19,16 +24,16 @@ def read_framedata(obj, copy=False, **kwargs):
 
     Parameters
     ----------
-    - obj: any compatible, see notes
+    obj: any compatible, see notes
       Object that will be readed to the FrameData.
-    - copy: bool (optional)
+    copy: bool (optional)
       If the object is already a FrameData, return a copy instead of the
       original one.
       Default: False
 
     Returns
     -------
-    - frame: `FrameData`
+    frame: `FrameData`
       The readed FrameData object.
 
     Notes
@@ -46,20 +51,23 @@ def read_framedata(obj, copy=False, **kwargs):
         if copy:
             obj = obj.copy(**kwargs)
     elif isinstance(obj, CCDData):
-        obj = FrameData(**_extract_ccddata(obj, **kwargs))
-    elif isinstance(obj, (str, bytes, os.PathLike)):
-        obj = FrameData(**_extract_fits(obj, **kwargs))
-    elif isinstance(obj, (fits.HDUList, *imhdus)):
-        obj = FrameData(**_extract_fits(obj, **kwargs))
+        obj = FrameData(**_extract_ccddata(obj), **kwargs)
+    elif isinstance(obj, (str, bytes, os.PathLike, fits.HDUList, *imhdus)):
+        # separate kwargs to be sent to extractors
+        fits_kwargs = {}
+        for k in _fits_kwargs:
+            if k in kwargs.keys():
+                fits_kwargs[k] = kwargs.pop(k)
+        obj = FrameData(**_extract_fits(obj, **fits_kwargs), **kwargs)
     elif isinstance(obj, (np.ndarray, MemMapArray)):
         if isinstance(obj, u.Quantity):
-            obj = FrameData(obj.value, unit=obj.unit)
+            obj = FrameData(obj.value, unit=obj.unit, **kwargs)
         else:
-            obj = FrameData(obj)
+            obj = FrameData(obj, **kwargs)
     elif obj.__class__.__name__ == "QFloat":
         # if not do this, a cyclic dependency breaks the code.
         obj = FrameData(obj.nominal, unit=obj.unit,
-                        uncertainty=obj.uncertainty)
+                        uncertainty=obj.uncertainty, **kwargs)
     else:
         raise TypeError(f'Object {obj} is not compatible with FrameData.')
 

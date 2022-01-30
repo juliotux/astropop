@@ -119,7 +119,6 @@ class Test_FitsFileGroup():
         assert_equal(len(nfg), 0)
         assert_equal(nfg.files, [])
 
-
     def test_fg_getitem_column(self):
         fg = FitsFileGroup(location=self.tmp, compression=False)
         obj_column = fg['object']
@@ -175,6 +174,10 @@ class Test_FitsFileGroup():
         assert_is_instance(row, FitsFileGroup)
         assert_equal(len(row), 0)
         assert_equal(row.files, [])
+
+    pytest.mark.skip
+    def test_fg_getitem_keyerror(self):
+        pass
 
 
 @pytest.mark.skip

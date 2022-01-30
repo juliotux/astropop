@@ -376,15 +376,18 @@ class Test_CheckRead_FrameData():
 
         # FIXME: must work with both string and pathlike
         # but astropy seems to not read the path lile
-        for n in [tmpstr]:
+        n = tmpstr
+        for mmap in [False, True]:
             fc = check_framedata(n, hdu=data_name, unit=None,
                                  hdu_uncertainty=uncert_name,
                                  hdu_mask=mask_name,
-                                 unit_key='astrunit')
+                                 unit_key='astrunit',
+                                 use_memmap_backend=mmap)
             fr = read_framedata(n, hdu=data_name, unit=None,
                                 hdu_uncertainty=uncert_name,
                                 hdu_mask=mask_name,
-                                unit_key='astrunit')
+                                unit_key='astrunit',
+                                use_memmap_backend=mmap)
             for f in (fc, fr):
                 assert_is_instance(f, FrameData)
                 assert_equal(f.data, data)
@@ -393,6 +396,7 @@ class Test_CheckRead_FrameData():
                              np.ones((DEFAULT_DATA_SIZE,
                                       DEFAULT_DATA_SIZE)))
                 assert_equal(f.mask, mask)
+                assert_equal(f._memmapping, mmap)
 
     def test_check_framedata_ccddata(self):
         data = _random_array.copy()
@@ -406,40 +410,47 @@ class Test_CheckRead_FrameData():
                       uncertainty=StdDevUncertainty(uncert, unit=unit),
                       mask=mask, meta=header)
 
-        fc = check_framedata(ccd)
-        fr = read_framedata(ccd)
-        for f in (fc, fr):
-            assert_is_instance(f, FrameData)
-            assert_equal(f.data, data)
-            assert_equal(f.unit, unit)
-            assert_equal(f.uncertainty, uncert)
-            assert_equal(f.mask, mask)
+        for mmap in [False, True]:
+            fc = check_framedata(ccd, use_memmap_backend=mmap)
+            fr = read_framedata(ccd, use_memmap_backend=mmap)
+            for f in (fc, fr):
+                assert_is_instance(f, FrameData)
+                assert_equal(f.data, data)
+                assert_equal(f.unit, unit)
+                assert_equal(f.uncertainty, uncert)
+                assert_equal(f.mask, mask)
+                assert_equal(f._memmapping, mmap)
 
     def test_check_framedata_quantity(self):
         data = _random_array.copy()*u.Unit('adu')
-        fc = check_framedata(data)
-        fr = read_framedata(data)
-        for f in (fc, fr):
-            assert_is_instance(f, FrameData)
-            assert_equal(f.data, _random_array)
-            assert_equal(f.unit, 'adu')
-            assert_true(f._unct.empty)
-            assert_false(np.any(f._mask))
-            assert_equal(f.meta, {})
-            assert_is_none(f.wcs)
+        for mmap in [False, True]:
+            fc = check_framedata(data, use_memmap_backend=mmap)
+            fr = read_framedata(data, use_memmap_backend=mmap)
+            for f in (fc, fr):
+                assert_is_instance(f, FrameData)
+                assert_equal(f.data, _random_array)
+                assert_equal(f.unit, 'adu')
+                assert_true(f._unct.empty)
+                assert_false(np.any(f._mask))
+                assert_equal(f.meta, {})
+                assert_is_none(f.wcs)
+                assert_equal(f._memmapping, mmap)
 
     def test_check_framedata_nparray(self):
         data = _random_array.copy()
-        fc = check_framedata(data)
-        fr = read_framedata(data)
-        for f in (fc, fr):
-            assert_is_instance(f, FrameData)
-            assert_equal(f.data, _random_array)
-            assert_equal(f.unit, u.dimensionless_unscaled)
-            assert_true(f._unct.empty)
-            assert_false(np.any(f._mask))
-            assert_equal(f.meta, {})
-            assert_is_none(f.wcs)
+
+        for mmap in [False, True]:
+            fc = check_framedata(data, use_memmap_backend=mmap)
+            fr = read_framedata(data, use_memmap_backend=mmap)
+            for f in (fc, fr):
+                assert_is_instance(f, FrameData)
+                assert_equal(f.data, _random_array)
+                assert_equal(f.unit, u.dimensionless_unscaled)
+                assert_true(f._unct.empty)
+                assert_false(np.any(f._mask))
+                assert_equal(f.meta, {})
+                assert_is_none(f.wcs)
+                assert_equal(f._memmapping, mmap)
 
     def test_check_framedata_qfloat(self):
         data = _random_array.copy()
@@ -447,16 +458,18 @@ class Test_CheckRead_FrameData():
         uncert = 0.1*np.ones_like(_random_array)
         qf = QFloat(data, uncert, unit)
 
-        fc = check_framedata(qf)
-        fr = read_framedata(qf)
-        for f in (fc, fr):
-            assert_is_instance(f, FrameData)
-            assert_equal(f.data, data)
-            assert_equal(f.unit, unit)
-            assert_equal(f._unct, uncert)
-            assert_false(np.any(f._mask))
-            assert_equal(f.meta, {})
-            assert_is_none(f.wcs)
+        for mmap in [False, True]:
+            fc = check_framedata(qf, use_memmap_backend=mmap)
+            fr = read_framedata(qf, use_memmap_backend=mmap)
+            for f in (fc, fr):
+                assert_is_instance(f, FrameData)
+                assert_equal(f.data, data)
+                assert_equal(f.unit, unit)
+                assert_equal(f._unct, uncert)
+                assert_false(np.any(f._mask))
+                assert_equal(f.meta, {})
+                assert_is_none(f.wcs)
+                assert_equal(f._memmapping, mmap)
 
     def test_check_framedata_invalid(self):
         # None should fail
@@ -545,6 +558,7 @@ class Test_FrameData_Copy():
         assert_path_exists(expect+'.data')
         assert_path_exists(expect+'.unct')
         assert_path_exists(expect+'.mask')
+
 
 class Test_FrameData_History():
     def test_framedata_set_history(self):

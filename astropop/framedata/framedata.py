@@ -188,7 +188,6 @@ class FrameData:
       `~astropop.ccd_processing.imarith` module.
     """
 
-    # TODO: Complete reimplement the initialize
     # TODO: write_fits
 
     _memmapping = False
