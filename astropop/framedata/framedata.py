@@ -11,7 +11,7 @@ from tempfile import mkdtemp, mkstemp
 from astropy import units as u
 from astropy.wcs import WCS
 
-from ..py_utils import mkdir_p, check_iterable
+from ..py_utils import check_iterable
 from .memmap import MemMapArray
 from .compat import extract_header_wcs, _to_ccddata, _to_hdu
 from .._unit_property import unit_property
@@ -136,7 +136,7 @@ def setup_filename(frame, cache_folder=None, filename=None):
     frame.cache_folder = cache_folder
     frame.cache_filename = filename
 
-    mkdir_p(cache_folder)
+    os.makedirs(cache_folder, exist_ok=True)
     return os.path.join(cache_folder, filename)
 
 
@@ -264,10 +264,9 @@ class FrameData:
         wcs = wcs_ if wcs is None else wcs
         if wcs is not None:
             self.wcs = wcs
-        # extract history from meta
-        for i in ('history', 'HISTORY'):
-            if i in meta:
-                self.history = meta.pop('history')
+
+        # extract history and comments from meta
+        self.history = meta.pop('history')
 
         self._meta = meta
 
@@ -510,6 +509,10 @@ class FrameData:
             CCDData instance with actual FrameData informations.
         """
         return _to_ccddata(self)
+
+    def write(self, filename, overwrite=False, **kwargs):
+        """Write frame to a fits file."""
+        self.to_hdu(**kwargs).writeto(filename, overwrite=True)
 
     def __copy__(self):
         """Copy the current instance to a new one."""

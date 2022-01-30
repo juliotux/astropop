@@ -10,30 +10,8 @@ from numbers import Number
 
 from .logger import logger, resolve_level_string
 
-__all__ = ['mkdir_p', 'string_fix', 'process_list', 'check_iterable',
+__all__ = ['string_fix', 'process_list', 'check_iterable',
            'batch_key_replace', 'IndexedDict', 'check_number']
-
-
-def mkdir_p(fname):
-    """
-    Simulate 'mkdir -p' bash function, with error handling.
-
-    This function wrapps the `~os.makedirs` function to create rescursive
-    directories. If the directory alread exists, this function ignores it.
-    Any other error in the directory creation is raised.
-
-    Parameters
-    ----------
-    fname: string or path_like
-        Full path of the directory to be created.
-    """
-    try:
-        makedirs(fname)
-    except OSError as exc:
-        if exc.errno == errno.EEXIST and path.isdir(fname):
-            pass
-        else:
-            raise exc
 
 
 def process_list(func, iterator, *args, **kwargs):
@@ -222,8 +200,18 @@ def run_command(args, stdout=None, stderr=None, stdout_loglevel='DEBUG',
     return process, stdout, stderr
 
 
+class CaseInsensitiveDict(dict):
+    """Extends Python dictionary to have case insensitive keys."""
+
+    def __setitem__(self, key, value):
+        super(CaseInsensitiveDict, self).__setitem__(key.lower(), value)
+
+    def __getitem__(self, key):
+        return super(CaseInsensitiveDict, self).__getitem__(key.lower())
+
+
 class IndexedDict(dict):
-    """Extends Python3.7 dictionary to include indexing and inserting.
+    """Extends Python dictionary to include indexing and inserting.
 
     Python3.7 keeps assignment ordering in default dict, like OrderedDict.
     """

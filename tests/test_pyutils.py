@@ -3,7 +3,7 @@
 import os
 import pytest
 import shlex
-from astropop.py_utils import mkdir_p, string_fix, process_list, \
+from astropop.py_utils import string_fix, process_list, \
                               check_iterable, batch_key_replace, \
                               run_command, IndexedDict, check_number
 import numpy as np
@@ -11,20 +11,6 @@ import numpy as np
 from astropop.testing import assert_true, assert_equal, assert_in, \
                              assert_false, assert_is_instance, assert_is
 from astropop.logger import logger, log_to_list
-
-
-class Test_MkDir:
-    def test_mkdir(self, tmpdir):
-        p = tmpdir.join('level1/level2').strpath
-        mkdir_p(p)
-        assert_true(os.path.isdir(p))
-        # mkdir a existent dir should not raise error
-        mkdir_p(p)
-
-    def test_mkdir_oserror(self):
-        p = '/bin/bash'
-        with pytest.raises(OSError):
-            mkdir_p(p)
 
 
 @pytest.mark.parametrize('v, exp', [(1, True),
