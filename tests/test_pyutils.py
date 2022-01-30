@@ -290,10 +290,26 @@ class Test_CaseInsensitiveDict():
         assert_equal(a['TesT'], None)
         assert_equal(len(a), 3)
 
-    def test_insensitivedit_deltitem(self):
+    def test_insensitivedict_deltitem(self):
         a = CaseInsensitiveDict({'A': 1, 'b': 2, 'TesT': 'AaA'})
         del a['test']
         assert_equal(a, {'a': 1, 'b': 2})
+
+    def test_insensitivedict_update(self):
+        a = CaseInsensitiveDict({'A': 1, 'B': 2, 'c': 3})
+        a.update({'a': 4})
+        assert_equal(a['A'], 4)
+        assert_equal(a['a'], 4)
+        assert_equal(a['B'], 2)
+        assert_equal(a['b'], 2)
+        assert_equal(a['C'], 3)
+        assert_equal(a['c'], 3)
+
+    def test_insensitivedict_update_error(self):
+        a = CaseInsensitiveDict({'A': 1, 'B': 2, 'c': 3})
+        with pytest.raises(TypeError,
+                           match='cannot convert dictionary update'):
+            a.update([1, 2, 3])
 
 
 class Test_IndexedDict():

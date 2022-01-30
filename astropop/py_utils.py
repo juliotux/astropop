@@ -4,8 +4,6 @@ import asyncio
 from asyncio.subprocess import PIPE
 import shlex
 import six
-import errno
-from os import path, makedirs
 from numbers import Number
 
 from .logger import logger, resolve_level_string
@@ -238,8 +236,7 @@ class CaseInsensitiveDict(dict):
         return self.items() == other.items()
 
     def __update__(self, other):
-        if not (isinstance(other, dict) or
-                isinstance(other, CaseInsensitiveDict)):
+        if not isinstance(other, (dict, CaseInsensitiveDict)):
             raise TypeError(f'{other} is not a dictionary type to update.')
 
         for k, v in other.items():
