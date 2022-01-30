@@ -27,7 +27,7 @@ __all__ = ['cosmics_lacosmic', 'gain_correct', 'subtract_bias',
 ###############################################################################
 
 
-def cosmics_lacosmic(ccddata, inplace=False, **lacosmic_kwargs):
+def cosmics_lacosmic(frame, inplace=False, **lacosmic_kwargs):
     """
     Remove cosmic rays with LAcosmic. From astroscrappy package.
 
@@ -37,21 +37,19 @@ def cosmics_lacosmic(ccddata, inplace=False, **lacosmic_kwargs):
       can be found on Dokkum,P.G. (2001) - PASP 113, 1420 (2001)
       https://arxiv.org/pdf/astro-ph/0108003.pdf.
 
-    * If ``ccddata`` is not a `~astropop.framedata.FrameData` instance,
+    * If ``frame`` is not a `~astropop.framedata.FrameData` instance,
       inplies in ``inplace=False``, and a new `~astropop.framedata.FrameData`
       instance will be created.
 
     Parameters
     ----------
-    ccddata : `~astropop.framedata.FrameData` compatible
+    frame: `~astropop.framedata.FrameData` compatible
         Values to perform the operation. `~astropy.units.Quantity`, numerical
         values and `~astropy.nddata.CCDData` are also suported.
-    inplace : bool, optional
-        If True, the operations will be performed inplace in the ``ccddata``.
-    logger : `logging.Logger`
+    inplace: bool, optional
+        If True, the operations will be performed inplace in the ``frame``.
+    logger: `~logging.Logger`
         Python logger to log the actions.
-    lacosmic_kwargs : -- NOT WRITTEN YET --
-        hejrjghsldhglksehlg
 
     Returns
     -------
@@ -61,12 +59,12 @@ def cosmics_lacosmic(ccddata, inplace=False, **lacosmic_kwargs):
     """
     # As lacosmic removes and replace the cosmics pixels, no need to
     # update the mask
-    _, dat = astroscrappy.detect_cosmics(ccddata.data, **lacosmic_kwargs)
+    _, dat = astroscrappy.detect_cosmics(frame.data, **lacosmic_kwargs)
 
     if inplace:
-        ccd = ccddata
+        ccd = frame
     else:
-        ccd = ccddata.copy()
+        ccd = frame.copy()
 
     ccd.data = dat
     # Do not update mask, astroscrappy replace the pixels
@@ -111,7 +109,7 @@ def gain_correct(image, gain, gain_unit=None, inplace=False):
     nim = imarith(image, gain, '*', inplace=False)
     nim.header['hierarch astropop gain_corrected'] = True
     nim.header['hierarch astropop gain_corrected_value'] = gain
-    nim.header['hierarch astropop gain_corrected_unit'] = str(gain_unit)
+    # nim.header['hierarch astropop gain_corrected_unit'] = str(gain_unit)
 
     if inplace:
         image.data = nim.data
