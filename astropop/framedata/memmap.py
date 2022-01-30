@@ -264,7 +264,7 @@ class MemMapArray:
         else:
             adata = data
             if isinstance(data, MemMapArray):
-                adata = MemMapArray._contained
+                adata = data._contained
             if self.memmap:
                 name = self.filename
                 mm = self._contained
