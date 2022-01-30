@@ -567,5 +567,13 @@ def imcombine(frames, method='median', memory_limit=1e9, **kwargs):
       - 'std': `~numpy.nanstd`
       - 'mad_std': `~astropy.stats.funcs.mad_std`
     """
-    # TODO: this is just a wrapper for the ImCombiner
-    raise NotImplementedError
+    # Sanitize kwargs and create combiner
+    kargs = {'dtype': kwargs.pop('dtype', np.float64),
+             'use_disk_cache': kwargs.pop('use_disk_cache', False),
+             'tmp_dir': kwargs.pop('tmp_dir', None)}
+    combiner = ImCombiner(max_memory=memory_limit, **kargs)
+
+    # TODO: sanitize kwargs and create rejections
+
+    # Perform the combinations
+    return combiner.combine(frames, method, **kwargs)
