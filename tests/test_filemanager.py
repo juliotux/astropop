@@ -9,23 +9,25 @@ from astropop.file_collection import FitsFileGroup
 from astropop.testing import assert_is_instance, assert_equal
 
 
-# Create temp files and directory
-# tmpdir = tempfile.TemporaryDirectory().name
-# Hardcoded to do not redownload every single time
-tmpdir = '/tmp/astropop-data-dir'
-os.makedirs(tmpdir, exist_ok=True)
-# Download some fits files
-with urllib.request.urlopen('https://raw.githubusercontent.com/sparc4-dev/astropop-data/main/raw_images/opd_ixon_bc_hd5980/filelist.txt') as f:
-    for line in f.readlines():
-        url = line.decode('UTF-8')
-        filename = os.path.join(tmpdir, url.split('/')[-1].split('?')[0])
-        if not os.path.exists(filename):
-            urllib.request.urlretrieve(url, filename)
-        fgz = fits.open(filename)
-        fgz.writeto(filename + '.gz', overwrite=True)
-with open(os.path.join(tmpdir, 'test.txt'), 'w') as f:
-    f.write('text file for test')
-
+try:
+    # Create temp files and directory
+    # tmpdir = tempfile.TemporaryDirectory().name
+    # Hardcoded to do not redownload every single time
+    tmpdir = '/tmp/astropop-data-dir'
+    os.makedirs(tmpdir, exist_ok=True)
+    # Download some fits files
+    with urllib.request.urlopen('https://raw.githubusercontent.com/sparc4-dev/astropop-data/main/raw_images/opd_ixon_bc_hd5980/filelist.txt') as f:
+        for line in f.readlines():
+            url = line.decode('UTF-8')
+            filename = os.path.join(tmpdir, url.split('/')[-1].split('?')[0])
+            if not os.path.exists(filename):
+                urllib.request.urlretrieve(url, filename)
+            fgz = fits.open(filename)
+            fgz.writeto(filename + '.gz', overwrite=True)
+    with open(os.path.join(tmpdir, 'test.txt'), 'w') as f:
+        f.write('text file for test')
+except:
+    pytest.mark.skip
 
 class Test_FitsFileGroup():
     tmp = tmpdir
