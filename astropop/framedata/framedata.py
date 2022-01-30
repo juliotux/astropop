@@ -11,7 +11,7 @@ from tempfile import mkdtemp, mkstemp
 from astropy import units as u
 from astropy.wcs import WCS
 
-from ..py_utils import check_iterable
+from ..py_utils import check_iterable, CaseInsensitiveDict
 from .memmap import MemMapArray
 from .compat import extract_header_wcs, _to_ccddata, _to_hdu
 from .._unit_property import unit_property
@@ -244,7 +244,7 @@ class FrameData:
 
         # avoiding security problems
         self._history = []
-        self._meta = {}
+        self._meta = CaseInsensitiveDict()
         self._header_update(header, meta, wcs)
 
     def _header_update(self, header, meta=None, wcs=None):
@@ -257,7 +257,15 @@ class FrameData:
             meta = dict(meta)
         else:
             meta = {}
+        meta = CaseInsensitiveDict(meta)
         meta.update(header)
+
+        # extract history and comments from meta
+        if 'history' in meta:
+            self.history = meta.pop('history')
+        # extract comments from the header
+        if 'comment' in meta:
+            self._comments = meta.pop('comment')
 
         # extract wcs from header
         meta, wcs_ = extract_header_wcs(meta)
@@ -265,10 +273,7 @@ class FrameData:
         if wcs is not None:
             self.wcs = wcs
 
-        # extract history and comments from meta
-        self.history = meta.pop('history')
-
-        self._meta = meta
+        self._meta = CaseInsensitiveDict(meta)
 
     def _update_cache_files(self, cache_file):
         if self._data is not None:
