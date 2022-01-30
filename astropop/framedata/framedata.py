@@ -522,3 +522,33 @@ class FrameData:
     def __copy__(self):
         """Copy the current instance to a new one."""
         return self.copy()
+
+    def median(self, **kwargs):
+        """Compute and return the median of the data."""
+        med = np.median(self._data, **kwargs)
+        if self._unit is None:
+            return med
+        return med * self.unit
+
+    def mean(self, **kwargs):
+        """Compute and return the mean of the data."""
+        if self._unit is None:
+            return self._data.mean(**kwargs)
+        return self._data.mean(**kwargs) * self.unit
+
+    def std(self, **kwargs):
+        if self._unit is None:
+            return self._data.std(**kwargs)
+        return self._data.std(**kwargs) * self.unit
+
+    def min(self):
+        """Compute minimum value of the data."""
+        if self._unit is None:
+            return self._data.min()
+        return self._data.min() * self.unit
+
+    def max(self):
+        """Compute minimum value of the data."""
+        if self._unit is None:
+            return self._data.max()
+        return self._data.max() * self.unit

@@ -1047,3 +1047,48 @@ class Test_FrameData_GetSet():
         frame.data = 1*u.Unit('s')
         assert_equal(frame.data, 1)
         assert_equal(frame.unit, 's')
+
+
+class Test_FrameData_MathProps():
+    def test_framedata_median_without_unit(self):
+        frame = FrameData([5, 1, 3, 4, 1])
+        assert_equal(frame.median(), 3)
+
+    def test_framedata_median_with_unit(self):
+        frame = FrameData([5, 1, 3, 4, 1], unit='adu')
+        assert_equal(frame.median(), 3*u.Unit('adu'))
+
+    def test_framedata_mean_without_unit(self):
+        frame = FrameData([2, 1, 3, 8, 6])
+        assert_equal(frame.mean(), 4)
+
+    def test_framedata_mean_with_unit(self):
+        frame = FrameData([2, 1, 3, 8, 6], unit='adu')
+        assert_equal(frame.mean(), 4*u.Unit('adu'))
+
+    def test_framedata_min_without_unit(self):
+        frame = FrameData([2, 1, 3, 8, 6])
+        assert_equal(frame.min(), 1)
+
+    def test_framedata_min_with_unit(self):
+        frame = FrameData([2, 1, 3, 8, 6], unit='adu')
+        assert_equal(frame.min(), 1*u.Unit('adu'))
+
+    def test_framedata_max_without_unit(self):
+        frame = FrameData([1, 2, 3, 8, 6])
+        assert_equal(frame.max(), 8)
+
+    def test_framedata_max_with_unit(self):
+        frame = FrameData([1, 2, 3, 8, 6], unit='adu')
+        assert_equal(frame.max(), 8*u.Unit('adu'))
+
+    def test_framedata_std_without_unit(self):
+        frame = FrameData(np.arange(10))
+        res = frame.std()
+        assert_almost_equal(res, 2.8722813232690143)
+
+    def test_framedata_std_with_unit(self):
+        frame = FrameData(np.arange(10), unit='adu')
+        res = frame.std()
+        assert_almost_equal(res.value, 2.8722813232690143)
+        assert_equal(res.unit, u.adu)
