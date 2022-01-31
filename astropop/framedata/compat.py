@@ -137,7 +137,7 @@ def _extract_fits(obj, hdu=0, unit=None, hdu_uncertainty=_HDU_UNCERT,
     res['meta'] = hdu_data.header
 
     unit_h = res['meta'].get(unit_key, None)
-    if unit_h is None:
+    if unit_h is None or unit_h == '':
         res['unit'] = unit
     else:
         unit_h = u.format.Fits.parse(unit_h)
