@@ -1,11 +1,13 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
 import os
+from tabnanny import check
 import numpy as np
 import astroscrappy
 
 from ..logger import logger
 from .imarith import imarith
+from ..math.physical import convert_to_qfloat
 from ..framedata import check_framedata
 
 
@@ -20,11 +22,6 @@ __all__ = ['cosmics_lacosmic', 'gain_correct', 'subtract_bias',
 # subtract_overscan = partial(ccdproc.subtract_overscan,
 #                             add_keyword='hierarch astropop'
 #                             ' overscan_subtracted')
-
-
-###############################################################################
-# DONE
-###############################################################################
 
 
 def cosmics_lacosmic(frame, inplace=False, **lacosmic_kwargs):
@@ -73,7 +70,7 @@ def cosmics_lacosmic(frame, inplace=False, **lacosmic_kwargs):
     return ccd
 
 
-def gain_correct(image, gain, gain_unit=None, inplace=False):
+def gain_correct(image, gain, inplace=False):
     """
     Process the gain correction of an image.
 
@@ -90,10 +87,8 @@ def gain_correct(image, gain, gain_unit=None, inplace=False):
     image : `~astropop.framedata.FrameData` compatible
         Values to perform the operation. `~astropy.units.Quantity`, numerical
         values and `~astropy.nddata.CCDData` are also suported.
-    gain : float, `~astropy.units.Quantity` ou `~astropop.math.QFloat`
+    gain : float, `~astropy.units.Quantity` or `~astropop.math.QFloat`
         Gain to be applied on the image numerical values.
-    gain_unit : str, optional
-        Unit of the applied gain.
     inplace : bool, optional
         If True, the operations will be performed inplace in the `image`.
 
@@ -103,17 +98,11 @@ def gain_correct(image, gain, gain_unit=None, inplace=False):
         New gain corrected `FrameData` instance if not ``inplace``, else the
         ``image`` `~astropop.framedata.FrameData` instance.
     """
-    # TODO: handle units
-    nim = imarith(image, gain, '*', inplace=False)
+    gain = convert_to_qfloat(gain)
+    nim = imarith(image, gain, '*', inplace=inplace)
     nim.header['hierarch astropop gain_corrected'] = True
-    nim.header['hierarch astropop gain_corrected_value'] = gain
-    # nim.header['hierarch astropop gain_corrected_unit'] = str(gain_unit)
-
-    if inplace:
-        image.data = nim.data
-        nim = image
-    else:
-        nim = check_framedata(nim)
+    nim.header['hierarch astropop gain_corrected_value'] = gain.nominal
+    nim.header['hierarch astropop gain_corrected_unit'] = str(gain.unit)
 
     return nim
 
@@ -149,18 +138,12 @@ def subtract_bias(image, master_bias, inplace=False):
         ``image`` `~astropop.framedata.FrameData` instance.
     """
     master_bias = check_framedata(master_bias)
-    nim = imarith(image, master_bias, '-', inplace=False)
+    nim = imarith(image, master_bias, '-', inplace=inplace)
 
     nim.header['hierarch astropop bias_corrected'] = True
     name = master_bias.origin_filename
     if name is not None:
         nim.header['hierarch astropop bias_corrected_file'] = name
-
-    if inplace:
-        image.data = nim.data
-        nim = image
-    else:
-        nim = check_framedata(nim)
 
     return nim
 

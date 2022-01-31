@@ -517,6 +517,7 @@ class FrameData:
 
     def write(self, filename, overwrite=False, **kwargs):
         """Write frame to a fits file."""
+        # FIXME: electron unit is not compatible with fits standards
         self.to_hdu(**kwargs).writeto(filename, overwrite=True)
 
     def __copy__(self):
