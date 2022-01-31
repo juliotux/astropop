@@ -228,11 +228,10 @@ def flat_correct(image, master_flat, min_value=None, norm_value=None,
         New flat field corrected `FrameData` instance if ``inplace``, else the
         ``image`` `~astropop.framedata.FrameData` instance.
     """
-    master_flat = check_framedata(master_flat)
+    master_flat = check_framedata(master_flat, copy=True)
     image = check_framedata(image)
 
     if min_value is not None:
-        # FIXME: this will modify master flat!
         logger.debug('Set lower flat value to %s', min_value)
         mask = master_flat.data < min_value
         master_flat.data[np.where(mask)] = min_value

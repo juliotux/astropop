@@ -487,16 +487,22 @@ class FrameData:
 
         Parameters
         ----------
-        hdu_uncertainty : string, optional
+        hdu_uncertainty: string, optional
             Extension name to store the uncertainty. If None,
             no uncertainty will be stored.
-        hdu_mask : string, optional
+        hdu_mask: string, optional
             Extension name to store the mask. If None, no mask
             will be saved.
-        unit_key : string, optional
+        unit_key: string, optional
             Header key for physical unit.
-        wcs_relax : `bool`, optional.
+        wcs_relax: `bool`, optional.
             Allow non-standard WCS keys.
+            Default: `True`
+        no_fits_standard_units: `bool`, optional
+            Skip FITS units standard for units. If this options is choose,
+            the units will be printed in header as `~astropy.units.Unit`
+            compatible string.
+            Default: `False`
 
         Returns
         -------
@@ -518,7 +524,7 @@ class FrameData:
     def write(self, filename, overwrite=False, **kwargs):
         """Write frame to a fits file."""
         # FIXME: electron unit is not compatible with fits standards
-        self.to_hdu(**kwargs).writeto(filename, overwrite=True)
+        self.to_hdu(**kwargs).writeto(filename, overwrite=overwrite)
 
     def __copy__(self):
         """Copy the current instance to a new one."""
@@ -538,6 +544,7 @@ class FrameData:
         return self._data.mean(**kwargs) * self.unit
 
     def std(self, **kwargs):
+        """Compute and return the std dev of the data."""
         if self._unit is None:
             return self._data.std(**kwargs)
         return self._data.std(**kwargs) * self.unit
@@ -555,6 +562,7 @@ class FrameData:
         return self._data.max() * self.unit
 
     def statistics(self):
+        """Compute general statistics ofthe image."""
         return {'min': self.min(),
                 'max': self.max(),
                 'mean': self.mean(),

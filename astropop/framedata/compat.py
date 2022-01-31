@@ -140,7 +140,10 @@ def _extract_fits(obj, hdu=0, unit=None, hdu_uncertainty=_HDU_UNCERT,
     if unit_h is None or unit_h == '':
         res['unit'] = unit
     else:
-        unit_h = u.format.Fits.parse(unit_h)
+        try:
+            unit_h = u.format.Fits.parse(unit_h)
+        except:
+            unit_h = u.Unit(unit_h)
         if unit_h != unit and unit is not None:
             raise ValueError('unit and unit_key got incompatible results.')
         res['unit'] = unit_h
@@ -208,23 +211,38 @@ def _to_ccddata(frame):
 
 
 def _to_hdu(frame, hdu_uncertainty=_HDU_UNCERT, hdu_mask=_HDU_MASK,
-            unit_key=_UNIT_KEY, wcs_relax=True):
+            unit_key=_UNIT_KEY, wcs_relax=True, **kwargs):
     """Translate a FrameData to an HDUList."""
     data = frame.data.copy()
-    header = fits.Header(frame.header)
+
+    # Clean header
+    header = fits.Header()
+    no_fits_std = kwargs.pop('no_fits_standard_units', False)
+    for k, v in frame.header.items():
+        if isinstance(v, u.UnitBase) and no_fits_std:
+            logger.info('no_fits_standard_units')
+            v = v.to_string()
+        header[k] = v
+
     if frame.wcs is not None:
         header.extend(frame.wcs.to_header(relax=wcs_relax),
                       useblanks=False, update=True)
-    header[unit_key] = frame.unit.to_string()
+
+    if no_fits_std:
+        unit_string = frame.unit.to_string()
+    else:
+        unit_string = u.format.Fits.to_string(frame.unit)
+
+    header[unit_key] = unit_string
+
     for i in frame.history:
         header['history'] = i
     hdul = fits.HDUList(fits.PrimaryHDU(data, header=header))
 
     if hdu_uncertainty and not frame._unct.empty:
         uncert = frame.uncertainty
-        uncert_unit = u.format.Fits.to_string(frame.unit)
         uncert_h = fits.Header()
-        uncert_h[unit_key] = uncert_unit
+        uncert_h[unit_key] = unit_string
         hdul.append(fits.ImageHDU(uncert, header=uncert_h,
                                   name=hdu_uncertainty))
 
