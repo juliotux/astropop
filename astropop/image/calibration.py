@@ -37,8 +37,8 @@ def cosmics_lacosmic(frame, inplace=False, **lacosmic_kwargs):
       can be found on Dokkum,P.G. (2001) - PASP 113, 1420 (2001)
       https://arxiv.org/pdf/astro-ph/0108003.pdf.
 
-    * If ``frame`` is not a `~astropop.framedata.FrameData` instance,
-      inplies in ``inplace=False``, and a new `~astropop.framedata.FrameData`
+    * If `frame` is not a `~astropop.framedata.FrameData` instance,
+      inplies in `inplace=False`, and a new `~astropop.framedata.FrameData`
       instance will be created.
 
     Parameters
@@ -47,15 +47,15 @@ def cosmics_lacosmic(frame, inplace=False, **lacosmic_kwargs):
         Values to perform the operation. `~astropy.units.Quantity`, numerical
         values and `~astropy.nddata.CCDData` are also suported.
     inplace: bool, optional
-        If True, the operations will be performed inplace in the ``frame``.
+        If True, the operations will be performed inplace in the `frame`.
     logger: `~logging.Logger`
         Python logger to log the actions.
 
     Returns
     -------
-    `~astropop.framedata.FrameData`:
-        New cosmic-rays corrected `FrameData` instance if not ``inplace``,
-        else the ``image`` `~astropop.framedata.FrameData` instance.
+    `~astropop.framedata.FrameData`
+        New cosmic-rays corrected `FrameData` instance if not `inplace`,
+        else the `image` `~astropop.framedata.FrameData` instance.
     """
     # As lacosmic removes and replace the cosmics pixels, no need to
     # update the mask
@@ -90,14 +90,12 @@ def gain_correct(image, gain, gain_unit=None, inplace=False):
     image : `~astropop.framedata.FrameData` compatible
         Values to perform the operation. `~astropy.units.Quantity`, numerical
         values and `~astropy.nddata.CCDData` are also suported.
-    gain : float
+    gain : float, `~astropy.units.Quantity` ou `~astropop.math.QFloat`
         Gain to be applied on the image numerical values.
     gain_unit : str, optional
         Unit of the applied gain.
     inplace : bool, optional
-        If True, the operations will be performed inplace in the ``image``.
-    logger : `logging.Logger`
-        Python logger to log the actions.
+        If True, the operations will be performed inplace in the `image`.
 
     Returns
     -------
@@ -136,15 +134,13 @@ def subtract_bias(image, master_bias, inplace=False):
 
     Parameters
     ----------
-    image : `~astropop.framedata.FrameData` compatible
+    image: `~astropop.framedata.FrameData` compatible
         Image to perform the bias correction. `~astropy.units.Quantity`,
         numerical values and `~astropy.nddata.CCDData` are also suported.
-    master_bias : `~astropop.framedata.FrameData` compatible
+    master_bias: `~astropop.framedata.FrameData` compatible
         Master bias image to be subtracted from the ``image``.
-    inplace : bool, optional
+    inplace: bool, optional
         If True, the operations will be performed inplace in the ``image``.
-    logger : `logging.Logger`
-        Python logger to log the actions.
 
     Returns
     -------
@@ -197,11 +193,9 @@ def subtract_dark(image, master_dark, dark_exposure, image_exposure,
     dark_exposure : float
         Exposure time of the Master dark.
     image_exposure : float
-        Exposure time of the ``image``.
+        Exposure time of the `image`.
     inplace : bool, optional
-        If True, the operations will be performed inplace in the ``image``.
-    logger : `logging.Logger`, optional
-        Python logger to log the actions.
+        If True, the operations will be performed inplace in the `image`.
 
     Returns
     -------
@@ -244,9 +238,7 @@ def flat_correct(image, master_flat, min_value=None, norm_value=None,
     min_value : float, optional
     norm_value : float, optional
     inplace : bool, optional
-        If True, the operations will be performed inplace in the ``image``.
-    logger : `logging.Logger`, optional
-        Python logger to log the actions.
+        If True, the operations will be performed inplace in the `image`.
 
     Returns
     -------
