@@ -11,6 +11,7 @@ from astropop.framedata.framedata import setup_filename, extract_units, \
                                          uncertainty_unit_consistency
 from astropop.framedata import FrameData, check_framedata, read_framedata
 from astropop.math import QFloat
+from astropop.py_utils import CaseInsensitiveDict
 from astropy.io import fits
 from astropy.utils import NumpyRNGContext
 from astropy import units as u
@@ -723,8 +724,8 @@ class Test_FrameData_Meta():
         header.update({'testing1': 'c'})
 
         a = FrameData([1, 2, 3], unit='', meta=meta, header=header)
-        assert_equal(type(a.meta), dict)
-        assert_equal(type(a.header), dict)
+        assert_equal(type(a.meta), CaseInsensitiveDict)
+        assert_equal(type(a.header), CaseInsensitiveDict)
         assert_equal(a.meta['testing1'], 'c')  # Header priority
         assert_equal(a.meta['testing2'], 'b')
         assert_equal(a.header['testing1'], 'c')  # Header priority
@@ -733,14 +734,14 @@ class Test_FrameData_Meta():
             assert_equal(a.header[k], DEFAULT_HEADER[k])
             assert_equal(a.meta[k], DEFAULT_HEADER[k])
 
-    def test_framedata_meta_is_case_sensitive(self):
+    def test_framedata_meta_is_not_case_sensitive(self):
         frame = create_framedata()
         key = 'SoMeKEY'
         lkey = key.lower()
         ukey = key.upper()
         frame.meta[key] = 10
-        assert_not_in(lkey, frame.meta)
-        assert_not_in(ukey, frame.meta)
+        assert_in(lkey, frame.meta)
+        assert_in(ukey, frame.meta)
         assert_in(key, frame.meta)
 
     def test_metafromheader(self):
