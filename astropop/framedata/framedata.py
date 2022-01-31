@@ -552,3 +552,10 @@ class FrameData:
         if self._unit is None:
             return self._data.max()
         return self._data.max() * self.unit
+
+    def statistics(self):
+        return {'min': self.min(),
+                'max': self.max(),
+                'mean': self.mean(),
+                'median': self.median(),
+                'std': self.std()}

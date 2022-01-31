@@ -1092,3 +1092,26 @@ class Test_FrameData_MathProps():
         res = frame.std()
         assert_almost_equal(res.value, 2.8722813232690143)
         assert_equal(res.unit, u.adu)
+
+    def test_framedata_statistics_without_unit(self):
+        frame = FrameData(np.arange(9))
+        res = frame.statistics()
+        assert_equal(res['mean'], 4)
+        assert_equal(res['median'], 4)
+        assert_equal(res['min'], 0)
+        assert_equal(res['max'], 8)
+        assert_almost_equal(res['std'], 2.581988897471611)
+
+    def test_framedata_statistics_with_unit(self):
+        frame = FrameData(np.arange(9), unit='adu')
+        res = frame.statistics()
+        assert_equal(res['mean'].value, 4)
+        assert_equal(res['median'].value, 4)
+        assert_equal(res['min'].value, 0)
+        assert_equal(res['max'].value, 8)
+        assert_almost_equal(res['std'].value, 2.581988897471611)
+        assert_equal(res['mean'].unit, u.adu)
+        assert_equal(res['median'].unit, u.adu)
+        assert_equal(res['min'].unit, u.adu)
+        assert_equal(res['max'].unit, u.adu)
+
