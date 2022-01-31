@@ -8,10 +8,7 @@ from astropop.framedata import FrameData
 from astropop.testing import assert_equal, assert_is, assert_is_not, \
                              assert_in, assert_almost_equal
 
-# TODO: Test with None FrameData
-# TODO: Test with None scalar values
 
-# TODO: '%' and '**' functions
 pars = pytest.mark.parametrize('op,vs', [('+', {'f1': {'v': 30, 'u': 0},
                                                 'f2': {'v': 10, 'u': 0},
                                                 'r': {'v': 40, 'u': 0}}),

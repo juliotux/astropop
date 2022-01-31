@@ -51,8 +51,7 @@ def _arith(operand1, operand2, operation):
     qf1 = convert_to_qfloat(operand1)
     qf2 = convert_to_qfloat(operand2)
 
-    res = _arith_funcs[operation](qf1, qf2)
-    return res.nominal, res.std_dev
+    return _arith_funcs[operation](qf1, qf2)
 
 
 def _join_headers(operand1, operand2, operation):  # noqa
@@ -105,13 +104,13 @@ def imarith(operand1, operand2, operation, inplace=False,
     if operation not in _arith_funcs.keys():
         raise ValueError(f"Operation {operation} not supported.")
 
+    operand1 = _qf_or_framedata(operand1)
+    operand2 = _qf_or_framedata(operand2)
+
     if isinstance(operand1, FrameData) and inplace:
         ccd = operand1
     else:
         ccd = FrameData(None)
-
-    operand1 = _qf_or_framedata(operand1)
-    operand2 = _qf_or_framedata(operand2)
 
     # Add the operation entry to the ccd history.
     lh = log_to_list(logger, ccd.history)
@@ -120,10 +119,14 @@ def imarith(operand1, operand2, operation, inplace=False,
 
     # Perform data, mask and uncertainty operations
     try:
-        ccd.data, ccd.uncertainty = _arith(operand1, operand2, operation)
+        result = _arith(operand1, operand2, operation)
     except UnitConversionError:
         raise UnitsError(f'Units {operand1.unit} and {operand2.unit} are'
                          f' incompatible for {operation} operation.')
+
+    ccd.data = result.nominal
+    ccd.unit = result.unit
+    ccd.uncertainty = result.uncertainty
 
     if join_masks:
         ccd.mask = _arith_mask(operand1, operand2)
