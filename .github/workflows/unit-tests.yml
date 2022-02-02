@@ -114,6 +114,7 @@ jobs:
       run: |
         conda install -y -q astropy numpy scipy astroquery scikit-image scikit-learn pytz pyyaml astroscrappy astroalign sep reproject astrometry
         conda install -y -q pytest pytest-astropy pytest-remotedata flaky
+        pip install coveralls
     - name: Print versions
       shell: bash -l {0}
       run: |
@@ -134,9 +135,10 @@ jobs:
       with:
         file: ./coverage.xml
     - name: Upload coverage to Coveralls
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
+      shell: bash -l {0}
+      env:
+        COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+      run: coveralls
 
   build_docs:
     name: Documentation Building
