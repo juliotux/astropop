@@ -1115,4 +1115,3 @@ class Test_FrameData_MathProps():
         assert_equal(res['median'].unit, u.adu)
         assert_equal(res['min'].unit, u.adu)
         assert_equal(res['max'].unit, u.adu)
-
