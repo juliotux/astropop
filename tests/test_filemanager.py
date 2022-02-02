@@ -1,5 +1,6 @@
 import pytest
 import os
+import time
 import numpy as np
 
 from astropy.io import fits
@@ -71,6 +72,12 @@ def delete_files_list(flist):
         os.remove(file)
 
 
+def delay_rerun(*args):
+    time.sleep(1)
+    return True
+
+
+@pytest.mark.flaky(rerun_filter=delay_rerun)
 class Test_FitsFileGroup():
     def test_fg_creation_empty(self):
         with pytest.raises(ValueError):
@@ -299,8 +306,8 @@ class Test_FitsFileGroup():
         delete_files_list(flist)
 
 
+@pytest.mark.flaky(rerun_filter=delay_rerun)
 class Test_ListFitsFiles():
-
     def test_list_custom_extension(self, tmpdir):
         flist1 = create_test_files(tmpdir, extension='myfits')
         found_files = list_fits_files(tmpdir, fits_extensions='myfits')
