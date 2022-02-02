@@ -15,7 +15,7 @@ from .framedata import check_framedata
 from .py_utils import check_iterable
 from .logger import logger
 
-__all__ = ['list_fits_files', 'FitsFileGroup']
+__all__ = ['list_fits_files', 'FitsFileGroup', 'create_table_summary']
 
 
 # TODO: different backends
