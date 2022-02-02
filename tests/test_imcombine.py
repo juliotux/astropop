@@ -629,14 +629,15 @@ class Test_ImCombiner_ChunkYielder():
 
 
 class Test_ImCombiner_LoadImages():
-    def test_image_loading_framedata(self, tmpdir):
+    @pytest.mark.parametrize('disk_cache', [True, False])
+    def test_image_loading_framedata(self, tmpdir, disk_cache):
         tmp = tmpdir.strpath
         n = 10
         d = np.ones((10, 10))
         l = [FrameData(d, unit='adu', uncertainty=d, cache_folder=tmp,
                        cache_filename=f'test{i}') for i in range(n)]
 
-        comb = ImCombiner()
+        comb = ImCombiner(use_disk_cache=disk_cache)
         # must start empty
         assert_equal(len(comb._images), 0)
         assert_is_none(comb._buffer)
@@ -646,10 +647,11 @@ class Test_ImCombiner_LoadImages():
         for i, v in enumerate(comb._images):
             fil = os.path.join(tmp, f'test{i}')
             assert_is_instance(v, FrameData)
-            assert_true(v._memmapping)
-            assert_path_exists(fil+'_copy_copy.data')
-            assert_path_exists(fil+'_copy_copy.unct')
-            assert_path_exists(fil+'_copy_copy.mask')
+            if disk_cache:
+                assert_true(v._memmapping)
+                # assert_path_exists(fil+'_copy_copy.data')
+                # assert_path_exists(fil+'_copy_copy.unct')
+                # assert_path_exists(fil+'_copy_copy.mask')
 
         comb._clear()
         # must start empty
@@ -657,13 +659,15 @@ class Test_ImCombiner_LoadImages():
         assert_is_none(comb._buffer)
 
         # ensure tmp files cleaned
-        for i in range(n):
-            fil = os.path.join(tmp, f'test{i}')
-            assert_path_not_exists(fil+'_copy_copy.data')
-            assert_path_not_exists(fil+'_copy_copy.unct')
-            assert_path_not_exists(fil+'_copy_copy.mask')
+        if disk_cache:
+            for i in range(n):
+                fil = os.path.join(tmp, f'test{i}')
+                assert_path_not_exists(fil+'_copy_copy.data')
+                assert_path_not_exists(fil+'_copy_copy.unct')
+                assert_path_not_exists(fil+'_copy_copy.mask')
 
-    def test_image_loading_fitsfile(self, tmpdir):
+    @pytest.mark.parametrize('disk_cache', [True, False])
+    def test_image_loading_fitsfile(self, tmpdir, disk_cache):
         tmp = tmpdir.strpath
         n = 10
         d = np.ones((10, 10))
@@ -673,7 +677,7 @@ class Test_ImCombiner_LoadImages():
 
         logs = []
         lh = log_to_list(logger, logs, full_record=True)
-        comb = ImCombiner()
+        comb = ImCombiner(use_disk_cache=disk_cache)
         comb._load_images(l)
 
         # check if the logging is properly being emitted.
@@ -686,21 +690,24 @@ class Test_ImCombiner_LoadImages():
         assert_is_none(comb._buffer)
         for i, v in enumerate(comb._images):
             assert_is_instance(v, FrameData)
-            assert_true(v._memmapping)
+            if disk_cache:
+                assert_true(v._memmapping)
 
         comb._clear()
         # must start empty
         assert_equal(len(comb._images), 0)
         assert_is_none(comb._buffer)
 
-    def test_image_loading_fitshdu(self):
+
+    @pytest.mark.parametrize('disk_cache', [True, False])
+    def test_image_loading_fitshdu(self, disk_cache):
         n = 10
         d = np.ones((10, 10))
         l = [fits.PrimaryHDU(d) for i in range(n)]
 
         logs = []
         lh = log_to_list(logger, logs, full_record=True)
-        comb = ImCombiner()
+        comb = ImCombiner(use_disk_cache=disk_cache)
         comb._load_images(l)
 
         # check if the logging is properly being emitted.
@@ -714,7 +721,8 @@ class Test_ImCombiner_LoadImages():
         assert_is_none(comb._buffer)
         for i, v in enumerate(comb._images):
             assert_is_instance(v, FrameData)
-            assert_true(v._memmapping)
+            if disk_cache:
+                assert_true(v._memmapping)
 
         comb._clear()
         # must start empty
@@ -941,3 +949,102 @@ class Test_ImCombiner_Combine():
         assert_almost_equal(res.uncertainty, 0.06693280212272602*base)
         assert_equal(res.meta['astropop imcombine nimages'], 5)
         assert_equal(res.meta['astropop imcombine method'], 'median')
+
+
+class Test_ImCombiner_HeaderMerging():
+    def create_images(self):
+        images = []
+        for i in range(30):
+            meta = {'first_equal': 1,
+                    'second_equal': 2,
+                    'first_differ': i,
+                    'second_differ': i // 2,
+                    'third_differ': i % 3}
+            images.append(FrameData(np.ones((10, 10)), unit='adu', meta=meta))
+
+        return images
+
+    def test_mergeheaders_conformance(self):
+        comb = ImCombiner()
+        comb.set_merge_header('no_merge')
+        comb.set_merge_header('first')
+        comb.set_merge_header('only_equal')
+        comb.set_merge_header('selected_keys', ['key 1'])
+        with pytest.raises(ValueError, match='not known.'):
+            comb.set_merge_header('unkown method')
+        with pytest.raises(ValueError, match='No key assigned'):
+            comb.set_merge_header('selected_keys')
+
+    def test_mergeheaders_default(self):
+        # default is 'no_merge'
+        images = self.create_images()
+        comb = ImCombiner()
+        res = comb.combine(images, method='sum')
+        assert_equal(res.meta, {'astropop imcombine nimages': 30,
+                                'astropop imcombine method': 'sum'})
+
+    def test_mergeheaders_no_merge(self):
+        images = self.create_images()
+        comb = ImCombiner(merge_header='no_merge')
+        res = comb.combine(images, method='sum')
+        assert_equal(res.meta, {'astropop imcombine nimages': 30,
+                                'astropop imcombine method': 'sum'})
+
+        # explicit setting
+        comb = ImCombiner()
+        comb.set_merge_header('no_merge')
+        res = comb.combine(images, method='sum')
+        assert_equal(res.meta, {'astropop imcombine nimages': 30,
+                                'astropop imcombine method': 'sum'})
+
+    def test_mergeheaders_first(self):
+        images = self.create_images()
+        expect = images[0].meta
+        expect.update({'astropop imcombine nimages': 30,
+                       'astropop imcombine method': 'sum'})
+
+        comb = ImCombiner(merge_header='first')
+        res = comb.combine(images, method='sum')
+        assert_equal(res.meta, expect)
+
+        # explicit setting
+        comb = ImCombiner()
+        comb.set_merge_header('first')
+        res = comb.combine(images, method='sum')
+        assert_equal(res.meta, expect)
+
+    def test_mergeheaders_only_equal(self):
+        images = self.create_images()
+        expect = {'astropop imcombine nimages': 30,
+                  'astropop imcombine method': 'sum',
+                  'first_equal': 1,
+                  'second_equal': 2}
+
+        comb = ImCombiner(merge_header='only_equal')
+        res = comb.combine(images, method='sum')
+        assert_equal(res.meta, expect)
+
+        # explicit setting
+        comb = ImCombiner()
+        comb.set_merge_header('only_equal')
+        res = comb.combine(images, method='sum')
+        assert_equal(res.meta, expect)
+
+    def test_mergeheaders_selected_keys(self):
+        images = self.create_images()
+        keys = ['first_equal', 'third_differ', 'first_differ']
+        expect = {'astropop imcombine nimages': 30,
+                  'astropop imcombine method': 'sum',
+                  'first_equal': 1,
+                  'third_differ': 0,
+                  'first_differ': 0}
+
+        comb = ImCombiner(merge_header='selected_keys', merge_header_keys=keys)
+        res = comb.combine(images, method='sum')
+        assert_equal(res.meta, expect)
+
+        # explicit setting
+        comb = ImCombiner()
+        comb.set_merge_header('selected_keys', keys=keys)
+        res = comb.combine(images, method='sum')
+        assert_equal(res.meta, expect)

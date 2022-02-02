@@ -10,6 +10,11 @@ from astropy.stats import mad_std
 from ..framedata import FrameData, check_framedata
 from ..py_utils import check_iterable, check_number
 from ..logger import logger
+from ..file_collection import create_table_summary
+from ..math.array import all_equal
+
+
+# TODO: verify why cache_folder is not being used
 
 
 # bottleneck has faster median
@@ -152,29 +157,37 @@ class ImCombiner:
     _unit = None  # Result unit
     _shape = None  # Full image shape
     _tmpdir = None  # Directory to store temporary files
+    _header_merge_keys = None  # Selected header keys for header merging
+    _header_strategy = 'no_merge'  # strategy for header merging
 
     def __init__(self, max_memory=1e9, dtype=np.float64, tmp_dir=None,
-                 use_disk_cache=False):
+                 use_disk_cache=False, **kwargs):
         """Combine images using various algorithms.
 
         Parameters
         ----------
-        - max_memory: int (optional)
+        max_memory: int (optional)
           Maximum memory to be used during median and mean combining.
           In bytes.
           Default: 1e9 (1GB)
-        - dtype: `~numpy.dtype` (optional)
+        dtype: `~numpy.dtype` (optional)
           Data type to be used during the operations and the final result.
           Defualt: `~numpy.float64`
-        - tmp_dir: `str` (optional)
+        tmp_dir: `str` (optional)
           Directory to store temporary files used in the combining. If None,
           a tmp dir will be created with `~tempfile.mkdtemp`.
           default: `None`
-        - use_disk_cache: `bool`
-          Enable caching images to disk. This slow down the process, but avoid
-          memory overflow for large number of images. If the memory size
-          needed exceeds max_memory, it is enabled automatically.
-          default: false
+        use_disk_cache: `bool`
+            Enable caching images to disk. This slow down the process, but
+            avoid memory overflow for large number of images. If the memory
+            size needed exceeds max_memory, it is enabled automatically.
+            default: false
+        merge_header: {'no_merge', 'first', 'only_equal', 'selected_keys'}
+            Strategy for merging headers.
+            default: 'no_merge'
+        merge_header_keys: `list` (optional)
+            Keywords for header merging if the strategy is 'selected_keys'.
+            default: None
         """
         # workaround to check dtype
         if not isinstance(dtype(0), (float, np.floating)):
@@ -187,6 +200,8 @@ class ImCombiner:
         # initialize empty image list
         self._images = []
         self._disk_cache = use_disk_cache
+        self.set_merge_header(kwargs.pop('merge_header', 'no_merge'),
+                              kwargs.pop('merge_header_keys', None))
 
     def set_sigma_clip(self, sigma_limits=None,
                        center_func='median', dev_func='mad_std'):
@@ -194,15 +209,15 @@ class ImCombiner:
 
         Parameters
         ----------
-        - sigma_limits: `float`, `tuple` or `None` (optional)
+        sigma_limits: `float`, `tuple` or `None` (optional)
           Set the low and high thresholds for sigma clipping. A number is
           applyed to both low and high limits. A tuple will be considered
           (low, high) limits. `None` disable the clipping.
           Default: `None`
-        - center_func: callable or {'median', 'mean'} (optional)
+        center_func: callable or {'median', 'mean'} (optional)
           Function to compute de central tendency of the data.
           Default: 'median'
-        - dev_func: callable or {'std', 'mad_std'} (optional)
+        dev_func: callable or {'std', 'mad_std'} (optional)
           Function to compute the deviation sigma for clipping.
           Defautl: 'mad_std'
 
@@ -240,10 +255,10 @@ class ImCombiner:
 
         Parameters
         ----------
-        - min_value: `float` or `None` (optional)
+        min_value: `float` or `None` (optional)
           Minimum threshold of the clipping. `None` disables minimum masking.
           Default: `None`
-        - max_value: `float` or `None` (optional)
+        max_value: `float` or `None` (optional)
           Maximum threshold of the clipping. `None` disables maximum masking.
           Default: `None`
         """
@@ -262,6 +277,42 @@ class ImCombiner:
             l, h = (l, h) if l < h else (h, l)
 
         self._minmax = (l, h)
+
+    def set_merge_header(self, strategy, keys=None):
+        """Set the strategy to merge headers during combination.
+
+        Strategies
+        ----------
+        no_merge:
+            No header merging will be done. The resulting combined image
+            will contain only new keys based on fits standards.
+            Default behavior.
+        first:
+            All keys from the first header will be used.
+        only_equal:
+            All keys are compared and just the keys that are equal between
+            all hedaers are merged and kept.
+        selected_keys:
+            Only a list of selected keys by the user will be merged and kept.
+            If they are different between headers, the value in the first
+            header willbe used.
+
+        Parameters
+        ----------
+        strategy: {'no_merge', 'first', 'only_equal', 'selected_keys'}
+            Header merging strategy.
+        keys: list
+            List of the keys to be used for `selected_keys` strategy.
+        """
+        if strategy not in {'no_merge', 'first',
+                            'only_equal', 'selected_keys'}:
+            raise ValueError(f'{strategy} not known.')
+
+        if strategy == 'selected_keys' and keys is None:
+            raise ValueError('No key assigned for `selected_keys` strategy.')
+
+        self._header_strategy = strategy
+        self._header_merge_keys = keys
 
     def _clear(self):
         """Clear buffer and images."""
@@ -437,18 +488,47 @@ class ImCombiner:
 
         return data, unct
 
+    def _merge_header(self):
+        """Merge headers."""
+        meta = {}
+        if self._header_strategy == 'no_merge':
+            return meta
+
+        logger.debug('Merging headers with %s strategy.',
+                     self._header_strategy)
+
+        if self._header_strategy == 'first':
+            return self._images[0].header
+
+        summary = create_table_summary([i.header for i in self._images],
+                                       len(self._images))
+        if self._header_strategy == 'selected_keys':
+            keys = self._header_merge_keys
+        else:
+            keys = summary.colnames
+
+        for k in keys:
+            if all_equal(summary[k]):
+                meta[k] = summary[k][0]
+            elif self._header_strategy == 'selected_keys':
+                logger.debug('Keyword %s is different across headers. '
+                             'Unsing first one.', k)
+                meta[k] = summary[k][0]
+
+        return meta
+
     def combine(self, image_list, method, **kwargs):
         """Perform the image combining.
 
         Parameters
         ----------
-        - image_list: `list` or `tuple`
+        image_list: `list` or `tuple`
           List containing the images to be combined. The values in the list
           must be all of the same type and `~astropop.framedata.FrameData`
           supported.
-        - method: {'mean', 'median', 'sum'}
+        method: {'mean', 'median', 'sum'}
           Combining method.
-        - sum_normalize: bool (optional)
+        sum_normalize: bool (optional)
           If True, the imaged will be multiplied, pixel by pixel, by the
           number of images divided by the number of non-masked pixels. This
           will avoid discrepancies by different numbers of masked pixels
@@ -457,7 +537,7 @@ class ImCombiner:
 
         Returns
         -------
-        - combined: `~astropop.framedata.FrameData`
+        combined: `~astropop.framedata.FrameData`
           The combined image.
 
         Notes
@@ -499,6 +579,7 @@ class ImCombiner:
 
         combined = FrameData(data, unit=self._unit, mask=mask,
                              uncertainty=unct)
+        combined.meta = self._merge_header()
         combined.meta['astropop imcombine nimages'] = len(self._images)
         combined.meta['astropop imcombine method'] = method
 

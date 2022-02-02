@@ -139,7 +139,7 @@ def _extract_fits(obj, hdu=0, unit=None, hdu_uncertainty=_HDU_UNCERT,
     else:
         try:
             unit_h = u.format.Fits.parse(unit_h)
-        except:
+        except ValueError:
             unit_h = u.Unit(unit_h)
         if unit_h != unit and unit is not None:
             raise ValueError('unit and unit_key got incompatible results.')
