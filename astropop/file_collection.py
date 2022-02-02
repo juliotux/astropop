@@ -3,6 +3,7 @@
 import os
 import fnmatch
 import glob
+from venv import create
 import numpy as np
 
 from astropy.table import Table
@@ -17,6 +18,34 @@ from .logger import logger
 __all__ = ['list_fits_files', 'FitsFileGroup']
 
 
+# TODO: different backends
+# - table: in memory only. faster but not persistent
+# - sql: disk file. slower but persistent
+
+
+def create_table_summary(headers, n):
+    """Create a table summary of headers.
+
+    Parameters
+    ----------
+    headers: iterator
+        Iterator for a list of header files.
+    n: int
+        Number of headers to iterate.
+    """
+    summary_dict = {}
+    for i, head in enumerate(headers):
+        logger.debug('Reading file %i from %i', i, n)
+        keys = head.keys()
+        for k in keys:
+            k_lower = k.lower()
+            if k_lower not in summary_dict.keys():
+                summary_dict[k_lower] = [None]*n
+            summary_dict[k_lower][i] = head.get(k)
+
+    return Table(summary_dict)
+
+
 def list_fits_files(location, fits_extensions=None,
                     glob_include=None, glob_exclude=None):
     """List all fist files in a directory, if compressed or not."""
@@ -29,7 +58,7 @@ def list_fits_files(location, fits_extensions=None,
         # filter only glob include
         if glob_include is not None:
             if not check_iterable(glob_include):
-                glob_include = []
+                glob_include = [glob_include]
             for inc in glob_include:
                 files = [i for i in files if fnmatch.fnmatch(i, inc)]
         f.extend(files)
@@ -43,7 +72,7 @@ def list_fits_files(location, fits_extensions=None,
 
     files = sorted(f)
     files = [os.path.join(location, i) for i in files]
-    return files
+    return sorted(files)
 
 
 def gen_mask(table, keywords):
@@ -94,21 +123,7 @@ class FitsFileGroup():
         self._files = files
         self._location = location
 
-        self._create_summary()
-
-    def _create_summary(self):
-        summary_dict = {}
-        size = len(self)
-        for i, head in enumerate(self.headers()):
-            logger.debug('Reading file %i from %i', i, size)
-            keys = self._keywords or head.keys()
-            for k in keys:
-                k_lower = k.lower()
-                if k_lower not in summary_dict.keys():
-                    summary_dict[k_lower] = [None]*size
-                summary_dict[k_lower][i] = head.get(k)
-
-        self._summary = Table(summary_dict)
+        self._summary = create_table_summary(self.headers(), len(self))
 
     def __len__(self):
         return len(self.files)
