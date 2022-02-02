@@ -7,7 +7,7 @@ Small module for simple matrix works. Possible deprecated in future.
 import numpy as np
 
 
-__all__ = ['xy2r', 'iraf_indices', 'trim_array']
+__all__ = ['xy2r', 'iraf_indices', 'trim_array', 'all_equal']
 
 
 def xy2r(x, y, data, xc, yc):
@@ -38,6 +38,11 @@ def trim_array(data, box_size, position, indices=None, origin=0):
     xi = indices[1][y_min:y_max, x_min:x_max]
     yi = indices[0][y_min:y_max, x_min:x_max]
     return d, xi, yi
+
+
+def all_equal(data):
+    """Check if all elements of an array are equal."""
+    return np.all(data == data.ravel()[0])
 
 
 def iraf_indices(data):
