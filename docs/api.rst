@@ -9,7 +9,7 @@ General Tools
 .. autosummary::
    :toctree: _api
 
-   astropop.file_manage
+   astropop.file_collection
    astropop.fits_utils
    astropop.logger
    astropop.py_utils
@@ -53,11 +53,11 @@ Image Processing
 .. autosummary::
    :toctree: _api
 
-   astropop.image_processing
-   astropop.image_processing.imarith
-   astropop.image_processing.ccd_processing
-   astropop.image_processing.register
-   astropop.image_processing.utils
+   astropop.image
+   astropop.image.imarith
+   astropop.image.processing
+   astropop.image.register
+   astropop.image.imcombine
 
 Math Utils
 ----------
@@ -70,7 +70,6 @@ Math Utils
    astropop.math.gaussian
    astropop.math.hasher
    astropop.math.moffat
-   astropop.math.opd_utils
    astropop.math.physical
 
 Photometry Processing
@@ -91,17 +90,6 @@ Pipelines
    :toctree: _api
 
    astropop.pipelines
-
-Plot Stuff
-----------
-
-.. autosummary::
-   :toctree: _api
-
-   astropop.plot_utils
-   astropop.plot_utils.ds9norm
-   astropop.plot_utils.plot_polarimetry
-   astropop.plot_utils.skyview
 
 Polarimetry Processing
 ----------------------
