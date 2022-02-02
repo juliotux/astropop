@@ -3,8 +3,9 @@
 import asyncio
 from asyncio.subprocess import PIPE
 import shlex
-import six
 from numbers import Number
+
+import numpy as np
 
 from .logger import logger, resolve_level_string
 
@@ -83,9 +84,13 @@ def check_iterable(value):
     """
     try:
         iter(value)
-        if not isinstance(value, six.string_types):
+        if isinstance(value, (str, bytes)):
+            return False
+        return True
+    except NotImplementedError:
+        # multi-dimensional sub-views are not implemented
+        if isinstance(value, np.memmap):
             return True
-        return False
     except TypeError:
         pass
 
@@ -131,7 +136,7 @@ def batch_key_replace(dictionary, key=None):
             batch_key_replace(dictionary, i)
         return
 
-    if isinstance(dictionary[key], (six.string_types)):
+    if isinstance(dictionary[key], (str, bytes)):
         for i in dictionary.keys():
             if '{'+i+'}' in dictionary[key]:
                 logger.debug("replacing key %s in key %s", i, key)
@@ -155,7 +160,7 @@ def run_command(args, stdout=None, stderr=None, stdout_loglevel='DEBUG',
     # https://stackoverflow.com/a/53323746
 
     # Put the cmd in python list, required
-    if isinstance(args, six.string_types):
+    if isinstance(args, (str, bytes)):
         logger.debug('Converting string using shlex')
         args = shlex.split(args)
 
@@ -256,9 +261,7 @@ class IndexedDict(dict):
         if key not in __keys:
             raise KeyError(f"{key}")
 
-        for i, k in enumerate(self.keys()):
-            if k == key:
-                return i
+        return np.where(__keys == key)[0]
 
     def insert_before(self, key, new_key, val):
         """Insert new_key:value into dict before key."""
