@@ -93,10 +93,7 @@ def extract_header_wcs(header):
 
 
 class EmptyDataError(ValueError):
-    """
-    Error raised when try to operate things not handled
-    by empty MemMapArray containers.
-    """
+    """Operation not handled by empty MemMapArray containers."""
 
 
 def _extract_fits(obj, hdu=0, unit=None, hdu_uncertainty=_HDU_UNCERT,
