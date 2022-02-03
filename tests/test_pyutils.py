@@ -228,7 +228,7 @@ class Test_CaseInsensitiveDict():
 
     def test_insensitivedict_pythonerrors(self):
         with pytest.raises(TypeError,
-                           match='dict expected at most 1 argument, got 2'):
+                           match='dict expected at most 1 argument'):
             CaseInsensitiveDict([('a', 1), ('B', 2)], {'TesT': 'AAA'})
 
         with pytest.raises(TypeError,
