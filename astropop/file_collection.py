@@ -52,6 +52,9 @@ def list_fits_files(location, fits_extensions=None,
     if fits_extensions is None:
         fits_extensions = _fits_extensions
 
+    if not check_iterable(fits_extensions):
+        fits_extensions = [fits_extensions]
+
     f = []
     for i in fits_extensions:
         files = glob.glob(os.path.join(location, '*' + i))

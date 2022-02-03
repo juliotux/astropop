@@ -16,6 +16,38 @@ def tmpdir(tmp_path_factory):
         folder = fn / i.replace('.', '_')
         folder.mkdir()
         files[i] = create_test_files(folder, extension=i)
+
+    # Also create the images on the custom HDU
+
+    tmpdir = fn / 'custom_hdu'
+    tmpdir.mkdir()
+    flist = []
+    for i in range(10):
+        fname = tmpdir / f'bias_{i+1}.fits'
+        if fname.is_file():
+            continue
+        hdr = fits.Header({'obstype': 'bias',
+                           'exptime': 0.0001,
+                           'observer': 'Galileo Galileo',
+                           'object': 'bias',
+                           'filter': ''})
+        hdul = fits.HDUList([
+            fits.PrimaryHDU(),
+            fits.ImageHDU(np.ones((8, 8), dtype=np.int16), hdr,
+                          name='image')
+            ])
+        hdul.writeto(fname)
+        flist.append(str(fname))
+    files['custom_hdu'] = flist
+
+    files['custom'] = []
+    folder = fn / 'custom'
+    folder.mkdir()
+    for i in ('myfits', 'otherfits'):
+        f = create_test_files(folder, extension=i)
+        files['custom'].extend(f)
+        files[i] = f
+
     return fn, files
 
 
@@ -144,29 +176,11 @@ class Test_FitsFileGroup():
 
     @pytest.mark.parametrize('hdu', [1, 'image'])
     def test_fg_creation_custom_hdu(self, tmpdir, hdu):
-        tmpdir, _ = tmpdir
-        flist = []
-        for i in range(10):
-            fname = tmpdir / f'bias_{i+1}.fits'
-            if fname.is_file():
-                continue
-            hdr = fits.Header({'obstype': 'bias',
-                               'exptime': 0.0001,
-                               'observer': 'Galileo Galileo',
-                               'object': 'bias',
-                               'filter': ''})
-            hdul = fits.HDUList([
-                fits.PrimaryHDU(),
-                fits.ImageHDU(np.ones((8, 8), dtype=np.int16), hdr,
-                              name='image')
-                ])
-            hdul.writeto(fname)
-            flist.append(str(fname))
-
-        fg = FitsFileGroup(location=tmpdir, ext=hdu)
+        tmpdir, flist = tmpdir
+        fg = FitsFileGroup(location=tmpdir/'custom_hdu', ext=hdu)
         assert_is_instance(fg, FitsFileGroup)
         assert_equal(len(fg), 10)
-        assert_equal(sorted(fg.files), sorted(flist))
+        assert_equal(sorted(fg.files), sorted(flist['custom_hdu']))
         for k in ('object', 'exptime', 'observer', 'filter'):
             assert_in(k, fg.summary.colnames)
         for i in fg.summary:
@@ -288,17 +302,14 @@ class Test_FitsFileGroup():
 
 class Test_ListFitsFiles():
     def test_list_custom_extension(self, tmpdir):
-        tmpdir, _ = tmpdir
-        tmpdir = tmpdir / 'custom'
-        tmpdir.mkdir()
-        flist1 = create_test_files(tmpdir, extension='myfits')
-        found_files = list_fits_files(tmpdir, fits_extensions='myfits')
-        assert_equal(sorted(found_files), sorted(flist1))
+        tmpdir, flist = tmpdir
+        found_files = list_fits_files(tmpdir/'custom',
+                                      fits_extensions='.myfits')
+        assert_equal(sorted(found_files), sorted(flist['myfits']))
 
-        flist2 = create_test_files(tmpdir, extension='otherfits')
-        found_files = list_fits_files(tmpdir,
-                                      fits_extensions=['myfits', 'otherfits'])
-        assert_equal(sorted(found_files), sorted(flist1+flist2))
+        found_files = list_fits_files(tmpdir/'custom',
+                                      fits_extensions=['.myfits', '.otherfits'])
+        assert_equal(sorted(found_files), sorted(flist['custom']))
 
     @pytest.mark.parametrize('ext', ['fits', 'fz', 'fit', 'fts'])
     def test_list_no_extension(self, tmpdir, ext):
