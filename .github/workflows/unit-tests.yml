@@ -15,6 +15,9 @@ jobs:
     name: ${{ matrix.toxenv }}
     runs-on: ubuntu-latest
     if: "!(contains(github.event.head_commit.message, '[skip ci]') || contains(github.event.head_commit.message, '[ci skip]'))"
+    concurrency:
+      group: ${{ github.ref }}
+      cancel-in-progress: true
     strategy:
       fail-fast: false
       matrix:
@@ -85,6 +88,9 @@ jobs:
     name: "Conda/Coverage/Astrometry.net"
     runs-on: ubuntu-latest
     if: "!(contains(github.event.head_commit.message, '[skip ci]') || contains(github.event.head_commit.message, '[ci skip]'))"
+    concurrency:
+      group: ${{ github.ref }}
+      cancel-in-progress: true
     env:
       ASTROPOP_TEST_CATALOGS: 1
     steps:
@@ -136,6 +142,9 @@ jobs:
     name: Documentation Building
     runs-on: ubuntu-latest
     if: "!(contains(github.event.head_commit.message, '[skip ci]') || contains(github.event.head_commit.message, '[ci skip]'))"
+    concurrency:
+      group: ${{ github.ref }}
+      cancel-in-progress: true
     steps:
     - uses: actions/checkout@v2
       with:

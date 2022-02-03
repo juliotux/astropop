@@ -9,6 +9,9 @@ jobs:
   codeql:
     name: CodeQL
     runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.ref }}
+      cancel-in-progress: true
 
     steps:
     - name: Checkout repository
@@ -25,6 +28,9 @@ jobs:
   codestyle:
     name: codestyle
     runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.ref }}
+      cancel-in-progress: true
 
     steps:
     - uses: actions/checkout@v2
@@ -39,4 +45,4 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install tox
     - name: Code Analyse
-      run: tox -v -e codestyle
+      run: tox -e codestyle
