@@ -19,10 +19,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: Documentation build
-            python: '3.9'
-            toxenv: build_docs
-
           - name: Python 3.10 with devdeps and online catalogs
             python: '3.10'
             toxenv: py310-test-devdeps-cat
