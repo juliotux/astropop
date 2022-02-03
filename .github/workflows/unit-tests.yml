@@ -157,6 +157,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         python -m pip install tox
+        python -m pip install pandoc
     - name: Install apt-get dependency
       shell: bash -l {0}
       run: sudo apt-get -y install graphviz pandoc
