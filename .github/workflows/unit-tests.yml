@@ -55,10 +55,6 @@ jobs:
             python: '3.10'
             toxenv: py310-test-stabledeps
 
-          #- name: Code style checks
-          #  python: 3.8
-          #  toxenv: codestyle
-
     steps:
     - uses: actions/checkout@v2
       with:
