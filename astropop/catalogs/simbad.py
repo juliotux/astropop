@@ -7,11 +7,10 @@ from astroquery.simbad import Simbad, SimbadClass
 from astropy.coordinates import SkyCoord
 from astropy import units as u
 
-from .base_catalog import _BasePhotometryCatalog, match_indexes
+from .base_catalog import _BasePhotometryCatalog
 from ._online_tools import _timeout_retry, _wrap_query_table, \
                            MAX_PARALLEL_QUERY, \
-                           astroquery_skycoord, astroquery_radius
-from ..logger import logger
+                           astroquery_radius
 from ..py_utils import string_fix
 
 

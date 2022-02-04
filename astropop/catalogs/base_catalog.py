@@ -100,7 +100,7 @@ class _BaseCatalog(abc.ABC):
 
 
 class _BasePhotometryCatalog(_BaseCatalog, abc.ABC):
-    """A base class for photometry catalogsself."""
+    """A base class for photometry catalogs."""
 
     name = None
     type = None

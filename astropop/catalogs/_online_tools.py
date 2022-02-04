@@ -4,7 +4,6 @@
 import numpy as np
 from astroquery.simbad import Simbad
 from astropy.coordinates import SkyCoord, Angle
-from urllib3 import Timeout
 from ..astrometry.coords_utils import guess_coordinates
 from ..py_utils import string_fix, process_list
 
