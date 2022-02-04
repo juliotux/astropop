@@ -8,29 +8,47 @@ from ..py_utils import process_list, string_fix
 __all__ = ['identify_stars']
 
 
-def identify_stars(x, y, wcs, identify_catalog,
-                   science_catalog=None, filter=None,
-                   limit_angle='2 arcsec'):
-    """Identify stars with coordinates x and y in a wcs frame and return
-    pertinent parameters from the catalogs."""
-    cat = identify_catalog
+def identify_stars(x, y, wcs, catalog, **kwargs):
+    """Identify and name stars based on their x,y positions and WCS.
+
+    Parameters
+    ----------
+    x, y: array_like
+        x and y positions ofthe stars in the frame.
+    wcs: `~astropy.wcs.WCS`
+        World Coordinate System reference to identify the astronomical
+        coordinates ofthe stars.
+    catalog: `~astropop.catalogs._BaseCatalog`
+        Catalog for star name matching.
+    science_catalog: `~astropop.catalogs._BaseCatalog`
+        Custom catalog for star name matching.
+    band: `str` (optional)
+        Photometric filter for flux estimation.
+    limit_angle: `float`, `str` or `~astropy.coordinates.Angle` (optional)
+        Maximum search limit to identify the star.
+        Default: '2 arcsec'
+
+    Returns
+    -------
+    `~astropy.table.Table`: All stars with id matched in the catalog.
+    """
+    limit_angle = kwargs.get('limit_angle', '2 arcsec')
+    band = kwargs.get('band')
+    cat = catalog
     ra, dec = wcs.all_pix2world(x, y, 1)  # Native wcs has 1 index counting
 
-    cat_res = cat.match_objects(ra, dec, filter, limit_angle=limit_angle)
-    name = cat_res['id']
-    mag = cat_res['flux']
-    mag_err = cat_res['flux_error']
+    cat_res = cat.match_objects(ra, dec, band, limit_angle=limit_angle)
 
     res = Table()
-    if science_catalog is not None:
-        sci = science_catalog
+    res['ra'] = ra
+    res['dec'] = dec
+    res['cat_id'] = process_list(string_fix, cat_res['id'])
+    res['cat_mag'] = cat_res['flux']
+    res['cat_mag_err'] = cat_res['flux_error']
+
+    if 'science_catalog' in kwargs.keys():
+        sci = kwargs.get('science_catalog')
         sci_res = sci.match_objects(ra, dec, limit_angle=limit_angle)
         res['sci_id'] = process_list(string_fix, sci_res['id'])
 
-    res['cat_id'] = process_list(string_fix, name)
-    res['ra'] = ra
-    res['dec'] = dec
-    res['cat_mag'] = mag
-    res['cat_mag_err'] = mag_err
-
-    return res.as_array()
+    return res

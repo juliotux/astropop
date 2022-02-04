@@ -1,11 +1,19 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 """Base classes for astronomical catalogs query."""
+
+import copy
 import abc
-import six
 import numpy as np
+from astropy.table import Table
 from astropy.coordinates import Angle, SkyCoord, match_coordinates_sky
 
 from ..logger import logger
+from ._online_tools import _timeout_retry, get_center_radius
+from ..astrometry.coords_utils import guess_coordinates
+from ..py_utils import string_fix
+
+
+__all__ = ['match_indexes']
 
 
 def match_indexes(ra, dec, cat_ra, cat_dec, limit_angle):
@@ -85,29 +93,6 @@ class _BaseCatalog(abc.ABC):
             return self.query_object(center, **kwargs)
         return self.query_region(center, radius, **kwargs)
 
-    def _get_radius(self, radius):
-        if isinstance(radius, six.string_types):
-            radius = Angle(radius)
-        if isinstance(radius, Angle):
-            radius = radius.degree
-        try:
-            radius = float(radius)
-            return radius
-        except ValueError:
-            raise ValueError(f"Radius value {radius} not understood.")
-
-    @abc.abstractmethod
-    def _get_center(self, center):
-        """Get the center of a field."""
-
-    @abc.abstractmethod
-    def query_object(self, center, **kwargs):
-        """Query a single object in the catalog."""
-
-    @abc.abstractmethod
-    def query_region(self, center, radius, **kwargs):
-        """Query all objects in a region."""
-
     def flush(self):
         """Clear previous query informations."""
         del self._last_query_info
@@ -115,19 +100,7 @@ class _BaseCatalog(abc.ABC):
 
 
 class _BasePhotometryCatalog(_BaseCatalog, abc.ABC):
-    """A base class for photometry catalogsself.
-
-    Parameters:
-    -----------
-        name : string
-            A name to designate the catalog.
-        type : 'online' or 'local'
-            If the catalog is online.
-        flux_unit : 'mag', 'log' or 'linear'
-            The unit of the data sotred as flux in catalog. Can be `linear`,
-            corresponding to a linear flux scale, `mag` for magnitudes or `log`
-            for log10(flux) scales.
-    """
+    """A base class for photometry catalogsself."""
 
     name = None
     type = None
@@ -143,18 +116,79 @@ class _BasePhotometryCatalog(_BaseCatalog, abc.ABC):
                          'The available formats are:'
                          f' {self.available_filters}')
 
-    @abc.abstractmethod
-    def query_ra_dec(self, center, radius, **kwargs):
-        """Query coordinates in a region of the catalog."""
+    def filter_ra_dec(self, query):
+        """Filter coordinates in a query result."""
+        if self.ra_key is None or self.dec_key is None:
+            raise ValueError("Invalid RA or Dec keys.")
 
-    @abc.abstractmethod
-    def query_flux(self, center, radius, **kwargs):
-        """Query the flux data in a region of the catalog."""
+        if query is None:
+            query = self._last_query_table
 
-    @abc.abstractmethod
-    def query_id(self, center, radius, **kwargs):
-        """Query coordinates in a region of the catalog."""
+        ra = query[self.ra_key].data
+        dec = query[self.dec_key].data
 
-    @abc.abstractmethod
-    def match_objects(self, ra, dec, limit_angle='2 arcsec'):
-        """Match objects from RA DEC list with this catalog."""
+        # Solve the most common types of coordinates
+        coords = guess_coordinates(ra, dec)
+        ra = np.array(coords.ra.degree)
+        dec = np.array(coords.dec.degree)
+
+        return ra, dec
+
+    def filter_id(self, query):
+        """Filter object names in a query result."""
+        if self.id_key is None:
+            raise ValueError("Invalid ID key.")
+        if query is None:
+            query = self._last_query_table
+
+        if self.id_key == -1:
+            return np.array(['']*len(query))
+
+        idn = query[self.id_key].data
+        idn = self._id_resolve(idn)
+
+        return string_fix(idn)
+
+    def _query(self, querier, *args, **kwargs):
+        """Perform a query. All args are passed to querier."""
+        query_info = (args, kwargs)
+        if (query_info == self._last_query_info and
+           self._last_query_table is not None):
+            logger.debug("Loading cached query.")
+            return copy.copy(self._last_query_table)
+
+        logger.info("Performing %s query with parameters: %s",
+                    self.__class__.__name__, query_info)
+
+        self._last_query_info = query_info
+        self._last_query_table = None
+
+        query = _timeout_retry(querier, *args, **kwargs)
+        if query is None:
+            raise RuntimeError("No online catalog result found.")
+        self._last_query_table = query
+        return copy.copy(self._last_query_table)
+
+    def _match_objects(self, ra, dec, band, limit_angle,
+                       flux_keys, table_props):
+        c_ra, c_dec, radius = get_center_radius(ra, dec)
+        query = self.query_region((c_ra, c_dec), radius)
+        cat = Table()
+        cat['id'] = self.filter_id(query)
+        cat['ra'], cat['dec'] = self.filter_ra_dec(query)
+
+        indexes = match_indexes(ra, dec, cat['ra'], cat['dec'], limit_angle)
+        if band is not None:
+            for k, v in zip(flux_keys, self.filter_flux(band, query)):
+                cat[k] = v
+        else:
+            for k in flux_keys:
+                cat[k] = np.full(len(cat), fill_value=np.nan)
+
+        res = Table()
+        res['ra'] = ra
+        res['dec'] = dec
+        for k, empty in table_props:
+            res['cat_'+k] = [cat[k][i] if i < 0 else empty for i in indexes]
+
+        return res
