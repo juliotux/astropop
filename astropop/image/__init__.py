@@ -1,9 +1,8 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
+"""Image proccessing library."""
 
-# from .calibration import ()
-from .imarith import imarith  # noqa: F401
-from .imcombine import imcombine, ImCombiner  # noqa: F401
-from . import register  # noqa: F401
+from .imarith import imarith
+from .imcombine import imcombine, ImCombiner
 
-register_available_methods = [None, 'fft']
-combine_available_methods = ['median', 'sum', 'average']
+
+__all__ = ['imarith', 'imcombine', 'ImCombiner']

@@ -14,13 +14,10 @@ from astropy import units as u
 
 
 from ..logger import logger
+from ..fits_utils import imhdus
 
 
 __all__ = ['imhdus', 'EmptyDataError']
-
-
-imhdus = (fits.ImageHDU, fits.PrimaryHDU, fits.CompImageHDU,
-          fits.StreamingHDU)
 
 
 _PCs = set(['PC1_1', 'PC1_2', 'PC2_1', 'PC2_2'])

@@ -1,8 +1,9 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 """Utils to handle FITS files."""
 
-from .framedata import imhdus
+from astropy.io import fits
 from .logger import logger
+
 
 __all__ = ['imhdus', 'check_header_keys']
 
@@ -15,6 +16,10 @@ for k in _fits_compression:
     _fits_extensions_with_compress.extend(
         [i+k for i in _fits_extensions_with_compress]
     )
+
+
+imhdus = (fits.ImageHDU, fits.PrimaryHDU, fits.CompImageHDU,
+          fits.StreamingHDU)
 
 
 class IncompatibleHeadersError(ValueError):
