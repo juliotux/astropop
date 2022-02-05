@@ -167,12 +167,12 @@ class SimbadCatalogClass(_BasePhotometryCatalog):
 
         return res
 
-    def match_object_ids(self, ra, dec, limit_angle='2 arcsec',
-                         name_order=None):
+    @staticmethod
+    def match_object_ids(ra, dec, limit_angle='2 arcsec', name_order=None):
         """Get the id from Simbad for every object in a RA, Dec list."""
         # Perform it in parallel to handle the online query overhead
-        func = partial(simbad_query_id, simbad=self.simbad,
-                       name_order=name_order, limit_angle=limit_angle)
+        func = partial(simbad_query_id, name_order=name_order,
+                       limit_angle=limit_angle)
         p = Pool(MAX_PARALLEL_QUERY)
         results = p.starmap(func, list(zip(ra, dec)))
         return results
