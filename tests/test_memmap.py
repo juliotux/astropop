@@ -75,7 +75,6 @@ class Test_MemMapArray:
             # set item whould rise
             a[0] = 1
 
-
     @pytest.mark.parametrize('memmap', [True, False])
     def test_create_memmap(self, tmpdir, memmap):
         f = os.path.join(tmpdir, 'npn_empty.npy')
