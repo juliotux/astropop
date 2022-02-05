@@ -36,7 +36,7 @@ sirius_coords = ["Sirius", "06h45m09s -16d42m58s", [101.28715, -16.7161158],
 
 
 @flaky_rerun
-# @catalog_skip
+@catalog_skip
 class Test_OnlineTools:
     def test_timeout_retry_error(self):
         def _only_fail(*args, **kwargs):
@@ -127,7 +127,7 @@ class Test_OnlineTools:
 
 
 @flaky_rerun
-# @catalog_skip
+@catalog_skip
 class TestSimbadCatalog():
     @property
     def cat(self):
