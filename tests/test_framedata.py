@@ -9,8 +9,7 @@ import numpy as np
 from astropop.framedata.framedata import setup_filename, extract_units, \
                                          shape_consistency, \
                                          uncertainty_unit_consistency
-from astropop.framedata import FrameData
-from astropop.framedata.memmap import check_framedata, read_framedata
+from astropop.framedata import FrameData, check_framedata, read_framedata
 from astropop.math import QFloat
 from astropop.py_utils import CaseInsensitiveDict
 from astropy.io import fits
