@@ -344,7 +344,8 @@ class Stage(abc.ABC):
                 variables[v] = self.factory.get_value(self, v)
             except Exception as e:
                 variables[v] = None
-                logger.warn('Variable %s not found. Falling back to None.', v)
+                logger.warn('Variable %s not found due to %s.'
+                            ' Falling back to None.', v, e)
 
         return variables
 

@@ -9,7 +9,7 @@ from astropy.coordinates import SkyCoord
 from astropy import units as u
 
 from .base_catalog import _BasePhotometryCatalog
-from ._online_tools import _timeout_retry, _wrap_query_table, \
+from ._online_tools import _timeout_retry, \
                            MAX_PARALLEL_QUERY, \
                            astroquery_radius, astroquery_skycoord
 from ..py_utils import string_fix

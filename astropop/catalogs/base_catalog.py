@@ -11,7 +11,6 @@ from ..logger import logger
 from ._online_tools import _timeout_retry, get_center_radius, \
                            _wrap_query_table
 from ..astrometry.coords_utils import guess_coordinates
-from ..py_utils import string_fix
 
 
 __all__ = ['match_indexes']
