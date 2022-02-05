@@ -1,4 +1,5 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
+"""Schemes for execute chains of jobs in pipelines."""
 
 import abc
 import yaml
@@ -27,6 +28,8 @@ def info_dumper(infos):
 
 
 class FrozenError(RuntimeError):
+    """Pipeline is frozen."""
+
     pass
 
 
@@ -67,6 +70,7 @@ class _Frozable():
 
 class Config(dict, _Frozable):
     """Class for generic sotring configs. Like a powered dict."""
+
     _mutable = ['_frozen', 'logger']
 
     def __init__(self, *args, **kwargs):
@@ -128,6 +132,7 @@ class Config(dict, _Frozable):
 
 class Instrument(abc.ABC, _Frozable):
     """Store all the informations and needed functions of a instrument."""
+
     _mutable = ['_frozen']
     _identifier = ''
 
@@ -155,6 +160,7 @@ class Instrument(abc.ABC, _Frozable):
 
 class Product():
     """Store all informations and data of a product."""
+
     _destruct_callbacks = []  # List of destruction callbacks
     _log_list = []  # Store the logs
     _variables = {}
@@ -239,7 +245,7 @@ class Product():
         self._variables[name] = value
 
     def add_info(self, session, info_dict):
-        """Custom add information dictionaries to the product."""
+        """Add information dictionaries to the product."""
         if session in self._infos.keys():
             self.logger.warn(f'Session {session} already exists in this '
                              'product infos. Overwriting it.')
@@ -264,8 +270,7 @@ class Product():
             self.logger.debug(f'Stage {name} not in the target list.')
 
     def add_destruct_callback(self, callback, *args, **kwargs):
-        """Add a destruction callback. First argument must be a class slot,
-        like self."""
+        """Add a destruction callback."""
         func = partial(callback, self, *args, **kwargs)
         self._destruct_callbacks.append(func)
 
@@ -280,6 +285,7 @@ class Product():
 
 class Stage(abc.ABC):
     """Stage process (sub-part) of a pipeline."""
+
     _default_config = Config()  # stage default config
     _requested_functions = []  # Instrument needed functions
     _required_variables = []  # Product needed variables
@@ -336,8 +342,9 @@ class Stage(abc.ABC):
         for v in self._optional_variables:
             try:
                 variables[v] = self.factory.get_value(self, v)
-            except:
+            except Exception as e:
                 variables[v] = None
+                logger.warn('Variable %s not found. Falling back to None.', v)
 
         return variables
 
@@ -581,7 +588,6 @@ class Factory():
 
     def run(self, config, target=None):
         """Run te factory to the product."""
-
         self._active_config = Config(config)
         targets = target or self._active_prod.targets
         if not check_iterable(targets):
@@ -622,14 +628,14 @@ class Manager(abc.ABC):
 
     @abc.abstractmethod
     def setup_pipeline(self, *args, **kwargs):
-        """Setup the pipeline, register stages, etc.
+        """Set up the pipeline, register stages, etc.
 
         Can be used to read a config.
         """
 
     @abc.abstractmethod
     def setup_products(self, *args, **kwargs):
-        """Setup products based on specified parameters.
+        """Set up products based on specified parameters.
 
         Examples:
             - Read files from a folder, with filters
@@ -701,7 +707,7 @@ class Manager(abc.ABC):
             pass
 
     def register_stage(self, name, stage, disable_variables=[]):
-        """Register a stage"""
+        """Register a stage."""
         self.factory.register_stage(name, stage, disable_variables)
 
     def unregister_stage(self, name):
