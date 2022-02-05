@@ -1,4 +1,5 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
+"""Small python addons to be used in astropop."""
 
 import asyncio
 from asyncio.subprocess import PIPE
