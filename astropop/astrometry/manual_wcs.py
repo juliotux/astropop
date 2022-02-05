@@ -1,13 +1,15 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
+"""Create WCS manually."""
 
 import six
 import numpy as np
 from astropy.wcs import WCS
 
 from .coords_utils import guess_coordinates
-from ..logger import logger
+
 
 __all__ = ['wcs_from_coords']
+
 
 _angles = {
     'left': 180,
@@ -18,7 +20,7 @@ _angles = {
 
 
 def wcs_from_coords(x, y, ra, dec, plate_scale, north, flip=None):
-    """Giving coordinates and plate scale, creates a WCS.
+    """Create WCS based on coordinates and plate scale.
 
     x, y: float, pixel coordinates in image
     ra, dec: float, sky coordinates
