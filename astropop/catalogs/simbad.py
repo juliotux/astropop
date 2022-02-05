@@ -25,7 +25,7 @@ def simbad_query_id(ra, dec, limit_angle, name_order=None,
     Parameters
     ----------
     ra, dec : `float`
-        RA and DEC coordinates to query.
+        RA and DEC decimal degrees coordinates to query.
     limit_angle : string, float, `~astropy.coordinates.Angle`
         Maximum radius for search.
     name_order : `list`, optional
@@ -40,29 +40,34 @@ def simbad_query_id(ra, dec, limit_angle, name_order=None,
         The ID of the object.
     """
     if name_order is None:
-        name_order = ['NAME', 'HD', 'HR', 'HYP', 'TYC', 'AAVSO']
+        name_order = ['MAIN_ID', 'NAME', 'HD', 'HR', 'HYP', 'TYC', 'AAVSO']
 
     if simbad is not None:
         s = simbad
     else:
         s = Simbad()
 
-    q = _timeout_retry(s.query_region, center=SkyCoord(ra, dec,
-                                                       unit=(u.degree,
-                                                             u.degree)),
+    def _strip_spaces(name):
+        name = name.strip('NAME')
+        name = name.strip('* ')
+        # remove excessive spaces
+        while '  ' in name:
+            name = name.replace('  ', ' ')
+        return name.strip(' ')
+
+    q = _timeout_retry(s.query_region, SkyCoord(ra, dec,
+                                                unit=(u.degree, u.degree)),
                        radius=limit_angle)
 
     if q is not None:
         name = string_fix(q['MAIN_ID'][0])
         ids = _timeout_retry(s.query_objectids, name)['ID']
         for i in name_order:
+            if i == 'MAIN_ID':
+                return _strip_spaces(name)
             for k in ids:
                 if i+' ' in k:
-                    r = k.strip(' ').strip('NAME')
-                    # remove excessive spaces
-                    while '  ' in r:
-                        r.replace('  ', ' ')
-                    return r
+                    return _strip_spaces(k)
     return None
 
 
@@ -165,12 +170,11 @@ class SimbadCatalogClass(_BasePhotometryCatalog):
     def match_object_ids(self, ra, dec, limit_angle='2 arcsec',
                          name_order=None):
         """Get the id from Simbad for every object in a RA, Dec list."""
-        name_order = name_order or ['NAME', 'HD', 'HR', 'HYP', 'TYC', 'AAVSO']
         # Perform it in parallel to handle the online query overhead
+        func = partial(simbad_query_id, simbad=self.simbad,
+                       name_order=name_order, limit_angle=limit_angle)
         p = Pool(MAX_PARALLEL_QUERY)
-        func = partial(simbad_query_id, simbad=self.simbad)
-        results = p.map(func, [(r, d, limit_angle, name_order)
-                               for r, d in zip(ra, dec)])
+        results = p.starmap(func, list(zip(ra, dec)))
         return results
 
 

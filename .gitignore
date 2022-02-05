@@ -2,6 +2,7 @@ examples
 .vscode
 .pytest_cache
 .trash
+.env
 
 # Compiled files
 *.py[cod]

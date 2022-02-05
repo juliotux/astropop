@@ -7,7 +7,7 @@ import copy
 import numpy as np
 from astropy.table import Table
 from astropy.coordinates import SkyCoord, Angle
-from astropop.catalogs import SimbadCatalog
+from astropop.catalogs.simbad import SimbadCatalog, simbad_query_id
 from astropop.catalogs._online_tools import _timeout_retry, \
                                             _wrap_query_table, \
                                             astroquery_radius, \
@@ -278,10 +278,37 @@ class TestSimbadCatalog():
 
         assert_equal(id, id_resolved)
 
-    def test_simbad_catalog_filter_query_none(self):
+    def test_simbad_catalog_filter_id_query_none(self):
         cat = self.cat
         query = cat.query_region('Sirius', '5m')
-        id = cat.filter_id()
+        idn = cat.filter_id()
         id_resolved = self.cat._id_resolve(query['MAIN_ID'])
+        assert_equal(idn, id_resolved)
 
-        assert_equal(id, id_resolved)
+    def test_simbad_catalog_match_object_ids(self):
+        ra = [101.28715, 88.79293875, 191.93028625]
+        dec = [-16.7161158, 7.40706389, -59.68877194]
+        name = ['alf CMa', 'alf Ori', 'bet Cru']
+        res = self.cat.match_object_ids(ra, dec)
+        assert_equal(res, name)
+
+    @pytest.mark.parametrize('order, expect', [(None, 'alf CMa'),
+                                               (['NAME'], 'Dog Star'),
+                                               (['*'], 'alf CMa'),
+                                               (['HIP'], 'HIP 32349'),
+                                               (['HIC', 'HD'], 'HIC 32349'),
+                                               (['NONE', 'HD'], 'HD 48915'),
+                                               (['UBV M', 'HD'],
+                                                'UBV M 12413')])
+    def test_simbad_query_id(self, order, expect):
+        idn = simbad_query_id(101.28715, -16.7161158, '5s', name_order=order)
+        assert_equal(idn, expect)
+
+    @pytest.mark.parametrize('coords,name', [((16.82590917, -72.4676825),
+                                              'HD 6884'),
+                                             ((86.46641167, -67.24053806),
+                                              'LHA 120-S 61')])
+    def test_simbad_query_id_non_default(self, coords, name):
+        order = ['NAME', 'HD', 'HR', 'HYP', 'AAVSO', 'LHA']
+        idn = simbad_query_id(*coords, '5s', name_order=order)
+        assert_equal(idn, name)

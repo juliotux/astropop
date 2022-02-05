@@ -3,6 +3,7 @@
 
 import numpy as np
 from astroquery.simbad import Simbad
+from astroquery.exceptions import TableParseError
 from astropy.coordinates import SkyCoord, Angle
 from ..astrometry.coords_utils import guess_coordinates
 from ..py_utils import string_fix, process_list
@@ -17,7 +18,7 @@ def _timeout_retry(func, *args, **kwargs):
     tried = kwargs.pop('_____retires', 0)
     try:
         q = func(*args, **kwargs)
-    except TimeoutError:
+    except (TimeoutError, TableParseError):
         if tried >= MAX_RETRIES_TIMEOUT:
             raise TimeoutError(f'TimeOut obtained in {MAX_RETRIES_TIMEOUT}'
                                ' tries, aborting.')
