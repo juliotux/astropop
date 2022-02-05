@@ -28,15 +28,15 @@ This software is intended to provide a full pipeline to reduce raw polarimetry a
 
 - Automatic photometry calibration using online catalogs.
 
-Requirements 
+Requirements
 ^^^^^^^^
 Astropop needs gcc. Install using:
 
 .. code-block::
-    
+
     sudo apt install build-essential
 
-Astropop was developed for python with a version equal or bigger than 3.6. 
+Astropop was developed for python with a version equal or bigger than 3.6.
 
 Dependencies
 ^^^^^^^^
@@ -75,22 +75,22 @@ Bellow we list all the necessary dependencies for the good working of the code. 
 
 Installation
 ^^^^^^^^
-Astropop can be downloaded from https://github.com/sparc4-dev/astropop. For this, type in the terminal: 
+Astropop can be downloaded from https://github.com/sparc4-dev/astropop. For this, type in the terminal:
 
 .. code-block::
-    
+
     git clone https://github.com/sparc4-dev/astropop
 
 To install Astropop, you should go to the directory where Astropop was cloned, open the terminal in the Astropop directory and follow one of the options bellow:
 
-1 – Install using pip:  
+1 – Install using pip:
 
 .. code-block::
 
     python setup.py build
     pip install -U .
 
-2 – Or, without the pip packet control: 
+2 – Or, without the pip packet control:
 
 .. code-block::
 
@@ -140,7 +140,7 @@ Documentation (not complete yet) can be found at `astropop.readthedocs.io <https
     :target: https://github.com/sparc4-dev/astropop/actions
     :alt: Astropop's Github CI Status
 
-.. |Codecov Status| image:: https://codecov.io/gh/sparc4-dev/astropop/branch/master/graph/badge.svg?token=tzrOfWMhUb
+.. |Codecov Status| image:: https://codecov.io/gh/sparc4-dev/astropop/branch/main/graph/badge.svg?token=tzrOfWMhUb
     :target: https://codecov.io/gh/sparc4-dev/astropop
     :alt: Astropop's Codecov Coverage Status
 
