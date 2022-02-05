@@ -1,9 +1,5 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
-
-import os
-from astropy.io import fits
-from astropy.io.fits.hdu.base import _ValidHDU
-import functools
+"""Utils to handle FITS files."""
 
 from .framedata import imhdus
 from .logger import logger
