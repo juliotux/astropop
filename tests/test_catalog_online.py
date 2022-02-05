@@ -3,7 +3,6 @@
 import os
 import time
 import pytest
-import copy
 import numpy as np
 from astropy.table import Table
 from astropy.coordinates import SkyCoord, Angle
