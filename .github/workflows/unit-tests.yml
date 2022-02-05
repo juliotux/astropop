@@ -47,13 +47,9 @@ jobs:
             python: '3.8'
             toxenv: py38-test-stabledeps
 
-          - name: Python 3.9 with lts deps
-            python: '3.9'
-            toxenv: py39-test-ltsdeps-cat
-
           - name: Python 3.9 with stable deps
             python: '3.9'
-            toxenv: py39-test-stabledeps-cat
+            toxenv: py39-test-stabledeps
 
           - name: Python 3.10 with stable deps
             python: '3.10'
