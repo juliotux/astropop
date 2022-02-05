@@ -8,7 +8,8 @@ from astropy.table import Table
 from astropy.coordinates import Angle, SkyCoord, match_coordinates_sky
 
 from ..logger import logger
-from ._online_tools import _timeout_retry, get_center_radius
+from ._online_tools import _timeout_retry, get_center_radius, \
+                           _wrap_query_table
 from ..astrometry.coords_utils import guess_coordinates
 from ..py_utils import string_fix
 
@@ -98,6 +99,10 @@ class _BaseCatalog(abc.ABC):
         del self._last_query_info
         del self._last_query_table
 
+    def copy(self):
+        """Get a new copy of the catalog."""
+        return copy.deepcopy(self)
+
 
 class _BasePhotometryCatalog(_BaseCatalog, abc.ABC):
     """A base class for photometry catalogs."""
@@ -112,6 +117,9 @@ class _BasePhotometryCatalog(_BaseCatalog, abc.ABC):
         """Check if a filter is available for this catalog."""
         if not raise_error:
             return band in self.available_filters
+        if band in self.available_filters:
+            return True
+
         raise ValueError(f'This catalog does not support {band} filter. '
                          'The available formats are:'
                          f' {self.available_filters}')
@@ -134,10 +142,11 @@ class _BasePhotometryCatalog(_BaseCatalog, abc.ABC):
 
         return ra, dec
 
-    def filter_id(self, query):
+    def filter_id(self, query=None):
         """Filter object names in a query result."""
         if self.id_key is None:
             raise ValueError("Invalid ID key.")
+
         if query is None:
             query = self._last_query_table
 
@@ -145,9 +154,7 @@ class _BasePhotometryCatalog(_BaseCatalog, abc.ABC):
             return np.array(['']*len(query))
 
         idn = query[self.id_key].data
-        idn = self._id_resolve(idn)
-
-        return string_fix(idn)
+        return self._id_resolve(idn)
 
     def _query(self, querier, *args, **kwargs):
         """Perform a query. All args are passed to querier."""
@@ -166,7 +173,7 @@ class _BasePhotometryCatalog(_BaseCatalog, abc.ABC):
         query = _timeout_retry(querier, *args, **kwargs)
         if query is None:
             raise RuntimeError("No online catalog result found.")
-        self._last_query_table = query
+        self._last_query_table = _wrap_query_table(query)
         return copy.copy(self._last_query_table)
 
     def _match_objects(self, ra, dec, band, limit_angle,

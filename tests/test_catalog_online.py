@@ -3,6 +3,7 @@
 import os
 import time
 import pytest
+import copy
 import numpy as np
 from astropy.table import Table
 from astropy.coordinates import SkyCoord, Angle
@@ -13,7 +14,10 @@ from astropop.catalogs._online_tools import _timeout_retry, \
                                             astroquery_skycoord, \
                                             get_center_radius
 from astropop.testing import assert_equal, assert_almost_equal, \
-                             assert_is_instance
+                             assert_is_instance, assert_is_not, \
+                             assert_not_in, assert_in, assert_true, \
+                             assert_false
+from astroquery.simbad import Simbad
 
 
 def delay_rerun(*args):
@@ -26,9 +30,13 @@ flaky_rerun = pytest.mark.flaky(max_runs=10, min_passes=1,
 catalog_skip = pytest.mark.skipif(not os.environ.get('ASTROPOP_TEST_CATALOGS'),
                                   reason='avoid servers errors.')
 
+sirius_coords = ["Sirius", "06h45m09s -16d42m58s", [101.28715, -16.7161158],
+                 np.array([101.28715, -16.7161158]), (101.28715, -16.7161158),
+                 SkyCoord(101.28715, -16.7161158, unit=('degree', 'degree'))]
+
 
 @flaky_rerun
-@catalog_skip
+# @catalog_skip
 class Test_OnlineTools:
     def test_timeout_retry_error(self):
         def _only_fail(*args, **kwargs):
@@ -66,15 +74,13 @@ class Test_OnlineTools:
             def __str__(self):
                 return str(self._s)
 
-        def _return_table(str_a, str_b):
-            t = Table()
-            t['a'] = [str_a.encode('utf-8') for i in range(10)]
-            t['b'] = [str_b for i in range(10)]
-            t['c'] = [StrObj__(i) for i in range(10)]
-            return t
+        tab = Table()
+        tab['a'] = ['A3#Â'.encode('utf-8') for i in range(10)]
+        tab['b'] = ['B3#Ê' for i in range(10)]
+        tab['c'] = [StrObj__(i) for i in range(10)]
 
-        f = _wrap_query_table(_return_table)
-        tab = f('A3#Â', str_b='B3#Ê')
+        _wrap_query_table(tab)
+
         assert_equal(len(tab), 10)
         assert_equal(tab['a'], ['A3#Â' for i in range(10)])
         assert_equal(tab['b'], ['B3#Ê' for i in range(10)])
@@ -91,43 +97,8 @@ class Test_OnlineTools:
         assert_equal(c_dec, 5)
         assert_equal(rad, 10)
 
-    def test_astroquery_skycoord_string_skcord(self):
-        value = "00h00m00s 00d00m00s"
-        skcord = astroquery_skycoord(value)
-        assert_is_instance(skcord, SkyCoord)
-        assert_equal(skcord.ra.degree, 0.0)
-        assert_equal(skcord.dec.degree, 0.0)
-
-    def test_astroquery_skycoord_string_obj(self):
-        value = "Sirius"
-        skcord = astroquery_skycoord(value)
-        assert_is_instance(skcord, SkyCoord)
-        assert_almost_equal(skcord.ra.degree, 101.28715, decimal=4)
-        assert_almost_equal(skcord.dec.degree, -16.7161158, decimal=4)
-
-    def test_astroquery_skycoord_decimal_list(self):
-        value = [101.28715, -16.7161158]
-        skcord = astroquery_skycoord(value)
-        assert_is_instance(skcord, SkyCoord)
-        assert_almost_equal(skcord.ra.degree, 101.28715, decimal=4)
-        assert_almost_equal(skcord.dec.degree, -16.7161158, decimal=4)
-
-    def test_astroquery_skycoord_decimal_nparray(self):
-        value = np.array([101.28715, -16.7161158])
-        skcord = astroquery_skycoord(value)
-        assert_is_instance(skcord, SkyCoord)
-        assert_almost_equal(skcord.ra.degree, 101.28715, decimal=4)
-        assert_almost_equal(skcord.dec.degree, -16.7161158, decimal=4)
-
-    def test_astroquery_skycoord_decimal_tuple(self):
-        value = (101.28715, -16.7161158)
-        skcord = astroquery_skycoord(value)
-        assert_is_instance(skcord, SkyCoord)
-        assert_almost_equal(skcord.ra.degree, 101.28715, decimal=4)
-        assert_almost_equal(skcord.dec.degree, -16.7161158, decimal=4)
-
-    def test_astroquery_skycoord_decimal_skycoord(self):
-        value = SkyCoord(101.28715, -16.7161158, unit=('degree', 'degree'))
+    @pytest.mark.parametrize('value', sirius_coords)
+    def test_astroquery_skycoord_string_obj(self, value):
         skcord = astroquery_skycoord(value)
         assert_is_instance(skcord, SkyCoord)
         assert_almost_equal(skcord.ra.degree, 101.28715, decimal=4)
@@ -155,13 +126,62 @@ class Test_OnlineTools:
             astroquery_radius(not_angle)
 
 
-# @pytest.mark.remote_data
-# @flaky_rerun
+@flaky_rerun
 # @catalog_skip
 class TestSimbadCatalog():
+    @property
+    def cat(self):
+        return SimbadCatalog.copy()
+
+    def test_simbad_catalog_get_simbad_copy(self):
+        # always return a copy of the querier
+        s = Simbad()
+
+        # assign our simbad
+        self.cat.simbad = s
+        assert_is_not(self.cat.simbad, s)
+        assert_equal(self.cat.simbad.ROW_LIMIT, 0)
+
+    def test_simbad_catalog_set_simbad(self):
+        s = Simbad()
+
+        # ok for simbad
+        self.cat.simbad = s
+
+        # raise everything else
+        for i in ['Simbad', 'simbad', 1.0, [], (), np.array([]), {}]:
+            with pytest.raises(ValueError, match='is not a SimbadClass'):
+                self.cat.simbad = i
+
+    @pytest.mark.parametrize('band', ["U", "B", "V", "R", "I", "J", "H", "K",
+                                      "u", "g", "r", "i", "z"])
+    def test_simbad_catalog_check_filter(self, band):
+        assert_true(self.cat.check_filter, band)
+
+    def test_simbad_catalog_check_filter_errors(self):
+        # default behavior is raise error
+        with pytest.raises(ValueError, match='This catalog does not support'):
+            self.cat.check_filter('inexisting')
+
+        with pytest.raises(ValueError, match='This catalog does not support'):
+            self.cat.check_filter('inexisting', raise_error=True)
+
+        assert_false(self.cat.check_filter('inexisting', raise_error=False))
+
+    def test_simbad_catalog_get_simbad(self):
+        # must be free of fluxdata
+        s = self.cat.get_simbad()
+        assert_is_instance(s, Simbad.__class__)
+        for i in s.get_votable_fields():
+            assert_not_in('fluxdata', i)
+
+        # must contain flux data
+        s = self.cat.get_simbad(band='V')
+        assert_is_instance(s, Simbad.__class__)
+        assert_in('fluxdata(V)', s.get_votable_fields())
+
     def test_simbad_catalog_query_object(self):
-        cat = SimbadCatalog
-        obj = cat.query_object('Sirius', band='V')
+        obj = self.cat.query_object('Sirius', band='V')
         assert_equal(obj[0]['MAIN_ID'], '* alf CMa')
         assert_equal(obj[0]['RA'], '06 45 08.9172')
         assert_equal(obj[0]['DEC'], '-16 42 58.017')
@@ -171,8 +191,7 @@ class TestSimbadCatalog():
         assert_equal(obj[0]['FLUX_BIBCODE_V'], '2002yCat.2237....0D')
 
     def test_simbad_query_obj_no_band(self):
-        cat = SimbadCatalog
-        obj = cat.query_object('Sirius', band=None)
+        obj = self.cat.query_object('Sirius', band=None)
         assert_equal(obj[0]['MAIN_ID'], '* alf CMa')
         assert_equal(obj[0]['RA'], '06 45 08.9172')
         assert_equal(obj[0]['DEC'], '-16 42 58.017')
@@ -182,10 +201,10 @@ class TestSimbadCatalog():
                 raise ValueError('Simbad is getting flux data when requested '
                                  'to not.')
 
-    def test_simbad_catalog_query_region(self):
-        cat = SimbadCatalog
-        obj = cat.query_region('Sirius', radius='10 arcmin',
-                               band='V')
+    @pytest.mark.parametrize('value', sirius_coords)
+    def test_simbad_catalog_query_region(self, value):
+        obj = self.cat.query_region(value, radius='10 arcmin',
+                                    band='V')
         assert_equal(obj[0]['MAIN_ID'], '* alf CMa')
         assert_equal(obj[0]['RA'], '06 45 08.9172')
         assert_equal(obj[0]['DEC'], '-16 42 58.017')
@@ -194,10 +213,10 @@ class TestSimbadCatalog():
         assert_equal(obj[0]['FLUX_SYSTEM_V'], 'Vega')
         assert_equal(obj[0]['FLUX_BIBCODE_V'], '2002yCat.2237....0D')
 
-    def test_simbad_catalog_query_region_no_band(self):
-        cat = SimbadCatalog
-        obj = cat.query_region('Sirius', radius='10 arcmin',
-                               band=None)
+    @pytest.mark.parametrize('value', sirius_coords)
+    def test_simbad_catalog_query_region_no_band(self, value):
+        obj = self.cat.query_region(value, radius='10 arcmin',
+                                    band=None)
         assert_equal(obj[0]['MAIN_ID'], '* alf CMa')
         assert_equal(obj[0]['RA'], '06 45 08.9172')
         assert_equal(obj[0]['DEC'], '-16 42 58.017')
@@ -206,3 +225,63 @@ class TestSimbadCatalog():
             if 'FLUX_' in i:
                 raise ValueError("Simbad is getting flux data when requested"
                                  "to not.")
+
+    @pytest.mark.parametrize('value', sirius_coords[2:])
+    def test_simbad_catalog_query_object_error(self, value):
+        # Simbad query do not accept coordinates or SkyCoords
+        with pytest.raises(ValueError, match="only accept object name"):
+            self.cat.query_object(value)
+        # but query region must pass
+        self.cat.query_region(value, radius='1m')
+
+    @pytest.mark.parametrize('radius', [Angle(0.01, unit='degree'), '0.01d',
+                                        0.01, '1m', '10s', '10 arcsec'])
+    def test_simbad_catalog_query_different_radius(self, radius):
+        # query with different radius types
+        self.cat.query_region('Sirius', radius)
+
+    def test_simbad_catalog_filter_flux(self):
+        query = Table()
+        query['FLUX_V'] = np.arange(10)
+        query['FLUX_ERROR_V'] = np.array([0.1]*10)
+        query['FLUX_UNIT_V'] = np.array(['mag']*10)
+        query['FLUX_BIBCODE_V'] = np.array(['gh2022&astropop']*10)
+
+        flux = self.cat.filter_flux(band='V', query=query)
+        assert_equal(len(flux), 4)
+        assert_equal(flux[0], query['FLUX_V'])
+        assert_equal(flux[1], query['FLUX_ERROR_V'])
+        assert_equal(flux[2], query['FLUX_UNIT_V'])
+        assert_equal(flux[3], query['FLUX_BIBCODE_V'])
+
+    def test_simbad_catalog_filter_flux_error(self):
+        query = Table()
+        with pytest.raises(KeyError,
+                           match='Simbad query must be performed with band'):
+            self.cat.filter_flux(band='V', query=query)
+
+    def test_simbad_catalog_filter_flux_query_none(self):
+        cat = self.cat
+        query = cat.query_region('Sirius', '5m', band='V')
+        flux = cat.filter_flux('V')
+
+        assert_equal(flux[0], query['FLUX_V'])
+        assert_equal(flux[1], query['FLUX_ERROR_V'])
+        assert_equal(flux[2], query['FLUX_UNIT_V'])
+        assert_equal(flux[3], query['FLUX_BIBCODE_V'])
+
+    def test_simbad_catalog_filter_id(self):
+        # performe filter in a different class
+        query = self.cat.query_region('Sirius', '5m')
+        id = self.cat.filter_id(query)
+        id_resolved = self.cat._id_resolve(query['MAIN_ID'])
+
+        assert_equal(id, id_resolved)
+
+    def test_simbad_catalog_filter_query_none(self):
+        cat = self.cat
+        query = cat.query_region('Sirius', '5m')
+        id = cat.filter_id()
+        id_resolved = self.cat._id_resolve(query['MAIN_ID'])
+
+        assert_equal(id, id_resolved)

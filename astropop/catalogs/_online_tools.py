@@ -25,17 +25,14 @@ def _timeout_retry(func, *args, **kwargs):
     return q
 
 
-def _wrap_query_table(func):
-    """Wrap queries to return bytes columns as strings."""
-    def wrapper(*args, **kwargs):
-        table = func(*args, **kwargs)
-        for i in table.columns:
-            tdtype = table[i].dtype.char
-            if tdtype in ('b', 'B', 'S', 'a', 'O'):
-                row = process_list(string_fix, table[i])
-                table[i] = np.array(row, dtype=str)
-        return table
-    return wrapper
+def _wrap_query_table(table):
+    """Fix bytes and objects columns to strings."""
+    for i in table.columns:
+        tdtype = table[i].dtype.char
+        if tdtype in ('b', 'B', 'S', 'a', 'O'):
+            row = process_list(string_fix, table[i])
+            table[i] = np.array(row, dtype=str)
+    return table
 
 
 def get_center_radius(ra, dec):

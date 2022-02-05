@@ -1,6 +1,7 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 """Query and match objects in Vizier catalogs."""
 
+from functools import partial
 import numpy as np
 from multiprocessing.pool import Pool
 from astroquery.simbad import Simbad, SimbadClass
@@ -10,7 +11,7 @@ from astropy import units as u
 from .base_catalog import _BasePhotometryCatalog
 from ._online_tools import _timeout_retry, _wrap_query_table, \
                            MAX_PARALLEL_QUERY, \
-                           astroquery_radius
+                           astroquery_radius, astroquery_skycoord
 from ..py_utils import string_fix
 
 
@@ -89,7 +90,7 @@ class SimbadCatalogClass(_BasePhotometryCatalog):
         if self._simbad is None:
             self._simbad = Simbad()
         self._simbad.ROW_LIMIT = 0
-        return self._simbad
+        return self._simbad()
 
     @simbad.setter
     def simbad(self, value):
@@ -99,7 +100,7 @@ class SimbadCatalogClass(_BasePhotometryCatalog):
 
     def get_simbad(self, band=None):
         """Get a copy of the simbad querier with optional band fields."""
-        s = self.simbad()
+        s = self.simbad
         if band is not None:
             s.add_votable_fields(f'fluxdata({band})')
         return s
@@ -111,24 +112,26 @@ class SimbadCatalogClass(_BasePhotometryCatalog):
         flux_unit_key = self.flux_unit_key.format(band=band)
         return flux_key, flux_error_key, flux_unit_key, flux_bibcode_key
 
-    def query_object(self, center, band=None):
+    def query_object(self, center, band=None, **kwargs):
         """Query a single object in the catalog."""
         s = self.get_simbad(band)
-        # center = astroquery_skycoord(center)
-        return self._query(_wrap_query_table(s.query_object), center)
+        if not isinstance(center, str):
+            raise ValueError("Simbad query_object only accept object name. "
+                             "Try query_region instead.")
+        return self._query(s.query_object, center, **kwargs)
 
-    def query_region(self, center, radius, band=None):
+    def query_region(self, center, radius, band=None, **kwargs):
         """Query all objects in a region."""
         s = self.get_simbad(band)
-        # center = astroquery_skycoord(center)
+        center = astroquery_skycoord(center)
         radius = astroquery_radius(radius)
-        return self._query(_wrap_query_table(s.query_region),
-                           center, radius=radius)
+        return self._query(s.query_region, center, radius=radius, **kwargs)
 
     def _id_resolve(self, idn):
         if self.prepend_id_key:
             idn = [f"{self.id_key} {i}" for i in idn]
             idn = np.array(idn)
+        return np.array([string_fix(i) for i in idn])
 
     def filter_flux(self, band, query=None):
         """Filter the flux data of a query."""
@@ -137,23 +140,14 @@ class SimbadCatalogClass(_BasePhotometryCatalog):
         if query is None:
             query = self._last_query_table
 
-        if flux_key not in query:
+        if flux_key not in query.colnames:
             raise KeyError(f'Simbad query must be performed with band {band}'
                            ' for flux data.')
 
         flux = np.array(query[flux_key].data)
-        if error_key is not None:
-            flux_error = np.array(query[error_key].data)
-        else:
-            flux_error = np.array([np.nan]*len(flux))
-        if bibcode_key is not None:
-            bibcode = np.array(query[bibcode_key].data)
-        else:
-            bibcode = np.zeros(len(flux), dtype=str)
-        if unit_key is not None:
-            unit = np.array(query[unit_key].data)
-        else:
-            unit = np.zeros(len(flux), dtype=str)
+        flux_error = np.array(query[error_key].data)
+        bibcode = np.array(query[bibcode_key].data)
+        unit = np.array(query[unit_key].data)
 
         return flux, flux_error, unit, bibcode
 
@@ -174,8 +168,9 @@ class SimbadCatalogClass(_BasePhotometryCatalog):
         name_order = name_order or ['NAME', 'HD', 'HR', 'HYP', 'TYC', 'AAVSO']
         # Perform it in parallel to handle the online query overhead
         p = Pool(MAX_PARALLEL_QUERY)
-        results = p.map(simbad_query_id, [(r, d, limit_angle, name_order)
-                                          for r, d in zip(ra, dec)])
+        func = partial(simbad_query_id, simbad=self.simbad)
+        results = p.map(func, [(r, d, limit_angle, name_order)
+                               for r, d in zip(ra, dec)])
         return results
 
 
