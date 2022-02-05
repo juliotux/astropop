@@ -101,8 +101,8 @@ class Test_OnlineTools:
     def test_astroquery_skycoord_string_obj(self, value):
         skcord = astroquery_skycoord(value)
         assert_is_instance(skcord, SkyCoord)
-        assert_almost_equal(skcord.ra.degree, 101.28715, decimal=4)
-        assert_almost_equal(skcord.dec.degree, -16.7161158, decimal=4)
+        assert_almost_equal(skcord.ra.degree, 101.28715, decimal=3)
+        assert_almost_equal(skcord.dec.degree, -16.7161158, decimal=3)
 
     def test_astroquery_skycoord_error(self):
         value = 'this should raise error'
