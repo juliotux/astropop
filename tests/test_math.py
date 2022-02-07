@@ -182,3 +182,57 @@ class Test_TrimArray():
         assert_equal(ta, a[85:, 40:61])
         assert_equal(tx, 10)
         assert_equal(ty, 10)
+
+
+@pytest.mark.skip
+class Test_Gaussian:
+    def test_gaussian_normalize(self):
+        pass
+
+    def test_gaussian_fwhm(self):
+        pass
+
+    def test_gaussian_r(self):
+        pass
+
+    def test_gaussian_1d(self):
+        pass
+
+    def test_gaussian_2d(self):
+        pass
+
+    def test_gaussian_1d_model(self):
+        pass
+
+    def test_gaussian_2d_model(self):
+        pass
+
+    def test_gaussian_r_model(self):
+        pass
+
+
+@pytest.mark.skip
+class Test_Moffat:
+    def test_moffat_normalize(self):
+        pass
+
+    def test_moffat_fwhm(self):
+        pass
+
+    def test_moffat_r(self):
+        pass
+
+    def test_moffat_1d(self):
+        pass
+
+    def test_moffat_2d(self):
+        pass
+
+    def test_moffat_1d_model(self):
+        pass
+
+    def test_moffat_2d_model(self):
+        pass
+
+    def test_moffat_r_model(self):
+        pass
