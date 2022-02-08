@@ -335,7 +335,7 @@ class FrameData:
 
     @wcs.setter
     def wcs(self, value):
-        if isinstance(value, WCS):
+        if isinstance(value, WCS) or value is None:
             self._wcs = value
         else:
             raise TypeError('wcs setter value must be a WCS instance.')

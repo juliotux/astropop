@@ -789,6 +789,23 @@ class Test_FrameData_Meta():
         for i in wcs.keys():
             assert_not_in(i, frame.meta)
 
+    def test_framedata_set_wcs_none(self):
+        frame = create_framedata()
+        frame.wcs = None
+        assert_equal(frame.wcs, None)
+
+    def test_framedata_set_wcs(self):
+        frame = create_framedata()
+        wcs = WCS(naxis=2)
+        frame.wcs = wcs
+        assert_equal(frame.wcs, wcs)
+
+    def test_framedata_set_wcs_error(self):
+        frame = create_framedata()
+        with pytest.raises(TypeError,
+                           match='wcs setter value must be a WCS instance.'):
+            frame.wcs = 1
+
 
 class Test_FrameData_Uncertainty():
     def test_setting_uncertainty_with_array(self):
