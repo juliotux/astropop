@@ -2,159 +2,74 @@
 
 import pytest
 import numpy as np
+from skimage import transform
+from astropop.image.register import AsterismRegister, \
+                                    CrossCorrelationRegister
+from astropop.testing import assert_almost_equal
 
-from astropop.image.register import translate, \
-                                    create_fft_shift_list, \
-                                    create_chi2_shift_list, \
-                                    apply_shift, \
-                                    apply_shift_list, \
-                                    hdu_shift_images
-
-from astropop.testing import assert_equal, assert_almost_equal
+from .test_detection import gen_position_flux, gen_image
 
 
-exptm2 = np.array([[1., 1., 1., 1., 1., 1., 1., 1., 0, 0],
-                   [1., 1., 1., 1., 1., 1., 1., 1., 0, 0],
-                   [1., 1., 1., 1., 1., 1., 1., 1., 0, 0],
-                   [1., 1., 2., 1., 1., 1., 1., 1., 0, 0],
-                   [1., 2., 4., 2., 1., 1., 1., 1., 0, 0],
-                   [1., 1., 2., 1., 1., 1., 1., 1., 0, 0],
-                   [1., 1., 1., 1., 1., 1., 1., 1., 0, 0],
-                   [1., 1., 1., 1., 1., 1., 1., 1., 0, 0],
-                   [1., 1., 1., 1., 1., 1., 1., 1., 0, 0],
-                   [1., 1., 1., 1., 1., 1., 1., 1., 0, 0]])
+class Test_AsterismRegister:
+    @pytest.mark.parametrize('shift', [(25, 32), (-12, 5), (23.42, 12.43)])
+    def test_compute_transform_translation(self, shift):
+        size = (1024, 1024)
+        sky = 800
+        n = 50
+        rdnoise = 10
+        x, y, f = gen_position_flux(size, n, 1e4, 4e6)
+        sx, sy = shift
 
-exptm1 = np.array([[1., 1., 1., 1., 1., 1., 1., 1., 1., 0.],
-                   [1., 1., 1., 1., 1., 1., 1., 1., 1., 0.],
-                   [1., 1., 1., 2., 1., 1., 1., 1., 1., 0.],
-                   [1., 1., 2., 4., 2., 1., 1., 1., 1., 0.],
-                   [1., 1., 1., 2., 1., 1., 1., 1., 1., 0.],
-                   [1., 1., 1., 1., 1., 1., 1., 1., 1., 0.],
-                   [1., 1., 1., 1., 1., 1., 1., 1., 1., 0.],
-                   [1., 1., 1., 1., 1., 1., 1., 1., 1., 0.],
-                   [1., 1., 1., 1., 1., 1., 1., 1., 1., 0.],
-                   [0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]])
+        # shift=(20x, 10y)
+        im1 = gen_image(size, x, y, f, sky, rdnoise, sigma=2)
+        im2 = gen_image(size, x+sx, y+sy, f, sky, rdnoise, sigma=2)
 
-expt0 = np.array([[1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
-                  [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
-                  [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
-                  [1., 1., 1., 1., 2., 1., 1., 1., 1., 1.],
-                  [1., 1., 1., 2., 4., 2., 1., 1., 1., 1.],
-                  [1., 1., 1., 1., 2., 1., 1., 1., 1., 1.],
-                  [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
-                  [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
-                  [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
-                  [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.]])
+        ar = AsterismRegister()
+        tform = ar._compute_transform(im1, im2)
 
-exptp1 = np.array([[0., 1.0, 1., 1.0, 1.0, 1.0, 1.0, 1.0, 1., 1.],
-                   [0., 1.0, 1., 1.0, 1.0, 1.0, 1.0, 1.0, 1., 1.],
-                   [0., 1.0, 1., 1.0, 1.0, 1.0, 1.0, 1.0, 1., 1.],
-                   [0., 1.0, 1., 1.0, 1.0, 1.5, 1.5, 1.0, 1., 1.],
-                   [0., 1.0, 1., 1.0, 1.5, 3.0, 3.0, 1.5, 1., 1.],
-                   [0., 1.0, 1., 1.0, 1.0, 1.5, 1.5, 1.0, 1., 1.],
-                   [0., 1.0, 1., 1.0, 1.0, 1.0, 1.0, 1.0, 1., 1.],
-                   [0., 1.0, 1., 1.0, 1.0, 1.0, 1.0, 1.0, 1., 1.],
-                   [0., 1.0, 1., 1.0, 1.0, 1.0, 1.0, 1.0, 1., 1.],
-                   [0., 1.0, 1., 1.0, 1.0, 1.0, 1.0, 1.0, 1., 1.]])
+        assert_almost_equal(tform.translation, shift, decimal=1)
+        assert_almost_equal(tform.rotation, 0, decimal=3)
+        assert_almost_equal(tform.scale, 1, decimal=4)
 
-exptp2 = np.array([[0., 0., 1., 1., 1., 1., 1., 1., 1., 1.],
-                   [0., 0., 1., 1., 1., 1., 1., 1., 1., 1.],
-                   [0., 0., 1., 1., 1., 1., 2., 1., 1., 1.],
-                   [0., 0., 1., 1., 1., 2., 4., 2., 1., 1.],
-                   [0., 0., 1., 1., 1., 1., 2., 1., 1., 1.],
-                   [0., 0., 1., 1., 1., 1., 1., 1., 1., 1.],
-                   [0., 0., 1., 1., 1., 1., 1., 1., 1., 1.],
-                   [0., 0., 1., 1., 1., 1., 1., 1., 1., 1.],
-                   [0., 0., 1., 1., 1., 1., 1., 1., 1., 1.],
-                   [0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]])
+    def test_compute_transform_rotation(self):
+        size = (1024, 1024)
+        sky = 800
+        n = 50
+        rdnoise = 10
+        x, y, f = gen_position_flux(size, n, 1e4, 4e6)
 
-exptm22 = np.array([[1., 1., 1., 1., 1., 1., 1., 1., 1, 1],
-                    [1., 1., 1., 1., 1., 1., 1., 1., 1, 1],
-                    [1., 1., 2., 1., 1., 1., 1., 1., 1, 1],
-                    [1., 2., 4., 2., 1., 1., 1., 1., 1, 1],
-                    [1., 1., 2., 1., 1., 1., 1., 1., 1, 1],
-                    [1., 1., 1., 1., 1., 1., 1., 1., 1, 1],
-                    [1., 1., 1., 1., 1., 1., 1., 1., 1, 1],
-                    [1., 1., 1., 1., 1., 1., 1., 1., 1, 1],
-                    [1., 1., 1., 1., 1., 1., 1., 1., 1, 1],
-                    [1., 1., 1., 1., 1., 1., 1., 1., 1, 1]])
+        im1 = gen_image(size, x, y, f, sky, rdnoise, sigma=2)
+        im2 = transform.rotate(im1, -35.2,
+                               preserve_range=True,
+                               cval=im1.mean())
 
-expts2 = np.array([[0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
-                   [0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
-                   [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
-                   [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
-                   [1., 1., 1., 1., 2., 1., 1., 1., 1., 1.],
-                   [1., 1., 1., 2., 4., 2., 1., 1., 1., 1.],
-                   [1., 1., 1., 1., 2., 1., 1., 1., 1., 1.],
-                   [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
-                   [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
-                   [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.]])
+        ar = AsterismRegister()
+        tform = ar._compute_transform(im1, im2)
+
+        assert_almost_equal(tform.rotation, np.deg2rad(35.2), decimal=3)
+        # the translation is needed due to the form skimage handles rotation
+        assert_almost_equal(tform.translation, [388.37, -201.31], decimal=1)
+        assert_almost_equal(tform.scale, 1, decimal=4)
 
 
-@pytest.mark.parametrize(('shift, test_result'), [((2, 0), exptm2),
-                                                  ((1, 1), exptm1),
-                                                  ((0, 0), expt0),
-                                                  ((-1.5, 0), exptp1),
-                                                  ((-2, 1), exptp2)])
-def test_translate(shift, test_result):
+class Test_CrossCorrelationRegister:
+    @pytest.mark.parametrize('shift', [(25, 32), (-12, 5), (23.42, 12.43)])
+    def test_compute_transform(self, shift):
+        size = (1024, 1024)
+        sky = 800
+        n = 50
+        rdnoise = 10
+        x, y, f = gen_position_flux(size, n, 1e4, 4e6)
+        sx, sy = shift
 
-    dat1 = np.array([[1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
-                     [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
-                     [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
-                     [1., 1., 1., 1., 2., 1., 1., 1., 1., 1.],
-                     [1., 1., 1., 2., 4., 2., 1., 1., 1., 1.],
-                     [1., 1., 1., 1., 2., 1., 1., 1., 1., 1.],
-                     [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
-                     [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
-                     [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
-                     [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.]])
-
-    calculated = translate(dat1, shift)
-
-    assert_equal(calculated, test_result)
+        im1 = gen_image(size, x, y, f, sky, rdnoise, sigma=2)
+        im2 = gen_image(size, x+sx, y+sy, f, sky,
+                        rdnoise, sigma=2)
 
 
-# @pytest.mark.parametrize('r', [2, 3, 4])
-def test_create_fft_shift_list():
-    pass
+        ccr = CrossCorrelationRegister(upsample_factor=3)
+        tform = ccr._compute_transform(im1, im2)
 
-
-# @pytest.mark.parametrize('r', [2, 3, 4])
-def test_create_chi2_shift_list():
-    pass
-
-
-@pytest.mark.parametrize(('shift2, test_result2'), [((-2, 0), expts2)])
-# ((1,1),exptm1),
-# ((0,0),expt0),
-# ((-1.5,0),exptp1),
-# ((2,-1),exptp2)])
-def test_apply_shift(shift2, test_result2):
-    dat1 = np.array([[1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
-                     [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
-                     [1., 1., 1., 1., 2., 1., 1., 1., 1., 1.],
-                     [1., 1., 1., 2., 4., 2., 1., 1., 1., 1.],
-                     [1., 1., 1., 1., 2., 1., 1., 1., 1., 1.],
-                     [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
-                     [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
-                     [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
-                     [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
-                     [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.]])
-
-    calculated_fft_nofootprint = apply_shift(dat1, shift2, True, False)[0]
-    assert_almost_equal(calculated_fft_nofootprint, test_result2)
-
-    calculated_fft = apply_shift(dat1, shift2, True, True)[0]
-    foot = apply_shift(dat1, shift2, True, True)[2]
-    assert_almost_equal(calculated_fft, test_result2)
-
-
-# @pytest.mark.parametrize('r', [2, 3, 4])
-def test_apply_shift_list():
-    pass
-
-
-# @pytest.mark.parametrize('r', [2, 3, 4])
-def test_hdu_shift_images():
-    # nunca utilizado, testar com cuidado
-    pass
+        assert_almost_equal(tform.translation, shift, decimal=1)
+        assert_almost_equal(tform.rotation, 0, decimal=3)
+        assert_almost_equal(tform.scale, 1, decimal=4)

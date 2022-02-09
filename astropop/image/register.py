@@ -1,176 +1,241 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
+"""Compute shifts and translate astronomical images."""
 
+import abc
 from skimage.registration import phase_cross_correlation
 from skimage import transform
-# from scipy.ndimage import fourier_shift
 import numpy as np
-try:
-    import astroalign
-except Exception:
-    astroalign = None
 
 from ..logger import logger
+from ..framedata import check_framedata, FrameData
 
 
-# TODO: wrapping up with CCDPROC transform_image for translating
+__all__ = ['CrossCorrelationRegister', 'AsterismRegister']
 
 
-def translate(image, shift, subpixel=True, cval=0):
-    """Translate an image by (dy, dx) using Scikit AffineTransform.
+class _BaseRegister(abc.ABC):
+    """Base class for Registers."""
 
-    Parameters
-    ----------
-    image : `~nnumpy.ndarray`
-        2D image data to be translated.
-    shift : `tuple (dx, dy)`
-        The shift along the axes. Shift should contain one value for each axis.
-    subpixel : `boolean (optional)`
-        Consider the CCD subpixels on the translation.
-        Default = True
-    cval : `float (optional)`
-        Value to fill empty pixels after shift.
-        Default = 0
+    _name = None
 
-    Returns
-    -------
-    image_new : `~nnumpy.ndarray`
-        2D shifted image.
-    """
-    # dy, dx = shift
-    # translated = (dx, dy)
+    @staticmethod
+    def _apply_transform_image(image, tform, cval=0):
+        """Apply the transform to an image."""
+        logger.info('Applying registration transform: '
+                    'translation=%s, rotation=%.2f',
+                    tform.translation, np.rad2deg(tform.rotation))
+        return transform.warp(image, tform, mode='constant', cval=cval,
+                              preserve_range=True)
 
-    tform = transform.AffineTransform(translation=shift)
-    return transform.warp(image, tform, mode='constant', cval=cval)
+    def register_image(self, image1, image2, mask1=None, mask2=None,
+                       cval='median'):
+        """Align and transform an image2 to match image1.
 
+        Parameters
+        ----------
+        image1 : 2d `~numpy.ndarray`
+            Reference image for registration.
+        image2 : 2d `~numpy.ndarray`
+            Moving image for registration.
+        mask1, mask2 : 2d `~numpy.ndarray` (optional)
+            Masks for images 1 and 2.
+            Default: `None`
+        cval : float or {'median', 'mean'} (optional)
+            Fill value for transformed pixels from outside the image. If
+            'median' or 'mean', these statistics will be computed as cval.
+            Default: 'median'
 
-def create_fft_shift_list(image_list):
-    """Use fft to calculate the shifts between images in a list.
+        Returns
+        -------
+        reg_image : `~numpy.ndarray`
+            Registered image according the transform computed by the class.
+        mask : `~numpy.ndarray`
+            Mask for the registered image.
+        tfrom : `~skimage.transform.AffineTransform`
+            Transform computed to project image2 in image2.
+        """
+        tform = self._compute_transform(image1, image2,
+                                        mask1, mask2)
+        if mask2 is not None:
+            mask2 = np.zeros_like(image2)
 
-    Return a set os (x, y) shift pairs.
-    """
-    shifts = [(0.0, 0.0)]*len(image_list)
-    for i in range(len(image_list)-1):
-        shifts[i+1], _, _ = phase_cross_correlation(image_list[0].data,
-                                                    image_list[i+1].data)
+        if cval == 'median':
+            cval = np.nanmedian(image2)
+        if cval == 'mean':
+            cval = np.nanmean(image2)
 
-    return shifts
+        reg_image = self._apply_transform_image(image2, tform, cval=cval)
+        logger.info('Filling registered image with cval=%.2f', cval)
+        mask = self._apply_transform_image(mask2, tform, cval=1)
+        mask = mask > 0
+        return reg_image, mask, tform
 
+    def register_framedata(self, frame1, frame2, cval='median',
+                           inplace=False):
+        """Align and transform a frame2 to match frame1.
 
-def create_chi2_shift_list(image_list):
-    """Calculate the shift between images using chi2 minimization.
+        Parameters
+        ----------
+        frame1 : `~astropop.framedata.FrameData`
+            Reference image for registration.
+        image2 : `~astropop.framedata.FrameData`
+            Moving image for registration.
+        cval : `float` or {'median', 'mean'} (optional)
+            Fill value for transformed pixels from outside the image. If
+            'median' or 'mean', these statistics will be computed as cval.
+            Default: 'median'
+        inplace : `bool` (optional)
+            Perform the operation in original frame2 instance. The original
+            data will be changed.
 
-    Uses image_registration.chi2_shift module.
-    """
-    from image_registration import chi2_shift
+        Returns
+        -------
+        reg_frame : `~astropop.framedata.FrameData`
+            Registered frame.
+        """
+        frame1 = check_framedata(frame1)
+        frame2 = check_framedata(frame2)
 
-    shifts = [(0.0, 0.0)]*len(image_list)
-    for i in range(len(image_list)-1):
-        im = image_list[i+1]
-        err = np.nanstd(im)
-        dx, dy, _, _ = chi2_shift(image_list[0], im, err)
-        shifts[i+1] = (-dx, -dy)
+        data, mask, tform = self.register_image(frame1.data, frame2.data,
+                                                frame1.mask, frame2.mask,
+                                                cval=cval)
+        unct = self._apply_transform_image(frame2.uncertainty, tform, cval=0)
 
-    return shifts
-
-
-def apply_shift(image, shiftxy, subpixel=True, footprint=False):
-    """Apply a shifts of (dx, dy) to a list of images.
-
-    Parameters:
-        image : ndarray_like
-            The image to be shifted.
-        shift: array_like
-            shift to be applyed (dx, dy)
-
-
-    Return the shifted images.
-    """
-
-    dx, dy = shiftxy
-    shift_col_lin = (dy, dx)
-
-    nimage = translate(image, shift_col_lin, subpixel=subpixel, cval=0)
-
-    masks = np.full(nimage.shape, False)
-    if dx < 0:
-        masks[dx:] = True
-    else:
-        masks[:dx] = True
-    if dy < 0:
-        masks[:, dy:] = True
-    else:
-        masks[:, :dy] = True
-
-    if footprint:
-        foot = np.ones(nimage.shape)
-        foot = translate(foot, shift_col_lin, subpixel=subpixel, cval=0)
-        return [nimage, masks, foot]
-    else:
-        return [nimage, masks]
-
-
-def apply_shift_list(image_list, shift_list, method='fft'):
-    """Apply a list of (x, y) shifts to a list of images.
-
-    Parameters:
-        image_list : ndarray_like
-            A list with the images to be shifted.
-        shift_list : array_like
-            A list with (x, y)shift pairs, like the ones created by
-            create_fft_shift_list.
-        method : string
-            The method used for shift images. Can be:
-            - 'fft' -> scipy fourier_shift
-            - 'simple' -> simples translate using scipy
-
-    Return a new image_list with the shifted images.
-    """
-    return [apply_shift(i, s)
-            for i, s in zip(image_list, shift_list)]
-
-
-def hdu_shift_images(hdu_list, method='fft', register_method='asterism',
-                     footprint=False):
-    """Calculate and apply shifts in a set of ccddata images.
-
-    The function process the list inplace. Original data altered.
-
-    methods:
-        - "asterism" : align images using asterism matching (astroalign)
-        - "chi2" : align images using chi2 minimization (image_registration)
-        - "fft" : align images using fourier transform correlation (skimage)
-    """
-    if method == "asterism":
-        logger.info("Registering images with astroalign.")
-        if astroalign is None:
-            raise RuntimeError("astroaling module not available.")
-        im0 = hdu_list[0].data
-        for i in hdu_list[1:]:
-            transf, _ = astroalign.find_transform(i.data, im0)
-            i.data = astroalign.apply_transform(transf, i.data, im0)
-            if footprint:
-                i.footprint = astroalign.apply_transform(transf,
-                                                         np.ones(i.data.shape,
-                                                                 dtype=bool),
-                                                         im0)
-            # s_method = 'similarity_transform'
-    else:
-        if method == 'chi2':
-            shifts = create_chi2_shift_list([ccd.data for ccd in hdu_list])
+        if inplace:
+            reg_frame = frame2
         else:
-            shifts = create_fft_shift_list([ccd.data for ccd in hdu_list])
-        logger.info("Aligning CCDData with shifts: %s", shifts)
-        for ccd, shift in zip(hdu_list, shifts):
-            ccd.data, ccd.masks = apply_shift(ccd.data, shift)
-            shift_s = [str(i) for i in shift]
-            ccd.header['hierarch astropop register_shift'] = ",".join(shift_s)
-            if footprint:
-                _, _, ccd.footprint = apply_shift(np.ones_like(ccd.data,
-                                                               dtype=bool),
-                                                  shift)
-    for i in hdu_list:
-        i.header['hierarch astropop registered'] = True
-        # i.header['hierarch astropop register_method'] = method
-        # i.header['hierarch astropop transform_method'] = s_method
+            reg_frame = FrameData()
+            reg_frame.meta = frame2.meta.copy()
 
-    return hdu_list
+        reg_frame.data = data
+        reg_frame.mask = mask
+        reg_frame.uncertainty = unct
+        reg_frame.meta['astropop registration'] = self._name
+        reg_frame.meta['astropop registration_shift'] = tform.translation
+        reg_frame.meta['astropop registration_rot'] = np.rad2deg(tform.rotation)
+
+        if reg_frame.wcs is not None:
+            logger.warn('WCS in frame2 is not None. Due to the transform it'
+                        ' will be erased.')
+            reg_frame.wcs = None
+
+        return reg_frame
+
+
+class CrossCorrelationRegister(_BaseRegister):
+    """Register images usgin `~skimage.Register.phase_cross_correlation`.
+
+    It uses cross-correlation to find a translation-only transform between
+    two images. It obtains an initial estimate of the cross-correlation
+    peak by an FFT and then refines the shift estimation by upsampling
+    the DFT only in a small neighborhood of that estimate by means of a
+    matrix-multiply DFT[1]_.
+
+    References
+    ----------
+    .. [1] :DOI:`10.1364/OL.33.000156`
+    """
+
+    _name = 'cross-correlation'
+
+    def __init__(self, upsample_factor=1, space='real'):
+        """Initialize a CrossCorrelationRegister instance.
+
+        Parameters
+        ----------
+        upsample_factor : int (optional)
+            Upsampling image factor. Images will be Registered to within
+            ``1 / upsample_factor`` of a pixel.
+            Default: 1 (no upsampling)
+        space : {'real', 'fourier'} (optional)
+            Defines how the algorithm interprets input data. "real" means
+            data will be FFT'd to compute the correlation, while "fourier"
+            data will bypass FFT of input data. Case insensitive.
+        """
+        self._up_factor = upsample_factor
+        self._fft_space = space
+
+    def _compute_transform(self, image1, image2, mask1=None, mask2=None):
+        shift, _, _ = phase_cross_correlation(image1, image2,
+                                              upsample_factor=self._up_factor,
+                                              space=self._fft_space,
+                                              reference_mask=mask1,
+                                              moving_mask=mask2)
+        dy, dx = shift
+        return transform.AffineTransform(translation=(-dx, -dy))
+
+
+class AsterismRegister(_BaseRegister):
+    """Register images using asterism matching. Based on astroalign [1]_.
+
+    This Register algorith compute the transform between 2 images based
+    on the position of detected sources. It can handle both translation and
+    rotation of the images. It compare similar 3-points asterisms in 2
+    images and find the best possible affine transform between them.
+
+    This package requires `astroalign` to work. The main difference here to
+    the bare astroalign Register is that we use our `starfind`
+    implementation to find the sources, to keep just good punctual sources
+    in the Register, and sort them by brightness, using the brighter sources
+    in the work. This may allow a better result in the Register, according our
+    experiments.
+
+    References
+    ----------
+    .. [1] :DOI:`10.1016/j.ascom.2020.100384`
+    """
+
+    _name = 'asterism-matching'
+
+    def __init__(self, max_control_points=50, detection_threshold=5):
+        """Initialize the AsterismRegister instance.
+
+        Parameters
+        ----------
+        max_control_points : int, optional
+            Maximum control points (stars) used in asterism matching.
+            Default: 50
+        detection_threshold : int, optional
+            Minimum SNR detection threshold.
+            Default: 5
+
+        Raises
+        ------
+        ImportError: if astroalign is not installed
+        """
+        try:
+            import astroalign
+        except ImportError:
+            raise ImportError('AsterismRegister requires astroalign tools.')
+
+        from ..photometry import starfind, background
+
+        self._aa = astroalign
+        self._sf = starfind
+        self._bkg = background
+        self._max_cntl_pts = max_control_points
+        self._threshold = detection_threshold
+
+    def _compute_transform(self, image1, image2, mask1=None, mask2=None):
+        if mask1 is not None or mask2 is not None:
+            logger.info("Masks are ignored in ChiSqRegister.")
+
+        # use our starfind to work with only good sources
+        bkg, rms = self._bkg(image1, global_bkg=True)
+        sources1 = self._sf(image1, self._threshold, bkg, rms)
+        bkg, rms = self._bkg(image2, global_bkg=True)
+        sources2 = self._sf(image2, self._threshold, bkg, rms)
+        sources1.sort('flux', reverse=True)
+        sources2.sort('flux', reverse=True)
+
+        sources1 = np.array(list(zip(sources1['x'], sources1['y'])))
+        sources2 = np.array(list(zip(sources2['x'], sources2['y'])))
+
+        tform, ctl_pts = self._aa.find_transform(sources1, sources2,
+                                                 self._max_cntl_pts)
+
+        logger.debug("Asterism matching performed with sources at: "
+                     "image1: %s; image2 %s",
+                     ctl_pts[0], ctl_pts[1])
+
+        return tform
