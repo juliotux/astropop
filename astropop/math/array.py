@@ -34,7 +34,7 @@ def trim_array(data, box_size, position, indices=None, origin=0):
 
     if indices is None:
         return d, x-x_min, y-y_min
-    # else
+
     xi = indices[1][y_min:y_max, x_min:x_max]
     yi = indices[0][y_min:y_max, x_min:x_max]
     return d, xi, yi

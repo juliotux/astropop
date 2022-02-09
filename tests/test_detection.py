@@ -9,6 +9,7 @@ from astropop.photometry.detection import gen_filter_kernel, DAOFind
 from astropop.testing import (assert_almost_equal, assert_equal)
 from astropop.math.moffat import moffat_2d
 from astropop.math.gaussian import gaussian_2d
+from astropop.math.array import trim_array
 from astropop.py_utils import check_number
 from astropy.utils import NumpyRNGContext
 from astropy.stats import gaussian_fwhm_to_sigma
@@ -46,7 +47,11 @@ def gen_stars_moffat(size, x, y, flux, fwhm):
     im = np.zeros(size)
     grid_y, grid_x = np.indices(size)
     for xi, yi, fi in zip(x, y, flux):
-        im += moffat_2d(grid_x, grid_y, xi, yi, alpha, beta, fi, 0)
+        imi, gxi, gyi = trim_array(np.zeros_like(im), box_size=5*fwhm,
+                                   position=(xi, yi),
+                                   indices=(grid_y, grid_x))
+        imi += moffat_2d(gxi, gyi, xi, yi, alpha, beta, fi, 0)
+        im[gyi.min():gyi.max()+1, gxi.min():gxi.max()+1] += imi
 
     return im
 
@@ -58,7 +63,7 @@ def gen_stars_gaussian(size, x, y, flux, sigma, theta):
 
     try:
         sigma_x, sigma_y = sigma
-    except:
+    except (TypeError, ValueError):
         sigma_x = sigma_y = sigma
 
     if check_number(sigma_x):
@@ -71,7 +76,11 @@ def gen_stars_gaussian(size, x, y, flux, sigma, theta):
         theta = [theta]*len(x)
 
     for xi, yi, fi, sxi, syi, ti in zip(x, y, flux, sigma_x, sigma_y, theta):
-        im += gaussian_2d(grid_x, grid_y, xi, yi, sxi, syi, ti, fi, 0)
+        imi, gxi, gyi = trim_array(np.zeros_like(im), box_size=10*sxi,
+                                   position=(xi, yi),
+                                   indices=(grid_y, grid_x))
+        imi += gaussian_2d(gxi, gyi, xi, yi, sxi, syi, ti, fi, 0)
+        im[gyi.min():gyi.max()+1, gxi.min():gxi.max()+1] += imi
 
     return im
 
@@ -410,6 +419,18 @@ class Test_SEP_Detection():
         assert_almost_equal(sources['x'], x, decimal=0)
         assert_almost_equal(sources['y'], y, decimal=0)
 
+    def test_sepfind_one_star_subpixel(self):
+        size = (128, 128)
+        pos = (54.32, 47.86)
+
+        im = gen_image(size, [pos[0]], [pos[1]], [45000], 800, 0,
+                       sigma=[3], skip_poisson=True)
+        sources = sepfind(im, 5, 800, 10)
+        assert_equal(len(sources), 1)
+        # no error, 2 decimals ok!
+        assert_almost_equal(sources[0]['x'], pos[0], decimal=2)
+        assert_almost_equal(sources[0]['y'], pos[1], decimal=2)
+
 
 @pytest.mark.flaky(max_runs=10, min_passes=1)
 class Test_DAOFind_Detection():
@@ -688,6 +709,19 @@ class Test_DAOFind_Detection():
         assert_almost_equal(sources['x'], [20, 100], decimal=0)
         assert_almost_equal(sources['y'], [20, 40], decimal=0)
 
+    def test_daofind_one_star_subpixel(self):
+        size = (128, 128)
+        pos = (54.32, 47.86)
+
+        im = gen_image(size, [pos[0]], [pos[1]], [45000], 800, 0,
+                       sigma=[5*gaussian_fwhm_to_sigma],
+                       skip_poisson=True)
+        sources = daofind(im, 5, 800, 10, 5)
+        assert_equal(len(sources), 1)
+        # no error, 2 decimals ok!
+        assert_almost_equal(sources[0]['x'], pos[0], decimal=2)
+        assert_almost_equal(sources[0]['y'], pos[1], decimal=2)
+
 
 @pytest.mark.flaky(max_runs=10, min_passes=1)
 class Test_StarFind():
@@ -843,3 +877,16 @@ class Test_StarFind():
         assert_almost_equal(sources['y'], [20, 40, 85], decimal=0)
         assert_almost_equal(sources.meta['astropop fwhm'], fwhm,
                             decimal=1)
+
+    def test_starfind_one_star_subpixel(self):
+        size = (128, 128)
+        pos = (54.32, 47.86)
+
+        im = gen_image(size, [pos[0]], [pos[1]], [45000], 800, 0,
+                       sigma=[5*gaussian_fwhm_to_sigma],
+                       skip_poisson=True)
+        sources = starfind(im, 5, 800, 10)
+        assert_equal(len(sources), 1)
+        # no error, 2 decimals ok!
+        assert_almost_equal(sources[0]['x'], pos[0], decimal=2)
+        assert_almost_equal(sources[0]['y'], pos[1], decimal=2)
