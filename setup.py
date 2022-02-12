@@ -74,5 +74,9 @@ except Exception:
     version = '{version}'
 """.lstrip()
 
+def local_scheme(version):
+    return ""
+
 setup(use_scm_version={'write_to': os.path.join('astropop', 'version.py'),
-                       'write_to_template': VERSION_TEMPLATE})
+                       'write_to_template': VERSION_TEMPLATE,
+                       'local_scheme': local_scheme})
