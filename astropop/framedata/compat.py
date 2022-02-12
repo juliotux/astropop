@@ -65,7 +65,7 @@ def extract_header_wcs(header):
     # ensure only compatible keys
     for k in header.keys():
         v = header[k]
-        if (isinstance(v, (str, bool)) or  check_number(v)) and k != '':
+        if (isinstance(v, (str, bool)) or check_number(v)) and k != '':
             hdr[k] = v
 
     # First, check if there is a WCS. If not, return header and None WCS

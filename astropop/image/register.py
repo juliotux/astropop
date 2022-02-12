@@ -69,8 +69,8 @@ class _BaseRegister(abc.ABC):
         reg_image = self._apply_transform_image(image2, tform, cval=cval)
         logger.info('Filling registered image with cval=%.2f', cval)
         logger.info('Registering image with: '
-                     'translation=%s, rotation=%.2f°',
-                     tform.translation, np.rad2deg(tform.rotation))
+                    'translation=%s, rotation=%.2f°',
+                    tform.translation, np.rad2deg(tform.rotation))
         mask = self._apply_transform_image(mask2, tform, cval=1)
         mask = mask > 0
         return reg_image, mask, tform
@@ -254,7 +254,7 @@ class AsterismRegister(_BaseRegister):
 
 
 def register_framedata_list(frame_list, algorithm='cross-correlation',
-                             cval='median', inplace=False, **kwargs):
+                            cval='median', inplace=False, **kwargs):
     """Perform registration in a framedata list.
 
     Parameters
