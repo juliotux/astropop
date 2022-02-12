@@ -162,7 +162,9 @@ class Test_ExtractHeader():
         # It should no raise, just return empty wcs
         # No header change too
         header = fits.Header.fromstring(_base_header+_invalid_wcs, sep='\n')
+        del header['']
         h, wcs = extract_header_wcs(header)
+
         assert_is_none(wcs)
         assert_is_instance(h, fits.Header)
         assert_equal(h, header)
