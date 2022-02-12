@@ -397,12 +397,10 @@ class FrameData:
           Default: True
         """
         if self._unct.empty and return_none:
-            unct = None
-        elif self._unct.empty:
-            unct = np.zeros_like(self._data)
-        else:
-            unct = np.array(self._unct)
-        return unct
+            return None
+        if self._unct.empty:
+            return np.zeros_like(self._data, dtype=self.dtype)
+        return np.array(self._unct, dtype=self.dtype)
 
     @property
     def mask(self):
