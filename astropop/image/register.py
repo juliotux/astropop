@@ -22,7 +22,7 @@ class _BaseRegister(abc.ABC):
     def _apply_transform_image(image, tform, cval=0):
         """Apply the transform to an image."""
         logger.info('Applying registration transform: '
-                    'translation=%s, rotation=%.2f',
+                    'translation=%s, rotation=%.2f°',
                     tform.translation, np.rad2deg(tform.rotation))
         return transform.warp(image, tform, mode='constant', cval=cval,
                               preserve_range=True)
@@ -56,7 +56,7 @@ class _BaseRegister(abc.ABC):
         """
         tform = self._compute_transform(image1, image2,
                                         mask1, mask2)
-        if mask2 is not None:
+        if mask2 is None:
             mask2 = np.zeros_like(image2)
 
         if cval == 'median':
@@ -95,21 +95,27 @@ class _BaseRegister(abc.ABC):
         """
         frame1 = check_framedata(frame1)
         frame2 = check_framedata(frame2)
+        im1 = np.array(frame1.data)
+        im2 = np.array(frame2.data)
+        msk1 = None  # np.array(frame1.mask)
+        msk2 = None  # np.array(frame2.mask)
 
-        data, mask, tform = self.register_image(frame1.data, frame2.data,
-                                                frame1.mask, frame2.mask,
+        data, mask, tform = self.register_image(im1, im2, msk1, msk2,
                                                 cval=cval)
-        unct = self._apply_transform_image(frame2.uncertainty, tform, cval=0)
-
         if inplace:
             reg_frame = frame2
         else:
-            reg_frame = FrameData()
+            reg_frame = FrameData(None)
             reg_frame.meta = frame2.meta.copy()
 
         reg_frame.data = data
         reg_frame.mask = mask
-        reg_frame.uncertainty = unct
+
+        if not frame2.uncertainty.empty:
+            unct = self._apply_transform_image(frame2.uncertainty,
+                                               tform, cval=0)
+            reg_frame.uncertainty = unct
+
         reg_frame.meta['astropop registration'] = self._name
         reg_frame.meta['astropop registration_shift'] = tform.translation
         reg_frame.meta['astropop registration_rot'] = np.rad2deg(tform.rotation)
@@ -156,12 +162,12 @@ class CrossCorrelationRegister(_BaseRegister):
         self._fft_space = space
 
     def _compute_transform(self, image1, image2, mask1=None, mask2=None):
-        shift, _, _ = phase_cross_correlation(image1, image2,
-                                              upsample_factor=self._up_factor,
-                                              space=self._fft_space,
-                                              reference_mask=mask1,
-                                              moving_mask=mask2)
-        dy, dx = shift
+        dy, dx = phase_cross_correlation(image1, image2,
+                                         upsample_factor=self._up_factor,
+                                         space=self._fft_space,
+                                         reference_mask=mask1,
+                                         moving_mask=mask2,
+                                         return_error=False)
         return transform.AffineTransform(translation=(-dx, -dy))
 
 

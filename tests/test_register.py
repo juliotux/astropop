@@ -5,7 +5,9 @@ import numpy as np
 from skimage import transform
 from astropop.image.register import AsterismRegister, \
                                     CrossCorrelationRegister
-from astropop.testing import assert_almost_equal
+from astropop.framedata import FrameData
+from astropop.testing import assert_almost_equal, assert_equal, \
+                             assert_is, assert_is_not
 
 from .test_detection import gen_position_flux, gen_image
 
@@ -34,6 +36,7 @@ def gen_positions_transformed(x, y, flux, dx, dy, limits,
 
 
 class Test_AsterismRegister:
+    # TODO: test minimum 3 fonts error
     @pytest.mark.parametrize('shift', [(25, 32), (-12, 5), (23.42, 12.43)])
     def test_compute_transform_translation(self, shift):
         size = (1024, 1024)
@@ -87,6 +90,7 @@ class Test_AsterismRegister:
         assert_almost_equal(tform.scale, 1, decimal=4)
 
 
+
 class Test_CrossCorrelationRegister:
     @pytest.mark.parametrize('shift', [(25, 32), (-12, 5), (23.42, 12.43)])
     def test_compute_transform(self, shift):
@@ -114,3 +118,100 @@ class Test_CrossCorrelationRegister:
         assert_almost_equal(tform.translation, shift, decimal=1)
         assert_almost_equal(tform.rotation, 0, decimal=3)
         assert_almost_equal(tform.scale, 1, decimal=4)
+
+
+class Test_Registration:
+    # TODO: test log capture
+    @pytest.mark.parametrize('cval,fill', [(0, 0),
+                                           ('median', 1.0),
+                                           ('mean', 1.51)])
+    def test_register_image(self, cval, fill):
+        im1 = [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+               [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+               [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+               [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+               [1, 1, 2, 2, 2, 1, 1, 1, 1, 1],
+               [1, 2, 4, 6, 4, 2, 1, 1, 1, 1],
+               [1, 2, 6, 8, 6, 2, 1, 1, 1, 1],
+               [1, 2, 4, 6, 4, 2, 1, 1, 1, 1],
+               [1, 1, 2, 2, 2, 1, 1, 1, 1, 1],
+               [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]
+
+        im2 = [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+               [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+               [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+               [1, 1, 1, 1, 2, 2, 2, 1, 1, 1],
+               [1, 1, 1, 2, 4, 6, 4, 2, 1, 1],
+               [1, 1, 1, 2, 6, 8, 6, 2, 1, 1],
+               [1, 1, 1, 2, 4, 6, 4, 2, 1, 1],
+               [1, 1, 1, 1, 2, 2, 2, 1, 1, 1],
+               [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+               [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]
+
+        expect = np.array(im1, dtype='f8')
+        expect[0, :] = fill
+        expect[:, -2:] = fill
+
+        mask = np.zeros_like(im2, dtype=bool)
+        mask[0, :] = 1
+        mask[:, -2:] = 1
+
+        ar = CrossCorrelationRegister()
+        im_reg, mask_reg, tform = ar.register_image(np.array(im1), np.array(im2),
+                                                    cval=cval)
+
+        assert_equal(im_reg, expect)
+        assert_equal(mask_reg, mask)
+        assert_equal(tform.translation, [2, -1])
+
+    @pytest.mark.parametrize('inplace', [True, False])
+    @pytest.mark.parametrize('cval,fill', [(0, 0),
+                                           ('median', 1.0),
+                                           ('mean', 1.51)])
+    def test_register_framedata(self, inplace, cval, fill):
+        im1 = [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+               [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+               [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+               [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+               [1, 1, 2, 2, 2, 1, 1, 1, 1, 1],
+               [1, 2, 4, 6, 4, 2, 1, 1, 1, 1],
+               [1, 2, 6, 8, 6, 2, 1, 1, 1, 1],
+               [1, 2, 4, 6, 4, 2, 1, 1, 1, 1],
+               [1, 1, 2, 2, 2, 1, 1, 1, 1, 1],
+               [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]
+
+        im2 = [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+               [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+               [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+               [1, 1, 1, 1, 2, 2, 2, 1, 1, 1],
+               [1, 1, 1, 2, 4, 6, 4, 2, 1, 1],
+               [1, 1, 1, 2, 6, 8, 6, 2, 1, 1],
+               [1, 1, 1, 2, 4, 6, 4, 2, 1, 1],
+               [1, 1, 1, 1, 2, 2, 2, 1, 1, 1],
+               [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+               [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]
+
+        expect = np.array(im1, dtype='f8')
+        expect[0, :] = fill
+        expect[:, -2:] = fill
+
+        mask = np.zeros_like(im2, dtype=bool)
+        mask[0, :] = 1
+        mask[:, -2:] = 1
+
+        frame1 = FrameData(im1, dtype='f8')
+        frame2 = FrameData(im2, dtype='f8')
+
+        ar = CrossCorrelationRegister()
+        frame_reg= ar.register_framedata(frame1, frame2,
+                                         cval=cval, inplace=inplace)
+
+        assert_equal(frame_reg.data, expect)
+        assert_equal(frame_reg.mask, mask)
+        assert_equal(frame_reg.meta['astropop registration'], 'cross-correlation')
+        assert_equal(frame_reg.meta['astropop registration_shift'], [2, -1])
+        assert_equal(frame_reg.meta['astropop registration_rot'], 0)
+        if inplace:
+            assert_is(frame_reg, frame2)
+        else:
+            assert_is_not(frame_reg, frame2)
