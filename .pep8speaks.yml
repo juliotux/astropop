@@ -16,4 +16,3 @@ flake8:
     - _astropy_init.py
     - version.py
     - setup.py
-
