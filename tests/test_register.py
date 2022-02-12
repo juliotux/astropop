@@ -36,7 +36,6 @@ def gen_positions_transformed(x, y, flux, dx, dy, limits,
 
 
 class Test_AsterismRegister:
-    # TODO: test minimum 3 fonts error
     @pytest.mark.parametrize('shift', [(25, 32), (-12, 5), (23.42, 12.43)])
     def test_compute_transform_translation(self, shift):
         size = (1024, 1024)
@@ -90,7 +89,6 @@ class Test_AsterismRegister:
         assert_almost_equal(tform.scale, 1, decimal=4)
 
 
-
 class Test_CrossCorrelationRegister:
     @pytest.mark.parametrize('shift', [(25, 32), (-12, 5), (23.42, 12.43)])
     def test_compute_transform(self, shift):
@@ -121,7 +119,6 @@ class Test_CrossCorrelationRegister:
 
 
 class Test_Registration:
-    # TODO: test log capture
     @pytest.mark.parametrize('cval,fill', [(0, 0),
                                            ('median', 1.0),
                                            ('mean', 1.51)])
