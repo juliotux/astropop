@@ -110,8 +110,7 @@ class Test_CrossCorrelationRegister:
         im2 = gen_image(size, x2, y2, flux2,
                         sky, rdnoise, sigma=2)
 
-
-        ccr = CrossCorrelationRegister(upsample_factor=3)
+        ccr = CrossCorrelationRegister(upsample_factor=10)
         tform = ccr._compute_transform(im1, im2)
 
         assert_almost_equal(tform.translation, shift, decimal=1)
