@@ -22,24 +22,20 @@ This software is intended to provide a full pipeline to reduce raw polarimetry a
 
 - Aperture and (planned) PSF photometry;
 
-- Calcite and (planned) polaroid polarimeters;
+- Calcite polarimeters;
 
   - Automatic pairs of stars identification;
 
 - Automatic photometry calibration using online catalogs.
 
 Requirements
-^^^^^^^^
-Astropop needs gcc. Install using:
+^^^^^^^^^^^^
+Some of astropop dependencies (numpy, astropy, scipy, astroscrappy) need gcc to get build. Make sure gcc is installed properly in your system.
 
-.. code-block::
-
-    sudo apt install build-essential
-
-Astropop was developed for python with a version equal or bigger than 3.6.
+Astropop was developed for python with a version equal or bigger than 3.7.
 
 Dependencies
-^^^^^^^^
+^^^^^^^^^^^^
 
 Bellow we list all the necessary dependencies for the good working of the code. Note that this can be changed with the time.
 
@@ -74,7 +70,7 @@ Bellow we list all the necessary dependencies for the good working of the code. 
 - sep.
 
 Installation
-^^^^^^^^
+^^^^^^^^^^^^
 Astropop can be downloaded from https://github.com/sparc4-dev/astropop. For this, type in the terminal:
 
 .. code-block::
