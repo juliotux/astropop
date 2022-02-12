@@ -10,7 +10,8 @@ from ..logger import logger
 from ..framedata import check_framedata, FrameData
 
 
-__all__ = ['CrossCorrelationRegister', 'AsterismRegister']
+__all__ = ['CrossCorrelationRegister', 'AsterismRegister',
+           'register_framedata_list']
 
 
 class _BaseRegister(abc.ABC):
@@ -21,9 +22,6 @@ class _BaseRegister(abc.ABC):
     @staticmethod
     def _apply_transform_image(image, tform, cval=0):
         """Apply the transform to an image."""
-        logger.info('Applying registration transform: '
-                    'translation=%s, rotation=%.2f°',
-                    tform.translation, np.rad2deg(tform.rotation))
         return transform.warp(image, tform, mode='constant', cval=cval,
                               preserve_range=True)
 
@@ -54,8 +52,12 @@ class _BaseRegister(abc.ABC):
         tfrom : `~skimage.transform.AffineTransform`
             Transform computed to project image2 in image2.
         """
-        tform = self._compute_transform(image1, image2,
-                                        mask1, mask2)
+        # equal images are just returned
+        if np.all(image1 == image2):
+            logger.info('Images are equal, skipping registering.')
+            return image1, np.zeros_like(image1), transform.AffineTransform()
+
+        tform = self._compute_transform(image1, image2, mask1, mask2)
         if mask2 is None:
             mask2 = np.zeros_like(image2)
 
@@ -66,6 +68,9 @@ class _BaseRegister(abc.ABC):
 
         reg_image = self._apply_transform_image(image2, tform, cval=cval)
         logger.info('Filling registered image with cval=%.2f', cval)
+        logger.info('Registering image with: '
+                     'translation=%s, rotation=%.2f°',
+                     tform.translation, np.rad2deg(tform.rotation))
         mask = self._apply_transform_image(mask2, tform, cval=1)
         mask = mask > 0
         return reg_image, mask, tform
@@ -95,25 +100,28 @@ class _BaseRegister(abc.ABC):
         """
         frame1 = check_framedata(frame1)
         frame2 = check_framedata(frame2)
+
         im1 = np.array(frame1.data)
         im2 = np.array(frame2.data)
-        msk1 = None  # np.array(frame1.mask)
-        msk2 = None  # np.array(frame2.mask)
+        msk1 = frame1.mask if frame1.mask is None else np.array(frame1.mask)
+        msk2 = frame2.mask if frame2.mask is None else np.array(frame2.mask)
 
         data, mask, tform = self.register_image(im1, im2, msk1, msk2,
                                                 cval=cval)
+
         if inplace:
             reg_frame = frame2
         else:
             reg_frame = FrameData(None)
-            reg_frame.meta = frame2.meta.copy()
+            reg_frame.meta = frame2.meta
 
         reg_frame.data = data
         reg_frame.mask = mask
 
         if not frame2.uncertainty.empty:
-            unct = self._apply_transform_image(frame2.uncertainty,
-                                               tform, cval=0)
+            unct = frame2.get_uncertainty(return_none=False)
+            unct = self._apply_transform_image(unct,
+                                               tform, cval=np.nan)
             reg_frame.uncertainty = unct
 
         reg_frame.meta['astropop registration'] = self._name
@@ -162,11 +170,10 @@ class CrossCorrelationRegister(_BaseRegister):
         self._fft_space = space
 
     def _compute_transform(self, image1, image2, mask1=None, mask2=None):
+        # Masks are ignored by default
         dy, dx = phase_cross_correlation(image1, image2,
                                          upsample_factor=self._up_factor,
                                          space=self._fft_space,
-                                         reference_mask=mask1,
-                                         moving_mask=mask2,
                                          return_error=False)
         return transform.AffineTransform(translation=(-dx, -dy))
 
@@ -233,7 +240,6 @@ class AsterismRegister(_BaseRegister):
         sources2 = self._sf(image2, self._threshold, bkg, rms)
         sources1.sort('flux', reverse=True)
         sources2.sort('flux', reverse=True)
-
         sources1 = np.array(list(zip(sources1['x'], sources1['y'])))
         sources2 = np.array(list(zip(sources2['x'], sources2['y'])))
 
@@ -245,3 +251,58 @@ class AsterismRegister(_BaseRegister):
                      ctl_pts[0], ctl_pts[1])
 
         return tform
+
+
+def register_framedata_list(frame_list, algorithm='cross-correlation',
+                             cval='median', inplace=False, **kwargs):
+    """Perform registration in a framedata list.
+
+    Parameters
+    ----------
+    frame_list : list
+        A list containing `~astropop.framedata.FrameData` images to be
+        registered. All images must have the same shape.
+    algorith : {'cross-correlation', 'asterism-matching'} (optional)
+        The algorithm to compute the `~skimage.transform.AffineTransform`
+        between the images.
+        'cross-correlation' will compute the transform
+        using `~skimage.transform.phase_cross_correlation` method.
+        'asterism-matching' will use `~astroalign` to match asterisms of 3
+        detected stars in the field and compute the transform.
+        Default: 'cross-correlation'
+    cval : float or {'median', 'mean'} (optional)
+        Fill value for the empty pixels in the transformed image. If 'mean' or
+        'median', the correspondent values will be computed from the image.
+        Default: 'median'
+    inplace : bool (optional)
+        Perform the operation inplace, modifying the original FrameData
+        container. If `False`, a new container will be created.
+        Default: `False`
+    **kwargs :
+        keyword arguments to be passed to `CrossCorrelationRegister` or
+        `AsterismRegister` during instance creation. See the parameters in
+        each class documentation.
+    """
+    # check the algorithms
+    if algorithm == 'cross-correlation':
+        reg = CrossCorrelationRegister(**kwargs)
+    elif algorithm == 'asterism-matching':
+        reg = AsterismRegister(**kwargs)
+    else:
+        raise ValueError(f'Algorithm {algorithm} unknown.')
+
+    for i in frame_list:
+        if not isinstance(i, FrameData):
+            raise TypeError('Only a list of FrameData instances is allowed.')
+        if i.shape != frame_list[0].shape:
+            raise ValueError('Images with incompatible shapes. Only frames '
+                             'with same shape allowed.')
+
+    n = len(frame_list)
+    reg_list = [None]*n
+    for i in range(n):
+        logger.info('Registering image %i from %i', i+1, n)
+        reg_list[i] = reg.register_framedata(frame_list[0], frame_list[i],
+                                             cval=cval, inplace=inplace)
+
+    return reg_list

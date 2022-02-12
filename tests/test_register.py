@@ -4,7 +4,8 @@ import pytest
 import numpy as np
 from skimage import transform
 from astropop.image.register import AsterismRegister, \
-                                    CrossCorrelationRegister
+                                    CrossCorrelationRegister, \
+                                    register_framedata_list
 from astropop.framedata import FrameData
 from astropop.testing import assert_almost_equal, assert_equal, \
                              assert_is, assert_is_not
@@ -196,8 +197,16 @@ class Test_Registration:
         mask[0, :] = 1
         mask[:, -2:] = 1
 
+        expect_unct = np.ones_like(im2, dtype='f8')
+        expect_unct[0, :] = np.nan
+        expect_unct[:, -2:] = np.nan
+
         frame1 = FrameData(im1, dtype='f8')
+        frame1.meta['moving'] = False
+        frame1.uncertainty = np.ones_like(im1)
         frame2 = FrameData(im2, dtype='f8')
+        frame2.meta['moving'] = True
+        frame2.uncertainty = np.ones_like(im2)
 
         ar = CrossCorrelationRegister()
         frame_reg= ar.register_framedata(frame1, frame2,
@@ -205,10 +214,109 @@ class Test_Registration:
 
         assert_equal(frame_reg.data, expect)
         assert_equal(frame_reg.mask, mask)
-        assert_equal(frame_reg.meta['astropop registration'], 'cross-correlation')
+        assert_equal(frame_reg.uncertainty, expect_unct)
+        assert_equal(frame_reg.meta['astropop registration'],
+                                    'cross-correlation')
         assert_equal(frame_reg.meta['astropop registration_shift'], [2, -1])
         assert_equal(frame_reg.meta['astropop registration_rot'], 0)
+        assert_equal(frame_reg.meta['moving'], True)
         if inplace:
             assert_is(frame_reg, frame2)
         else:
             assert_is_not(frame_reg, frame2)
+
+    def test_register_image_equal(self):
+        im = gen_image((50, 50), [25], [25], [10000], 10, 0, sigma=3)
+        ar = CrossCorrelationRegister()
+        im_reg, mask_reg, tform = ar.register_image(im, im)
+        assert_is(im_reg, im)
+        assert_equal(im_reg, im)
+        assert_equal(mask_reg, np.zeros_like(im))
+        assert_equal(tform.translation, [0, 0])
+
+    @pytest.mark.parametrize('inplace', [True, False])
+    def test_register_frame_equal(self, inplace):
+        im = gen_image((50, 50), [25], [25], [10000], 10, 0, sigma=3)
+        im = FrameData(im)
+        ar = CrossCorrelationRegister()
+        im_reg= ar.register_framedata(im, im, inplace=inplace)
+        if inplace:
+            assert_is(im_reg, im)
+        else:
+            assert_is_not(im_reg, im)
+        assert_equal(im_reg.data, im.data)
+        assert_equal(im_reg.mask, np.zeros_like(im))
+        assert_equal(im_reg.meta['astropop registration_shift'], [0, 0])
+
+
+class Test_Register_FrameData_List:
+    _shifts = [(0, 0), (-1, 2.4), (1.5, 3.2), (-2.2, 1.75), (-0.5, 0.5)]
+
+    def gen_frame_list(self, size):
+        sky = 800
+        rdnoise = 10
+        n = 100
+        x, y, f = gen_position_flux(np.array(size)+80, n, 1e4, 4e6)
+        x -= 40
+        y -= 40
+
+        frame_list = []
+        for shift in self._shifts:
+            x1, y1, flux1 = gen_positions_transformed(x, y, f, *shift, size)
+            im1 = gen_image(size, x1, y1, flux1,
+                            sky, rdnoise, sigma=2)
+            frame = FrameData(im1, meta={'test expect_shift': shift})
+            frame_list.append(frame)
+
+        return frame_list
+
+    def test_error_unkown_algorithm(self):
+        with pytest.raises(ValueError, match='Algorithm noexisting unknown.'):
+            register_framedata_list([FrameData(None) for i in range(10)],
+                                    algorithm='noexisting')
+
+    def test_error_non_framedata(self):
+        with pytest.raises(TypeError, match='Only a list of FrameData'):
+            register_framedata_list([np.zeros((10, 10)) for i in range(10)])
+
+    def test_error_non_iterable_list(self):
+        with pytest.raises(TypeError):
+            register_framedata_list(10)
+
+    def test_error_incompatible_shapes(self):
+        frame_list = [FrameData(np.zeros((i+1, i+1))) for i in range(10)]
+        with pytest.raises(ValueError, match='incompatible shapes'):
+            register_framedata_list(frame_list)
+
+    @pytest.mark.parametrize('inplace', [True, False])
+    def test_register_framedata_crosscorr(self, inplace):
+        frame_list = self.gen_frame_list((1024, 1024))
+        reg_list = register_framedata_list(frame_list,
+                                           algorithm='cross-correlation',
+                                           inplace=inplace,
+                                           upsample_factor=10, space='real')
+        assert_equal(len(frame_list), len(reg_list))
+        for org, reg in zip(frame_list, reg_list):
+            if inplace:
+                assert_is(org, reg)
+            else:
+                assert_is_not(org, reg)
+            assert_almost_equal(reg.meta['astropop registration_shift'],
+                                org.meta['test expect_shift'], decimal=0)
+
+    @pytest.mark.parametrize('inplace', [True, False])
+    def test_register_framedata_asterism(self, inplace):
+        frame_list = self.gen_frame_list((1024, 1024))
+        reg_list = register_framedata_list(frame_list,
+                                           algorithm='asterism-matching',
+                                           inplace=inplace,
+                                           max_control_points=30,
+                                           detection_threshold=5)
+        assert_equal(len(frame_list), len(reg_list))
+        for org, reg in zip(frame_list, reg_list):
+            if inplace:
+                assert_is(org, reg)
+            else:
+                assert_is_not(org, reg)
+            assert_almost_equal(reg.meta['astropop registration_shift'],
+                                org.meta['test expect_shift'], decimal=0)
