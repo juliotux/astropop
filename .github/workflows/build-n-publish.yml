@@ -3,6 +3,7 @@ name: Build wheels and publish
 on:
   push:
     branches: [ main ]
+    tags:
 
 concurrency:
   group: pytest-${{ github.ref }}
