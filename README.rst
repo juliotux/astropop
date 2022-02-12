@@ -132,7 +132,7 @@ Documentation
 
 Documentation (not complete yet) can be found at `astropop.readthedocs.io <https://astropop.readthedocs.io>`_
 
-.. |GHAction Status| image:: https://github.com/sparc4-dev/astropop/workflows/Unit%20Tests/badge.svg
+.. |GHAction Status| image:: https://github.com/sparc4-dev/astropop/actions/workflows/unit-tests.yml/badge.svg
     :target: https://github.com/sparc4-dev/astropop/actions
     :alt: Astropop's Github CI Status
 
