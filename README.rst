@@ -1,7 +1,7 @@
 AstroPoP
 ========
 
-|GHAction Status| |Codecov Status| |RTD Status| |CODACY| |GITPOD|
+|GHAction Status| |Codecov Status| |RTD Status| |CODACY|
 
 The (non) famous ASTROnomical POlarimetry and Photometry pipeline. Developed for work with IAGPOL polarimeter at Observatório Pico dos Dias (Brazil), but suitable to be used in other image polarimeters around the world.
 
@@ -170,7 +170,3 @@ Documentation (not complete yet) can be found at `astropop.readthedocs.io <https
 
 .. |CODACY|  image:: https://app.codacy.com/project/badge/Grade/ab9d4647935d4b33aee0544b6957d7a7
     :target: https://www.codacy.com/gh/sparc4-dev/astropop/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=sparc4-dev/astropop&amp;utm_campaign=Badge_Grade
-
-.. |GITPOD|  image:: https://img.shields.io/badge/Gitpod-ready--to--code-blue?logo=gitpod
-    :target: https://gitpod.io/#https://github.com/sparc4-dev/astropop
-    :alt: Gitpod Ready-to-Code
