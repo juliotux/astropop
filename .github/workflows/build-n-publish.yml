@@ -1,9 +1,7 @@
 name: Build wheels and publish
 
 on:
-  push:
-    branches: [ main ]
-    tags:
+  push
 
 concurrency:
   group: pytest-${{ github.ref }}
@@ -35,6 +33,7 @@ jobs:
         --wheel
         --outdir dist/
     - name: Publish package to PyPi testing
+      if: github.ref == 'refs/heads/main'
       uses: pypa/gh-action-pypi-publish@master
       with:
         password: ${{ secrets.TEST_PYPI_API_TOKEN }}
