@@ -28,14 +28,11 @@ This software is intended to provide a full pipeline to reduce raw polarimetry a
 
 - Automatic photometry calibration using online catalogs.
 
-Requirements
-^^^^^^^^^^^^
-Some of astropop dependencies (numpy, astropy, scipy, astroscrappy) need gcc to get build. Make sure gcc is installed properly in your system.
-
-Astropop was developed for python with a version equal or bigger than 3.7.
 
 Dependencies
 ^^^^^^^^^^^^
+
+Some of astropop dependencies (numpy, astropy, scipy, astroscrappy) need gcc to get build. Make sure gcc is installed properly in your system.
 
 Bellow we list all the necessary dependencies for the good working of the code. Note that this can be changed with the time.
 
@@ -47,23 +44,11 @@ Bellow we list all the necessary dependencies for the good working of the code. 
 
 - astroscrappy;
 
-- ccdproc;
-
-- cython;
-
-- matplotlib;
-
 - numpy >= 1.17;
 
-- photutils;
-
-- pytz;
-
-- pyyaml;
-
-- reproject;
-
 - scikit-image;
+
+- scikit-learn;
 
 - scipy;
 
@@ -99,7 +84,7 @@ Once the anaconda is installed you can create an Astropop enviroment using:
 
 .. code-block::
 
-    conda create -n <environment name> -c conda-forge python=3.9 astroalign astropy astroquery astroscrappy ccdproc cython	matplotlib numpy photutils pytz pyyaml reproject scikit-image scipy sep
+    conda create -n <environment name> -c conda-forge python=3.9 astroalign astropy astroquery astroscrappy matplotlib numpy pyyaml reproject scikit-image scikit-learn scipy sep
 
 Citating
 ^^^^^^^^
