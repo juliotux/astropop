@@ -74,7 +74,7 @@ def delete_array_memmap(memmap, read=True, remove=False):
     data : array_like or `None`
         Data read from memmap.
     """
-    if memmap is None:
+    if memmap is None or np.shape(memmap) == ():
         return None
 
     if read:
@@ -308,6 +308,10 @@ class MemMapArray:
             return np.array(None)
         # Ignore memmapping
         return np.array(self._contained, dtype=dtype)
+
+    def __del__(self):
+        """Safe destruct the MemMapArray."""
+        self.disable_memmap(True)
 
     __lt__ = to_memmap_operator('__lt__')
     __le__ = to_memmap_operator('__le__')

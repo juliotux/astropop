@@ -185,34 +185,34 @@ class Test_FrameData_Setup_Filename():
         with pytest.raises(ValueError):
             setup_filename(np.array(None))
 
-    def test_simple(self, tmpdir):
-        temp = tmpdir.strpath
+    def test_simple(self, tmp_path):
+        temp = str(tmp_path)
         frame = self.frame(temp)
         cache_file = os.path.join(temp, self.fname)
         assert_equal(setup_filename(frame), cache_file)
 
-    def test_manual_filename_with_full_path(self, tmpdir):
-        temp = tmpdir.strpath
+    def test_manual_filename_with_full_path(self, tmp_path):
+        temp = str(tmp_path)
         frame = self.frame(temp)
-        ntemp = tempfile.mkstemp(suffix='.npy')[1]
+        ntemp = tempfile.mkstemp(suffix='.npy', dir=temp)[1]
         assert_equal(setup_filename(frame, filename=ntemp), ntemp)
 
-    def test_manual_filename_without_full_path(self, tmpdir):
-        temp = tmpdir.strpath
+    def test_manual_filename_without_full_path(self, tmp_path):
+        temp = str(tmp_path)
         frame = self.frame(temp)
         ntemp = 'testing.npy'
-        cache_file = os.path.join(tmpdir, ntemp)
+        cache_file = os.path.join(temp, ntemp)
         assert_equal(setup_filename(frame, filename=ntemp), cache_file)
 
-    def test_manual_cache_folder_without_file(self, tmpdir):
-        temp = tmpdir.strpath
+    def test_manual_cache_folder_without_file(self, tmp_path):
+        temp = str(tmp_path)
         frame = self.frame(temp)
         ntemp = os.path.dirname(tempfile.mkstemp(suffix='.npy')[1])
         cache_file = os.path.join(ntemp, self.fname)
         assert_equal(setup_filename(frame, cache_folder=ntemp), cache_file)
 
-    def test_manual_folder_and_file(self, tmpdir):
-        temp = tmpdir.strpath
+    def test_manual_folder_and_file(self, tmp_path):
+        temp = str(tmp_path)
         frame = self.frame(temp)
         nfile = '/no-existing/testing.file.npy'
         ndir = os.path.dirname(tempfile.mkstemp(suffix='.npy')[1])
@@ -354,9 +354,9 @@ class Test_CheckRead_FrameData():
             assert_equal(f.data, data)
             assert_equal(f.unit, 'adu')
 
-    def test_check_framedata_fitsfile(self, tmpdir):
-        tmp = tmpdir.join('fest_check_framedata.fits')
-        tmpstr = tmp.strpath
+    def test_check_framedata_fitsfile(self, tmp_path):
+        tmp = tmp_path / 'fest_check_framedata.fits'
+        tmpstr = str(tmp)
 
         uncert_name = 'ASTROPOP_UNCERT'
         mask_name = 'ASTROPOP_MASK'

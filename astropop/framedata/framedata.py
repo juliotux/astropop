@@ -7,7 +7,8 @@
 import os
 import numpy as np
 import copy as cp
-from tempfile import mkdtemp, mkstemp
+import tempfile
+import pathlib
 from astropy import units as u
 from astropy.wcs import WCS
 
@@ -122,21 +123,26 @@ def setup_filename(frame, cache_folder=None, filename=None):
 
     # explicit set must be over defult
     filename = filename or filename_ccd
-    filename = filename or mkstemp(suffix='.npy')[1]
+    if filename is None:
+        filename = tempfile.NamedTemporaryFile(suffix='.npy').name
 
-    if cache_folder is None and os.path.dirname(filename) != '':
+    if cache_folder is None and \
+       os.path.dirname(filename) not in ('', tempfile.gettempdir()):
+        # we need filename dir for cache_folder
         cache_folder = os.path.dirname(filename)
-    # we need filename dir for cache_folder
+
     filename = os.path.basename(filename)
 
     # explicit set must be over defult
     cache_folder = cache_folder or cache_folder_ccd
-    cache_folder = cache_folder or mkdtemp(prefix='astropop')
+    if cache_folder is None:
+        cache_folder = tempfile.TemporaryDirectory(prefix='astropop_').name
+
+    os.makedirs(cache_folder, exist_ok=True)
 
     frame.cache_folder = cache_folder
     frame.cache_filename = filename
 
-    os.makedirs(cache_folder, exist_ok=True)
     return os.path.join(cache_folder, filename)
 
 
@@ -508,6 +514,14 @@ class FrameData:
             HDU storing all FrameData informations.
         """
         return _to_hdu(self, **kwargs)
+
+    def __del__(self):
+        """Safe destruction of the container."""
+        # ensure all files are removed when exit
+        self.disable_memmap()
+        # remove tmp folder if empty
+        if len(os.listdir(self.cache_folder)) == 0:
+            os.rmdir(self.cache_folder)
 
     def to_ccddata(self):
         """Convert actual FrameData to CCDData.
