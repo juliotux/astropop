@@ -11,8 +11,7 @@ import numpy as np
 from .logger import logger, resolve_level_string
 
 __all__ = ['string_fix', 'process_list', 'check_iterable',
-           'batch_key_replace', 'IndexedDict', 'check_number',
-           'CaseInsensitiveDict']
+           'batch_key_replace', 'IndexedDict', 'check_number']
 
 
 def process_list(func, iterator, *args, **kwargs):
