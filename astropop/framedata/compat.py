@@ -198,7 +198,7 @@ def _to_ccddata(frame):
     """Translate a FrameData to a CCDData."""
     data = np.array(frame.data)
     unit = frame.unit
-    meta = frame.header
+    meta = dict(frame.header)
     wcs = frame.wcs
     uncertainty = frame._unct
     if uncertainty.empty:

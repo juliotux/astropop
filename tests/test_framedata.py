@@ -9,9 +9,9 @@ import numpy as np
 from astropop.framedata.framedata import setup_filename, extract_units, \
                                          shape_consistency, \
                                          uncertainty_unit_consistency
+from astropop.framedata._meta import FrameMeta
 from astropop.framedata import FrameData, check_framedata, read_framedata
 from astropop.math import QFloat
-from astropop.py_utils import CaseInsensitiveDict
 from astropy.io import fits
 from astropy.utils import NumpyRNGContext
 from astropy import units as u
@@ -724,8 +724,8 @@ class Test_FrameData_Meta():
         header.update({'testing1': 'c'})
 
         a = FrameData([1, 2, 3], unit='', meta=meta, header=header)
-        assert_equal(type(a.meta), CaseInsensitiveDict)
-        assert_equal(type(a.header), CaseInsensitiveDict)
+        assert_equal(type(a.meta), FrameMeta)
+        assert_equal(type(a.header), FrameMeta)
         assert_equal(a.meta['testing1'], 'c')  # Header priority
         assert_equal(a.meta['testing2'], 'b')
         assert_equal(a.header['testing1'], 'c')  # Header priority

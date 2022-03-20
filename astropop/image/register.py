@@ -125,7 +125,7 @@ class _BaseRegister(abc.ABC):
             reg_frame.uncertainty = unct
 
         reg_frame.meta['astropop registration'] = self._name
-        reg_frame.meta['astropop registration_shift'] = tform.translation
+        reg_frame.meta['astropop registration_shift'] = list(tform.translation)
         reg_frame.meta['astropop registration_rot'] = np.rad2deg(tform.rotation)
 
         if reg_frame.wcs is not None:

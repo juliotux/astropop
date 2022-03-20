@@ -264,7 +264,7 @@ class Test_Register_FrameData_List:
             x1, y1, flux1 = gen_positions_transformed(x, y, f, *shift, size)
             im1 = gen_image(size, x1, y1, flux1,
                             sky, rdnoise, sigma=2)
-            frame = FrameData(im1, meta={'test expect_shift': shift})
+            frame = FrameData(im1, meta={'test expect_shift': list(shift)})
             frame_list.append(frame)
 
         return frame_list

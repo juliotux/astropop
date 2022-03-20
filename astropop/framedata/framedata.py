@@ -12,7 +12,8 @@ import pathlib
 from astropy import units as u
 from astropy.wcs import WCS
 
-from ..py_utils import check_iterable, CaseInsensitiveDict
+from ..py_utils import check_iterable
+from ._meta import FrameMeta
 from .memmap import MemMapArray
 from .compat import extract_header_wcs, _to_ccddata, _to_hdu
 from .._unit_property import unit_property
@@ -250,7 +251,8 @@ class FrameData:
 
         # avoiding security problems
         self._history = []
-        self._meta = CaseInsensitiveDict()
+        self._comments = []
+        self._meta = FrameMeta()
         self._header_update(header, meta, wcs)
 
     def _header_update(self, header, meta=None, wcs=None):
@@ -263,15 +265,23 @@ class FrameData:
             meta = dict(meta)
         else:
             meta = {}
-        meta = CaseInsensitiveDict(meta)
+        meta = FrameMeta(meta)
         meta.update(header)
 
         # extract history and comments from meta
         if 'history' in meta:
-            self.history = meta.pop('history')
-        # extract comments from the header
+            hist = meta.pop('history')
+            if check_iterable(hist):
+                self.history = [i for i in hist]
+            else:
+                self.history = hist
+
         if 'comment' in meta:
-            self._comments = meta.pop('comment')
+            comm = meta.pop('comment')
+            if check_iterable(comm):
+                self.comment = [i for i in comm]
+            else:
+                self.comment = comm
 
         # extract wcs from header
         meta, wcs_ = extract_header_wcs(meta)
@@ -279,9 +289,10 @@ class FrameData:
         if wcs is not None:
             self.wcs = wcs
 
-        self._meta = CaseInsensitiveDict(meta)
+        self._meta = FrameMeta(meta)
 
     def _update_cache_files(self, cache_file):
+        # TODO: if cache folder is changing, remove it
         if self._data is not None:
             self._data.disable_memmap(remove=True)
             nd = self._data._contained
@@ -313,6 +324,18 @@ class FrameData:
             self._history = self._history + list(value)
         else:
             self._history.append(value)
+
+    @property
+    def comment(self):
+        """Get the FrameData stored comments."""
+        return self._comments
+
+    @comment.setter
+    def comment(self, value):
+        if check_iterable(value):
+            self._comments = self._comments + list(value)
+        else:
+            self._comments.append(value)
 
     @property
     def origin_filename(self):
@@ -521,7 +544,10 @@ class FrameData:
         self.disable_memmap()
         # remove tmp folder if empty
         if len(os.listdir(self.cache_folder)) == 0:
-            os.rmdir(self.cache_folder)
+            try:
+                os.rmdir(self.cache_folder)
+            except FileNotFoundError:
+                pass
 
     def to_ccddata(self):
         """Convert actual FrameData to CCDData.
