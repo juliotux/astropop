@@ -205,50 +205,6 @@ def run_command(args, stdout=None, stderr=None, stdout_loglevel='DEBUG',
     return process, stdout, stderr
 
 
-class CaseInsensitiveDict(dict):
-    """Extends Python dictionary to have case insensitive keys."""
-
-    def __init__(self, *args, **kwargs):
-        super(CaseInsensitiveDict, self).__init__()
-        tmp_dict = dict(*args, **kwargs)
-        for k, v in tmp_dict.items():
-            if isinstance(k, str):
-                k = k.lower()
-            self.__setitem__(k, v)
-
-    def _lower_key_wrapper(func):
-        def wrapper(obj, key, *args, **kwargs):
-            if isinstance(key, str):
-                key = key.lower()
-            return func(obj, key, *args, **kwargs)
-        wrapper.__doc__ = func.__doc__
-        return wrapper
-
-    __setitem__ = _lower_key_wrapper(dict.__setitem__)
-    __getitem__ = _lower_key_wrapper(dict.__getitem__)
-    __delitem__ = _lower_key_wrapper(dict.__delitem__)
-    __contains__ = _lower_key_wrapper(dict.__contains__)
-    get = _lower_key_wrapper(dict.get)
-    pop = _lower_key_wrapper(dict.pop)
-
-    def __eq__(self, other):
-        if isinstance(other, dict):
-            other = CaseInsensitiveDict(other)
-        elif isinstance(other, CaseInsensitiveDict):
-            pass
-        else:
-            raise NotImplementedError
-
-        return self.items() == other.items()
-
-    def __update__(self, other):
-        if not isinstance(other, (dict, CaseInsensitiveDict)):
-            raise TypeError(f'{other} is not a dictionary type to update.')
-
-        for k, v in other.items():
-            self.__setitem__(k, v)
-
-
 class IndexedDict(dict):
     """Extends Python dictionary to include indexing and inserting.
 
