@@ -543,11 +543,11 @@ class FrameData:
         # ensure all files are removed when exit
         self.disable_memmap()
         # remove tmp folder if empty
-        if len(os.listdir(self.cache_folder)) == 0:
-            try:
+        try:
+            if len(os.listdir(self.cache_folder)) == 0:
                 os.rmdir(self.cache_folder)
-            except FileNotFoundError:
-                pass
+        except FileNotFoundError:
+            pass
 
     def to_ccddata(self):
         """Convert actual FrameData to CCDData.
