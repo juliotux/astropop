@@ -8,7 +8,6 @@ import os
 import numpy as np
 import copy as cp
 import tempfile
-import pathlib
 from astropy import units as u
 from astropy.wcs import WCS
 

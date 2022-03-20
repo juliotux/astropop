@@ -115,7 +115,7 @@ class FrameMeta():
     def index(self, key):
         """Get the index of a given key in the meta."""
         key = str(key).lower()
-        if not key in self.__keys:
+        if key not in self.__keys:
             raise KeyError(key)
         return self.__keys.index(key)
 
