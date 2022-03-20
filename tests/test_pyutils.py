@@ -3,7 +3,7 @@
 from typing import Type
 import pytest
 import shlex
-from astropop.py_utils import CaseInsensitiveDict, string_fix, process_list, \
+from astropop.py_utils import string_fix, process_list, \
                               check_iterable, batch_key_replace, \
                               run_command, IndexedDict, check_number
 import numpy as np
