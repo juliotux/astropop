@@ -747,7 +747,7 @@ def test_math_redirects(tmpdir, memmap):
         arr_flags = arr.flags
         a_flags = a.flags
         for i in ['C_CONTIGUOUS', 'F_CONTIGUOUS', 'WRITEABLE', 'ALIGNED',
-                  'WRITEBACKIFCOPY', 'UPDATEIFCOPY', 'FNC', 'FORC',
+                  'WRITEBACKIFCOPY', 'FNC', 'FORC',
                   'BEHAVED', 'CARRAY', 'FARRAY']:
             assert_equal(arr_flags[i], a_flags[i])
         for i in ['OWNDATA']:
