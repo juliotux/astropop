@@ -87,9 +87,9 @@ class FrameMeta():
         return len(self.__keys)
 
     def __repr__(self):
-        s = 'FrameMetada:\n'
+        s = 'FrameMeta:\n'
         for k, v, c in zip(self.keys(), self.values(), self.comments()):
-            s += f"'{k}' = {v}  # {c}\n"
+            s += f"{k} = {v}  # {c}\n"
         return s
 
     def keys(self):
@@ -156,6 +156,10 @@ class FrameMeta():
         """Add a key to the meta."""
         self.__setitem__(key, (value, comment))
 
+    def remove(self, key):
+        """Delete a key from the meta."""
+        del self[key]
+
     def to_dict(self):
         return dict([(k, v) for k, v in self.items()])
 
@@ -168,7 +172,4 @@ class FrameMeta():
         return new
 
     def __copy__(self):
-        return self.copy()
-
-    def __deepcopy__(self):
         return self.copy()
