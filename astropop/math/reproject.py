@@ -6,7 +6,7 @@ from astropy.coordinates import SkyCoord
 import numpy as np
 
 
-def tangential_projection(coords, center, pixel_scale=1./3600.):
+def gnomonic_tangential_projection(coords, center, pixel_scale=1./3600.):
     """Project a list of coordinates using gnomonic tangential projetion.
 
     Parameters
