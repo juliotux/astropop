@@ -81,6 +81,10 @@ def delete_array_memmap(memmap, read=True, remove=False):
         data = np.array(memmap[:])
     else:
         data = None
+
+    if not isinstance(memmap, np.memmap):
+        return data
+
     name = memmap.filename
     if remove:
         del memmap
