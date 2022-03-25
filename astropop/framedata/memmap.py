@@ -316,8 +316,7 @@ class MemMapArray:
     def __del__(self):
         """Safe destruct the MemMapArray."""
         try:
-            delete_array_memmap(self._contained, read=False,
-                                remove=True)
+            os.remove(self._filename)
         except FileNotFoundError:
             pass
 
