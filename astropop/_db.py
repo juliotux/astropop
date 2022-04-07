@@ -82,7 +82,6 @@ class DataBase:
 
         comm = f"INSERT INTO {self._table} VALUES ("
         for i, name in enumerate(self._dtype.names):
-            kind = self._dtype[i].kind
             comm += f"{data[name]}"
             if i != len(self._dtype) - 1:
                 comm += ", "
