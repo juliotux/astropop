@@ -42,11 +42,9 @@ def _fix_row_index(row, length):
 def _row_dict(data, cols):
     """Convert a dict to match the colnames fo a database."""
     data = _sanitize_colnames(data)
-    comm_dict = {}
+    comm_dict = {_ID_KEY: "NULL"}
     for i, name in enumerate(cols):
-        if name == _ID_KEY:
-            comm_dict[_ID_KEY] = "NULL"
-        elif name in data.keys():
+        if name in data.keys():
             d = data[name]
             if isinstance(d, str):
                 d = f"'{d}'"
@@ -77,7 +75,12 @@ def _import_from_data(data):
 
 
 class Database:
-    """Database creation and manipulation with SQL."""
+    """Database creation and manipulation with SQL.
+
+    Notes
+    -----
+    - __id__ is only for internal indexing. It is ignored on returns.
+    """
 
     def __init__(self, db=':memory:', table='main', dtype=None, length=0,
                  data=None):
@@ -93,7 +96,7 @@ class Database:
             raise ValueError('data and length cannot be both set.')
 
         # initialize a length if needed
-        for i in range(length):
+        for _ in range(length):
             self.add_row({})
 
         if data is not None:
@@ -134,13 +137,24 @@ class Database:
         comm = "SELECT * FROM "
         comm += f"{table or self._table} LIMIT 1;"
         self.execute(comm)
-        return [i[0].lower() for i in self._cur.description]
+        return [i[0].lower() for i in self._cur.description
+                if i[0].lower() != _ID_KEY.lower()]
+
+    def values(self, table=None):
+        """Get the values of the current table."""
+        comm = f"SELECT * FROM {table or self._table};"
+        vals = self.execute(comm)
+        vals = [i[1:] for i in vals if len(i) > 1]
+        return vals
 
     def add_column(self, column, dtype=None, data=None, table=None):
         """Add a column to a table."""
         if data is not None and len(data) != self.__len__(table) and \
            self.__len__(table) != 0:
             raise ValueError("data must have the same length as the table.")
+
+        if column in (_ID_KEY, 'table', 'default'):
+            raise ValueError(f"{column} is a protected name.")
 
         # adding the column to the table
         if dtype is None and data is None:
@@ -182,13 +196,9 @@ class Database:
 
         comm_dict = _row_dict(data, self.colnames(table=table))
         # create the sql command and add the row
-        cols = self.colnames(table=table)
+        cols = [_ID_KEY] + self.colnames(table=table)
         comm = f"INSERT INTO {table or self._table} VALUES ("
-        for i, name in enumerate(cols):
-            comm += comm_dict[name]
-            if i != len(cols) - 1:
-                comm += ", "
-        comm += ");"
+        comm += f"{', '.join(comm_dict[i] for i in cols)});"
         self.execute(comm)
 
     def select(self, columns=None, where=None, table=None):
@@ -245,7 +255,19 @@ class Database:
         index = _fix_row_index(index, self.__len__(table=table))
         return dict(zip(self.colnames(table=table),
                         self.select(where={_ID_KEY: index+1},
-                                    table=table)[0]))
+                                    table=table)[0][1:]))
+
+    def get_column(self, column, table=None):
+        """Get a column from the table."""
+        try:
+            res = [i[0] for i in self.select(columns=[column], table=table)]
+        except sql.OperationalError:
+            raise KeyError(f"column '{column}' does not exist in table "
+                           f"'{table or self._table}'")
+
+        if len(res) == 1:
+            return res[0]
+        return res
 
     def set_item(self, column, row, value, table=None):
         """Set a value in a cell."""
@@ -298,20 +320,23 @@ class Database:
             return db
 
         elif isinstance(item, str):
-            res = [i[0] for i in self.select(columns=[item], table=table)]
-            if len(res) == 0:
-                raise KeyError(f'column "{item}" not found')
-            if len(res) == 1:
-                return res[0]
-            return res
+            return self.get_column(item, table=table)
 
         elif isinstance(item, slice):
             db = Database(':memory:', table=table)
-            for i in range(*item.indices(item.stop)):
-                db.add_row(self.get_row(i, table=table), add_columns=True)
+            # Python allow slicing outside the range of the table
+            rows = self.values(table=table)[item]
+            if len(rows) == 0:
+                for c in self.colnames(table=table):
+                    dt = np.array(self.get_column(c, table=table)).dtype
+                    db.add_column(c, dtype=dt)
+            else:
+                for row in rows:
+                    db.add_row(dict(zip(self.colnames(table=table), row)),
+                               add_columns=True)
             return db
 
-        elif isinstance(item, (list, tuple, np.ndarray)):
+        elif isinstance(item, (list, np.ndarray)):
             if isinstance(item[0], str):
                 db = Database(':memory:', table=table, length=len(self))
                 for i in item:
