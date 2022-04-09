@@ -1,11 +1,45 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
 import pytest
-from astropop._db import Database, _ID_KEY
+from astropop._db import Database, _ID_KEY, _sanitize_colnames
 import numpy as np
 from astropy.table import Table
 from astropop.testing import *
+import sqlite3
 
+
+def test_sanitize_string():
+    assert_equal(_sanitize_colnames('test'), 'test')
+    assert_equal(_sanitize_colnames('test_'), 'test_')
+    assert_equal(_sanitize_colnames('test_1'), 'test_1')
+    assert_equal(_sanitize_colnames('test-2'), 'test_2')
+    assert_equal(_sanitize_colnames('test!2'), 'test_2')
+    assert_equal(_sanitize_colnames('test@2'), 'test_2')
+    assert_equal(_sanitize_colnames('test#2'), 'test_2')
+    assert_equal(_sanitize_colnames('test$2'), 'test_2')
+    assert_equal(_sanitize_colnames('test&2'), 'test_2')
+    assert_equal(_sanitize_colnames('test*2'), 'test_2')
+    assert_equal(_sanitize_colnames('test(2)'), 'test_2_')
+    assert_equal(_sanitize_colnames('test)2'), 'test_2')
+    assert_equal(_sanitize_colnames('test[2]'), 'test_2_')
+    assert_equal(_sanitize_colnames('test]2'), 'test_2')
+    assert_equal(_sanitize_colnames('test{2}'), 'test_2_')
+    assert_equal(_sanitize_colnames('test}2'), 'test_2')
+    assert_equal(_sanitize_colnames('test|2'), 'test_2')
+    assert_equal(_sanitize_colnames('test\\2'), 'test_2')
+    assert_equal(_sanitize_colnames('test^2'), 'test_2')
+    assert_equal(_sanitize_colnames('test~2'), 'test_2')
+    assert_equal(_sanitize_colnames('test"2'), 'test_2')
+    assert_equal(_sanitize_colnames('test\'2'), 'test_2')
+    assert_equal(_sanitize_colnames('test`2'), 'test_2')
+    assert_equal(_sanitize_colnames('test<2'), 'test_2')
+    assert_equal(_sanitize_colnames('test>2'), 'test_2')
+    assert_equal(_sanitize_colnames('test=2'), 'test_2')
+    assert_equal(_sanitize_colnames('test,2'), 'test_2')
+    assert_equal(_sanitize_colnames('test;2'), 'test_2')
+    assert_equal(_sanitize_colnames('test:2'), 'test_2')
+    assert_equal(_sanitize_colnames('test?2'), 'test_2')
+    assert_equal(_sanitize_colnames('test/2'), 'test_2')
 
 class Test_Database_Creation:
     def test_database_simple_creation(self):
@@ -318,3 +352,35 @@ class Test_Database_Access:
             db[[11, 12]]
         with pytest.raises(IndexError):
             db[[-11, -12]]
+
+
+class Test_Database_Select:
+    def test_select_one_column(self):
+        db = Database()
+        db.add_column('a', data=np.arange(10, 20))
+        db.add_column('b', data=np.arange(10))
+        sel = db.select(columns=['a'])
+        assert_is_instance(sel, list)
+        assert_equal(sel, list(zip(np.arange(10, 20))))
+
+    def test_select_two_columns(self):
+        db = Database()
+        db.add_column('a', data=np.arange(10, 20))
+        db.add_column('b', data=np.arange(10))
+        sel = db.select(columns=['a', 'b'])
+        assert_is_instance(sel, list)
+        assert_equal(sel, list(zip(np.arange(10, 20), np.arange(10))))
+
+    def test_select_two_columns_invalid(self):
+        db = Database()
+        db.add_column('a', data=np.arange(10, 20))
+        db.add_column('b', data=np.arange(10))
+        with pytest.raises(sqlite3.OperationalError):
+            db.select(columns=['a', 'c'])
+
+    def test_select_two_columns_invalid_type(self):
+        db = Database()
+        db.add_column('a', data=np.arange(10, 20))
+        db.add_column('b', data=np.arange(10))
+        with pytest.raises(TypeError):
+            db.select(columns=['a', 1])

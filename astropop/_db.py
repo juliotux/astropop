@@ -23,11 +23,22 @@ _ID_KEY = '__id__'
 
 def _sanitize_colnames(data):
     """Sanitize the colnames to avoid invalid characteres like '-'."""
+    def _sanitize(key):
+        non_alpha = [ch for ch in key if not ch.isalnum()]
+        for i in non_alpha:
+            key = key.replace(i, '_')
+        return key
+
     if isinstance(data, dict):
         d = data
         colnames = _sanitize_colnames(list(data.keys()))
         return dict(zip(colnames, d.values()))
-    return [c.replace('-', '_').replace(' ', '_').lower() for c in data]
+    elif isinstance(data, str):
+        return _sanitize(data)
+    elif not isinstance(data, (list, tuple, np.ndarray)):
+        raise TypeError(f'{type(data)} is not supported.')
+
+    return [_sanitize(i) for i in data]
 
 
 def _fix_row_index(row, length):
@@ -142,10 +153,7 @@ class Database:
 
     def values(self, table=None):
         """Get the values of the current table."""
-        comm = f"SELECT * FROM {table or self._table};"
-        vals = self.execute(comm)
-        vals = [i[1:] for i in vals if len(i) > 1]
-        return vals
+        return self.select(table=table)
 
     def add_column(self, column, dtype=None, data=None, table=None):
         """Add a column to a table."""
@@ -214,10 +222,9 @@ class Database:
             be selected. If None, all rows are selected.
         """
         if columns is None:
-            columns = '*'
-        else:
-            # only use sanitized column names
-            columns = ', '.join(_sanitize_colnames(columns))
+            columns = self.colnames(table=table)
+        # only use sanitized column names
+        columns = ', '.join(_sanitize_colnames(columns))
 
         if where is None:
             _where = '1=1'
@@ -230,8 +237,9 @@ class Database:
                     _where = f"{k}={v}"
                 else:
                     _where += f" AND {k}={v}"
-        return self.execute(f"SELECT {columns} FROM {table or self._table} "
-                            f"WHERE {_where}")
+        res = self.execute(f"SELECT {columns} FROM {table or self._table} "
+                           f"WHERE {_where}")
+        return res
 
     def __len__(self, table=None):
         """Get the number of rows in the current table."""
@@ -255,7 +263,7 @@ class Database:
         index = _fix_row_index(index, self.__len__(table=table))
         return dict(zip(self.colnames(table=table),
                         self.select(where={_ID_KEY: index+1},
-                                    table=table)[0][1:]))
+                                    table=table)[0]))
 
     def get_column(self, column, table=None):
         """Get a column from the table."""
