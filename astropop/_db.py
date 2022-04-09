@@ -139,7 +139,7 @@ class Database:
     def add_column(self, column, dtype=None, data=None, table=None):
         """Add a column to a table."""
         if data is not None and len(data) != self.__len__(table) and \
-            self.__len__(table) != 0:
+           self.__len__(table) != 0:
             raise ValueError("data must have the same length as the table.")
 
         # adding the column to the table
@@ -324,7 +324,7 @@ class Database:
 
     def __repr__(self):
         """Get a string representation of the table."""
-        s =  f"{self.__class__.__name__} at {hex(id(self))}:"
+        s = f"{self.__class__.__name__} at {hex(id(self))}:"
         s += f" table '{self._table}' "
         s += f"({len(self.colnames())} columns x {len(self)} rows)\n"
         s += '\n'.join(self.as_table().__repr__().split('\n')[1:])
