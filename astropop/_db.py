@@ -589,8 +589,7 @@ class SQLDatabase:
             cols = set(self.column_names(table))
             for k in data.keys():
                 if k not in cols:
-                    self.add_column(k, np.array([data[k]]).dtype,
-                                    table=table)
+                    self.add_column(table, k, np.array([data[k]]).dtype)
 
         comm_dict = _row_dict(data, self.column_names(table))
         # create the sql command and add the row
