@@ -173,9 +173,9 @@ class SQLTable:
         """Add a column to the table."""
         self._db.add_column(self._name, name, dtype=dtype, data=data)
 
-    def add_row(self, data):
+    def add_row(self, data, add_columns=False):
         """Add a row to the table."""
-        self._db.add_row(self._name, data)
+        self._db.add_row(self._name, data, add_columns=add_columns)
 
     def get_column(self, column):
         """Get a given column from the table."""
@@ -534,6 +534,7 @@ class SQLDatabase:
         if dtype is not None and data is not None:
             raise ValueError('cannot specify both dtype and data.')
         if dtype is not None:
+            dtype = np.dtype(dtype)
             comm += ",\n"
             for i, name in enumerate(dtype.names):
                 kind = dtype[i].kind
