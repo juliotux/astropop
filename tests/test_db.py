@@ -90,6 +90,127 @@ class Test_SQLDatabase_Creation_Modify:
         assert_equal(db.table_names, ['test'])
 
 
+class Test_SQLDatabase_Access:
+    def test_sql_get_table(self):
+        db = SQLDatabase(':memory:')
+        db.add_table('test')
+        db.add_column('test', 'a', data=np.arange(10, 20))
+        db.add_column('test', 'b', data=np.arange(20, 30))
+
+        assert_equal(db.get_table('test').values, list(zip(np.arange(10, 20),
+                                                           np.arange(20, 30))))
+        assert_is_instance(db.get_table('test'), SQLTable)
+
+        with pytest.raises(KeyError):
+            db.get_table('not_a_table')
+
+    def test_sql_get_column(self):
+        db = SQLDatabase(':memory:')
+        db.add_table('test')
+        db.add_column('test', 'a', data=np.arange(10, 20))
+        db.add_column('test', 'b', data=np.arange(20, 30))
+
+        assert_equal(db.get_column('test', 'a').values, np.arange(10, 20))
+        assert_equal(db.get_column('test', 'b').values, np.arange(20, 30))
+        assert_is_instance(db.get_column('test', 'a'), SQLColumn)
+        assert_is_instance(db.get_column('test', 'b'), SQLColumn)
+
+        # same access from table
+        assert_equal(db.get_table('test').get_column('a').values, np.arange(10, 20))
+        assert_equal(db.get_table('test').get_column('b').values, np.arange(20, 30))
+        assert_is_instance(db.get_table('test').get_column('a'), SQLColumn)
+        assert_is_instance(db.get_table('test').get_column('b'), SQLColumn)
+
+        with pytest.raises(KeyError):
+            db.get_column('test', 'c')
+        with pytest.raises(KeyError):
+            db.get_table('test').get_column('c')
+
+    def test_sql_get_row(self):
+        db = SQLDatabase(':memory:')
+        db.add_table('test')
+        db.add_column('test', 'a', data=np.arange(10, 20))
+        db.add_column('test', 'b', data=np.arange(20, 30))
+
+        assert_equal(db.get_row('test', 4).values, (14, 24))
+        assert_is_instance(db.get_row('test', 4), SQLRow)
+
+        assert_equal(db.get_row('test', -1).values, (19, 29))
+        assert_is_instance(db.get_row('test', -1), SQLRow)
+
+        # same access from table
+        assert_equal(db.get_table('test').get_row(4).values, [14, 24])
+        assert_is_instance(db.get_table('test').get_row(4), SQLRow)
+
+        with pytest.raises(IndexError):
+            db.get_row('test', 11)
+        with pytest.raises(IndexError):
+            db.get_row('test', -11)
+        with pytest.raises(IndexError):
+            db.get_table('test').get_row(11)
+        with pytest.raises(IndexError):
+            db.get_table('test').get_row(-11)
+
+    def test_sql_getitem(self):
+        db = SQLDatabase(':memory:')
+        db.add_table('test')
+        db.add_column('test', 'a', data=np.arange(10, 20))
+        db.add_column('test', 'b', data=np.arange(20, 30))
+
+        assert_equal(db['test']['a'].values, np.arange(10, 20))
+        assert_equal(db['test']['b'].values, np.arange(20, 30))
+        assert_is_instance(db['test']['a'], SQLColumn)
+        assert_is_instance(db['test']['b'], SQLColumn)
+
+        assert_equal(db['test'][4].values, (14, 24))
+        assert_is_instance(db['test'][4], SQLRow)
+        assert_equal(db['test'][-1].values, (19, 29))
+        assert_is_instance(db['test'][-1], SQLRow)
+
+        with pytest.raises(KeyError):
+            db['test']['c']
+        with pytest.raises(KeyError):
+            db['not_a_table']['a']
+
+        with pytest.raises(IndexError):
+            db['test'][11]
+        with pytest.raises(IndexError):
+            db['test'][-11]
+
+    def test_sql_getitem_tuple(self):
+        db = SQLDatabase(':memory:')
+        db.add_table('test')
+        db.add_column('test', 'a', data=np.arange(10, 20))
+        db.add_column('test', 'b', data=np.arange(20, 30))
+
+        assert_equal(db['test', 'a'].values, np.arange(10, 20))
+        assert_equal(db['test', 'b'].values, np.arange(20, 30))
+        assert_is_instance(db['test', 'a'], SQLColumn)
+        assert_is_instance(db['test', 'b'], SQLColumn)
+
+        assert_equal(db['test', 4].values, (14, 24))
+        assert_is_instance(db['test', 4], SQLRow)
+        assert_equal(db['test', -1].values, (19, 29))
+        assert_is_instance(db['test', -1], SQLRow)
+
+        # TODO: tests with column and row
+
+    def test_sql_getitem_table_force(self):
+        db = SQLDatabase(':memory:')
+        db.add_table('test')
+        db.add_column('test', 'a', data=np.arange(10, 20))
+        db.add_column('test', 'b', data=np.arange(20, 30))
+
+        with pytest.raises(ValueError):
+            db[1]
+        with pytest.raises(ValueError):
+            db[1, 2]
+        with pytest.raises(ValueError):
+            db[1, 2, 'test']
+        with pytest.raises(ValueError):
+            db[[1, 2], 'test']
+
+
 class Test_SQLDatabase_SQLCommands:
     def test_sql_select_where(self):
         db = SQLDatabase(':memory:')

@@ -193,16 +193,26 @@ class SQLTable:
         """Set a given row in the table."""
         self._db.set_row(self._name, row, data)
 
+    def _resolve_tuple(self, key):
+        """Resolve how tuples keys are handled."""
+        raise NotImplementedError
+
     def __getitem__(self, key):
         """Get a row or a column from the table."""
         if isinstance(key, int):
             return self.get_row(key)
-        elif isinstance(key, str):
+        if isinstance(key, str):
             return self.get_column(key)
-        elif isinstance(key, (tuple, slice, list, np.ndarray)):
+        if isinstance(key, tuple):
+            if len(key) not in (1, 2):
+                raise KeyError(f'{key}')
+            if len(key) == 1:
+                return self[key[0]]
+            col, row = self._resolve_tuple(key)
+            return self[col][row]
+        if isinstance(key, (slice, list, np.ndarray)):
             raise NotImplementedError('TODO')
-        else:
-            raise KeyError(f'{key}')
+        raise KeyError(f'{key}')
 
     def __setitem__(self, key, value):
         """Set a row or a column in the table."""
@@ -210,6 +220,13 @@ class SQLTable:
             self.set_row(key, value)
         elif isinstance(key, str):
             self.set_column(key, value)
+        elif isinstance(key, tuple):
+            if len(key) not in (1, 2):
+                raise KeyError(f'{key}')
+            if len(key) == 1:
+                self[key[0]] = value
+            col, row = self._resolve_tuple(key)
+            self[col][row] = value
         elif isinstance(key, (tuple, slice, list, np.ndarray)):
             raise NotImplementedError('TODO')
         else:
@@ -335,7 +352,7 @@ class SQLRow:
     @property
     def values(self):
         """Get the values of the current row."""
-        return self._db.select(self._table)[self._row]
+        return self._db.select(self._table)[self.index]
 
     @property
     def index(self):
@@ -364,7 +381,7 @@ class SQLRow:
         """Set a column in the row."""
         if key not in self.column_names:
             raise KeyError(f'{key}')
-        self._db.set_item(self._table, key, self._row, value)
+        self._db.set_item(self._table, key, self.index, value)
 
     def __iter__(self):
         """Iterate over the row."""
@@ -506,7 +523,7 @@ class SQLDatabase:
     def _check_table(self, table):
         """Check if the table exists in the database."""
         if table not in self.table_names:
-            raise ValueError(f'Table "{table}" does not exist.')
+            raise KeyError(f'Table "{table}" does not exist.')
 
     def add_table(self, table, dtype=None, data=None):
         """Create a table in database."""
@@ -601,8 +618,7 @@ class SQLDatabase:
     def get_row(self, table, index):
         """Get a row from the table."""
         self._check_table(table)
-        if index >= self.count(table):
-            raise IndexError('index out of range.')
+        index = _fix_row_index(index, len(self[table]))
         return SQLRow(self, table, index)
 
     def get_column(self, table, column):
@@ -664,15 +680,14 @@ class SQLDatabase:
         """Get a items from the table."""
         if isinstance(item, str):
             return self.get_table(item)
-        elif isinstance(item, tuple):
+        if isinstance(item, tuple):
             if not isinstance(item[0], str):
                 raise ValueError('first item must be the table name.')
             return self.get_table(item[0])[item[1:]]
-        else:
-            raise ValueError('items must be a string for table names, '
-                             'or a tuple in the formats. '
-                             'db[table, row], db[table, column] or '
-                             'db[table, column, row].')
+        raise ValueError('items must be a string for table names, '
+                         'or a tuple in the formats. '
+                         'db[table, row], db[table, column] or '
+                         'db[table, column, row].')
 
     def __repr__(self):
         """Get a string representation of the table."""
