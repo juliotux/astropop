@@ -539,7 +539,7 @@ class SQLDatabase:
 
         if data is not None:
             for r in rows:
-                self.add_row(table, r)
+                self.add_row(table, r, add_columns=True)
 
     def add_column(self, table, column, dtype=None, data=None):
         """Add a column to a table."""
