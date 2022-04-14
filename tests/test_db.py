@@ -112,6 +112,17 @@ class Test_SQLDatabase_Creation_Modify:
         assert_equal(len(db), 1)
         assert_equal(db.table_names, ['test'])
 
+    def test_sql_add_table_from_data_dict(self):
+        d = {'a': np.arange(10, 20), 'b': np.arange(20, 30)}
+        db = SQLDatabase(':memory:')
+        db.add_table('test', data=d)
+
+        assert_equal(db.get_column('test', 'a').values, np.arange(10, 20))
+        assert_equal(db.get_column('test', 'b').values, np.arange(20, 30))
+        assert_equal(db.column_names('test'), ['a', 'b'])
+        assert_equal(len(db), 1)
+        assert_equal(db.table_names, ['test'])
+
     def test_sql_add_table_from_data_ndarray_untyped(self):
         # Untyped ndarray should fail in get column names
         data = np.array([(1, 2.0), (3, 4.0), (5, 6.0), (7, 8.0)])
