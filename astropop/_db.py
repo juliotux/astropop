@@ -21,15 +21,6 @@ np_to_sql = {
 _ID_KEY = '__id__'
 
 
-# TODO: redesign:
-# - db[table, column, row], db[table, column], db[table, row] only
-#   - works for getting and setting.
-# - table as the first argument of all functions.
-# - decorator to check if table exists.
-# - only unitialized db, without tables.
-# - add_table as a public function.
-
-
 def _sanitize_colnames(data):
     """Sanitize the colnames to avoid invalid characteres like '-'."""
     def _sanitize(key):
