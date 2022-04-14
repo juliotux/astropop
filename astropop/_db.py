@@ -289,8 +289,7 @@ class SQLColumn:
         """Get a row from the column."""
         if isinstance(key, (int, tuple, slice, list, np.ndarray)):
             return self.values[key]
-        else:
-            raise KeyError(f'{key}')
+        raise KeyError(f'{key}')
 
     def __setitem__(self, key, value):
         """Set a row in the column."""
