@@ -524,13 +524,15 @@ class SQLDatabase:
 
     def add_table(self, table, dtype=None, data=None):
         """Create a table in database."""
-        # TODO: handle data and dtype
         logger.debug('Initializing "%s" table.', table)
         if table in self.table_names:
             raise ValueError('table {table} already exists.')
 
         comm = f"CREATE TABLE '{table}'"
         comm += f" (\n{_ID_KEY} INTEGER PRIMARY KEY AUTOINCREMENT"
+
+        if dtype is not None and data is not None:
+            raise ValueError('cannot specify both dtype and data.')
         if dtype is not None:
             comm += ",\n"
             for i, name in enumerate(dtype.names):
@@ -539,8 +541,15 @@ class SQLDatabase:
                 if i != len(dtype) - 1:
                     comm += ",\n"
         comm += "\n);"
+        if data is not None:
+            rows = list(_import_from_data(data))
 
         self.execute(comm)
+
+        if data is not None:
+            for r in rows:
+                self.add_row(table, r)
+
 
     def add_column(self, table, column, dtype=None, data=None):
         """Add a column to a table."""
@@ -597,15 +606,6 @@ class SQLDatabase:
         comm += f"{', '.join(comm_dict[i] for i in cols)});"
         self.execute(comm)
 
-    def __len__(self):
-        """Get the number of rows in the current table."""
-        return len(self.table_names)
-
-    def __del__(self):
-        """Delete the class, closing the db connection."""
-        # ensure connection is closed.
-        self._con.close()
-
     def get_table(self, table):
         """Get a table from the database."""
         self._check_table(table)
@@ -639,10 +639,7 @@ class SQLDatabase:
         comm_dict = _row_dict(data, colnames)
 
         comm = f"UPDATE {table} SET "
-        for i, name in enumerate(colnames):
-            comm += f"{name}={comm_dict[name]}"
-            if i != len(colnames) - 1:
-                comm += ", "
+        comm += f"{', '.join(f'{i}={comm_dict[i]}' for i in colnames)} "
         comm += f" WHERE {_ID_KEY}={row+1};"
         self.execute(comm)
 
@@ -658,11 +655,16 @@ class SQLDatabase:
 
         col = _sanitize_colnames([column])[0]
         for i, d in enumerate(data):
-            if isinstance(d, str):
-                d = f"'{d}'"
-            comm = f"UPDATE {table} SET {col} = {d} "
-            comm += f"WHERE {_ID_KEY} = {i+1};"
-            self.execute(comm)
+            self.set_item(table, col, i, d)
+
+    def __len__(self):
+        """Get the number of rows in the current table."""
+        return len(self.table_names)
+
+    def __del__(self):
+        """Delete the class, closing the db connection."""
+        # ensure connection is closed.
+        self._con.close()
 
     def __setitem__(self, item, value):
         """Set a row in the table."""
@@ -670,7 +672,9 @@ class SQLDatabase:
             raise ValueError('item must be a in the formats '
                              'db[table, row], db[table, column] or '
                              'db[table, column, row].')
-        raise NotImplementedError('TODO')
+        if not isinstance(item[0], str):
+            raise ValueError('first item must be the table name.')
+        self.get_table(item[0])[item[1:]] = value
 
     def __getitem__(self, item):
         """Get a items from the table."""

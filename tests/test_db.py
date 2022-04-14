@@ -89,6 +89,47 @@ class Test_SQLDatabase_Creation_Modify:
         assert_equal(len(db), 1)
         assert_equal(db.table_names, ['test'])
 
+    def test_sql_add_table_from_data_table(self):
+        db = SQLDatabase(':memory:')
+        d = Table(names=['a', 'b'], data=[np.arange(10, 20), np.arange(20, 30)])
+        db.add_table('test', data=d)
+
+        assert_equal(db.get_column('test', 'a').values, np.arange(10, 20))
+        assert_equal(db.get_column('test', 'b').values, np.arange(20, 30))
+        assert_equal(db.column_names('test'), ['a', 'b'])
+        assert_equal(len(db), 1)
+        assert_equal(db.table_names, ['test'])
+
+    def test_sql_add_table_from_data_ndarray(self):
+        dtype = [('a', 'i4'), ('b', 'f8')]
+        data = np.array([(1, 2.0), (3, 4.0), (5, 6.0), (7, 8.0)], dtype=dtype)
+        db = SQLDatabase(':memory:')
+        db.add_table('test', data=data)
+
+        assert_equal(db.get_column('test', 'a').values, [1, 3, 5, 7])
+        assert_equal(db.get_column('test', 'b').values, [2.0, 4.0, 6.0, 8.0])
+        assert_equal(db.column_names('test'), ['a', 'b'])
+        assert_equal(len(db), 1)
+        assert_equal(db.table_names, ['test'])
+
+    def test_sql_add_table_from_data_ndarray_untyped(self):
+        # Untyped ndarray should fail in get column names
+        data = np.array([(1, 2.0), (3, 4.0), (5, 6.0), (7, 8.0)])
+        db = SQLDatabase(':memory:')
+        with pytest.raises(TypeError):
+            db.add_table('test', data=data)
+
+    def test_sql_add_table_from_data_invalid(self):
+        db = SQLDatabase(':memory:')
+        with assert_raises(TypeError):
+            db.add_table('test', data=[1, 2, 3])
+        with assert_raises(TypeError):
+            db.add_table('test', data=1)
+        with assert_raises(TypeError):
+            db.add_table('test', data=1.0)
+        with assert_raises(TypeError):
+            db.add_table('test', data='test')
+
 
 class Test_SQLDatabase_Access:
     def test_sql_get_table(self):
