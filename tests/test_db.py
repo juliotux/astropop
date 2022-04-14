@@ -437,12 +437,487 @@ class Test_SQLDatabase_SQLCommands:
 
 
 class Test_SQLRow:
-    pass
+    @property
+    def db(self):
+        db = SQLDatabase(':memory:')
+        db.add_table('test')
+        db.add_column('test', 'a', data=np.arange(10, 20))
+        db.add_column('test', 'b', data=np.arange(20, 30))
+        return db
+
+    def test_row_basic_properties(self):
+        db = self.db
+        row = db['test'][0]
+        assert_is_instance(row, SQLRow)
+        assert_equal(row.table, 'test')
+        assert_equal(row.index, 0)
+        assert_equal(row.column_names, ['a', 'b'])
+        assert_equal(row.keys, ['a', 'b'])
+        assert_equal(row.values, [10, 20])
+        assert_equal(row.as_dict(), {'a': 10, 'b': 20})
+
+    def test_row_iter(self):
+        db = self.db
+        row = db['test'][0]
+        assert_is_instance(row, SQLRow)
+
+        v = 10
+        for i in row:
+            assert_equal(i, v)
+            v += 10
+
+    def test_row_getitem(self):
+        db = self.db
+        row = db['test'][0]
+        assert_is_instance(row, SQLRow)
+
+        assert_equal(row['a'], 10)
+        assert_equal(row['b'], 20)
+
+        with pytest.raises(KeyError):
+            row['c']
+
+        assert_equal(row[0], 10)
+        assert_equal(row[1], 20)
+        assert_equal(row[-1], 20)
+        assert_equal(row[-2], 10)
+
+        with pytest.raises(IndexError):
+            row[2]
+        with pytest.raises(IndexError):
+            row[-3]
+
+    def test_row_setitem(self):
+        db = self.db
+        row = db['test'][0]
+        assert_is_instance(row, SQLRow)
+
+        row['a'] = 1
+        row['b'] = 1
+        assert_equal(db['test']['a'], [1, 11, 12, 13, 14,
+                                       15, 16, 17, 18, 19])
+        assert_equal(db['test']['b'], [1, 21, 22, 23, 24,
+                                       25, 26, 27, 28, 29])
+
+        with pytest.raises(KeyError):
+            row['c'] = 1
+        with pytest.raises(KeyError):
+            row[2] = 1
+        with pytest.raises(KeyError):
+            row[-3] = 1
+
+    def test_row_contains(self):
+        db = self.db
+        row = db['test'][0]
+        assert_is_instance(row, SQLRow)
+
+        assert_true(10 in row)
+        assert_true(20 in row)
+        assert_false('c' in row)
+        assert_false('a' in row)
+        assert_false('b' in row)
+
+    def test_row_repr(self):
+        db = self.db
+        row = db['test'][0]
+        assert_is_instance(row, SQLRow)
+        assert_equal(repr(row), "SQLRow 0 in table 'test' {'a': 10, 'b': 20}")
 
 
 class Test_SQLTable:
-    pass
+    @property
+    def db(self):
+        db = SQLDatabase(':memory:')
+        db.add_table('test')
+        db.add_column('test', 'a', data=np.arange(10, 20))
+        db.add_column('test', 'b', data=np.arange(20, 30))
+        return db
+
+    def test_table_basic_properties(self):
+        db = self.db
+        table = db['test']
+        assert_equal(table.name, 'test')
+        assert_equal(table.db, db.db)
+        assert_equal(table.column_names, ['a', 'b'])
+        assert_equal(table.values, list(zip(np.arange(10, 20),
+                                            np.arange(20, 30))))
+
+    def test_table_select(self):
+        db = self.db
+        table = db['test']
+
+        a = table.select()
+        assert_equal(a, list(zip(np.arange(10, 20),
+                                 np.arange(20, 30))))
+
+        a = table.select(order='a')
+        assert_equal(a, list(zip(np.arange(10, 20),
+                                 np.arange(20, 30))))
+
+        a = table.select(order='a', limit=2)
+        assert_equal(a, [(10, 20), (11, 21)])
+
+        a = table.select(order='a', limit=2, offset=2)
+        assert_equal(a, [(12, 22), (13, 23)])
+
+        a = table.select(order='a', where='a < 15')
+        assert_equal(a, [(10, 20), (11, 21), (12, 22), (13, 23), (14, 24)])
+
+        a = table.select(order='a', where='a < 15', limit=3)
+        assert_equal(a, [(10, 20), (11, 21), (12, 22)])
+
+        a = table.select(order='a', where='a < 15', limit=3, offset=2)
+        assert_equal(a, [(12, 22), (13, 23), (14, 24)])
+
+        a = table.select(columns=['a'], where='a < 15')
+        assert_equal(a, [(10,), (11,), (12,), (13,), (14,)])
+
+    def test_table_as_table(self):
+        db = self.db
+        table = db['test']
+
+        a = table.as_table()
+        assert_is_instance(a, Table)
+        assert_equal(a.colnames, ['a', 'b'])
+        assert_equal(a, Table(names=['a', 'b'], data=[np.arange(10, 20),
+                                                      np.arange(20, 30)]))
+
+    def test_table_len(self):
+        db = self.db
+        table = db['test']
+        assert_equal(len(table), 10)
+
+    def test_table_iter(self):
+        db = self.db
+        table = db['test']
+
+        v = 10
+        for i in table:
+            assert_equal(i, (v, v + 10))
+            v += 1
+
+    def test_table_contains(self):
+        db = self.db
+        table = db['test']
+
+        assert_false(10 in table)
+        assert_false(20 in table)
+        assert_false('c' in table)
+        assert_true('a' in table)
+        assert_true('b' in table)
+
+    def test_table_repr(self):
+        db = self.db
+        table = db['test']
+        i = hex(id(table))
+
+        expect = "SQLTable 'test' in database ':memory:':"
+        expect += f"(2 columns x 10 rows)\n"
+        expect += '\n'.join(table.as_table().__repr__().split('\n')[1:])
+        assert_is_instance(table, SQLTable)
+        assert_equal(repr(table), expect)
+
+    def test_table_add_column(self):
+        db = self.db
+        table = db['test']
+
+        table.add_column('c', data=np.arange(10, 20))
+        assert_equal(table.column_names, ['a', 'b', 'c'])
+        assert_equal(table.values, list(zip(np.arange(10, 20),
+                                            np.arange(20, 30),
+                                            np.arange(10, 20))))
+
+        table.add_column('d', data=np.arange(20, 30))
+        assert_equal(table.column_names, ['a', 'b', 'c', 'd'])
+        assert_equal(table.values, list(zip(np.arange(10, 20),
+                                            np.arange(20, 30),
+                                            np.arange(10, 20),
+                                            np.arange(20, 30))))
+
+    def test_table_get_column(self):
+        db = self.db
+        table = db['test']
+
+        a = table.get_column('a')
+        assert_is_instance(a, SQLColumn)
+        assert_equal(a.values, np.arange(10, 20))
+
+        a = table.get_column('b')
+        assert_is_instance(a, SQLColumn)
+        assert_equal(a.values, np.arange(20, 30))
+
+    def test_table_set_column(self):
+        db = self.db
+        table = db['test']
+
+        table.set_column('a', np.arange(5, 15))
+        assert_equal(table.column_names, ['a', 'b'])
+        assert_equal(table.values, list(zip(np.arange(5, 15),
+                                            np.arange(20, 30))))
+
+    def test_table_set_column_invalid(self):
+        db = self.db
+        table = db['test']
+
+        with assert_raises(ValueError):
+            table.set_column('a', np.arange(5, 16))
+
+        with assert_raises(KeyError):
+            table.set_column('c', np.arange(5, 15))
+
+    def test_table_add_row(self):
+        db = self.db
+        table = db['test']
+
+        table.add_row({'a': -1, 'b': -1})
+        assert_equal(table.column_names, ['a', 'b'])
+        assert_equal(len(table), 11)
+        assert_equal(table[-1].values, (-1, -1))
+
+        table.add_row({'a': -2, 'c': -2}, add_columns=True)
+        assert_equal(table.column_names, ['a', 'b', 'c'])
+        assert_equal(len(table), 12)
+        assert_equal(table[-1].values, (-2, None, -2))
+
+        table.add_row({'a': -3, 'd': -3}, add_columns=False)
+        assert_equal(table.column_names, ['a', 'b', 'c'])
+        assert_equal(len(table), 13)
+        assert_equal(table[-1].values, (-3, None, None))
+
+        # defult add_columns must be false
+        table.add_row({'a': -4, 'b': -4, 'c': -4, 'd': -4})
+        assert_equal(table.column_names, ['a', 'b', 'c'])
+        assert_equal(len(table), 14)
+        assert_equal(table[-1].values, (-4, -4, -4))
+
+    def test_table_add_row_invalid(self):
+        db = self.db
+        table = db['test']
+
+        with assert_raises(TypeError):
+            table.add_row([1, 2, 3, 4])
+
+        with assert_raises(TypeError):
+            table.add_row(2)
+
+    def test_table_get_row(self):
+        db = self.db
+        table = db['test']
+
+        a = table.get_row(0)
+        assert_is_instance(a, SQLRow)
+        assert_equal(a.values, (10, 20))
+
+        a = table.get_row(1)
+        assert_is_instance(a, SQLRow)
+        assert_equal(a.values, (11, 21))
+
+    def test_table_set_row(self):
+        db = self.db
+        table = db['test']
+
+        table.set_row(0, {'a': 5, 'b': 15})
+        expect = np.transpose([np.arange(10, 20), np.arange(20, 30)])
+        expect[0] = [5, 15]
+        assert_equal(table.column_names, ['a', 'b'])
+        assert_equal(table.values, expect)
+
+        expect[-1] = [-1, -1]
+        table.set_row(-1, {'a': -1, 'b': -1})
+        assert_equal(table.column_names, ['a', 'b'])
+        assert_equal(table.values, expect)
+
+    def test_table_set_row_invalid(self):
+        db = self.db
+        table = db['test']
+
+        with pytest.raises(IndexError):
+            table.set_row(10, {'a': -1, 'b': -1})
+        with pytest.raises(IndexError):
+            table.set_row(-11, {'a': -1, 'b': -1})
+
+        with pytest.raises(TypeError):
+            table.set_row(0, [1, 2])
+        with pytest.raises(TypeError):
+            table.set_row(0, 'a')
+
+    def test_table_getitem_int(self):
+        db = self.db
+        table = db['test']
+        assert_is_instance(table, SQLTable)
+
+        assert_equal(table[0].values, (10, 20))
+        assert_equal(table[-1].values, (19, 29))
+
+        with pytest.raises(IndexError):
+            table[10]
+        with pytest.raises(IndexError):
+            table[-11]
+
+    @pytest.mark.skip
+    def test_table_getitem_slice(self):
+        db = self.db
+        table = db['test']
+        assert_is_instance(table, SQLTable)
+
+    def test_table_getitem_str(self):
+        db = self.db
+        table = db['test']
+        assert_is_instance(table, SQLTable)
+
+        assert_equal(table['a'].values, np.arange(10, 20))
+        assert_equal(table['b'].values, np.arange(20, 30))
+
+        with pytest.raises(KeyError):
+            table['c']
+
+    @pytest.mark.skip
+    def test_table_getitem_list(self):
+        db = self.db
+        table = db['test']
+        assert_is_instance(table, SQLTable)
+
+    def test_table_getitem_tuple(self):
+        db = self.db
+        table = db['test']
+        assert_is_instance(table, SQLTable)
+
+        assert_equal(table[('a',)].values, np.arange(10, 20))
+        assert_is_instance(table[('a',)], SQLColumn)
+        assert_equal(table[(1,)].values, (11, 21))
+        assert_is_instance(table[(1,)], SQLRow)
+
+        with pytest.raises(KeyError):
+            table[('c')]
+        with pytest.raises(IndexError):
+            table[(11,)]
+
+        # TODO: continue with combined tuples
 
 
 class Test_SQLColumn:
-    pass
+    @property
+    def db(self):
+        db = SQLDatabase(':memory:')
+        db.add_table('test')
+        db.add_column('test', 'a', data=np.arange(10, 20))
+        db.add_column('test', 'b', data=np.arange(20, 30))
+        return db
+
+    def test_column_basic_properties(self):
+        db = self.db
+        table = db['test']
+        column = table['a']
+
+        assert_equal(column.name, 'a')
+        assert_equal(column.table, 'test')
+        assert_equal(column.values, np.arange(10, 20))
+
+    def test_column_len(self):
+        db = self.db
+        table = db['test']
+        column = table['a']
+        assert_equal(len(column), 10)
+
+    def test_column_repr(self):
+        db = self.db
+        table = db['test']
+        column = table['a']
+        assert_equal(repr(column), "SQLColumn a in table 'test' (10 rows)")
+
+    def test_column_contains(self):
+        db = self.db
+        table = db['test']
+        column = table['a']
+        assert_true(15 in column)
+        assert_false(25 in column)
+
+    def test_column_iter(self):
+        db = self.db
+        table = db['test']
+        column = table['a']
+
+        v = 10
+        for i in column:
+            assert_equal(i, v)
+            v += 1
+
+    def test_column_getitem_int(self):
+        db = self.db
+        table = db['test']
+        column = table['a']
+
+        assert_equal(column[0], 10)
+        assert_equal(column[-1], 19)
+
+        with pytest.raises(IndexError):
+            column[10]
+        with pytest.raises(IndexError):
+            column[-11]
+
+    def test_column_getitem_list(self):
+        db = self.db
+        table = db['test']
+        column = table['a']
+
+        assert_equal(column[[0, 1]], [10, 11])
+        assert_equal(column[[-2, -1]], [18, 19])
+
+        with pytest.raises(IndexError):
+            column[[10, 11]]
+        with pytest.raises(IndexError):
+            column[[-11, -12]]
+
+    def test_column_getitem_slice(self):
+        db = self.db
+        table = db['test']
+        column = table['a']
+
+        assert_equal(column[:2], [10, 11])
+        assert_equal(column[-2:], [18, 19])
+        assert_equal(column[2:5], [12, 13, 14])
+        assert_equal(column[::-1], [19, 18, 17, 16, 15, 14, 13, 12, 11, 10])
+
+    def test_column_getitem_tuple(self):
+        db = self.db
+        table = db['test']
+        column = table['a']
+        with pytest.raises(IndexError):
+            column[('a',)]
+        with pytest.raises(IndexError):
+            column[(1,)]
+        with pytest.raises(IndexError):
+            column[1, 2]
+
+    def test_column_setitem_int(self):
+        db = self.db
+        table = db['test']
+        column = table['a']
+
+        column[0] = 5
+        assert_equal(db.get_row('test', 0).values, [5, 20])
+
+        column[-1] = -1
+        assert_equal(db.get_row('test', -1).values, [-1, 29])
+
+    def test_column_setitem_list_slice(self):
+        db = self.db
+        table = db['test']
+        column = table['a']
+
+        column[:] = -1
+        assert_equal(db.get_column('test', 'a').values, [-1]*10)
+        column[[2, 4]] = 2
+        assert_equal(db.get_column('test', 'a').values, [-1, -1, 2, -1, 2,
+                                                         -1, -1, -1, -1, -1])
+    def test_column_setitem_invalid(self):
+        db = self.db
+        table = db['test']
+        column = table['a']
+
+        with pytest.raises(IndexError):
+            column[10] = 10
+        with pytest.raises(IndexError):
+            column[-11] = 10
+        with pytest.raises(IndexError):
+            column[2, 4] = [10, 11]

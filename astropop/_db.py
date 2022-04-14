@@ -45,13 +45,15 @@ def _fix_row_index(row, length):
     """Fix the row number to be a valid index."""
     if row < 0:
         row += length
-    if row > length or row < 0:
+    if row >= length or row < 0:
         raise IndexError('Row index out of range.')
     return row
 
 
 def _row_dict(data, cols):
     """Convert a dict to match the colnames fo a database."""
+    if not isinstance(data, dict):
+        raise TypeError(f'{type(data)} is not supported.')
     data = _sanitize_colnames(data)
     comm_dict = {_ID_KEY: "NULL"}
     for name in cols:
@@ -149,9 +151,9 @@ class SQLTable:
         """Get the values of the current table."""
         return self.select()
 
-    def select(self, columns=None, where=None, order=None, limit=None):
+    def select(self, *args, **kwargs):
         """Select rows from the table."""
-        return self._db.select(self._name, columns, where, order, limit)
+        return self._db.select(self._name, *args, **kwargs)
 
     def as_table(self):
         """Return the current table as an `~astropy.table.Table` object."""
@@ -229,13 +231,17 @@ class SQLTable:
 
     def __contains__(self, item):
         """Check if a given column is in the table."""
-        if isinstance(item, str):
-            return item in self.column_names
-        raise TypeError(f'{item} is not supported.')
+        return item in self.column_names
+
+    def __iter__(self):
+        """Iterate over the rows of the table."""
+        for i in self.select():
+            yield i
 
     def __repr__(self):
         """Get a string representation of the table."""
-        s = f"{self.__class__.__name__} '{self.name}' at {hex(id(self))}:"
+        s = f"{self.__class__.__name__} '{self.name}'"
+        s += f" in database '{self.db}':"
         s += f"({len(self.column_names)} columns x {len(self)} rows)\n"
         s += '\n'.join(self.as_table().__repr__().split('\n')[1:])
         return s
@@ -278,16 +284,23 @@ class SQLColumn:
 
     def __getitem__(self, key):
         """Get a row from the column."""
-        if isinstance(key, (int, tuple, slice, list, np.ndarray)):
+        if isinstance(key, (int, slice)):
             return self.values[key]
-        raise KeyError(f'{key}')
+        if isinstance(key, (list, np.ndarray)):
+            v = self.values
+            return [v[i] for i in key]
+        raise IndexError(f'{key}')
 
     def __setitem__(self, key, value):
         """Set a row in the column."""
         if isinstance(key, int):
             self._db.set_item(self._table, self._name, key, value)
+        elif isinstance(key, (slice, list, np.ndarray)):
+            v = np.array(self.values)
+            v[key] = value
+            self._db.set_column(self._table, self._name, v)
         else:
-            raise KeyError(f'{key}')
+            raise IndexError(f'{key}')
 
     def __len__(self):
         """Get the number of rows in the column."""
@@ -305,7 +318,7 @@ class SQLColumn:
     def __repr__(self):
         """Get a string representation of the column."""
         s = f"{self.__class__.__name__} {self._name} in table '{self._table}'"
-        s += f" ({len(self)} rows):"
+        s += f" ({len(self)} rows)"
         return s
 
 
@@ -353,14 +366,22 @@ class SQLRow:
         """Get the keys of the current row."""
         return self.column_names
 
+    @property
+    def items(self):
+        """Get the items of the current row."""
+        return zip(self.column_names, self.values)
+
     def as_dict(self):
         """Get the row as a dict."""
-        return dict(zip(self.column_names, self.values))
+        return dict(self.items)
 
     def __getitem__(self, key):
         """Get a column from the row."""
         if isinstance(key, str):
-            return self.values[self.column_names.index(key)]
+            try:
+                return self.values[self.column_names.index(key)]
+            except ValueError:
+                raise KeyError(f'{key}')
         if isinstance(key, int):
             return self.values[key]
         raise KeyError(f'{key}')
@@ -382,7 +403,7 @@ class SQLRow:
 
     def __repr__(self):
         """Get a string representation of the row."""
-        s = f"{self.__class__.__name__} {self._row} in table '{self._table}'"
+        s = f"{self.__class__.__name__} {self._row} in table '{self._table}' "
         s += self.as_dict().__repr__()
         return s
 
@@ -638,6 +659,8 @@ class SQLDatabase:
     def set_column(self, table, column, data):
         """Set a column in the table."""
         tablen = self.count(table)
+        if column not in self.column_names(table):
+            raise KeyError(f"column {column} does not exist.")
         if len(data) != tablen and tablen != 0:
             raise ValueError("data must have the same length as the table.")
 
