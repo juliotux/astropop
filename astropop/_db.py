@@ -42,9 +42,9 @@ def _sanitize_colnames(data):
         d = data
         colnames = _sanitize_colnames(list(data.keys()))
         return dict(zip(colnames, d.values()))
-    elif isinstance(data, str):
+    if isinstance(data, str):
         return _sanitize(data)
-    elif not isinstance(data, (list, tuple, np.ndarray)):
+    if not isinstance(data, (list, tuple, np.ndarray)):
         raise TypeError(f'{type(data)} is not supported.')
 
     return [_sanitize(i) for i in data]
@@ -240,8 +240,7 @@ class SQLTable:
         """Check if a given column is in the table."""
         if isinstance(item, str):
             return item in self.column_names
-        else:
-            raise TypeError(f'{item} is not supported.')
+        raise TypeError(f'{item} is not supported.')
 
     def __repr__(self):
         """Get a string representation of the table."""
@@ -372,10 +371,9 @@ class SQLRow:
         """Get a column from the row."""
         if isinstance(key, str):
             return self.values[self.column_names.index(key)]
-        elif isinstance(key, int):
+        if isinstance(key, int):
             return self.values[key]
-        else:
-            raise KeyError(f'{key}')
+        raise KeyError(f'{key}')
 
     def __setitem__(self, key, value):
         """Set a column in the row."""
