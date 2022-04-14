@@ -130,6 +130,16 @@ class Test_SQLDatabase_Creation_Modify:
         with assert_raises(TypeError):
             db.add_table('test', data='test')
 
+    def test_sql_add_table_dtype(self):
+        db = SQLDatabase(':memory:')
+        db.add_table('test', dtype=[('a', 'i4'), ('b', 'f8')])
+
+        assert_equal(db.get_column('test', 'a').values, [])
+        assert_equal(db.get_column('test', 'b').values, [])
+        assert_equal(db.column_names('test'), ['a', 'b'])
+        assert_equal(len(db), 1)
+        assert_equal(db.table_names, ['test'])
+
     def test_sql_add_row(self):
         db = SQLDatabase(':memory:')
         db.add_table('test')
@@ -160,6 +170,36 @@ class Test_SQLDatabase_Creation_Modify:
         db.add_row('test', dict(a=1, b=2))
         db.add_row('test', dict(a=3, c=4), add_columns=False)
         db.add_row('test', dict(a=5, d=6), add_columns=True)
+
+        assert_equal(db.get_column('test', 'a').values, [1, 3, 5])
+        assert_equal(db.get_column('test', 'b').values, [2, None, None])
+        assert_equal(len(db), 1)
+        assert_equal(db.table_names, ['test'])
+        assert_equal(db.column_names('test'), ['a', 'b', 'd'])
+
+    def test_sqltable_add_column(self):
+        db = SQLDatabase(':memory:')
+        db.add_table('test')
+        db['test'].add_column('a')
+        db['test'].add_column('b', dtype=np.int32)
+        db['test'].add_column('c', data=[1, 2, 3])
+
+        assert_equal(db.get_column('test', 'a').values, [None, None, None])
+        assert_equal(db.get_column('test', 'b').values, [None, None, None])
+        assert_equal(db.get_column('test', 'c').values, [1, 2, 3])
+        assert_equal(len(db), 1)
+        assert_equal(db.table_names, ['test'])
+        assert_equal(db.column_names('test'), ['a', 'b', 'c'])
+        assert_equal(len(db['test']), 3)
+
+    def test_sqltable_add_row_add_columns(self):
+        db = SQLDatabase(':memory:')
+        db.add_table('test')
+        db.add_column('test', 'a')
+        db.add_column('test', 'b')
+        db['test'].add_row(dict(a=1, b=2))
+        db['test'].add_row(dict(a=3, c=4), add_columns=False)
+        db['test'].add_row(dict(a=5, d=6), add_columns=True)
 
         assert_equal(db.get_column('test', 'a').values, [1, 3, 5])
         assert_equal(db.get_column('test', 'b').values, [2, None, None])
