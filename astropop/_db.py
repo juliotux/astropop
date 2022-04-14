@@ -472,7 +472,6 @@ class SQLDatabase:
         comm = f"SELECT {columns} "
         comm += f"FROM {table} "
 
-
         where = _parse_where(where)
         if where is not None:
             comm += f"WHERE {where} "
