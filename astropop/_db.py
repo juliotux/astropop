@@ -550,7 +550,6 @@ class SQLDatabase:
             for r in rows:
                 self.add_row(table, r)
 
-
     def add_column(self, table, column, dtype=None, data=None):
         """Add a column to a table."""
         self._check_table(table)
@@ -589,6 +588,8 @@ class SQLDatabase:
         add_columns : bool (optional)
             If True, add missing columns to the table.
         """
+        if not isinstance(data, dict):
+            raise TypeError('data must be a dict.')
         self._check_table(table)
         data = _sanitize_colnames(data)
 
