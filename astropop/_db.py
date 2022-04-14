@@ -296,8 +296,7 @@ class SQLColumn:
         """Set a row in the column."""
         if isinstance(key, int):
             self._db.set_item(self._table, self._name, key, value)
-        else:
-            raise KeyError(f'{key}')
+        raise KeyError(f'{key}')
 
     def __len__(self):
         """Get the number of rows in the column."""
