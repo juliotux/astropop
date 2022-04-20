@@ -693,8 +693,8 @@ class SQLDatabase:
         """Set a row in the table."""
         if not isinstance(item, tuple):
             raise KeyError('item must be a in the formats '
-                             'db[table, row], db[table, column] or '
-                             'db[table, column, row].')
+                           'db[table, row], db[table, column] or '
+                           'db[table, column, row].')
         if not isinstance(item[0], str):
             raise KeyError('first item must be the table name.')
         self.get_table(item[0])[item[1:]] = value
