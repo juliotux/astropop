@@ -714,9 +714,9 @@ class SQLDatabase:
 
     def __repr__(self):
         """Get a string representation of the table."""
-        s = f"{self.__class__.__name__} at {hex(id(self))}:"
+        s = f"{self.__class__.__name__} '{self.db}' at {hex(id(self))}:"
         if len(self) == 0:
-            s += '\tEmpty table.'
+            s += '\n\tEmpty database.'
         for i in self.table_names:
             s += f"\n\t{i}: {len(self.column_names(i))} columns"
             s += f" {len(self[i])} rows"

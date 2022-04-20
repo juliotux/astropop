@@ -354,7 +354,7 @@ class Test_SQLDatabase_Access:
             db[[1, 2], 'test']
 
 
-class Test_SQLDatabase_SQLCommands:
+class Test_SQLDatabase_PropsComms:
     def test_sql_select_where(self):
         db = SQLDatabase(':memory:')
         db.add_table('test')
@@ -448,6 +448,53 @@ class Test_SQLDatabase_SQLCommands:
         assert_equal(db.count('test', where={'a': 15, 'b': 22}), 0)
         assert_equal(db.count('test', where='a > 15'), 4)
         assert_equal(db.count('test', where=['a > 15', 'b < 27']), 1)
+
+    def test_sql_prop_db(self, tmp_path):
+        db = SQLDatabase(':memory:')
+        assert_equal(db.db, ':memory:')
+
+        db = SQLDatabase(str(tmp_path / 'test.db'))
+        assert_equal(db.db, str(tmp_path / 'test.db'))
+
+    def test_sql_prop_table_names(self):
+        db = SQLDatabase(':memory:')
+        db.add_table('test')
+        db.add_table('test2')
+        assert_equal(db.table_names, ['test', 'test2'])
+
+    def test_sql_prop_column_names(self):
+        db = SQLDatabase(':memory:')
+        db.add_table('test')
+        db.add_column('test', 'a', data=np.arange(10, 20))
+        db.add_column('test', 'b', data=np.arange(20, 30))
+        assert_equal(db.column_names('test'), ['a', 'b'])
+
+    def test_sql_repr(self):
+        db = SQLDatabase(':memory:')
+        db.add_table('test')
+        db.add_column('test', 'a', data=np.arange(10, 20))
+        db.add_column('test', 'b', data=np.arange(20, 30))
+        db.add_table('test2')
+        db.add_column('test2', 'a', data=np.arange(10, 20))
+        db.add_column('test2', 'b', data=np.arange(20, 30))
+
+        expect = f"SQLDatabase ':memory:' at {hex(id(db))}:\n"
+        expect += "\ttest: 2 columns 10 rows\n"
+        expect += "\ttest2: 2 columns 10 rows"
+        assert_equal(repr(db), expect)
+
+        db = SQLDatabase(':memory:')
+        expect = f"SQLDatabase ':memory:' at {hex(id(db))}:\n"
+        expect += "\tEmpty database."
+        assert_equal(repr(db), expect)
+
+    def test_sql_len(self):
+        db = SQLDatabase(':memory:')
+        db.add_table('test')
+        db.add_table('test2')
+        db.add_table('test3')
+
+        assert_equal(len(db), 3)
 
 
 class Test_SQLRow:
@@ -944,6 +991,7 @@ class Test_SQLTable:
             table[2:5] = 2
         with pytest.raises(KeyError):
             table[1, 2, 3] = 3
+
 
 class Test_SQLColumn:
     @property
