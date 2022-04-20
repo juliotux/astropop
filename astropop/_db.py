@@ -81,7 +81,8 @@ def _import_from_data(data):
             yield dict(zip(data.dtype.names, i))
     elif isinstance(data, dict):
         if np.any([check_iterable(i) for i in data.values()]):
-            for row in [dict(zip(data.keys(), i)) for i in zip(*data.values())]:
+            for row in [dict(zip(data.keys(), i))
+                        for i in zip(*data.values())]:
                 yield row
         else:
             yield data
@@ -188,7 +189,22 @@ class SQLTable:
 
     def _resolve_tuple(self, key):
         """Resolve how tuples keys are handled."""
-        raise NotImplementedError
+        col, row = key
+        _tuple_err = """Tuple items must be in the format table[col, row] or
+        table[row, col].
+        """
+
+        if not isinstance(col, str):
+            # Try inverting
+            col, row = row, col
+
+        if not isinstance(col, str):
+            raise KeyError(_tuple_err)
+
+        if not isinstance(row, (int, slice, list, np.ndarray)):
+            raise KeyError(_tuple_err)
+
+        return col, row
 
     def __getitem__(self, key):
         """Get a row or a column from the table."""

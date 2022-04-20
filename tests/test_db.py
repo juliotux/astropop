@@ -792,7 +792,44 @@ class Test_SQLTable:
         with pytest.raises(IndexError):
             table[(11,)]
 
-        # TODO: continue with combined tuples
+    def test_table_getitem_tuple_rowcol(self):
+        db = self.db
+        table = db['test']
+        assert_is_instance(table, SQLTable)
+
+        assert_equal(table['a', 0], 10)
+        assert_equal(table['a', 1], 11)
+        assert_equal(table['b', 0], 20)
+        assert_equal(table['b', 1], 21)
+
+        assert_equal(table[0, 'a'], 10)
+        assert_equal(table[1, 'a'], 11)
+        assert_equal(table[0, 'b'], 20)
+        assert_equal(table[1, 'b'], 21)
+
+        assert_equal(table['a', [0, 1, 2]], [10, 11, 12])
+        assert_equal(table['b', [0, 1, 2]], [20, 21, 22])
+        assert_equal(table[[0, 1, 2], 'b'], [20, 21, 22])
+        assert_equal(table[[0, 1, 2], 'a'], [10, 11, 12])
+
+        assert_equal(table['a', 2:5], [12, 13, 14])
+        assert_equal(table['b', 2:5], [22, 23, 24])
+        assert_equal(table[2:5, 'b'], [22, 23, 24])
+        assert_equal(table[2:5, 'a'], [12, 13, 14])
+
+        with pytest.raises(KeyError):
+            table['c', 0]
+        with pytest.raises(IndexError):
+            table['a', 11]
+
+        with pytest.raises(KeyError):
+            table[0, 0]
+        with pytest.raises(KeyError):
+            table['b', 'a']
+        with pytest.raises(KeyError):
+            table[0, 1, 2]
+        with pytest.raises(KeyError):
+            table[0, 'a', 'b']
 
 
 class Test_SQLColumn:
