@@ -444,7 +444,7 @@ class SQLDatabase:
         self._db = db
         self._con = sql.connect(self._db)
         self._cur = self._con.cursor()
-        self._autocommit = autocommit
+        self.autocommit = autocommit
 
     def execute(self, command):
         """Execute a SQL command in the database."""
@@ -452,7 +452,7 @@ class SQLDatabase:
                      str.replace(command, '\n', ' '))
         self._cur.execute(command)
         res = self._cur.fetchall()
-        if self._autocommit:
+        if self.autocommit:
             self.commit()
         return res
 
@@ -529,11 +529,6 @@ class SQLDatabase:
     def db(self):
         """Get the database name."""
         return str(self._db)
-
-    @property
-    def autocommit(self):
-        """Get whether the database commits after each operation."""
-        return bool(self._autocommit)
 
     @property
     def table_names(self):
