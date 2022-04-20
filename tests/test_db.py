@@ -219,6 +219,93 @@ class Test_SQLDatabase_Creation_Modify:
         assert_equal(db.column_names('test'), ['a', 'b', 'd'])
 
 
+    def test_sql_set_column(self):
+        db = SQLDatabase(':memory:')
+        db.add_table('test')
+        db.add_column('test', 'a')
+        db.add_column('test', 'b')
+        db.add_row('test', dict(a=1, b=2))
+        db.add_row('test', dict(a=3, b=4))
+        db.add_row('test', dict(a=5, b=6))
+
+        db.set_column('test', 'a', [10, 20, 30])
+        db.set_column('test', 'b', [20, 40, 60])
+
+        assert_equal(db.get_column('test', 'a').values, [10, 20, 30])
+        assert_equal(db.get_column('test', 'b').values, [20, 40, 60])
+
+        with pytest.raises(KeyError):
+            db.set_column('test', 'c', [10, 20, 30])
+        with pytest.raises(ValueError):
+            db.set_column('test', 'a', [10, 20, 30, 40])
+
+    def test_sql_set_row(self):
+        db = SQLDatabase(':memory:')
+        db.add_table('test')
+        db.add_column('test', 'a')
+        db.add_column('test', 'b')
+        db.add_row('test', dict(a=1, b=2))
+        db.add_row('test', dict(a=3, b=4))
+        db.add_row('test', dict(a=5, b=6))
+
+        db.set_row('test', 0, dict(a=10, b=20))
+        db.set_row('test', 1, dict(a=20, b=40))
+        db.set_row('test', 2, dict(a=30, b=60))
+
+        assert_equal(db.get_column('test', 'a').values, [10, 20, 30])
+        assert_equal(db.get_column('test', 'b').values, [20, 40, 60])
+
+        with pytest.raises(IndexError):
+            db.set_row('test', 3, dict(a=10, b=20))
+        with pytest.raises(IndexError):
+            db.set_row('test', -4, dict(a=10, b=20))
+
+    def test_sql_set_item(self):
+        db = SQLDatabase(':memory:')
+        db.add_table('test')
+        db.add_column('test', 'a')
+        db.add_column('test', 'b')
+        db.add_row('test', dict(a=1, b=2))
+        db.add_row('test', dict(a=3, b=4))
+        db.add_row('test', dict(a=5, b=6))
+
+        db.set_item('test', 'a', 0, 10)
+        db.set_item('test', 'b', 1, 'a')
+        assert_equal(db.get_column('test', 'a').values, [10, 3, 5])
+        assert_equal(db.get_column('test', 'b').values, [2, 'a', 6])
+
+    def test_sql_setitem_tuple_only(self):
+        db = SQLDatabase(':memory:')
+        db.add_table('test')
+        db.add_column('test', 'a', data=np.arange(10, 20))
+        db.add_column('test', 'b', data=np.arange(20, 30))
+
+        with pytest.raises(KeyError):
+            db[1] = 0
+        with pytest.raises(KeyError):
+            db['notable'] = 0
+        with pytest.raises(KeyError):
+            db[['test', 0]] = 0
+        with pytest.raises(KeyError):
+            db[1, 0] = 0
+
+    def test_sql_setitem(self):
+        db = SQLDatabase(':memory:')
+        db.add_table('test')
+        db.add_column('test', 'a', data=np.arange(10, 20))
+        db.add_column('test', 'b', data=np.arange(20, 30))
+
+        db['test', 'a'] = np.arange(50, 60)
+        db['test', 0] = {'a': 1, 'b': 2}
+        db['test', 'b', 5] = -999
+
+        expect = np.transpose([np.arange(50, 60), np.arange(20, 30)])
+        expect[0] = [1, 2]
+        expect[5, 1] = -999
+
+        assert_equal(db['test'].values, expect)
+
+
 class Test_SQLDatabase_Access:
     def test_sql_get_table(self):
         db = SQLDatabase(':memory:')
