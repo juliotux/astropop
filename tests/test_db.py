@@ -329,7 +329,14 @@ class Test_SQLDatabase_Access:
         assert_equal(db['test', -1].values, (19, 29))
         assert_is_instance(db['test', -1], SQLRow)
 
-        # TODO: tests with column and row
+        assert_equal(db['test', 'a', 4], 14)
+        assert_equal(db['test', 'b', 4], 24)
+        assert_equal(db['test', 'a', -1], 19)
+        assert_equal(db['test', 'b', -1], 29)
+        assert_equal(db['test', 4, 'a'], 14)
+        assert_equal(db['test', 4, 'b'], 24)
+        assert_equal(db['test', -1, 'a'], 19)
+        assert_equal(db['test', -1, 'b'], 29)
 
     def test_sql_getitem_table_force(self):
         db = SQLDatabase(':memory:')
