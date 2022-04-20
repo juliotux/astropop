@@ -589,6 +589,16 @@ class Test_SQLTable:
         assert_equal(a, Table(names=['a', 'b'], data=[np.arange(10, 20),
                                                       np.arange(20, 30)]))
 
+    def test_table_as_table_empty(self):
+        db = SQLDatabase(':memory:')
+        db.add_table('test')
+        table = db['test']
+
+        a = table.as_table()
+        assert_is_instance(a, Table)
+        assert_equal(a.colnames, [])
+        assert_equal(a, Table())
+
     def test_table_len(self):
         db = self.db
         table = db['test']
