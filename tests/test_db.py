@@ -233,6 +233,13 @@ class Test_SQLDatabase_Access:
         with pytest.raises(KeyError):
             db.get_table('not_a_table')
 
+    def test_sql_get_table_empty(self):
+        db = SQLDatabase(':memory:')
+        db.add_table('test')
+
+        assert_equal(len(db.get_table('test')), 0)
+        assert_is_instance(db.get_table('test'), SQLTable)
+
     def test_sql_get_column(self):
         db = SQLDatabase(':memory:')
         db.add_table('test')
