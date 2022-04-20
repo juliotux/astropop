@@ -219,8 +219,6 @@ class SQLTable:
                 return self[key[0]]
             col, row = self._resolve_tuple(key)
             return self[col][row]
-        if isinstance(key, (slice, list, np.ndarray)):
-            raise NotImplementedError('TODO')
         raise KeyError(f'{key}')
 
     def __setitem__(self, key, value):
@@ -234,10 +232,9 @@ class SQLTable:
                 raise KeyError(f'{key}')
             if len(key) == 1:
                 self[key[0]] = value
-            col, row = self._resolve_tuple(key)
-            self[col][row] = value
-        elif isinstance(key, (tuple, slice, list, np.ndarray)):
-            raise NotImplementedError('TODO')
+            else:
+                col, row = self._resolve_tuple(key)
+                self[col][row] = value
         else:
             raise KeyError(f'{key}')
 

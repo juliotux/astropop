@@ -831,6 +831,95 @@ class Test_SQLTable:
         with pytest.raises(KeyError):
             table[0, 'a', 'b']
 
+    def test_table_setitem_int(self):
+        db = self.db
+        table = db['test']
+        assert_is_instance(table, SQLTable)
+
+        table[0] = {'a': 5, 'b': 15}
+        expect = np.transpose([np.arange(10, 20), np.arange(20, 30)])
+        expect[0] = [5, 15]
+        assert_equal(table.column_names, ['a', 'b'])
+        assert_equal(table.values, expect)
+
+        table[-1] = {'a': -1, 'b': -1}
+        expect[-1] = [-1, -1]
+        assert_equal(table.column_names, ['a', 'b'])
+        assert_equal(table.values, expect)
+
+        with pytest.raises(IndexError):
+            table[10] = {'a': -1, 'b': -1}
+        with pytest.raises(IndexError):
+            table[-11] = {'a': -1, 'b': -1}
+
+    def test_table_setitem_str(self):
+        db = self.db
+        table = db['test']
+        assert_is_instance(table, SQLTable)
+
+        table['a'] = np.arange(40, 50)
+        expect = np.transpose([np.arange(40, 50), np.arange(20, 30)])
+        assert_equal(table.column_names, ['a', 'b'])
+        assert_equal(table.values, expect)
+
+        table['b'] = np.arange(10, 20)
+        expect = np.transpose([np.arange(40, 50), np.arange(10, 20)])
+        assert_equal(table.column_names, ['a', 'b'])
+        assert_equal(table.values, expect)
+
+        with pytest.raises(KeyError):
+            table['c'] = np.arange(10, 20)
+
+    def test_table_setitem_tuple(self):
+        db = self.db
+        table = db['test']
+        assert_is_instance(table, SQLTable)
+
+        table[('a',)] = np.arange(40, 50)
+        expect = np.transpose([np.arange(40, 50), np.arange(20, 30)])
+        assert_equal(table.column_names, ['a', 'b'])
+        assert_equal(table.values, expect)
+
+        table[(1,)] = {'a': -1, 'b': -1}
+        expect[1] = [-1, -1]
+        assert_equal(table.column_names, ['a', 'b'])
+        assert_equal(table.values, expect)
+
+        with pytest.raises(KeyError):
+            table[('c',)] = np.arange(10, 20)
+        with pytest.raises(IndexError):
+            table[(11,)] = np.arange(10, 20)
+
+    def test_table_setitem_tuple_multiple(self):
+        db = self.db
+        table = db['test']
+        assert_is_instance(table, SQLTable)
+        expect = np.transpose([np.arange(10, 20), np.arange(20, 30)])
+
+        table[('a', 1)] = 57
+        expect[1, 0] = 57
+        table['b', -1] = 32
+        expect[-1, 1] = 32
+        table[0, 'a'] = -1
+        expect[0, 0] = -1
+        table[5, 'b'] = 99
+        expect[5, 1] = 99
+        table['a', 3:6] = -999
+        expect[3:6, 0] = -999
+        table['b', [2, 7]] = -888
+        expect[[2, 7], 1] = -888
+        assert_equal(table.values, expect)
+
+        with pytest.raises(KeyError):
+            table[('c',)] = np.arange(10, 20)
+        with pytest.raises(IndexError):
+            table[(11,)] = np.arange(10, 20)
+        with pytest.raises(KeyError):
+            table['a', 'c'] = None
+        with pytest.raises(KeyError):
+            table[2:5] = 2
+        with pytest.raises(KeyError):
+            table[1, 2, 3] = 3
 
 class Test_SQLColumn:
     @property
