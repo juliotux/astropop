@@ -9,6 +9,9 @@ from .logger import logger
 from .py_utils import check_iterable
 
 
+__all__ = ['SQLDatabase', 'SQLTable']
+
+
 np_to_sql = {
     'i': 'INTEGER',
     'f': 'REAL',
@@ -38,7 +41,7 @@ def _sanitize_colnames(data):
     if not isinstance(data, (list, tuple, np.ndarray)):
         raise TypeError(f'{type(data)} is not supported.')
 
-    return [_sanitize(i) for i in data]
+    return [_sanitize(i).lower() for i in data]
 
 
 def _fix_row_index(row, length):
@@ -573,6 +576,8 @@ class SQLDatabase:
     def add_column(self, table, column, dtype=None, data=None):
         """Add a column to a table."""
         self._check_table(table)
+
+        column = column.lower()
         if data is not None and len(data) != len(self[table]) and \
            len(self[table]) != 0:
             raise ValueError("data must have the same length as the table.")
