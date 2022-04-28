@@ -68,6 +68,8 @@ def _row_dict(data, cols):
                 d = f"'{d.decode()}'"
             elif d is None:
                 d = 'NULL'
+            elif isinstance(d, bool):
+                d = str(int(d))
             comm_dict[name] = f"{d}"
         else:
             comm_dict[name] = "NULL"
