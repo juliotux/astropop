@@ -53,7 +53,7 @@ def list_fits_files(location, fits_extensions=None,
 
     f = []
     for i in fits_extensions:
-        files = glob.glob('*'+i, root_dir=location, recursive=True)
+        files = glob.glob(os.path.join(location, '**/*'+i), recursive=True)
         # filter only glob include
         if glob_include is not None:
             if not check_iterable(glob_include):
@@ -70,7 +70,7 @@ def list_fits_files(location, fits_extensions=None,
             f = [i for i in f if not fnmatch.fnmatch(i, exc)]
 
     files = sorted(f)
-    files = [os.path.join(location, i) for i in files]
+    # files = [os.path.join(location, i) for i in files]
     return files
 
 
