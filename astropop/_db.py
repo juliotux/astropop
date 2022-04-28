@@ -9,7 +9,7 @@ from .logger import logger
 from .py_utils import check_iterable
 
 
-__all__ = ['SQLDatabase', 'SQLTable', 'SQLRow', 'SQLColumn', 'DB_API']
+__all__ = ['SQLDatabase', 'SQLTable', 'SQLRow', 'SQLColumn']
 
 
 np_to_sql = {

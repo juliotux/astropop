@@ -130,9 +130,7 @@ class FitsFileGroup():
 
         if not initialized:
             self._db.add_table(_metadata)
-            self._db.add_row(_metadata, {'DB_API_MAJ': 1,
-                                         'DB_API_MIN': 0,
-                                         'GLOB_INCLUDE': self._include,
+            self._db.add_row(_metadata, {'GLOB_INCLUDE': self._include,
                                          'GLOB_EXCLUDE': self._exclude,
                                          'LOCATION': location,
                                          'COMPRESSION': compression,
