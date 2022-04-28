@@ -3,11 +3,13 @@
 import os
 import fnmatch
 import glob
+from pathlib import Path
 import numpy as np
 
 from astropy.table import Table
 from astropy.io import fits
 
+from ._db import SQLDatabase, _ID_KEY
 from .fits_utils import _fits_extensions, \
                         _fits_extensions_with_compress
 from .framedata import check_framedata
@@ -77,148 +79,177 @@ def list_fits_files(location, fits_extensions=None,
     return sorted(files)
 
 
-def gen_mask(table, keywords):
-    """Generate a mask to be applyed in the filtering."""
-    if len(table) == 0:
-        return []
-
-    t = Table(table)
-
-    mask = np.ones(len(t), dtype=bool)
-    for k, v in keywords.items():
-        if not check_iterable(v):
-            v = [v]
-        k = k.lower()
-        if k not in t.colnames:
-            t[k] = [None]*len(t)
-        nmask = [t[k][i] in v for i in range(len(t))]
-        mask &= np.array(nmask)
-
-    return mask
+_headers = 'headers'
+_metadata = 'astropop_metadata'
+_files_col = '__file'
 
 
 class FitsFileGroup():
     """Easy handle groups of fits files."""
 
     def __init__(self, location=None, files=None, ext=0,
-                 compression=False, **kwargs):
-        if kwargs.get('__uninitialized', False):
-            # Skip init if not initialize. Manual initialization needed.
-            return
-
+                 compression=False, database=':memory:', **kwargs):
         self._ext = ext
-        self._extensions = kwargs.get('fits_ext',
-                                      _fits_extensions_with_compress
-                                      if compression else _fits_extensions)
-
+        self._extensions = kwargs.get('fits_ext')
         self._include = kwargs.get('glob_include')
         self._exclude = kwargs.get('glob_exclude')
-        self._keywords = kwargs.get('keywords')
 
-        if location is None and files is None:
-            raise ValueError("You must specify a 'location'"
-                             "or a list of 'files'")
-        if files is None and location is not None:
-            files = list_fits_files(location, self._extensions,
-                                    self._include, self._exclude)
+        self._db = SQLDatabase(database)
+        if database == ':memory:':
+            self._db_dir = None
+        else:
+            self._db_dir = Path(database).resolve().parent
 
-        self._files = files
-        self._location = location
-
-        self._summary = create_table_summary(self.headers(), len(self))
+        self._read_db(files, location, compression, kwargs.get('update', 0))
 
     def __len__(self):
         return len(self.files)
 
+    def _list_files(self, files, location, compression):
+        extensions = self._extensions
+        if extensions is None:
+            if compression:
+                extensions = _fits_extensions_with_compress
+            else:
+                extensions = _fits_extensions
+
+        if files is not None and location is not None:
+            raise ValueError('You can only specify either files or location.')
+        if files is None and location is not None:
+            files = list_fits_files(location, extensions,
+                                    self._include, self._exclude)
+        if files is None:
+            files = []
+        return files
+
+    def _read_db(self, files, location, compression, update=False):
+        """Read the database and generate the summary if needed."""
+        initialized = _metadata in self._db.table_names
+        if location is not None:
+            location = str(location)
+
+        if not initialized:
+            self._db.add_table(_metadata)
+            self._db.add_row(_metadata, {'DB_API_MAJ': 1,
+                                         'DB_API_MIN': 0,
+                                         'GLOB_INCLUDE': self._include,
+                                         'GLOB_EXCLUDE': self._exclude,
+                                         'LOCATION': location,
+                                         'COMPRESSION': compression,
+                                         'FITS_EXT': self._extensions,
+                                         'EXT': self._ext},
+                             add_columns=True)
+
+        self._include = self._db[_metadata, 'glob_include'][0]
+        self._exclude = self._db[_metadata, 'glob_exclude'][0]
+        self._extensions = self._db[_metadata, 'fits_ext'][0]
+        self._ext = self._db[_metadata, 'ext'][0]
+        self._location = self._db[_metadata, 'location'][0]
+        self._compression = self._db[_metadata, 'compression'][0]
+
+        if update or not initialized:
+            self.update(files, location, compression)
+
     @property
     def files(self):
-        return self._files.copy()
-
-    @property
-    def location(self):
-        return self._location
-
-    @property
-    def keywords(self):
-        return self._keywords
+        """List files in the group."""
+        files = self._db[_headers, _files_col].values
+        if self._db_dir is not None:
+            return [os.path.join(self._db_dir, f) for f in files]
+        return files
 
     @property
     def summary(self):
-        return Table(self._summary)
+        """Get a table with summary of the fits files."""
+        return self._db[_headers].as_table()
 
-    def __copy__(self, files=None, summary=None):
-        nfg = FitsFileGroup(__uninitialized=True)
-        for k, v in self.__dict__.items():
-            if k == '_summary':
-                nfg._summary = summary or self._summary
-            elif k == '_files':
-                nfg._files = files if files is not None else self._files
-            else:
-                nfg.__dict__[k] = v
+    def __copy__(self, indexes=None):
+        """Copy the current instance to a new object."""
+        db = self._db.copy()
+        if indexes is not None:
+            db.drop_table(_headers)
+            db.add_table(_headers, columns=self._db[_headers].column_names)
+            for i in indexes:
+                db.add_row(_headers, self._db[_headers][i].as_dict())
+
+        nfg = object.__new__(FitsFileGroup)
+        nfg._db = db
+        nfg._db_dir = None
+        nfg._read_db(None, None, None, False)
+        nfg._location = None
         return nfg
 
-    def __getitem__(self, item):
-        if isinstance(item, str):
-            # string will be interpreted as collumn name
-            if item.lower() not in self._summary.colnames:
-                raise KeyError(f'Column {item} not found.')
-            return self._summary.columns[item.lower()]
+    def __len__(self):
+        """Get the number of files in the group."""
+        return len(self._db[_headers])
 
-        # returning FitsFileGroups
-        if isinstance(item, (int, np.integer)):
-            # single index will be interpreted as a single file group
-            return self.__copy__(files=[self._files[item]],
-                                 summary=self._summary[item])
-        if (isinstance(item, slice)):
-            files = self._files[item]
-            summ = self._summary[item]
-            return self.__copy__(files=files, summary=summ)
-        if isinstance(item, (np.ndarray, list, tuple)):
-            item = np.array(item)
-            if len(item) == 0:
-                return self.__copy__(files=[], summary=self._summary[item])
-            files = list(np.take(self._files, item))
-            summ = self._summary[item]
-            return self.__copy__(files=files, summary=summ)
+    def filtered(self, keywords):
+        """Create a new FitsFileGroup with only filtered files."""
+        indexes = self._db.select(_headers, columns=[_ID_KEY], where=keywords)
+        if len(indexes) == 0:
+            return self.__copy__(indexes=[])
+        indexes = np.array(indexes).ravel() - 1
+        return self.__copy__(indexes)
 
-        raise KeyError(f'{item}')
+    def update(self, files=None, location=None, compression=False):
+        """Update the database with the current files."""
+        if _headers in self._db.table_names:
+            self._db.drop_table(_headers)
 
-    def filtered(self, keywords=None):
-        """Create a new FileGroup with only filtered files."""
-        where = np.where(gen_mask(self._summary, keywords))[0]
-        return self[where]
+        self._db.add_table(_headers)
+        location = location or self._location
+        compression = compression or self._compression
+        files = self._list_files(files, location, compression)
+        for i, f in enumerate(files):
+            logger.debug('reading file %i from %i', i, len(files))
+            self.add_file(f)
 
     def values(self, keyword, unique=False):
         """Return the values of a keyword in the summary.
 
         If unique, only unique values returned.
         """
-        if keyword not in self.summary.colnames:
-            if unique:
-                n = 1
-            else:
-                n = len(self.summary)
-            return [None]*n
+        vals = self._db[_headers, keyword].values()
         if unique:
-            return list(set(self.summary[keyword].tolist()))
-        return self.summary[keyword].tolist()
+            vals = list(set(vals))
+        return vals
 
-    def add_column(self, name, values, mask=None):
+    def add_column(self, name, values=None):
         """Add a new column to the summary."""
-        if not check_iterable(values):
-            values = [values]*len(self.summary)
-        elif len(values) != len(self.summary):
-            values = [values]*len(self.summary)
+        self._db.add_column(_headers, name, data=values)
 
-        self.summary[name] = values
-        self.summary[name].mask = mask
+    def add_file(self, file):
+        """Add a new file to the group."""
+        header = fits.open(file)[self._ext].header
+        logger.debug('reading file %s', file)
+        if self._db_dir is not None:
+            file = os.path.relpath(file, self._db_dir)
+        hdr = {_files_col: file}
+        hdr.update(dict(header))
+        hdr.pop('COMMENT', None)
+        hdr.pop('HISTORY', None)
+        self._db.add_row(_headers,  hdr, add_columns=True)
 
-    def _intern_yelder(self, files=None, ext=None, ret_type=None,
-                       **kwargs):
-        """Iter over files."""
+    def __getitem__(self, item):
+        if isinstance(item, str):
+            return self._db[_headers, item].values
+
+        # returning FitsFileGroups
+        if isinstance(item, (int, np.integer)):
+            # single index will be interpreted as a single file group
+            return self.__copy__(indexes=[item])
+        if (isinstance(item, slice)):
+            item = list(range(*item.indices(len(self))))
+        if isinstance(item, (np.ndarray, list)):
+            item = np.array(item)
+            return self.__copy__(indexes=item)
+
+        raise KeyError(f'{item}')
+
+    def _intern_yelder(self, ext=None, ret_type=None, **kwargs):
+        """Iterate over files."""
         ext = ext if ext is not None else self._ext
-        files = files if files is not None else self._files
-        for i in files:
+        for i in self.files:
             if ret_type == 'header':
                 yield fits.open(i, **kwargs)[ext].header
             if ret_type == 'data':

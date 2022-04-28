@@ -97,6 +97,7 @@ def _parse_where(where):
     if where is None:
         _where = None
     elif isinstance(where, dict):
+        where = _sanitize_colnames(where)
         for i, (k, v) in enumerate(where.items()):
             if isinstance(v, str):
                 # avoid sql errors
@@ -211,9 +212,9 @@ class SQLTable:
 
     def __getitem__(self, key):
         """Get a row or a column from the table."""
-        if isinstance(key, int):
+        if isinstance(key, (int, np.int_)):
             return self.get_row(key)
-        if isinstance(key, str):
+        if isinstance(key, (str, np.str_)):
             return self.get_column(key)
         if isinstance(key, tuple):
             if len(key) not in (1, 2):
@@ -300,7 +301,7 @@ class SQLColumn:
 
     def __getitem__(self, key):
         """Get a row from the column."""
-        if isinstance(key, (int, slice)):
+        if isinstance(key, (int, np.int_, slice)):
             return self.values[key]
         if isinstance(key, (list, np.ndarray)):
             v = self.values
@@ -309,7 +310,7 @@ class SQLColumn:
 
     def __setitem__(self, key, value):
         """Set a row in the column."""
-        if isinstance(key, int):
+        if isinstance(key, (int, np.int_)):
             self._db.set_item(self._table, self._name, key, value)
         elif isinstance(key, (slice, list, np.ndarray)):
             v = np.array(self.values)
@@ -393,12 +394,12 @@ class SQLRow:
 
     def __getitem__(self, key):
         """Get a column from the row."""
-        if isinstance(key, str):
+        if isinstance(key, (str, np.str_)):
             try:
                 return self._db.get_item(self._table, key, self._row)
             except ValueError:
                 raise KeyError(f'{key}')
-        if isinstance(key, int):
+        if isinstance(key, (int, np.int_)):
             return self.values[key]
         raise KeyError(f'{key}')
 
@@ -516,7 +517,13 @@ class SQLDatabase:
 
         comm = comm + ';'
 
-        res = self.execute(comm)
+        try:
+            res = self.execute(comm)
+        except sql.OperationalError as e:
+            if 'no such column' in str(e):
+                return []
+            raise e
+
         return res
 
     def copy(self):
@@ -714,7 +721,7 @@ class SQLDatabase:
 
     def __getitem__(self, item):
         """Get a items from the table."""
-        if isinstance(item, str):
+        if isinstance(item, (str, np.str_)):
             return self.get_table(item)
         if isinstance(item, tuple):
             if not isinstance(item[0], str):

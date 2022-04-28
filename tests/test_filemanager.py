@@ -110,11 +110,9 @@ def create_test_files(tmpdir, extension='fits'):
 
 class Test_FitsFileGroup():
     def test_fg_creation_empty(self):
-        with pytest.raises(ValueError):
-            FitsFileGroup()
-        # test the hidden option to create uninitialized group.
-        fg = FitsFileGroup(__uninitialized=True)
+        fg = FitsFileGroup()
         assert_is_instance(fg, FitsFileGroup)
+        assert_equal(len(fg), 0)
 
     def test_fg_create_filegroup(self, tmpdir):
         tmpdir, flist = tmpdir
@@ -177,7 +175,7 @@ class Test_FitsFileGroup():
     @pytest.mark.parametrize('hdu', [1, 'image'])
     def test_fg_creation_custom_hdu(self, tmpdir, hdu):
         tmpdir, flist = tmpdir
-        fg = FitsFileGroup(location=tmpdir/'custom_hdu', ext=hdu)
+        fg = FitsFileGroup(location=str(tmpdir/'custom_hdu'), ext=hdu)
         assert_is_instance(fg, FitsFileGroup)
         assert_equal(len(fg), 10)
         assert_equal(sorted(fg.files), sorted(flist['custom_hdu']))
@@ -242,7 +240,6 @@ class Test_FitsFileGroup():
         obj_column = fg['object']
         assert_equal(sorted(obj_column),
                      sorted(['bias']*10+['flat']*10+['Moon']*10))
-        assert_is_instance(obj_column, Column)
 
     def test_fg_getitem_single_file(self, tmpdir):
         tmpdir, flist = tmpdir
@@ -265,17 +262,8 @@ class Test_FitsFileGroup():
         flist = flist['fits']
         files = [flist[2], flist[4]]
         fg = FitsFileGroup(location=tmpdir/'fits', compression=False)
-        row = fg[2, 4]
-        assert_is_instance(row, FitsFileGroup)
-        assert_equal(len(row), 2)
-        assert_equal(row.files, files)
 
         row = fg[[2, 4]]
-        assert_is_instance(row, FitsFileGroup)
-        assert_equal(len(row), 2)
-        assert_equal(row.files, files)
-
-        row = fg[(2, 4)]
         assert_is_instance(row, FitsFileGroup)
         assert_equal(len(row), 2)
         assert_equal(row.files, files)
