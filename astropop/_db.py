@@ -589,9 +589,8 @@ class SQLDatabase:
             raise ValueError(f"{column} is a protected name.")
 
         col = _sanitize_colnames([column])[0]
-        comm = f"ALTER TABLE {table or self._table} ADD COLUMN '{col}' ;"
-        logger.debug('adding column "%s" "%s" "%s" to table "%s"',
-                     col, table or self._table)
+        comm = f"ALTER TABLE {table} ADD COLUMN '{col}' ;"
+        logger.debug('adding column "%s" to table "%s"', col, table)
         self.execute(comm)
 
         # adding the data to the table
