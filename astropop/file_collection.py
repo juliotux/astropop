@@ -53,8 +53,7 @@ def list_fits_files(location, fits_extensions=None,
 
     f = []
     for i in fits_extensions:
-        files = list(glob.iglob(os.path.join(location, '**/*' + i),
-                                recursive=True))
+        files = glob.glob('*'+i, root_dir=location, recursive=True)
         # filter only glob include
         if glob_include is not None:
             if not check_iterable(glob_include):
@@ -72,7 +71,7 @@ def list_fits_files(location, fits_extensions=None,
 
     files = sorted(f)
     files = [os.path.join(location, i) for i in files]
-    return sorted(files)
+    return files
 
 
 _headers = 'headers'
@@ -86,7 +85,7 @@ class FitsFileGroup():
     def __init__(self, location=None, files=None, ext=0,
                  compression=False, database=':memory:', **kwargs):
         self._ext = ext
-        self._extensions = kwargs.get('fits_ext')
+        self._extensions = kwargs.get('fits_ext', None)
         self._include = kwargs.get('glob_include')
         self._exclude = kwargs.get('glob_exclude')
 
@@ -127,13 +126,13 @@ class FitsFileGroup():
                                          'GLOB_EXCLUDE': self._exclude,
                                          'LOCATION': location,
                                          'COMPRESSION': compression,
-                                         'FITS_EXT': self._extensions,
                                          'EXT': self._ext},
                              add_columns=True)
+            self._db.add_column(_metadata, 'FITS_EXT', self._extensions)
 
         self._include = self._db[_metadata, 'glob_include'][0]
         self._exclude = self._db[_metadata, 'glob_exclude'][0]
-        self._extensions = self._db[_metadata, 'fits_ext'][0]
+        self._extensions = self._db[_metadata, 'fits_ext'].values
         self._ext = self._db[_metadata, 'ext'][0]
         self._location = self._db[_metadata, 'location'][0]
         self._compression = self._db[_metadata, 'compression'][0]
@@ -223,6 +222,7 @@ class FitsFileGroup():
         hdr.update(dict(header))
         hdr.pop('COMMENT', None)
         hdr.pop('HISTORY', None)
+        hdr.pop('', None)
         self._db.add_row(_headers,  hdr, add_columns=True)
 
     def __getitem__(self, item):

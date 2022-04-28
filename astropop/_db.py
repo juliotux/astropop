@@ -456,8 +456,13 @@ class SQLDatabase:
         """Execute a SQL command in the database."""
         logger.debug('executing sql command: "%s"',
                      str.replace(command, '\n', ' '))
-        self._cur.execute(command)
-        res = self._cur.fetchall()
+        try:
+            self._cur.execute(command)
+            res = self._cur.fetchall()
+        except sql.Error as e:
+            self._con.rollback()
+            raise e
+
         if self.autocommit:
             self.commit()
         return res
