@@ -102,9 +102,6 @@ class FitsFileGroup():
 
         self._read_db(files, location, compression, kwargs.get('update', 0))
 
-    def __len__(self):
-        return len(self.files)
-
     def _list_files(self, files, location, compression):
         extensions = self._extensions
         if extensions is None:
