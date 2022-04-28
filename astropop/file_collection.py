@@ -133,6 +133,8 @@ class FitsFileGroup():
         self._include = self._db[_metadata, 'glob_include'][0]
         self._exclude = self._db[_metadata, 'glob_exclude'][0]
         self._extensions = self._db[_metadata, 'fits_ext'].values
+        if self._extensions == [None]:
+            self._extensions = None
         self._ext = self._db[_metadata, 'ext'][0]
         self._location = self._db[_metadata, 'location'][0]
         self._compression = self._db[_metadata, 'compression'][0]
