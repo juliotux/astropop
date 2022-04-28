@@ -519,6 +519,10 @@ class SQLDatabase:
         res = self.execute(comm)
         return res
 
+    def copy(self):
+        """Get a copy of the database."""
+        return self.__copy__()
+
     def column_names(self, table):
         """Get the column names of the table."""
         self._check_table(table)
@@ -730,3 +734,11 @@ class SQLDatabase:
             s += f"\n\t{i}: {len(self.column_names(i))} columns"
             s += f" {len(self[i])} rows"
         return s
+
+    def __copy__(self):
+        """Copy the database."""
+        # when copying, always copy to memory
+        db = SQLDatabase(':memory:')
+        for i in self.table_names:
+            db.add_table(i, data=self[i].as_table())
+        return db

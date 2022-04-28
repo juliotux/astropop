@@ -311,6 +311,22 @@ class Test_SQLDatabase_Creation_Modify:
         with pytest.raises(KeyError):
             db['test']
 
+    def test_sql_copy(self):
+        db = SQLDatabase(':memory:')
+        db.add_table('test')
+        db.add_column('test', 'a')
+        db.add_column('test', 'b')
+        db.add_row('test', dict(a=1, b=2))
+        db.add_row('test', dict(a=3, b=4))
+        db.add_row('test', dict(a=5, b=6))
+
+        db2 = db.copy()
+        assert_equal(db2.table_names, ['test'])
+        assert_equal(db2.column_names('test'), ['a', 'b'])
+        assert_equal(db2.get_column('test', 'a').values, [1, 3, 5])
+        assert_equal(db2.get_column('test', 'b').values, [2, 4, 6])
+
+
 
 class Test_SQLDatabase_Access:
     def test_sql_get_table(self):
