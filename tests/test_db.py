@@ -77,18 +77,6 @@ class Test_SQLDatabase_Creation_Modify:
         assert_equal(len(db), 1)
         assert_equal(db.table_names, ['test'])
 
-    def test_sql_add_column_name_and_dtype(self):
-        db = SQLDatabase(':memory:')
-        db.add_table('test')
-        db.add_column('test', 'a', dtype=np.int32)
-        db.add_column('test', 'b', dtype='f8')
-
-        assert_equal(db.get_column('test', 'a').values, [])
-        assert_equal(db.get_column('test', 'b').values, [])
-        assert_equal(db.column_names('test'), ['a', 'b'])
-        assert_equal(len(db), 1)
-        assert_equal(db.table_names, ['test'])
-
     def test_sql_add_table_from_data_table(self):
         db = SQLDatabase(':memory:')
         d = Table(names=['a', 'b'], data=[np.arange(10, 20), np.arange(20, 30)])
@@ -141,15 +129,20 @@ class Test_SQLDatabase_Creation_Modify:
         with assert_raises(TypeError):
             db.add_table('test', data='test')
 
-    def test_sql_add_table_dtype(self):
+    def test_sql_add_table_columns(self):
         db = SQLDatabase(':memory:')
-        db.add_table('test', dtype=[('a', 'i4'), ('b', 'f8')])
+        db.add_table('test', columns=['a', 'b'])
 
         assert_equal(db.get_column('test', 'a').values, [])
         assert_equal(db.get_column('test', 'b').values, [])
         assert_equal(db.column_names('test'), ['a', 'b'])
         assert_equal(len(db), 1)
         assert_equal(db.table_names, ['test'])
+
+    def test_sql_add_table_columns_data(self):
+        db = SQLDatabase(':memory:')
+        with pytest.raises(ValueError):
+            db.add_table('test', columns=['a', 'b'], data=[1, 2, 3])
 
     def test_sql_add_row(self):
         db = SQLDatabase(':memory:')
@@ -192,7 +185,7 @@ class Test_SQLDatabase_Creation_Modify:
         db = SQLDatabase(':memory:')
         db.add_table('test')
         db['test'].add_column('a')
-        db['test'].add_column('b', dtype=np.int32)
+        db['test'].add_column('b')
         db['test'].add_column('c', data=[1, 2, 3])
 
         assert_equal(db.get_column('test', 'a').values, [None, None, None])
@@ -217,7 +210,6 @@ class Test_SQLDatabase_Creation_Modify:
         assert_equal(len(db), 1)
         assert_equal(db.table_names, ['test'])
         assert_equal(db.column_names('test'), ['a', 'b', 'd'])
-
 
     def test_sql_set_column(self):
         db = SQLDatabase(':memory:')
@@ -304,6 +296,20 @@ class Test_SQLDatabase_Creation_Modify:
         expect[5, 1] = -999
 
         assert_equal(db['test'].values, expect)
+
+    def test_sql_droptable(self):
+        db = SQLDatabase(':memory:')
+        db.add_table('test')
+        db.add_column('test', 'a')
+        db.add_column('test', 'b')
+        db.add_row('test', dict(a=1, b=2))
+        db.add_row('test', dict(a=3, b=4))
+        db.add_row('test', dict(a=5, b=6))
+
+        db.drop_table('test')
+        assert_equal(db.table_names, [])
+        with pytest.raises(KeyError):
+            db['test']
 
 
 class Test_SQLDatabase_Access:

@@ -9,7 +9,7 @@ from .logger import logger
 from .py_utils import check_iterable
 
 
-__all__ = ['SQLDatabase', 'SQLTable']
+__all__ = ['SQLDatabase', 'SQLTable', 'SQLRow', 'SQLColumn', 'DB_API']
 
 
 np_to_sql = {
@@ -166,9 +166,9 @@ class SQLTable:
         return Table(rows=self.values,
                      names=self.column_names)
 
-    def add_column(self, name, dtype=None, data=None):
+    def add_column(self, name, data=None):
         """Add a column to the table."""
-        self._db.add_column(self._name, name, dtype=dtype, data=data)
+        self._db.add_column(self._name, name, data=data)
 
     def add_row(self, data, add_columns=False):
         """Add a row to the table."""
@@ -395,7 +395,7 @@ class SQLRow:
         """Get a column from the row."""
         if isinstance(key, str):
             try:
-                return self.values[self.column_names.index(key)]
+                return self._db.get_item(self._table, key, self._row)
             except ValueError:
                 raise KeyError(f'{key}')
         if isinstance(key, int):
@@ -544,7 +544,7 @@ class SQLDatabase:
         if table not in self.table_names:
             raise KeyError(f'Table "{table}" does not exist.')
 
-    def add_table(self, table, dtype=None, data=None):
+    def add_table(self, table, columns=None, data=None):
         """Create a table in database."""
         logger.debug('Initializing "%s" table.', table)
         if table in self.table_names:
@@ -553,15 +553,13 @@ class SQLDatabase:
         comm = f"CREATE TABLE '{table}'"
         comm += f" (\n{_ID_KEY} INTEGER PRIMARY KEY AUTOINCREMENT"
 
-        if dtype is not None and data is not None:
-            raise ValueError('cannot specify both dtype and data.')
-        if dtype is not None:
-            dtype = np.dtype(dtype)
+        if columns is not None and data is not None:
+            raise ValueError('cannot specify both columns and data.')
+        if columns is not None:
             comm += ",\n"
-            for i, name in enumerate(dtype.names):
-                kind = dtype[i].kind
-                comm += f"\t'{name}' {np_to_sql[kind]}"
-                if i != len(dtype) - 1:
+            for i, name in enumerate(columns):
+                comm += f"\t'{name}'"
+                if i != len(columns) - 1:
                     comm += ",\n"
         comm += "\n);"
         if data is not None:
@@ -573,7 +571,7 @@ class SQLDatabase:
             for r in rows:
                 self.add_row(table, r, add_columns=True)
 
-    def add_column(self, table, column, dtype=None, data=None):
+    def add_column(self, table, column, data=None):
         """Add a column to a table."""
         self._check_table(table)
 
@@ -585,18 +583,10 @@ class SQLDatabase:
         if column in (_ID_KEY, 'table', 'default'):
             raise ValueError(f"{column} is a protected name.")
 
-        # adding the column to the table
-        if dtype is None and data is None:
-            kind = ''
-        elif dtype is not None:
-            kind = np_to_sql[np.dtype(dtype).kind]
-        else:
-            kind = np_to_sql[np.array(data).dtype.kind]
         col = _sanitize_colnames([column])[0]
-        comm = f"ALTER TABLE {table or self._table} ADD COLUMN '{col}' "
+        comm = f"ALTER TABLE {table or self._table} ADD COLUMN '{col}' ;"
         logger.debug('adding column "%s" "%s" "%s" to table "%s"',
-                     col, dtype, kind, table or self._table)
-        comm += f"{kind};"
+                     col, table or self._table)
         self.execute(comm)
 
         # adding the data to the table
@@ -623,13 +613,19 @@ class SQLDatabase:
             cols = set(self.column_names(table))
             for k in data.keys():
                 if k not in cols:
-                    self.add_column(table, k, np.array([data[k]]).dtype)
+                    self.add_column(table, k)
 
         comm_dict = _row_dict(data, self.column_names(table))
         # create the sql command and add the row
         cols = [_ID_KEY] + self.column_names(table)
         comm = f"INSERT INTO {table} VALUES ("
         comm += f"{', '.join(comm_dict[i] for i in cols)});"
+        self.execute(comm)
+
+    def drop_table(self, table):
+        """Drop a table from the database."""
+        self._check_table(table)
+        comm = f"DROP TABLE {table};"
         self.execute(comm)
 
     def get_table(self, table):
@@ -645,13 +641,21 @@ class SQLDatabase:
 
     def get_column(self, table, column):
         """Get a column from the table."""
+        column = column.lower()
         if column not in self.column_names(table):
             raise KeyError(f"column {column} does not exist.")
         return SQLColumn(self, table, column)
 
+    def get_item(self, table, column, row):
+        """Get an item from the table."""
+        self._check_table(table)
+        row = _fix_row_index(row, len(self[table]))
+        return self.get_column(table, column)[row]
+
     def set_item(self, table, column, row, value):
         """Set a value in a cell."""
         row = _fix_row_index(row, self.count(table))
+        column = column.lower()
         if isinstance(value, str):
             value = f"'{value}'"
         self.execute(f"UPDATE {table} SET {column}={value} "
