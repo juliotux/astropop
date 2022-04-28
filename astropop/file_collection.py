@@ -19,11 +19,6 @@ from .logger import logger
 __all__ = ['list_fits_files', 'FitsFileGroup', 'create_table_summary']
 
 
-# TODO: different backends
-# - table: in memory only. faster but not persistent
-# - sql: disk file. slower but persistent
-
-
 def create_table_summary(headers, n):
     """Create a table summary of headers.
 
