@@ -517,13 +517,7 @@ class SQLDatabase:
 
         comm = comm + ';'
 
-        try:
-            res = self.execute(comm)
-        except sql.OperationalError as e:
-            if 'no such column' in str(e):
-                return []
-            raise e
-
+        res = self.execute(comm)
         return res
 
     def copy(self):

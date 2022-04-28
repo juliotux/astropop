@@ -9,7 +9,7 @@ import numpy as np
 from astropy.table import Table
 from astropy.io import fits
 
-from ._db import SQLDatabase, _ID_KEY
+from ._db import SQLDatabase, _ID_KEY, sql
 from .fits_utils import _fits_extensions, \
                         _fits_extensions_with_compress
 from .framedata import check_framedata
@@ -180,7 +180,11 @@ class FitsFileGroup():
 
     def filtered(self, keywords):
         """Create a new FitsFileGroup with only filtered files."""
-        indexes = self._db.select(_headers, columns=[_ID_KEY], where=keywords)
+        try:
+            indexes = self._db.select(_headers, columns=[_ID_KEY],
+                                      where=keywords)
+        except sql.OperationalError:
+            indexes = []
         if len(indexes) == 0:
             return self.__copy__(indexes=[])
         indexes = np.array(indexes).ravel() - 1
