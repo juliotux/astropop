@@ -327,7 +327,6 @@ class Test_SQLDatabase_Creation_Modify:
         assert_equal(db2.get_column('test', 'b').values, [2, 4, 6])
 
 
-
 class Test_SQLDatabase_Access:
     def test_sql_get_table(self):
         db = SQLDatabase(':memory:')
