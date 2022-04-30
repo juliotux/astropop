@@ -243,6 +243,10 @@ class FitsFileGroup():
 
         raise KeyError(f'{item}')
 
+    def __setitem__(self, item, value):
+        """Set the value of a keyword in the summary."""
+        self._db[_headers, item] = value
+
     def _intern_yelder(self, ext=None, ret_type=None, **kwargs):
         """Iterate over files."""
         ext = ext if ext is not None else self._ext

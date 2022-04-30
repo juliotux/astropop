@@ -287,6 +287,22 @@ class Test_FitsFileGroup():
         with pytest.raises(KeyError):
             fg['NonExistingKey']
 
+    def test_fg_setitem_str(self, tmpdir):
+        tmpdir, flist = tmpdir
+        fg = FitsFileGroup(location=tmpdir/'fits', compression=False)
+        fg.add_column('new_column')
+        fg['new_column'] = ['test']*len(fg)
+        assert_equal(sorted(fg['new_column']), ['test']*len(fg))
+
+    def test_fg_setitem_tuple(self, tmpdir):
+        tmpdir, flist = tmpdir
+        fg = FitsFileGroup(location=tmpdir/'fits', compression=False)
+        fg.add_column('new_column', values=['test']*len(fg))
+        fg['new_column', -1] = 'test1'
+        expect = ['test']*len(fg)
+        expect[-1] = 'test1'
+        assert_equal(sorted(fg['new_column']), expect)
+
 
 class Test_ListFitsFiles():
     def test_list_custom_extension(self, tmpdir):
