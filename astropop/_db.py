@@ -661,12 +661,13 @@ class SQLDatabase:
         """Get an item from the table."""
         self._check_table(table)
         row = _fix_row_index(row, len(self[table]))
+        column = _sanitize_colnames([column])[0]
         return self.get_column(table, column)[row]
 
     def set_item(self, table, column, row, value):
         """Set a value in a cell."""
         row = _fix_row_index(row, self.count(table))
-        column = column.lower()
+        column = _sanitize_colnames([column])[0]
         if isinstance(value, str):
             value = f"'{value}'"
         self.execute(f"UPDATE {table} SET {column}={value} "
