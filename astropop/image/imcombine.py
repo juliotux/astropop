@@ -10,7 +10,7 @@ from astropy.stats import mad_std
 from ..framedata import FrameData, check_framedata
 from ..py_utils import check_iterable, check_number
 from ..logger import logger
-from ..file_collection import create_table_summary
+from .._db import SQLDatabase
 from ..math.array import all_equal
 
 
@@ -500,8 +500,15 @@ class ImCombiner:
         if self._header_strategy == 'first':
             return self._images[0].header
 
-        summary = create_table_summary([i.header for i in self._images],
-                                       len(self._images))
+        db = SQLDatabase()
+        db.add_table('headers')
+        for i in self._images:
+            hdr = i.header
+            for k in ['COMMENT', 'HISTORY', '']:
+                hdr.pop(k, None)
+            db.add_row('headers', dict(hdr), add_columns=True)
+        summary = db['headers'].as_table()
+
         if self._header_strategy == 'selected_keys':
             keys = self._header_merge_keys
         else:

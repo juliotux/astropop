@@ -2,7 +2,6 @@ import pytest
 import numpy as np
 
 from astropy.io import fits
-from astropy.table import Column
 from astropop.file_collection import FitsFileGroup, list_fits_files
 from astropop.testing import assert_is_instance, assert_equal, \
                              assert_in
