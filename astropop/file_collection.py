@@ -16,30 +16,7 @@ from .framedata import check_framedata
 from .py_utils import check_iterable
 from .logger import logger
 
-__all__ = ['list_fits_files', 'FitsFileGroup', 'create_table_summary']
-
-
-def create_table_summary(headers, n):
-    """Create a table summary of headers.
-
-    Parameters
-    ----------
-    headers: iterator
-        Iterator for a list of header files.
-    n: int
-        Number of headers to iterate.
-    """
-    summary_dict = {}
-    for i, head in enumerate(headers):
-        logger.debug('Reading file %i from %i', i, n)
-        keys = head.keys()
-        for k in keys:
-            k_lower = k.lower()
-            if k_lower not in summary_dict.keys():
-                summary_dict[k_lower] = [None]*n
-            summary_dict[k_lower][i] = head.get(k)
-
-    return Table(summary_dict)
+__all__ = ['list_fits_files', 'FitsFileGroup']
 
 
 def list_fits_files(location, fits_extensions=None,
@@ -197,7 +174,7 @@ class FitsFileGroup():
         compression = compression or self._compression
         files = self._list_files(files, location, compression)
         for i, f in enumerate(files):
-            logger.debug('reading file %i from %i', i, len(files))
+            logger.info('reading file %i from %i: %s', i, len(files), f)
             self.add_file(f)
 
     def values(self, keyword, unique=False):
