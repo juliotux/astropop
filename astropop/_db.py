@@ -43,6 +43,19 @@ def _sanitize_colnames(data):
     return [_sanitize(i) for i in data]
 
 
+def _sanitize_value(data):
+    """Sanitize the value to avoid sql errors."""
+    if isinstance(data, str):
+        data = f"'{data}'"
+    elif isinstance(data, bytes):
+        data = f"'{data.decode()}'"
+    elif isinstance(data, bool):
+        data = str(int(data))
+    elif data is None:
+        data = 'NULL'
+    return data
+
+
 def _fix_row_index(row, length):
     """Fix the row number to be a valid index."""
     if row < 0:
@@ -60,16 +73,7 @@ def _row_dict(data, cols):
     comm_dict = {_ID_KEY: "NULL"}
     for name in cols:
         if name in data.keys():
-            d = data[name]
-            if isinstance(d, str):
-                d = f"'{d}'"
-            elif isinstance(d, bytes):
-                d = f"'{d.decode()}'"
-            elif d is None:
-                d = 'NULL'
-            elif isinstance(d, bool):
-                d = str(int(d))
-            comm_dict[name] = f"{d}"
+            comm_dict[name] = _sanitize_value(data[name])
         else:
             comm_dict[name] = "NULL"
     return comm_dict
