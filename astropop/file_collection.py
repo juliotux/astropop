@@ -182,7 +182,7 @@ class FitsFileGroup():
 
         If unique, only unique values returned.
         """
-        vals = self._db[_headers, keyword].values()
+        vals = self._db[_headers, keyword].values
         if unique:
             vals = list(set(vals))
         return vals
