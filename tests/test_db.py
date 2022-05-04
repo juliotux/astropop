@@ -10,37 +10,16 @@ import sqlite3
 
 
 def test_sanitize_string():
-    assert_equal(_sanitize_colnames('test'), 'test')
-    assert_equal(_sanitize_colnames('test_'), 'test_')
-    assert_equal(_sanitize_colnames('test_1'), 'test_1')
-    assert_equal(_sanitize_colnames('test-2'), 'test_2')
-    assert_equal(_sanitize_colnames('test!2'), 'test_2')
-    assert_equal(_sanitize_colnames('test@2'), 'test_2')
-    assert_equal(_sanitize_colnames('test#2'), 'test_2')
-    assert_equal(_sanitize_colnames('test$2'), 'test_2')
-    assert_equal(_sanitize_colnames('test&2'), 'test_2')
-    assert_equal(_sanitize_colnames('test*2'), 'test_2')
-    assert_equal(_sanitize_colnames('test(2)'), 'test_2_')
-    assert_equal(_sanitize_colnames('test)2'), 'test_2')
-    assert_equal(_sanitize_colnames('test[2]'), 'test_2_')
-    assert_equal(_sanitize_colnames('test]2'), 'test_2')
-    assert_equal(_sanitize_colnames('test{2}'), 'test_2_')
-    assert_equal(_sanitize_colnames('test}2'), 'test_2')
-    assert_equal(_sanitize_colnames('test|2'), 'test_2')
-    assert_equal(_sanitize_colnames('test\\2'), 'test_2')
-    assert_equal(_sanitize_colnames('test^2'), 'test_2')
-    assert_equal(_sanitize_colnames('test~2'), 'test_2')
-    assert_equal(_sanitize_colnames('test"2'), 'test_2')
-    assert_equal(_sanitize_colnames('test\'2'), 'test_2')
-    assert_equal(_sanitize_colnames('test`2'), 'test_2')
-    assert_equal(_sanitize_colnames('test<2'), 'test_2')
-    assert_equal(_sanitize_colnames('test>2'), 'test_2')
-    assert_equal(_sanitize_colnames('test=2'), 'test_2')
-    assert_equal(_sanitize_colnames('test,2'), 'test_2')
-    assert_equal(_sanitize_colnames('test;2'), 'test_2')
-    assert_equal(_sanitize_colnames('test:2'), 'test_2')
-    assert_equal(_sanitize_colnames('test?2'), 'test_2')
-    assert_equal(_sanitize_colnames('test/2'), 'test_2')
+    for i in ['test-2', 'test!2', 'test@2', 'test#2', 'test$2',
+              'test&2', 'test*2', 'test(2)', 'test)2', 'test[2]', 'test]2',
+              'test{2}', 'test}2', 'test|2', 'test\\2', 'test^2', 'test~2'
+              'test"2', 'test\'2', 'test`2', 'test<2', 'test>2', 'test=2',
+              'test,2', 'test;2', 'test:2', 'test?2', 'test/2']:
+        with pytest.raises(ValueError):
+            _sanitize_colnames(i)
+
+    for i in ['test', 'test_1', 'test_1_2', 'test_1_2', 'Test', 'Test_1']:
+        assert_equal(_sanitize_colnames(i), i.lower())
 
 
 class Test_SQLDatabase_Creation_Modify:

@@ -27,10 +27,9 @@ _ID_KEY = '__id__'
 def _sanitize_colnames(data):
     """Sanitize the colnames to avoid invalid characteres like '-'."""
     def _sanitize(key):
-        non_alpha = [ch for ch in key if not ch.isalnum()]
-        for i in non_alpha:
-            key = key.replace(i, '_')
-        return key
+        if len([ch for ch in key if not ch.isalnum() and ch != '_']) != 0:
+            raise ValueError(f'Invalid column name: {key}.')
+        return key.lower()
 
     if isinstance(data, dict):
         d = data
@@ -41,7 +40,7 @@ def _sanitize_colnames(data):
     if not isinstance(data, (list, tuple, np.ndarray)):
         raise TypeError(f'{type(data)} is not supported.')
 
-    return [_sanitize(i).lower() for i in data]
+    return [_sanitize(i) for i in data]
 
 
 def _fix_row_index(row, length):
