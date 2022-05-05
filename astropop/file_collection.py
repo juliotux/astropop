@@ -56,6 +56,31 @@ _metadata = 'astropop_metadata'
 _files_col = '__file'
 
 
+class _SQLColumnMap:
+    """Map keywords to compilant keys in a SQLTable."""
+
+    def __init__(self, db, table, key_col, cols_col):
+        self.db = db
+        self.table = table
+        self.key_col = key_col
+        self.cols_col = cols_col
+
+    def __getitem__(self, item):
+        i = self.db.select(self.table, columns=[self.cols_col],
+                           where={self.key_col: item.lower()})
+        if len(i) == 1:
+            return i[0][0]
+        raise KeyError(f'{item}')
+
+    def __setitem__(self, item, value):
+        indx = self.db.index_of(self.table, {self.key_col: item})
+        if indx is not None:
+            self.db.set_item(self.table, self.cols_col, indx, value)
+        else:
+            self.db.add_rows(self.table, {self.key_col:item,
+                                          self.cols_col:value})
+
+
 class FitsFileGroup():
     """Easy handle groups of fits files."""
 
@@ -99,12 +124,12 @@ class FitsFileGroup():
 
         if not initialized:
             self._db.add_table(_metadata)
-            self._db.add_row(_metadata, {'GLOB_INCLUDE': self._include,
-                                         'GLOB_EXCLUDE': self._exclude,
-                                         'LOCATION': location,
-                                         'COMPRESSION': compression,
-                                         'EXT': self._ext},
-                             add_columns=True)
+            self._db.add_rows(_metadata, {'GLOB_INCLUDE': self._include,
+                                          'GLOB_EXCLUDE': self._exclude,
+                                          'LOCATION': location,
+                                          'COMPRESSION': compression,
+                                          'EXT': self._ext},
+                              add_columns=True)
             self._db.add_column(_metadata, 'FITS_EXT', self._extensions)
 
         self._include = self._db[_metadata, 'glob_include'][0]
@@ -139,7 +164,7 @@ class FitsFileGroup():
             db.drop_table(_headers)
             db.add_table(_headers, columns=self._db[_headers].column_names)
             for i in indexes:
-                db.add_row(_headers, self._db[_headers][i].as_dict())
+                db.add_rows(_headers, self._db[_headers][i].values)
 
         nfg = object.__new__(FitsFileGroup)
         nfg._db = db
@@ -202,7 +227,7 @@ class FitsFileGroup():
         hdr.pop('COMMENT', None)
         hdr.pop('HISTORY', None)
         hdr.pop('', None)
-        self._db.add_row(_headers,  hdr, add_columns=True)
+        self._db.add_rows(_headers,  hdr, add_columns=True)
 
     def __getitem__(self, item):
         if isinstance(item, str):
