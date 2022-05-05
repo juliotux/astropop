@@ -275,7 +275,7 @@ class SQLRow:
     @property
     def values(self):
         """Get the values of the current row."""
-        return self._db.select(self._table)[self.index]
+        return self._db.select(self._table, where={_ID_KEY: self.index+1})[0]
 
     @property
     def index(self):
@@ -536,35 +536,10 @@ class SQLDatabase:
         if table not in self.table_names:
             raise KeyError(f'Table "{table}" does not exist.')
 
-    def add_table(self, table, columns=None, data=None):
-        """Create a table in database."""
-        logger.debug('Initializing "%s" table.', table)
-        if table in self.table_names:
-            raise ValueError('table {table} already exists.')
-
-        comm = f"CREATE TABLE '{table}'"
-        comm += f" (\n{_ID_KEY} INTEGER PRIMARY KEY AUTOINCREMENT"
-
-        if columns is not None and data is not None:
-            raise ValueError('cannot specify both columns and data.')
-        if columns is not None:
-            comm += ",\n"
-            for i, name in enumerate(columns):
-                comm += f"\t'{name}'"
-                if i != len(columns) - 1:
-                    comm += ",\n"
-        comm += "\n);"
-
-        self.execute(comm)
-
-        if data is not None:
-            self.add_rows(table, data, add_columns=True)
-
     def _add_missing_columns(self, table, columns):
         """Add missing columns to the table."""
         existing = set(self.column_names(table))
-        missing = set(columns) - existing
-        for col in missing:
+        for col in [i for i in columns if i not in existing]:
             self.add_column(table, col)
 
     def _add_data_dict(self, table, data, add_columns=False):
@@ -596,6 +571,30 @@ class SQLDatabase:
         comm += ', '.join(map(_values_str, data))
         comm += ';'
         self.execute(comm)
+
+    def add_table(self, table, columns=None, data=None):
+        """Create a table in database."""
+        logger.debug('Initializing "%s" table.', table)
+        if table in self.table_names:
+            raise ValueError('table {table} already exists.')
+
+        comm = f"CREATE TABLE '{table}'"
+        comm += f" (\n{_ID_KEY} INTEGER PRIMARY KEY AUTOINCREMENT"
+
+        if columns is not None and data is not None:
+            raise ValueError('cannot specify both columns and data.')
+        if columns is not None:
+            comm += ",\n"
+            for i, name in enumerate(columns):
+                comm += f"\t'{name}'"
+                if i != len(columns) - 1:
+                    comm += ",\n"
+        comm += "\n);"
+
+        self.execute(comm)
+
+        if data is not None:
+            self.add_rows(table, data, add_columns=True)
 
     def add_column(self, table, column, data=None):
         """Add a column to a table."""
@@ -725,6 +724,12 @@ class SQLDatabase:
         col = _sanitize_colnames([column])[0]
         for i, d in enumerate(data):
             self.set_item(table, col, i, d)
+
+    def index_of(self, table, where):
+        """Get the index(es) where a given condition is satisfied."""
+        indx = self.select(table, _ID_KEY, where=where)
+        # TODO: finish
+        raise NotImplementedError
 
     def __len__(self):
         """Get the number of rows in the current table."""
