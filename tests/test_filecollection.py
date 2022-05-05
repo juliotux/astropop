@@ -133,7 +133,6 @@ class Test_SQLColumnMap:
         assert_equal(cmap['key 5'], 'col6')
 
 
-
 class Test_FitsFileGroup():
     def test_fg_creation_empty(self):
         fg = FitsFileGroup()

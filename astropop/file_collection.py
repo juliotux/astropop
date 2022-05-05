@@ -74,7 +74,7 @@ class _SQLColumnMap:
 
     def __setitem__(self, item, value):
         indx = self.db.index_of(self.table, {self.key_col: item})
-        if indx is not None:
+        if indx != []:
             self.db.set_item(self.table, self.cols_col, indx, value)
         else:
             self.db.add_rows(self.table, {self.key_col:item,
