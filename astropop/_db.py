@@ -24,107 +24,6 @@ np_to_sql = {
 _ID_KEY = '__id__'
 
 
-def _sanitize_colnames(data):
-    """Sanitize the colnames to avoid invalid characteres like '-'."""
-    def _sanitize(key):
-        if len([ch for ch in key if not ch.isalnum() and ch != '_']) != 0:
-            raise ValueError(f'Invalid column name: {key}.')
-        return key.lower()
-
-    if isinstance(data, dict):
-        d = data
-        colnames = _sanitize_colnames(list(data.keys()))
-        return dict(zip(colnames, d.values()))
-    if isinstance(data, str):
-        return _sanitize(data)
-    if not isinstance(data, (list, tuple, np.ndarray)):
-        raise TypeError(f'{type(data)} is not supported.')
-
-    return [_sanitize(i) for i in data]
-
-
-def _sanitize_value(data):
-    """Sanitize the value to avoid sql errors."""
-    if isinstance(data, str):
-        data = f"'{data}'"
-    elif isinstance(data, bytes):
-        data = f"'{data.decode()}'"
-    elif isinstance(data, bool):
-        data = str(int(data))
-    elif data is None:
-        data = 'NULL'
-    return data
-
-
-def _fix_row_index(row, length):
-    """Fix the row number to be a valid index."""
-    if row < 0:
-        row += length
-    if row >= length or row < 0:
-        raise IndexError('Row index out of range.')
-    return row
-
-
-def _row_dict(data, cols):
-    """Convert a dict to match the colnames fo a database."""
-    if not isinstance(data, dict):
-        raise TypeError(f'{type(data)} is not supported.')
-    data = _sanitize_colnames(data)
-    comm_dict = {_ID_KEY: "NULL"}
-    for name in cols:
-        if name in data.keys():
-            comm_dict[name] = _sanitize_value(data[name])
-        else:
-            comm_dict[name] = "NULL"
-    return comm_dict
-
-
-def _import_from_data(data):
-    """Import data from a dict or a list of dicts."""
-    if isinstance(data, Table):
-        data = data.as_array()
-
-    if isinstance(data, np.ndarray):
-        for i in data:
-            yield dict(zip(data.dtype.names, i))
-    elif isinstance(data, dict):
-        if np.any([check_iterable(i) for i in data.values()]):
-            for row in [dict(zip(data.keys(), i))
-                        for i in zip(*data.values())]:
-                yield row
-        else:
-            yield data
-    else:
-        raise TypeError(f'{type(data)} is not supported.')
-
-
-def _parse_where(where):
-    if where is None:
-        _where = None
-    elif isinstance(where, dict):
-        where = _sanitize_colnames(where)
-        for i, (k, v) in enumerate(where.items()):
-            if isinstance(v, str):
-                # avoid sql errors
-                v = f"'{v}'"
-            if i == 0:
-                _where = f"{k}={v}"
-            else:
-                _where += f" AND {k}={v}"
-    elif isinstance(where, str):
-        _where = where
-    elif isinstance(where, (list, tuple)):
-        for w in where:
-            if not isinstance(w, str):
-                raise TypeError('if where is a list, it must be a list '
-                                f'of strings. Not {type(w)}.')
-        _where = ' AND '.join(where)
-    else:
-        raise TypeError('where must be a string, list of strings or'
-                        ' dict.')
-    return _where
-
-
 class SQLTable:
     """Handle an SQL table operations interfacing with the DB."""
 
@@ -176,9 +75,9 @@ class SQLTable:
         """Add a column to the table."""
         self._db.add_column(self._name, name, data=data)
 
-    def add_row(self, data, add_columns=False):
+    def add_rows(self, data, add_columns=False):
         """Add a row to the table."""
-        self._db.add_row(self._name, data, add_columns=add_columns)
+        self._db.add_rows(self._name, data, add_columns=add_columns)
 
     def get_column(self, column):
         """Get a given column from the table."""
@@ -430,6 +329,84 @@ class SQLRow:
         return s
 
 
+def _sanitize_colnames(data):
+    """Sanitize the colnames to avoid invalid characteres like '-'."""
+    def _sanitize(key):
+        if len([ch for ch in key if not ch.isalnum() and ch != '_']) != 0:
+            raise ValueError(f'Invalid column name: {key}.')
+        return key.lower()
+
+    if isinstance(data, dict):
+        d = data
+        colnames = _sanitize_colnames(list(data.keys()))
+        return dict(zip(colnames, d.values()))
+    if isinstance(data, str):
+        return _sanitize(data)
+    if not isinstance(data, (list, tuple, np.ndarray)):
+        raise TypeError(f'{type(data)} is not supported.')
+
+    return [_sanitize(i) for i in data]
+
+
+def _sanitize_value(data):
+    """Sanitize the value to avoid sql errors."""
+    if isinstance(data, str):
+        return f"'{data}'"
+    if isinstance(data, bytes):
+        return f"'{data.decode()}'"
+    if isinstance(data, bool):
+        return str(int(data))
+    if data is None:
+        return 'NULL'
+    if np.isscalar(data) and np.isreal(data):
+        return str(data)
+    raise TypeError(f'{type(data)} is not supported.')
+
+
+def _fix_row_index(row, length):
+    """Fix the row number to be a valid index."""
+    if row < 0:
+        row += length
+    if row >= length or row < 0:
+        raise IndexError('Row index out of range.')
+    return row
+
+
+def _dict2row(cols, **row):
+    values = [None]*len(cols)
+    for i, c in enumerate(cols):
+        if c in row.keys():
+            values[i] = row[c]
+        else:
+            values[i] = None
+    return values
+
+
+def _parse_where(where):
+    if where is None:
+        _where = None
+    elif isinstance(where, dict):
+        where = _sanitize_colnames(where)
+        for i, (k, v) in enumerate(where.items()):
+            v = _sanitize_value(v)
+            if i == 0:
+                _where = f"{k}={v}"
+            else:
+                _where += f" AND {k}={v}"
+    elif isinstance(where, str):
+        _where = where
+    elif isinstance(where, (list, tuple)):
+        for w in where:
+            if not isinstance(w, str):
+                raise TypeError('if where is a list, it must be a list '
+                                f'of strings. Not {type(w)}.')
+        _where = ' AND '.join(where)
+    else:
+        raise TypeError('where must be a string, list of strings or'
+                        ' dict.')
+    return _where
+
+
 class SQLDatabase:
     """Database creation and manipulation with SQL.
 
@@ -577,14 +554,48 @@ class SQLDatabase:
                 if i != len(columns) - 1:
                     comm += ",\n"
         comm += "\n);"
-        if data is not None:
-            rows = list(_import_from_data(data))
 
         self.execute(comm)
 
         if data is not None:
-            for r in rows:
-                self.add_row(table, r, add_columns=True)
+            self.add_rows(table, data, add_columns=True)
+
+    def _add_missing_columns(self, table, columns):
+        """Add missing columns to the table."""
+        existing = set(self.column_names(table))
+        missing = set(columns) - existing
+        for col in missing:
+            self.add_column(table, col)
+
+    def _add_data_dict(self, table, data, add_columns=False):
+        """Add data sotred in a dict to the table."""
+        data = _sanitize_colnames(data)
+        if add_columns:
+            self._add_missing_columns(table, data.keys())
+
+        rows = np.broadcast(*_dict2row(cols=self.column_names(table), **data))
+        rows = list(zip(*rows.iters))
+        self._add_data_list(table, rows)
+
+    def _add_data_list(self, table, data):
+        """Add data stored in a list to the table."""
+        if np.ndim(data) not in (1, 2):
+            raise ValueError('data must be a 1D or 2D array.')
+
+        if np.ndim(data) == 1:
+            data = np.reshape(data, (1, len(data)))
+
+        if np.shape(data)[1] != len(self.column_names(table)):
+            raise ValueError('data must have the same number of columns as '
+                             'the table.')
+
+        def _values_str(row):
+            return f"({', '.join(['NULL'] + list(map(_sanitize_value, row)))})"
+
+        comm = f"INSERT INTO {table} VALUES "
+        comm += ', '.join(map(_values_str, data))
+        comm += ';'
+        self.execute(comm)
 
     def add_column(self, table, column, data=None):
         """Add a column to a table."""
@@ -607,34 +618,37 @@ class SQLDatabase:
         if data is not None:
             self.set_column(table, column, data)
 
-    def add_row(self, table, data, add_columns=False):
+    def add_rows(self, table, data, add_columns=False):
         """Add a dict row to a table.
 
         Parameters
         ----------
-        data : dict
-            Dictionary of data to add.
+        data : dict, list or `~numpy.ndarray`
+            Data to add to the table. If dict, keys are column names,
+            if list, the order of the values is the same as the order of
+            the column names. If `~numpy.ndarray`, dtype names are interpreted
+            as column names.
         add_columns : bool (optional)
             If True, add missing columns to the table.
         """
-        if not isinstance(data, dict):
-            raise TypeError('data must be a dict.')
         self._check_table(table)
-        data = _sanitize_colnames(data)
+        if isinstance(data, (list, tuple)):
+            return self._add_data_list(table, data)
+        if isinstance(data, dict):
+            return self._add_data_dict(table, data, add_columns=add_columns)
+        if isinstance(data, np.ndarray):
+            names = data.dtype.names
+            if names is not None:
+                data = {n:data[n] for n in names}
+                return self._add_data_dict(table, data,
+                                           add_columns=add_columns)
+            return self._add_data_list(table, data)
+        if isinstance(data, Table):
+            data = {c: data[c].value for c in data.colnames}
+            return self._add_data_dict(table, data, add_columns=add_columns)
 
-        if add_columns:
-            # add missing columns
-            cols = set(self.column_names(table))
-            for k in data.keys():
-                if k not in cols:
-                    self.add_column(table, k)
-
-        comm_dict = _row_dict(data, self.column_names(table))
-        # create the sql command and add the row
-        cols = [_ID_KEY] + self.column_names(table)
-        comm = f"INSERT INTO {table} VALUES ("
-        comm += f"{', '.join(comm_dict[i] for i in cols)});"
-        self.execute(comm)
+        raise TypeError('data must be a dict, list, or numpy array. '
+                        f'Not {type(data)}.')
 
     def drop_table(self, table):
         """Drop a table from the database."""
@@ -681,10 +695,18 @@ class SQLDatabase:
         row = _fix_row_index(row, self.count(table))
         colnames = self.column_names(table)
 
-        comm_dict = _row_dict(data, colnames)
+        if isinstance(data, dict):
+            data = _dict2row(colnames, **data)
+        elif isinstance(data, (list, tuple, np.ndarray)):
+            if len(data) != len(colnames):
+                raise ValueError('data must have the same length as the '
+                                 'table.')
+        else:
+            raise TypeError('data must be a dict, list, or numpy array. '
+                            f'Not {type(data)}.')
 
         comm = f"UPDATE {table} SET "
-        comm += f"{', '.join(f'{i}={comm_dict[i]}' for i in colnames)} "
+        comm += f"{', '.join(f'{i}={v}' for i, v in zip(colnames, data))} "
         comm += f" WHERE {_ID_KEY}={row+1};"
         self.execute(comm)
 
@@ -698,7 +720,7 @@ class SQLDatabase:
 
         if tablen == 0:
             for i in range(len(data)):
-                self.add_row(table, {})
+                self.add_rows(table, {})
 
         col = _sanitize_colnames([column])[0]
         for i, d in enumerate(data):
@@ -751,5 +773,6 @@ class SQLDatabase:
         # when copying, always copy to memory
         db = SQLDatabase(':memory:')
         for i in self.table_names:
-            db.add_table(i, data=self[i].as_table())
+            db.add_table(i, columns=self.column_names(i))
+            db.add_rows(i, self.select(i))
         return db
