@@ -565,6 +565,16 @@ class Test_SQLDatabase_PropsComms:
 
         assert_equal(len(db), 3)
 
+    def test_sql_index_of(self):
+        db = SQLDatabase(':memory:')
+        db.add_table('test')
+        db.add_column('test', 'a', data=np.arange(10, 20))
+        db.add_column('test', 'b', data=np.arange(20, 30))
+
+        assert_equal(db.index_of('test', {'a': 15}), 5)
+        assert_equal(db.index_of('test', 'b >= 27'), [7, 8, 9])
+        assert_equal(db.index_of('test', {'a': 1, 'b': 2}), [])
+
 
 class Test_SQLRow:
     @property
@@ -1051,6 +1061,13 @@ class Test_SQLTable:
             table[2:5] = 2
         with pytest.raises(KeyError):
             table[1, 2, 3] = 3
+
+    def test_table_indexof(self):
+        db = self.db
+        table = db['test']
+        assert_equal(table.index_of({'a': 15}), 5)
+        assert_equal(table.index_of({'a': 50}), [])
+        assert_equal(table.index_of('a < 13'), [0, 1, 2])
 
 
 class Test_SQLColumn:

@@ -95,6 +95,10 @@ class SQLTable:
         """Set a given row in the table."""
         self._db.set_row(self._name, row, data)
 
+    def index_of(self, where):
+        """Get the index of the rows that match the given condition."""
+        return self._db.index_of(self._name, where)
+
     def _resolve_tuple(self, key):
         """Resolve how tuples keys are handled."""
         col, row = key
@@ -482,6 +486,8 @@ class SQLDatabase:
         self._check_table(table)
         if columns is None:
             columns = self[table].column_names
+        elif isinstance(columns, str):
+            columns = [columns]
         # only use sanitized column names
         columns = ', '.join(_sanitize_colnames(columns))
 
@@ -728,8 +734,9 @@ class SQLDatabase:
     def index_of(self, table, where):
         """Get the index(es) where a given condition is satisfied."""
         indx = self.select(table, _ID_KEY, where=where)
-        # TODO: finish
-        raise NotImplementedError
+        if len(indx) == 1:
+            return indx[0][0]-1
+        return [i[0]-1 for i in indx]
 
     def __len__(self):
         """Get the number of rows in the current table."""
