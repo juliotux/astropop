@@ -6,7 +6,6 @@ import numpy as np
 from astropy.table import Table
 
 from .logger import logger
-from .py_utils import check_iterable
 
 
 __all__ = ['SQLDatabase', 'SQLTable', 'SQLRow', 'SQLColumn']
@@ -644,7 +643,7 @@ class SQLDatabase:
         if isinstance(data, np.ndarray):
             names = data.dtype.names
             if names is not None:
-                data = {n:data[n] for n in names}
+                data = {n: data[n] for n in names}
                 return self._add_data_dict(table, data,
                                            add_columns=add_columns)
             return self._add_data_list(table, data)
