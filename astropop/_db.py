@@ -42,7 +42,11 @@ class SQLColumnMap:
         if name in self.keywords:
             raise ValueError(f'{name} already exists')
 
-        col = f'col_{len(self.columns)}'
+        i = len(self.keywords)+1
+        col = f'col_{i}'
+        while col in self.keywords:
+            i += 1
+            col = f'col_{i}'
 
         self.map.add_rows({self.key: name, self.col: col})
         self._clear_cache()
