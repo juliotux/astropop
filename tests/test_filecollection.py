@@ -2,9 +2,7 @@ import pytest
 import numpy as np
 
 from astropy.io import fits
-from astropop.file_collection import FitsFileGroup, list_fits_files, \
-                                     _SQLColumnMap
-from astropop._db import SQLDatabase
+from astropop.file_collection import FitsFileGroup, list_fits_files
 from astropop.testing import *
 
 
@@ -106,31 +104,6 @@ def create_test_files(tmpdir, extension='fits'):
         files_list.append(str(fname))
 
     return files_list
-
-
-class Test_SQLColumnMap:
-    def test_columnmap_simple(self):
-        db = SQLDatabase()
-        db.add_table('key_columns', data={'keywords': ['key1', 'key 2',
-                                                       'key-3', 'key_4'],
-                                          'columns': ['col1', 'col2', 'col3',
-                                                      'col4']})
-        cmap = _SQLColumnMap(db, 'key_columns', 'keywords', 'columns')
-        assert_equal(cmap['key1'], 'col1')
-        assert_equal(cmap['key 2'], 'col2')
-        assert_equal(cmap['key-3'], 'col3')
-        assert_equal(cmap['key_4'], 'col4')
-
-        with pytest.raises(KeyError):
-            cmap['key5']
-
-        cmap['key1'] = 'col5'
-        cmap['key 5'] = 'col6'
-        assert_equal(cmap['key1'], 'col5')
-        assert_equal(cmap['key 2'], 'col2')
-        assert_equal(cmap['key-3'], 'col3')
-        assert_equal(cmap['key_4'], 'col4')
-        assert_equal(cmap['key 5'], 'col6')
 
 
 class Test_FitsFileGroup():
@@ -248,10 +221,8 @@ class Test_FitsFileGroup():
         fg = FitsFileGroup(location=tmpdir/'fits', compression=False)
 
         # non existing key
-        nfg = fg.filtered({'NON-EXISTING': 1})
-        assert_is_instance(nfg, FitsFileGroup)
-        assert_equal(len(nfg), 0)
-        assert_equal(nfg.files, [])
+        with pytest.raises(KeyError):
+            nfg = fg.filtered({'NON-EXISTING': 1})
 
         # existing but not matched
         nfg = fg.filtered({'object': 'Sun'})
