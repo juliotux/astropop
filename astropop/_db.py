@@ -9,7 +9,7 @@ from .logger import logger
 from .py_utils import check_iterable
 
 
-__all__ = ['SQLDatabase', 'SQLTable', 'SQLRow', 'SQLColumn']
+__all__ = ['SQLDatabase', 'SQLTable', 'SQLRow', 'SQLColumn', 'SQLColumnMap']
 
 
 np_to_sql = {
@@ -24,108 +24,99 @@ np_to_sql = {
 _ID_KEY = '__id__'
 
 
-def _sanitize_colnames(data):
-    """Sanitize the colnames to avoid invalid characteres like '-'."""
-    def _sanitize(key):
-        non_alpha = [ch for ch in key if not ch.isalnum()]
-        for i in non_alpha:
-            key = key.replace(i, '_')
-        return key
+class SQLColumnMap:
+    """Map keywords to SQL columns."""
 
-    if isinstance(data, dict):
-        d = data
-        colnames = _sanitize_colnames(list(data.keys()))
-        return dict(zip(colnames, d.values()))
-    if isinstance(data, str):
-        return _sanitize(data)
-    if not isinstance(data, (list, tuple, np.ndarray)):
-        raise TypeError(f'{type(data)} is not supported.')
+    def __init__(self, db, map_table, map_key, map_column):
+        self.db = db
+        self.map = db[map_table]
+        self.key = map_key
+        self.col = map_column
 
-    return [_sanitize(i).lower() for i in data]
+        self._clear_cache()
 
+    def add_column(self, name):
+        """Add a new column to the table."""
+        name = name.lower()
 
-def _fix_row_index(row, length):
-    """Fix the row number to be a valid index."""
-    if row < 0:
-        row += length
-    if row >= length or row < 0:
-        raise IndexError('Row index out of range.')
-    return row
+        if name in self.keywords:
+            raise ValueError(f'{name} already exists')
 
+        i = len(self.keywords)+1
+        col = f'col_{i}'
+        while col in self.keywords:
+            i += 1
+            col = f'col_{i}'
 
-def _row_dict(data, cols):
-    """Convert a dict to match the colnames fo a database."""
-    if not isinstance(data, dict):
-        raise TypeError(f'{type(data)} is not supported.')
-    data = _sanitize_colnames(data)
-    comm_dict = {_ID_KEY: "NULL"}
-    for name in cols:
-        if name in data.keys():
-            d = data[name]
-            if isinstance(d, str):
-                d = f"'{d}'"
-            elif isinstance(d, bytes):
-                d = f"'{d.decode()}'"
-            elif d is None:
-                d = 'NULL'
-            elif isinstance(d, bool):
-                d = str(int(d))
-            comm_dict[name] = f"{d}"
-        else:
-            comm_dict[name] = "NULL"
-    return comm_dict
+        self.map.add_rows({self.key: name, self.col: col})
+        self._clear_cache()
+        return col
 
+    def get_column_name(self, item, add_columns=False):
+        """Get the column name for a given keyword."""
+        if check_iterable(item):
+            return [self.get_column_name(i) for i in item]
 
-def _import_from_data(data):
-    """Import data from a dict or a list of dicts."""
-    if isinstance(data, Table):
-        data = data.as_array()
+        item = item.lower()
+        if item not in self.keywords:
+            if add_columns:
+                return self.add_column(item)
+            raise KeyError(f'{item}')
 
-    if isinstance(data, np.ndarray):
-        for i in data:
-            yield dict(zip(data.dtype.names, i))
-    elif isinstance(data, dict):
-        if np.any([check_iterable(i) for i in data.values()]):
-            for row in [dict(zip(data.keys(), i))
-                        for i in zip(*data.values())]:
-                yield row
-        else:
-            yield data
-    else:
-        raise TypeError(f'{type(data)} is not supported.')
+        return self.columns[np.where(self.keywords == item)][0]
 
+    def get_keyword(self, item):
+        """Get the keyword for a given column."""
+        if check_iterable(item):
+            return [self.get_keyword(i) for i in item]
 
-def _parse_where(where):
-    if where is None:
-        _where = None
-    elif isinstance(where, dict):
-        where = _sanitize_colnames(where)
-        for i, (k, v) in enumerate(where.items()):
-            if isinstance(v, str):
-                # avoid sql errors
-                v = f"'{v}'"
-            if i == 0:
-                _where = f"{k}={v}"
-            else:
-                _where += f" AND {k}={v}"
-    elif isinstance(where, str):
-        _where = where
-    elif isinstance(where, (list, tuple)):
-        for w in where:
-            if not isinstance(w, str):
-                raise TypeError('if where is a list, it must be a list '
-                                f'of strings. Not {type(w)}.')
-        _where = ' AND '.join(where)
-    else:
-        raise TypeError('where must be a string, list of strings or'
-                        ' dict.')
-    return _where
+        item = item.lower()
+        if item not in self.columns:
+            raise KeyError(f'{item}')
+
+        return self.keywords[np.where(self.columns == item)][0]
+
+    def _clear_cache(self):
+        self._columns = None
+        self._keywords = None
+
+    @property
+    def columns(self):
+        """Get the column names for the table."""
+        if self._columns is None:
+            self._columns = np.array(self.map.select(columns=[self.col]))
+        return self._columns
+
+    @property
+    def keywords(self):
+        """Get the keywords of the columns for the table."""
+        if self._keywords is None:
+            self._keywords = np.array(self.map.select(columns=[self.key]))
+        return self._keywords
+
+    def map_row(self, data, add_columns=False):
+        """Map a row to the columns."""
+        if isinstance(data, dict):
+            d = {}
+            for k, v in data.items():
+                if k in self.keywords or add_columns:
+                    d[self.get_column_name(k, add_columns=add_columns)] = v
+            data = d
+        elif not isinstance(data, list):
+            raise ValueError('Only dict and list are supported')
+        return data
+
+    def parse_where(self, where):
+        """Parse a where clause using column mappring."""
+        if isinstance(where, dict):
+            return {self.get_column_name(k): v for k, v in where.items()}
+        raise TypeError('Only dict is supported')
 
 
 class SQLTable:
     """Handle an SQL table operations interfacing with the DB."""
 
-    def __init__(self, db, name):
+    def __init__(self, db, name, colmap=None):
         """Initialize the table.
 
         Parameters
@@ -137,6 +128,7 @@ class SQLTable:
         """
         self._db = db
         self._name = name
+        self._colmap = colmap
 
     @property
     def name(self):
@@ -151,16 +143,27 @@ class SQLTable:
     @property
     def column_names(self):
         """Get the column names of the current table."""
-        return self._db.column_names(self._name)
+        names = self._db.column_names(self._name)
+        if self._colmap is not None:
+            return self._colmap.get_keyword(names)
+        return names
 
     @property
     def values(self):
         """Get the values of the current table."""
         return self.select()
 
-    def select(self, *args, **kwargs):
+    def select(self, **kwargs):
         """Select rows from the table."""
-        return self._db.select(self._name, *args, **kwargs)
+        where = kwargs.pop('where', None)
+        order = kwargs.pop('order', None)
+        if self._colmap is not None:
+            if where is not None:
+                where = self._colmap.parse_where(where)
+            if order is not None:
+                order = self._colmap.get_column_name(order)
+
+        return self._db.select(self._name, where=where, order=order, **kwargs)
 
     def as_table(self):
         """Return the current table as an `~astropy.table.Table` object."""
@@ -171,14 +174,21 @@ class SQLTable:
 
     def add_column(self, name, data=None):
         """Add a column to the table."""
+        if self._colmap is not None:
+            name = self._colmap.add_column(name)
         self._db.add_column(self._name, name, data=data)
 
-    def add_row(self, data, add_columns=False):
+    def add_rows(self, data, add_columns=False):
         """Add a row to the table."""
-        self._db.add_row(self._name, data, add_columns=add_columns)
+        # If keymappging is used, only dict and list
+        if self._colmap is not None:
+            data = self._colmap.map_row(data, add_columns=add_columns)
+        self._db.add_rows(self._name, data, add_columns=add_columns)
 
     def get_column(self, column):
         """Get a given column from the table."""
+        if self._colmap is not None:
+            column = self._colmap.get_column_name(column)
         return self._db.get_column(self._name, column)
 
     def get_row(self, row):
@@ -187,11 +197,21 @@ class SQLTable:
 
     def set_column(self, column, data):
         """Set a given column in the table."""
+        if self._colmap is not None:
+            column = self._colmap.get_column_name(column)
         self._db.set_column(self._name, column, data)
 
     def set_row(self, row, data):
         """Set a given row in the table."""
+        if self._colmap is not None:
+            data = self._colmap.map_row(data)
         self._db.set_row(self._name, row, data)
+
+    def index_of(self, where):
+        """Get the index of the rows that match the given condition."""
+        if self._colmap is not None:
+            where = self._colmap.parse_where(where)
+        return self._db.index_of(self._name, where)
 
     def _resolve_tuple(self, key):
         """Resolve how tuples keys are handled."""
@@ -373,7 +393,7 @@ class SQLRow:
     @property
     def values(self):
         """Get the values of the current row."""
-        return self._db.select(self._table)[self.index]
+        return self._db.select(self._table, where={_ID_KEY: self.index+1})[0]
 
     @property
     def index(self):
@@ -425,6 +445,84 @@ class SQLRow:
         s = f"{self.__class__.__name__} {self._row} in table '{self._table}' "
         s += self.as_dict().__repr__()
         return s
+
+
+def _sanitize_colnames(data):
+    """Sanitize the colnames to avoid invalid characteres like '-'."""
+    def _sanitize(key):
+        if len([ch for ch in key if not ch.isalnum() and ch != '_']) != 0:
+            raise ValueError(f'Invalid column name: {key}.')
+        return key.lower()
+
+    if isinstance(data, dict):
+        d = data
+        colnames = _sanitize_colnames(list(data.keys()))
+        return dict(zip(colnames, d.values()))
+    if isinstance(data, str):
+        return _sanitize(data)
+    if not isinstance(data, (list, tuple, np.ndarray)):
+        raise TypeError(f'{type(data)} is not supported.')
+
+    return [_sanitize(i) for i in data]
+
+
+def _sanitize_value(data):
+    """Sanitize the value to avoid sql errors."""
+    if isinstance(data, str):
+        return f"'{data}'"
+    if isinstance(data, bytes):
+        return f"'{data.decode()}'"
+    if isinstance(data, bool):
+        return str(int(data))
+    if data is None:
+        return 'NULL'
+    if np.isscalar(data) and np.isreal(data):
+        return str(data)
+    raise TypeError(f'{type(data)} is not supported.')
+
+
+def _fix_row_index(row, length):
+    """Fix the row number to be a valid index."""
+    if row < 0:
+        row += length
+    if row >= length or row < 0:
+        raise IndexError('Row index out of range.')
+    return row
+
+
+def _dict2row(cols, **row):
+    values = [None]*len(cols)
+    for i, c in enumerate(cols):
+        if c in row.keys():
+            values[i] = row[c]
+        else:
+            values[i] = None
+    return values
+
+
+def _parse_where(where):
+    if where is None:
+        _where = None
+    elif isinstance(where, dict):
+        where = _sanitize_colnames(where)
+        for i, (k, v) in enumerate(where.items()):
+            v = _sanitize_value(v)
+            if i == 0:
+                _where = f"{k}={v}"
+            else:
+                _where += f" AND {k}={v}"
+    elif isinstance(where, str):
+        _where = where
+    elif isinstance(where, (list, tuple)):
+        for w in where:
+            if not isinstance(w, str):
+                raise TypeError('if where is a list, it must be a list '
+                                f'of strings. Not {type(w)}.')
+        _where = ' AND '.join(where)
+    else:
+        raise TypeError('where must be a string, list of strings or'
+                        ' dict.')
+    return _where
 
 
 class SQLDatabase:
@@ -502,6 +600,8 @@ class SQLDatabase:
         self._check_table(table)
         if columns is None:
             columns = self[table].column_names
+        elif isinstance(columns, str):
+            columns = [columns]
         # only use sanitized column names
         columns = ', '.join(_sanitize_colnames(columns))
 
@@ -556,6 +656,42 @@ class SQLDatabase:
         if table not in self.table_names:
             raise KeyError(f'Table "{table}" does not exist.')
 
+    def _add_missing_columns(self, table, columns):
+        """Add missing columns to the table."""
+        existing = set(self.column_names(table))
+        for col in [i for i in columns if i not in existing]:
+            self.add_column(table, col)
+
+    def _add_data_dict(self, table, data, add_columns=False):
+        """Add data sotred in a dict to the table."""
+        data = _sanitize_colnames(data)
+        if add_columns:
+            self._add_missing_columns(table, data.keys())
+
+        rows = np.broadcast(*_dict2row(cols=self.column_names(table), **data))
+        rows = list(zip(*rows.iters))
+        self._add_data_list(table, rows)
+
+    def _add_data_list(self, table, data):
+        """Add data stored in a list to the table."""
+        if np.ndim(data) not in (1, 2):
+            raise ValueError('data must be a 1D or 2D array.')
+
+        if np.ndim(data) == 1:
+            data = np.reshape(data, (1, len(data)))
+
+        if np.shape(data)[1] != len(self.column_names(table)):
+            raise ValueError('data must have the same number of columns as '
+                             'the table.')
+
+        def _values_str(row):
+            return f"({', '.join(['NULL'] + list(map(_sanitize_value, row)))})"
+
+        comm = f"INSERT INTO {table} VALUES "
+        comm += ', '.join(map(_values_str, data))
+        comm += ';'
+        self.execute(comm)
+
     def add_table(self, table, columns=None, data=None):
         """Create a table in database."""
         logger.debug('Initializing "%s" table.', table)
@@ -574,14 +710,11 @@ class SQLDatabase:
                 if i != len(columns) - 1:
                     comm += ",\n"
         comm += "\n);"
-        if data is not None:
-            rows = list(_import_from_data(data))
 
         self.execute(comm)
 
         if data is not None:
-            for r in rows:
-                self.add_row(table, r, add_columns=True)
+            self.add_rows(table, data, add_columns=True)
 
     def add_column(self, table, column, data=None):
         """Add a column to a table."""
@@ -604,34 +737,37 @@ class SQLDatabase:
         if data is not None:
             self.set_column(table, column, data)
 
-    def add_row(self, table, data, add_columns=False):
+    def add_rows(self, table, data, add_columns=False):
         """Add a dict row to a table.
 
         Parameters
         ----------
-        data : dict
-            Dictionary of data to add.
+        data : dict, list or `~numpy.ndarray`
+            Data to add to the table. If dict, keys are column names,
+            if list, the order of the values is the same as the order of
+            the column names. If `~numpy.ndarray`, dtype names are interpreted
+            as column names.
         add_columns : bool (optional)
             If True, add missing columns to the table.
         """
-        if not isinstance(data, dict):
-            raise TypeError('data must be a dict.')
         self._check_table(table)
-        data = _sanitize_colnames(data)
+        if isinstance(data, (list, tuple)):
+            return self._add_data_list(table, data)
+        if isinstance(data, dict):
+            return self._add_data_dict(table, data, add_columns=add_columns)
+        if isinstance(data, np.ndarray):
+            names = data.dtype.names
+            if names is not None:
+                data = {n: data[n] for n in names}
+                return self._add_data_dict(table, data,
+                                           add_columns=add_columns)
+            return self._add_data_list(table, data)
+        if isinstance(data, Table):
+            data = {c: list(data[c]) for c in data.colnames}
+            return self._add_data_dict(table, data, add_columns=add_columns)
 
-        if add_columns:
-            # add missing columns
-            cols = set(self.column_names(table))
-            for k in data.keys():
-                if k not in cols:
-                    self.add_column(table, k)
-
-        comm_dict = _row_dict(data, self.column_names(table))
-        # create the sql command and add the row
-        cols = [_ID_KEY] + self.column_names(table)
-        comm = f"INSERT INTO {table} VALUES ("
-        comm += f"{', '.join(comm_dict[i] for i in cols)});"
-        self.execute(comm)
+        raise TypeError('data must be a dict, list, or numpy array. '
+                        f'Not {type(data)}.')
 
     def drop_table(self, table):
         """Drop a table from the database."""
@@ -678,10 +814,18 @@ class SQLDatabase:
         row = _fix_row_index(row, self.count(table))
         colnames = self.column_names(table)
 
-        comm_dict = _row_dict(data, colnames)
+        if isinstance(data, dict):
+            data = _dict2row(colnames, **data)
+        elif isinstance(data, (list, tuple, np.ndarray)):
+            if len(data) != len(colnames):
+                raise ValueError('data must have the same length as the '
+                                 'table.')
+        else:
+            raise TypeError('data must be a dict, list, or numpy array. '
+                            f'Not {type(data)}.')
 
         comm = f"UPDATE {table} SET "
-        comm += f"{', '.join(f'{i}={comm_dict[i]}' for i in colnames)} "
+        comm += f"{', '.join(f'{i}={v}' for i, v in zip(colnames, data))} "
         comm += f" WHERE {_ID_KEY}={row+1};"
         self.execute(comm)
 
@@ -695,11 +839,18 @@ class SQLDatabase:
 
         if tablen == 0:
             for i in range(len(data)):
-                self.add_row(table, {})
+                self.add_rows(table, {})
 
         col = _sanitize_colnames([column])[0]
         for i, d in enumerate(data):
             self.set_item(table, col, i, d)
+
+    def index_of(self, table, where):
+        """Get the index(es) where a given condition is satisfied."""
+        indx = self.select(table, _ID_KEY, where=where)
+        if len(indx) == 1:
+            return indx[0][0]-1
+        return [i[0]-1 for i in indx]
 
     def __len__(self):
         """Get the number of rows in the current table."""
@@ -748,5 +899,6 @@ class SQLDatabase:
         # when copying, always copy to memory
         db = SQLDatabase(':memory:')
         for i in self.table_names:
-            db.add_table(i, data=self[i].as_table())
+            db.add_table(i, columns=self.column_names(i))
+            db.add_rows(i, self.select(i))
         return db

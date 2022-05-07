@@ -3,8 +3,7 @@ import numpy as np
 
 from astropy.io import fits
 from astropop.file_collection import FitsFileGroup, list_fits_files
-from astropop.testing import assert_is_instance, assert_equal, \
-                             assert_in
+from astropop.testing import *
 
 
 @pytest.fixture(scope='session')
@@ -222,10 +221,8 @@ class Test_FitsFileGroup():
         fg = FitsFileGroup(location=tmpdir/'fits', compression=False)
 
         # non existing key
-        nfg = fg.filtered({'NON-EXISTING': 1})
-        assert_is_instance(nfg, FitsFileGroup)
-        assert_equal(len(nfg), 0)
-        assert_equal(nfg.files, [])
+        with pytest.raises(KeyError):
+            nfg = fg.filtered({'NON-EXISTING': 1})
 
         # existing but not matched
         nfg = fg.filtered({'object': 'Sun'})

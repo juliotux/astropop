@@ -2,7 +2,8 @@
 
 import pytest
 from astropop._db import SQLColumn, SQLRow, SQLTable, _ID_KEY, \
-                         SQLDatabase, _sanitize_colnames
+                         SQLDatabase, _sanitize_colnames, \
+                         SQLColumnMap
 import numpy as np
 from astropy.table import Table
 from astropop.testing import *
@@ -10,37 +11,98 @@ import sqlite3
 
 
 def test_sanitize_string():
-    assert_equal(_sanitize_colnames('test'), 'test')
-    assert_equal(_sanitize_colnames('test_'), 'test_')
-    assert_equal(_sanitize_colnames('test_1'), 'test_1')
-    assert_equal(_sanitize_colnames('test-2'), 'test_2')
-    assert_equal(_sanitize_colnames('test!2'), 'test_2')
-    assert_equal(_sanitize_colnames('test@2'), 'test_2')
-    assert_equal(_sanitize_colnames('test#2'), 'test_2')
-    assert_equal(_sanitize_colnames('test$2'), 'test_2')
-    assert_equal(_sanitize_colnames('test&2'), 'test_2')
-    assert_equal(_sanitize_colnames('test*2'), 'test_2')
-    assert_equal(_sanitize_colnames('test(2)'), 'test_2_')
-    assert_equal(_sanitize_colnames('test)2'), 'test_2')
-    assert_equal(_sanitize_colnames('test[2]'), 'test_2_')
-    assert_equal(_sanitize_colnames('test]2'), 'test_2')
-    assert_equal(_sanitize_colnames('test{2}'), 'test_2_')
-    assert_equal(_sanitize_colnames('test}2'), 'test_2')
-    assert_equal(_sanitize_colnames('test|2'), 'test_2')
-    assert_equal(_sanitize_colnames('test\\2'), 'test_2')
-    assert_equal(_sanitize_colnames('test^2'), 'test_2')
-    assert_equal(_sanitize_colnames('test~2'), 'test_2')
-    assert_equal(_sanitize_colnames('test"2'), 'test_2')
-    assert_equal(_sanitize_colnames('test\'2'), 'test_2')
-    assert_equal(_sanitize_colnames('test`2'), 'test_2')
-    assert_equal(_sanitize_colnames('test<2'), 'test_2')
-    assert_equal(_sanitize_colnames('test>2'), 'test_2')
-    assert_equal(_sanitize_colnames('test=2'), 'test_2')
-    assert_equal(_sanitize_colnames('test,2'), 'test_2')
-    assert_equal(_sanitize_colnames('test;2'), 'test_2')
-    assert_equal(_sanitize_colnames('test:2'), 'test_2')
-    assert_equal(_sanitize_colnames('test?2'), 'test_2')
-    assert_equal(_sanitize_colnames('test/2'), 'test_2')
+    for i in ['test-2', 'test!2', 'test@2', 'test#2', 'test$2',
+              'test&2', 'test*2', 'test(2)', 'test)2', 'test[2]', 'test]2',
+              'test{2}', 'test}2', 'test|2', 'test\\2', 'test^2', 'test~2'
+              'test"2', 'test\'2', 'test`2', 'test<2', 'test>2', 'test=2',
+              'test,2', 'test;2', 'test:2', 'test?2', 'test/2']:
+        with pytest.raises(ValueError):
+            _sanitize_colnames(i)
+
+    for i in ['test', 'test_1', 'test_1_2', 'test_1_2', 'Test', 'Test_1']:
+        assert_equal(_sanitize_colnames(i), i.lower())
+
+
+class Test_SQLColumnMap:
+    def cmap(self):
+        db = SQLDatabase()
+        db.add_table('key_columns', data={'keywords': ['key1', 'key 2',
+                                                       'key-3', 'key_4'],
+                                          'columns': ['col1', 'col2', 'col3',
+                                                      'col4']})
+        cmap = SQLColumnMap(db, 'key_columns', 'keywords', 'columns')
+        return cmap
+
+    def test_columnmap_get_column_name(self):
+        cmap = self.cmap()
+        assert_equal(cmap.get_column_name('key1'), 'col1')
+        assert_equal(cmap.get_column_name('key 2'), 'col2')
+        assert_equal(cmap.get_column_name('key-3'), 'col3')
+        assert_equal(cmap.get_column_name('key_4'), 'col4')
+
+    def test_columnmap_get_column_name_list(self):
+        cmap = self.cmap()
+        assert_equal(cmap.get_column_name(['key1', 'key 2']), ['col1', 'col2'])
+
+    def test_columnmap_get_column_name_not_found(self):
+        cmap = self.cmap()
+        with pytest.raises(KeyError):
+            cmap.get_column_name('key5')
+
+    def test_columnmap_get_keyword(self):
+        cmap = self.cmap()
+        assert_equal(cmap.get_keyword('col1'), 'key1')
+        assert_equal(cmap.get_keyword('col2'), 'key 2')
+        assert_equal(cmap.get_keyword('col3'), 'key-3')
+        assert_equal(cmap.get_keyword('col4'), 'key_4')
+
+    def test_columnmap_get_keyword_list(self):
+        cmap = self.cmap()
+        assert_equal(cmap.get_keyword(['col1', 'col2']), ['key1', 'key 2'])
+
+    def test_columnmap_get_keyword_not_found(self):
+        db = SQLDatabase()
+        db.add_table('key_columns', data={'keywords': ['key1', 'key 2',
+                                                       'key-3', 'key_4'],
+                                          'columns': ['col1', 'col2', 'col3',
+                                                      'col4']})
+        cmap = SQLColumnMap(db, 'key_columns', 'keywords', 'columns')
+        with pytest.raises(KeyError):
+            cmap.get_keyword('col5')
+
+    def test_columnmap_map_row(self):
+        cmap = self.cmap()
+        row = {'key1': 1, 'key 2': 2, 'key-3': 3}
+        assert_equal(cmap.map_row(row), {'col1': 1, 'col2': 2, 'col3': 3})
+
+    def test_columnmap_map_row_add_column(self):
+        cmap = self.cmap()
+        row = {'key1': 1, 'key 2': 2, 'key 5': 3}
+        assert_equal(cmap.map_row(row, add_columns=True),
+                     {'col1': 1, 'col2': 2, 'col_5': 3})
+
+    def test_columnmap_map_row_list(self):
+        cmap = self.cmap()
+        row = [1, 2, 3, 4]
+        assert_equal(cmap.map_row(row), [1, 2, 3, 4])
+
+    def test_columnmap_add_column(self):
+        cmap = self.cmap()
+        cmap.add_column('key 55')
+        assert_equal(cmap.get_column_name('key 55'), 'col_5')
+
+    def test_columnmap_add_column_existing(self):
+        cmap = self.cmap()
+        with pytest.raises(ValueError):
+            cmap.add_column('key1')
+
+    def test_columnmap_parse_where(self):
+        cmap = self.cmap()
+        with pytest.raises(TypeError):
+            cmap.parse_where('key1 = 1')
+        with pytest.raises(TypeError):
+            cmap.parse_where(['key1 = 1', 'key2 = 2'])
+        cmap.parse_where({'key1': 1, 'key 2': 2})
 
 
 class Test_SQLDatabase_Creation_Modify:
@@ -115,19 +177,17 @@ class Test_SQLDatabase_Creation_Modify:
         # Untyped ndarray should fail in get column names
         data = np.array([(1, 2.0), (3, 4.0), (5, 6.0), (7, 8.0)])
         db = SQLDatabase(':memory:')
-        with pytest.raises(TypeError):
+        with pytest.raises(ValueError):
             db.add_table('test', data=data)
 
-    def test_sql_add_table_from_data_invalid(self):
+    @pytest.mark.parametrize('data, error', [([1, 2, 3], ValueError),
+                                             (1, TypeError),
+                                             (1.0, TypeError),
+                                             ('test', TypeError)])
+    def test_sql_add_table_from_data_invalid(self, data, error):
         db = SQLDatabase(':memory:')
-        with assert_raises(TypeError):
-            db.add_table('test', data=[1, 2, 3])
-        with assert_raises(TypeError):
-            db.add_table('test', data=1)
-        with assert_raises(TypeError):
-            db.add_table('test', data=1.0)
-        with assert_raises(TypeError):
-            db.add_table('test', data='test')
+        with assert_raises(error):
+            db.add_table('test', data=data)
 
     def test_sql_add_table_columns(self):
         db = SQLDatabase(':memory:')
@@ -149,9 +209,8 @@ class Test_SQLDatabase_Creation_Modify:
         db.add_table('test')
         db.add_column('test', 'a')
         db.add_column('test', 'b')
-        db.add_row('test', dict(a=1, b=2))
-        db.add_row('test', dict(a=3, b=4))
-        db.add_row('test', dict(a=5, b=6))
+        db.add_rows('test', dict(a=1, b=2))
+        db.add_rows('test', dict(a=[3, 5], b=[4, 6]))
 
         assert_equal(db.get_column('test', 'a').values, [1, 3, 5])
         assert_equal(db.get_column('test', 'b').values, [2, 4, 6])
@@ -163,17 +222,17 @@ class Test_SQLDatabase_Creation_Modify:
         db.add_table('test')
         db.add_column('test', 'a')
         db.add_column('test', 'b')
-        with assert_raises(TypeError):
-            db.add_row('test', [1, 2, 3])
+        with assert_raises(ValueError):
+            db.add_rows('test', [1, 2, 3])
 
     def test_sql_add_row_add_columns(self):
         db = SQLDatabase(':memory:')
         db.add_table('test')
         db.add_column('test', 'a')
         db.add_column('test', 'b')
-        db.add_row('test', dict(a=1, b=2))
-        db.add_row('test', dict(a=3, c=4), add_columns=False)
-        db.add_row('test', dict(a=5, d=6), add_columns=True)
+        db.add_rows('test', dict(a=1, b=2))
+        db.add_rows('test', dict(a=3, c=4), add_columns=False)
+        db.add_rows('test', dict(a=5, d=6), add_columns=True)
 
         assert_equal(db.get_column('test', 'a').values, [1, 3, 5])
         assert_equal(db.get_column('test', 'b').values, [2, None, None])
@@ -201,9 +260,9 @@ class Test_SQLDatabase_Creation_Modify:
         db.add_table('test')
         db.add_column('test', 'a')
         db.add_column('test', 'b')
-        db['test'].add_row(dict(a=1, b=2))
-        db['test'].add_row(dict(a=3, c=4), add_columns=False)
-        db['test'].add_row(dict(a=5, d=6), add_columns=True)
+        db['test'].add_rows(dict(a=1, b=2))
+        db['test'].add_rows(dict(a=3, c=4), add_columns=False)
+        db['test'].add_rows(dict(a=5, d=6), add_columns=True)
 
         assert_equal(db.get_column('test', 'a').values, [1, 3, 5])
         assert_equal(db.get_column('test', 'b').values, [2, None, None])
@@ -214,11 +273,8 @@ class Test_SQLDatabase_Creation_Modify:
     def test_sql_set_column(self):
         db = SQLDatabase(':memory:')
         db.add_table('test')
-        db.add_column('test', 'a')
-        db.add_column('test', 'b')
-        db.add_row('test', dict(a=1, b=2))
-        db.add_row('test', dict(a=3, b=4))
-        db.add_row('test', dict(a=5, b=6))
+        db.add_column('test', 'a', [1, 3, 5])
+        db.add_column('test', 'b', [2, 4, 6])
 
         db.set_column('test', 'a', [10, 20, 30])
         db.set_column('test', 'b', [20, 40, 60])
@@ -234,15 +290,12 @@ class Test_SQLDatabase_Creation_Modify:
     def test_sql_set_row(self):
         db = SQLDatabase(':memory:')
         db.add_table('test')
-        db.add_column('test', 'a')
-        db.add_column('test', 'b')
-        db.add_row('test', dict(a=1, b=2))
-        db.add_row('test', dict(a=3, b=4))
-        db.add_row('test', dict(a=5, b=6))
+        db.add_column('test', 'a', [1, 3, 5])
+        db.add_column('test', 'b', [2, 4, 6])
 
         db.set_row('test', 0, dict(a=10, b=20))
-        db.set_row('test', 1, dict(a=20, b=40))
-        db.set_row('test', 2, dict(a=30, b=60))
+        db.set_row('test', 1, [20, 40])
+        db.set_row('test', 2, np.array([30, 60]))
 
         assert_equal(db.get_column('test', 'a').values, [10, 20, 30])
         assert_equal(db.get_column('test', 'b').values, [20, 40, 60])
@@ -255,11 +308,8 @@ class Test_SQLDatabase_Creation_Modify:
     def test_sql_set_item(self):
         db = SQLDatabase(':memory:')
         db.add_table('test')
-        db.add_column('test', 'a')
-        db.add_column('test', 'b')
-        db.add_row('test', dict(a=1, b=2))
-        db.add_row('test', dict(a=3, b=4))
-        db.add_row('test', dict(a=5, b=6))
+        db.add_column('test', 'a', [1, 3, 5])
+        db.add_column('test', 'b', [2, 4, 6])
 
         db.set_item('test', 'a', 0, 10)
         db.set_item('test', 'b', 1, 'a')
@@ -300,11 +350,8 @@ class Test_SQLDatabase_Creation_Modify:
     def test_sql_droptable(self):
         db = SQLDatabase(':memory:')
         db.add_table('test')
-        db.add_column('test', 'a')
-        db.add_column('test', 'b')
-        db.add_row('test', dict(a=1, b=2))
-        db.add_row('test', dict(a=3, b=4))
-        db.add_row('test', dict(a=5, b=6))
+        db.add_column('test', 'a', [1, 3, 5])
+        db.add_column('test', 'b', [2, 4, 6])
 
         db.drop_table('test')
         assert_equal(db.table_names, [])
@@ -314,11 +361,8 @@ class Test_SQLDatabase_Creation_Modify:
     def test_sql_copy(self):
         db = SQLDatabase(':memory:')
         db.add_table('test')
-        db.add_column('test', 'a')
-        db.add_column('test', 'b')
-        db.add_row('test', dict(a=1, b=2))
-        db.add_row('test', dict(a=3, b=4))
-        db.add_row('test', dict(a=5, b=6))
+        db.add_column('test', 'a', [1, 3, 5])
+        db.add_column('test', 'b', [2, 4, 6])
 
         db2 = db.copy()
         assert_equal(db2.table_names, ['test'])
@@ -604,6 +648,16 @@ class Test_SQLDatabase_PropsComms:
 
         assert_equal(len(db), 3)
 
+    def test_sql_index_of(self):
+        db = SQLDatabase(':memory:')
+        db.add_table('test')
+        db.add_column('test', 'a', data=np.arange(10, 20))
+        db.add_column('test', 'b', data=np.arange(20, 30))
+
+        assert_equal(db.index_of('test', {'a': 15}), 5)
+        assert_equal(db.index_of('test', 'b >= 27'), [7, 8, 9])
+        assert_equal(db.index_of('test', {'a': 1, 'b': 2}), [])
+
 
 class Test_SQLRow:
     @property
@@ -848,23 +902,23 @@ class Test_SQLTable:
         db = self.db
         table = db['test']
 
-        table.add_row({'a': -1, 'b': -1})
+        table.add_rows({'a': -1, 'b': -1})
         assert_equal(table.column_names, ['a', 'b'])
         assert_equal(len(table), 11)
         assert_equal(table[-1].values, (-1, -1))
 
-        table.add_row({'a': -2, 'c': -2}, add_columns=True)
+        table.add_rows({'a': -2, 'c': -2}, add_columns=True)
         assert_equal(table.column_names, ['a', 'b', 'c'])
         assert_equal(len(table), 12)
         assert_equal(table[-1].values, (-2, None, -2))
 
-        table.add_row({'a': -3, 'd': -3}, add_columns=False)
+        table.add_rows({'a': -3, 'd': -3}, add_columns=False)
         assert_equal(table.column_names, ['a', 'b', 'c'])
         assert_equal(len(table), 13)
         assert_equal(table[-1].values, (-3, None, None))
 
         # defult add_columns must be false
-        table.add_row({'a': -4, 'b': -4, 'c': -4, 'd': -4})
+        table.add_rows({'a': -4, 'b': -4, 'c': -4, 'd': -4})
         assert_equal(table.column_names, ['a', 'b', 'c'])
         assert_equal(len(table), 14)
         assert_equal(table[-1].values, (-4, -4, -4))
@@ -873,11 +927,11 @@ class Test_SQLTable:
         db = self.db
         table = db['test']
 
-        with assert_raises(TypeError):
-            table.add_row([1, 2, 3, 4])
+        with assert_raises(ValueError):
+            table.add_rows([1, 2, 3, 4])
 
         with assert_raises(TypeError):
-            table.add_row(2)
+            table.add_rows(2)
 
     def test_table_get_row(self):
         db = self.db
@@ -906,6 +960,11 @@ class Test_SQLTable:
         assert_equal(table.column_names, ['a', 'b'])
         assert_equal(table.values, expect)
 
+        expect[-1] = [5, 5]
+        table.set_row(-1, [5, 5])
+        assert_equal(table.column_names, ['a', 'b'])
+        assert_equal(table.values, expect)
+
     def test_table_set_row_invalid(self):
         db = self.db
         table = db['test']
@@ -915,8 +974,6 @@ class Test_SQLTable:
         with pytest.raises(IndexError):
             table.set_row(-11, {'a': -1, 'b': -1})
 
-        with pytest.raises(TypeError):
-            table.set_row(0, [1, 2])
         with pytest.raises(TypeError):
             table.set_row(0, 'a')
 
@@ -933,12 +990,6 @@ class Test_SQLTable:
         with pytest.raises(IndexError):
             table[-11]
 
-    @pytest.mark.skip
-    def test_table_getitem_slice(self):
-        db = self.db
-        table = db['test']
-        assert_is_instance(table, SQLTable)
-
     def test_table_getitem_str(self):
         db = self.db
         table = db['test']
@@ -949,12 +1000,6 @@ class Test_SQLTable:
 
         with pytest.raises(KeyError):
             table['c']
-
-    @pytest.mark.skip
-    def test_table_getitem_list(self):
-        db = self.db
-        table = db['test']
-        assert_is_instance(table, SQLTable)
 
     def test_table_getitem_tuple(self):
         db = self.db
@@ -1100,6 +1145,13 @@ class Test_SQLTable:
         with pytest.raises(KeyError):
             table[1, 2, 3] = 3
 
+    def test_table_indexof(self):
+        db = self.db
+        table = db['test']
+        assert_equal(table.index_of({'a': 15}), 5)
+        assert_equal(table.index_of({'a': 50}), [])
+        assert_equal(table.index_of('a < 13'), [0, 1, 2])
+
 
 class Test_SQLColumn:
     @property
@@ -1227,3 +1279,298 @@ class Test_SQLColumn:
             column[-11] = 10
         with pytest.raises(IndexError):
             column[2, 4] = [10, 11]
+
+
+class Test_SQLTableMapping:
+    @property
+    def db(self):
+        db = SQLDatabase(':memory:')
+        db.add_table('test')
+        db.add_column('test', 'a', data=np.arange(10, 20))
+        db.add_column('test', 'b', data=np.arange(20, 30))
+
+        db.add_table('mapping')
+        db.add_column('mapping', 'keywords', ['key a', 'key-b'])
+        db.add_column('mapping', 'columns', ['a', 'b'])
+
+        return db
+
+    @property
+    def table(self):
+        map = SQLColumnMap(self.db, 'mapping', 'keywords', 'columns')
+        return SQLTable(self.db, 'test', colmap=map)
+
+    def test_table_select(self):
+        table = self.table
+
+        a = table.select()
+        assert_equal(a, list(zip(np.arange(10, 20),
+                                 np.arange(20, 30))))
+
+        a = table.select(order='key a')
+        assert_equal(a, list(zip(np.arange(10, 20),
+                                 np.arange(20, 30))))
+
+        a = table.select(order='key-b', limit=2)
+        assert_equal(a, [(10, 20), (11, 21)])
+
+        a = table.select(order='key a', limit=2, offset=2)
+        assert_equal(a, [(12, 22), (13, 23)])
+
+        a = table.select(order='key-b', where={'key a': 15})
+        assert_equal(a, [(15, 25)])
+
+    def test_table_column_names(self):
+        table = self.table
+        assert_equal(table.column_names, ['key a', 'key-b'])
+
+    def test_table_getitem_str(self):
+        table = self.table
+
+        assert_equal(table['key a'].values, np.arange(10, 20))
+        assert_equal(table['key-b'].values, np.arange(20, 30))
+
+        with pytest.raises(KeyError):
+            table['c']
+
+    def test_table_getitem_tuple(self):
+        table = self.table
+        assert_equal(table[('key a',)].values, np.arange(10, 20))
+        assert_is_instance(table[('key a',)], SQLColumn)
+        assert_equal(table[(1,)].values, (11, 21))
+        assert_is_instance(table[(1,)], SQLRow)
+
+        with pytest.raises(KeyError):
+            table[('c')]
+        with pytest.raises(IndexError):
+            table[(11,)]
+
+    def test_table_getitem_tuple_rowcol(self):
+        table = self.table
+        assert_equal(table['key a', 0], 10)
+        assert_equal(table['key a', 1], 11)
+        assert_equal(table['key-b', 0], 20)
+        assert_equal(table['key-b', 1], 21)
+
+        assert_equal(table[0, 'key a'], 10)
+        assert_equal(table[1, 'key a'], 11)
+        assert_equal(table[0, 'key-b'], 20)
+        assert_equal(table[1, 'key-b'], 21)
+
+        assert_equal(table['key a', [0, 1, 2]], [10, 11, 12])
+        assert_equal(table['key-b', [0, 1, 2]], [20, 21, 22])
+        assert_equal(table[[0, 1, 2], 'key-b'], [20, 21, 22])
+        assert_equal(table[[0, 1, 2], 'key a'], [10, 11, 12])
+
+        assert_equal(table['key a', 2:5], [12, 13, 14])
+        assert_equal(table['key-b', 2:5], [22, 23, 24])
+        assert_equal(table[2:5, 'key-b'], [22, 23, 24])
+        assert_equal(table[2:5, 'key a'], [12, 13, 14])
+
+        with pytest.raises(KeyError):
+            table['c', 0]
+        with pytest.raises(IndexError):
+            table['key a', 11]
+
+        with pytest.raises(KeyError):
+            table[0, 0]
+        with pytest.raises(KeyError):
+            table['key-b', 'key a']
+        with pytest.raises(KeyError):
+            table[0, 1, 2]
+        with pytest.raises(KeyError):
+            table[0, 'key a', 'key-b']
+
+    def test_table_set_row(self):
+        table = self.table
+
+        table.set_row(0, {'key a': 5, 'key-b': 15})
+        expect = np.transpose([np.arange(10, 20), np.arange(20, 30)])
+        expect[0] = [5, 15]
+        assert_equal(table.column_names, ['key a', 'key-b'])
+        assert_equal(table.values, expect)
+
+        expect[-1] = [-1, -1]
+        table.set_row(-1, {'key a': -1, 'key-b': -1})
+        assert_equal(table.column_names, ['key a', 'key-b'])
+        assert_equal(table.values, expect)
+
+        expect[-1] = [5, 5]
+        table.set_row(-1, [5, 5])
+        assert_equal(table.column_names, ['key a', 'key-b'])
+        assert_equal(table.values, expect)
+
+    def test_table_add_row(self):
+        table = self.table
+
+        table.add_rows({'key a': -1, 'key-b': -1})
+        assert_equal(table.column_names, ['key a', 'key-b'])
+        assert_equal(len(table), 11)
+        assert_equal(table[-1].values, (-1, -1))
+
+        table.add_rows({'key a': -2, 'key!c': -2}, add_columns=True)
+        assert_equal(table.column_names, ['key a', 'key-b', 'key!c'])
+        assert_equal(len(table), 12)
+        assert_equal(table[-1].values, (-2, None, -2))
+
+        table.add_rows({'key a': -3, 'key_d': -3}, add_columns=False)
+        assert_equal(table.column_names, ['key a', 'key-b', 'key!c'])
+        assert_equal(len(table), 13)
+        assert_equal(table[-1].values, (-3, None, None))
+
+        # defult add_columns must be false
+        table.add_rows({'key a': -4, 'key-b': -4, 'key!c': -4, 'key_d': -4})
+        assert_equal(table.column_names, ['key a', 'key-b', 'key!c'])
+        assert_equal(len(table), 14)
+        assert_equal(table[-1].values, (-4, -4, -4))
+
+    def test_table_get_column(self):
+        table = self.table
+
+        a = table.get_column('key a')
+        assert_is_instance(a, SQLColumn)
+        assert_equal(a.values, np.arange(10, 20))
+        assert_equal(a.name, 'a')
+
+        a = table.get_column('key-b')
+        assert_is_instance(a, SQLColumn)
+        assert_equal(a.values, np.arange(20, 30))
+        assert_equal(a.name, 'b')
+
+    def test_table_set_column(self):
+        table = self.table
+
+        table.set_column('key a', np.arange(5, 15))
+        assert_equal(table.column_names, ['key a', 'key-b'])
+        assert_equal(table.values, list(zip(np.arange(5, 15),
+                                            np.arange(20, 30))))
+
+    def test_table_set_column_invalid(self):
+        table = self.table
+
+        with assert_raises(ValueError):
+            table.set_column('key a', np.arange(5, 16))
+
+        with assert_raises(KeyError):
+            table.set_column('key!c', np.arange(5, 15))
+
+    def test_table_add_column(self):
+        table = self.table
+
+        table.add_column('key!c', data=np.arange(10, 20))
+        assert_equal(table.column_names, ['key a', 'key-b', 'key!c'])
+        assert_equal(table.values, list(zip(np.arange(10, 20),
+                                            np.arange(20, 30),
+                                            np.arange(10, 20))))
+
+        table.add_column('key_d', data=np.arange(20, 30))
+        assert_equal(table.column_names, ['key a', 'key-b', 'key!c', 'key_d'])
+        assert_equal(table.values, list(zip(np.arange(10, 20),
+                                            np.arange(20, 30),
+                                            np.arange(10, 20),
+                                            np.arange(20, 30))))
+
+    def test_table_contains(self):
+        table = self.table
+
+        assert_false(10 in table)
+        assert_false(20 in table)
+        assert_false('key!c' in table)
+        assert_true('key a' in table)
+        assert_true('key-b' in table)
+
+    def test_table_as_table_empty(self):
+        db = SQLDatabase(':memory:')
+        db.add_table('test')
+        db.add_table('mapping')
+        db.add_column('mapping', 'keywords')
+        db.add_column('mapping', 'columns')
+        table = SQLTable(db, 'test',
+                         SQLColumnMap(db, 'mapping', 'keywords', 'columns'))
+
+        a = table.as_table()
+        assert_is_instance(a, Table)
+        assert_equal(a.colnames, [])
+        assert_equal(a, Table())
+
+    def test_table_as_table(self):
+        table = self.table
+
+        a = table.as_table()
+        assert_is_instance(a, Table)
+        assert_equal(a.colnames, ['key a', 'key-b'])
+        assert_equal(a, Table(names=['key a', 'key-b'],
+                              data=[np.arange(10, 20), np.arange(20, 30)]))
+
+    def test_table_setitem_int(self):
+        table = self.table
+
+        table[0] = {'key a': 5, 'key-b': 15}
+        expect = np.transpose([np.arange(10, 20), np.arange(20, 30)])
+        expect[0] = [5, 15]
+        assert_equal(table.column_names, ['key a', 'key-b'])
+        assert_equal(table.values, expect)
+
+        table[-1] = {'key a': -1, 'key-b': -1}
+        expect[-1] = [-1, -1]
+        assert_equal(table.column_names, ['key a', 'key-b'])
+        assert_equal(table.values, expect)
+
+        with pytest.raises(IndexError):
+            table[10] = {'key a': -1, 'key-b': -1}
+        with pytest.raises(IndexError):
+            table[-11] = {'key a': -1, 'key-b': -1}
+
+    def test_table_setitem_str(self):
+        table = self.table
+
+        table['key a'] = np.arange(40, 50)
+        expect = np.transpose([np.arange(40, 50), np.arange(20, 30)])
+        assert_equal(table.column_names, ['key a', 'key-b'])
+        assert_equal(table.values, expect)
+
+        table['key-b'] = np.arange(10, 20)
+        expect = np.transpose([np.arange(40, 50), np.arange(10, 20)])
+        assert_equal(table.column_names, ['key a', 'key-b'])
+        assert_equal(table.values, expect)
+
+        with pytest.raises(KeyError):
+            table['c'] = np.arange(10, 20)
+
+    def test_table_setitem_tuple(self):
+        table = self.table
+
+        table[('key a',)] = np.arange(40, 50)
+        expect = np.transpose([np.arange(40, 50), np.arange(20, 30)])
+        assert_equal(table.column_names, ['key a', 'key-b'])
+        assert_equal(table.values, expect)
+
+        table[(1,)] = {'key a': -1, 'key-b': -1}
+        expect[1] = [-1, -1]
+        assert_equal(table.column_names, ['key a', 'key-b'])
+        assert_equal(table.values, expect)
+
+    def test_table_setitem_tuple_multiple(self):
+        table = self.table
+        expect = np.transpose([np.arange(10, 20), np.arange(20, 30)])
+
+        table[('key a', 1)] = 57
+        expect[1, 0] = 57
+        table['key-b', -1] = 32
+        expect[-1, 1] = 32
+        table[0, 'key a'] = -1
+        expect[0, 0] = -1
+        table[5, 'key-b'] = 99
+        expect[5, 1] = 99
+        table['key a', 3:6] = -999
+        expect[3:6, 0] = -999
+        table['key-b', [2, 7]] = -888
+        expect[[2, 7], 1] = -888
+        assert_equal(table.values, expect)
+
+    def test_table_indexof(self):
+        table = self.table
+        assert_equal(table.index_of({'key a': 15}), 5)
+        assert_equal(table.index_of({'key a': 50}), [])
+        with pytest.raises(TypeError):
+            assert_equal(table.index_of('"key a" < 13'), [0, 1, 2])

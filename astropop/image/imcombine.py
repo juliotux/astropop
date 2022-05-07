@@ -10,7 +10,6 @@ from astropy.stats import mad_std
 from ..framedata import FrameData, check_framedata
 from ..py_utils import check_iterable, check_number
 from ..logger import logger
-from .._db import SQLDatabase
 from ..math.array import all_equal
 
 
@@ -500,22 +499,22 @@ class ImCombiner:
         if self._header_strategy == 'first':
             return self._images[0].header
 
-        db = SQLDatabase()
-        db.add_table('headers')
+        summary = {h: [] for h in self._images[0].header.keys()}
         for i in self._images:
             hdr = i.header
-            for k in ['COMMENT', 'HISTORY', '']:
-                hdr.pop(k, None)
-            db.add_row('headers', dict(hdr), add_columns=True)
-        summary = db['headers'].as_table()
+            for key in hdr.keys():
+                if key not in summary.keys():
+                    summary[key] = []
+                if hdr[key] not in summary[key]:
+                    summary[key].append(hdr[key])
 
         if self._header_strategy == 'selected_keys':
             keys = self._header_merge_keys
         else:
-            keys = summary.colnames
+            keys = summary.keys()
 
         for k in keys:
-            if all_equal(summary[k]):
+            if all_equal(np.array(summary[k])):
                 meta[k] = summary[k][0]
             elif self._header_strategy == 'selected_keys':
                 logger.debug('Keyword %s is different across headers. '

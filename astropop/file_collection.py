@@ -6,10 +6,9 @@ import glob
 from pathlib import Path
 import numpy as np
 
-from astropy.table import Table
 from astropy.io import fits
 
-from ._db import SQLDatabase, _ID_KEY, sql
+from ._db import SQLDatabase, _ID_KEY, sql, SQLTable, SQLColumnMap
 from .fits_utils import _fits_extensions, \
                         _fits_extensions_with_compress
 from .framedata import check_framedata
@@ -54,6 +53,9 @@ def list_fits_files(location, fits_extensions=None,
 _headers = 'headers'
 _metadata = 'astropop_metadata'
 _files_col = '__file'
+_keycolstable = 'astropop_keyword2column'
+_keywords_col = 'keyword'
+_columns_col = 'column'
 
 
 class FitsFileGroup():
@@ -99,13 +101,16 @@ class FitsFileGroup():
 
         if not initialized:
             self._db.add_table(_metadata)
-            self._db.add_row(_metadata, {'GLOB_INCLUDE': self._include,
-                                         'GLOB_EXCLUDE': self._exclude,
-                                         'LOCATION': location,
-                                         'COMPRESSION': compression,
-                                         'EXT': self._ext},
-                             add_columns=True)
+            self._db.add_rows(_metadata, {'GLOB_INCLUDE': self._include,
+                                          'GLOB_EXCLUDE': self._exclude,
+                                          'LOCATION': location,
+                                          'COMPRESSION': compression,
+                                          'EXT': self._ext},
+                              add_columns=True)
             self._db.add_column(_metadata, 'FITS_EXT', self._extensions)
+            self._db.add_table(_keycolstable)
+            self._db.add_column(_keycolstable, _keywords_col)
+            self._db.add_column(_keycolstable, _columns_col)
 
         self._include = self._db[_metadata, 'glob_include'][0]
         self._exclude = self._db[_metadata, 'glob_exclude'][0]
@@ -116,13 +121,17 @@ class FitsFileGroup():
         self._location = self._db[_metadata, 'location'][0]
         self._compression = self._db[_metadata, 'compression'][0]
 
+        cmap = SQLColumnMap(self._db, _keycolstable,
+                            _keywords_col, _columns_col)
+        self._table = SQLTable(self._db, _headers, colmap=cmap)
+
         if update or not initialized:
             self.update(files, location, compression)
 
     @property
     def files(self):
         """List files in the group."""
-        files = self._db[_headers, _files_col].values
+        files = self._table[_files_col].values
         if self._db_dir is not None:
             return [os.path.join(self._db_dir, f) for f in files]
         return files
@@ -130,7 +139,7 @@ class FitsFileGroup():
     @property
     def summary(self):
         """Get a table with summary of the fits files."""
-        return self._db[_headers].as_table()
+        return self._table.as_table()
 
     def __copy__(self, indexes=None):
         """Copy the current instance to a new object."""
@@ -139,7 +148,7 @@ class FitsFileGroup():
             db.drop_table(_headers)
             db.add_table(_headers, columns=self._db[_headers].column_names)
             for i in indexes:
-                db.add_row(_headers, self._db[_headers][i].as_dict())
+                db.add_rows(_headers, self._db[_headers][i].values)
 
         nfg = object.__new__(FitsFileGroup)
         nfg._db = db
@@ -150,13 +159,13 @@ class FitsFileGroup():
 
     def __len__(self):
         """Get the number of files in the group."""
-        return len(self._db[_headers])
+        return len(self._table)
 
     def filtered(self, keywords):
         """Create a new FitsFileGroup with only filtered files."""
         try:
-            indexes = self._db.select(_headers, columns=[_ID_KEY],
-                                      where=keywords)
+            indexes = self._table.select(columns=[_ID_KEY],
+                                         where=keywords)
         except sql.OperationalError:
             indexes = []
         if len(indexes) == 0:
@@ -182,14 +191,14 @@ class FitsFileGroup():
 
         If unique, only unique values returned.
         """
-        vals = self._db[_headers, keyword].values
+        vals = self._table[keyword].values
         if unique:
             vals = list(set(vals))
         return vals
 
     def add_column(self, name, values=None):
         """Add a new column to the summary."""
-        self._db.add_column(_headers, name, data=values)
+        self._table.add_column(name, data=values)
 
     def add_file(self, file):
         """Add a new file to the group."""
@@ -202,11 +211,11 @@ class FitsFileGroup():
         hdr.pop('COMMENT', None)
         hdr.pop('HISTORY', None)
         hdr.pop('', None)
-        self._db.add_row(_headers,  hdr, add_columns=True)
+        self._table.add_rows(hdr, add_columns=True)
 
     def __getitem__(self, item):
         if isinstance(item, str):
-            return self._db[_headers, item].values
+            return self._table[item].values
 
         # returning FitsFileGroups
         if isinstance(item, (int, np.integer)):
@@ -222,7 +231,7 @@ class FitsFileGroup():
 
     def __setitem__(self, item, value):
         """Set the value of a keyword in the summary."""
-        self._db[_headers, item] = value
+        self._table[item] = value
 
     def _intern_yelder(self, ext=None, ret_type=None, **kwargs):
         """Iterate over files."""
