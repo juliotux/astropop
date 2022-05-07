@@ -102,6 +102,14 @@ class Test_SQLColumnMap:
         with pytest.raises(ValueError):
             cmap.add_column('key1')
 
+    def test_columnmap_parse_where(self):
+        cmap = self.cmap()
+        with pytest.raises(TypeError):
+            cmap.parse_where('key1 = 1')
+        with pytest.raises(TypeError):
+            cmap.parse_where(['key1 = 1', 'key2 = 2'])
+        cmap.parse_where({'key1': 1, 'key 2': 2})
+
 
 class Test_SQLDatabase_Creation_Modify:
     def test_sql_db_creation(self):
