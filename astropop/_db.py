@@ -97,8 +97,11 @@ class SQLColumnMap:
     def map_row(self, data, add_columns=False):
         """Map a row to the columns."""
         if isinstance(data, dict):
-            data = {self.get_column_name(k, add_columns=add_columns): v for
-                    k, v in data.items()}
+            d = {}
+            for k, v in data.items():
+                if k in self.keywords or add_columns:
+                    d[self.get_column_name(k, add_columns=add_columns)] = v
+            data = d
         elif not isinstance(data, list):
             raise ValueError('Only dict and list are supported')
         return data
@@ -142,7 +145,7 @@ class SQLTable:
         """Get the column names of the current table."""
         names = self._db.column_names(self._name)
         if self._colmap is not None:
-            return self._colmap.get_keyword_name(names)
+            return self._colmap.get_keyword(names)
         return names
 
     @property
@@ -150,9 +153,16 @@ class SQLTable:
         """Get the values of the current table."""
         return self.select()
 
-    def select(self, *args, **kwargs):
+    def select(self, **kwargs):
         """Select rows from the table."""
-        return self._db.select(self._name, *args, **kwargs)
+        where = kwargs.pop('where', None)
+        if self._colmap is not None and where is not None:
+            where = self._colmap.parse_where(where)
+        order = kwargs.pop('order', None)
+        if order is not None:
+            order = self._colmap.get_column_name(order)
+
+        return self._db.select(self._name, where=where, order=order, **kwargs)
 
     def as_table(self):
         """Return the current table as an `~astropy.table.Table` object."""
@@ -171,7 +181,7 @@ class SQLTable:
         """Add a row to the table."""
         # If keymappging is used, only dict and list
         if self._colmap is not None:
-            self._colmap.map_row(data, add_columns=add_columns)
+            data = self._colmap.map_row(data, add_columns=add_columns)
         self._db.add_rows(self._name, data, add_columns=add_columns)
 
     def get_column(self, column):
@@ -259,8 +269,6 @@ class SQLTable:
 
     def __contains__(self, item):
         """Check if a given column is in the table."""
-        if self._colmap is not None:
-            item = self._colmap.get_column_name(item)
         return item in self.column_names
 
     def __iter__(self):
