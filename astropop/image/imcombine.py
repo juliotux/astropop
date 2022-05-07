@@ -499,7 +499,7 @@ class ImCombiner:
         if self._header_strategy == 'first':
             return self._images[0].header
 
-        summary = {h:[] for h in self._images[0].header.keys()}
+        summary = {h: [] for h in self._images[0].header.keys()}
         for i in self._images:
             hdr = i.header
             for key in hdr.keys():

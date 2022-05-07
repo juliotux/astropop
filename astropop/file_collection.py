@@ -6,7 +6,6 @@ import glob
 from pathlib import Path
 import numpy as np
 
-from astropy.table import Table
 from astropy.io import fits
 
 from ._db import SQLDatabase, _ID_KEY, sql, SQLTable, SQLColumnMap
