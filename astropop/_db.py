@@ -44,17 +44,19 @@ class SQLColumnMap:
 
         col = f'col_{len(self.columns)}'
 
-        self.map.add_row({self.key_col: name, self.cols_col: col})
+        self.map.add_rows({self.key: name, self.col: col})
         self._clear_cache()
         return col
 
-    def get_column_name(self, item):
+    def get_column_name(self, item, add_columns=False):
         """Get the column name for a given keyword."""
         if check_iterable(item):
             return [self.get_column_name(i) for i in item]
 
         item = item.lower()
         if item not in self.keywords:
+            if add_columns:
+                return self.add_column(item)
             raise KeyError(f'{item}')
 
         return self.columns[np.where(self.keywords == item)][0]
@@ -88,10 +90,10 @@ class SQLColumnMap:
             self._keywords = np.array(self.map.select(columns=[self.key]))
         return self._keywords
 
-    def map_row(self, data):
+    def map_row(self, data, add_columns=False):
         """Map a row to the columns."""
         if isinstance(data, dict):
-            data = {self.get_column_name(k): v for
+            data = {self.get_column_name(k, add_columns=add_columns): v for
                     k, v in data.items()}
         elif not isinstance(data, list):
             raise ValueError('Only dict and list are supported')
@@ -165,7 +167,7 @@ class SQLTable:
         """Add a row to the table."""
         # If keymappging is used, only dict and list
         if self._colmap is not None:
-            self._colmap.map_row(data)
+            self._colmap.map_row(data, add_columns=add_columns)
         self._db.add_rows(self._name, data, add_columns=add_columns)
 
     def get_column(self, column):
