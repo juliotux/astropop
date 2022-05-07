@@ -2,7 +2,8 @@
 
 import pytest
 from astropop._db import SQLColumn, SQLRow, SQLTable, _ID_KEY, \
-                         SQLDatabase, _sanitize_colnames
+                         SQLDatabase, _sanitize_colnames, \
+                         SQLColumnMap
 import numpy as np
 from astropy.table import Table
 from astropop.testing import *
@@ -20,6 +21,54 @@ def test_sanitize_string():
 
     for i in ['test', 'test_1', 'test_1_2', 'test_1_2', 'Test', 'Test_1']:
         assert_equal(_sanitize_colnames(i), i.lower())
+
+
+class Test_SQLColumnMap:
+    def cmap(self):
+        db = SQLDatabase()
+        db.add_table('key_columns', data={'keywords': ['key1', 'key 2',
+                                                       'key-3', 'key_4'],
+                                          'columns': ['col1', 'col2', 'col3',
+                                                      'col4']})
+        cmap = SQLColumnMap(db, 'key_columns', 'keywords', 'columns')
+        return cmap
+
+    def test_columnmap_get_column_name(self):
+        cmap = self.cmap()
+        assert_equal(cmap.get_column_name('key1'), 'col1')
+        assert_equal(cmap.get_column_name('key 2'), 'col2')
+        assert_equal(cmap.get_column_name('key-3'), 'col3')
+        assert_equal(cmap.get_column_name('key_4'), 'col4')
+
+    def test_columnmap_get_column_name_list(self):
+        cmap = self.cmap()
+        assert_equal(cmap.get_column_name(['key1', 'key 2']), ['col1', 'col2'])
+
+    def test_columnmap_get_column_name_not_found(self):
+        cmap = self.cmap()
+        with pytest.raises(KeyError):
+            cmap.get_column_name('key5')
+
+    def test_columnmap_get_keyword(self):
+        cmap = self.cmap()
+        assert_equal(cmap.get_keyword('col1'), 'key1')
+        assert_equal(cmap.get_keyword('col2'), 'key 2')
+        assert_equal(cmap.get_keyword('col3'), 'key-3')
+        assert_equal(cmap.get_keyword('col4'), 'key_4')
+
+    def test_columnmap_get_keyword_list(self):
+        cmap = self.cmap()
+        assert_equal(cmap.get_keyword(['col1', 'col2']), ['key1', 'key 2'])
+
+    def test_columnmap_get_keyword_not_found(self):
+        db = SQLDatabase()
+        db.add_table('key_columns', data={'keywords': ['key1', 'key 2',
+                                                       'key-3', 'key_4'],
+                                          'columns': ['col1', 'col2', 'col3',
+                                                      'col4']})
+        cmap = SQLColumnMap(db, 'key_columns', 'keywords', 'columns')
+        with pytest.raises(KeyError):
+            cmap.get_keyword('col5')
 
 
 class Test_SQLDatabase_Creation_Modify:

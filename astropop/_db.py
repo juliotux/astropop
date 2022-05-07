@@ -6,9 +6,10 @@ import numpy as np
 from astropy.table import Table
 
 from .logger import logger
+from .py_utils import check_iterable
 
 
-__all__ = ['SQLDatabase', 'SQLTable', 'SQLRow', 'SQLColumn']
+__all__ = ['SQLDatabase', 'SQLTable', 'SQLRow', 'SQLColumn', 'SQLColumnMap']
 
 
 np_to_sql = {
@@ -23,10 +24,90 @@ np_to_sql = {
 _ID_KEY = '__id__'
 
 
+class SQLColumnMap:
+    """Map keywords to SQL columns."""
+
+    def __init__(self, db, map_table, map_key, map_column):
+        self.db = db
+        self.map = db[map_table]
+        self.key = map_key
+        self.col = map_column
+
+        self._clear_cache()
+
+    def add_column(self, name):
+        """Add a new column to the table."""
+        name = name.lower()
+
+        if name in self.keywords:
+            raise ValueError(f'{name} already exists')
+
+        col = f'col_{len(self.columns)}'
+
+        self.map.add_row({self.key_col: name, self.cols_col: col})
+        self._clear_cache()
+        return col
+
+    def get_column_name(self, item):
+        """Get the column name for a given keyword."""
+        if check_iterable(item):
+            return [self.get_column_name(i) for i in item]
+
+        item = item.lower()
+        if item not in self.keywords:
+            raise KeyError(f'{item}')
+
+        return self.columns[np.where(self.keywords == item)][0]
+
+    def get_keyword(self, item):
+        """Get the keyword for a given column."""
+        if check_iterable(item):
+            return [self.get_keyword(i) for i in item]
+
+        item = item.lower()
+        if item not in self.columns:
+            raise KeyError(f'{item}')
+
+        return self.keywords[np.where(self.columns == item)][0]
+
+    def _clear_cache(self):
+        self._columns = None
+        self._keywords = None
+
+    @property
+    def columns(self):
+        """Get the column names for the table."""
+        if self._columns is None:
+            self._columns = np.array(self.map.select(columns=[self.col]))
+        return self._columns
+
+    @property
+    def keywords(self):
+        """Get the keywords of the columns for the table."""
+        if self._keywords is None:
+            self._keywords = np.array(self.map.select(columns=[self.key]))
+        return self._keywords
+
+    def map_row(self, data):
+        """Map a row to the columns."""
+        if isinstance(data, dict):
+            data = {self.get_column_name(k): v for
+                    k, v in data.items()}
+        elif not isinstance(data, list):
+            raise ValueError('Only dict and list are supported')
+        return data
+
+    def parse_where(self, where):
+        """Parse a where clause using column mappring."""
+        if isinstance(where, dict):
+            return {self.get_column_name(k): v for k, v in where.items()}
+        raise TypeError('Only dict is supported')
+
+
 class SQLTable:
     """Handle an SQL table operations interfacing with the DB."""
 
-    def __init__(self, db, name):
+    def __init__(self, db, name, colmap=None):
         """Initialize the table.
 
         Parameters
@@ -38,6 +119,7 @@ class SQLTable:
         """
         self._db = db
         self._name = name
+        self._colmap = colmap
 
     @property
     def name(self):
@@ -52,7 +134,10 @@ class SQLTable:
     @property
     def column_names(self):
         """Get the column names of the current table."""
-        return self._db.column_names(self._name)
+        names = self._db.column_names(self._name)
+        if self._colmap is not None:
+            return self._colmap.get_keyword_name(names)
+        return names
 
     @property
     def values(self):
@@ -72,14 +157,21 @@ class SQLTable:
 
     def add_column(self, name, data=None):
         """Add a column to the table."""
+        if self._colmap is not None:
+            name = self._colmap.add_column(name)
         self._db.add_column(self._name, name, data=data)
 
     def add_rows(self, data, add_columns=False):
         """Add a row to the table."""
+        # If keymappging is used, only dict and list
+        if self._colmap is not None:
+            self._colmap.map_row(data)
         self._db.add_rows(self._name, data, add_columns=add_columns)
 
     def get_column(self, column):
         """Get a given column from the table."""
+        if self._colmap is not None:
+            column = self._colmap.get_column_name(column)
         return self._db.get_column(self._name, column)
 
     def get_row(self, row):
@@ -88,14 +180,20 @@ class SQLTable:
 
     def set_column(self, column, data):
         """Set a given column in the table."""
+        if self._colmap is not None:
+            column = self._colmap.get_column_name(column)
         self._db.set_column(self._name, column, data)
 
     def set_row(self, row, data):
         """Set a given row in the table."""
+        if self._colmap is not None:
+            data = self._colmap.map_row(data)
         self._db.set_row(self._name, row, data)
 
     def index_of(self, where):
         """Get the index of the rows that match the given condition."""
+        if self._colmap is not None:
+            where = self._colmap.parse_where(where)
         return self._db.index_of(self._name, where)
 
     def _resolve_tuple(self, key):
@@ -155,6 +253,8 @@ class SQLTable:
 
     def __contains__(self, item):
         """Check if a given column is in the table."""
+        if self._colmap is not None:
+            item = self._colmap.get_column_name(item)
         return item in self.column_names
 
     def __iter__(self):
