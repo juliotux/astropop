@@ -156,11 +156,12 @@ class SQLTable:
     def select(self, **kwargs):
         """Select rows from the table."""
         where = kwargs.pop('where', None)
-        if self._colmap is not None and where is not None:
-            where = self._colmap.parse_where(where)
         order = kwargs.pop('order', None)
-        if order is not None:
-            order = self._colmap.get_column_name(order)
+        if self._colmap is not None:
+            if where is not None:
+                where = self._colmap.parse_where(where)
+            if order is not None:
+                order = self._colmap.get_column_name(order)
 
         return self._db.select(self._name, where=where, order=order, **kwargs)
 

@@ -75,12 +75,6 @@ class Test_SQLColumnMap:
         row = {'key1': 1, 'key 2': 2, 'key-3': 3}
         assert_equal(cmap.map_row(row), {'col1': 1, 'col2': 2, 'col3': 3})
 
-    def test_columnmap_map_row_not_found(self):
-        cmap = self.cmap()
-        row = {'key1': 1, 'key 2': 2, 'key-3': 3, 'key 5': 4}
-        with pytest.raises(KeyError):
-            cmap.map_row(row)
-
     def test_columnmap_map_row_add_column(self):
         cmap = self.cmap()
         row = {'key1': 1, 'key 2': 2, 'key 5': 3}
