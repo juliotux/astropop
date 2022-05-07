@@ -763,7 +763,7 @@ class SQLDatabase:
                                            add_columns=add_columns)
             return self._add_data_list(table, data)
         if isinstance(data, Table):
-            data = {c: data[c].value for c in data.colnames}
+            data = {c: list(data[c]) for c in data.colnames}
             return self._add_data_dict(table, data, add_columns=add_columns)
 
         raise TypeError('data must be a dict, list, or numpy array. '
