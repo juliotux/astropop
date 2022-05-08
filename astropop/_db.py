@@ -658,7 +658,7 @@ class SQLDatabase:
             comm += f"ORDER BY {order} ASC "
 
         if limit is not None:
-            comm += f"LIMIT ? "
+            comm += "LIMIT ? "
             if not isinstance(limit, (int, np.integer)):
                 raise TypeError('limit must be an integer.')
             args.append(int(limit))
@@ -667,7 +667,7 @@ class SQLDatabase:
                 raise ValueError('offset cannot be used without limit.')
             if not isinstance(offset, (int, np.integer)):
                 raise TypeError('offset must be an integer.')
-            comm += f"OFFSET ? "
+            comm += "OFFSET ? "
             args.append(int(offset))
 
         comm = comm + ';'
