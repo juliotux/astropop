@@ -217,6 +217,23 @@ class Test_SQLDatabase_Creation_Modify:
         assert_equal(len(db), 1)
         assert_equal(db.table_names, ['test'])
 
+    def test_sql_add_row_types(self):
+        db = SQLDatabase(':memory:')
+        db.add_table('test')
+        for k in ['a', 'b', 'c', 'd', 'e']:
+            db.add_column('test', k)
+
+        db.add_rows('test', dict(a=1, b='a', c=True, d=b'a', e=3.14))
+        db.add_rows('test', dict(a=2, b='b', c=False, d=b'b', e=2.71))
+
+        assert_equal(db.get_column('test', 'a').values, [1, 2])
+        assert_equal(db.get_column('test', 'b').values, ['a', 'b'])
+        assert_equal(db.get_column('test', 'c').values, [1, 0])
+        assert_equal(db.get_column('test', 'd').values, [b'a', b'b'])
+        assert_almost_equal(db.get_column('test', 'e').values, [3.14, 2.71])
+        assert_equal(len(db), 1)
+        assert_equal(db.table_names, ['test'])
+
     def test_sql_add_row_invalid(self):
         db = SQLDatabase(':memory:')
         db.add_table('test')

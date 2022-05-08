@@ -481,16 +481,19 @@ def _sanitize_colnames(data):
 
 def _sanitize_value(data):
     """Sanitize the value to avoid sql errors."""
-    if isinstance(data, str):
-        return f"'{data}'"
+    if isinstance(data, (str, np.str_)):
+        return f"{data}"
     if isinstance(data, bytes):
-        return f"'{data.decode()}'"
-    if isinstance(data, bool):
-        return str(int(data))
+        return bytes(data)
+    if isinstance(data, (bool, np.bool_)):
+        return bool(data)
     if data is None:
-        return 'NULL'
+        return None
     if np.isscalar(data) and np.isreal(data):
-        return str(data)
+        if isinstance(data, (int, np.integer)):
+            return int(data)
+        elif isinstance(data, (float, np.floating)):
+            return float(data)
     raise TypeError(f'{type(data)} is not supported.')
 
 
@@ -563,12 +566,31 @@ class SQLDatabase:
         self._cur = self._con.cursor()
         self.autocommit = autocommit
 
-    def execute(self, command):
+    def execute(self, command, arguments=None):
         """Execute a SQL command in the database."""
         logger.debug('executing sql command: "%s"',
                      str.replace(command, '\n', ' '))
         try:
-            self._cur.execute(command)
+            if arguments is None:
+                self._cur.execute(command)
+            else:
+                self._cur.execute(command, arguments)
+            res = self._cur.fetchall()
+        except sql.Error as e:
+            self._con.rollback()
+            raise e
+
+        if self.autocommit:
+            self.commit()
+        return res
+
+    def executemany(self, command, arguments):
+        """Execute a SQL command in the database."""
+        logger.debug('executing sql command: "%s"',
+                     str.replace(command, '\n', ' '))
+
+        try:
+            self._cur.executemany(command, arguments)
             res = self._cur.fetchall()
         except sql.Error as e:
             self._con.rollback()
@@ -701,13 +723,11 @@ class SQLDatabase:
             raise ValueError('data must have the same number of columns as '
                              'the table.')
 
-        def _values_str(row):
-            return f"({', '.join(['NULL'] + list(map(_sanitize_value, row)))})"
-
+        data = [[None] + list(map(_sanitize_value, d)) for d in data]
         comm = f"INSERT INTO {table} VALUES "
-        comm += ', '.join(map(_values_str, data))
+        comm += f"({', '.join(['?']*len(data[0]))})"
         comm += ';'
-        self.execute(comm)
+        self.executemany(comm, data)
 
     def add_table(self, table, columns=None, data=None):
         """Create a table in database."""
@@ -858,13 +878,13 @@ class SQLDatabase:
             for i in range(len(data)):
                 self.add_rows(table, {})
 
-        # this operation is slow. Disabling autocommit may be faster.
-        self.autocommit = False
         col = _sanitize_colnames([column])[0]
-        for i, d in enumerate(data):
-            self.set_item(table, col, i, d)
-        self.autocommit = True
-        self.commit()
+        comm = f"UPDATE {table} SET "
+        comm += f"{col}=? "
+        comm += f" WHERE {_ID_KEY}=?;"
+        args = list(zip([_sanitize_value(d) for d in data],
+                        range(1, self.count(table)+1)))
+        self.executemany(comm, args)
 
     def index_of(self, table, where):
         """Get the index(es) where a given condition is satisfied."""

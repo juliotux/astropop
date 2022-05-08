@@ -98,6 +98,26 @@ def check_iterable(value):
     return False
 
 
+def check_number(value):
+    """Check if a value passed is a scalar number.
+
+    Parameters
+    ----------
+    value: any
+        Value to be checked.
+
+    Returns
+    -------
+    bool:
+        `True` if the value is a scalar number (not string, list or array) and
+        `False` otherwise.
+    """
+    if isinstance(value, Number):
+        if not isinstance(value, (bool, complex)):
+            return True
+    return False
+
+
 class _scalar_iterator:
     """Iterator for scalar values."""
     def __init__(self, value, length):
@@ -157,26 +177,6 @@ class broadcast:
     def __len__(self):
         """Return the length of the broadcast."""
         return self.length
-
-
-def check_number(value):
-    """Check if a value passed is a scalar number.
-
-    Parameters
-    ----------
-    value: any
-        Value to be checked.
-
-    Returns
-    -------
-    bool:
-        `True` if the value is a scalar number (not string, list or array) and
-        `False` otherwise.
-    """
-    if isinstance(value, Number):
-        if not isinstance(value, (bool, complex)):
-            return True
-    return False
 
 
 def batch_key_replace(dictionary, key=None):
