@@ -11,7 +11,8 @@ import numpy as np
 from .logger import logger, resolve_level_string
 
 __all__ = ['string_fix', 'process_list', 'check_iterable',
-           'batch_key_replace', 'IndexedDict', 'check_number']
+           'batch_key_replace', 'IndexedDict', 'check_number',
+           'broadcast']
 
 
 def process_list(func, iterator, *args, **kwargs):
@@ -95,6 +96,63 @@ def check_iterable(value):
         pass
 
     return False
+
+
+@np.vectorize
+def _get_length(value):
+    """Get the length of iterable only values."""
+    if not check_iterable(value):
+        return -1
+    return len(value)
+
+
+class broadcast:
+    """Broadcast values to the list size. Alternative to `~numpy.broadcast`."""
+
+    def __init__(self, *args):
+        """Initialize the broadcast object."""
+        if len(args) == 0:
+            raise ValueError("Empty broadcast")
+
+        self.args = args
+        lengths = _get_length(args)
+        if np.all(lengths == -1):
+            self.length = 0
+        else:
+            self.length = [i for i in lengths if i >= 0]
+            if len(set(self.length)) > 1:
+                raise ValueError("All array arguments must have the same "
+                                 "length.")
+            self.length = self.length[0]
+            self.is_array = lengths != -1
+
+    def __iter__(self):
+        """Return the iterator."""
+        if self.length == 0:
+            self.index = None
+            return self
+        self.index = 0
+        return self
+
+    def __next__(self):
+        """Return the next value."""
+        if self.index is None:
+            self.index = 0  # for stop interaction
+            return self.args
+        if self.index >= self.length:
+            raise StopIteration
+        arr = [v[self.index] if self.is_array[i] else v
+               for i, v in enumerate(self.args)]
+        self.index += 1
+        return arr
+
+    def iters(self):
+        """Return the tuple containing the iterators."""
+        return tuple(i for i in self)
+
+    def __len__(self):
+        """Return the length of the broadcast."""
+        return self.length
 
 
 def check_number(value):

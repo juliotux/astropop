@@ -5,7 +5,8 @@ import pytest
 import shlex
 from astropop.py_utils import string_fix, process_list, \
                               check_iterable, batch_key_replace, \
-                              run_command, IndexedDict, check_number
+                              run_command, IndexedDict, check_number, \
+                              broadcast
 import numpy as np
 
 from astropop.testing import assert_true, assert_equal, assert_in, \
@@ -177,6 +178,53 @@ class Test_BatchKeyReplace():
         batch_key_replace(dic1)
         assert_equal(dic1['a'], "['61', '42'] value")
 
+
+class Test_Broadcast():
+    def test_broadcast(self):
+        a = np.arange(10)
+        b = np.arange(1, 11)
+        c = 2
+
+        bc = broadcast(a, b, c)
+        iterator = iter(bc)
+
+        indx = 0
+        for i in range(10):
+            assert_equal(next(iterator), [a[indx], b[indx], c])
+            indx += 1
+
+        with pytest.raises(StopIteration):
+            next(iterator)
+
+    def test_broadcast_empty(self):
+        with pytest.raises(ValueError):
+            broadcast()
+
+    def test_broadcast_wrong_shape(self):
+        a = np.arange(10)
+        b = np.arange(5)
+
+        with pytest.raises(ValueError):
+            broadcast(a, b)
+
+    def test_broadcast_only_scalars(self):
+        a = 1
+        b = 2
+        c = 3
+
+        bc = broadcast(a, b, c)
+
+        for i in bc:
+            assert_equal(i, [a, b, c])
+
+    def test_broadcast_superpass_32_limit(self):
+        arr = [np.arange(10)]*64
+        bc = broadcast(*arr)
+        assert_equal(len(bc), 10)
+        it = iter(bc)
+
+        for i in range(10):
+            assert_equal(next(it), [i]*64)
 
 class Test_IndexedDict():
     def test_indexeddict_create(self):
