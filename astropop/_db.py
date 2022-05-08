@@ -858,9 +858,13 @@ class SQLDatabase:
             for i in range(len(data)):
                 self.add_rows(table, {})
 
+        # this operation is slow. Disabling autocommit may be faster.
+        self.autocommit = False
         col = _sanitize_colnames([column])[0]
         for i, d in enumerate(data):
             self.set_item(table, col, i, d)
+        self.autocommit = True
+        self.commit()
 
     def index_of(self, table, where):
         """Get the index(es) where a given condition is satisfied."""
