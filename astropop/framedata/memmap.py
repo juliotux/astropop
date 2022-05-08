@@ -317,7 +317,7 @@ class MemMapArray:
         """Safe destruct the MemMapArray."""
         try:
             os.remove(self._filename)
-        except FileNotFoundError:
+        except (FileNotFoundError, TypeError):
             pass
 
     __lt__ = to_memmap_operator('__lt__')
