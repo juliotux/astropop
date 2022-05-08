@@ -434,6 +434,9 @@ class SQLRow:
 
     def __setitem__(self, key, value):
         """Set a column in the row."""
+        if not isinstance(key, (str, np.str_)):
+            raise KeyError(f'{key}')
+
         column = key = key.lower()
         if self._colmap is not None:
             column = self._colmap.get_column_name(key)
