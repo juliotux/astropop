@@ -146,15 +146,15 @@ class FitsFileGroup():
         db = self._db.copy()
         if indexes is not None:
             db.drop_table(_headers)
-            db.add_table(_headers, columns=self._db[_headers].column_names)
-            for i in indexes:
-                db.add_rows(_headers, self._db[_headers][i].values)
+            # copying must be unmmaped
+            db.add_table(_headers, columns=self._db.column_names(_headers))
+            if len(indexes) > 0:
+                db.add_rows(_headers, np.array(self._table.values)[indexes])
 
         nfg = object.__new__(FitsFileGroup)
         nfg._db = db
-        nfg._db_dir = None
+        nfg._db_dir = self._db_dir  # need to keep the db_dir for the iterators
         nfg._read_db(None, None, None, False)
-        nfg._location = None
         return nfg
 
     def __len__(self):
@@ -237,6 +237,9 @@ class FitsFileGroup():
         """Iterate over files."""
         ext = ext if ext is not None else self._ext
         for i in self.files:
+            if self._db_dir is not None:
+                i = os.path.join(self._db_dir, i)
+
             if ret_type == 'header':
                 yield fits.open(i, **kwargs)[ext].header
             if ret_type == 'data':
