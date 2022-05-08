@@ -240,6 +240,16 @@ class Test_SQLDatabase_Creation_Modify:
         assert_equal(db.table_names, ['test'])
         assert_equal(db.column_names('test'), ['a', 'b', 'd'])
 
+    def test_sql_add_row_superpass_64_limit(self):
+        db = SQLDatabase(':memory:')
+        db.add_table('test')
+        db.add_rows('test', {f'col{i}': np.arange(10) for i in range(128)},
+                     add_columns=True)
+        assert_equal(db.column_names('test'), [f'col{i}' for i in range(128)])
+
+        for i, v in enumerate(db.select('test')):
+            assert_equal(v, [i]*128)
+
     def test_sqltable_add_column(self):
         db = SQLDatabase(':memory:')
         db.add_table('test')

@@ -6,7 +6,7 @@ import numpy as np
 from astropy.table import Table
 
 from .logger import logger
-from .py_utils import check_iterable
+from .py_utils import check_iterable, broadcast
 
 
 __all__ = ['SQLDatabase', 'SQLTable', 'SQLRow', 'SQLColumn', 'SQLColumnMap']
@@ -668,7 +668,11 @@ class SQLDatabase:
         if add_columns:
             self._add_missing_columns(table, data.keys())
 
-        rows = np.broadcast(*_dict2row(cols=self.column_names(table), **data))
+        dict_row_list = _dict2row(cols=self.column_names(table), **data)
+        try:
+            rows = np.broadcast(*dict_row_list)
+        except ValueError:
+            rows = broadcast(*dict_row_list)
         rows = list(zip(*rows.iters))
         self._add_data_list(table, rows)
 
