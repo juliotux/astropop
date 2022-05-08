@@ -148,6 +148,8 @@ class broadcast:
     @property
     def iters(self):
         """Return the tuple containing the iterators."""
+        if self.length == 0:
+            return tuple([a] for a in self.args)
         return tuple(np.array(a) if self.is_array[i]
                      else np.array([a]*self.length)
                      for i, a in enumerate(self.args))

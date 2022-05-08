@@ -226,6 +226,15 @@ class Test_Broadcast():
         for i in range(10):
             assert_equal(next(it), [i]*64)
 
+    def test_broadcast_iters_only_scalars(self):
+        bc = broadcast(1, 2, 3)
+        assert_equal(bc.iters, [[1], [2], [3]])
+
+    def test_broadcast_iters(self):
+        bc = broadcast(np.arange(10), 3, 2)
+
+        assert_equal(bc.iters, [np.arange(10), [3]*10, [2]*10])
+
 class Test_IndexedDict():
     def test_indexeddict_create(self):
         d = dict(a=1, b=2, c=3)
