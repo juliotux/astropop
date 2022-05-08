@@ -98,11 +98,27 @@ def check_iterable(value):
     return False
 
 
-def _get_length(value):
-    """Get the length of iterable only values."""
-    if not check_iterable(value):
-        return -1
-    return len(value)
+class _scalar_iterator:
+    """Iterator for scalar values."""
+    def __init__(self, value, length):
+        self.value = value
+        self.length = length
+
+    def __iter__(self):
+        if self.length == 0:
+            yield self.value
+        else:
+            for i in range(self.length):
+                yield self.value
+
+    def __getitem__(self, index):
+        if ((index >= self.length or index < 0) and self.length > 0) or \
+           (self.length == 0 and index != 0):
+            raise IndexError
+        return self.value
+
+    def __len__(self):
+        return self.length
 
 
 class broadcast:
@@ -113,8 +129,7 @@ class broadcast:
         if len(args) == 0:
             raise ValueError("Empty broadcast")
 
-        self.args = args
-        lengths = np.array([_get_length(a) for a in args])
+        lengths = np.array([self._get_length(a) for a in args])
         if np.all(lengths == -1):
             self.length = 0
         else:
@@ -123,36 +138,25 @@ class broadcast:
                 raise ValueError("All array arguments must have the same "
                                  "length.")
             self.length = self.length[0]
-            self.is_array = lengths != -1
+        self.args = [a if lengths[i] >= 0 else _scalar_iterator(a, self.length)
+                     for i, a in enumerate(args)]
 
     def __iter__(self):
         """Return the iterator."""
-        if self.length == 0:
-            self.index = None
-            return self
-        self.index = 0
-        return self
+        for i in zip(*self.iters):
+            yield i
 
-    def __next__(self):
-        """Return the next value."""
-        if self.index is None:
-            self.index = 0  # for stop interaction
-            return self.args
-        if self.index >= self.length:
-            raise StopIteration
-        arr = [v[self.index] if self.is_array[i] else v
-               for i, v in enumerate(self.args)]
-        self.index += 1
-        return arr
+    @staticmethod
+    def _get_length(value):
+        """Get the length of iterable only values."""
+        if not check_iterable(value):
+            return -1
+        return len(value)
 
     @property
     def iters(self):
         """Return the tuple containing the iterators."""
-        if self.length == 0:
-            return tuple([a] for a in self.args)
-        return tuple(np.array(a) if self.is_array[i]
-                     else np.array([a]*self.length)
-                     for i, a in enumerate(self.args))
+        return self.args
 
     def __len__(self):
         """Return the length of the broadcast."""
