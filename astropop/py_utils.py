@@ -145,9 +145,12 @@ class broadcast:
         self.index += 1
         return arr
 
+    @property
     def iters(self):
         """Return the tuple containing the iterators."""
-        return tuple(i for i in self)
+        return tuple(np.array(a) if self.is_array[i]
+                     else np.array([a]*self.length)
+                     for i, a in enumerate(self.args))
 
     def __len__(self):
         """Return the length of the broadcast."""

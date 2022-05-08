@@ -670,9 +670,9 @@ class SQLDatabase:
 
         dict_row_list = _dict2row(cols=self.column_names(table), **data)
         try:
-            rows = np.broadcast(**dict_row_list)
+            rows = np.broadcast(*dict_row_list)
         except ValueError:
-            rows = broadcast(**dict_row_list)
+            rows = broadcast(*dict_row_list)
         rows = list(zip(*rows.iters))
         self._add_data_list(table, rows)
 
