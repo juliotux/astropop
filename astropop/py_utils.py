@@ -98,7 +98,6 @@ def check_iterable(value):
     return False
 
 
-@np.vectorize
 def _get_length(value):
     """Get the length of iterable only values."""
     if not check_iterable(value):
@@ -115,7 +114,7 @@ class broadcast:
             raise ValueError("Empty broadcast")
 
         self.args = args
-        lengths = _get_length(args)
+        lengths = np.array([_get_length(a) for a in args])
         if np.all(lengths == -1):
             self.length = 0
         else:
