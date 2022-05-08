@@ -149,7 +149,8 @@ class FitsFileGroup():
             # copying must be unmmaped
             db.add_table(_headers, columns=self._db.column_names(_headers))
             if len(indexes) > 0:
-                db.add_rows(_headers, np.array(self._table.values)[indexes])
+                db.add_rows(_headers, np.array(self._table.values)[indexes],
+                            skip_sanitize=True)
 
         nfg = object.__new__(FitsFileGroup)
         nfg._db = db

@@ -481,19 +481,17 @@ def _sanitize_colnames(data):
 
 def _sanitize_value(data):
     """Sanitize the value to avoid sql errors."""
+    if data is None or isinstance(data, bytes):
+        return data
     if isinstance(data, (str, np.str_)):
         return f"{data}"
-    if isinstance(data, bytes):
-        return bytes(data)
-    if isinstance(data, (bool, np.bool_)):
-        return bool(data)
-    if data is None:
-        return None
     if np.isscalar(data) and np.isreal(data):
         if isinstance(data, (int, np.integer)):
             return int(data)
         elif isinstance(data, (float, np.floating)):
             return float(data)
+    if isinstance(data, (bool, np.bool_)):
+        return bool(data)
     raise TypeError(f'{type(data)} is not supported.')
 
 
@@ -712,7 +710,8 @@ class SQLDatabase:
         for col in [i for i in columns if i not in existing]:
             self.add_column(table, col)
 
-    def _add_data_dict(self, table, data, add_columns=False):
+    def _add_data_dict(self, table, data, add_columns=False,
+                       skip_sanitize=False):
         """Add data sotred in a dict to the table."""
         data = _sanitize_colnames(data)
         if add_columns:
@@ -724,9 +723,9 @@ class SQLDatabase:
         except ValueError:
             rows = broadcast(*dict_row_list)
         rows = list(zip(*rows.iters))
-        self._add_data_list(table, rows)
+        self._add_data_list(table, rows, skip_sanitize=skip_sanitize)
 
-    def _add_data_list(self, table, data):
+    def _add_data_list(self, table, data, skip_sanitize=False):
         """Add data stored in a list to the table."""
         if np.ndim(data) not in (1, 2):
             raise ValueError('data must be a 1D or 2D array.')
@@ -738,7 +737,10 @@ class SQLDatabase:
             raise ValueError('data must have the same number of columns as '
                              'the table.')
 
-        data = [[None] + list(map(_sanitize_value, d)) for d in data]
+        if skip_sanitize:
+            data = [[None] + i for i in data]
+        else:
+            data = [[None] + list(map(_sanitize_value, d)) for d in data]
         comm = f"INSERT INTO {table} VALUES "
         comm += f"({', '.join(['?']*len(data[0]))})"
         comm += ';'
@@ -789,7 +791,7 @@ class SQLDatabase:
         if data is not None:
             self.set_column(table, column, data)
 
-    def add_rows(self, table, data, add_columns=False):
+    def add_rows(self, table, data, add_columns=False, skip_sanitize=False):
         """Add a dict row to a table.
 
         Parameters
@@ -804,19 +806,24 @@ class SQLDatabase:
         """
         self._check_table(table)
         if isinstance(data, (list, tuple)):
-            return self._add_data_list(table, data)
+            return self._add_data_list(table, data,
+                                       skip_sanitize=skip_sanitize)
         if isinstance(data, dict):
-            return self._add_data_dict(table, data, add_columns=add_columns)
+            return self._add_data_dict(table, data, add_columns=add_columns,
+                                       skip_sanitize=skip_sanitize)
         if isinstance(data, np.ndarray):
             names = data.dtype.names
             if names is not None:
                 data = {n: data[n] for n in names}
                 return self._add_data_dict(table, data,
-                                           add_columns=add_columns)
-            return self._add_data_list(table, data)
+                                           add_columns=add_columns,
+                                           skip_sanitize=skip_sanitize)
+            return self._add_data_list(table, data,
+                                       skip_sanitize=skip_sanitize)
         if isinstance(data, Table):
             data = {c: list(data[c]) for c in data.colnames}
-            return self._add_data_dict(table, data, add_columns=add_columns)
+            return self._add_data_dict(table, data, add_columns=add_columns,
+                                       skip_sanitize=skip_sanitize)
 
         raise TypeError('data must be a dict, list, or numpy array. '
                         f'Not {type(data)}.')
@@ -955,5 +962,5 @@ class SQLDatabase:
         db = SQLDatabase(':memory:')
         for i in self.table_names:
             db.add_table(i, columns=self.column_names(i))
-            db.add_rows(i, self.select(i))
+            db.add_rows(i, self.select(i), skip_sanitize=True)
         return db
