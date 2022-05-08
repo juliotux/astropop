@@ -66,16 +66,9 @@ def gen_stars_gaussian(size, x, y, flux, sigma, theta):
     except (TypeError, ValueError):
         sigma_x = sigma_y = sigma
 
-    if check_number(sigma_x):
-        sigma_x = [sigma_x]*len(x)
+    bc = np.broadcast(x, y, flux, sigma_x, sigma_y, theta)
 
-    if check_number(sigma_y):
-        sigma_y = [sigma_y]*len(x)
-
-    if check_number(theta):
-        theta = [theta]*len(x)
-
-    for xi, yi, fi, sxi, syi, ti in zip(x, y, flux, sigma_x, sigma_y, theta):
+    for xi, yi, fi, sxi, syi, ti in zip(*bc.iters):
         imi, gxi, gyi = trim_array(np.zeros_like(im), box_size=10*sxi,
                                    position=(xi, yi),
                                    indices=(grid_y, grid_x))
