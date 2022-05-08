@@ -12,15 +12,6 @@ from .py_utils import check_iterable, broadcast
 __all__ = ['SQLDatabase', 'SQLTable', 'SQLRow', 'SQLColumn', 'SQLColumnMap']
 
 
-np_to_sql = {
-    'i': 'INTEGER',
-    'f': 'REAL',
-    'S': 'TEXT',
-    'U': 'TEXT',
-    'b': 'BOOLEAN',
-}
-
-
 _ID_KEY = '__id__'
 
 
