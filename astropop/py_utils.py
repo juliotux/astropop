@@ -105,15 +105,11 @@ class _scalar_iterator:
         self.length = length
 
     def __iter__(self):
-        if self.length == 0:
+        for i in range(self.length):
             yield self.value
-        else:
-            for i in range(self.length):
-                yield self.value
 
     def __getitem__(self, index):
-        if ((index >= self.length or index < 0) and self.length > 0) or \
-           (self.length == 0 and index != 0):
+        if index >= self.length or index < 0:
             raise IndexError
         return self.value
 
@@ -131,7 +127,7 @@ class broadcast:
 
         lengths = np.array([self._get_length(a) for a in args])
         if np.all(lengths == -1):
-            self.length = 0
+            self.length = 1
         else:
             self.length = [i for i in lengths if i >= 0]
             if len(set(self.length)) > 1:
