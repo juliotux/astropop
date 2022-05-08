@@ -193,7 +193,7 @@ class SQLTable:
 
     def get_row(self, row):
         """Get a given row from the table."""
-        return self._db.get_row(self._name, row)
+        return self._db.get_row(self._name, row, column_map=self._colmap)
 
     def set_column(self, column, data):
         """Set a given column in the table."""
@@ -364,7 +364,7 @@ class SQLColumn:
 class SQLRow:
     """Handle and SQL table row interfacing with the DB."""
 
-    def __init__(self, db, table, row):
+    def __init__(self, db, table, row, colmap=None):
         """Initialize the row.
 
         Parameters
@@ -379,11 +379,15 @@ class SQLRow:
         self._db = db
         self._table = table
         self._row = row
+        self._colmap = colmap
 
     @property
     def column_names(self):
         """Get the column names of the current table."""
-        return self._db.column_names(self._table)
+        names = self._db.column_names(self._table)
+        if self._colmap is not None:
+            names = self._colmap.get_keyword(names)
+        return names
 
     @property
     def table(self):
@@ -417,8 +421,11 @@ class SQLRow:
     def __getitem__(self, key):
         """Get a column from the row."""
         if isinstance(key, (str, np.str_)):
+            column = key
+            if self._colmap is not None:
+                column = self._colmap.get_column_name(key)
             try:
-                return self._db.get_item(self._table, key, self._row)
+                return self._db.get_item(self._table, column, self._row)
             except ValueError:
                 raise KeyError(f'{key}')
         if isinstance(key, (int, np.int_)):
@@ -427,9 +434,12 @@ class SQLRow:
 
     def __setitem__(self, key, value):
         """Set a column in the row."""
+        column = key = key.lower()
+        if self._colmap is not None:
+            column = self._colmap.get_column_name(key)
         if key not in self.column_names:
             raise KeyError(f'{key}')
-        self._db.set_item(self._table, key, self.index, value)
+        self._db.set_item(self._table, column, self.index, value)
 
     def __iter__(self):
         """Iterate over the row."""
@@ -779,16 +789,16 @@ class SQLDatabase:
         comm = f"DROP TABLE {table};"
         self.execute(comm)
 
-    def get_table(self, table):
+    def get_table(self, table, column_map=None):
         """Get a table from the database."""
         self._check_table(table)
-        return SQLTable(self, table)
+        return SQLTable(self, table, colmap=column_map)
 
-    def get_row(self, table, index):
+    def get_row(self, table, index, column_map=None):
         """Get a row from the table."""
         self._check_table(table)
         index = _fix_row_index(index, len(self[table]))
-        return SQLRow(self, table, index)
+        return SQLRow(self, table, index, colmap=column_map)
 
     def get_column(self, table, column):
         """Get a column from the table."""

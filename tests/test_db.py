@@ -1293,7 +1293,7 @@ class Test_SQLColumn:
 
 class Test_SQLTableMapping:
     @property
-    def db(self):
+    def table(self):
         db = SQLDatabase(':memory:')
         db.add_table('test')
         db.add_column('test', 'a', data=np.arange(10, 20))
@@ -1303,12 +1303,8 @@ class Test_SQLTableMapping:
         db.add_column('mapping', 'keywords', ['key a', 'key-b'])
         db.add_column('mapping', 'columns', ['a', 'b'])
 
-        return db
-
-    @property
-    def table(self):
-        map = SQLColumnMap(self.db, 'mapping', 'keywords', 'columns')
-        return SQLTable(self.db, 'test', colmap=map)
+        map = SQLColumnMap(db, 'mapping', 'keywords', 'columns')
+        return SQLTable(db, 'test', colmap=map)
 
     def test_table_select(self):
         table = self.table
@@ -1584,3 +1580,67 @@ class Test_SQLTableMapping:
         assert_equal(table.index_of({'key a': 50}), [])
         with pytest.raises(TypeError):
             assert_equal(table.index_of('"key a" < 13'), [0, 1, 2])
+
+
+class Test_SQLRowMapping:
+    @property
+    def table(self):
+        db = SQLDatabase(':memory:')
+        db.add_table('test')
+        db.add_column('test', 'a', data=np.arange(10, 20))
+        db.add_column('test', 'b', data=np.arange(20, 30))
+
+        db.add_table('mapping')
+        db.add_column('mapping', 'keywords', ['key a', 'key-b'])
+        db.add_column('mapping', 'columns', ['a', 'b'])
+
+        map = SQLColumnMap(db, 'mapping', 'keywords', 'columns')
+        return SQLTable(db, 'test', colmap=map)
+
+    def test_row_column_names(self):
+        table = self.table
+        r = table.get_row(5)
+        assert_equal(r.column_names, ['key a', 'key-b'])
+        assert_equal(r.keys, ['key a', 'key-b'])
+        r = table[5]
+        assert_equal(r.column_names, ['key a', 'key-b'])
+        assert_equal(r.keys, ['key a', 'key-b'])
+
+    def test_row_invalid_index(self):
+        table = self.table
+
+        with pytest.raises(IndexError):
+            table[10]
+        with pytest.raises(IndexError):
+            table[-11]
+        with pytest.raises(IndexError):
+            table.get_row(10)
+        with pytest.raises(IndexError):
+            table.get_row(-11)
+
+    def test_row_getitem(self):
+        table = self.table
+        r = table.get_row(5)
+        assert_equal(r['key a'], 15)
+        assert_equal(r['key-b'], 25)
+
+        with pytest.raises(KeyError):
+            r['c']
+
+    def test_row_setitem(self):
+        table = self.table
+        r = table.get_row(5)
+        r['key a'] = -1
+        r['key-b'] = -2
+        assert_equal(r.values, [-1, -2])
+        assert_equal(table.values[5], [-1, -2])
+
+    def test_row_as_dict(self):
+        table = self.table
+        r = table.get_row(5)
+        assert_equal(r.as_dict(), {'key a': 15, 'key-b': 25})
+
+    def test_row_items(self):
+        table = self.table
+        r = table.get_row(5)
+        assert_equal(list(r.items), [('key a', 15), ('key-b', 25)])
