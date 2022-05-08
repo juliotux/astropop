@@ -675,9 +675,9 @@ class SQLDatabase:
         res = self.execute(comm, args)
         return res
 
-    def copy(self):
+    def copy(self, indexes=None):
         """Get a copy of the database."""
-        return self.__copy__()
+        return self.__copy__(indexes=indexes)
 
     def column_names(self, table):
         """Get the column names of the table."""
@@ -954,11 +954,44 @@ class SQLDatabase:
             s += f" {len(self[i])} rows"
         return s
 
-    def __copy__(self):
-        """Copy the database."""
+    def __copy__(self, indexes=None):
+        """Copy the database.
+
+        Parameters
+        ----------
+        indexes : dict, optional
+            A dictionary of table names and their indexes to copy.
+
+        Returns
+        -------
+        db : SQLDatabase
+            A copy of the database.
+        """
+        def _get_data(table, indx=None):
+            if indx is None:
+                return self.select(table)
+            if len(indx) == 0:
+                return None
+            if len(indx) >= 10000:
+                # too many rows must be divided
+                indx = np.array_split(indx, np.ceil(len(indx)/10000))
+                d = None
+                for i in indx:
+                    if d is None:
+                        d = _get_data(table, i)
+                    else:
+                        np.vstack([d, _get_data(table, i)])
+                return d
+            where = " OR ".join(f"{_ID_KEY}={v+1}" for v in indx)
+            return self.select(table, where=where)
+
         # when copying, always copy to memory
         db = SQLDatabase(':memory:')
+        if indexes is None:
+            indexes = {}
         for i in self.table_names:
             db.add_table(i, columns=self.column_names(i))
-            db.add_rows(i, self.select(i), skip_sanitize=True)
+            rows = _get_data(i, indexes.get(i, None))
+            if rows is not None:
+                db.add_rows(i, rows, skip_sanitize=True)
         return db

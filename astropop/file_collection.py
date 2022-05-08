@@ -7,6 +7,7 @@ from pathlib import Path
 import numpy as np
 
 from astropy.io import fits
+from astropy.table import Column
 
 from ._db import SQLDatabase, _ID_KEY, sql, SQLTable, SQLColumnMap
 from .fits_utils import _fits_extensions, \
@@ -143,14 +144,10 @@ class FitsFileGroup():
 
     def __copy__(self, indexes=None):
         """Copy the current instance to a new object."""
-        db = self._db.copy()
-        if indexes is not None:
-            db.drop_table(_headers)
-            # copying must be unmmaped
-            db.add_table(_headers, columns=self._db.column_names(_headers))
-            if len(indexes) > 0:
-                db.add_rows(_headers, np.array(self._table.values)[indexes],
-                            skip_sanitize=True)
+        if indexes is None:
+            db = self._db.copy()
+        else:
+            db = self._db.copy(indexes={_headers: indexes})
 
         nfg = object.__new__(FitsFileGroup)
         nfg._db = db
@@ -173,6 +170,19 @@ class FitsFileGroup():
             return self.__copy__(indexes=[])
         indexes = np.array(indexes).ravel() - 1
         return self.__copy__(indexes)
+
+    def group_by(self, keywords):
+        """Create FitsFileGroups grouped by keywords."""
+        summary = self.summary
+        id_key = 'id'
+        while id_key in summary.colnames:
+            id_key += '_'
+        summary.add_column(Column(np.arange(len(summary))),
+                           name=id_key)
+
+        grouped = summary.group_by(keywords)
+        for g in grouped.groups:
+            yield self.__copy__(indexes=list(g[id_key]))
 
     def update(self, files=None, location=None, compression=False):
         """Update the database with the current files."""

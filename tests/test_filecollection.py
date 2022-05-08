@@ -299,6 +299,26 @@ class Test_FitsFileGroup():
         expect[-1] = 'test1'
         assert_equal(sorted(fg['new_column']), expect)
 
+    def test_fg_group_by(self, tmpdir):
+        tmpdir, flist = tmpdir
+        fg = FitsFileGroup(location=tmpdir/'fits', compression=False)
+        for i in fg.group_by('object'):
+            assert_is_instance(i, FitsFileGroup)
+            assert_equal(len(i.values('object', unique=True)), 1)
+            assert_in(i.values('object', unique=True)[0],
+                      ['bias', 'flat', 'Moon'])
+            assert_equal(len(i), 10)
+
+    def test_fg_group_by_used_id(self, tmpdir):
+        tmpdir, flist = tmpdir
+        fg = FitsFileGroup(location=tmpdir/'fits', compression=False)
+        fg.add_column('id', values=np.arange(len(fg)))
+        for i in fg.group_by('object'):
+            assert_is_instance(i, FitsFileGroup)
+            assert_equal(len(i.values('object', unique=True)), 1)
+            assert_in(i.values('object', unique=True)[0],
+                      ['bias', 'flat', 'Moon'])
+            assert_equal(len(i), 10)
 
 class Test_ListFitsFiles():
     def test_list_custom_extension(self, tmpdir):

@@ -397,6 +397,18 @@ class Test_SQLDatabase_Creation_Modify:
         assert_equal(db2.get_column('test', 'a').values, [1, 3, 5])
         assert_equal(db2.get_column('test', 'b').values, [2, 4, 6])
 
+    def test_sql_copy_indexes(self):
+        db = SQLDatabase(':memory:')
+        db.add_table('test')
+        db.add_column('test', 'a', np.arange(1, 101, 2))
+        db.add_column('test', 'b', np.arange(2, 102, 2))
+
+        db2 = db.copy(indexes={'test': [30, 24, 32, 11]})
+        assert_equal(db2.table_names, ['test'])
+        assert_equal(db2.column_names('test'), ['a', 'b'])
+        assert_equal(db2.get_column('test', 'a').values, [23, 49, 61, 65])
+        assert_equal(db2.get_column('test', 'b').values, [24, 50, 62, 66])
+
 
 class Test_SQLDatabase_Access:
     def test_sql_get_table(self):
