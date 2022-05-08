@@ -517,6 +517,7 @@ def _dict2row(cols, **row):
 
 
 def _parse_where(where):
+    args = None
     if where is None:
         _where = None
     elif isinstance(where, dict):
@@ -524,9 +525,11 @@ def _parse_where(where):
         for i, (k, v) in enumerate(where.items()):
             v = _sanitize_value(v)
             if i == 0:
-                _where = f"{k}={v}"
+                _where = f"{k}=?"
+                args = [v]
             else:
-                _where += f" AND {k}={v}"
+                _where += f" AND {k}=?"
+                args.append(v)
     elif isinstance(where, str):
         _where = where
     elif isinstance(where, (list, tuple)):
@@ -538,7 +541,7 @@ def _parse_where(where):
     else:
         raise TypeError('where must be a string, list of strings or'
                         ' dict.')
-    return _where
+    return _where, args
 
 
 class SQLDatabase:
@@ -609,11 +612,11 @@ class SQLDatabase:
         self._check_table(table)
         comm = "SELECT COUNT(*) FROM "
         comm += f"{table} "
-        where = _parse_where(where)
+        where, args = _parse_where(where)
         if where is not None:
             comm += f"WHERE {where}"
         comm += ";"
-        return self.execute(comm)[0][0]
+        return self.execute(comm, args)[0][0]
 
     def select(self, table, columns=None, where=None, order=None, limit=None,
                offset=None):
@@ -642,24 +645,36 @@ class SQLDatabase:
 
         comm = f"SELECT {columns} "
         comm += f"FROM {table} "
+        args = []
 
-        where = _parse_where(where)
+        where, args_w = _parse_where(where)
         if where is not None:
             comm += f"WHERE {where} "
+            if args_w is not None:
+                args += args_w
 
         if order is not None:
+            order = _sanitize_colnames(order)
             comm += f"ORDER BY {order} ASC "
 
         if limit is not None:
-            comm += f"LIMIT {limit} "
+            comm += f"LIMIT ? "
+            if not isinstance(limit, (int, np.integer)):
+                raise TypeError('limit must be an integer.')
+            args.append(int(limit))
         if offset is not None:
             if limit is None:
                 raise ValueError('offset cannot be used without limit.')
-            comm += f"OFFSET {offset} "
+            if not isinstance(offset, (int, np.integer)):
+                raise TypeError('offset must be an integer.')
+            comm += f"OFFSET ? "
+            args.append(int(offset))
 
         comm = comm + ';'
 
-        res = self.execute(comm)
+        if args == []:
+            args = None
+        res = self.execute(comm, args)
         return res
 
     def copy(self):
@@ -841,10 +856,9 @@ class SQLDatabase:
         """Set a value in a cell."""
         row = _fix_row_index(row, self.count(table))
         column = _sanitize_colnames([column])[0]
-        if isinstance(value, str):
-            value = f"'{value}'"
-        self.execute(f"UPDATE {table} SET {column}={value} "
-                     f"WHERE {_ID_KEY}={row+1};")
+        value = _sanitize_value(value)
+        self.execute(f"UPDATE {table} SET {column}=? "
+                     f"WHERE {_ID_KEY}=?;", (value, row+1))
 
     def set_row(self, table, row, data):
         """Set a row in the table."""
@@ -862,9 +876,9 @@ class SQLDatabase:
                             f'Not {type(data)}.')
 
         comm = f"UPDATE {table} SET "
-        comm += f"{', '.join(f'{i}={v}' for i, v in zip(colnames, data))} "
-        comm += f" WHERE {_ID_KEY}={row+1};"
-        self.execute(comm)
+        comm += f"{', '.join(f'{i}=?' for i in colnames)} "
+        comm += f" WHERE {_ID_KEY}=?;"
+        self.execute(comm, tuple(list(map(_sanitize_value, data)) + [row+1]))
 
     def set_column(self, table, column, data):
         """Set a column in the table."""

@@ -584,10 +584,10 @@ class Test_SQLDatabase_PropsComms:
         with pytest.raises(TypeError, match='if where is a list'):
             db.select('test', columns='a', where=[1, 2, 3])
 
-        with pytest.raises(sqlite3.IntegrityError):
+        with pytest.raises(TypeError):
             db.select('test', limit=3.14)
 
-        with pytest.raises(sqlite3.OperationalError):
+        with pytest.raises(TypeError):
             db.select('test', order=5)
 
     def test_sql_select_order(self):
