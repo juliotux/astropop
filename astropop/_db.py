@@ -737,12 +737,10 @@ class SQLDatabase:
             raise ValueError('data must have the same number of columns as '
                              'the table.')
 
-        if skip_sanitize:
-            data = [[None] + i for i in data]
-        else:
-            data = [[None] + list(map(_sanitize_value, d)) for d in data]
+        if not skip_sanitize:
+            data = [tuple(map(_sanitize_value, d)) for d in data]
         comm = f"INSERT INTO {table} VALUES "
-        comm += f"({', '.join(['?']*len(data[0]))})"
+        comm += f"(NULL, {', '.join(['?']*len(data[0]))})"
         comm += ';'
         self.executemany(comm, data)
 
