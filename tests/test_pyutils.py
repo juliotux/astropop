@@ -77,10 +77,15 @@ class Test_RunCommand():
 
     @pytest.mark.parametrize('com', com)
     def test_logging(self, com):
+        logger.setLevel('DEBUG')
         logl = []
-        logcmd = com if isinstance(com, list) else shlex.split(com)
+        expect_log = []
+        if not isinstance(com, list):
+            com = shlex.split(com)
+            expect_log += ['Converting string using shlex']
+        logcmd = com
         logcmd = " ".join(logcmd)
-        expect_log = [f"Runing: {logcmd}"]
+        expect_log += [f"Runing: {logcmd}"]
         expect_log += list(range(1, 11))
         expect_log += [f"Done with process: {logcmd}"]
 
@@ -98,14 +103,23 @@ class Test_RunCommand():
 
     @pytest.mark.parametrize('com', com2)
     def test_logging_err(self, com):
+        logger.setLevel('DEBUG')
         logl = []
-        # stdout messages must not appear due to loglevel
-        expect_log = ['this is an error']
+        expect_log = []
+        if not isinstance(com, list):
+            com = shlex.split(com)
+            expect_log += ['Converting string using shlex']
+        logcmd = com
+        logcmd = " ".join(logcmd)
+        expect_log += [f"Runing: {logcmd}"]
+        expect_log += ['this is an error']
+        expect_log += [f"Done with process: {logcmd}"]
+
         lh = log_to_list(logger, logl)
         stdout = []
         stderr = []
         _, out, err = run_command(com, stdout=stdout, stderr=stderr,
-                                  stdout_loglevel='DEBUG',
+                                  stdout_loglevel='ERROR',
                                   stderr_loglevel='ERROR')
         assert_is(out, stdout)
         assert_is(err, stderr)
