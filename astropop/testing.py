@@ -22,7 +22,8 @@ __all__ = ['assert_equal', 'assert_not_equal', 'assert_almost_equal',
            'assert_greater', 'assert_greater_equal',
            'assert_less', 'assert_less_equal',
            'assert_raises', 'assert_raises_regex',
-           'assert_warns', 'assert_not_warnings']
+           'assert_warns', 'assert_not_warnings',
+           'assert_path_exists', 'assert_path_not_exists']
 
 
 def func_wrapper(func):
