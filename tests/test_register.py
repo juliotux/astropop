@@ -319,3 +319,19 @@ class Test_Register_FrameData_List:
                 assert_is_not(org, reg)
             assert_almost_equal(reg.meta['astropop registration_shift'],
                                 org.meta['test expect_shift'], decimal=0)
+
+    def test_register_framedata_list_ref_image(self):
+        frame_list = self.gen_frame_list((1024, 1024))
+        reg_list = register_framedata_list(frame_list,
+                                           algorithm='cross-correlation',
+                                           ref_image=4,
+                                           upsample_factor=10, space='real')
+        assert_equal(len(frame_list), len(reg_list))
+        ref_shift = np.array(self._shifts[4])
+
+        for org, reg in zip(frame_list, reg_list):
+            expect = np.array(org.meta['test expect_shift']) - ref_shift
+            assert_almost_equal(reg.meta['astropop registration_shift'],
+                                expect, decimal=0)
+
+

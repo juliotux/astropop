@@ -280,6 +280,7 @@ class AsterismRegister(_BaseRegister):
 
 
 def register_framedata_list(frame_list, algorithm='cross-correlation',
+                            ref_image=0, clip_output=False,
                             cval='median', inplace=False, **kwargs):
     """Perform registration in a framedata list.
 
@@ -296,6 +297,12 @@ def register_framedata_list(frame_list, algorithm='cross-correlation',
         'asterism-matching' will use `~astroalign` to match asterisms of 3
         detected stars in the field and compute the transform.
         Default: 'cross-correlation'
+    ref_image : int (optional)
+        Reference image index to compute the registration.
+        Default: 0
+    clip_output : bool (optional)
+        If True, the output images will be clipped to a only-valid pixels
+        frame.
     cval : float or {'median', 'mean'} (optional)
         Fill value for the empty pixels in the transformed image. If 'mean' or
         'median', the correspondent values will be computed from the image.
@@ -328,7 +335,8 @@ def register_framedata_list(frame_list, algorithm='cross-correlation',
     reg_list = [None]*n
     for i in range(n):
         logger.info('Registering image %i from %i', i+1, n)
-        reg_list[i] = reg.register_framedata(frame_list[0], frame_list[i],
+        reg_list[i] = reg.register_framedata(frame_list[ref_image],
+                                             frame_list[i],
                                              cval=cval, inplace=inplace)
 
     return reg_list
