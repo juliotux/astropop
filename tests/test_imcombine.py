@@ -985,17 +985,21 @@ class Test_ImCombiner_HeaderMerging():
 
     def test_mergeheaders_no_merge(self):
         images = self.create_images()
+        expect = {'astropop imcombine nimages': 30,
+                  'astropop imcombine method': 'sum'}
         comb = ImCombiner(merge_header='no_merge')
         res = comb.combine(images, method='sum')
-        assert_equal(res.meta, {'astropop imcombine nimages': 30,
-                                'astropop imcombine method': 'sum'})
+        assert_equal(res.meta, expect)
 
         # explicit setting
         comb = ImCombiner()
         comb.set_merge_header('no_merge')
         res = comb.combine(images, method='sum')
-        assert_equal(res.meta, {'astropop imcombine nimages': 30,
-                                'astropop imcombine method': 'sum'})
+        assert_equal(res.meta, expect)
+
+        # func
+        res = imcombine(images, method='sum', merge_header='no_merge')
+        assert_equal(res.meta, expect)
 
     def test_mergeheaders_first(self):
         images = self.create_images()
@@ -1011,6 +1015,10 @@ class Test_ImCombiner_HeaderMerging():
         comb = ImCombiner()
         comb.set_merge_header('first')
         res = comb.combine(images, method='sum')
+        assert_equal(res.meta, expect)
+
+        # func
+        res = imcombine(images, method='sum', merge_header='first')
         assert_equal(res.meta, expect)
 
     def test_mergeheaders_only_equal(self):
@@ -1030,6 +1038,10 @@ class Test_ImCombiner_HeaderMerging():
         res = comb.combine(images, method='sum')
         assert_equal(res.meta, expect)
 
+        # func
+        res = imcombine(images, method='sum', merge_header='only_equal')
+        assert_equal(res.meta, expect)
+
     def test_mergeheaders_selected_keys(self):
         images = self.create_images()
         keys = ['first_equal', 'third_differ', 'first_differ']
@@ -1047,4 +1059,9 @@ class Test_ImCombiner_HeaderMerging():
         comb = ImCombiner()
         comb.set_merge_header('selected_keys', keys=keys)
         res = comb.combine(images, method='sum')
+        assert_equal(res.meta, expect)
+
+        # func
+        res = imcombine(images, method='sum', merge_header='selected_keys',
+                        merge_header_keys=keys)
         assert_equal(res.meta, expect)
