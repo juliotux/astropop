@@ -11,7 +11,26 @@ from ..framedata import check_framedata, FrameData
 
 
 __all__ = ['CrossCorrelationRegister', 'AsterismRegister',
-           'register_framedata_list']
+           'register_framedata_list', 'compute_shift_list']
+
+
+def _algorithm_check(algorithm, kwargs):
+    """Check the algorithms and get the register."""
+    if algorithm == 'cross-correlation':
+        return CrossCorrelationRegister(**kwargs)
+    if algorithm == 'asterism-matching':
+        return AsterismRegister(**kwargs)
+    raise ValueError(f'Algorithm {algorithm} unknown.')
+
+
+def _check_compatible_list(frame_list):
+    """Check if the list if it is compatible with the register."""
+    for i in frame_list:
+        if not isinstance(i, FrameData):
+            raise TypeError('Only a list of FrameData instances is allowed.')
+        if i.shape != frame_list[0].shape:
+            raise ValueError('Images with incompatible shapes. Only frames '
+                             'with same shape allowed.')
 
 
 class _BaseRegister(abc.ABC):
@@ -279,6 +298,56 @@ class AsterismRegister(_BaseRegister):
         return tform
 
 
+def compute_shift_list(frame_list, algorithm='cross-correlation',
+                       ref_image=0, clip_output=False, **kwargs):
+    """Compute the shift between a list of frames.
+
+    Parameters
+    ----------
+    frame_list : list
+        A list containing `~astropop.framedata.FrameData` images to be
+        registered. All images must have the same shape.
+    algorithm : {'cross-correlation', 'asterism-matching'} (optional)
+        The algorithm to compute the `~skimage.transform.AffineTransform`
+        between the images.
+        'cross-correlation' will compute the transform
+        using `~skimage.transform.phase_cross_correlation` method.
+        'asterism-matching' will use `~astroalign` to match asterisms of 3
+        detected stars in the field and compute the transform.
+        Default: 'cross-correlation'
+    ref_image : int (optional)
+        Reference image index to compute the registration.
+        Default: 0
+    **kwargs :
+        keyword arguments to be passed to `CrossCorrelationRegister` or
+        `AsterismRegister` during instance creation. See the parameters in
+        each class documentation.
+    """
+    reg = _algorithm_check(algorithm, kwargs)
+    _check_compatible_list(frame_list)
+
+    n = len(frame_list)
+
+    ref = frame_list[ref_image]
+    ref_im = np.array(ref.data)
+    ref_mk = ref.mask if ref.mask is None else np.array(ref.mask)
+
+    shift_list = [None]*n
+    for i in range(n):
+        logger.info('Computing shift of image %i from %i', i+1, n)
+        if i == ref_image:
+            shift_list[i] = [0, 0]
+            continue
+
+        mov = frame_list[i]
+        mov_im = np.array(mov.data)
+        mov_mk = mov.mask if mov.mask is None else np.array(mov.mask)
+        tform = reg.compute_transform(ref_im, mov_im, ref_mk, mov_mk)
+        shift_list[i] = tform.translation
+
+    return shift_list
+
+
 def register_framedata_list(frame_list, algorithm='cross-correlation',
                             ref_image=0, clip_output=False,
                             cval='median', inplace=False, **kwargs):
@@ -316,20 +385,8 @@ def register_framedata_list(frame_list, algorithm='cross-correlation',
         `AsterismRegister` during instance creation. See the parameters in
         each class documentation.
     """
-    # check the algorithms
-    if algorithm == 'cross-correlation':
-        reg = CrossCorrelationRegister(**kwargs)
-    elif algorithm == 'asterism-matching':
-        reg = AsterismRegister(**kwargs)
-    else:
-        raise ValueError(f'Algorithm {algorithm} unknown.')
-
-    for i in frame_list:
-        if not isinstance(i, FrameData):
-            raise TypeError('Only a list of FrameData instances is allowed.')
-        if i.shape != frame_list[0].shape:
-            raise ValueError('Images with incompatible shapes. Only frames '
-                             'with same shape allowed.')
+    reg = _algorithm_check(algorithm, kwargs)
+    _check_compatible_list(frame_list)
 
     n = len(frame_list)
     reg_list = [None]*n
