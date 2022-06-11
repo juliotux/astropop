@@ -82,7 +82,7 @@ class Test_RunCommand():
         expect_log = []
         if not isinstance(com, list):
             com = shlex.split(com)
-            expect_log += ['Converting string using shlex']
+            # expect_log += ['Converting string using shlex']
         logcmd = com
         logcmd = " ".join(logcmd)
         expect_log += [f"Runing: {logcmd}"]
@@ -108,7 +108,7 @@ class Test_RunCommand():
         expect_log = []
         if not isinstance(com, list):
             com = shlex.split(com)
-            expect_log += ['Converting string using shlex']
+            # expect_log += ['Converting string using shlex']
         logcmd = com
         logcmd = " ".join(logcmd)
         expect_log += [f"Runing: {logcmd}"]
@@ -119,7 +119,7 @@ class Test_RunCommand():
         stdout = []
         stderr = []
         _, out, err = run_command(com, stdout=stdout, stderr=stderr,
-                                  stdout_loglevel='ERROR',
+                                  stdout_loglevel='DEBUG',
                                   stderr_loglevel='ERROR')
         assert_is(out, stdout)
         assert_is(err, stderr)
