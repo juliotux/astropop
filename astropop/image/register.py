@@ -29,6 +29,26 @@ class _BaseRegister(abc.ABC):
     def _compute_transform(self, image1, image2, mask1=None, mask2=None):
         """Compute the transform to register image2 to image1."""
 
+    def compute_transform(self, image1, image2, mask1=None, mask2=None):
+        """Compute the transform to register image2 to image1.
+
+        Parameters
+        ----------
+        image1 : 2d `~numpy.ndarray`
+            Reference image for registration.
+        image2 : 2d `~numpy.ndarray`
+            Moving image for registration.
+        mask1, mask2 : 2d `~numpy.ndarray` (optional)
+            Masks for images 1 and 2.
+            Default: `None`
+
+        Returns
+        -------
+        tfrom : `~skimage.transform.AffineTransform`
+            Transform computed to project image2 in image2.
+        """
+        return self._compute_transform(image1, image2, mask1, mask2)
+
     def register_image(self, image1, image2, mask1=None, mask2=None,
                        cval='median'):
         """Align and transform an image2 to match image1.
