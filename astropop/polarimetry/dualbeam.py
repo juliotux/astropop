@@ -166,7 +166,7 @@ def _quarter(psi, q=1.0, u=1.0, v=1.0):
     """
     psi = np.radians(psi)
     psi2 = 2*psi
-    z = q*(np.cos(psi2)**2) + u*np.sin(psi)*np.cos(psi2) - v*np.sin(psi2)
+    z = q*(np.cos(psi2)**2) + u*np.sin(psi2)*np.cos(psi2) - v*np.sin(psi2)
     return z
 
 
