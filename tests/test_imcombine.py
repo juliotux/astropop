@@ -402,7 +402,8 @@ class Test_ImCombineConformance():
 
 
 class Test_ImCombiner_ChunkYielder():
-    def test_chunk_yielder_f64(self):
+    @pytest.mark.parametrize('method', ['mean', 'median', 'sum'])
+    def test_chunk_yielder_f64(self, method):
         n = 100
         d = np.random.random((100, 100)).astype(np.float64)
         l = [FrameData(d, unit='adu') for i in range(n)]
@@ -418,80 +419,43 @@ class Test_ImCombiner_ChunkYielder():
         level = logger.getEffectiveLevel()
         logger.setLevel('DEBUG')
 
-        # for median, tot_size=9*4.5=41
-        # xstep = 2, so n_chuks=50
-        i = 0
-        for chunk, unct, slc in comb._chunk_yielder(method='median'):
-            i += 1
-            for k in chunk:
-                assert_equal(k.shape, (2, 100))
-                assert_equal(k, d[slc])
-                assert_is_none(unct)
-                assert_is_instance(k, np.ma.MaskedArray)
-        assert_equal(i, 50)
-        assert_in('Splitting the images into 50 chunks.', logs)
-        logs.clear()
-
-        # for mean and sum, tot_size=9*3=27
-        # xstep = 3, so n_chunks=33+1
-        i = 0
-        for chunk, unct, slc in comb._chunk_yielder(method='mean'):
-            i += 1
-            for k in chunk:
-                assert_in(k.shape, [(3, 100), (1, 100)])
-                assert_equal(k, d[slc])
-                assert_is_none(unct)
-                assert_is_instance(k, np.ma.MaskedArray)
-        assert_equal(i, 34)
-        assert_in('Splitting the images into 34 chunks.', logs)
-        logs.clear()
+        if method == 'median':
+            # for median, tot_size=9*4.5=41
+            # xstep = 2, so n_chuks=50
+            nchunk = 50
+            shape = [(n, 2, 100)]
+        elif method in ['mean', 'sum']:
+            # for mean and sum, tot_size=9*3=27
+            # xstep = 3, so n_chunks=33+1
+            nchunk = 34
+            shape = [(n, 3, 100), (n, 1, 100)]
 
         i = 0
-        for chunk, unct, slc in comb._chunk_yielder(method='sum'):
+        for chunk, unct, slc in comb._chunk_yielder(method=method):
             i += 1
-            for k in chunk:
-                assert_in(k.shape, [(3, 100), (1, 100)])
-                assert_equal(k, d[slc])
-                assert_is_none(unct)
-                assert_is_instance(k, np.ma.MaskedArray)
-        assert_equal(i, 34)
-        assert_in('Splitting the images into 34 chunks.', logs)
+            assert_in(chunk.shape, shape)
+            assert_equal(chunk[0], d[slc])
+            assert_is_none(unct)
+            assert_is_instance(chunk, np.ndarray)
+        assert_equal(i, nchunk)
+        assert_in(f'Splitting the images into {nchunk} chunks.', logs)
         logs.clear()
 
         # this should not split into chunks
         comb = ImCombiner(max_memory=1e8)
         comb._load_images(l)
+
         i = 0
-        for chunk, unct, slc in comb._chunk_yielder(method='median'):
+        for chunk, unct, slc in comb._chunk_yielder(method=method):
             i += 1
-            for k in chunk:
-                assert_equal(k.shape, (100, 100))
-                assert_equal(k, d)
-                assert_is_none(unct)
-                assert_is_instance(k, np.ma.MaskedArray)
+            assert_equal(chunk.shape, (n, 100, 100))
+            assert_equal(chunk[0], d)
+            assert_is_none(unct)
+            assert_is_instance(chunk, np.ndarray)
         assert_equal(i, 1)
-        assert_equal(len(logs), 0)
-        logs.clear()
 
-        # this should split in 400 chunks!
-        comb = ImCombiner(max_memory=1e5)
-        comb._load_images(l)
-        i = 0
-        for chunk, unct, slc in comb._chunk_yielder(method='median'):
-            i += 1
-            for k in chunk:
-                assert_equal(k.shape, (1, 25))
-                assert_equal(k, d[slc])
-                assert_is_none(unct)
-                assert_is_instance(k, np.ma.MaskedArray)
-        assert_equal(i, 400)
-        assert_in('Splitting the images into 400 chunks.', logs)
-        logs.clear()
-
-        logger.setLevel(level)
-        logger.removeHandler(lh)
-
-    def test_chunk_yielder_f32(self):
+    @pytest.mark.parametrize('method', ['mean', 'median', 'sum'])
+    def test_chunk_yielder_f32(self, method):
         # using float32, the number of chunks are almost halved
         n = 100
         d = np.random.random((100, 100)).astype(np.float64)
@@ -508,60 +472,55 @@ class Test_ImCombiner_ChunkYielder():
         level = logger.getEffectiveLevel()
         logger.setLevel('DEBUG')
 
-        # for median, tot_size=5*4.5=22.5
-        # xstep = 4, so n_chuks=25
-        i = 0
-        for chunk, unct, slc in comb._chunk_yielder(method='median'):
-            i += 1
-            for k in chunk:
-                assert_equal(k.shape, (4, 100))
-                assert_almost_equal(k, d[slc])
-                assert_is_none(unct)
-                assert_is_instance(k, np.ma.MaskedArray)
-        assert_equal(i, 25)
-        assert_in('Splitting the images into 25 chunks.', logs)
-        logs.clear()
-
-        # for mean and sum, tot_size=5*3=15
-        # xstep = 6, so n_chunks=16+1
-        i = 0
-        for chunk, unct, slc in comb._chunk_yielder(method='mean'):
-            i += 1
-            for k in chunk:
-                assert_in(k.shape, [(6, 100), (4, 100)])
-                assert_almost_equal(k, d[slc])
-                assert_is_none(unct)
-                assert_is_instance(k, np.ma.MaskedArray)
-        assert_equal(i, 17)
-        assert_in('Splitting the images into 17 chunks.', logs)
-        logs.clear()
+        if method == 'median':
+            # for median, tot_size=5*4.5=22.5
+            # xstep = 4, so n_chuks=25
+            nchunk = 25
+            shape = [(n, 4, 100)]
+        elif method in ['mean', 'sum']:
+            # for mean and sum, tot_size=5*3=15
+            # xstep = 6, so n_chunks=16+1
+            nchunk = 17
+            shape = [(n, 6, 100), (n, 4, 100)]
 
         i = 0
-        for chunk, unct, slc in comb._chunk_yielder(method='sum'):
+        for chunk, unct, slc in comb._chunk_yielder(method=method):
             i += 1
-            for k in chunk:
-                assert_in(k.shape, [(6, 100), (4, 100)])
-                assert_almost_equal(k, d[slc])
-                assert_is_none(unct)
-                assert_is_instance(k, np.ma.MaskedArray)
-        assert_equal(i, 17)
-        assert_in('Splitting the images into 17 chunks.', logs)
+            assert_in(chunk.shape, shape)
+            assert_almost_equal(chunk[0], d[slc])
+            assert_is_none(unct)
+            assert_is_instance(chunk, np.ndarray)
+        assert_equal(i, nchunk)
+        assert_in(f'Splitting the images into {nchunk} chunks.', logs)
         logs.clear()
 
         # this should not split into chunks
-        comb = ImCombiner(max_memory=1e8, dtype=np.float32)
+        comb = ImCombiner(max_memory=1e8)
         comb._load_images(l)
+
         i = 0
-        for chunk, unct, slc in comb._chunk_yielder(method='median'):
+        for chunk, unct, slc in comb._chunk_yielder(method=method):
             i += 1
-            for k in chunk:
-                assert_equal(k.shape, (100, 100))
-                assert_almost_equal(k, d)
-                assert_is_none(unct)
-                assert_is_instance(k, np.ma.MaskedArray)
+            assert_equal(chunk.shape, (n, 100, 100))
+            assert_equal(chunk[0], d)
+            assert_is_none(unct)
+            assert_is_instance(chunk, np.ndarray)
         assert_equal(i, 1)
-        assert_equal(len(logs), 0)
         logs.clear()
+
+    def test_chunk_yielder_ysplit(self):
+        # using float32, the number of chunks are almost halved
+        n = 100
+        d = np.random.random((100, 100)).astype(np.float64)
+        l = [FrameData(d, unit='adu') for i in range(n)]
+        # data size = 4 000 000 = 4 bytes * 100 * 100 * 100
+        # mask size = 1 000 000 = 1 bytes * 100 * 100 * 100
+        # total size = 5 000 000
+
+        logs = []
+        lh = log_to_list(logger, logs, False)
+        level = logger.getEffectiveLevel()
+        logger.setLevel('DEBUG')
 
         # this should split in 300 chunks!
         # total_size = 4.5*5e6=22.5e6 = 225 chunks
@@ -576,7 +535,7 @@ class Test_ImCombiner_ChunkYielder():
                 assert_in(k.shape, ((1, 45), (1, 10)))
                 assert_almost_equal(k, d[slc])
                 assert_is_none(unct)
-                assert_is_instance(k, np.ma.MaskedArray)
+                assert_is_instance(k, np.ndarray)
         assert_equal(i, 300)
         assert_in('Splitting the images into 300 chunks.', logs)
         logs.clear()
@@ -600,7 +559,7 @@ class Test_ImCombiner_ChunkYielder():
                 assert_in(k.shape, ((7, 100), (2, 100)))
                 assert_almost_equal(k, d[slc])
                 assert_almost_equal(un, u[slc])
-                assert_is_instance(un, np.ma.MaskedArray)
+                assert_is_instance(un, np.ndarray)
         assert_equal(i, 15)
 
         # if a single uncertainty is empty, disable it
@@ -675,16 +634,8 @@ class Test_ImCombiner_LoadImages():
         for f in l:
             fits.PrimaryHDU(d).writeto(f)
 
-        logs = []
-        lh = log_to_list(logger, logs, full_record=True)
         comb = ImCombiner(use_disk_cache=disk_cache)
         comb._load_images(l)
-
-        # check if the logging is properly being emitted.
-        log = [i for i in logs if i.msg == 'The images to combine are not '
-               'FrameData. Some features may be disabled.']
-        assert_equal(len(log),  1)
-        assert_equal(log[0].levelname, 'WARNING')
 
         assert_equal(len(comb._images), n)
         assert_is_none(comb._buffer)
@@ -698,24 +649,14 @@ class Test_ImCombiner_LoadImages():
         assert_equal(len(comb._images), 0)
         assert_is_none(comb._buffer)
 
-
     @pytest.mark.parametrize('disk_cache', [True, False])
     def test_image_loading_fitshdu(self, disk_cache):
         n = 10
         d = np.ones((10, 10))
         l = [fits.PrimaryHDU(d) for i in range(n)]
 
-        logs = []
-        lh = log_to_list(logger, logs, full_record=True)
         comb = ImCombiner(use_disk_cache=disk_cache)
         comb._load_images(l)
-
-        # check if the logging is properly being emitted.
-        log = [i for i in logs if i.msg == 'The images to combine are not '
-               'FrameData. Some features may be disabled.']
-        assert_equal(len(log),  1)
-        assert_equal(log[0].levelname, 'WARNING')
-        logger.removeHandler(lh)
 
         assert_equal(len(comb._images), n)
         assert_is_none(comb._buffer)
@@ -736,21 +677,28 @@ class Test_ImCombiner_LoadImages():
 
 
 class Test_ImCombiner_Rejection():
-    def test_apply_minmax_clip(self):
-        _min, _max = (0, 20)
-        outliers = ((1, 2), (6, 2), (2, 9), (5, 2))
+    @pytest.mark.parametrize('clip', [(0, 20), (0, None), (None, 20)])
+    def test_apply_minmax_clip(self, clip):
+        _min, _max = clip
+        outliers = ((4, 2), (6, 2), (2, 9), (5, 2))
         outvalues = [1e6, -2e3, 5e3, -7e2]
         expect = np.zeros((10, 10))
         with NumpyRNGContext(123):
-            data = np.ma.MaskedArray(np.random.normal(loc=10, scale=1,
-                                                      size=[10, 10]),
-                                     mask=np.zeros((10, 10)))
+            data = np.random.normal(loc=10, scale=1, size=[10, 10])
 
         for p, v in zip(outliers, outvalues):
             data[p] = v
-            expect[p] = 1
-        data[0:2, 0:3].mask = 1
+            if _min is not None:
+                if _min > v:
+                    expect[p] = 1
+            if _max is not None:
+                if _max < v:
+                    expect[p] = 1
+
+        data[0:2, 0:3] = np.nan
         expect[0:2, 0:3] = 1
+        expect = expect.astype(bool)
+        s = np.sum(expect)
 
         # force assign the buffer
         comb = ImCombiner()
@@ -759,56 +707,11 @@ class Test_ImCombiner_Rejection():
         comb.set_minmax_clip(_min, _max)
         comb._apply_rejection()
         # original mask must be kept
-        assert_equal(comb._buffer.mask, expect)
-
-    def test_apply_minmax_clip_only_lower(self):
-        _min, _max = (0, None)
-        outliers = ((1, 2), (6, 2), (2, 9), (5, 2))
-        outvalues = [1e6, -2e3, 5e3, -7e2]
-        expect = np.zeros((10, 10))
-        with NumpyRNGContext(123):
-            data = np.ma.MaskedArray(np.random.normal(loc=10, scale=1,
-                                                      size=[10, 10]),
-                                     mask=np.zeros((10, 10)))
-
-        for p, v in zip(outliers, outvalues):
-            data[p] = v
-            if v < _min:
-                expect[p] = 1
-        data[0:2, 0:3].mask = 1
-        expect[0:2, 0:3] = 1
-
-        comb = ImCombiner()
-        comb._buffer = data
-        comb.set_minmax_clip(_min, _max)
-        comb._apply_rejection()
-        assert_equal(comb._buffer.mask, expect)
-
-    def test_apply_minmax_clip_only_higher(self):
-        _min, _max = (None, 20)
-        outliers = ((1, 2), (6, 2), (2, 9), (5, 2))
-        outvalues = [-1e6, 2e3, 5e3, -7e2]
-        expect = np.zeros((10, 10))
-        with NumpyRNGContext(123):
-            data = np.ma.MaskedArray(np.random.normal(loc=10, scale=1,
-                                                      size=[10, 10]),
-                                     mask=np.zeros((10, 10)))
-
-        for p, v in zip(outliers, outvalues):
-            data[p] = v
-            if v > _max:
-                expect[p] = 1
-        data[0:2, 0:3].mask = 1
-        expect[0:2, 0:3] = 1
-
-        comb = ImCombiner()
-        comb._buffer = data
-        comb.set_minmax_clip(_min, _max)
-        comb._apply_rejection()
-        assert_equal(comb._buffer.mask, expect)
+        sr = np.sum(np.isnan(comb._buffer))
+        assert_equal(np.isnan(comb._buffer), expect)
 
     def test_apply_sigmaclip(self):
-        data = np.ma.MaskedArray([1, -1, 1, -1, 65000], mask=np.zeros(5))
+        data = np.array([1, -1, 1, -1, 65000], dtype=np.float32)
         comb = ImCombiner()
 
         # if threshold=1, only 65000 must be masked.
@@ -816,25 +719,25 @@ class Test_ImCombiner_Rejection():
         comb.set_sigma_clip(1)
         expect = [0, 0, 0, 0, 1]
         comb._apply_rejection()
-        assert_equal(comb._buffer.mask, expect)
+        assert_equal(np.isnan(comb._buffer), expect)
 
         # if threshold=3, 65000 must be masked too using mad_std.
         comb._buffer = data.copy()
         comb.set_sigma_clip(3)
         expect = [0, 0, 0, 0, 1]
         comb._apply_rejection()
-        assert_equal(comb._buffer.mask, expect)
+        assert_equal(np.isnan(comb._buffer), expect)
 
         # if threshold=3 and a mask, the mask must be preserved.
         comb._buffer = data.copy()
-        comb._buffer.mask[1] = 1
+        comb._buffer[1] = np.nan
         comb.set_sigma_clip(3)
         expect = [0, 1, 0, 0, 1]
         comb._apply_rejection()
-        assert_equal(comb._buffer.mask, expect)
+        assert_equal(np.isnan(comb._buffer), expect)
 
     def test_apply_sigmaclip_only_lower(self):
-        data = np.ma.MaskedArray([1, -1, 1, -1, 65000], mask=np.zeros(5))
+        data = np.array([1, -1, 1, -1, 65000], dtype=np.float32)
         comb = ImCombiner()
 
         # 65000 must not be masked
@@ -842,10 +745,10 @@ class Test_ImCombiner_Rejection():
         comb.set_sigma_clip((1, None))
         expect = [0, 0, 0, 0, 0]
         comb._apply_rejection()
-        assert_equal(comb._buffer.mask, expect)
+        assert_equal(np.isnan(comb._buffer), expect)
 
     def test_apply_sigmaclip_only_higher(self):
-        data = np.ma.MaskedArray([1, -1, 1, -1, -65000], mask=np.zeros(5))
+        data = np.array([1, -1, 1, -1, -65000], dtype=np.float32)
         comb = ImCombiner()
 
         # -65000 must not be masked
@@ -853,25 +756,13 @@ class Test_ImCombiner_Rejection():
         comb.set_sigma_clip((None, 1))
         expect = [0, 0, 0, 0, 0]
         comb._apply_rejection()
-        assert_equal(comb._buffer.mask, expect)
+        assert_equal(np.isnan(comb._buffer), expect)
 
 
 class Test_ImCombiner_Combine():
-    def create_framedata_array(self, values, size=(100, 100), unct=None):
-        # values is an array containing the scale factor for each image
-
-        with NumpyRNGContext(123):
-            data = np.random.normal(loc=100, scale=20, size=size)
-
-        arr = [None]*len(values)
-        for i, k in enumerate(values):
-            u = unct*data*k if unct is not None else unct
-            arr[i] = FrameData(data*k, uncertainty=u, unit='adu')
-
-        return arr, data
-
-    def test_combine_mask_median(self):
-        comb = ImCombiner()
+    @pytest.mark.parametrize('method', ['sum', 'median', 'mean'])
+    def test_combine_mask_median(self, method):
+        # Just check if mask combining works.
         images = [None]*10
         shape = (10, 10)
         for i in range(10):
@@ -879,6 +770,7 @@ class Test_ImCombiner_Combine():
             # all (2, 5) elements are masked, so the result must be
             mask[2, 5] = 1
             images[i] = FrameData(np.ones(shape), unit='adu', mask=mask)
+
         # these points in result must no be masked
         images[5].mask[7, 7] = 1
         images[2].mask[7, 7] = 1
@@ -886,69 +778,75 @@ class Test_ImCombiner_Combine():
         expect = np.zeros(shape)
         expect[2, 5] = 1
 
-        res = comb.combine(images, 'median')
+        # with ImCombiner
+        comb = ImCombiner()
+        res = comb.combine(images, method)
         assert_equal(res.mask, expect)
 
-    def test_combine_mask_sum(self):
-        comb = ImCombiner()
-        images = [None]*10
+        # with imcombine function
+        assert_equal(imcombine(images, method).mask, expect)
+
+    @pytest.mark.parametrize('method', ['sum', 'median', 'mean'])
+    def test_combine_simple(self, method):
+        values = [0.8, 1.0, 0.9, 1.1, 1.2, 1.1, 1.0, 0.8, 0.9]
+        n = len(values)
         shape = (10, 10)
-        for i in range(10):
-            mask = np.zeros(shape)
-            # all (2, 5) elements are masked, so the result must be
-            mask[2, 5] = 1
-            images[i] = FrameData(np.ones(shape), unit='adu', mask=mask)
-        # these points in result must no be masked
-        images[5].mask[7, 7] = 1
-        images[2].mask[7, 7] = 1
-        images[8].mask[8, 8] = 1
-        expect = np.zeros(shape)
-        expect[2, 5] = 1
+        images = [FrameData(np.ones(shape)*i, unit='adu') for i in values]
+        if method == 'median':
+            med = np.median(values)
+            std = np.std(values)/np.sqrt(n)
+        elif method == 'mean':
+            med = np.mean(values)
+            std = np.std(values)/np.sqrt(n)
+        elif method == 'sum':
+            med = np.sum(values)
+            std = np.std(values)*np.sqrt(n)
 
-        res = comb.combine(images, 'sum')
-        assert_equal(res.mask, expect)
-
-    def test_combine_mask_mean(self):
         comb = ImCombiner()
-        images = [None]*10
+        res1 = comb.combine(images, method=method)
+        res2 = imcombine(images, method=method)
+        for res in (res1, res2):
+            assert_equal(res.data, np.ones(shape)*med)
+            assert_almost_equal(res.uncertainty, np.ones(shape)*std)
+            assert_equal(res.meta['astropop imcombine nimages'], n)
+            assert_equal(res.meta['astropop imcombine method'], method)
+
+    @pytest.mark.parametrize('method', ['sum', 'median', 'mean'])
+    def test_combine_masked(self, method):
+        values = [0.8, 1.0, 0.9, 1.1, 1.2, 1.1, 1.0, 0.8, 0.9]
+        n = len(values)
         shape = (10, 10)
-        for i in range(10):
-            mask = np.zeros(shape)
-            # all (2, 5) elements are masked, so the result must be
-            mask[2, 5] = 1
-            images[i] = FrameData(np.ones(shape), unit='adu', mask=mask)
-        # these points in result must no be masked
-        images[5].mask[7, 7] = 1
-        images[2].mask[7, 7] = 1
-        images[8].mask[8, 8] = 1
-        expect = np.zeros(shape)
-        expect[2, 5] = 1
+        images = [FrameData(np.ones(shape)*i, unit='adu') for i in values]
 
-        res = comb.combine(images, 'mean')
-        assert_equal(res.mask, expect)
+        # this pixel is masked and must be ignored
+        images[0].mask[0, 0] = 1
+        images[0].data[0, 0] = 1000
 
-    def test_combine_median_simple(self):
-        arr, base = self.create_framedata_array([0.8, 1.0, 1.2, 1.0, 1.2],
-                                                size=[1024, 1024],
-                                                unct=0.1)
+        if method == 'median':
+            med = np.ones(shape)*np.median(values)
+            std = np.ones(shape)*np.std(values)/np.sqrt(n)
+            med[0, 0] = np.median(values[1:])
+            std[0, 0] = np.std(values[1:])/np.sqrt(n-1)
+        elif method == 'mean':
+            med = np.ones(shape)*np.mean(values)
+            std = np.ones(shape)*np.std(values)/np.sqrt(n)
+            med[0, 0] = np.mean(values[1:])
+            std[0, 0] = np.std(values[1:])/np.sqrt(n-1)
+        elif method == 'sum':
+            med = np.ones(shape)*np.sum(values)
+            std = np.ones(shape)*np.std(values)*np.sqrt(n)
+            med[0, 0] = np.sum(values[1:])*float(n)/(n-1)
+            std[0, 0] = np.std(values[1:])*np.sqrt(n-1)*float(n)/(n-1)
 
         comb = ImCombiner()
+        res1 = comb.combine(images, method=method)
+        res2 = imcombine(images, method=method)
+        for res in (res1, res2):
+            assert_almost_equal(res.data, med)
+            assert_almost_equal(res.uncertainty, std)
+            assert_equal(res.meta['astropop imcombine nimages'], n)
+            assert_equal(res.meta['astropop imcombine method'], method)
 
-        # the unclipped median of [0.8, 1.0, 1.2, 1.0, 1.2] is 1.0
-        # std([0.8, 1.0, 1.2, 1.0, 1.2])/sqrt(5) = 0.06693280212272602
-        res = comb.combine(arr, method='median')
-        assert_equal(res.data, base)
-        assert_almost_equal(res.uncertainty, 0.06693280212272602*base)
-        assert_equal(res.meta['astropop imcombine nimages'], 5)
-        assert_equal(res.meta['astropop imcombine method'], 'median')
-
-        # same for 3 sigma clipping
-        comb.set_sigma_clip(3, 'median', 'mad_std')
-        res = comb.combine(arr, method='median')
-        assert_equal(res.data, base)
-        assert_almost_equal(res.uncertainty, 0.06693280212272602*base)
-        assert_equal(res.meta['astropop imcombine nimages'], 5)
-        assert_equal(res.meta['astropop imcombine method'], 'median')
 
 
 class Test_ImCombiner_HeaderMerging():

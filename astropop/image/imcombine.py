@@ -4,7 +4,6 @@
 import functools
 from tempfile import mkdtemp
 import numpy as np
-from numpy.ma import MaskedArray as marr
 from astropy.stats import mad_std
 
 from ..framedata import FrameData, check_framedata
@@ -273,7 +272,7 @@ class ImCombiner:
 
         # check if minimum is lower then maximum
         if l is not None and h is not None:
-            l, h = (l, h) if l < h else (h, l)
+            l, h = sorted([l, h])
 
         self._minmax = (l, h)
 
@@ -332,13 +331,8 @@ class ImCombiner:
         if len(image_list) == 0:
             raise ValueError('Image list is empty.')
 
-        is_not_framedata = False
         for indx, i in enumerate(image_list):
-            # before combine, copy everything to memmaped FrameData
-            if not isinstance(i, FrameData) and not is_not_framedata:
-                logger.warning('The images to combine are not FrameData. '
-                               'Some features may be disabled.')
-                is_not_framedata = True
+            # before combine, copy everything to FrameData
             ic = check_framedata(i, copy=True)
             ic = ic.astype(self._dtype)
 
@@ -402,37 +396,31 @@ class ImCombiner:
             ystep = max(1, int(np.ceil(shape[1]/(n_chunks/shape[0]))))
 
         n_chunks = np.ceil(shape[0]/xstep)*np.ceil(shape[1]/ystep)
-        if n_chunks == 1:
-            result = marr([marr(i.data, i.mask, fill_value=np.nan,
-                           dtype=self._dtype)
-                          for i in self._images])
-            yield result, None, (slice(0, shape[0]), slice(0, shape[1]))
-        else:
+        if n_chunks > 1:
             logger.debug('Splitting the images into %i chunks.', n_chunks)
-            # return the sliced data and the slice
-            for x in range(0, shape[0], xstep):
-                for y in range(0, shape[1], ystep):
-                    slc_x = slice(x, min(x+xstep, shape[0]))
-                    slc_y = slice(y, min(y+ystep, shape[1]))
-                    lst = [marr(i.data[slc_x, slc_y],
-                                mask=i.mask[slc_x, slc_y],
-                                fill_value=np.nan,
-                                dtype=self._dtype)
-                           for i in self._images]
-                    # join the instances in a single masked array
-                    lst = marr(lst)
 
+        for x in range(0, shape[0], xstep):
+            for y in range(0, shape[1], ystep):
+                slc_x = slice(x, min(x+xstep, shape[0]))
+                slc_y = slice(y, min(y+ystep, shape[1]))
+                shp = slc_x.stop-slc_x.start, slc_y.stop-slc_y.start
+                slc = (slc_x, slc_y)
+                buffer = np.full((len(self._images), shp[0], shp[1]),
+                                    fill_value=np.nan, dtype=self._dtype)
+                if unct:
+                    unct_buffer = np.full((len(self._images), shp[0], shp[1]),
+                                          fill_value=np.nan, dtype=self._dtype)
+                else:
+                    unct_buffer = None
+
+                for i in range(len(self._images)):
+                    buffer[i] = self._images[i].data[slc]
+                    buffer[i][self._images[i].mask[slc]] = np.nan
                     if unct:
-                        uncta = [marr(i.uncertainty[slc_x, slc_y],
-                                      mask=i.mask[slc_x, slc_y],
-                                      fill_value=np.nan,
-                                      dtype=self._dtype)
-                                 for i in self._images]
-                        uncta = marr(uncta)
-                    else:
-                        uncta = None
+                        unct_buffer[i] = self._images[i].uncertainty[slc]
+                        unct_buffer[i][self._images[i].mask[slc]] = np.nan
 
-                    yield lst, uncta, (slc_x, slc_y)
+                yield buffer, unct_buffer, (slc_x, slc_y)
 
     def _apply_rejection(self):
         mask = np.zeros(self._buffer[0].shape)
@@ -448,12 +436,13 @@ class ImCombiner:
             mask = np.logical_or(_minmax_clip(self._buffer, _min, _max),
                                  mask)
 
-        self._buffer.mask = np.logical_or(self._buffer.mask, mask)
+        mask = np.logical_or(np.isnan(self._buffer), mask)
+        self._buffer[mask] = np.nan
 
     def _combine(self, method, **kwargs):
         """Process the combine and compute the uncertainty."""
         # number of masked pixels for each position
-        n_masked = np.sum([i.mask for i in self._buffer], axis=0)
+        n_masked = np.sum([np.isnan(i) for i in self._buffer], axis=0)
         # number of images
         n = float(len(self._buffer))
         # number of not masked pixels for each position
@@ -475,7 +464,7 @@ class ImCombiner:
                 unct = np.sqrt(unct)
 
             if kwargs.get('sum_normalize', True):
-                norm = n/(n - n_masked)
+                norm = n/n_no_mask
                 data *= norm
                 unct *= norm
 
@@ -529,17 +518,19 @@ class ImCombiner:
         Parameters
         ----------
         image_list: `list` or `tuple`
-          List containing the images to be combined. The values in the list
-          must be all of the same type and `~astropop.framedata.FrameData`
-          supported.
+            List containing the images to be combined. The values in the list
+            must be all of the same type and `~astropop.framedata.FrameData`
+            supported.
         method: {'mean', 'median', 'sum'}
-          Combining method.
-        sum_normalize: bool (optional)
-          If True, the imaged will be multiplied, pixel by pixel, by the
-          number of images divided by the number of non-masked pixels. This
-          will avoid discrepancies by different numbers of masked pixels
-          across the image. If False, the raw sum of images will be returned.
-          Default: True
+            Combining method.
+        **kwargs:
+            sum_normalize: bool (optional)
+                If True, the imaged will be multiplied, pixel by pixel, by the
+                number of images divided by the number of non-masked pixels.
+                This will avoid discrepancies by different numbers of masked
+                pixels across the image. If False, the raw sum of images will
+                be returned.
+                Default: True
 
         Returns
         -------
@@ -581,7 +572,8 @@ class ImCombiner:
             data[slc], unct[slc] = self._combine(method, **kwargs)
 
             # combine masks
-            mask[slc] = np.all([i.mask for i in self._buffer], axis=0)
+            mask[slc] = np.all([np.isnan(i) for i in self._buffer], axis=0)
+            # TODO: flag pixels with NaN as pixels with rejection
 
         combined = FrameData(data, unit=self._unit, mask=mask,
                              uncertainty=unct)
