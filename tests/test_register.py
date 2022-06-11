@@ -8,8 +8,7 @@ from astropop.image.register import AsterismRegister, \
                                     register_framedata_list, \
                                     compute_shift_list
 from astropop.framedata import FrameData
-from astropop.testing import assert_almost_equal, assert_equal, \
-                             assert_is, assert_is_not
+from astropop.testing import *
 
 from .test_detection import gen_position_flux, gen_image
 

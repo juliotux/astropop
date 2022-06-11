@@ -7,8 +7,7 @@ from astropop.math.array import xy2r, iraf_indices, trim_array,  \
 from astropop.math import gaussian, moffat
 import numpy as np
 
-from astropop.testing import assert_equal, assert_true, \
-                             assert_false
+from astropop.testing import *
 
 
 def test_hasher():

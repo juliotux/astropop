@@ -11,10 +11,7 @@ from astropop.framedata import FrameData
 from astropop.logger import logger, log_to_list
 from astropop.image.imcombine import imcombine, _sigma_clip, \
                                      _minmax_clip, ImCombiner
-from astropop.testing import assert_equal, assert_true, assert_false, \
-                             assert_is_instance, assert_is_none, assert_in, \
-                             assert_path_exists, assert_path_not_exists, \
-                             assert_almost_equal
+from astropop.testing import *
 
 
 class Test_MinMaxClip():

@@ -6,8 +6,7 @@ import pytest
 from astropop.image.imarith import imarith
 from astropop.framedata import FrameData
 from astropop.math.physical import UnitsError, units, QFloat
-from astropop.testing import assert_equal, assert_is, assert_is_not, \
-                             assert_in, assert_almost_equal
+from astropop.testing import *
 
 
 # TODO: % and ** functions

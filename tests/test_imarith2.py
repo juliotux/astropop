@@ -5,8 +5,7 @@ import pytest
 
 from astropop.image.imarith import imarith
 from astropop.framedata import FrameData
-from astropop.testing import assert_equal, assert_is, assert_is_not, \
-                             assert_in, assert_almost_equal
+from astropop.testing import *
 
 
 pars = pytest.mark.parametrize('op,vs', [('+', {'f1': {'v': 30, 'u': 0},

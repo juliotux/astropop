@@ -3,8 +3,9 @@
 import numpy as np
 import pytest
 from astropop.math.physical import QFloat, UnitsError, units
-from astropop.testing import assert_almost_equal, assert_equal
 from packaging import version
+
+from astropop.testing import *
 
 # Testing qfloat compatibility with Numpy ufuncs and array functions.
 

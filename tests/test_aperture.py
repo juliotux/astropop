@@ -3,7 +3,7 @@
 import pytest
 import numpy as np
 from astropop.photometry.aperture import aperture_photometry, sky_annulus
-from astropop.testing import assert_almost_equal, assert_equal, assert_not_in
+from astropop.testing import *
 
 
 @pytest.mark.parametrize('r', [2, 3, 4])

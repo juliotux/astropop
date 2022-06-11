@@ -10,8 +10,7 @@ from astropop.image.processing import cosmics_lacosmic, \
                                       subtract_dark, \
                                       flat_correct
 from astropop.framedata import FrameData
-from astropop.testing import assert_is_instance, assert_equal, \
-                             assert_is, assert_is_not
+from astropop.testing import *
 
 
 @pytest.mark.skip

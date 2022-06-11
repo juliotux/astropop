@@ -6,7 +6,6 @@ import numpy as np
 from astropop.photometry import (background, sepfind, daofind, starfind,
                                  calc_fwhm, recenter_sources)
 from astropop.photometry.detection import gen_filter_kernel, DAOFind
-from astropop.testing import (assert_almost_equal, assert_equal)
 from astropop.math.moffat import moffat_2d
 from astropop.math.gaussian import gaussian_2d
 from astropop.math.array import trim_array
@@ -14,6 +13,7 @@ from astropop.py_utils import check_number
 from astropy.utils import NumpyRNGContext
 from astropy.stats import gaussian_fwhm_to_sigma
 
+from astropop.testing import *
 
 def gen_bkg(size, level, rdnoise, rng_seed=123, dtype='f8'):
     """Generate a simple background image."""

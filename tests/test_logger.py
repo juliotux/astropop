@@ -3,8 +3,7 @@
 import pytest
 from astropop.logger import logger, log_to_list, resolve_level_string, \
                             ListHandler
-from astropop.testing import assert_equal, assert_is_instance, assert_in, \
-                             assert_not_in
+from astropop.testing import *
 
 
 class Test_Logger_To_List():

@@ -2,14 +2,13 @@
 
 import pytest
 import numpy as np
-from astropop.testing import (assert_equal, assert_almost_equal,
-                              assert_is_instance, assert_is_none,
-                              assert_false, assert_true)
 from astropop.framedata import FrameData
 from astropop.math.physical import QFloat, qfloat, units, \
                                    same_unit, UnitsError, \
                                    equal_within_errors, \
                                    convert_to_qfloat
+
+from astropop.testing import *
 
 # pylint: disable=no-member, pointless-statement
 

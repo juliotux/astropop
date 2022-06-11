@@ -20,8 +20,7 @@ from astropop.astrometry.coords_utils import guess_coordinates
 from astropop.photometry.aperture import aperture_photometry
 from astropop.photometry.detection import starfind
 
-from astropop.testing import assert_equal, assert_almost_equal, \
-                             assert_true, assert_is_instance, assert_in
+from astropop.testing import *
 
 
 def get_image_index():

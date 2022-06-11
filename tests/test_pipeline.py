@@ -4,7 +4,7 @@ import pytest
 
 from astropop.pipelines import Manager, Config, Instrument, Stage, Product
 from astropop.pipelines import FrozenError
-from astropop.testing import assert_equal
+from astropop.testing import *
 
 string_store = []
 

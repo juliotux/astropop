@@ -9,9 +9,7 @@ from astropop.py_utils import string_fix, process_list, \
                               broadcast
 import numpy as np
 
-from astropop.testing import assert_true, assert_equal, assert_in, \
-                             assert_false, assert_is_instance, assert_is,\
-                             assert_not_in
+from astropop.testing import *
 from astropop.logger import logger, log_to_list
 
 

@@ -1,8 +1,7 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
 from astropop.framedata._meta import FrameMeta
-from astropop.testing import assert_equal, assert_is_instance, assert_true, \
-                             assert_in, assert_not_in
+from astropop.testing import *
 import pytest
 
 

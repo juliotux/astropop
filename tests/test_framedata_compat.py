@@ -14,10 +14,7 @@ from astropy.nddata import StdDevUncertainty, InverseVariance, \
                            CCDData
 
 from astropop.logger import logger, log_to_list
-from astropop.testing import assert_equal, assert_is_instance, \
-                             assert_is_none, assert_not_in, \
-                             assert_false, assert_in, \
-                             assert_not_equal
+from astropop.testing import *
 
 
 _comon_wcs_keys = ('CTYPE', 'CRVAL', 'CRPIX', 'CD1_', 'CD2_', 'PC1_', 'PC2_')

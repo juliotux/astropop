@@ -12,10 +12,7 @@ from astropop.catalogs._online_tools import _timeout_retry, \
                                             astroquery_radius, \
                                             astroquery_skycoord, \
                                             get_center_radius
-from astropop.testing import assert_equal, assert_almost_equal, \
-                             assert_is_instance, assert_is_not, \
-                             assert_not_in, assert_in, assert_true, \
-                             assert_false
+from astropop.testing import *
 from astroquery.simbad import Simbad
 
 

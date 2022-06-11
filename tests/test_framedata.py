@@ -17,11 +17,7 @@ from astropy.utils import NumpyRNGContext
 from astropy import units as u
 from astropy.wcs import WCS
 from astropy.nddata import CCDData, StdDevUncertainty
-from astropop.testing import assert_almost_equal, assert_equal, assert_true, \
-                             assert_false, assert_is_instance, assert_in, \
-                             assert_not_in, assert_is, assert_is_none, \
-                             assert_is_not_none, assert_is_not, \
-                             assert_path_exists
+from astropop.testing import *
 
 
 DEFAULT_DATA_SIZE = 100
