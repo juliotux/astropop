@@ -406,7 +406,7 @@ class ImCombiner:
                 shp = slc_x.stop-slc_x.start, slc_y.stop-slc_y.start
                 slc = (slc_x, slc_y)
                 buffer = np.full((len(self._images), shp[0], shp[1]),
-                                    fill_value=np.nan, dtype=self._dtype)
+                                 fill_value=np.nan, dtype=self._dtype)
                 if unct:
                     unct_buffer = np.full((len(self._images), shp[0], shp[1]),
                                           fill_value=np.nan, dtype=self._dtype)
