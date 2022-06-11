@@ -607,34 +607,44 @@ def imcombine(frames, method='median', memory_limit=1e9, **kwargs):
     method: {'sum', 'median', 'mean'}
         Combining method. Each one has a proper math and a proper error
         computation.
-    sigma_clip: float or tuple (optional)
-        Threshold of sigma clipping rejection. If `None`, it disables the
-        sigma clipping. If a number is provided, it is applied for both low
-        and high values. If a tuple is provided, it is interpreted as
-        (sigma_low, sigma_high) values.
-        Default: `None`
-    sigma_cen_func: callable or {'median', 'mean'} (optional)
-        Function to compute the central value of sigma clipping rejection.
-        If a name is provided, it must follow the convention in Notes.
-        If a callable is provided, it will be applied directly on the data
-        and must accept 'axis' argument.
-        Default: 'median'
-    sigma_dev_func: callable or {'std', 'mad_std'} (optional)
-        Function to compute the std deviation of sigma clipping rejection.
-        If a name is provided, it must follow the convention in Notes.
-        If a callable is provided, it will be applied directly on the data
-        and must accept 'axis' argument.
-        Default: 'std'
-    minmax_clip: tuple (optional)
-        Minimum and maximum limits for minmax clipping. The values are
-        interpreted as (min, max) limits. All values lower then the minimum
-        limit and greater then the maximum limit will be masked. If `None`,
-        the minmax clipping will be disabled.
-        Default: `None`
     memory_limit: int (optional)
         The maximum memory limit (in bytes) to be used in the combining.
         If the data exceeds the maximum memory limit, it will be slipted in
         chunks for the rejection and combining processes.
+    **kwargs:
+        sigma_clip: float or tuple (optional)
+            Threshold of sigma clipping rejection. If `None`, it disables the
+            sigma clipping. If a number is provided, it is applied for both low
+            and high values. If a tuple is provided, it is interpreted as
+            (sigma_low, sigma_high) values.
+            Default: `None`
+        sigma_cen_func: callable or {'median', 'mean'} (optional)
+            Function to compute the central value of sigma clipping rejection.
+            If a name is provided, it must follow the convention in Notes.
+            If a callable is provided, it will be applied directly on the data
+            and must accept 'axis' argument.
+            Default: 'median'
+        sigma_dev_func: callable or {'std', 'mad_std'} (optional)
+            Function to compute the std deviation of sigma clipping rejection.
+            If a name is provided, it must follow the convention in Notes.
+            If a callable is provided, it will be applied directly on the data
+            and must accept 'axis' argument.
+            Default: 'std'
+        minmax_clip: tuple (optional)
+            Minimum and maximum limits for minmax clipping. The values are
+            interpreted as (min, max) limits. All values lower then the minimum
+            limit and greater then the maximum limit will be masked. If `None`,
+            the minmax clipping will be disabled.
+            Default: `None`
+        merge_header: {'first', 'selected_keys', 'no_merge'} (optional)
+            Strategy to merge the headers of the images. If 'first', the first
+            image header will be used. If 'selected_keys', the headers will be
+            merged using the keys provided in the `header_merge_keys`.
+            If 'no_merge', the headers will not be merged.
+            Default: 'no_merge'
+        header_merge_keys: list (optional)
+            List of the keywords to be used to merge the headers.
+            Defaut: `None`
 
     Returns
     -------
@@ -660,7 +670,18 @@ def imcombine(frames, method='median', memory_limit=1e9, **kwargs):
              'tmp_dir': kwargs.pop('tmp_dir', None)}
     combiner = ImCombiner(max_memory=memory_limit, **kargs)
 
-    # TODO: sanitize kwargs and create rejections
+    sc = kwargs.pop('sigma_clip', None)
+    if sc is not None:
+        sigma_cen_func = kwargs.pop('sigma_cen_func', 'median')
+        sigma_dev_func = kwargs.pop('sigma_dev_func', 'std')
+        combiner.set_sigma_clip(sc, sigma_cen_func, sigma_dev_func)
+
+    mm = kwargs.pop('minmax_clip', None)
+    combiner.set_minmax_clip(mm)
+
+    merge_header = kwargs.pop('merge_header', 'no_merge')
+    header_keys = kwargs.pop('merge_header_keys', None)
+    combiner.set_merge_header(merge_header, header_keys)
 
     # Perform the combinations
     return combiner.combine(frames, method, **kwargs)
