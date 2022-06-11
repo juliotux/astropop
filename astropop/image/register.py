@@ -25,6 +25,10 @@ class _BaseRegister(abc.ABC):
         return transform.warp(image, tform, mode='constant', cval=cval,
                               preserve_range=True)
 
+    @abc.abstractmethod
+    def _compute_transform(self, image1, image2, mask1=None, mask2=None):
+        """Compute the transform to register image2 to image1."""
+
     def register_image(self, image1, image2, mask1=None, mask2=None,
                        cval='median'):
         """Align and transform an image2 to match image1.
@@ -170,6 +174,8 @@ class CrossCorrelationRegister(_BaseRegister):
         self._fft_space = space
 
     def _compute_transform(self, image1, image2, mask1=None, mask2=None):
+        if mask1 is not None or mask2 is not None:
+            logger.info("Masks are ignored in CrossCorrelationRegister.")
         # Masks are ignored by default
         dy, dx = phase_cross_correlation(image1, image2,
                                          upsample_factor=self._up_factor,
@@ -231,7 +237,7 @@ class AsterismRegister(_BaseRegister):
 
     def _compute_transform(self, image1, image2, mask1=None, mask2=None):
         if mask1 is not None or mask2 is not None:
-            logger.info("Masks are ignored in ChiSqRegister.")
+            logger.info("Masks are ignored in AsterismRegister.")
 
         # use our starfind to work with only good sources
         bkg, rms = self._bkg(image1, global_bkg=True)
