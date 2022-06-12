@@ -4,23 +4,68 @@ import pytest
 import numpy as np
 
 from astropy import units as u
+from astropy.wcs import WCS
 from astropop.image.processing import cosmics_lacosmic, \
                                       gain_correct, \
                                       subtract_bias, \
                                       subtract_dark, \
-                                      flat_correct
+                                      flat_correct, \
+                                      trim_image
 from astropop.framedata import FrameData
 from astropop.testing import *
 
 
-@pytest.mark.skip
 class Test_Processing_Cosmics():
-    pass
+    @pytest.mark.parametrize('inplace', [True, False])
+    def test_cosmics_lacosmic(self, inplace):
+        image = FrameData(np.ones((20, 20))*3, unit=u.adu,
+                          mask=np.zeros((20, 20)))
+        # Add cosmics
+        image.data[10, 10] = 35000
+        image.data[10, 11] = 35000
+        image.data[11, 10] = 35000
+        image.mask[15, 18] = 1
+
+        expect_mask = np.zeros((20, 20))
+        # currently we are not updating the mask
+        # expect_mask[10, 10] = 1
+        # expect_mask[10, 11] = 1
+        # expect_mask[11, 10] = 1
+        expect_mask[15, 18] = 1
+
+        # Run the cosmics removal
+        res = cosmics_lacosmic(image, inplace=inplace)
+        assert_equal(res.data, np.ones((20, 20))*3)
+        assert_equal(res.mask, expect_mask)
+        assert_equal(res.meta['astropop lacosmic'], True)
+
+        if inplace:
+            assert_is(res, image)
+        else:
+            assert_is_not(res, image)
 
 
-@pytest.mark.skip
 class Test_Processing_Gain():
-    pass
+    @pytest.mark.parametrize('inplace', [True, False])
+    def test_simple_gain_correct(self, inplace):
+        image = FrameData(np.ones((20, 20))*3, unit=u.adu,
+                          uncertainty=5, mask=np.zeros((20, 20)))
+        gain = 1.5*u.Unit('electron')/u.adu
+        res = gain_correct(image, gain, inplace=inplace)
+
+        assert_equal(res.data, np.ones((20, 20))*3*1.5)
+        assert_equal(res.uncertainty, np.ones((20, 20))*5*1.5)
+        assert_equal(res.unit, u.Unit('electron'))
+
+        assert_equal(res.meta['astropop gain_corrected'], True)
+        assert_equal(res.meta['astropop gain_corrected_value'], 1.5)
+        assert_equal(res.meta['astropop gain_corrected_unit'],
+                     'electron / adu')
+
+        if inplace:
+            assert_is(res, image)
+        else:
+            assert_is_not(res, image)
 
 
 class Test_Processing_Flat():
@@ -73,3 +118,61 @@ class Test_Processing_Bias():
 @pytest.mark.skip
 class Test_Processing_Dark():
     pass
+
+
+class Test_Processing_TrimImage():
+    @pytest.mark.parametrize('inplace', [True, False])
+    def test_simple_trim(self, inplace):
+        arr = np.random.uniform(20, 30, (200, 200))
+        mask = np.zeros((200, 200))
+        mask[0:10, 0:40] = 1
+        image = FrameData(arr, unit=u.adu, uncertainty=np.sqrt(arr),
+                          mask=mask)
+
+        # Trim the image
+        section = (slice(5, 25), slice(34, 46))
+        res = trim_image(image, section, inplace=inplace)
+
+        assert_almost_equal(res.data, arr[section])
+        assert_almost_equal(res.uncertainty, np.sqrt(arr)[section])
+        assert_almost_equal(res.mask, mask[section])
+        assert_equal(res.header['astropop trimmed_section'], '5:25,34:46')
+
+        if inplace:
+            assert_is(res, image)
+        else:
+            assert_is_not(res, image)
+
+    @pytest.mark.parametrize('inplace', [True, False])
+    def test_wcs_trim(self, inplace):
+        arr = np.random.uniform(20, 30, (200, 200))
+        mask = np.zeros((200, 200))
+        mask[0:10, 0:40] = 1
+        wcs = WCS(naxis=2)
+        wcs.wcs.crpix = [100, 100]
+        wcs.wcs.cdelt = [1, 1]
+        wcs.wcs.crval = [0, 0]
+        wcs.wcs.ctype = ['RA---TAN', 'DEC--TAN']
+        wcs.wcs.pc = [[1, 0], [0, 1]]
+
+        image = FrameData(arr, unit=u.adu, uncertainty=np.sqrt(arr),
+                          mask=mask, wcs=wcs)
+
+        # Trim the image
+        section = (slice(5, 25), slice(34, 46))
+        res = trim_image(image, section, inplace=inplace)
+
+        assert_almost_equal(res.data, arr[section])
+        assert_almost_equal(res.uncertainty, np.sqrt(arr)[section])
+        assert_almost_equal(res.mask, mask[section])
+        assert_equal(res.header['astropop trimmed_section'], '5:25,34:46')
+        assert_equal(res.wcs.wcs.crpix, [100-5, 100-34])
+        assert_equal(res.wcs.wcs.cdelt, [1, 1])
+        assert_equal(res.wcs.wcs.crval, [0, 0])
+        assert_equal(res.wcs.wcs.ctype, ['RA---TAN', 'DEC--TAN'])
+        assert_equal(res.wcs.wcs.pc, [[1, 0], [0, 1]])
+
+        if inplace:
+            assert_is(res, image)
+        else:
+            assert_is_not(res, image)
