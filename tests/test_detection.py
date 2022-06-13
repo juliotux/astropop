@@ -18,11 +18,11 @@ from astropop.testing import *
 def gen_bkg(size, level, rdnoise, rng_seed=123, dtype='f8'):
     """Generate a simple background image."""
     # create a level image
-    im = np.ones(size, dtype)*level
+    im = np.ones(size[::-1], dtype)*level
 
     # reate the gaussian read noise image to sum
     with NumpyRNGContext(rng_seed):
-        noise = np.random.normal(loc=0, scale=rdnoise, size=size)
+        noise = np.random.normal(loc=0, scale=rdnoise, size=size[::-1])
     im += noise
 
     # poisonic not needed?
@@ -44,8 +44,8 @@ def gen_stars_moffat(size, x, y, flux, fwhm):
     """Generate stars image to add to background."""
     beta = 1.5
     alpha = fwhm/np.sqrt(2**(1/beta)-1)
-    im = np.zeros(size)
-    grid_y, grid_x = np.indices(size)
+    im = np.zeros(size[::-1])
+    grid_y, grid_x = np.indices(size[::-1])
     for xi, yi, fi in zip(x, y, flux):
         imi, gxi, gyi = trim_array(np.zeros_like(im), box_size=5*fwhm,
                                    position=(xi, yi),
@@ -58,8 +58,8 @@ def gen_stars_moffat(size, x, y, flux, fwhm):
 
 def gen_stars_gaussian(size, x, y, flux, sigma, theta):
     """Generate stars image to add to background."""
-    im = np.zeros(size)
-    grid_y, grid_x = np.indices(size)
+    im = np.zeros(size[::-1])
+    grid_y, grid_x = np.indices(size[::-1])
 
     try:
         sigma_x, sigma_y = sigma
