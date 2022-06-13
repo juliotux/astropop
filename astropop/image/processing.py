@@ -11,7 +11,8 @@ from ..framedata import check_framedata
 
 
 __all__ = ['cosmics_lacosmic', 'gain_correct', 'subtract_bias',
-           'subtract_dark', 'flat_correct', 'process_image']
+           'subtract_dark', 'flat_correct', 'process_image',
+           'trim_image']
 
 
 # TODO: replace ccdproc functions by built-in, skiping units
@@ -271,10 +272,12 @@ def trim_image(image, section, inplace=False):
         image = image.copy()
 
     # trim the arrays
-    data, uncertainty, mask = image.data, image.uncertainty, image.mask
+    data, uncertainty, mask = (image.data, image.get_uncertainty(False),
+                               image.mask)
     image.data = data[section]
     image.uncertainty = uncertainty[section]
-    image.mask = mask[section]
+    if not mask.empty:
+        image.mask = mask[section]
 
     # fix WCS if existing
     if image.wcs is not None:
