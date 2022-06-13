@@ -84,7 +84,7 @@ class Test_Processing_Flat():
 
         assert_is_instance(res1, FrameData)
         assert_equal(res1.data, expect)
-        assert_equal(res1.header['hierarch astropop flat_corrected'], True)
+        assert_equal(res1.header['astropop flat_corrected'], True)
 
         if inplace:
             assert_is(res1.data, frame1.data)
@@ -107,7 +107,7 @@ class Test_Processing_Bias():
 
         assert_is_instance(res4, FrameData)
         assert_equal(res4.data, expected)
-        assert_equal(res4.header['hierarch astropop bias_corrected'], True)
+        assert_equal(res4.header['astropop bias_corrected'], True)
 
         if inplace:
             assert_is(res4.data, frame4bias.data)

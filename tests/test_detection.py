@@ -9,7 +9,6 @@ from astropop.photometry.detection import gen_filter_kernel, DAOFind
 from astropop.math.moffat import moffat_2d
 from astropop.math.gaussian import gaussian_2d
 from astropop.math.array import trim_array
-from astropop.py_utils import check_number
 from astropy.utils import NumpyRNGContext
 from astropy.stats import gaussian_fwhm_to_sigma
 
@@ -530,7 +529,7 @@ class Test_DAOFind_Detection():
         # without filtering, both have to output the same round/sharp and
         # the same coordinates for all stars, because use the same algorithm
 
-        image_size = (200, 525)
+        image_size = (525, 200)
         xpos = np.arange(10)*50 + 25
         ypos = np.ones_like(xpos)*30 + np.arange(len(xpos))*10
         sky = 800
@@ -560,7 +559,7 @@ class Test_DAOFind_Detection():
         # without filtering, both have to output the same round/sharp and
         # the same coordinates for all stars, because use the same algorithm
 
-        image_size = (200, 525)
+        image_size = (525, 200)
         xpos = np.arange(10)*50 + 25
         ypos = np.ones_like(xpos)*30 + np.arange(len(xpos))*10
         sky = 800
@@ -796,7 +795,7 @@ class Test_StarFind():
                             decimal=1)
 
     def test_starfind_strong_weak(self):
-        size = (100, 200)
+        size = (200, 100)
         posx = (50, 150)
         posy = (40, 60)
         sky = 800
