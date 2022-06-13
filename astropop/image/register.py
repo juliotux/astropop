@@ -6,6 +6,7 @@ from skimage.registration import phase_cross_correlation
 from skimage import transform
 import numpy as np
 
+from .processing import trim_image
 from ..logger import logger
 from ..framedata import check_framedata, FrameData
 
@@ -31,6 +32,20 @@ def _check_compatible_list(frame_list):
         if i.shape != frame_list[0].shape:
             raise ValueError('Images with incompatible shapes. Only frames '
                              'with same shape allowed.')
+
+
+def _get_clip_slices(shifts):
+    """Get the slices of the clip."""
+    xmin, xmax = np.min(shifts[:, 0]), np.max(shifts[:, 0])
+    ymin, ymax = np.min(shifts[:, 1]), np.max(shifts[:, 1])
+
+    xstop = int(np.floor(xmin)) if xmin < 0 else None
+    xstart = int(np.ceil(xmax))
+
+    ystop = int(np.floor(ymin)) if ymin < 0 else None
+    ystart = int(np.ceil(ymax))
+
+    return slice(xstart, xstop), slice(ystart, ystop)
 
 
 class _BaseRegister(abc.ABC):
@@ -299,7 +314,7 @@ class AsterismRegister(_BaseRegister):
 
 
 def compute_shift_list(frame_list, algorithm='cross-correlation',
-                       ref_image=0, clip_output=False, **kwargs):
+                       ref_image=0, **kwargs):
     """Compute the shift between a list of frames.
 
     Parameters
@@ -343,7 +358,7 @@ def compute_shift_list(frame_list, algorithm='cross-correlation',
         mov_im = np.array(mov.data)
         mov_mk = mov.mask if mov.mask is None else np.array(mov.mask)
         tform = reg.compute_transform(ref_im, mov_im, ref_mk, mov_mk)
-        shift_list[i] = tform.translation
+        shift_list[i] = list(tform.translation)
 
     return shift_list
 
@@ -395,5 +410,12 @@ def register_framedata_list(frame_list, algorithm='cross-correlation',
         reg_list[i] = reg.register_framedata(frame_list[ref_image],
                                              frame_list[i],
                                              cval=cval, inplace=inplace)
+
+    if clip_output:
+        shifts = [i.meta['astropop registration_shift'] for i in reg_list]
+        shifts = np.array(shifts)
+        section = _get_clip_slices(shifts)
+        for i in range(n):
+            trim_image(reg_list[i], section, inplace=True)
 
     return reg_list

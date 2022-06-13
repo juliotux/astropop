@@ -249,7 +249,7 @@ class Test_Registration:
 
 
 class Test_Register_FrameData_List:
-    _shifts = [(0, 0), (-1, 2.4), (1.5, 3.2), (-2.2, 1.75), (-0.5, 0.5)]
+    _shifts = [(0, 0), (-1, 22.4), (15.5, 3.2), (2.2, -1.75), (-5, 0.5)]
 
     def gen_frame_list(self, size):
         sky = 800
@@ -359,7 +359,28 @@ class Test_Register_FrameData_List:
                                 expect, decimal=0)
 
         shift_list = compute_shift_list(frame_list,
+                                        ref_image=4,
                                         algorithm='cross-correlation',
                                         upsample_factor=10, space='real')
         assert_equal(len(frame_list), len(shift_list))
         assert_almost_equal(shift_list, self._shifts - ref_shift, decimal=0)
+
+    def test_register_framedata_list_clip(self):
+        frame_list = self.gen_frame_list((1024, 1024))
+        reg_list = register_framedata_list(frame_list,
+                                           algorithm='cross-correlation',
+                                           clip_output=True,
+                                           inplace=True,
+                                           upsample_factor=10, space='real')
+
+
+        assert_equal(len(frame_list), len(reg_list))
+        for org, reg in zip(frame_list, reg_list):
+            assert_is(org, reg)
+            assert_almost_equal(reg.meta['astropop registration_shift'],
+                                org.meta['test expect_shift'], decimal=0)
+            # excluded 16 pixels from the left, 5 from the right
+            # excluded 23 pixels from the bottom, 2 from the top
+            assert_equal(reg.shape, (1024-5-16, 1024-23-2))
+            # no masked pixel should remain
+            assert_false(np.any(reg.mask))
