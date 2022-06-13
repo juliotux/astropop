@@ -249,7 +249,7 @@ class Test_Registration:
 
 
 class Test_Register_FrameData_List:
-    _shifts = [(0, 0), (-1, 22.4), (15.5, 3.2), (2.2, -1.75), (-5, 0.5)]
+    _shifts = [(0, 0), (-1, 22.4), (15.5, 3.2), (2.2, -1.75), (-5.4, 0.5)]
 
     def gen_frame_list(self, size):
         sky = 800
@@ -347,9 +347,10 @@ class Test_Register_FrameData_List:
     def test_register_framedata_list_ref_image(self):
         frame_list = self.gen_frame_list((1024, 1024))
         reg_list = register_framedata_list(frame_list,
-                                           algorithm='cross-correlation',
+                                           algorithm='asterism-matching',
                                            ref_image=4,
-                                           upsample_factor=10, space='real')
+                                           max_control_points=30,
+                                           detection_threshold=5)
         assert_equal(len(frame_list), len(reg_list))
         ref_shift = np.array(self._shifts[4])
 
@@ -360,18 +361,19 @@ class Test_Register_FrameData_List:
 
         shift_list = compute_shift_list(frame_list,
                                         ref_image=4,
-                                        algorithm='cross-correlation',
-                                        upsample_factor=10, space='real')
+                                        algorithm='asterism-matching',
+                                        max_control_points=30,
+                                        detection_threshold=5)
         assert_equal(len(frame_list), len(shift_list))
         assert_almost_equal(shift_list, self._shifts - ref_shift, decimal=0)
 
     def test_register_framedata_list_clip(self):
-        frame_list = self.gen_frame_list((1024, 1024))
-        reg_list = register_framedata_list(frame_list,
-                                           algorithm='cross-correlation',
-                                           clip_output=True,
+        frame_list = self.gen_frame_list((512, 1024))
+        reg_list = register_framedata_list(frame_list, clip_output=True,
                                            inplace=True,
-                                           upsample_factor=10, space='real')
+                                           algorithm='asterism-matching',
+                                           max_control_points=30,
+                                           detection_threshold=5)
 
 
         assert_equal(len(frame_list), len(reg_list))
@@ -379,8 +381,8 @@ class Test_Register_FrameData_List:
             assert_is(org, reg)
             assert_almost_equal(reg.meta['astropop registration_shift'],
                                 org.meta['test expect_shift'], decimal=0)
-            # excluded 16 pixels from the left, 5 from the right
-            # excluded 23 pixels from the bottom, 2 from the top
-            assert_equal(reg.shape, (1024-5-16, 1024-23-2))
+            # x: 6:-16, y: 2:-23
+            assert_equal(reg.shape, (1024-23-2, 512-6-16))
+            assert_equal(reg.meta['astropop trimmed_section'], '6:-16,2:-23')
             # no masked pixel should remain
             assert_false(np.any(reg.mask))

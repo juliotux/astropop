@@ -34,16 +34,19 @@ def _check_compatible_list(frame_list):
                              'with same shape allowed.')
 
 
-def _get_clip_slices(shifts):
+def _get_clip_slices(shifts, imshape):
     """Get the slices of the clip."""
+    # negative shifts means the image is translated up and right, so they
+    # define the start.
+    # positive shifts translates down and left, so they define the stop.
     xmin, xmax = np.min(shifts[:, 0]), np.max(shifts[:, 0])
     ymin, ymax = np.min(shifts[:, 1]), np.max(shifts[:, 1])
 
-    xstop = int(np.floor(xmin)) if xmin < 0 else None
-    xstart = int(np.ceil(xmax))
+    xstart = int(np.ceil(-xmin)) if xmin < 0 else 0
+    xstop = int(np.floor(-xmax)) if xmax > 0 else imshape[0]
 
-    ystop = int(np.floor(ymin)) if ymin < 0 else None
-    ystart = int(np.ceil(ymax))
+    ystart = int(np.ceil(-ymin)) if ymin < 0 else 0
+    ystop = int(np.floor(-ymax)) if ymax > 0 else imshape[1]
 
     return slice(xstart, xstop), slice(ystart, ystop)
 
@@ -414,8 +417,10 @@ def register_framedata_list(frame_list, algorithm='cross-correlation',
     if clip_output:
         shifts = [i.meta['astropop registration_shift'] for i in reg_list]
         shifts = np.array(shifts)
-        section = _get_clip_slices(shifts)
+        xslice, yslice = _get_clip_slices(shifts, reg_list[0].shape)
+        logger.info('Clipping output images to section: x=%s:%s, y=%s:%s',
+                    xslice.start, xslice.stop, yslice.start, yslice.stop)
         for i in range(n):
-            trim_image(reg_list[i], section, inplace=True)
+            trim_image(reg_list[i], xslice, yslice, inplace=True)
 
     return reg_list
