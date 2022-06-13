@@ -249,7 +249,7 @@ def flat_correct(image, master_flat, min_value=None, norm_value=None,
     return nim
 
 
-def trim_image(image, section, inplace=False):
+def trim_image(image, x_slice=None, y_slice=None, inplace=False):
     """Trim an image to a given section. Uses python slice standard.
 
     Parameters
@@ -257,8 +257,8 @@ def trim_image(image, section, inplace=False):
     image : `~astropop.framedata.FrameData` compatible
         Image to be trimmed. `~astropy.units.Quantity`, numerical values and
         `~astropy.nddata.CCDData` are also suported.
-    section : tuple
-        Section to be trimmed. Tuple containing the slices in x and y.
+    x_slice, y_slice : `slice`
+        Section to be trimmed in x and y axes.
     inplace : bool, optional
         If True, the operations will be performed inplace in the `image`.
 
@@ -271,6 +271,12 @@ def trim_image(image, section, inplace=False):
     if not inplace:
         image = image.copy()
 
+    # shape is always (y, x)
+    x_slice = slice(0, image.shape[1]) if x_slice is None else x_slice
+    y_slice = slice(0, image.shape[0]) if y_slice is None else y_slice
+
+    section = (y_slice, x_slice)
+
     # trim the arrays
     data, uncertainty, mask = (image.data, image.get_uncertainty(False),
                                image.mask)
@@ -282,14 +288,14 @@ def trim_image(image, section, inplace=False):
     # fix WCS if existing
     if image.wcs is not None:
         wcs = image.wcs.copy()
-        wcs.wcs.crpix[0] -= section[0].start
-        wcs.wcs.crpix[1] -= section[1].start
+        wcs.wcs.crpix[0] -= x_slice.start
+        wcs.wcs.crpix[1] -= y_slice.start
         # FIXME: this should work but is getting wrong results
         # image.wcs = wcs.slice(section[::-1])
         image.wcs = wcs
 
     str_slice = ''
-    for s in section:
+    for s in section[::-1]:
         str_slice += ':'.join(str(i) if i is not None else ''
                               for i in [s.start, s.stop])
         str_slice += ','

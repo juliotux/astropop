@@ -123,15 +123,19 @@ class Test_Processing_Dark():
 class Test_Processing_TrimImage():
     @pytest.mark.parametrize('inplace', [True, False])
     def test_simple_trim(self, inplace):
-        arr = np.random.uniform(20, 30, (200, 200))
-        mask = np.zeros((200, 200))
+        shape = (512, 1024)
+        arr = np.random.uniform(20, 30, shape)
+        mask = np.zeros(shape)
         mask[0:10, 0:40] = 1
         image = FrameData(arr, unit=u.adu, uncertainty=np.sqrt(arr),
                           mask=mask)
 
         # Trim the image
-        section = (slice(5, 25), slice(34, 46))
-        res = trim_image(image, section, inplace=inplace)
+        xslice = slice(5, 25)
+        yslice = slice(34, 46)
+        res = trim_image(image, xslice, yslice, inplace=inplace)
+
+        section = (yslice, xslice)
 
         assert_almost_equal(res.data, arr[section])
         assert_almost_equal(res.uncertainty, np.sqrt(arr)[section])
@@ -145,8 +149,9 @@ class Test_Processing_TrimImage():
 
     @pytest.mark.parametrize('inplace', [True, False])
     def test_wcs_trim(self, inplace):
-        arr = np.random.uniform(20, 30, (200, 200))
-        mask = np.zeros((200, 200))
+        shape = (512, 1024)
+        arr = np.random.uniform(20, 30, shape)
+        mask = np.zeros(shape)
         mask[0:10, 0:40] = 1
         wcs = WCS(naxis=2)
         wcs.wcs.crpix = [100, 100]
@@ -159,8 +164,11 @@ class Test_Processing_TrimImage():
                           mask=mask, wcs=wcs)
 
         # Trim the image
-        section = (slice(5, 25), slice(34, 46))
-        res = trim_image(image, section, inplace=inplace)
+        xslice = slice(5, 25)
+        yslice = slice(34, 46)
+        res = trim_image(image, xslice, yslice, inplace=inplace)
+
+        section = (yslice, xslice)
 
         assert_almost_equal(res.data, arr[section])
         assert_almost_equal(res.uncertainty, np.sqrt(arr)[section])
