@@ -14,7 +14,7 @@ from astropy.wcs import WCS
 from ..py_utils import check_iterable
 from ._meta import FrameMeta
 from .memmap import MemMapArray
-from .compat import extract_header_wcs, _to_ccddata, _to_hdu
+from .compat import _to_ccddata, _to_hdu, _merge_and_clean_header
 from .._unit_property import unit_property
 
 
@@ -256,38 +256,11 @@ class FrameData:
 
     def _header_update(self, header, meta=None, wcs=None):
         # merge header and meta. meta with higher priority
-        if header is not None:
-            header = dict(header)
-        else:
-            header = {}
-        if meta is not None:
-            meta = dict(meta)
-        else:
-            meta = {}
-        meta = FrameMeta(meta)
-        meta.update(header)
-
-        # extract history and comments from meta
-        if 'history' in meta:
-            hist = meta.pop('history')
-            if check_iterable(hist):
-                self.history = [i for i in hist]
-            else:
-                self.history = hist
-
-        if 'comment' in meta:
-            comm = meta.pop('comment')
-            if check_iterable(comm):
-                self.comment = [i for i in comm]
-            else:
-                self.comment = comm
-
-        # extract wcs from header
-        meta, wcs_ = extract_header_wcs(meta)
-        wcs = wcs_ if wcs is None else wcs
-        if wcs is not None:
-            self.wcs = wcs
-
+        meta, wcs, history, comment = _merge_and_clean_header(meta, header,
+                                                              wcs)
+        self.history = history
+        self.comments = comment
+        self._wcs = wcs
         self._meta = FrameMeta(meta)
 
     def _update_cache_files(self, cache_file):
@@ -561,7 +534,8 @@ class FrameData:
     def write(self, filename, overwrite=False, **kwargs):
         """Write frame to a fits file."""
         # FIXME: electron unit is not compatible with fits standards
-        self.to_hdu(**kwargs).writeto(filename, overwrite=overwrite)
+        self.to_hdu(**kwargs).writeto(filename, overwrite=overwrite,
+                                      output_verify='silentfix')
 
     def __copy__(self):
         """Copy the current instance to a new one."""

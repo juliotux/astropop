@@ -15,7 +15,8 @@ from astropy import units as u
 
 from ..logger import logger
 from ..fits_utils import imhdus
-from ..py_utils import check_number
+from ..py_utils import check_number, broadcast
+from ._meta import FrameMeta
 
 
 __all__ = ['imhdus', 'EmptyDataError']
@@ -72,7 +73,7 @@ def extract_header_wcs(header):
 
     # First, check if there is a WCS. If not, return header and None WCS
     try:
-        wcs = WCS(hdr, relax=True)
+        wcs = WCS(hdr, relax=True, fix=False)
         if not wcs.wcs.ctype[0]:
             wcs = None
     except Exception as e:
@@ -98,6 +99,59 @@ def extract_header_wcs(header):
             header = _remove_sip_keys(header, wcs)
 
     return (header, wcs)
+
+
+def _framemeta_compat(header):
+    """Translate some formats to a proper FrameMeta."""
+    meta = {}
+    if isinstance(header, fits.Header):
+        keys = set(header.keys())
+        for k in keys:
+            v = header[k]
+            c = header.comments[k]
+            meta[k] = (v, c)
+    elif isinstance(header, (dict, FrameMeta)):
+        meta = header
+    elif header is None:
+        meta = {}
+    else:
+        raise ValueError('Header have an incompatible type.')
+
+    return meta
+
+
+def _merge_and_clean_header(meta, header, wcs):
+    """Merge meta and header and clean the WCS and spurious keys."""
+    for i in (meta, header, wcs):
+        if isinstance(i, fits.Header):
+            i.strip()
+
+    header = _framemeta_compat(header)
+    meta = _framemeta_compat(meta)
+
+    meta = FrameMeta(meta)
+    meta.update(header)
+
+    # strip blank cards
+    meta.pop('')
+
+    # extract history and comments from meta
+    if 'history' in meta:
+        history = meta.pop('history')
+        history = list(broadcast(history).iters[0])
+    else:
+        history = []
+
+    if 'comment' in meta:
+        comment = meta.pop('comment')
+        comment = list(broadcast(comment).iters[0])
+    else:
+        comment = []
+
+    # extract wcs from header
+    meta, wcs_ = extract_header_wcs(meta)
+    wcs = wcs_ if wcs is None else wcs
+    return meta, wcs, history, comment
 
 
 class EmptyDataError(ValueError):
@@ -227,6 +281,10 @@ def _to_hdu(frame, hdu_uncertainty=_HDU_UNCERT, hdu_mask=_HDU_MASK,
         if isinstance(v, u.UnitBase) and no_fits_std:
             logger.info('no_fits_standard_units')
             v = v.to_string()
+        elif isinstance(v, (list, tuple, np.ndarray)):
+            logger.debug('keyword %s has multiple values and will be converted'
+                         ' to a space separated string', k)
+            v = ' '.join(str(x) for x in v)
         header[k] = v
 
     if frame.wcs is not None:
