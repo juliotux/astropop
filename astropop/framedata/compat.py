@@ -87,7 +87,8 @@ def extract_header_wcs(header):
 
         # Astropy uses PC. So remove CD if any
         # The reverse case should not be allowed by astropy
-        if (_PCs & set(wcs.to_header(relax=True))) and (_CDs & set(header)):
+        if (_PCs & set(wcs.to_header(relax=True))) and \
+           (_CDs & set(header.keys())):
             for k in _CDs:
                 if k in header.keys():
                     header.remove(k)
