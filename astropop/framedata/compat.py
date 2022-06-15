@@ -35,11 +35,13 @@ def _remove_sip_keys(header, wcs):
     pol = ['A', 'B', 'AP', 'BP']
     for poly in pol:
         order = wcs.sip.__getattribute__(f'{poly.lower()}_order')
-        header.remove(f'{poly}_ORDER', ignore_missing=True)
-        header.remove(f'{poly}_DMAX', ignore_missing=True)
+        for i in [f'{poly}_ORDER', f'{poly}_DMAX']:
+            if i in header.keys():
+                header.remove(i)
         for i, j in itertools.product(range(order), repeat=2):
-            header.remove(kwd.format(poly, i, j),
-                          ignore_missing=True)
+            key = kwd.format(poly, i, j)
+            if key in header.keys():
+                header.remove(key)
     return header
 
 
@@ -80,14 +82,15 @@ def extract_header_wcs(header):
     if wcs is not None:
         # Delete wcs keys, except time ones
         for k in wcs.to_header(relax=True).keys():
-            if k not in _KEEP:
-                header.remove(k, ignore_missing=True)
+            if k not in _KEEP and k in header.keys():
+                header.remove(k)
 
         # Astropy uses PC. So remove CD if any
         # The reverse case should not be allowed by astropy
         if (_PCs & set(wcs.to_header(relax=True))) and (_CDs & set(header)):
             for k in _CDs:
-                header.remove(k, ignore_missing=True)
+                if k in header.keys():
+                    header.remove(k)
 
         # Check and remove remaining SIP coefficients
         if wcs.sip is not None:
