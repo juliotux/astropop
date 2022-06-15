@@ -284,10 +284,10 @@ class AsterismRegister(_BaseRegister):
         except ImportError:
             raise ImportError('AsterismRegister requires astroalign tools.')
 
-        from ..photometry import starfind, background
+        from ..photometry import sepfind, background
 
         self._aa = astroalign
-        self._sf = starfind
+        self._sf = sepfind
         self._bkg = background
         self._max_cntl_pts = max_control_points
         self._threshold = detection_threshold
@@ -303,6 +303,8 @@ class AsterismRegister(_BaseRegister):
         sources2 = self._sf(image2, self._threshold, bkg, rms)
         sources1.sort('flux', reverse=True)
         sources2.sort('flux', reverse=True)
+        logger.debug('Asterism matching: %d sources in image1, %d in image2',
+                     len(sources1), len(sources2))
         sources1 = np.array(list(zip(sources1['x'], sources1['y'])))
         sources2 = np.array(list(zip(sources2['x'], sources2['y'])))
 
@@ -311,7 +313,7 @@ class AsterismRegister(_BaseRegister):
 
         logger.debug("Asterism matching performed with sources at: "
                      "image1: %s; image2 %s",
-                     ctl_pts[0], ctl_pts[1])
+                     ctl_pts[0].tolist(), ctl_pts[1].tolist())
 
         return tform
 

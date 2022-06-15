@@ -1,12 +1,14 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 """Handle compatibility between FrameData and other data formats."""
 
+import warnings
 import itertools
 from os import PathLike
 import copy as cp
 import numpy as np
 from astropy.io import fits
-from astropy.wcs import WCS
+from astropy.io.fits.verify import VerifyWarning
+from astropy.wcs import WCS, FITSFixedWarning
 from astropy.nddata.ccddata import CCDData
 from astropy.nddata import StdDevUncertainty, VarianceUncertainty, \
                            InverseVariance
@@ -73,9 +75,12 @@ def extract_header_wcs(header):
 
     # First, check if there is a WCS. If not, return header and None WCS
     try:
-        wcs = WCS(hdr, relax=True, fix=False)
-        if not wcs.wcs.ctype[0]:
-            wcs = None
+        with warnings.catch_warnings():
+            # silent WCS anoying warnings
+            warnings.filterwarnings("ignore", category=FITSFixedWarning)
+            wcs = WCS(hdr, relax=True, fix=True)
+            if not wcs.wcs.ctype[0]:
+                wcs = None
     except Exception as e:
         logger.warning('An error raised when extracting WCS: %s', e)
         wcs = None
@@ -277,19 +282,22 @@ def _to_hdu(frame, hdu_uncertainty=_HDU_UNCERT, hdu_mask=_HDU_MASK,
     # Clean header
     header = fits.Header()
     no_fits_std = kwargs.pop('no_fits_standard_units', False)
-    for k, v in frame.header.items():
-        if isinstance(v, u.UnitBase) and no_fits_std:
-            logger.info('no_fits_standard_units')
-            v = v.to_string()
-        elif isinstance(v, (list, tuple, np.ndarray)):
-            logger.debug('keyword %s has multiple values and will be converted'
-                         ' to a space separated string', k)
-            v = ' '.join(str(x) for x in v)
-        header[k] = v
+    with warnings.catch_warnings():
+        # silent hierarch warnings
+        warnings.filterwarnings("ignore", category=VerifyWarning)
+        for k, v in frame.header.items():
+            if isinstance(v, u.UnitBase) and no_fits_std:
+                logger.info('no_fits_standard_units')
+                v = v.to_string()
+            elif isinstance(v, (list, tuple, np.ndarray)):
+                logger.debug('keyword %s has multiple values and will be '
+                            'converted to a space separated string', k)
+                v = ' '.join(str(x) for x in v)
+            header[k] = v
 
     if frame.wcs is not None:
         header.extend(frame.wcs.to_header(relax=wcs_relax),
-                      useblanks=False, update=True)
+                      update=True)
 
     if no_fits_std:
         unit_string = frame.unit.to_string()
