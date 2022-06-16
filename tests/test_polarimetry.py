@@ -2,8 +2,20 @@
 
 import pytest
 import numpy as np
-from astropop.polarimetry.dualbeam import match_pairs, estimate_dxdy
+from astropop.polarimetry.dualbeam import match_pairs, estimate_dxdy, \
+                                          compute_theta
 from astropop.testing import *
+
+
+def test_compute_theta():
+    assert_almost_equal(compute_theta(0, 1), 45)
+    assert_almost_equal(compute_theta(1, 0), 0)
+    assert_almost_equal(compute_theta(0, -1), 135)
+    assert_almost_equal(compute_theta(-1, 0), 90)
+    assert_almost_equal(compute_theta(0.5, 0.5), 22.5)
+    assert_almost_equal(compute_theta(0.5, -0.5), 157.5)
+    assert_almost_equal(compute_theta(-0.5, 0.5), 67.5)
+    assert_almost_equal(compute_theta(-0.5, -0.5), 112.5)
 
 
 class Test_PairMatching:
