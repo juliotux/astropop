@@ -2,7 +2,6 @@
 
 import pytest
 import numpy as np
-from skimage import transform
 from astropop.image.register import AsterismRegister, \
                                     CrossCorrelationRegister, \
                                     register_framedata_list, \
