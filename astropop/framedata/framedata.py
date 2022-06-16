@@ -435,7 +435,7 @@ class FrameData:
         unct = np.array(self._unct) if not self._unct.empty else None
         unit = self._unit
         wcs = cp.copy(self._wcs)
-        meta = cp.copy(self._meta)
+        meta = fits.Header(self._meta, copy=True)
         hist = cp.copy(self._history)
         comm = cp.copy(self._comments)
         fname = self._origin
