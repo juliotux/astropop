@@ -17,7 +17,7 @@ from astropy import units as u
 
 from ..logger import logger
 from ..fits_utils import imhdus
-from ..py_utils import check_number, broadcast
+from ..py_utils import broadcast
 
 
 __all__ = ['imhdus', 'EmptyDataError']

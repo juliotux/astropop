@@ -449,9 +449,9 @@ class FrameData:
         if cache_fname is not None:
             cache_fname = cache_fname + '_copy'
 
-        nframe =  FrameData(data, unit=unit, mask=mask, uncertainty=unct,
-                            meta=meta, cache_folder=cache_folder,
-                            cache_filename=cache_fname, origin_filename=fname)
+        nframe = FrameData(data, unit=unit, mask=mask, uncertainty=unct,
+                           meta=meta, cache_folder=cache_folder,
+                           cache_filename=cache_fname, origin_filename=fname)
         nframe.history = hist
         nframe.comments = comm
         nframe.wcs = wcs
