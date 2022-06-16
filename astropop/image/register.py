@@ -235,7 +235,7 @@ class CrossCorrelationRegister(_BaseRegister):
 
     def _compute_transform(self, image1, image2, mask1=None, mask2=None):
         if mask1 is not None or mask2 is not None:
-            logger.info("Masks are ignored in CrossCorrelationRegister.")
+            logger.debug("Masks are ignored in CrossCorrelationRegister.")
         # Masks are ignored by default
         dy, dx = phase_cross_correlation(image1, image2,
                                          upsample_factor=self._up_factor,
@@ -297,7 +297,7 @@ class AsterismRegister(_BaseRegister):
 
     def _compute_transform(self, image1, image2, mask1=None, mask2=None):
         if mask1 is not None or mask2 is not None:
-            logger.info("Masks are ignored in AsterismRegister.")
+            logger.debug("Masks are ignored in AsterismRegister.")
 
         # use our starfind to work with only good sources
         bkg, rms = self._bkg(image1, global_bkg=True)
