@@ -216,7 +216,8 @@ class Test_Registration:
         assert_equal(frame_reg.uncertainty, expect_unct)
         assert_equal(frame_reg.meta['astropop registration'],
                                     'cross-correlation')
-        assert_equal(frame_reg.meta['astropop registration_shift'], [2, -1])
+        assert_equal(frame_reg.meta['astropop registration_shift_x'], 2)
+        assert_equal(frame_reg.meta['astropop registration_shift_y'], -1)
         assert_equal(frame_reg.meta['astropop registration_rot'], 0)
         assert_equal(frame_reg.meta['moving'], True)
         if inplace:
@@ -245,7 +246,8 @@ class Test_Registration:
             assert_is_not(im_reg, im)
         assert_equal(im_reg.data, im.data)
         assert_equal(im_reg.mask, np.zeros_like(im))
-        assert_equal(im_reg.meta['astropop registration_shift'], [0, 0])
+        assert_equal(im_reg.meta['astropop registration_shift_x'], 0)
+        assert_equal(im_reg.meta['astropop registration_shift_y'], 0)
 
 
 class Test_Register_FrameData_List:
@@ -264,7 +266,8 @@ class Test_Register_FrameData_List:
             x1, y1, flux1 = gen_positions_transformed(x, y, f, *shift, size)
             im1 = gen_image(size, x1, y1, flux1,
                             sky, rdnoise, sigma=2)
-            frame = FrameData(im1, meta={'test expect_shift': list(shift)})
+            frame = FrameData(im1, meta={'test expect_shift_x': shift[0],
+                                         'test expect_shift_y': shift[1]})
             frame_list.append(frame)
 
         return frame_list
@@ -309,8 +312,10 @@ class Test_Register_FrameData_List:
                 assert_is(org, reg)
             else:
                 assert_is_not(org, reg)
-            assert_almost_equal(reg.meta['astropop registration_shift'],
-                                org.meta['test expect_shift'], decimal=0)
+            for i in ['x', 'y']:
+                ap_reg_shift = reg.meta[f'astropop registration_shift_{i}']
+                ex_reg_shift = org.meta[f'test expect_shift_{i}']
+                assert_almost_equal(ap_reg_shift, ex_reg_shift, decimal=0)
 
         if not inplace:
             shift_list = compute_shift_list(frame_list,
@@ -333,8 +338,10 @@ class Test_Register_FrameData_List:
                 assert_is(org, reg)
             else:
                 assert_is_not(org, reg)
-            assert_almost_equal(reg.meta['astropop registration_shift'],
-                                org.meta['test expect_shift'], decimal=0)
+            for i in ['x', 'y']:
+                ap_reg_shift = reg.meta[f'astropop registration_shift_{i}']
+                ex_reg_shift = org.meta[f'test expect_shift_{i}']
+                assert_almost_equal(ap_reg_shift, ex_reg_shift, decimal=0)
 
         if not inplace:
             shift_list = compute_shift_list(frame_list,
@@ -355,9 +362,10 @@ class Test_Register_FrameData_List:
         ref_shift = np.array(self._shifts[4])
 
         for org, reg in zip(frame_list, reg_list):
-            expect = np.array(org.meta['test expect_shift']) - ref_shift
-            assert_almost_equal(reg.meta['astropop registration_shift'],
-                                expect, decimal=0)
+            for i, ref in zip(['x', 'y'], ref_shift):
+                ap_reg_shift = reg.meta[f'astropop registration_shift_{i}']
+                ex_reg_shift = org.meta[f'test expect_shift_{i}'] - ref
+                assert_almost_equal(ap_reg_shift, ex_reg_shift, decimal=0)
 
         shift_list = compute_shift_list(frame_list,
                                         ref_image=4,
@@ -379,8 +387,10 @@ class Test_Register_FrameData_List:
         assert_equal(len(frame_list), len(reg_list))
         for org, reg in zip(frame_list, reg_list):
             assert_is(org, reg)
-            assert_almost_equal(reg.meta['astropop registration_shift'],
-                                org.meta['test expect_shift'], decimal=0)
+            for i in ['x', 'y']:
+                ap_reg_shift = reg.meta[f'astropop registration_shift_{i}']
+                ex_reg_shift = org.meta[f'test expect_shift_{i}']
+                assert_almost_equal(ap_reg_shift, ex_reg_shift, decimal=0)
             # x: 6:-16, y: 2:-23
             assert_equal(reg.shape, (1024-23-2, 512-6-16))
             assert_equal(reg.meta['astropop trimmed_section'], '6:-16,2:-23')

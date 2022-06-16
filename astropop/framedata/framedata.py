@@ -9,12 +9,12 @@ import numpy as np
 import copy as cp
 import tempfile
 from astropy import units as u
+from astropy.io import fits
 from astropy.wcs import WCS
 
 from ..py_utils import check_iterable
-from ._meta import FrameMeta
 from .memmap import MemMapArray
-from .compat import _to_ccddata, _to_hdu, _merge_and_clean_header
+from .compat import _to_ccddata, _to_hdu, _merge_and_clean_header, _write_fits
 from .._unit_property import unit_property
 
 
@@ -251,17 +251,20 @@ class FrameData:
         # avoiding security problems
         self._history = []
         self._comments = []
-        self._meta = FrameMeta()
+        self._meta = fits.Header()
         self._header_update(header, meta, wcs)
 
     def _header_update(self, header, meta=None, wcs=None):
         # merge header and meta. meta with higher priority
         meta, wcs, history, comment = _merge_and_clean_header(meta, header,
                                                               wcs)
-        self.history = history
-        self.comments = comment
-        self._wcs = wcs
-        self._meta = FrameMeta(meta)
+        if len(history) > 0:
+            self.history = history
+        if len(comment) > 0:
+            self.comments = comment
+        if wcs is not None:
+            self._wcs = wcs
+        self._meta = meta
 
     def _update_cache_files(self, cache_file):
         # TODO: if cache folder is changing, remove it
@@ -434,6 +437,7 @@ class FrameData:
         wcs = cp.copy(self._wcs)
         meta = cp.copy(self._meta)
         hist = cp.copy(self._history)
+        comm = cp.copy(self._comments)
         fname = self._origin
         cache_folder = self.cache_folder
         cache_fname = self.cache_filename
@@ -445,12 +449,13 @@ class FrameData:
         if cache_fname is not None:
             cache_fname = cache_fname + '_copy'
 
-        if len(hist) > 0:
-            meta['history'] = hist
-
-        return FrameData(data, unit=unit, mask=mask, uncertainty=unct,
-                         wcs=wcs, meta=meta, cache_folder=cache_folder,
-                         cache_filename=cache_fname, origin_filename=fname)
+        nframe =  FrameData(data, unit=unit, mask=mask, uncertainty=unct,
+                            meta=meta, cache_folder=cache_folder,
+                            cache_filename=cache_fname, origin_filename=fname)
+        nframe.history = hist
+        nframe.comments = comm
+        nframe.wcs = wcs
+        return nframe
 
     def enable_memmap(self, filename=None, cache_folder=None):
         """Enable array file memmapping.
@@ -533,9 +538,7 @@ class FrameData:
 
     def write(self, filename, overwrite=False, **kwargs):
         """Write frame to a fits file."""
-        # FIXME: electron unit is not compatible with fits standards
-        self.to_hdu(**kwargs).writeto(filename, overwrite=overwrite,
-                                      output_verify='silentfix')
+        _write_fits(self, filename, overwrite, **kwargs)
 
     def __copy__(self):
         """Copy the current instance to a new one."""

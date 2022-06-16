@@ -875,8 +875,8 @@ class Test_ImCombiner_HeaderMerging():
         images = self.create_images()
         comb = ImCombiner()
         res = comb.combine(images, method='sum')
-        assert_equal(res.meta, {'astropop imcombine nimages': 30,
-                                'astropop imcombine method': 'sum'})
+        for i, v in zip(['nimages', 'method'], [30, 'sum']):
+            assert_equal(res.meta[f'astropop imcombine {i}'], v)
 
     def test_mergeheaders_no_merge(self):
         images = self.create_images()
@@ -884,17 +884,20 @@ class Test_ImCombiner_HeaderMerging():
                   'astropop imcombine method': 'sum'}
         comb = ImCombiner(merge_header='no_merge')
         res = comb.combine(images, method='sum')
-        assert_equal(res.meta, expect)
+        for k, v in expect.items():
+            assert_equal(res.meta[k], v)
 
         # explicit setting
         comb = ImCombiner()
         comb.set_merge_header('no_merge')
         res = comb.combine(images, method='sum')
-        assert_equal(res.meta, expect)
+        for k, v in expect.items():
+            assert_equal(res.meta[k], v)
 
         # func
         res = imcombine(images, method='sum', merge_header='no_merge')
-        assert_equal(res.meta, expect)
+        for k, v in expect.items():
+            assert_equal(res.meta[k], v)
 
     def test_mergeheaders_first(self):
         images = self.create_images()
@@ -904,17 +907,20 @@ class Test_ImCombiner_HeaderMerging():
 
         comb = ImCombiner(merge_header='first')
         res = comb.combine(images, method='sum')
-        assert_equal(res.meta, expect)
+        for k, v in expect.items():
+            assert_equal(res.meta[k], v)
 
         # explicit setting
         comb = ImCombiner()
         comb.set_merge_header('first')
         res = comb.combine(images, method='sum')
-        assert_equal(res.meta, expect)
+        for k, v in expect.items():
+            assert_equal(res.meta[k], v)
 
         # func
         res = imcombine(images, method='sum', merge_header='first')
-        assert_equal(res.meta, expect)
+        for k, v in expect.items():
+            assert_equal(res.meta[k], v)
 
     def test_mergeheaders_only_equal(self):
         images = self.create_images()
@@ -925,17 +931,20 @@ class Test_ImCombiner_HeaderMerging():
 
         comb = ImCombiner(merge_header='only_equal')
         res = comb.combine(images, method='sum')
-        assert_equal(res.meta, expect)
+        for k, v in expect.items():
+            assert_equal(res.meta[k], v)
 
         # explicit setting
         comb = ImCombiner()
         comb.set_merge_header('only_equal')
         res = comb.combine(images, method='sum')
-        assert_equal(res.meta, expect)
+        for k, v in expect.items():
+            assert_equal(res.meta[k], v)
 
         # func
         res = imcombine(images, method='sum', merge_header='only_equal')
-        assert_equal(res.meta, expect)
+        for k, v in expect.items():
+            assert_equal(res.meta[k], v)
 
     def test_mergeheaders_selected_keys(self):
         images = self.create_images()
@@ -948,15 +957,18 @@ class Test_ImCombiner_HeaderMerging():
 
         comb = ImCombiner(merge_header='selected_keys', merge_header_keys=keys)
         res = comb.combine(images, method='sum')
-        assert_equal(res.meta, expect)
+        for k, v in expect.items():
+            assert_equal(res.meta[k], v)
 
         # explicit setting
         comb = ImCombiner()
         comb.set_merge_header('selected_keys', keys=keys)
         res = comb.combine(images, method='sum')
-        assert_equal(res.meta, expect)
+        for k, v in expect.items():
+            assert_equal(res.meta[k], v)
 
         # func
         res = imcombine(images, method='sum', merge_header='selected_keys',
                         merge_header_keys=keys)
-        assert_equal(res.meta, expect)
+        for k, v in expect.items():
+            assert_equal(res.meta[k], v)

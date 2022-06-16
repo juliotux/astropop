@@ -186,7 +186,8 @@ class _BaseRegister(abc.ABC):
             reg_frame.uncertainty = unct
 
         reg_frame.meta['astropop registration'] = self._name
-        reg_frame.meta['astropop registration_shift'] = list(tform.translation)
+        reg_frame.meta['astropop registration_shift_x'] = tform.translation[0]
+        reg_frame.meta['astropop registration_shift_y'] = tform.translation[1]
         reg_frame.meta['astropop registration_rot'] = np.rad2deg(tform.rotation)
 
         if reg_frame.wcs is not None:
@@ -417,7 +418,8 @@ def register_framedata_list(frame_list, algorithm='cross-correlation',
                                              cval=cval, inplace=inplace)
 
     if clip_output:
-        shifts = [i.meta['astropop registration_shift'] for i in reg_list]
+        shifts = [(i.meta['astropop registration_shift_x'],
+                   i.meta['astropop registration_shift_y']) for i in reg_list]
         shifts = np.array(shifts)
         xslice, yslice = _get_clip_slices(shifts, reg_list[0].shape)
         logger.info('Clipping output images to section: x=%s:%s, y=%s:%s',

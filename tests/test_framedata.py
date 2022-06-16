@@ -9,7 +9,6 @@ import numpy as np
 from astropop.framedata.framedata import setup_filename, extract_units, \
                                          shape_consistency, \
                                          uncertainty_unit_consistency
-from astropop.framedata._meta import FrameMeta
 from astropop.framedata import FrameData, check_framedata, read_framedata
 from astropop.math import QFloat
 from astropy.io import fits
@@ -720,8 +719,9 @@ class Test_FrameData_Meta():
         header.update({'testing1': 'c'})
 
         a = FrameData([1, 2, 3], unit='', meta=meta, header=header)
-        assert_equal(type(a.meta), FrameMeta)
-        assert_equal(type(a.header), FrameMeta)
+        assert_is_instance(a.meta, fits.Header)
+        assert_is_instance(a.header, fits.Header)
+        assert_is(a.meta, a.header)
         assert_equal(a.meta['testing1'], 'c')  # Header priority
         assert_equal(a.meta['testing2'], 'b')
         assert_equal(a.header['testing1'], 'c')  # Header priority
@@ -766,13 +766,13 @@ class Test_FrameData_Meta():
 
     def test_metafromstring_fail(self):
         hdr = 'this is not a valid header'
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             FrameData(np.ones((5, 5)), meta=hdr, unit=u.adu)
 
-    def test_framedata_meta_is_not_fits_header(self):
+    def test_framedata_meta_is_fits_header(self):
         frame = create_framedata()
         frame.meta = {'OBSERVER': 'Edwin Hubble'}
-        assert_false(isinstance(frame.meta, fits.Header))
+        assert_is_instance(frame.meta, fits.Header)
 
     def test_framedata_meta_history(self):
         frame = create_framedata(meta={'history': 'testing history'})
@@ -933,7 +933,7 @@ class Test_FrameData_FITS():
 
 class Test_FrameData_CCDData():
     shape = (10, 10)
-    meta = {'observer': 'testing', 'very long keyword': 1}
+    meta = {'OBSERVER': 'testing', 'very long keyword': 1}
     unit = 'adu'
 
     @property
@@ -953,7 +953,8 @@ class Test_FrameData_CCDData():
 
         assert_equal(ccd.data, 100*np.ones(self.shape))
         assert_equal(ccd.unit, self.unit)
-        assert_equal(ccd.meta, self.meta)
+        for i in self.meta.keys():
+            assert_equal(ccd.meta[i], self.meta[i])
         assert_equal(ccd.mask, np.zeros(self.shape, dtype=bool))
         assert_is_none(ccd.uncertainty)
 
@@ -964,7 +965,8 @@ class Test_FrameData_CCDData():
         ccd = frame.to_ccddata()
         assert_equal(ccd.data, 100*np.ones(self.shape))
         assert_equal(ccd.unit, self.unit)
-        assert_equal(ccd.meta, self.meta)
+        for i in self.meta.keys():
+            assert_equal(ccd.meta[i], self.meta[i])
         assert_equal(ccd.mask, self.mask)
         assert_is_none(ccd.uncertainty, str(ccd.uncertainty))
 
@@ -975,7 +977,8 @@ class Test_FrameData_CCDData():
         ccd = frame.to_ccddata()
         assert_equal(ccd.data, 100*np.ones(self.shape))
         assert_equal(ccd.unit, self.unit)
-        assert_equal(ccd.meta, self.meta)
+        for i in self.meta.keys():
+            assert_equal(ccd.meta[i], self.meta[i])
         assert_equal(ccd.mask, np.zeros(self.shape, dtype=bool))
         assert_equal(ccd.uncertainty.array, np.ones(self.shape))
         assert_equal(ccd.uncertainty.unit, self.unit)
@@ -989,7 +992,8 @@ class Test_FrameData_CCDData():
         ccd = frame.to_ccddata()
         assert_equal(ccd.data, 100*np.ones(self.shape))
         assert_equal(ccd.unit, self.unit)
-        assert_equal(ccd.meta, self.meta)
+        for i in self.meta.keys():
+            assert_equal(ccd.meta[i], self.meta[i])
         assert_equal(ccd.mask, self.mask)
         assert_equal(ccd.uncertainty.array, np.ones(self.shape))
         assert_equal(ccd.uncertainty.unit, self.unit)

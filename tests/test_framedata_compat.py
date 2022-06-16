@@ -5,9 +5,7 @@
 import pytest
 import numpy as np
 from astropop.framedata.compat import extract_header_wcs, _extract_ccddata, \
-                                      _extract_fits, _framemeta_compat, \
-                                      _merge_and_clean_header
-from astropop.framedata._meta import FrameMeta
+                                      _extract_fits, _merge_and_clean_header
 from astropy.io import fits
 from astropy.wcs import WCS
 from astropy.table import Table
@@ -126,38 +124,6 @@ COMMENT This is a third comment
 """
 
 class Test_ExtractHeader():
-    def test_framemeta_compat_header(self):
-        header = fits.Header.fromstring(_base_header, sep='\n')
-        header['TEST'] = ('value', 'comment')
-        meta = _framemeta_compat(header)
-        assert_is_instance(meta, dict)
-        assert_equal(meta['SIMPLE'], (True, 'Fits standard'))
-        assert_equal(meta['BITPIX'],
-                     (-32, 'FOUR-BYTE SINGLE PRECISION FLOATING POINT'))
-        assert_equal(meta['NAXIS'], (2, 'STANDARD FITS FORMAT'))
-        assert_equal(meta['NAXIS1'], (256, 'STANDARD FITS FORMAT'))
-        assert_equal(meta['NAXIS2'], (256, 'STANDARD FITS FORMAT'))
-        assert_equal(meta['DATE-OBS'],
-                     ('1996-10-14T10:14:36.123',
-                      'Date and time of start of obs. in UTC.'))
-        assert_equal(meta['TEST'], ('value', 'comment'))
-
-    def test_framemeta_compat_dict(self):
-        meta = _framemeta_compat({'TEST': 'value'})
-        assert_is_instance(meta, dict)
-        assert_equal(meta['TEST'], 'value')
-
-    def test_framemeta_compat_invalid(self):
-        with assert_raises(ValueError):
-            _framemeta_compat('string is not compatible')
-
-    def test_framemeta_compat_framemeta(self):
-        meta = FrameMeta({'TEST': ('value', 'comment')})
-        meta = _framemeta_compat(meta)
-        assert_is_instance(meta, FrameMeta)
-        assert_equal(meta['TEST'], 'value')
-        assert_equal(list(meta.comments()), ['comment'])
-
     def test_merge_and_clean_header(self):
         strhdr = _base_header+_wcs_no_sip+_hist_comm_blank
         header = fits.Header.fromstring(strhdr, sep='\n')
@@ -166,7 +132,7 @@ class Test_ExtractHeader():
         meta = {'META1': 1, 'META2': 2}
         meta, wcs, history, comments = _merge_and_clean_header(meta, header,
                                                                None)
-        assert_is_instance(meta, FrameMeta)
+        assert_is_instance(meta, fits.Header)
         assert_equal(meta['META1'], 1)
         assert_equal(meta['META2'], 2)
         assert_equal(meta['TEST'], 'value')

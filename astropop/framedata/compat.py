@@ -18,7 +18,6 @@ from astropy import units as u
 from ..logger import logger
 from ..fits_utils import imhdus
 from ..py_utils import check_number, broadcast
-from ._meta import FrameMeta
 
 
 __all__ = ['imhdus', 'EmptyDataError']
@@ -106,50 +105,41 @@ def extract_header_wcs(header):
     return (header, wcs)
 
 
-def _framemeta_compat(header):
-    """Translate some formats to a proper FrameMeta."""
-    meta = {}
-    if isinstance(header, fits.Header):
-        keys = set(header.keys())
-        for k in keys:
-            v = header[k]
-            c = header.comments[k]
-            meta[k] = (v, c)
-    elif isinstance(header, (dict, FrameMeta)):
-        meta = header
-    elif header is None:
-        meta = {}
-    else:
-        raise ValueError('Header have an incompatible type.')
-
-    return meta
-
-
 def _merge_and_clean_header(meta, header, wcs):
     """Merge meta and header and clean the WCS and spurious keys."""
     for i in (meta, header, wcs):
-        if isinstance(i, fits.Header):
-            i.strip()
+        if not isinstance(i, (dict, fits.Header, WCS)) and i is not None:
+            raise TypeError(f'{i} is not a compatible format.')
 
-    header = _framemeta_compat(header)
-    meta = _framemeta_compat(meta)
+    if header is not None:
+        header = fits.Header(header)
+        header.strip()
+    else:
+        header = fits.Header()
 
-    meta = FrameMeta(meta)
+    if meta is not None:
+        meta = fits.Header(meta)
+        meta.strip()
+    else:
+        meta = fits.Header()
+
     meta.update(header)
 
     # strip blank cards
-    meta.pop('')
+    meta.remove('', ignore_missing=True)
 
     # extract history and comments from meta
     if 'history' in meta:
-        history = meta.pop('history')
+        history = meta['history']
         history = list(broadcast(history).iters[0])
+        del meta['history']
     else:
         history = []
 
     if 'comment' in meta:
-        comment = meta.pop('comment')
+        comment = meta['comment']
         comment = list(broadcast(comment).iters[0])
+        del meta['comment']
     else:
         comment = []
 
@@ -280,20 +270,8 @@ def _to_hdu(frame, hdu_uncertainty=_HDU_UNCERT, hdu_mask=_HDU_MASK,
     data = frame.data.copy()
 
     # Clean header
-    header = fits.Header()
+    header = fits.Header(frame.header)
     no_fits_std = kwargs.pop('no_fits_standard_units', False)
-    with warnings.catch_warnings():
-        # silent hierarch warnings
-        warnings.filterwarnings("ignore", category=VerifyWarning)
-        for k, v in frame.header.items():
-            if isinstance(v, u.UnitBase) and no_fits_std:
-                logger.info('no_fits_standard_units')
-                v = v.to_string()
-            elif isinstance(v, (list, tuple, np.ndarray)):
-                logger.debug('keyword %s has multiple values and will be '
-                            'converted to a space separated string', k)
-                v = ' '.join(str(x) for x in v)
-            header[k] = v
 
     if frame.wcs is not None:
         header.extend(frame.wcs.to_header(relax=wcs_relax),
@@ -325,3 +303,13 @@ def _to_hdu(frame, hdu_uncertainty=_HDU_UNCERT, hdu_mask=_HDU_MASK,
         hdul.append(fits.ImageHDU(mask, name=hdu_mask))
 
     return hdul
+
+
+def _write_fits(frame, filename, overwrite=True, **kwargs):
+    """Write a framedata to a fits file."""
+    # FIXME: electron unit is not compatible with fits standards
+    with warnings.catch_warnings():
+        # silent hierarch warnings
+        warnings.filterwarnings("ignore", category=VerifyWarning)
+        frame.to_hdu(**kwargs).writeto(filename, overwrite=overwrite,
+                                       output_verify='silentfix')
