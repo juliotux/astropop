@@ -30,13 +30,9 @@ jobs:
             python: '3.7'
             toxenv: py37-test-olddeps
 
-          - name: Python 3.7 with lts deps
-            python: '3.7'
-            toxenv: py37-test-ltsdeps
-
-          - name: Python 3.7 with astrometry (stable)
-            python: '3.7'
-            toxenv: py37-test-stabledeps
+          - name: Python 3.8 with old deps
+            python: '3.8'
+            toxenv: py38-test-olddeps
 
           - name: Python 3.8 with lts deps
             python: '3.8'
