@@ -185,10 +185,12 @@ class _BaseRegister(abc.ABC):
                                                tform, cval=np.nan)
             reg_frame.uncertainty = unct
 
-        reg_frame.meta['astropop registration'] = self._name
-        reg_frame.meta['astropop registration_shift_x'] = tform.translation[0]
-        reg_frame.meta['astropop registration_shift_y'] = tform.translation[1]
-        reg_frame.meta['astropop registration_rot'] = np.rad2deg(tform.rotation)
+        sx, sy = tform.translation
+        theta = np.rad2deg(tform.rotation)
+        reg_frame.meta['HIERARCH astropop registration'] = self._name
+        reg_frame.meta['HIERARCH astropop registration_shift_x'] = sx
+        reg_frame.meta['HIERARCH astropop registration_shift_y'] = sy
+        reg_frame.meta['HIERARCH astropop registration_rot'] = theta
 
         if reg_frame.wcs is not None:
             logger.warn('WCS in frame2 is not None. Due to the transform it'

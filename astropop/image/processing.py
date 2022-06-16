@@ -62,7 +62,7 @@ def cosmics_lacosmic(frame, inplace=False, **lacosmic_kwargs):
     ccd.data = dat
     # Do not update mask, astroscrappy replace the pixels
     # ccd.mask &= mask
-    ccd.header['astropop lacosmic'] = True
+    ccd.header['HIERARCH astropop lacosmic'] = True
     return ccd
 
 
@@ -96,9 +96,9 @@ def gain_correct(image, gain, inplace=False):
     """
     gain = convert_to_qfloat(gain)
     nim = imarith(image, gain, '*', inplace=inplace)
-    nim.header['astropop gain_corrected'] = True
-    nim.header['astropop gain_corrected_value'] = gain.nominal
-    nim.header['astropop gain_corrected_unit'] = str(gain.unit)
+    nim.header['HIERARCH astropop gain_corrected'] = True
+    nim.header['HIERARCH astropop gain_corrected_value'] = gain.nominal
+    nim.header['HIERARCH astropop gain_corrected_unit'] = str(gain.unit)
 
     return nim
 
@@ -136,10 +136,10 @@ def subtract_bias(image, master_bias, inplace=False):
     master_bias = check_framedata(master_bias)
     nim = imarith(image, master_bias, '-', inplace=inplace)
 
-    nim.header['astropop bias_corrected'] = True
+    nim.header['HIERARCH astropop bias_corrected'] = True
     name = master_bias.origin_filename
     if name is not None:
-        nim.header['astropop bias_corrected_file'] = name
+        nim.header['HIERARCH astropop bias_corrected_file'] = name
 
     return nim
 
@@ -192,12 +192,12 @@ def subtract_dark(image, master_dark, dark_exposure, image_exposure,
 
     nim = imarith(image, master_dark, '-', inplace=inplace)
 
-    nim.header['astropop dark_corrected'] = True
-    nim.header['astropop dark_corrected_scale'] = scale
+    nim.header['HIERARCH astropop dark_corrected'] = True
+    nim.header['HIERARCH astropop dark_corrected_scale'] = scale
     name = master_dark.origin_filename
     if name is not None:
         name = os.path.basename(name)
-        nim.header['astropop dark_corrected_file'] = name
+        nim.header['HIERARCH astropop dark_corrected_file'] = name
 
     return nim
 
@@ -239,12 +239,12 @@ def flat_correct(image, master_flat, min_value=None, norm_value=None,
 
     nim = imarith(image, master_flat, '/', inplace=inplace)
 
-    nim.header['astropop flat_corrected'] = True
+    nim.header['HIERARCH astropop flat_corrected'] = True
 
     name = master_flat.origin_filename
     if name is not None:
         name = os.path.basename(name)
-        nim.header['astropop flat_corrected_file'] = name
+        nim.header['HIERARCH astropop flat_corrected_file'] = name
 
     return nim
 
@@ -300,7 +300,7 @@ def trim_image(image, x_slice=None, y_slice=None, inplace=False):
                               for i in [s.start, s.stop])
         str_slice += ','
     str_slice = str_slice[:-1]
-    image.meta['astropop trimmed_section'] = str_slice
+    image.meta['HIERARCH astropop trimmed_section'] = str_slice
 
     return image
 

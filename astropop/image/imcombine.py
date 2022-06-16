@@ -575,11 +575,12 @@ class ImCombiner:
             mask[slc] = np.all([np.isnan(i) for i in self._buffer], axis=0)
             # TODO: flag pixels with NaN as pixels with rejection
 
+        n = len(self._images)
         combined = FrameData(data, unit=self._unit, mask=mask,
                              uncertainty=unct)
         combined.meta = self._merge_header()
-        combined.meta['astropop imcombine nimages'] = len(self._images)
-        combined.meta['astropop imcombine method'] = method
+        combined.meta['HIERARCH astropop imcombine nimages'] = n
+        combined.meta['HIERARCH astropop imcombine method'] = method
 
         # after, clear all buffers
         self._clear()
