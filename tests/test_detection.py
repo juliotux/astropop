@@ -5,7 +5,9 @@ import numpy as np
 
 from astropop.photometry import (background, sepfind, daofind, starfind,
                                  calc_fwhm, recenter_sources)
-from astropop.photometry.detection import gen_filter_kernel, DAOFind
+from astropop.photometry.detection import gen_filter_kernel, DAOFind, \
+                                          _sep_fix_byte_order
+from astropop.framedata import MemMapArray
 from astropop.math.moffat import moffat_2d
 from astropop.math.gaussian import gaussian_2d
 from astropop.math.array import trim_array
@@ -123,6 +125,60 @@ class Test_Detection_Conformance():
     @pytest.mark.skip
     def test_sources_mask(self):
         pass
+
+
+class Test_SepFixByteOrder():
+    def test_sep_fix_byte_order_memmaparray(self):
+        arr = MemMapArray(np.arange(10).reshape(2, 5))
+        arr1 = _sep_fix_byte_order(arr)
+        assert_equal(arr1, arr)
+        assert_is_instance(arr1, np.ndarray)
+        assert_true(arr1.dtype.isnative)
+        assert_true(arr1.flags['C_CONTIGUOUS'])
+        assert_equal(arr1.dtype, np.dtype('float64'))
+
+    def test_sep_fix_byte_order_f4(self):
+        arr = np.arange(10, dtype='f4').reshape(2, 5)
+        arr1 = _sep_fix_byte_order(arr)
+        assert_equal(arr1, arr)
+        assert_is_instance(arr1, np.ndarray)
+        assert_true(arr1.dtype.isnative)
+        assert_true(arr1.flags['C_CONTIGUOUS'])
+        assert_equal(arr1.dtype, np.dtype('float32'))
+
+    @pytest.mark.parametrize('dtype', ['i1', 'i2', 'i4', 'i8',
+                                       'u1', 'u2', 'u4', 'u8'])
+    def test_sep_fix_byte_order_dtypes(self, dtype):
+        arr = np.arange(10, dtype=dtype).reshape(2, 5)
+        arr1 = _sep_fix_byte_order(arr)
+        assert_equal(arr1, arr)
+        assert_is_instance(arr1, np.ndarray)
+        assert_true(arr1.dtype.isnative)
+        assert_true(arr1.flags['C_CONTIGUOUS'])
+        assert_equal(arr1.dtype, np.dtype('float64'))
+
+    @pytest.mark.parametrize('byteorder', ['>', '<'])
+    @pytest.mark.parametrize('dtype', ['i1', 'i2', 'i4', 'i8',
+                                       'u1', 'u2', 'u4', 'u8',
+                                       'f8'])
+    def test_sep_fix_byte_order_byteorder(self, byteorder, dtype):
+        dtype = f"{byteorder}{dtype}"
+        arr = np.arange(10, dtype=dtype).reshape(2, 5)
+        arr1 = _sep_fix_byte_order(arr)
+        assert_equal(arr1, arr)
+        assert_is_instance(arr1, np.ndarray)
+        assert_true(arr1.dtype.isnative)
+        assert_true(arr1.flags['C_CONTIGUOUS'])
+        assert_equal(arr1.dtype, np.dtype('float64'))
+
+    def test_sep_fix_byte_order_contiguous(self):
+        arr = np.arange(10, dtype='f4').reshape(2, 5).T
+        arr1 = _sep_fix_byte_order(arr)
+        assert_equal(arr1, arr)
+        assert_is_instance(arr1, np.ndarray)
+        assert_true(arr1.dtype.isnative)
+        assert_true(arr1.flags['C_CONTIGUOUS'])
+        assert_equal(arr1.dtype, np.dtype('float32'))
 
 
 class Test_Background():

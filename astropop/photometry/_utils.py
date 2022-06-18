@@ -1,10 +1,14 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
 import numpy as np
+from ..framedata import MemMapArray
 
 
 def _sep_fix_byte_order(data):
     """Fix the byte order of the data for SEP."""
+    if isinstance(data, MemMapArray):
+        data = np.array(data)
+
     if not data.flags['C_CONTIGUOUS']:
         data = np.ascontiguousarray(data)
     if not data.dtype.isnative:
