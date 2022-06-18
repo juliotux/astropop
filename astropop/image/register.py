@@ -2,7 +2,7 @@
 """Compute shifts and translate astronomical images."""
 
 import abc
-from skimage.registration import phase_cross_correlation
+from functools import partial
 from skimage import transform
 import numpy as np
 
@@ -230,17 +230,17 @@ class CrossCorrelationRegister(_BaseRegister):
             data will be FFT'd to compute the correlation, while "fourier"
             data will bypass FFT of input data. Case insensitive.
         """
-        self._up_factor = upsample_factor
-        self._fft_space = space
+        from skimage.registration import phase_cross_correlation
+
+        self._pcc = partial(phase_cross_correlation, space=space,
+                            upsample_factor=upsample_factor,
+                            return_error=False)
 
     def _compute_transform(self, image1, image2, mask1=None, mask2=None):
         if mask1 is not None or mask2 is not None:
             logger.debug("Masks are ignored in CrossCorrelationRegister.")
         # Masks are ignored by default
-        dy, dx = phase_cross_correlation(image1, image2,
-                                         upsample_factor=self._up_factor,
-                                         space=self._fft_space,
-                                         return_error=False)
+        dy, dx = self._pcc(image1, image2)
         return transform.AffineTransform(translation=(-dx, -dy))
 
 
@@ -266,7 +266,8 @@ class AsterismRegister(_BaseRegister):
 
     _name = 'asterism-matching'
 
-    def __init__(self, max_control_points=50, detection_threshold=5):
+    def __init__(self, max_control_points=50, detection_threshold=5,
+                 detection_function='sepfind', **detection_kwargs):
         """Initialize the AsterismRegister instance.
 
         Parameters
@@ -277,6 +278,11 @@ class AsterismRegister(_BaseRegister):
         detection_threshold : int, optional
             Minimum SNR detection threshold.
             Default: 5
+        detection_function : {'sepfind', 'starfind', 'daofind'} (optional)
+            Detection function to use.
+            Default: 'sepfind'
+        detection_kwargs : dict (optional)
+            Keyword arguments to pass to the detection function.
 
         Raises
         ------
@@ -287,10 +293,11 @@ class AsterismRegister(_BaseRegister):
         except ImportError:
             raise ImportError('AsterismRegister requires astroalign tools.')
 
-        from ..photometry import sepfind, background
+        from ..photometry import sepfind, starfind, daofind, background
 
+        funcs = {'sepfind': sepfind, 'starfind': starfind, 'daofind': daofind}
         self._aa = astroalign
-        self._sf = sepfind
+        self._sf = partial(funcs[detection_function], **detection_kwargs)
         self._bkg = background
         self._max_cntl_pts = max_control_points
         self._threshold = detection_threshold
