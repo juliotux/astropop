@@ -38,7 +38,7 @@ Bellow we list all the necessary dependencies for the good working of the code. 
 
 - astroalign;
 
-- astropy >= 3.2;
+- astropy >= 4.3;
 
 - astroquery;
 
@@ -68,7 +68,6 @@ To install Astropop, you should go to the directory where Astropop was cloned, o
 
 .. code-block::
 
-    python setup.py build
     pip install -U .
 
 2 – Or, without the pip packet control:
