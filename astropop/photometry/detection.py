@@ -68,7 +68,7 @@ def background(data, box_size=64, filter_size=3, mask=None,
         and rms, else, a 2D image with local values will be returned.
     """
     d = _sep_fix_byte_order(data)
-    if isinstance(mask, np.ndarray):
+    if mask is not None:
         mask = np.array(mask, dtype=bool)
 
     bkg = sep.Background(d, bw=box_size, bh=box_size,
@@ -107,7 +107,7 @@ def sepfind(data, threshold, background, noise,
     sep_kwargs can be any kwargs to be passed to sep.extract function.
     """
     d = _sep_fix_byte_order(data)
-    if isinstance(mask, np.ndarray):
+    if mask is not None:
         mask = np.array(mask, dtype=bool)
 
     # Check if need to create a new kernel
