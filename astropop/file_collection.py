@@ -132,14 +132,11 @@ class FitsFileGroup():
     @property
     def files(self):
         """List files in the group."""
-        files = self._table[_files_col].values
-        if self._db_dir is not None:
-            return [os.path.join(self._db_dir, f) for f in files]
-        return files
+        return [self.full_path(i) for i in range(len(self))]
 
     @property
     def summary(self):
-        """Get a table with summary of the fits files."""
+        """Get a readonly table with summary of the fits files."""
         return self._table.as_table()
 
     def __copy__(self, indexes=None):
@@ -227,33 +224,21 @@ class FitsFileGroup():
         hdr.pop('', None)
         self._table.add_rows(hdr, add_columns=True)
 
-    def full_path(self, index=None, file=None):
+    def full_path(self, file):
         """Get the full path of a file in the group.
-
-        If index is given, the file with that index is returned.
-        If file is given, the file with that name is returned.
 
         Parameters
         ----------
-        index : int (optional)
-            Index of the file in the group. If None, the file name must be
-            provided.
-        file : str (optional)
-            Relative path of the file to the database directory. If None, the
-            file index must be provided.
+        file : str or int
+            If string, the file name. If int, the index of the file.
 
         Returns
         -------
         path : str
             Full path of the file.
         """
-        if file is not None and index is not None:
-            raise ValueError('Only one of file and index can be specified')
-        if file is None and index is None:
-            raise ValueError('One of file or index must be specified')
-
-        if index is not None:
-            file = self._table[_files_col][index]
+        if isinstance(file, int):
+            file = self._table[_files_col][file]
         if self._db_dir is not None:
             return os.path.join(self._db_dir, file)
         return file

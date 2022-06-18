@@ -1,3 +1,4 @@
+import os
 import pytest
 import numpy as np
 
@@ -348,3 +349,51 @@ class Test_ListFitsFiles():
         found_files = list_fits_files(tmpdir/'fits', glob_exclude='*bias*')
         # find everything except bias
         assert_equal(sorted(found_files), sorted(flist['fits'][10:]))
+
+
+class Test_FitsFileGroup_Paths():
+    def test_fg_full_path_file(self, tmpdir):
+        tmpdir, flist = tmpdir
+        fg = FitsFileGroup(location=tmpdir/'fits', compression=False)
+        for i in range(len(fg)):
+            assert_equal(fg.full_path(i), str(flist['fits'][i]))
+        for f in fg.files:
+            assert_equal(fg.full_path(f), str(f))
+
+    def test_fg_full_path_file_db(self, tmpdir):
+        tmpdir, flist = tmpdir
+        fg = FitsFileGroup(location=tmpdir/'fits', compression=False,
+                           database=tmpdir/'fits'/'database.db')
+
+        for i in range(len(fg)):
+            assert_equal(fg.full_path(i), str(flist['fits'][i]))
+        for f in fg.files:
+            assert_equal(fg.full_path(f), str(f))
+
+        # but the files must be stored relativelly in database
+        for i in range(len(fg)):
+            assert_equal(fg['__file'][i],
+                         os.path.relpath(flist['fits'][i], tmpdir/'fits'))
+
+    def test_fg_relative_path_file(self, tmpdir):
+        # no database means full paths
+        tmpdir, flist = tmpdir
+        fg = FitsFileGroup(location=tmpdir/'fits', compression=False)
+        for i in range(len(fg)):
+            assert_equal(fg.relative_path(flist['fits'][i]), flist['fits'][i])
+
+        for f in fg.files:
+            assert_equal(fg.relative_path(f), f)
+
+    def test_fg_relative_path_file_db(self, tmpdir):
+        # database means relative paths
+        tmpdir, flist = tmpdir
+        fg = FitsFileGroup(location=tmpdir/'fits', compression=False,
+                           database=tmpdir/'fits'/'database.db')
+        for i in range(len(fg)):
+            assert_equal(fg.relative_path(flist['fits'][i]),
+                         os.path.relpath(flist['fits'][i], tmpdir/'fits'))
+
+        for f in fg.files:
+            assert_equal(fg.relative_path(f),
+                         os.path.relpath(f, tmpdir/'fits'))
