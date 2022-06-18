@@ -219,14 +219,61 @@ class FitsFileGroup():
         """Add a new file to the group."""
         header = fits.open(file)[self._ext].header
         logger.debug('reading file %s', file)
-        if self._db_dir is not None:
-            file = os.path.relpath(file, self._db_dir)
+        file = self.relative_path(file)
         hdr = {_files_col: file}
         hdr.update(dict(header))
         hdr.pop('COMMENT', None)
         hdr.pop('HISTORY', None)
         hdr.pop('', None)
         self._table.add_rows(hdr, add_columns=True)
+
+    def full_path(self, index=None, file=None):
+        """Get the full path of a file in the group.
+
+        If index is given, the file with that index is returned.
+        If file is given, the file with that name is returned.
+
+        Parameters
+        ----------
+        index : int (optional)
+            Index of the file in the group. If None, the file name must be
+            provided.
+        file : str (optional)
+            Relative path of the file to the database directory. If None, the
+            file index must be provided.
+
+        Returns
+        -------
+        path : str
+            Full path of the file.
+        """
+        if file is not None and index is not None:
+            raise ValueError('Only one of file and index can be specified')
+        if file is None and index is None:
+            raise ValueError('One of file or index must be specified')
+
+        if index is not None:
+            file = self._table[_files_col][index]
+        if self._db_dir is not None:
+            return os.path.join(self._db_dir, file)
+        return file
+
+    def relative_path(self, file):
+        """Get the relative path of a file.
+
+        Parameters
+        ----------
+        file : str
+            Full path of the file.
+
+        Returns
+        -------
+        path : str
+            Relative path of the file.
+        """
+        if self._db_dir is not None:
+            return os.path.relpath(file, self._db_dir)
+        return file
 
     def __getitem__(self, item):
         if isinstance(item, str):
