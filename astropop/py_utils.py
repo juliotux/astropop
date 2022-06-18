@@ -1,8 +1,7 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 """Small python addons to be used in astropop."""
 
-import asyncio
-from asyncio.subprocess import PIPE
+import subprocess
 import shlex
 from numbers import Number
 
@@ -218,8 +217,6 @@ def batch_key_replace(dictionary, key=None):
 def run_command(args, stdout=None, stderr=None, stdout_loglevel='DEBUG',
                 stderr_loglevel='ERROR', **kwargs):
     """Run a command in command line with logging."""
-    # Based on async buffer streaming from
-    # https://stackoverflow.com/a/53323746
 
     # Put the cmd in python list, required
     if isinstance(args, (str, bytes)):
@@ -232,38 +229,27 @@ def run_command(args, stdout=None, stderr=None, stdout_loglevel='DEBUG',
     }
 
     logger.log(ps['out']['log'], 'Runing: %s', " ".join(args))
-
-    # Read line callback
-    async def _read_stream(stream, typ):
-        store = ps[typ]['list']
-        # ensure stream is not None,for safety
-        while stream is not None:
-            line = await stream.readline()
-            if line:
-                # string fix avoiding bytes
-                line = string_fix(string_fix(line).strip('\n'))
-                logger.log(ps[typ]['log'], line)
-                if store is not None:
-                    store.append(line)
-            else:
-                break
-
-    # Create the process as async subprocess
-    async def _run():
-        p = await asyncio.create_subprocess_exec(*args,
-                                                 stderr=PIPE, stdout=PIPE,
-                                                 **kwargs)
-        await asyncio.wait([_read_stream(p.stdout, 'out'),
-                            _read_stream(p.stderr, 'err')])
-        await p.wait()
-        return p
-
-    loop = asyncio.get_event_loop()
-    process = loop.run_until_complete(_run())
+    # Run the command
+    proc = subprocess.Popen(args, stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                            **kwargs)
+    while True:
+        output = proc.stdout.readline().decode('utf-8').strip()
+        err = proc.stderr.readline().decode('utf-8').strip()
+        if output == '' and err == '' and proc.poll() is not None:
+            break
+        if output:
+            logger.log(ps['out']['log'], output)
+            if ps['out']['list'] is not None:
+                ps['out']['list'].append(output)
+        if err:
+            logger.log(ps['err']['log'], err)
+            if ps['err']['list'] is not None:
+                ps['err']['list'].append(err)
 
     logger.log(ps['out']['log'], "Done with process: %s", " ".join(args))
 
-    return process, stdout, stderr
+    return proc, stdout, stderr
 
 
 class IndexedDict(dict):
