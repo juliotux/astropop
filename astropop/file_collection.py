@@ -195,7 +195,11 @@ class FitsFileGroup():
         files = self._list_files(files, location, compression)
         for i, f in enumerate(files):
             logger.info('reading file %i from %i: %s', i, len(files), f)
-            self.add_file(f)
+            try:
+                self.add_file(f)
+            except Exception as e:
+                # just log error instead of raise an exception
+                logger.error('Error reading file %s: %s', f, e)
 
     def values(self, keyword, unique=False):
         """Return the values of a keyword in the summary.
