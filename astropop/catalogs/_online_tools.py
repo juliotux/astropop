@@ -5,6 +5,7 @@ import numpy as np
 from astroquery.simbad import Simbad
 from astroquery.exceptions import TableParseError
 from astropy.coordinates import SkyCoord, Angle
+from astropy.units import UnitTypeError
 from ..astrometry.coords_utils import guess_coordinates
 from ..py_utils import string_fix, process_list
 
@@ -26,7 +27,7 @@ def _timeout_retry(func, *args, **kwargs):
     return q
 
 
-def _wrap_query_table(table):
+def _fix_query_table(table):
     """Fix bytes and objects columns to strings."""
     for i in table.columns:
         tdtype = table[i].dtype.char
@@ -88,18 +89,28 @@ def astroquery_skycoord(center, simbad=None):
 
 
 def astroquery_radius(radius):
-    """Convert several types of values to decimal degree angle radius.
+    """Convert several types of values to angle radius.
 
     Notes
     -----
     - Current supported types are:
-      - Any instance that can be converted to `float`.
+      - Numbers (float or int) are interpreted as decimal degree
       - `str` or `bytes` that can be converted to `astropy.coordinates.Angle`.
     """
-    if isinstance(radius, (str, bytes)):
+    try:
         radius = Angle(radius)
+    except UnitTypeError:
+        if isinstance(radius, (int, float)):
+            radius = Angle(radius, unit='deg')
+        else:
+            raise TypeError(f'{radius.__class__} not supported.')
 
-    if isinstance(radius, Angle):
-        radius = radius.degree
+    return radius
 
-    return f"{float(radius)}d"
+
+def astroquery_query(querier, *args, **kwargs):
+    """Query an region using astroquery."""
+    query = _timeout_retry(querier, *args, **kwargs)
+    if query is None:
+        raise RuntimeError("No online catalog result found.")
+    return query
