@@ -195,7 +195,7 @@ class _SourceCatalogClass:
         ----------
         ids: Sources identifier.
         ra, dec: RA and DEC coordinates.
-        mag, mag_error:Photometric magnitude and error.
+        mag, mag_error: Photometric magnitude and error.
         pm_ra, pm_dec: Proper motion. If None, no proper motion will be used.
         obstime: Time of observation. To be used with proper motion.
         frame: celestial frame of references of coordinates.
