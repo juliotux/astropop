@@ -1,5 +1,5 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
-"""Query and match objects in Vizier catalogs."""
+"""Query and match objects in Simbad database."""
 
 import numpy as np
 from astropy.coordinates import SkyCoord
@@ -76,12 +76,12 @@ class SimbadSourcesCatalog(_OnlineSourcesCatalog):
 
     @property
     def coordinates_bibcode(self):
-        return self._coords_bib.copy()
+        return np.array(self._coords_bib)
 
     @property
     def magnitudes_bibcode(self):
         if self._mags is not None:
-            return self._mag_bibs.copy()
+            return np.array(self._mag_bibs)
 
     def _setup_catalog(self):
         self._s = Simbad()

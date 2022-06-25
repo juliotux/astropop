@@ -360,6 +360,10 @@ class Test_Simbad():
         assert_equal(s.ra_dec_list.shape, (len(s), 2))
         assert_is_instance(s.mag_list, np.ndarray)
         assert_equal(s.mag_list.shape, (len(s), 2))
+        assert_is_instance(s.coordinates_bibcode, np.ndarray)
+        assert_equal(s.coordinates_bibcode.shape, (len(s),))
+        assert_is_instance(s.magnitudes_bibcode, np.ndarray)
+        assert_equal(s.magnitudes_bibcode.shape, (len(s),))
 
     def test_catalog_properties_table(self):
         s = SimbadSourcesCatalog(sirius_coords[0],
