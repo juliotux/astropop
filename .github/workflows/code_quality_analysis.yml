@@ -74,7 +74,7 @@ jobs:
       run: prospector -w pyflakes -w bandit --doc-warnings -F astropop
 
   codestyle_pull_request:
-    name: codestyle
+    name: codestyle-pull-request
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
 
@@ -92,11 +92,13 @@ jobs:
         python -m pip install pycodestyle
     - name: Code Analyse
       run: |
-        DIFF=$(git diff --name-only --diff-filter=d $(git merge-base HEAD main)) | grep -E .py | grep -v test
-        pycodestyle --statistics --exclude=test_*.py
+        DIFF=$(git diff --name-only --diff-filter=d $(git merge-base HEAD main) | grep -E ".py$" | grep -v -E "tests/test_")
+        if [[ $DIFF ]]; then
+          pycodestyle --statistics $DIFF;
+        fi
 
   docstyle_pull_request:
-    name: pydocstyle
+    name: pydocstyle-pull-request
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
 
@@ -115,11 +117,13 @@ jobs:
     - name: Code Analyse
       continue-on-error: true
       run: |
-        DIFF=$(git diff --name-only --diff-filter=d $(git merge-base HEAD main)) | grep -E .py | grep -v test
-        pydocstyle --statistics --exclude=test_*.py
+        DIFF=$(git diff --name-only --diff-filter=d $(git merge-base HEAD main) | grep -E ".py$" | grep -v -E "tests/test_")
+        if [[ $DIFF ]]; then
+          pydocstyle --statistics $DIFF;
+        fi
 
   prospector_pull_request:
-    name: prospector
+    name: prospector-pull-request
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
 
@@ -139,5 +143,7 @@ jobs:
     - name: Code Analyse
       continue-on-error: true
       run: |
-        DIFF=$(git diff --name-only --diff-filter=d $(git merge-base HEAD main)) | grep -E .py | grep -v test
-        prospector -w pyflakes -w bandit -F --no-autodetect --doc-warnings -e .py -b main
+        DIFF=$(git diff --name-only --diff-filter=d $(git merge-base HEAD main) | grep -E ".py$" | grep -v -E "tests/test_")
+        if [[ $DIFF ]]; then
+          prospector -w pyflakes -w bandit -F --no-autodetect --doc-warnings $DIFF;
+        fi
