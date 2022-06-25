@@ -46,6 +46,7 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install pydocstyle
     - name: Code Analyse
+      continue-on-error: true
       run: pydocstyle astropop
 
   prospector:
@@ -65,4 +66,5 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install prospector pylint pyflakes bandit
     - name: Code Analyse
+      continue-on-error: true
       run: prospector -w pyflakes -w bandit -F astropop
