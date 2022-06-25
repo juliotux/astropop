@@ -132,7 +132,7 @@ jobs:
         python -m pip install pydocstyle
     - name: Code Analyse
       continue-on-error: true
-      run: pydocstyle --statistics ${{ env.GIT_DIFF_FILTERED}}
+      run: pydocstyle ${{ env.GIT_DIFF_FILTERED}}
       if: env.GIT_DIFF_FILTERED
 
   prospector_pull_request:
