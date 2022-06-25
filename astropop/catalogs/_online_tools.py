@@ -80,9 +80,9 @@ def astroquery_skycoord(center, simbad=None):
                 raise ValueError(f'Coordinates {center} could not be'
                                  ' resolved.')
             return guess_coordinates(t['RA'][0], t['DEC'][0], skycoord=True)
-    elif isinstance(center, (tuple, list, np.ndarray)) and len(center) == 2:
+    if isinstance(center, (tuple, list, np.ndarray)) and len(center) == 2:
         return guess_coordinates(center[0], center[1], skycoord=True)
-    elif isinstance(center, SkyCoord):
+    if isinstance(center, SkyCoord):
         return center
 
     raise ValueError(f'Center coordinates {center} not undertood.')

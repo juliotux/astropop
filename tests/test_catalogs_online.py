@@ -53,9 +53,6 @@ class DummySourcesCatalog(_OnlineSourcesCatalog):
 
 flaky_rerun = pytest.mark.flaky(max_runs=10, min_passes=1,
                                 rerun_filter=delay_rerun)
-catalog_skip = pytest.mark.skipif(not os.environ.get('ASTROPOP_TEST_CATALOGS'),
-                                  reason='avoid servers errors.')
-
 sirius_coords = ["Sirius", "06h45m09s -16d42m58s", [101.28715, -16.7161158],
                  np.array([101.28715, -16.7161158]), (101.28715, -16.7161158),
                  SkyCoord(101.28715, -16.7161158, unit=('degree', 'degree'))]
@@ -63,7 +60,6 @@ search_radius = ['0.1d', '360s', '6m', 0.1, Angle('0.1d')]
 
 
 @flaky_rerun
-# @catalog_skip
 class Test_OnlineTools:
     def test_timeout_retry_error(self):
         def _only_fail(*args, **kwargs):
@@ -135,6 +131,9 @@ class Test_OnlineTools:
         value = 'this should raise error'
         with pytest.raises(ValueError, match='could not be resolved'):
             astroquery_skycoord(value)
+
+        with pytest.raises(ValueError, match='Center coordinates 1.0'):
+            astroquery_skycoord(1.0)
 
     def test_astroquery_radius(self):
         ang = Angle(1.0, unit='degree')
@@ -303,7 +302,6 @@ class Test_DummySourcesCatalog:
 
 
 @flaky_rerun
-# @catalog_skip
 class Test_Simbad():
     def test_catalog_creation_errors(self):
         # Need arguments
