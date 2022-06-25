@@ -92,7 +92,7 @@ jobs:
         python -m pip install pycodestyle
     - name: Code Analyse
       run: |
-        DIFF=$(git diff --name-only --diff-filter=d $(git merge-base HEAD main) | grep -E .py | grep -v test
+        DIFF=$(git diff --name-only --diff-filter=d $(git merge-base HEAD main)) | grep -E .py | grep -v test
         pycodestyle --statistics --exclude=test_*.py
 
   docstyle_pull_request:
@@ -115,7 +115,7 @@ jobs:
     - name: Code Analyse
       continue-on-error: true
       run: |
-        DIFF=$(git diff --name-only --diff-filter=d $(git merge-base HEAD main) | grep -E .py | grep -v test
+        DIFF=$(git diff --name-only --diff-filter=d $(git merge-base HEAD main)) | grep -E .py | grep -v test
         pydocstyle --statistics --exclude=test_*.py
 
   prospector_pull_request:
@@ -139,5 +139,5 @@ jobs:
     - name: Code Analyse
       continue-on-error: true
       run: |
-        DIFF=$(git diff --name-only --diff-filter=d $(git merge-base HEAD main) | grep -E .py | grep -v test
+        DIFF=$(git diff --name-only --diff-filter=d $(git merge-base HEAD main)) | grep -E .py | grep -v test
         prospector -w pyflakes -w bandit -F --no-autodetect --doc-warnings -e .py -b main
