@@ -89,8 +89,8 @@ jobs:
     - uses: technote-space/get-diff-action@v6
       with:
         PATTERNS: |
-          +astropop/**/*.py
-          +tests/*.py
+          astropop/**/*.py
+          tests/*.py
     - name: Print DIFF
       run: |
         echo "GIT_DIFF: ${{ env.GIT_DIFF }}"
@@ -120,7 +120,7 @@ jobs:
     - uses: technote-space/get-diff-action@v6
       with:
         PATTERNS: |
-          +astropop/**/*.py
+          astropop/**/*.py
           !tests/*.py
     - name: Print DIFF
       run: |
@@ -151,7 +151,7 @@ jobs:
     - uses: technote-space/get-diff-action@v6
       with:
         PATTERNS: |
-          +astropop/**/*.py
+          astropop/**/*.py
           !tests/*.py
     - name: Print DIFF
       run: |
