@@ -2,7 +2,9 @@
 """Catalog managing and query."""
 
 from .utils import identify_stars
+from ._sources_catalog import SourcesCatalog
 from .simbad import SimbadSourcesCatalog, simbad_query_id
 
 
-__all__ = ['identify_stars', 'SimbadSourcesCatalog', 'simbad_query_id']
+__all__ = ['identify_stars', 'SimbadSourcesCatalog', 'simbad_query_id',
+           'SourcesCatalog']
