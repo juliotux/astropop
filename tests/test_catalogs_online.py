@@ -13,7 +13,8 @@ from astropop.catalogs._online_tools import _timeout_retry, \
                                             _fix_query_table, \
                                             get_center_radius, \
                                             astroquery_radius, \
-                                            astroquery_skycoord
+                                            astroquery_skycoord, \
+                                            astroquery_query
 from astropop.catalogs._sources_catalog import _OnlineSourcesCatalog, \
                                                SourcesCatalog
 from astropop.math import QFloat
@@ -148,8 +149,16 @@ class Test_OnlineTools:
 
     def test_astroquery_radius_error(self):
         not_angle = '10 not angle'
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match='Invalid character at col'):
             astroquery_radius(not_angle)
+        with pytest.raises(TypeError, match='not supported.'):
+            astroquery_radius([])
+
+    def test_astroquery_query_error(self):
+        def return_none(a, b=1):
+            return None
+        with pytest.raises(RuntimeError, match='No online catalog result'):
+            astroquery_query(return_none, 1, b=1)
 
 
 class Test_DummySourcesCatalog:
