@@ -6,9 +6,10 @@ from astropy.coordinates import SkyCoord
 from astroquery.simbad import Simbad
 from astropy import units as u
 
-from ._sources_catalog import _SourceCatalogClass
+from ._sources_catalog import _OnlineSourcesCatalog, SourcesCatalog
 from ._online_tools import _timeout_retry, astroquery_query
 from ..py_utils import string_fix
+from ..math import qfloat
 
 
 __all__ = ['simbad_query_id', 'SimbadSourcesCatalog']
@@ -63,14 +64,24 @@ def _simbad_query_id(ra, dec, limit_angle, name_order=None):
     return None
 
 
-simbad_query_id = np.vectorize(_simbad_query_id, excluded=['limit_angle', 'name_order'])
+simbad_query_id = np.vectorize(_simbad_query_id,
+                               excluded=['limit_angle', 'name_order'])
 
 
-class SimbadSourcesCatalog(_SourceCatalogClass):
+class SimbadSourcesCatalog(_OnlineSourcesCatalog):
     """Sources catalog from Simbad plataform."""
 
     _available_filters = ['B', 'V', 'R', 'I', 'J', 'H', 'K',
                           'u', 'g', 'r', 'i', 'z']
+
+    @property
+    def coordinates_bibcode(self):
+        return self._coords_bib.copy()
+
+    @property
+    def magnitudes_bibcode(self):
+        if self._mags is not None:
+            return self._mag_bibs.copy()
 
     def _setup_catalog(self):
         self._s = Simbad()
@@ -87,15 +98,20 @@ class SimbadSourcesCatalog(_SourceCatalogClass):
                                        epoch='J2000')
         ids = np.array([string_fix(i) for i in self._query['MAIN_ID']])
         if self._band is not None:
-            mags = self._query[f'FLUX_{self._band}']
-            mags_error = self._query[f'FLUX_ERROR_{self._band}']
+            band = self._band
+            mags = np.array(self._query[f'FLUX_{band}'])
+            mags_error = np.array(self._query[f'FLUX_ERROR_{band}'])
+            mags_unit = self._query[f'FLUX_{band}'].unit
+            mags = qfloat(mags, uncertainty=mags_error, unit=mags_unit)
+            self._mag_bibs = np.array(self._query[f'FLUX_BIBCODE_{band}'])
         else:
-            mags = mags_error = None
+            mags = None
 
-        self._set_values(ids=ids,
-                         ra=self._query['RA'], dec=self._query['DEC'],
-                         mag=mags, mag_error=mags_error,
-                         pm_ra=self._query['PMRA'],
-                         pm_dec=self._query['PMDEC'],
-                         frame='icrs', obstime='J2000',
-                         radec_unit=('hourangle', 'degree'))
+        sk = SkyCoord(self._query['RA'], self._query['DEC'],
+                      unit=('hourangle', 'degree'),
+                      pm_ra_cosdec=self._query['PMRA'],
+                      pm_dec=self._query['PMDEC'],
+                      obstime='J2000.0', frame='icrs')
+        self._coords_bib = np.array(self._query['COO_BIBCODE'])
+
+        SourcesCatalog.__init__(self, sk, ids=ids, mag=mags)

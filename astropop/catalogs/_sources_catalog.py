@@ -114,7 +114,10 @@ class SourcesCatalog:
         self._ids = np.array(ids)
 
         # magnitudes are stored as QFloat
-        if mag is not None:
+        if isinstance(mag, QFloat):
+            self._mags = mag
+            # TODO: check redundancy in error and unit
+        elif mag is not None:
             self._mags = QFloat(mag, uncertainty=mag_error, unit=mag_unit)
         else:
             self._mags = None
@@ -241,8 +244,9 @@ class SourcesCatalog:
                 mags[i] = self._mags.nominal[v]
                 mags_error[i] = self._mags.uncertainty[v]
 
-        ncat = SourcesCatalog.__new__(SourcesCatalog)
-        ncat._set_values(ids, nra, ndec, mags, mags_error, obstime=obstime)
+        ncat = SourcesCatalog(nra, ndec, unit='degree', ids=ids,
+                              mag=QFloat(mags, uncertainty=mags_error,
+                                         unit=self._mags.unit))
         if table:
             return ncat.table
         return ncat
@@ -317,10 +321,6 @@ class _OnlineSourcesCatalog(SourcesCatalog, abc.ABC):
                     self._band)
         self._do_query()
 
-    @abc.abstractproperty
-    def available_filters(self):
-        """List available filters for the catalog."""
-
     @abc.abstractmethod
     def _setup_catalog(self):
         """If a catalog setup is needed."""
@@ -329,6 +329,12 @@ class _OnlineSourcesCatalog(SourcesCatalog, abc.ABC):
     def _do_query(self):
         """Query the catalog. Must end with the catalog initialization."""
 
-    @abc.abstractproperty
+    @property
     def query_colnames(self):
-        """Names of query table columns."""
+        """Get column names from query"""
+        return copy.copy(self._query.colnames)
+
+    @property
+    def available_filters(self):
+        """List available filters for the catalog."""
+        return copy.copy(self._available_filters)

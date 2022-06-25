@@ -1,4 +1,5 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
+# flake8: noqa: F403, F405
 
 import os
 import time
@@ -13,7 +14,8 @@ from astropop.catalogs._online_tools import _timeout_retry, \
                                             get_center_radius, \
                                             astroquery_radius, \
                                             astroquery_skycoord
-from astropop.catalogs._sources_catalog import _SourceCatalogClass
+from astropop.catalogs._sources_catalog import _OnlineSourcesCatalog, \
+                                               SourcesCatalog
 from astropop.math import QFloat
 
 from astropop.testing import *
@@ -24,7 +26,7 @@ def delay_rerun(*args):
     return True
 
 
-class DummySourcesCatalog(_SourceCatalogClass):
+class DummySourcesCatalog(_OnlineSourcesCatalog):
     sources = Table({'id': ['id1', 'id2', 'id3', 'id4'],
                      'ra': [2.44644404, 0.52522258, 0.64638169, 4.16520547],
                      'dec': [4.92305031, 3.65404807, 4.50588171, 3.80703142],
@@ -34,17 +36,19 @@ class DummySourcesCatalog(_SourceCatalogClass):
                      'mag_error': [0.01, 0.02, 0.01, 0.03]})
     _available_filters = ['A', 'B']
 
+    def _setup_catalog(self):
+        return
+
     def _do_query(self):
-        self._set_values(ids=self.sources['id'],
-                         ra=self.sources['ra'],
-                         dec=self.sources['dec'],
-                         mag=self.sources['mag'],
-                         mag_error=self.sources['mag_error'],
-                         pm_ra=self.sources['pm_ra']*u.Unit('mas/year'),
-                         pm_dec=self.sources['pm_dec']*u.Unit('mas/year'),
-                         obstime='J2005.0', frame='icrs', radec_unit='deg',
-                         mag_unit='mag')
         self._query = Table(self.sources)
+        mag = QFloat(self.sources['mag'], uncertainty=self.sources['mag_error'],
+                     unit='mag')
+        SourcesCatalog.__init__(self, ra=self.sources['ra'],
+                                dec=self.sources['dec'], unit='degree',
+                                pm_ra_cosdec=self.sources['pm_ra']*u.Unit('mas/year'),
+                                pm_dec=self.sources['pm_dec']*u.Unit('mas/year'),
+                                frame='icrs', obstime='J2005.0',
+                                ids=self.sources['id'], mag=mag)
 
 
 flaky_rerun = pytest.mark.flaky(max_runs=10, min_passes=1,
@@ -59,7 +63,7 @@ search_radius = ['0.1d', '360s', '6m', 0.1, Angle('0.1d')]
 
 
 @flaky_rerun
-@catalog_skip
+# @catalog_skip
 class Test_OnlineTools:
     def test_timeout_retry_error(self):
         def _only_fail(*args, **kwargs):
@@ -267,7 +271,7 @@ class Test_DummySourcesCatalog:
         m = c.match_objects([0.52525258, 0.87265989, 4.16526547],
                             [3.65404807, 5.50588171, 3.80703142],
                             limit_angle='1 arcsec')
-        assert_is_instance(m, _SourceCatalogClass)
+        assert_is_instance(m, SourcesCatalog)
         assert_equal(m.sources_id, ['id2', '', 'id4'])
         assert_almost_equal(m.ra_dec_list[:, 0], [0.52522258, np.nan, 4.16520547])
         assert_almost_equal(m.ra_dec_list[:, 1], [3.65404807, np.nan, 3.80703142])
@@ -299,7 +303,7 @@ class Test_DummySourcesCatalog:
 
 
 @flaky_rerun
-@catalog_skip
+# @catalog_skip
 class Test_Simbad():
     def test_catalog_creation_errors(self):
         # Need arguments
