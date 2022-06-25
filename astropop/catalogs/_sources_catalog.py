@@ -2,6 +2,7 @@
 """Base classes for astronomical catalogs queries."""
 
 import copy
+import abc
 import numpy as np
 from astropy.table import Table
 from astropy.coordinates import SkyCoord, match_coordinates_sky, Angle
@@ -55,52 +56,68 @@ def _match_indexes(ra, dec, cat_skycoords, limit_angle):
     return index
 
 
-class _SourceCatalogClass:
-    """Store and manipulate catalogs of astronomical sources."""
+class SourcesCatalog:
+    """Manage and query a catalog of point sources objects.
 
-    _coords = None
-    _ids = None
-    _mags = None
-    _query = None
+    This catalog wraps around `~astropy.coordinates.SkyCoord` and it's
+    query mechanism, extending it to include sources id or names,
+    magnitudes or other informtions that user may want. It's initialization
+    accept all initialization arguments from this class. Other informations
+    are stored according the following arguments.
 
-    def __init__(self, center, radius, band=None):
-        """Query the catalog and create the source catalog instance.
+    Parameters
+    ----------
+    ids: array (optional)
+        Names or ids of the objects in the catalog.
+    mag: array or `~astropop.math.QFloat` (optional)
+        Photometric magnitude or photometric flux of the object. If a list
+        or array, must be 1-dimensional array containing only the fluxes or
+        magnitudes. If QFloat, ``mag_error`` and ``mag_unit`` arguments
+        will be ignored. Photometry will be only available if this
+        argument is set.
+    mag_error: array (optional)
+        Photometric magnitude errors in the same unit of the `mag`
+        argument. Ignored if ``mag`` is a QFloat.
+    mag_unit: str, `~astropy.units.Unit` or array (optional)
+        Unit of the photometric magnitude or flux.
+        Ignored if ``mag`` is a QFloat.
+    *args, **kwargs:
+        Arguments to be passed to `~astropy.coordinates.SkyCoord`
+        initialization. See `~astropy.coordinates.SkyCoord` docs for more
+        details.
+        ra, dec: array (optional)
+            RA and DEC coordinates of the object. Conflicts with ``coords``
+            argument. If floats, are interpreted as decimal degrees.
+        pm_ra_cosdec, pm_dec: `~astropy.units.Quantity` (optional)
+            Proper motion of both coordinates.
+        unit: `~astropy.units.Unit`, string, or tuple
+            Units for supplied coordinate values.
+        obstime: time-like (optional)
+            Time of observation of the values. Used to compute proper
+            motion on a target observation time.
+        frame: str (optional)
+            Celestial frame of coordinates. Default is 'ICRS'
+    """
 
-        Parameters
-        ----------
-        center: string, tuple or `astropy.coordinates.SkyCoord`
-            The center of the search field.
-            If center is a string, can be an object name or the string
-            containing the object coordinates. If it is a tuple, have to be
-            (ra, dec) coordinates, in hexa or decimal degrees format.
-        radius: string, float, `~astropy.coordinates.Angle`
-                or None (optional)
-            The radius to search. If None, the query will be performed as
-            single object query mode. Else, the query will be performed as
-            field mode. If a string value is passed, it must be readable by
-            astropy.coordinates.Angle. If a float value is passed, it will
-            be interpreted as a decimal degree radius.
-        band: string (optional)
-            For catalogs with photometric information with multiple filters,
-            the desired filter must be passed here.
-            Default: None
-        """
-        self._center = astroquery_skycoord(center)
-        self._radius = astroquery_radius(radius)
-        if band is not None and band not in self._available_filters:
-            raise ValueError(f'Filter {band} not available. Default '
-                             f'filters are {self._available_filters}.')
-        self._band = band
+    _ids = None  # Store array of ids
+    _mags = None  # Store QFloat of mags
+    _coords = None  # Store Skycoord of coordinates
 
-        # setup the catalog if needed
-        self._setup_catalog()
+    def __init__(self, *args, ids=None, mag=None, mag_error=None,
+                 mag_unit=None, **kwargs):
+        # initializate coords and skycoords using default kwargs.
+        self._coords = SkyCoord(*args, **kwargs, copy=True)
 
-        # perform the query
-        logger.info('Quering region centered at %s with radius %s',
-                    self._center, self._radius)
-        logger.info('Using %s filter for photometry information.',
-                    self._band)
-        self._do_query()
+        # IDs are stored in a numpy 1d-array
+        if len(np.shape(ids)) != 1:
+            raise ValueError('Sources ID must be a 1d array.')
+        self._ids = np.array(ids)
+
+        # magnitudes are stored as QFloat
+        if mag is not None:
+            self._mags = QFloat(mag, uncertainty=mag_error, unit=mag_unit)
+        else:
+            self._mags = None
 
     @property
     def sources_id(self):
@@ -179,50 +196,6 @@ class _SourceCatalogClass:
         """Copy the current catalog to a new instance."""
         return copy.copy(self)
 
-    def _setup_catalog(self):
-        """If a catalog setup is needed."""
-
-    def _do_query(self):
-        """Query the catalog."""
-        raise NotImplementedError
-
-    def _set_values(self, ids, ra, dec, mag=None, mag_error=None,
-                    pm_ra=None, pm_dec=None, obstime=None,
-                    frame='icrs', radec_unit='deg', mag_unit='mag'):
-        """Set the values using proper types internally.
-
-        Parameters
-        ----------
-        ids: Sources identifier.
-        ra, dec: RA and DEC coordinates.
-        mag, mag_error: Photometric magnitude and error.
-        pm_ra, pm_dec: Proper motion. If None, no proper motion will be used.
-        obstime: Time of observation. To be used with proper motion.
-        frame: celestial frame of references of coordinates.
-        radec_unit: unit of RA and DEC coordinates.
-        mag_unit: unit of magnitudes
-        """
-        # IDs are stored in a numpy 1d-array
-        if len(np.shape(ids)) != 1:
-            raise ValueError('Sources ID must be a 1d array.')
-        self._ids = np.array(ids)
-
-        # coordinates are stored in SkyCoord format.
-        if pm_ra is not None and pm_dec is not None:
-            self._coords = SkyCoord(ra, dec, unit=radec_unit,
-                                    pm_ra_cosdec=pm_ra,
-                                    pm_dec=pm_dec,
-                                    obstime=obstime or 'J2000.0',
-                                    frame=frame)
-        else:
-            self._coords = SkyCoord(ra, dec, unit=radec_unit, frame=frame)
-
-        # magnitudes are stored as QFloat
-        if mag is not None:
-            self._mags = QFloat(mag, uncertainty=mag_error, unit=mag_unit)
-        else:
-            self._mags = None
-
     def get_coordinates(self, obstime=None):
         """Get the skycoord positions from the catalog."""
         try:
@@ -251,13 +224,14 @@ class _SourceCatalogClass:
             Default: False
         """
         cat_sk = self.get_coordinates(obstime=obstime)
-        indexes = _match_indexes(ra, dec, cat_sk, astroquery_radius(limit_angle))
+        indexes = _match_indexes(ra, dec, cat_sk,
+                                 astroquery_radius(limit_angle))
         length = len(ra)
         ids = ['']*length
         nra = np.full(length, fill_value=np.nan, dtype='f8')
         ndec = np.full(length, fill_value=np.nan, dtype='f8')
-        mags = np.full(length, fill_value=np.nan, dtype='f8')
-        mags_error = np.full(length, fill_value=np.nan, dtype='f8')
+        mags = np.full(length, fill_value=np.nan, dtype='f4')
+        mags_error = np.full(length, fill_value=np.nan, dtype='f4')
 
         for i, v in enumerate(indexes):
             if v != -1:
@@ -267,7 +241,7 @@ class _SourceCatalogClass:
                 mags[i] = self._mags.nominal[v]
                 mags_error[i] = self._mags.uncertainty[v]
 
-        ncat = _SourceCatalogClass.__new__(_SourceCatalogClass)
+        ncat = SourcesCatalog.__new__(SourcesCatalog)
         ncat._set_values(ids, nra, ndec, mags, mags_error, obstime=obstime)
         if table:
             return ncat.table
@@ -297,3 +271,64 @@ class _SourceCatalogClass:
 
     def __len__(self):
         return len(self._coords.ra.degree)
+
+
+class _OnlineSourcesCatalog(SourcesCatalog, abc.ABC):
+    """Sources Catalog based on online queries."""
+
+    _query = None
+
+    def __init__(self, center, radius, band=None):
+        """Query the catalog and create the source catalog instance.
+
+        Parameters
+        ----------
+        center: string, tuple or `astropy.coordinates.SkyCoord`
+            The center of the search field.
+            If center is a string, can be an object name or the string
+            containing the object coordinates. If it is a tuple, have to be
+            (ra, dec) coordinates, in hexa or decimal degrees format.
+        radius: string, float, `~astropy.coordinates.Angle`
+                or None (optional)
+            The radius to search. If None, the query will be performed as
+            single object query mode. Else, the query will be performed as
+            field mode. If a string value is passed, it must be readable by
+            astropy.coordinates.Angle. If a float value is passed, it will
+            be interpreted as a decimal degree radius.
+        band: string (optional)
+            For catalogs with photometric information with multiple filters,
+            the desired filter must be passed here.
+            Default: None
+        """
+        self._center = astroquery_skycoord(center)
+        self._radius = astroquery_radius(radius)
+        if band is not None and band not in self.available_filters:
+            raise ValueError(f'Filter {band} not available. Default '
+                             f'filters are {self.available_filters}.')
+        self._band = band
+
+        # setup the catalog if needed
+        self._setup_catalog()
+
+        # perform the query
+        logger.info('Quering region centered at %s with radius %s',
+                    self._center, self._radius)
+        logger.info('Using %s filter for photometry information.',
+                    self._band)
+        self._do_query()
+
+    @abc.abstractproperty
+    def available_filters(self):
+        """List available filters for the catalog."""
+
+    @abc.abstractmethod
+    def _setup_catalog(self):
+        """If a catalog setup is needed."""
+
+    @abc.abstractmethod
+    def _do_query(self):
+        """Query the catalog. Must end with the catalog initialization."""
+
+    @abc.abstractproperty
+    def query_colnames(self):
+        """Names of query table columns."""
