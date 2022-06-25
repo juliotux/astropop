@@ -1,6 +1,5 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
-
-# Some parts stolen from Astropy CCDData testing bench
+# flake8: noqa: F403, F405
 
 import pytest
 import numpy as np
