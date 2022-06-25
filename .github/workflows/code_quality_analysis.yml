@@ -13,6 +13,7 @@ jobs:
   codestyle:
     name: codestyle
     runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
 
     steps:
     - uses: actions/checkout@v2
@@ -32,6 +33,7 @@ jobs:
   docstyle:
     name: pydocstyle
     runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
 
     steps:
     - uses: actions/checkout@v2
@@ -52,6 +54,7 @@ jobs:
   prospector:
     name: prospector
     runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
 
     steps:
     - uses: actions/checkout@v2
@@ -68,4 +71,73 @@ jobs:
         python -m pip install .[all]
     - name: Code Analyse
       continue-on-error: true
-      run: prospector -w pyflakes -w bandit -F astropop
+      run: prospector -w pyflakes -w bandit --doc-warnings -F astropop
+
+  codestyle_pull_request:
+    name: codestyle
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.10'
+    - name: Install base dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install pycodestyle
+    - name: Code Analyse
+      run: |
+        DIFF=$(git diff --name-only --diff-filter=d $(git merge-base HEAD main) | grep -E .py | grep -v test
+        pycodestyle --statistics --exclude=test_*.py
+
+  docstyle_pull_request:
+    name: pydocstyle
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.10'
+    - name: Install base dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install pydocstyle
+    - name: Code Analyse
+      continue-on-error: true
+      run: |
+        DIFF=$(git diff --name-only --diff-filter=d $(git merge-base HEAD main) | grep -E .py | grep -v test
+        pydocstyle --statistics --exclude=test_*.py
+
+  prospector_pull_request:
+    name: prospector
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.10'
+    - name: Install base dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install prospector pylint pyflakes bandit
+        python -m pip install .[all]
+    - name: Code Analyse
+      continue-on-error: true
+      run: |
+        DIFF=$(git diff --name-only --diff-filter=d $(git merge-base HEAD main) | grep -E .py | grep -v test
+        prospector -w pyflakes -w bandit -F --no-autodetect --doc-warnings -e .py -b main
