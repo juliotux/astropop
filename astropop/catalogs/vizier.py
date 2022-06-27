@@ -24,6 +24,7 @@ class _VizierSourcesCatalog(_OnlineSourcesCatalog):
     _filter_epoch = None
     _table = None
     _frame = 'icrs'
+    _columns = ['*']
 
     def _setup_catalog(self):
         if self._filter_magnitudes is None or \
@@ -32,7 +33,7 @@ class _VizierSourcesCatalog(_OnlineSourcesCatalog):
            self._table is None:
             raise NotImplementedError('Some required methods are not '
                                       'properly setup.')
-        self._v = Vizier(catalog=self._table, columns=["**", "+_r"])
+        self._v = Vizier(catalog=self._table, columns=self._columns)
         self._v.ROW_LIMIT = -1
 
     def _do_query(self):
@@ -63,8 +64,9 @@ def _ucac4_filter_magnitude(query, band):
     unit = query[f'{band}mag'].unit
     mag = np.array(query[f'{band}mag'])
     if f'e_{band}mag' in query:
+        mag_err = np.array(query[f'e_{band}mag'])
         mag_err = [float(i) if i != '' else np.nan
-                   for i in query[f'e_{band}mag']]
+                   for i in mag_err]
     else:
         mag_err = None
     return qfloat(mag, uncertainty=mag_err, unit=unit)
@@ -78,8 +80,15 @@ class UCAC4SourcesCatalog(_VizierSourcesCatalog):
 
     @staticmethod
     def _filter_ids(query):
-        return [f'UCAC4 {string_fix(i)}' for i in query['UCAC4']]
+        return [f'UCAC4 {string_fix(i)}' for i in list(query['UCAC4'])]
 
     @staticmethod
     def _filter_epoch(query):
         return Time(query['EpRA'], format='jyear')
+
+    @property
+    def _columns(self):
+        cols = ['+_r', 'UCAC4', 'RAJ2000', 'DEJ2000', 'pmRA', 'pmDE', 'EpRA']
+        for i in self._available_filters:
+            cols += [f'{i}mag', f'e_{i}mag']
+        return cols
