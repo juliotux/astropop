@@ -9,6 +9,9 @@ from astropy.table import Table
 from astropy.coordinates import SkyCoord, Angle
 from astropy import units as u
 from astropop.catalogs.simbad import SimbadSourcesCatalog, simbad_query_id
+from astropop.catalogs.vizier import _VizierSourcesCatalog, \
+                                     UCAC4SourcesCatalog, \
+                                     UCAC5SourcesCatalog
 from astropop.catalogs._online_tools import _timeout_retry, \
                                             _fix_query_table, \
                                             get_center_radius, \
@@ -312,7 +315,7 @@ class Test_DummySourcesCatalog:
 
 @flaky_rerun
 class Test_Simbad():
-    def test_catalog_creation_errors(self):
+    def test_simbad_creation_errors(self):
         # Need arguments
         with pytest.raises(TypeError):
             SimbadSourcesCatalog()
@@ -326,7 +329,7 @@ class Test_Simbad():
 
     @pytest.mark.parametrize('radius', search_radius)
     @pytest.mark.parametrize('center', sirius_coords)
-    def test_catalog_creation_params(self, center, radius):
+    def test_csimbad_creation_params(self, center, radius):
         s = SimbadSourcesCatalog(center, radius)
         assert_equal(s.sources_id[0], '* alf CMa')
         assert_almost_equal(s.ra_dec_list[0], [101.287155, -16.7161158], decimal=5)
@@ -339,7 +342,7 @@ class Test_Simbad():
         assert_is_instance(s.radius, Angle)
         assert_almost_equal(s.radius.degree, 0.1)
 
-    def test_catalog_creation_photometry(self):
+    def test_simbad_creation_photometry(self):
         s = SimbadSourcesCatalog(sirius_coords[0],
                                  search_radius[0],
                                  band='V')
@@ -347,7 +350,7 @@ class Test_Simbad():
         assert_almost_equal(s.ra_dec_list[0], [101.28715, -16.7161158], decimal=5)
         assert_almost_equal(s.mag_list[0][0], -1.46)
 
-    def test_catalog_properties_types(self):
+    def test_simbad_properties_types(self):
         s = SimbadSourcesCatalog(sirius_coords[0],
                                  search_radius[0],
                                  band='V')
@@ -365,7 +368,7 @@ class Test_Simbad():
         assert_is_instance(s.magnitudes_bibcode, np.ndarray)
         assert_equal(s.magnitudes_bibcode.shape, (len(s),))
 
-    def test_catalog_properties_table(self):
+    def test_simbad_properties_table(self):
         s = SimbadSourcesCatalog(sirius_coords[0],
                                  search_radius[0],
                                  band='V')
@@ -408,3 +411,49 @@ class Test_SimbadQueryID:
         name = ['alf CMa', 'alf Ori', 'bet Cru']
         res = simbad_query_id(ra, dec, '2s')
         assert_equal(res, name)
+
+
+class Test_Vizier:
+    def test_vizier_need_initialization(self):
+        with pytest.raises(NotImplementedError, match='Some required methods'):
+            _VizierSourcesCatalog(sirius_coords[0],
+                                  search_radius[0],
+                                  band=None)
+
+
+@flaky_rerun
+class Test_Vizier_UCAC4:
+    def test_ucac4_creation_errors(self):
+        # Need arguments
+        with pytest.raises(TypeError):
+            UCAC4SourcesCatalog()
+        with pytest.raises(TypeError):
+            UCAC4SourcesCatalog('test')
+
+        with pytest.raises(ValueError, match='Filter None not available.'):
+            UCAC4SourcesCatalog('Sirius', '0.05d', band='None')
+        # Filter None should pass, no mag data
+        UCAC4SourcesCatalog('Sirius', '0.05d', None)
+
+    @pytest.mark.parametrize('radius', search_radius)
+    @pytest.mark.parametrize('center', sirius_coords)
+    def test_ucac4_query_input_types(self, center, radius):
+        c = UCAC4SourcesCatalog(center, radius, band='V')
+
+        assert_equal(c.sources_id[0], 'UCAC4 367-016700')
+        assert_almost_equal(c.ra_dec_list[0], [101.28715, -16.7161158], decimal=5)
+        assert_almost_equal(c.mag_list[0], [-1.440, 0.0])
+
+    def test_ucac4_properties_types(self):
+        s = UCAC4SourcesCatalog(sirius_coords[0],
+                                 search_radius[0],
+                                 band='V')
+
+        assert_is_instance(s.sources_id, np.ndarray)
+        assert_equal(s.sources_id.shape, (len(s)))
+        assert_is_instance(s.skycoord, SkyCoord)
+        assert_is_instance(s.magnitude, QFloat)
+        assert_is_instance(s.ra_dec_list, np.ndarray)
+        assert_equal(s.ra_dec_list.shape, (len(s), 2))
+        assert_is_instance(s.mag_list, np.ndarray)
+        assert_equal(s.mag_list.shape, (len(s), 2))
