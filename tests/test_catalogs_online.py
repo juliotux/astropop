@@ -446,8 +446,8 @@ class Test_Vizier_UCAC4:
 
     def test_ucac4_properties_types(self):
         s = UCAC4SourcesCatalog(sirius_coords[0],
-                                 search_radius[0],
-                                 band='V')
+                                search_radius[0],
+                                band='V')
 
         assert_is_instance(s.sources_id, np.ndarray)
         assert_equal(s.sources_id.shape, (len(s)))
