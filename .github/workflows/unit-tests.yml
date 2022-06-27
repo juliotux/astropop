@@ -24,7 +24,7 @@ jobs:
         include:
           - name: Python 3.10 with devdeps
             python: '3.10'
-            toxenv: py310-test-devdeps
+            toxenv: py310-test-devdeps-cat
 
           - name: Python 3.7 with old deps
             python: '3.7'
@@ -36,7 +36,7 @@ jobs:
 
           - name: Python 3.8 with lts deps
             python: '3.8'
-            toxenv: py38-test-ltsdeps
+            toxenv: py38-test-ltsdeps-cat
 
           - name: Python 3.8 with stable deps
             python: '3.8'
@@ -48,7 +48,7 @@ jobs:
 
           - name: Python 3.10 with stable deps
             python: '3.10'
-            toxenv: py310-test-stabledeps
+            toxenv: py310-test-stabledeps-cat
 
     steps:
     - uses: actions/checkout@v2
@@ -109,11 +109,11 @@ jobs:
         conda list
     - name: Install astropop
       shell: bash -l {0}
-      run: |
-        python setup.py build
-        pip install -U --no-deps .
+      run: pip install -U --no-deps .
     - name: Run Pytest and generate coverage
       shell: bash -l {0}
+      env:
+        ASTROPOP_TEST_CATALOGS: 1
       run: |
         pytest --pyargs ./tests ./docs --remote-data --cov astropop --cov-config=./setup.cfg
         coverage xml -o ./coverage.xml

@@ -60,9 +60,12 @@ sirius_coords = ["Sirius", "06h45m09s -16d42m58s", [101.28715, -16.7161158],
                  np.array([101.28715, -16.7161158]), (101.28715, -16.7161158),
                  SkyCoord(101.28715, -16.7161158, unit=('degree', 'degree'))]
 search_radius = ['0.1d', 0.1, Angle('0.1d')]
+catalog_skip = pytest.mark.skipif(not os.environ.get('ASTROPOP_TEST_CATALOGS'),
+                                  reason='avoid servers errors.')
 
 
 @flaky_rerun
+@catalog_skip
 class Test_OnlineTools:
     def test_timeout_retry_error(self):
         def _only_fail(*args, **kwargs):
@@ -313,6 +316,7 @@ class Test_DummySourcesCatalog:
 
 
 @flaky_rerun
+@catalog_skip
 class Test_Simbad():
     def test_simbad_creation_errors(self):
         # Need arguments
@@ -382,6 +386,8 @@ class Test_Simbad():
         assert_true(np.isnan(t['mag_error'][0]))
 
 
+@catalog_skip
+@flaky_rerun
 class Test_SimbadQueryID:
     @pytest.mark.parametrize('order, expect', [(None, 'alf CMa'),
                                                (['NAME'], 'Dog Star'),
@@ -421,6 +427,7 @@ class Test_Vizier:
 
 
 @flaky_rerun
+@catalog_skip
 class Test_Vizier_UCAC4:
     def test_ucac4_creation_errors(self):
         # Need arguments
