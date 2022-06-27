@@ -59,7 +59,7 @@ flaky_rerun = pytest.mark.flaky(max_runs=10, min_passes=1,
 sirius_coords = ["Sirius", "06h45m09s -16d42m58s", [101.28715, -16.7161158],
                  np.array([101.28715, -16.7161158]), (101.28715, -16.7161158),
                  SkyCoord(101.28715, -16.7161158, unit=('degree', 'degree'))]
-search_radius = ['0.1d', '360s', '6m', 0.1, Angle('0.1d')]
+search_radius = ['0.1d', 0.1, Angle('0.1d')]
 
 
 @flaky_rerun
