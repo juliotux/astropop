@@ -10,8 +10,7 @@ from astropy.coordinates import SkyCoord, Angle
 from astropy import units as u
 from astropop.catalogs.simbad import SimbadSourcesCatalog, simbad_query_id
 from astropop.catalogs.vizier import _VizierSourcesCatalog, \
-                                     UCAC4SourcesCatalog, \
-                                     UCAC5SourcesCatalog
+                                     UCAC4SourcesCatalog
 from astropop.catalogs._online_tools import _timeout_retry, \
                                             _fix_query_table, \
                                             get_center_radius, \
