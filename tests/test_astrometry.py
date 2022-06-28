@@ -277,14 +277,14 @@ def test_guess_coords_hexa_space():
     ra = "1 00 00"
     dec = "-43 30 00"
     assert_almost_equal(guess_coordinates(ra, dec, skycoord=False),
-                              (15.0, -43.5))
+                        (15.0, -43.5))
 
 
 def test_guess_coords_hexa_dots():
     ra = "1:00:00"
     dec = "-43:30:00"
     assert_almost_equal(guess_coordinates(ra, dec, skycoord=False),
-                              (15.0, -43.5))
+                        (15.0, -43.5))
 
 
 def test_guess_coords_skycord_float():
