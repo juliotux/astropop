@@ -56,6 +56,7 @@ skip_astrometry = pytest.mark.skipif("_solve_field is None or "
 
 
 @skip_astrometry
+@pytest.mark.remote_data
 def test_solve_astrometry_hdu(tmpdir):
     data, index = get_image_index()
     hdu = fits.open(data)[0]
@@ -68,6 +69,7 @@ def test_solve_astrometry_hdu(tmpdir):
 
 
 @skip_astrometry
+@pytest.mark.remote_data
 def test_solve_astrometry_xyl(tmpdir):
     data, index = get_image_index()
     hdu = fits.open(data)[0]
@@ -85,6 +87,7 @@ def test_solve_astrometry_xyl(tmpdir):
 
 
 @skip_astrometry
+@pytest.mark.remote_data
 def test_solve_astrometry_image(tmpdir):
     data, index = get_image_index()
     hdu = fits.open(data)[0]
@@ -99,6 +102,7 @@ def test_solve_astrometry_image(tmpdir):
 
 
 @skip_astrometry
+@pytest.mark.remote_data
 def test_fit_wcs(tmpdir):
     data, index = get_image_index()
     hdu = fits.open(data)[0]
