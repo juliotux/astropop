@@ -63,7 +63,7 @@ def _ucac4_filter_coord(query, obstime, frame):
 def _ucac4_filter_magnitude(query, band):
     unit = query[f'{band}mag'].unit
     mag = np.array(query[f'{band}mag'])
-    if f'e_{band}mag' in query:
+    if f'e_{band}mag' in query.colnames:
         mag_err = np.array(query[f'e_{band}mag'])
         mag_err = [float(i) if i != '' else np.nan
                    for i in mag_err]
