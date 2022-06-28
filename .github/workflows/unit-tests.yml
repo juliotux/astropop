@@ -101,6 +101,7 @@ jobs:
       shell: bash -l {0}
       run: |
         conda install -y -q pytest
+        conda install -y -q astrometry
         pip install coveralls .[test]
     - name: Install astropop
       shell: bash -l {0}
