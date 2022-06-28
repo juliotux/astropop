@@ -13,6 +13,9 @@ concurrency:
   group: pytest-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   tests:
     name: ${{ matrix.toxenv }}
@@ -97,8 +100,8 @@ jobs:
     - name: Install dependencies
       shell: bash -l {0}
       run: |
-        conda install -y -q pytest .[test]
-        pip install coveralls
+        conda install -y -q pytest
+        pip install coveralls .[test]
     - name: Install astropop
       shell: bash -l {0}
       run: pip install -U .[all]
