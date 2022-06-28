@@ -22,9 +22,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: Python 3.10 with devdeps
+          - name: Python 3.10 with devdeps (online)
             python: '3.10'
-            toxenv: py310-test-devdeps-cat
+            toxenv: py310-test-devdeps-online
 
           - name: Python 3.7 with old deps
             python: '3.7'
@@ -34,9 +34,9 @@ jobs:
             python: '3.8'
             toxenv: py38-test-olddeps
 
-          - name: Python 3.8 with lts deps
+          - name: Python 3.8 with lts deps (online)
             python: '3.8'
-            toxenv: py38-test-ltsdeps-cat
+            toxenv: py38-test-ltsdeps-online
 
           - name: Python 3.8 with stable deps
             python: '3.8'
@@ -46,9 +46,9 @@ jobs:
             python: '3.9'
             toxenv: py39-test-stabledeps
 
-          - name: Python 3.10 with stable deps
+          - name: Python 3.10 with stable deps (online)
             python: '3.10'
-            toxenv: py310-test-stabledeps-cat
+            toxenv: py310-test-stabledeps-online
 
     steps:
     - uses: actions/checkout@v2
@@ -80,8 +80,6 @@ jobs:
     name: "Conda/Coverage/Astrometry.net"
     runs-on: ubuntu-latest
     if: "!(contains(github.event.head_commit.message, '[skip ci]') || contains(github.event.head_commit.message, '[ci skip]'))"
-    env:
-      ASTROPOP_TEST_CATALOGS: 1
     steps:
     - uses: actions/checkout@v2
       with:
@@ -111,10 +109,8 @@ jobs:
         conda list
     - name: Run Pytest and generate coverage
       shell: bash -l {0}
-      env:
-        ASTROPOP_TEST_CATALOGS: 1
       run: |
-        pytest --pyargs ./tests ./docs --remote-data --cov astropop --cov-config=./setup.cfg
+        pytest --pyargs ./tests ./docs --remote-data --reruns=1 --reruns-delay 10 --cov astropop --cov-config=./setup.cfg
         coverage xml -o ./coverage.xml
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v2

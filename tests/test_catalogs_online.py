@@ -5,6 +5,7 @@ import os
 import time
 import pytest
 import numpy as np
+import requests
 from astropy.table import Table
 from astropy.coordinates import SkyCoord, Angle
 from astropy import units as u
@@ -20,13 +21,9 @@ from astropop.catalogs._online_tools import _timeout_retry, \
 from astropop.catalogs._sources_catalog import _OnlineSourcesCatalog, \
                                                SourcesCatalog
 from astropop.math import QFloat
+from astroquery.utils.mocks import MockResponse
 
 from astropop.testing import *
-
-
-def delay_rerun(*args):
-    time.sleep(10)
-    return True
 
 
 class DummySourcesCatalog(_OnlineSourcesCatalog):
@@ -54,18 +51,13 @@ class DummySourcesCatalog(_OnlineSourcesCatalog):
                                 ids=self.sources['id'], mag=mag)
 
 
-flaky_rerun = pytest.mark.flaky(max_runs=10, min_passes=1,
-                                rerun_filter=delay_rerun)
 sirius_coords = ["Sirius", "06h45m09s -16d42m58s", [101.28715, -16.7161158],
                  np.array([101.28715, -16.7161158]), (101.28715, -16.7161158),
                  SkyCoord(101.28715, -16.7161158, unit=('degree', 'degree'))]
 search_radius = ['0.1d', 0.1, Angle('0.1d')]
-catalog_skip = pytest.mark.skipif(not os.environ.get('ASTROPOP_TEST_CATALOGS'),
-                                  reason='avoid servers errors.')
 
 
-@flaky_rerun
-@catalog_skip
+@pytest.mark.remote_data
 class Test_OnlineTools:
     def test_timeout_retry_error(self):
         def _only_fail(*args, **kwargs):
@@ -315,8 +307,7 @@ class Test_DummySourcesCatalog:
         assert_equal(c.table.colnames, ['id', 'ra', 'dec'])
 
 
-@flaky_rerun
-@catalog_skip
+@pytest.mark.remote_data
 class Test_Simbad():
     def test_simbad_creation_errors(self):
         # Need arguments
@@ -386,8 +377,7 @@ class Test_Simbad():
         assert_true(np.isnan(t['mag_error'][0]))
 
 
-@catalog_skip
-@flaky_rerun
+@pytest.mark.remote_data
 class Test_SimbadQueryID:
     @pytest.mark.parametrize('order, expect', [(None, 'alf CMa'),
                                                (['NAME'], 'Dog Star'),
@@ -426,8 +416,7 @@ class Test_Vizier:
                                   band=None)
 
 
-@flaky_rerun
-@catalog_skip
+@pytest.mark.remote_data
 class Test_Vizier_UCAC4:
     def test_ucac4_creation_errors(self):
         # Need arguments
