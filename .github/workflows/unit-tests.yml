@@ -97,7 +97,7 @@ jobs:
     - name: Install dependencies
       shell: bash -l {0}
       run: |
-        conda install -y -q pytest pytest-astropy pytest-remotedata flaky
+        conda install -y -q pytest .[test]
         pip install coveralls
     - name: Install astropop
       shell: bash -l {0}
