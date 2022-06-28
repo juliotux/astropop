@@ -19,10 +19,10 @@ def _timeout_retry(func, *args, **kwargs):
     tried = kwargs.pop('_____retires', 0)
     try:
         q = func(*args, **kwargs)
-    except (TimeoutError, TableParseError):
+    except (TimeoutError, TableParseError) as exc:
         if tried >= MAX_RETRIES_TIMEOUT:
             raise TimeoutError(f'TimeOut obtained in {MAX_RETRIES_TIMEOUT}'
-                               ' tries, aborting.')
+                               ' tries, aborting.') from exc
         return _timeout_retry(func, *args, **kwargs, _____retires=tried+1)
     return q
 
