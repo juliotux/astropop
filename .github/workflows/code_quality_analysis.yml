@@ -30,8 +30,8 @@ jobs:
         python -m pip install pydocstyle pycodestyle prospector pylint pyflakes bandit
     - name: Run pycodestyle
       run: pycodestyle --statistics astropop
-    - name: Run pydocstyle
-      run: pydocstyle astropop
+    # - name: Run pydocstyle
+    #   run: pydocstyle astropop
     - name: Run prospector
       run: prospector -w pyflakes -w bandit --doc-warnings -F astropop
 
@@ -61,10 +61,10 @@ jobs:
     - name: Run pycodestyle
       run: pycodestyle --statistics ${{ env.GIT_DIFF_FILTERED}}
       if: env.GIT_DIFF_FILTERED
-    - name: Run pydocstyle
-      continue-on-error: true
-      run: pydocstyle ${{ env.GIT_DIFF_FILTERED}}
-      if: env.GIT_DIFF_FILTERED
+    # - name: Run pydocstyle
+    #   continue-on-error: true
+    #   run: pydocstyle ${{ env.GIT_DIFF_FILTERED}}
+    #   if: env.GIT_DIFF_FILTERED
     - name: Run prospector
       continue-on-error: true
       run: prospector -w pyflakes -w bandit -F --no-autodetect --doc-warnings ${{ env.GIT_DIFF_FILTERED}}
