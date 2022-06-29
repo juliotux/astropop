@@ -1,6 +1,7 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 """Query and match objects in Vizier catalogs."""
 
+import abc
 import numpy as np
 from astropy.coordinates import SkyCoord
 from astroquery.vizier import Vizier
@@ -12,27 +13,37 @@ from ..py_utils import string_fix
 from ..math import qfloat
 
 
-__all__ = ['UCAC4SourcesCatalog']
+__all__ = ['UCAC4SourcesCatalog', 'APASS9SourcesCatalog']
 
 
-class _VizierSourcesCatalog(_OnlineSourcesCatalog):
+class _VizierSourcesCatalog(_OnlineSourcesCatalog, abc.ABC):
     """Sources catalog from Vizier plataform."""
 
-    _filter_magnitudes = None
-    _filter_coordinates = None
-    _filter_ids = None
-    _filter_epoch = None
     _table = None
     _frame = 'icrs'
-    _columns = ['*']
+    _columns = ['+_r', '**']
+
+    @staticmethod
+    @abc.abstractmethod
+    def _filter_magnitudes(query, band):
+        """Get the qfloat magnitudes."""
+
+    @staticmethod
+    @abc.abstractmethod
+    def _filter_coordinates(query, obstime, frame):
+        """Get the SkyCoord coordinates."""
+
+    @staticmethod
+    @abc.abstractmethod
+    def _filter_ids(query):
+        """Get the id names for the objects."""
+
+    @staticmethod
+    @abc.abstractmethod
+    def _filter_epoch(query):
+        """Get the epoch for the coordinates."""
 
     def _setup_catalog(self):
-        if self._filter_magnitudes is None or \
-           self._filter_coordinates is None or \
-           self._filter_epoch is None or \
-           self._table is None:
-            raise NotImplementedError('Some required methods are not '
-                                      'properly setup.')
         self._v = Vizier(catalog=self._table, columns=self._columns)
         self._v.ROW_LIMIT = -1
 
@@ -64,9 +75,12 @@ def _ucac4_filter_magnitude(query, band):
     unit = query[f'{band}mag'].unit
     mag = np.array(query[f'{band}mag'])
     if f'e_{band}mag' in query.colnames:
+        err_unit = query[f'e_{band}mag'].unit
         mag_err = np.array(query[f'e_{band}mag'])
-        mag_err = [float(i) if i != '' else np.nan
-                   for i in mag_err]
+        mag_err = np.array([float(i) if i != '' else np.nan
+                            for i in mag_err])
+        if str(err_unit) == 'cmag':
+            mag_err /= 100.0
     else:
         mag_err = None
     return qfloat(mag, uncertainty=mag_err, unit=unit)
@@ -92,3 +106,29 @@ class UCAC4SourcesCatalog(_VizierSourcesCatalog):
         for i in self._available_filters:
             cols += [f'{i}mag', f'e_{i}mag']
         return cols
+
+
+class APASS9SourcesCatalog(_VizierSourcesCatalog):
+    _table = 'apass9'
+    _available_filters = ['V', 'B', "g", "r", "i"]
+    _columns = ['+_r', '**']
+
+    @staticmethod
+    def _filter_coordinates(query, obstime, frame):
+        ra = np.array(query['RAJ2000'])*query['RAJ2000'].unit
+        dec = np.array(query['DEJ2000'])*query['DEJ2000'].unit
+        return SkyCoord(ra, dec, frame=frame, obstime=obstime)
+
+    @staticmethod
+    def _filter_ids(query):
+        return ['']*len(query)
+
+    @staticmethod
+    def _filter_epoch(query):
+        return None
+
+    @staticmethod
+    def _filter_magnitudes(query, band):
+        if band in ['g', 'r', 'i']:
+            band = f'{band}_'
+        return _ucac4_filter_magnitude(query, band)

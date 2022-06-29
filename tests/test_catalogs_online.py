@@ -12,7 +12,8 @@ from astropy.coordinates import SkyCoord, Angle
 from astropy import units as u
 from astropop.catalogs.simbad import SimbadSourcesCatalog, simbad_query_id
 from astropop.catalogs.vizier import _VizierSourcesCatalog, \
-                                     UCAC4SourcesCatalog
+                                     UCAC4SourcesCatalog, \
+                                     APASS9SourcesCatalog
 from astropop.catalogs._online_tools import _timeout_retry, \
                                             _fix_query_table, \
                                             get_center_radius, \
@@ -55,6 +56,9 @@ class DummySourcesCatalog(_OnlineSourcesCatalog):
 sirius_coords = ["Sirius", "06h45m09s -16d42m58s", [101.28715, -16.7161158],
                  np.array([101.28715, -16.7161158]), (101.28715, -16.7161158),
                  SkyCoord(101.28715, -16.7161158, unit=('degree', 'degree'))]
+hd674_coords = ["HD 674", "00h10m52s -54d17m26s", [2.716748, -54.290647],
+                np.array([2.716748, -54.290647]), (2.716748, -54.290647),
+                SkyCoord(2.716748, -54.290647, unit='degree')]
 search_radius = ['0.1d', 0.1, Angle('0.1d')]
 
 
@@ -411,7 +415,7 @@ class Test_SimbadQueryID:
 
 class Test_Vizier:
     def test_vizier_need_initialization(self):
-        with pytest.raises(NotImplementedError, match='Some required methods'):
+        with pytest.raises(TypeError, match='with abstract methods'):
             _VizierSourcesCatalog(sirius_coords[0],
                                   search_radius[0],
                                   band=None)
@@ -431,6 +435,20 @@ class Test_Vizier_UCAC4:
         # Filter None should pass, no mag data
         UCAC4SourcesCatalog('Sirius', '0.05d', None)
 
+    @pytest.mark.parametrize('band,mag', [('J', [10.157, 0.02]),
+                                          ('H', [10.083, 0.02]),
+                                          ('K', [10.029, 0.02]),
+                                          ('B', [10.752, 0.01]),
+                                          ('V', [10.597, 0.07]),
+                                          ('g', [np.nan, np.nan]),
+                                          ('r', [np.nan, np.nan]),
+                                          ('i', [10.688, 0.01])])
+    def test_ucac4_creation_filters(self, band, mag):
+        c = UCAC4SourcesCatalog(hd674_coords[0], '0.05d', band=band)
+
+        assert_equal(c.sources_id[0], 'UCAC4 179-000175')
+        assert_almost_equal(c.mag_list[0], mag)
+
     @pytest.mark.parametrize('radius', search_radius)
     @pytest.mark.parametrize('center', sirius_coords)
     def test_ucac4_query_input_types(self, center, radius):
@@ -444,6 +462,55 @@ class Test_Vizier_UCAC4:
         s = UCAC4SourcesCatalog(sirius_coords[0],
                                 search_radius[0],
                                 band='V')
+
+        assert_is_instance(s.sources_id, np.ndarray)
+        assert_equal(s.sources_id.shape, (len(s)))
+        assert_is_instance(s.skycoord, SkyCoord)
+        assert_is_instance(s.magnitude, QFloat)
+        assert_is_instance(s.ra_dec_list, np.ndarray)
+        assert_equal(s.ra_dec_list.shape, (len(s), 2))
+        assert_is_instance(s.mag_list, np.ndarray)
+        assert_equal(s.mag_list.shape, (len(s), 2))
+
+
+@pytest.mark.remote_data
+class Test_Vizier_APASS9:
+    def test_apass9_creation_errors(self):
+        # Need arguments
+        with pytest.raises(TypeError):
+            APASS9SourcesCatalog()
+        with pytest.raises(TypeError):
+            APASS9SourcesCatalog('test')
+
+        with pytest.raises(ValueError, match='Filter None not available.'):
+            APASS9SourcesCatalog('Sirius', '0.05d', band='None')
+        # Filter None should pass, no mag data
+        APASS9SourcesCatalog('Sirius', '0.05d', None)
+
+    @pytest.mark.parametrize('radius', search_radius)
+    @pytest.mark.parametrize('center', hd674_coords)
+    def test_apass9_query_input_types(self, center, radius):
+        c = APASS9SourcesCatalog(center, radius, band='V')
+
+        assert_equal(c.sources_id[0], '')
+        assert_almost_equal(c.ra_dec_list[0], [2.716748, -54.290647], decimal=5)
+        assert_almost_equal(c.mag_list[0], [10.626, 0.043])
+
+    @pytest.mark.parametrize('band,mag', [('B', [10.775, 0.031]),
+                                          ('V', [10.626, 0.043]),
+                                          ("g", [10.783, 0.104]),
+                                          ("r", [10.675, 0.047]),
+                                          ("i", [10.726, 0.077])])
+    def test_apass9_creation_filters(self, band, mag):
+        c = APASS9SourcesCatalog(hd674_coords[0], '0.05d', band=band)
+
+        assert_equal(c.sources_id[0], '')
+        assert_almost_equal(c.mag_list[0], mag)
+
+    def test_apass9_properties_types(self):
+        s = APASS9SourcesCatalog(hd674_coords[0],
+                                 search_radius[0],
+                                 band='V')
 
         assert_is_instance(s.sources_id, np.ndarray)
         assert_equal(s.sources_id.shape, (len(s)))
