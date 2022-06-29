@@ -62,11 +62,13 @@ class _VizierSourcesCatalog(_OnlineSourcesCatalog, abc.ABC):
         SourcesCatalog.__init__(self, sk, ids=ids, mag=mag)
 
 
-def _ucac4_filter_coord(query, obstime, frame):
-    ra = np.array(query['RAJ2000'])*query['RAJ2000'].unit
-    dec = np.array(query['DEJ2000'])*query['DEJ2000'].unit
-    pmra = np.array(query['pmRA'])*query['pmRA'].unit
-    pmdec = np.array(query['pmDE'])*query['pmDE'].unit
+def _ucac4_filter_coord(query, obstime, frame,
+                        rakey='RAJ2000', deckey='DEJ2000',
+                        pmrakey='pmRA', pmdeckey='pmDE'):
+    ra = np.array(query[rakey])*query[rakey].unit
+    dec = np.array(query[deckey])*query[deckey].unit
+    pmra = np.array(query[pmrakey])*query[pmrakey].unit
+    pmdec = np.array(query[pmdeckey])*query[pmdeckey].unit
     return SkyCoord(ra, dec, frame=frame, obstime=obstime,
                     pm_ra_cosdec=pmra, pm_dec=pmdec)
 
@@ -132,3 +134,32 @@ class APASS9SourcesCatalog(_VizierSourcesCatalog):
         if band in ['g', 'r', 'i']:
             band = f'{band}_'
         return _ucac4_filter_magnitude(query, band)
+
+
+class GSC242SourcesCatalog(_VizierSourcesCatalog):
+    _table = 'I/353/gsc242'
+    _available_filters = ['G', 'Bj', 'Fpg', 'Epg', 'Npg',
+                          'U', 'B', 'V', 'u', 'g', 'r', 'i', 'z',
+                          'y', 'J', 'H', 'Ks', 'Z', 'Y', 'W1', 'W2',
+                          'W3', 'W4', 'FUV', 'NUV', 'RP', 'BP']
+    _filter_magnitudes = staticmethod(_ucac4_filter_magnitude)
+
+    @property
+    def _columns(self):
+        cols = ['+_r', 'GSC2', 'RA_ICRS', 'DE_ICRS', 'pmRA', 'pmDE', 'Epoch']
+        for i in self._available_filters:
+            cols += [f'{i}mag', f'e_{i}mag']
+        return cols
+
+    @staticmethod
+    def _filter_epoch(query):
+        return Time(query['Epoch'], format='jyear')
+
+    @staticmethod
+    def _filter_ids(query):
+        return [f'GSC2 {string_fix(i)}' for i in list(query['GSC2'])]
+
+    @staticmethod
+    def _filter_coordinates(query, obstime, frame):
+        return _ucac4_filter_coord(query, obstime, frame,
+                                   rakey='RA_ICRS', deckey='DE_ICRS')

@@ -13,7 +13,8 @@ from astropy import units as u
 from astropop.catalogs.simbad import SimbadSourcesCatalog, simbad_query_id
 from astropop.catalogs.vizier import _VizierSourcesCatalog, \
                                      UCAC4SourcesCatalog, \
-                                     APASS9SourcesCatalog
+                                     APASS9SourcesCatalog, \
+                                     GSC242SourcesCatalog
 from astropop.catalogs._online_tools import _timeout_retry, \
                                             _fix_query_table, \
                                             get_center_radius, \
@@ -509,6 +510,75 @@ class Test_Vizier_APASS9:
 
     def test_apass9_properties_types(self):
         s = APASS9SourcesCatalog(hd674_coords[0],
+                                 search_radius[0],
+                                 band='V')
+
+        assert_is_instance(s.sources_id, np.ndarray)
+        assert_equal(s.sources_id.shape, (len(s)))
+        assert_is_instance(s.skycoord, SkyCoord)
+        assert_is_instance(s.magnitude, QFloat)
+        assert_is_instance(s.ra_dec_list, np.ndarray)
+        assert_equal(s.ra_dec_list.shape, (len(s), 2))
+        assert_is_instance(s.mag_list, np.ndarray)
+        assert_equal(s.mag_list.shape, (len(s), 2))
+
+
+@pytest.mark.remote_data
+class Test_Vizier_GSC242:
+    def test_gsc242_creation_errors(self):
+        # Need arguments
+        with pytest.raises(TypeError):
+            GSC242SourcesCatalog()
+        with pytest.raises(TypeError):
+            GSC242SourcesCatalog('test')
+
+        with pytest.raises(ValueError, match='Filter None not available.'):
+            GSC242SourcesCatalog('Sirius', '0.05d', band='None')
+        # Filter None should pass, no mag data
+        GSC242SourcesCatalog('Sirius', '0.05d', None)
+
+    @pytest.mark.parametrize('radius', search_radius)
+    @pytest.mark.parametrize('center', hd674_coords)
+    def test_gsc242_query_input_types(self, center, radius):
+        c = GSC242SourcesCatalog(center, radius, band='V')
+
+        assert_equal(c.sources_id[0], 'GSC2 S17J000168')
+        assert_almost_equal(c.ra_dec_list[0], [2.7168074, -54.2906086], decimal=5)
+        assert_almost_equal(c.mag_list[0], [10.626, 0.043])
+
+    @pytest.mark.parametrize('band,mag', [('G', [10.551350, 0.000404]),
+                                          ('Bj', [np.nan, np.nan]),
+                                          ('Fpg', [np.nan, np.nan]),
+                                          ('Epg', [np.nan, np.nan]),
+                                          ('Npg', [np.nan, np.nan]),
+                                          ('U', [np.nan, np.nan]),
+                                          ('B', [10.775, 0.031]),
+                                          ('V', [10.626, 0.043]),
+                                          ('u', [11.902, 0.014]),
+                                          ('g', [10.783, 0.104]),
+                                          ('r', [10.675, 0.047]),
+                                          ('i', [10.726, 0.077]),
+                                          ('z', [10.840, 0.007]),
+                                          ('y', [np.nan, np.nan]),
+                                          ('J', [11.055, 0.00]),
+                                          ('H', [10.083, 0.022]),
+                                          ('Ks', [10.313, 0.001]),
+                                          ('Z', [np.nan, np.nan]),
+                                          ('Y', [np.nan, np.nan]),
+                                          ('W1', [10.026, 0.023]),
+                                          ('W2', [10.044, 0.020]),
+                                          ('W3', [10.043, 0.051]),
+                                          ('W4', [8.522, np.nan]),
+                                          ('FUV', [16.229, 0.031]),
+                                          ('NUV', [13.755, 0.007])])
+    def test_gsc242_creation_filters(self, band, mag):
+        c = GSC242SourcesCatalog(hd674_coords[0], '0.05d', band=band)
+
+        assert_equal(c.sources_id[0], 'GSC2 S17J000168')
+        assert_almost_equal(c.mag_list[0], mag)
+
+    def test_gsc242_properties_types(self):
+        s = GSC242SourcesCatalog(hd674_coords[0],
                                  search_radius[0],
                                  band='V')
 
