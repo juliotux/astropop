@@ -141,7 +141,7 @@ class SourcesCatalog:
         try:
             return np.array(list(zip(sk.ra.degree, sk.dec.degree)))
         except TypeError:
-            return (sk.ra.degree, sk.dec.degree)
+            return [(sk.ra.degree, sk.dec.degree)]
 
     @property
     def magnitude(self):
@@ -157,7 +157,7 @@ class SourcesCatalog:
             return np.array(list(zip(self._mags.nominal,
                                      self._mags.uncertainty)))
         except TypeError:
-            return (self._mags.nominal, self._mags.uncertainty)
+            return [(self._mags.nominal, self._mags.uncertainty)]
 
     @property
     def table(self):
