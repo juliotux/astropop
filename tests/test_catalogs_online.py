@@ -614,8 +614,8 @@ class Test_Vizier_GaiaDR3:
 
     def test_gaiadr3_properties_types(self):
         s = GaiaDR3SourcesCatalog(hd674_coords[0],
-                                 search_radius[0],
-                                 band='G')
+                                  search_radius[0],
+                                  band='G')
 
         assert_is_instance(s.sources_id, np.ndarray)
         assert_equal(s.sources_id.shape, (len(s)))
