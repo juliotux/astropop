@@ -65,21 +65,24 @@ class SourcesCatalog:
     accept all initialization arguments from this class. Other informations
     are stored according the following arguments.
 
+    Currently, it is designed to contain only magnitudes for photometric
+    data.
+
     Parameters
     ----------
     ids: array (optional)
         Names or ids of the objects in the catalog.
     mag: array or `~astropop.math.QFloat` (optional)
-        Photometric magnitude or photometric flux of the object. If a list
-        or array, must be 1-dimensional array containing only the fluxes or
-        magnitudes. If QFloat, ``mag_error`` and ``mag_unit`` arguments
+        Photometric magnitude of the object. If a list
+        or array, must be 1-dimensional array containing only the magnitudes.
+        If QFloat, ``mag_error`` and ``mag_unit`` arguments
         will be ignored. Photometry will be only available if this
         argument is set.
     mag_error: array (optional)
         Photometric magnitude errors in the same unit of the `mag`
         argument. Ignored if ``mag`` is a QFloat.
     mag_unit: str, `~astropy.units.Unit` or array (optional)
-        Unit of the photometric magnitude or flux.
+        Unit of the photometric magnitude.
         Ignored if ``mag`` is a QFloat.
     *args, **kwargs:
         Arguments to be passed to `~astropy.coordinates.SkyCoord`
@@ -116,7 +119,6 @@ class SourcesCatalog:
         # magnitudes are stored as QFloat
         if isinstance(mag, QFloat):
             self._mags = mag
-            # TODO: check redundancy in error and unit
         elif mag is not None:
             self._mags = QFloat(mag, uncertainty=mag_error, unit=mag_unit)
         else:
@@ -164,14 +166,16 @@ class SourcesCatalog:
         if self.magnitude is None:
             t = Table({'id': self.sources_id,
                        'ra': sk.ra.degree,
-                       'dec': sk.dec.degree})
+                       'dec': sk.dec.degree},
+                      units=(None, 'degree', 'degree'))
         else:
             fl = self.magnitude
             t = Table({'id': self.sources_id,
                        'ra': sk.ra.degree,
                        'dec': sk.dec.degree,
                        'mag': fl.nominal,
-                       'mag_error': fl.uncertainty})
+                       'mag_error': fl.uncertainty},
+                      units=(None, 'degree', 'degree', 'mag', 'mag'))
 
         return t
 

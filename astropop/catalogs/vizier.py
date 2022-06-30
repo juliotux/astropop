@@ -163,3 +163,20 @@ class GSC242SourcesCatalog(_VizierSourcesCatalog):
     def _filter_coordinates(query, obstime, frame):
         return _ucac4_filter_coord(query, obstime, frame,
                                    rakey='RA_ICRS', deckey='DE_ICRS')
+
+
+# TODO:
+# - UCAC5: I/340
+# - DENIS: B/denis
+# - 2MASS
+# - APASS DR10
+# - VSX: B/vsx
+# - GCVS: B/gcvs
+# - Hipparcos
+# - Tycho
+# - HD
+# - NOMAD
+# - Photometric Standard Stars (Cousins 1971): II/50/ubv
+# - Photometric Data for the Bright Stars (Hauck+, 1986): II/128/catalog
+# - UBVRI Photometric Standards (Landolt 1992): II/183A/table2
+# - UBVR CCD survey of the Magellanic clouds (Massey+, 2002): II/236
