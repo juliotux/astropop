@@ -354,9 +354,9 @@ class Test_DummySourcesCatalog:
         nc = c[0]
         assert_equal(nc.sources_id, sources['id'][0])
         assert_almost_equal(nc.ra_dec_list,
-                            [sources['ra'][0], sources['dec'][0]])
+                            [[sources['ra'][0], sources['dec'][0]]])
         assert_almost_equal(nc.mag_list,
-                            [sources['mag'][0], sources['mag_error'][0]])
+                            [[sources['mag'][0], sources['mag_error'][0]]])
 
     def test_catalog_getitem_array(self):
         c = DummySourcesCatalog(sirius_coords[0], search_radius[0], band='B')
