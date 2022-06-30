@@ -322,52 +322,52 @@ class Test_DummySourcesCatalog:
         assert_is_instance(c.mag_list, np.ndarray)
         assert_equal(c.mag_list.shape, (4, 2))
 
-        assert_equal(c.sources_id, c.sources['id'])
-        assert_almost_equal(c.ra_dec_list[:, 0], c.sources['ra'])
-        assert_almost_equal(c.ra_dec_list[:, 1], c.sources['dec'])
-        assert_almost_equal(c.mag_list[:, 0], c.sources['mag'])
-        assert_almost_equal(c.mag_list[:, 1], c.sources['mag_error'])
+        assert_equal(c.sources_id, sources['id'])
+        assert_almost_equal(c.ra_dec_list[:, 0], sources['ra'])
+        assert_almost_equal(c.ra_dec_list[:, 1], sources['dec'])
+        assert_almost_equal(c.mag_list[:, 0], sources['mag'])
+        assert_almost_equal(c.mag_list[:, 1], sources['mag_error'])
 
     def test_catalog_table(self):
         c = DummySourcesCatalog(sirius_coords[0], search_radius[0], band='B')
         t = c.table
         assert_is_instance(t, Table)
         assert_equal(t.colnames, ['id', 'ra', 'dec', 'mag', 'mag_error'])
-        assert_equal(t['id'], c.sources['id'])
-        assert_almost_equal(t['ra'], c.sources['ra'])
-        assert_almost_equal(t['dec'], c.sources['dec'])
-        assert_almost_equal(t['mag'], c.sources['mag'])
-        assert_almost_equal(t['mag_error'], c.sources['mag_error'])
+        assert_equal(t['id'], sources['id'])
+        assert_almost_equal(t['ra'], sources['ra'])
+        assert_almost_equal(t['dec'], sources['dec'])
+        assert_almost_equal(t['mag'], sources['mag'])
+        assert_almost_equal(t['mag_error'], sources['mag_error'])
 
     def test_catalog_array(self):
         c = DummySourcesCatalog(sirius_coords[0], search_radius[0], band='B')
         t = c.array
         assert_is_instance(t, np.ndarray)
-        assert_equal(t['id'], c.sources['id'])
-        assert_almost_equal(t['ra'], c.sources['ra'])
-        assert_almost_equal(t['dec'], c.sources['dec'])
-        assert_almost_equal(t['mag'], c.sources['mag'])
-        assert_almost_equal(t['mag_error'], c.sources['mag_error'])
+        assert_equal(t['id'], sources['id'])
+        assert_almost_equal(t['ra'], sources['ra'])
+        assert_almost_equal(t['dec'], sources['dec'])
+        assert_almost_equal(t['mag'], sources['mag'])
+        assert_almost_equal(t['mag_error'], sources['mag_error'])
 
     def test_catalog_getitem_number(self):
         c = DummySourcesCatalog(sirius_coords[0], search_radius[0], band='B')
         nc = c[0]
-        assert_equal(nc.sources_id, c.sources['id'][0])
+        assert_equal(nc.sources_id, sources['id'][0])
         assert_almost_equal(nc.ra_dec_list,
-                            [c.sources['ra'][0], c.sources['dec'][0]])
+                            [sources['ra'][0], sources['dec'][0]])
         assert_almost_equal(nc.mag_list,
-                            [c.sources['mag'][0], c.sources['mag_error'][0]])
+                            [sources['mag'][0], sources['mag_error'][0]])
 
     def test_catalog_getitem_array(self):
         c = DummySourcesCatalog(sirius_coords[0], search_radius[0], band='B')
         for items in [[2, 3], slice(2, None), np.array([2, 3])]:
             nc = c[items]
             assert_equal(len(nc), 2)
-            assert_equal(nc.sources_id, c.sources['id'][2:])
-            assert_almost_equal(nc.ra_dec_list[:, 0], c.sources['ra'][2:])
-            assert_almost_equal(nc.ra_dec_list[:, 1], c.sources['dec'][2:])
-            assert_almost_equal(nc.mag_list[:, 0], c.sources['mag'][2:])
-            assert_almost_equal(nc.mag_list[:, 1], c.sources['mag_error'][2:])
+            assert_equal(nc.sources_id, sources['id'][2:])
+            assert_almost_equal(nc.ra_dec_list[:, 0], sources['ra'][2:])
+            assert_almost_equal(nc.ra_dec_list[:, 1], sources['dec'][2:])
+            assert_almost_equal(nc.mag_list[:, 0], sources['mag'][2:])
+            assert_almost_equal(nc.mag_list[:, 1], sources['mag_error'][2:])
             assert_is_none(nc._query)
 
         # Ensure error is raised when a list of strings
@@ -379,8 +379,8 @@ class Test_DummySourcesCatalog:
 
     def test_catalog_getitem_columns(self):
         c = DummySourcesCatalog(sirius_coords[0], search_radius[0], band='B')
-        for i in c.sources.colnames:
-            assert_equal(c[i], c.sources[i])
+        for i in sources.colnames:
+            assert_equal(c[i], sources[i])
 
         with pytest.raises(KeyError):
             c['no column']
