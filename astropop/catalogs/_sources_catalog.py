@@ -105,9 +105,10 @@ class SourcesCatalog:
     _ids = None  # Store array of ids
     _mags = None  # Store QFloat of mags
     _coords = None  # Store Skycoord of coordinates
+    _query = None  # Store query table
 
     def __init__(self, *args, ids=None, mag=None, mag_error=None,
-                 mag_unit=None, **kwargs):
+                 mag_unit=None, query_table=None, **kwargs):
         # initializate coords and skycoords using default kwargs.
         self._coords = SkyCoord(*args, **kwargs, copy=True)
 
@@ -123,6 +124,10 @@ class SourcesCatalog:
             self._mags = QFloat(mag, uncertainty=mag_error, unit=mag_unit)
         else:
             self._mags = None
+
+        # Store base query table
+        if query_table is not None:
+            self._query = query_table
 
     @property
     def sources_id(self):
@@ -269,8 +274,12 @@ class SourcesCatalog:
         if not isinstance(item, (int, list, np.ndarray, slice)):
             raise KeyError(f"{item}")
 
+        if isinstance(item, int):
+            item = [item]
+
         nc = copy.copy(self)
-        nc._query = None
+        if self._query is not None:
+            nc._query = self._query[item]
         nc._coords = self._coords[item]
         nc._ids = self._ids[item]
         if self._mags is not None:
@@ -278,7 +287,7 @@ class SourcesCatalog:
         return nc
 
     def __len__(self):
-        return len(self._coords.ra.degree)
+        return len(self._ids)
 
 
 class _OnlineSourcesCatalog(SourcesCatalog, abc.ABC):
@@ -342,3 +351,25 @@ class _OnlineSourcesCatalog(SourcesCatalog, abc.ABC):
     def available_filters(self):
         """List available filters for the catalog."""
         return copy.copy(self._available_filters)
+
+    def __getitem__(self, item):
+        """Get items from the catalog.
+
+        A new catalog with only the selected sources is returned.
+        If item is a string, a column from the result query will be returned.
+        """
+        if isinstance(item, str):
+            if self._query is None:
+                raise KeyError('Empty query.')
+            return copy.copy(self._query[item])
+
+        if not isinstance(item, (int, list, np.ndarray, slice)):
+            raise KeyError(f"{item}")
+
+        nc = copy.copy(self)
+        nc._query = None
+        nc._coords = self._coords[item]
+        nc._ids = self._ids[item]
+        if self._mags is not None:
+            nc._mags = self._mags[item]
+        return nc
