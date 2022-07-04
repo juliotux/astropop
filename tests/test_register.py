@@ -438,7 +438,7 @@ class Test_Register_FrameData_List:
         assert_equal(len(frame_list), len(reg_list))
         assert_is_none(reg_list[2].meta['astropop registration_shift_x'])
         assert_is_none(reg_list[2].meta['astropop registration_shift_y'])
-        assert_is_none(reg_list[2].meta['astropop registration_rotation'])
+        assert_is_none(reg_list[2].meta['astropop registration_rot'])
         assert_equal(reg_list[2].meta['astropop registration'], 'failed')
         assert_equal(reg_list[2].data, np.full(reg_list[2].shape, expct_cval))
         assert_true(np.all(reg_list[2].mask))
