@@ -16,7 +16,7 @@ from .test_detection import gen_position_flux, gen_image
 def gen_positions_transformed(x, y, flux, dx, dy, limits,
                               rotation=None, rotation_center=None):
     """Generate translated positions."""
-    x, y = x+dx,  y+dy
+    x, y = x+dx, y+dy
 
     if rotation is not None:
         rotation_center = rotation_center or np.array(limits)/2
@@ -27,10 +27,10 @@ def gen_positions_transformed(x, y, flux, dx, dy, limits,
         x, y = nx, ny
 
     # ensure all positions are inside the image
-    mask = x>=0
-    mask &= x<=limits[0]
-    mask &= y>=0
-    mask &= y<=limits[1]
+    mask = x >= 0
+    mask &= x <= limits[0]
+    mask &= y >= 0
+    mask &= y <= limits[1]
     where = np.where(mask)
 
     return x[where], y[where], flux[where]
@@ -208,14 +208,14 @@ class Test_Registration:
         frame2.uncertainty = np.ones_like(im2)
 
         ar = CrossCorrelationRegister()
-        frame_reg= ar.register_framedata(frame1, frame2,
-                                         cval=cval, inplace=inplace)
+        frame_reg = ar.register_framedata(frame1, frame2,
+                                          cval=cval, inplace=inplace)
 
         assert_equal(frame_reg.data, expect)
         assert_equal(frame_reg.mask, mask)
         assert_equal(frame_reg.uncertainty, expect_unct)
         assert_equal(frame_reg.meta['astropop registration'],
-                                    'cross-correlation')
+                     'cross-correlation')
         assert_equal(frame_reg.meta['astropop registration_shift_x'], 2)
         assert_equal(frame_reg.meta['astropop registration_shift_y'], -1)
         assert_equal(frame_reg.meta['astropop registration_rot'], 0)
@@ -239,7 +239,7 @@ class Test_Registration:
         im = gen_image((50, 50), [25], [25], [10000], 10, 0, sigma=3)
         im = FrameData(im)
         ar = CrossCorrelationRegister()
-        im_reg= ar.register_framedata(im, im, inplace=inplace)
+        im_reg = ar.register_framedata(im, im, inplace=inplace)
         if inplace:
             assert_is(im_reg, im)
         else:
@@ -278,7 +278,7 @@ class Test_Register_FrameData_List:
                                     algorithm='noexisting')
         with pytest.raises(ValueError, match='Algorithm noexisting unknown.'):
             compute_shift_list([FrameData(None) for i in range(10)],
-                                algorithm='noexisting')
+                               algorithm='noexisting')
 
     def test_error_non_framedata(self):
         with pytest.raises(TypeError, match='Only a list of FrameData'):
@@ -383,7 +383,6 @@ class Test_Register_FrameData_List:
                                            max_control_points=30,
                                            detection_threshold=5)
 
-
         assert_equal(len(frame_list), len(reg_list))
         for org, reg in zip(frame_list, reg_list):
             assert_is(org, reg)
@@ -420,11 +419,10 @@ class Test_Register_FrameData_List:
             compute_shift_list(frame_list, algorithm='asterism-matching',
                                skip_failure=False)
 
-
     @pytest.mark.parametrize('cval,expct_cval', [(np.nan, np.nan),
-                                                  ('median', 1),
-                                                  ('mean', 1),
-                                                  (0, 0)])
+                                                 ('median', 1),
+                                                 ('mean', 1),
+                                                 (0, 0)])
     def test_register_framedata_list_skip_failure_true(self, cval, expct_cval):
         frame_list = self.gen_frame_list((512, 1024))
         frame_list[2].data = np.ones((1024, 512))
