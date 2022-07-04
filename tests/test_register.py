@@ -428,7 +428,7 @@ class Test_Register_FrameData_List:
         frame_list[2].data = np.ones((1024, 512))
 
         reg_list = register_framedata_list(frame_list, clip_output=True,
-                                           inplace=True,
+                                           inplace=False,
                                            algorithm='asterism-matching',
                                            max_control_points=30,
                                            detection_threshold=5,
@@ -444,7 +444,6 @@ class Test_Register_FrameData_List:
         assert_true(np.all(reg_list[2].mask))
 
         for org, reg in zip(frame_list, reg_list):
-            assert_is(org, reg)
             assert_equal(reg.meta['astropop trimmed_section'], '6:-3,2:-23')
             # x: 6:-3, y: 2:-23, since frame[2] is not available
             assert_equal(reg.shape, (1024-23-2, 512-6-3))
@@ -456,4 +455,4 @@ class Test_Register_FrameData_List:
                                         skip_failure=True)
         shift_list_expt = np.array(self._shifts)
         shift_list_expt[2][:] = np.nan
-        assert_almost_equal(shift_list, shift_list_expt, decimal=0)
+        assert_almost_equal(shift_list, shift_list_expt, decimal=1)
