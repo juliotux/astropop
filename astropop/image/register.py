@@ -182,8 +182,8 @@ class _BaseRegister(abc.ABC):
         if inplace:
             reg_frame = frame2
         else:
-            reg_frame = FrameData(None)
-            reg_frame.meta = frame2.meta
+            # Copy the frame to mantain the memmap caching behavior
+            reg_frame = frame2.copy()
 
         reg_frame.data = data
         reg_frame.mask = mask
