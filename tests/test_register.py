@@ -391,8 +391,71 @@ class Test_Register_FrameData_List:
                 ap_reg_shift = reg.meta[f'astropop registration_shift_{i}']
                 ex_reg_shift = org.meta[f'test expect_shift_{i}']
                 assert_almost_equal(ap_reg_shift, ex_reg_shift, decimal=0)
+            assert_equal(reg.meta['astropop trimmed_section'], '6:-16,2:-23')
             # x: 6:-16, y: 2:-23
             assert_equal(reg.shape, (1024-23-2, 512-6-16))
-            assert_equal(reg.meta['astropop trimmed_section'], '6:-16,2:-23')
             # no masked pixel should remain
             assert_false(np.any(reg.mask))
+
+    def test_register_framedata_list_skip_failure_default(self):
+        # defult behavior is raise error
+        frame_list = self.gen_frame_list((512, 1024))
+        frame_list[2].data = np.ones((1024, 512))
+
+        with pytest.raises(TypeError):
+            register_framedata_list(frame_list, algorithm='asterism-matching')
+
+        with pytest.raises(TypeError):
+            compute_shift_list(frame_list, algorithm='asterism-matching')
+
+    def test_register_framedata_list_skip_failure_false(self):
+        frame_list = self.gen_frame_list((512, 1024))
+        frame_list[2].data = np.ones((1024, 512))
+
+        with pytest.raises(TypeError):
+            register_framedata_list(frame_list, algorithm='asterism-matching',
+                                    skip_failure=False)
+
+        with pytest.raises(TypeError):
+            compute_shift_list(frame_list, algorithm='asterism-matching',
+                               skip_failure=False)
+
+
+    @pytest.mark.parametrize('cval,expct_cval', [(np.nan, np.nan),
+                                                  ('median', 1),
+                                                  ('mean', 1),
+                                                  (0, 0)])
+    def test_register_framedata_list_skip_failure_true(self, cval, expct_cval):
+        frame_list = self.gen_frame_list((512, 1024))
+        frame_list[2].data = np.ones((1024, 512))
+
+        reg_list = register_framedata_list(frame_list, clip_output=True,
+                                           inplace=True,
+                                           algorithm='asterism-matching',
+                                           max_control_points=30,
+                                           detection_threshold=5,
+                                           cval=cval,
+                                           skip_failure=True)
+
+        assert_equal(len(frame_list), len(reg_list))
+        assert_is_none(reg_list[2].meta['astropop registration_shift_x'])
+        assert_is_none(reg_list[2].meta['astropop registration_shift_y'])
+        assert_is_none(reg_list[2].meta['astropop registration_rotation'])
+        assert_equal(reg_list[2].meta['astropop registration'], 'failed')
+        assert_equal(reg_list[2].data, np.full(reg_list[2].shape, expct_cval))
+        assert_true(np.all(reg_list[2].mask))
+
+        for org, reg in zip(frame_list, reg_list):
+            assert_is(org, reg)
+            assert_equal(reg.meta['astropop trimmed_section'], '6:-3,2:-23')
+            # x: 6:-3, y: 2:-23, since frame[2] is not available
+            assert_equal(reg.shape, (1024-23-2, 512-6-3))
+
+        shift_list = compute_shift_list(frame_list,
+                                        algorithm='asterism-matching',
+                                        max_control_points=30,
+                                        detection_threshold=5,
+                                        skip_failure=True)
+        shift_list_expt = np.array(self._shifts)
+        shift_list_expt[2][:] = np.nan
+        assert_almost_equal(shift_list, shift_list_expt, decimal=0)

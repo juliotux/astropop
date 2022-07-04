@@ -30,8 +30,9 @@ def _check_compatible_list(frame_list):
         if not isinstance(i, FrameData):
             raise TypeError('Only a list of FrameData instances is allowed.')
         if i.shape != frame_list[0].shape:
-            raise ValueError('Images with incompatible shapes. Only frames '
-                             'with same shape allowed.')
+            raise ValueError('Images with incompatible shapes '
+                             f'{frame_list[0].shape} and {i.shape}.'
+                             'Only frames with same shape allowed.')
 
 
 def _get_clip_slices(shifts, imshape):
@@ -39,8 +40,8 @@ def _get_clip_slices(shifts, imshape):
     # negative shifts means the image is translated up and right, so they
     # define the start.
     # positive shifts translates down and left, so they define the stop.
-    xmin, xmax = np.min(shifts[:, 0]), np.max(shifts[:, 0])
-    ymin, ymax = np.min(shifts[:, 1]), np.max(shifts[:, 1])
+    xmin, xmax = np.nanmin(shifts[:, 0]), np.nanmax(shifts[:, 0])
+    ymin, ymax = np.nanmin(shifts[:, 1]), np.nanmax(shifts[:, 1])
 
     xstart = int(np.ceil(-xmin)) if xmin < 0 else 0
     xstop = int(np.floor(-xmax)) if xmax > 0 else imshape[0]
@@ -49,6 +50,14 @@ def _get_clip_slices(shifts, imshape):
     ystop = int(np.floor(-ymax)) if ymax > 0 else imshape[1]
 
     return slice(xstart, xstop), slice(ystart, ystop)
+
+
+_keywords = {
+    'method': 'HIERARCH astropop registration',
+    'shift_x': 'HIERARCH astropop registration_shift_x',
+    'shift_y': 'HIERARCH astropop registration_shift_y',
+    'rotation': 'HIERARCH astropop registration_rot',
+}
 
 
 class _BaseRegister(abc.ABC):
@@ -187,10 +196,10 @@ class _BaseRegister(abc.ABC):
 
         sx, sy = tform.translation
         theta = np.rad2deg(tform.rotation)
-        reg_frame.meta['HIERARCH astropop registration'] = self._name
-        reg_frame.meta['HIERARCH astropop registration_shift_x'] = sx
-        reg_frame.meta['HIERARCH astropop registration_shift_y'] = sy
-        reg_frame.meta['HIERARCH astropop registration_rot'] = theta
+        reg_frame.meta[_keywords['method']] = self._name
+        reg_frame.meta[_keywords['shift_x']] = sx
+        reg_frame.meta[_keywords['shift_y']] = sy
+        reg_frame.meta[_keywords['rotation']] = theta
 
         if reg_frame.wcs is not None:
             logger.warn('WCS in frame2 is not None. Due to the transform it'
@@ -329,7 +338,7 @@ class AsterismRegister(_BaseRegister):
 
 
 def compute_shift_list(frame_list, algorithm='cross-correlation',
-                       ref_image=0, **kwargs):
+                       ref_image=0, skip_failure=False, **kwargs):
     """Compute the shift between a list of frames.
 
     Parameters
@@ -348,6 +357,10 @@ def compute_shift_list(frame_list, algorithm='cross-correlation',
     ref_image : int (optional)
         Reference image index to compute the registration.
         Default: 0
+    skip_failure : bool (optional)
+        If True, the images that fail to register will be skipped and their
+        shifts will be set to nan.
+        Default: False
     **kwargs :
         keyword arguments to be passed to `CrossCorrelationRegister` or
         `AsterismRegister` during instance creation. See the parameters in
@@ -372,15 +385,23 @@ def compute_shift_list(frame_list, algorithm='cross-correlation',
         mov = frame_list[i]
         mov_im = np.array(mov.data)
         mov_mk = mov.mask if mov.mask is None else np.array(mov.mask)
-        tform = reg.compute_transform(ref_im, mov_im, ref_mk, mov_mk)
-        shift_list[i] = list(tform.translation)
+        try:
+            tform = reg.compute_transform(ref_im, mov_im, ref_mk, mov_mk)
+            shift_list[i] = list(tform.translation)
+        except Exception as e:
+            logger.warning('Failed to compute shift of image %i: %s', i+1, e)
+            if skip_failure:
+                shift_list[i] = [np.nan, np.nan]
+            else:
+                raise e
 
     return shift_list
 
 
 def register_framedata_list(frame_list, algorithm='cross-correlation',
                             ref_image=0, clip_output=False,
-                            cval='median', inplace=False, **kwargs):
+                            cval='median', inplace=False, skip_failure=False,
+                            **kwargs):
     """Perform registration in a framedata list.
 
     Parameters
@@ -406,6 +427,11 @@ def register_framedata_list(frame_list, algorithm='cross-correlation',
         Fill value for the empty pixels in the transformed image. If 'mean' or
         'median', the correspondent values will be computed from the image.
         Default: 'median'
+    skip_failure: bool (optional)
+        If True, the images that fail to register will be skipped. Their data
+        will be fill with the cval and all pixels mask will be set to
+        True. If False, the error will be raised.
+        Default: False
     inplace : bool (optional)
         Perform the operation inplace, modifying the original FrameData
         container. If `False`, a new container will be created.
@@ -422,13 +448,33 @@ def register_framedata_list(frame_list, algorithm='cross-correlation',
     reg_list = [None]*n
     for i in range(n):
         logger.info('Registering image %i from %i', i+1, n)
-        reg_list[i] = reg.register_framedata(frame_list[ref_image],
-                                             frame_list[i],
-                                             cval=cval, inplace=inplace)
+        try:
+            reg_list[i] = reg.register_framedata(frame_list[ref_image],
+                                                 frame_list[i],
+                                                 cval=cval, inplace=inplace)
+        except Exception as e:
+            if not skip_failure:
+                raise e
+            logger.warning('Failed to register image %i: %s', i+1, e)
+            reg_list[i] = check_framedata(frame_list[i], copy=not inplace)
+            if cval == 'median':
+                icval = np.median(reg_list[i].data)
+            elif cval == 'mean':
+                icval = np.mean(reg_list[i].data)
+            else:
+                icval = cval
+            reg_list[i].data[:] = icval
+            reg_list[i].mask[:] = True
+            reg_list[i].meta[_keywords['method']] = 'failed'
+            reg_list[i].meta[_keywords['shift_x']] = None
+            reg_list[i].meta[_keywords['shift_y']] = None
+            reg_list[i].meta[_keywords['rotation']] = None
 
     if clip_output:
-        shifts = [(i.meta['astropop registration_shift_x'],
-                   i.meta['astropop registration_shift_y']) for i in reg_list]
+        shifts = [(i.meta[_keywords['shift_x']], i.meta[_keywords['shift_y']])
+                  if i.meta[_keywords['method']] != 'failed'
+                  else (np.nan, np.nan)
+                  for i in reg_list]
         shifts = np.array(shifts)
         xslice, yslice = _get_clip_slices(shifts, reg_list[0].shape)
         logger.info('Clipping output images to section: x=%s:%s, y=%s:%s',
