@@ -86,7 +86,7 @@ def delete_array_memmap(memmap, read=True, remove=False):
         return data
 
     name = memmap.filename
-    if remove:
+    if remove and os.path.exists(name):
         del memmap
         os.remove(name)
     return data
