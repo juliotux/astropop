@@ -76,7 +76,7 @@ def match_pairs(x, y, dx, dy, tolerance=1.0):
     py = np.array(y-dy)
 
     d, ind = kd.query(list(zip(px, py)), k=1, distance_upper_bound=tolerance,
-                      n_jobs=-1)
+                      workers=-1)
 
     o = np.arange(len(x))[np.where(d <= tolerance)]
     e = np.array(ind[np.where(d <= tolerance)])
