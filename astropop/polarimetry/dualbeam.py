@@ -6,99 +6,28 @@ import numpy as np
 from astropy.modeling.fitting import LevMarLSQFitter
 from astropy.table import Table
 from scipy.spatial import cKDTree
-from astropy.modeling import custom_model
+from astropy.modeling import Fittable1DModel, Parameter
+from astropy import units
 
 from ..logger import logger
 
 
 # TODO: Reimplement normalization
-# TODO: Implement generic retarder
 # TODO: Implement quarter-wave for MBR84
-# TODO: Plotting stuff here?
 
-__all__ = ['compute_theta', 'reduced_chi2', 'estimate_dxdy', 'match_pairs',
+__all__ = ['estimate_dxdy', 'match_pairs',
            'MBR84DualBeamPolarimetry', 'SLSDualBeamPolarimetry',
            'HalfWaveModel', 'QuarterWaveModel']
 
 
-def check_shapes(func):
-    """Check if all the shapes matches between the data.
-
-    Also puts everything in np.arrays.
-    """
-    def wrapper(self, psi, ford, fext, ford_err=None,
-                fext_err=None, *args, **kwargs):
-        psi = np.array(psi)
-        ford = np.array(ford)
-        fext = np.array(fext)
-        # Shapes must match. If A==B and B==C, so A==C
-        if psi.shape != ford.shape or ford.shape != fext.shape:
-            raise ValueError('psi, ford and fext have incompatible '
-                             f'shapes {psi.shape} {ford.shape} {fext.shape}')
-
-        # Put everything in 2D arrays.
-        if psi.ndim == 1:
-            psi = np.array([psi])
-            ford = np.array([ford])
-            fext = np.array([fext])
-        elif psi.ndim != 2:
-            raise ValueError('psi, ford and fext have wrong number of '
-                             f'dimensions: {psi.ndim}')
-        # Check if errors matches
-        if ford_err is None or fext_err is None:
-            ford_err = None
-            fext_err = None
-        else:
-            ford_err = np.array(ford_err)
-            fext_err = np.array(fext_err)
-            # Both shapes must match
-            if ford_err.shape != fext_err.shape:
-                raise ValueError('Fluxes errors have inconpatible shapes. '
-                                 f'{ford_err.shape} {fext_err.shape}')
-            # Put everything in 2D arrays.
-            if ford_err.ndim == 1:
-                ford_err = np.array([ford_err])
-                fext_err = np.array([fext_err])
-
-        if ford.shape != ford_err.shape and ford_err is not None:
-            raise ValueError('Ordinary flux and error have incompatible'
-                             f' shapes {ford.shape} {ford_err.shape}')
-        if fext.shape != fext_err.shape and fext_err is not None:
-            raise ValueError('Extraodinary flux and error have incompatible '
-                             f'shapes {fext.shape} {fext_err.shape}')
-
-        return func(self, psi, ford, fext, ford_err,
-                    fext_err, *args, **kwargs)
-    wrapper.__doc__ = func.__doc__
-    return wrapper
-
-
-def reduced_chi2(psi, z, z_err, q, u, v=None, retarder='half'):
-    """Compute the reduced chi-square for a given model."""
-    if retarder == 'quarter' and v is None:
-        raise ValueError('missing value `v` of circular polarimetry.')
-
-    if retarder == 'half':
-        model = HalfWaveModel(q=q, u=u)
-        npar = 2
-    elif retarder == 'quarter':
-        model = QuarterWaveModel(q=q, u=u, v=v)
-        npar = 3
-
-    z_m = model(psi)
-    nu = len(z_m) - npar
-
-    return np.sum(np.square((z-z_m)/z_err))/nu
-
-
-def compute_theta(q, u):
+def _compute_theta(q, u):
     """Compute theta using Q and U, considering quadrants and max 180 value."""
     # numpy arctan2 already looks for quadrants and is defined in [-pi, pi]
     theta = np.degrees(0.5*np.arctan2(u, q))
     # do not allow negative values
     if theta < 0:
         theta += 180
-    return theta
+    return theta*units.degree
 
 
 def estimate_dxdy(x, y, steps=[100, 30, 5, 3], bins=30, dist_limit=100):
@@ -158,44 +87,78 @@ def match_pairs(x, y, dx, dy, tolerance=1.0):
     return result.as_array()
 
 
-def _quarter(psi, q=1.0, u=1.0, v=1.0):
-    """Polarimetry z(psi) model for quarter wavelenght retarder.
-
-    Z= Q*cos(2psi)**2 + U*sin(2psi)*cos(2psi) - V*sin(2psi)
-    psi in degrees.
-    """
-    psi = np.radians(psi)
-    psi2 = 2*psi
-    z = q*(np.cos(psi2)**2) + u*np.sin(psi2)*np.cos(psi2) - v*np.sin(psi2)
-    return z
-
-
-def _quarter_deriv(psi, q=1.0, u=1.0, v=1.0):
-    psi = np.radians(psi)
-    x = 2*psi
-    dq = np.cos(x)**2
-    du = 0.5*np.sin(2*x)
-    dv = -np.sin(2*x)
-    return (dq, du, dv)
-
-
-def _half(psi, q=1.0, u=1.0):
+class HalfWaveModel(Fittable1DModel):
     """Polarimetry z(psi) model for half wavelenght retarder.
 
     Z(I)= Q*cos(4psi(I)) + U*sin(4psi(I))
     psi in degrees.
     """
-    psi = np.radians(psi)
-    return q*np.cos(4*psi) + u*np.sin(4*psi)
+
+    q = Parameter(default=0)
+    u = Parameter(default=0)
+
+    @property
+    def p(self):
+        return np.sqrt(self.q**2 + self.u**2)
+
+    @property
+    def theta(self):
+        return _compute_theta(self.q, self.u)
+
+    @staticmethod
+    def evaluate(psi, q, u):
+        return q*np.cos(4*psi) + u*np.sin(4*psi)
+
+    @staticmethod
+    def fit_deriv(psi, q, u):
+        dq = np.cos(4*psi)
+        du = np.sin(4*psi)
+        return (dq, du)
 
 
-def _half_deriv(psi, q=1.0, u=1.0):
-    psi = np.radians(psi)
-    return (np.cos(4*psi), np.sin(4*psi))
+class QuarterWaveModel(Fittable1DModel):
+    """Polarimetry z(psi) model for quarter wavelength retarder.
 
+    Z= Q*cos(2psi)**2 + U*sin(2psi)*cos(2psi) - V*sin(2psi)
+    psi in degrees.
+    """
 
-HalfWaveModel = custom_model(_half, fit_deriv=_half_deriv)
-QuarterWaveModel = custom_model(_quarter, fit_deriv=_quarter_deriv)
+    q = Parameter(default=0)
+    u = Parameter(default=0)
+    v = Parameter(default=0)
+    zero = Parameter(default=0, unit=units.degree, fixed=True)
+
+    @property
+    def p(self):
+        return np.sqrt(self.q**2 + self.u**2)
+
+    @property
+    def theta(self):
+        return _compute_theta(self.q, self.u)
+
+    @staticmethod
+    def evaluate(x, q, u, v, zero):
+        psi = np.radians(x+zero)
+        psi2 = 2*psi
+        r = q*(np.cos(psi2)**2) + u*np.sin(psi2)*np.cos(psi2) - v*np.sin(psi2)
+        return r
+
+    @staticmethod
+    def fit_deriv(x, q, u, v, zero):
+        psi = np.radians(x+zero)
+        dq = np.cos(psi)**2
+        du = 0.5*np.sin(2*psi)
+        dv = -np.sin(2*psi)
+        return (dq, du, dv)
+
+    @property
+    def input_units(self):
+        return {self.inputs[0]: self.zero.unit}
+
+    def _parameter_units_for_data_units(self, inputs_unit, outputs_unit):
+        return {'q': outputs_unit[self.outputs[0]],
+                'u': outputs_unit[self.outputs[0]],
+                'v': outputs_unit[self.outputs[0]]}
 
 
 class DualBeamPolarimetryBase(abc.ABC):
@@ -311,7 +274,6 @@ class SLSDualBeamPolarimetry(DualBeamPolarimetryBase):
         else:
             raise ValueError(f'Retarder {self.retarder} not recognized.')
 
-    @check_shapes
     def compute(self, psi, ford, fext, ford_err=None, fext_err=None,
                 logger=None):
         """Compute the polarimetry.
@@ -394,7 +356,6 @@ class MBR84DualBeamPolarimetry(DualBeamPolarimetryBase):
                                                      positions, min_snr,
                                                      filter_negative, global_k)
 
-    @check_shapes
     def compute(self, psi, ford, fext, ford_err=None, fext_err=None,
                 logger=None):
         """Compute the polarimetry.
