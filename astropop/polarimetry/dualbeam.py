@@ -125,6 +125,11 @@ def halfwave_model(psi, q, u, zero=None):
         Stokes parameters
     zero: float (optional)
         Zero angle of the retarder position.
+
+    Return
+    ------
+    z: array_like
+        Array of polarimetry values.
     """
     if zero is not None:
         psi = psi+zero  # avoid inplace modification
