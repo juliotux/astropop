@@ -4,8 +4,9 @@
 import pytest
 import numpy as np
 from astropop.polarimetry.dualbeam import match_pairs, estimate_dxdy, \
-                                          _compute_theta
+                                          _compute_theta, quarterwave_model
 from astropy import units
+from astropy.modeling import fitting
 from astropop.testing import *
 
 
@@ -74,3 +75,70 @@ class Test_PairMatching:
         assert_equal(len(index), 10)
         assert_equal(index['o'], np.arange(0, 10))
         assert_equal(index['e'], np.arange(10, 20))
+
+
+class Test_ModelQuarter:
+    def test_model_evaluate_plain(self):
+        q = 0.0130
+        u = -0.0021
+        v = 0.03044
+        zero = 60
+        # values simulated that match IRAF pccdpack
+        expect = np.array([-0.02220249, 0.00477571, 0.02406067, 0.02974862,
+                           0.03052114, 0.02053262, -0.00637933, -0.02905695,
+                           -0.02220249, 0.00477571, 0.02406067, 0.02974862,
+                           0.03052114, 0.02053262, -0.00637933, -0.02905695])
+
+        psi = np.arange(0, 360, 22.5)
+        zi = quarterwave_model(psi, q=q, u=u, v=v, zero=zero)
+        assert_almost_equal(zi, expect)
+
+    def test_model_evaluate_quantity(self):
+        q = 0.0130
+        u = -0.0021
+        v = 0.03044
+        # values simulated that match IRAF pccdpack
+        expect = np.array([-0.02220249, 0.00477571, 0.02406067, 0.02974862,
+                           0.03052114, 0.02053262, -0.00637933, -0.02905695,
+                           -0.02220249, 0.00477571, 0.02406067, 0.02974862,
+                           0.03052114, 0.02053262, -0.00637933, -0.02905695])
+
+        psi = np.arange(0, 360, 22.5)*units.degree
+        zero = 60*units.degree
+        zi = quarterwave_model(psi, q=q, u=u, v=v, zero=zero)
+        assert_almost_equal(zi, expect)
+
+        psi = np.arange(0, 2*np.pi, np.pi/8)*units.radian
+        zero = 60*units.degree
+        zi = quarterwave_model(psi, q=q, u=u, v=v, zero=zero)
+        assert_almost_equal(zi, expect)
+
+    def test_fit(self):
+        q = 0.0130
+        u = -0.0021
+        v = 0.03044
+        zero = 60
+        psi = np.arange(0, 360.5, 22.5)
+        zi = quarterwave_model(psi, q=q, u=u, v=v, zero=zero)
+
+        # fitter = fitting.LevMarLSQFitter()
+        # m_fit = fitter(QuarterWaveModel(zero=60), pos, zi)
+        # assert_almost_equal(m_fit.q, q)
+        # assert_almost_equal(m_fit.u, u)
+        # assert_almost_equal(m_fit.v, v)
+        # assert_almost_equal(m_fit.zero, zero)
+
+    def test_fit_free_zero(self):
+        q = 0.0130
+        u = -0.0021
+        v = 0.03044
+        zero = 60
+        psi = np.arange(0, 360, 22.5)
+        zi = quarterwave_model(psi, q=q, u=u, v=v, zero=zero)
+
+        # fitter = fitting.TRFLSQFitter()
+        # m_fit = fitter(QuarterWaveModel(fixed={'zero': False}), pos, zi)
+        # assert_almost_equal(m_fit.q, q)
+        # assert_almost_equal(m_fit.u, u)
+        # assert_almost_equal(m_fit.v, v)
+        # assert_almost_equal(m_fit.zero, zero)
