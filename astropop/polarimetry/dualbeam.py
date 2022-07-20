@@ -12,11 +12,6 @@ from ..logger import logger
 from ..math.physical import QFloat
 
 
-# TODO: Reimplement normalization
-# TODO: Implement quarter-wave for MBR84
-# TODO: for future, change scipy fitting to astropy.modeling
-
-
 __all__ = ['estimate_dxdy', 'match_pairs',
            'quarterwave_model', 'halfwave_model']
 
