@@ -1,12 +1,15 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 """Compute polarimetry of dual beam polarimeters images."""
 
+import abc
 import numpy as np
+from dataclasses import dataclass
 from astropy.table import Table
 from scipy.spatial import cKDTree
 from astropy import units
 
 from ..logger import logger
+from ..math.physical import QFloat
 
 
 # TODO: Reimplement normalization
@@ -136,3 +139,123 @@ def halfwave_model(psi, q, u, zero=None):
     psi = np.radians(psi)
     zi = q*np.cos(4*psi) + u*np.sin(4*psi)
     return zi
+
+
+@dataclass
+class _DualBeamPolarimetry(abc.ABC):
+    """Base class for polarimetry computation."""
+
+    retarder: str  # 'quarterwave' or 'halfwave'
+    k: float = None  # global normalization constant
+    zero: float = None  # zero position of the retarder
+    compute_zero: bool = False  # compute the zero position
+    compute_k: bool = False  # compute the normalization constant
+    min_snr: float = None  # minimum signal-to-noise ratio
+
+    def __post_init__(self):
+        if self.retarder not in ['quarterwave', 'halfwave']:
+            raise ValueError(f"Retarder {self.retarder} unknown.")
+        if isinstance(self.zero, (QFloat, units.Quantity)):
+            self.zero = self.zero.to(units.degree).value
+        if self.k is not None and self.compute_k:
+            raise ValueError('k and compute_k cannot be used together.')
+        if self.zero is not None and self.compute_zero:
+            raise ValueError('zero and compute_zero cannot be used together.')
+
+        if self.compute_zero and self.retarder == 'halfwave':
+            raise ValueError('Half-wave retarder cannot compute zero.')
+
+        # number of positions per cicle
+        self._n_pos = 8 if self.retarder == 'quarterwave' else 4
+
+    def _calc_zi(self, f_ord, f_ext, k):
+        """Compute zi from ordinary and extraordinary fluxes."""
+        return (f_ord - f_ext*k)(f_ord + f_ext*k)
+
+    def _estimate_normalize_half(self, f_ord, f_ext):
+        """Estimate the normalization factor for halfwave retarder."""
+        return np.sum(f_ord)/np.sum(f_ext)
+
+    def _estimate_normalize_quarter(self, q):
+        """Estimate the normalization factor for quarterwave retarder."""
+        return (1+0.5*q)/(1-0.5*q)
+
+
+@dataclass
+class SLSDualBeamPolarimetry(_DualBeamPolarimetry):
+    """Polarimetry computation for Stokes Least Squares algorithm.
+
+    This method is describe in [1]_ and consists in fitting the data using
+    theoretical models. This method has the advantage of not need particular
+    sets of retarder positions and can handle missing points.
+
+    Parameters
+    ----------
+    retarder: str
+        Retarder type. Must be 'quarterwave' or 'halfwave'.
+    k: float (optional)
+        Normalization factor. If None, it is estimated from the data.
+    zero: float (optional)
+        Zero position of the retarder in degrees. If None, it is estimated
+        from the data.
+    compute_zero: bool (optional)
+        Fit zero position using the data.
+    compute_k: bool (optional)
+        Fit the normalization factor using the data.
+
+    Notes
+    -----
+    - The model fitting is performed by `~scipy.optimize.cure_fit` function,
+      using the Trust Region Reflective ``trf`` method.
+    - If ``k`` or ``zero`` arguments are passed, they won't be computed.
+      Instead, the passed values will be used.
+    - If ``compute_zero`` or ``compute_k`` are True, the values for these
+      constants will be estimated from the data.
+
+    References
+    ----------
+    .. [1] https://ui.adsabs.harvard.edu/abs/2019PASP..131b4501N
+    """
+
+
+@dataclass
+class PCCDDualBealPlarimetry(_DualBeamPolarimetry):
+    """Polarimetry computation using PCCDPACK algorithms.
+
+    PCCDPACK algorithms are described by [1]_ and [2]_.
+
+    Parameters
+    ----------
+    retarder: str
+        Retarder type. Must be 'quarterwave' or 'halfwave'.
+    k: float (optional)
+        Normalization factor. If None, it is estimated from the data.
+    zero: float (optional)
+        Zero position of the retarder in degrees. If None, it is estimated
+        from the data.
+    compute_zero: bool (optional)
+        Fit zero position using the data.
+    compute_k: bool (optional)
+        Fit the normalization factor using the data.
+
+    References
+    ----------
+    .. [1] https://ui.adsabs.harvard.edu/abs/1984PASP...96..383M
+    .. [2] https://ui.adsabs.harvard.edu/abs/1998A&A...335..979R
+    """
+
+    def _half_compute(self, psi, zi):
+        """Compute stokes parameters for halfwave retarder."""
+        n = len(psi)
+        q = (2.0/n) * np.nansum(zi*np.cos(4*np.radians(psi)))
+        u = (2.0/n) * np.nansum(zi*np.sin(4*np.radians(psi)))
+        return q, u
+
+    def _quarter_compute(self, psi, zi):
+        """Compute stokes parameters for quarterwave retarder."""
+        # FIXME: the sums is from 0 to 7, 1-cycle only
+        psi = np.radians(psi)
+        q = 1.0/3 * np.nansum(zi*np.square(np.cos(2*psi)))
+        u = np.nansum(zi*np.sin(2*psi)*np.cos(2*psi))
+        v = -1.0/4 * np.nansum(zi*np.sin(2*psi))
+        return q, u, v
