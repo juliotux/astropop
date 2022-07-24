@@ -5,11 +5,29 @@ import pytest
 import numpy as np
 from astropop.polarimetry.dualbeam import match_pairs, estimate_dxdy, \
                                           _compute_theta, quarterwave_model, \
-                                          halfwave_model
+                                          halfwave_model, \
+                                          _DualBeamPolarimetry, \
+                                          SLSDualBeamPolarimetry, \
+                                          PCCDDualBealPlarimetry
 from astropy import units
 from astropop.testing import *
 from scipy.optimize import curve_fit
 from functools import partial
+
+
+def get_flux_oe(flux, psi, k, q, u, v=None, zero=0):
+    """Get ordinary and extraordinary fluxes."""
+    if v is None:
+        zi = halfwave_model(psi, q, u, zero=zero)
+    else:
+        zi = quarterwave_model(psi, q, u, v, zero=zero)
+    fo = flux*(1+zi)/2
+    fe = flux*(1-zi)/2
+    return fo, fe/k
+
+
+class DummyPolarimeter(_DualBeamPolarimetry):
+    pass
 
 
 def test_compute_theta():
@@ -189,3 +207,110 @@ class Test_ModelHalf:
                              bounds=([-1, -1], [1, 1]),
                              method='trf')
         assert_almost_equal(fit, [q, u], decimal=3)
+
+
+class Test_DualBeamPolarimetry:
+    @pytest.mark.parametrize('kwargs', [{}, {'zero': 60},
+                                        {'zero': 60, 'k': 1.2},
+                                        {'zero': 60, 'k': 1.2, 'min_snr': 80},
+                                        {'k': 1.0}, {'min_snr': 80},
+                                        {'compute_k': True}])
+    def test_initialize_ok(self, kwargs):
+        pol = DummyPolarimeter('halfwave', **kwargs)
+        assert_equal(pol.retarder, 'halfwave')
+        if 'k' in kwargs:
+            assert_equal(pol.k, kwargs['k'])
+        else:
+            assert_is_none(pol.k)
+        if 'zero' in kwargs:
+            assert_equal(pol.zero, kwargs['zero'])
+        else:
+            assert_is_none(pol.zero)
+        if 'min_snr' in kwargs:
+            assert_equal(pol.min_snr, kwargs['min_snr'])
+        else:
+            assert_is_none(pol.min_snr)
+        if 'compute_k' in kwargs:
+            assert_equal(pol.compute_k, kwargs['compute_k'])
+        else:
+            assert_false(pol.compute_k)
+
+    def test_initialize_compute_zero(self):
+        # quarterwae ok
+        pol = DummyPolarimeter('quarterwave', compute_zero=True)
+        with pytest.raises(ValueError, match='Half-wave retarder cannot '
+                           'compute zero.'):
+            DummyPolarimeter('halfwave', compute_zero=True)
+
+    def test_initialize_error_redundancy(self):
+        with pytest.raises(ValueError, match='k and compute_k cannot be used '
+                           'together.'):
+            DummyPolarimeter('halfwave', k=1.2, compute_k=True)
+        with pytest.raises(ValueError, match='zero and compute_zero cannot be'
+                           ' used together.'):
+            DummyPolarimeter('halfwave', zero=60, compute_zero=True)
+
+    def test_initialize_error_retarder(self):
+        with pytest.raises(ValueError, match="Retarder dummy unknown."):
+            DummyPolarimeter('dummy')
+
+    def test_initialize_zero_quantity(self):
+        pol = DummyPolarimeter('halfwave', zero=60*units.degree)
+        assert_equal(pol.zero, 60)
+
+    def test_initialize_n_pos(self):
+        pol = DummyPolarimeter('halfwave')
+        assert_equal(pol._n_pos, 4)
+        pol = DummyPolarimeter('quarterwave')
+        assert_equal(pol._n_pos, 8)
+
+    def test_estimate_normalize_half_ok(self):
+        pol = DummyPolarimeter('halfwave')
+        psi = np.arange(0, 360, 22.5)
+        flux_o, flux_e = get_flux_oe(1e5, psi, k=1.2, q=0.0130,
+                                     u=-0.021, zero=60)
+        k = pol._estimate_normalize_half(psi, flux_o, flux_e)
+        assert_almost_equal(k, 1.2)
+
+    def test_estimate_normalize_half_error(self):
+        pol = DummyPolarimeter('halfwave')
+        psi = np.arange(0, 360, 22.5)
+
+        flux_o, flux_e = get_flux_oe(1e5, psi, k=1.2, q=0.0130,
+                                     u=-0.021, zero=60)
+        flux_o[np.where(psi // 22.5 == 0)] = np.nan
+        with pytest.raises(ValueError, match='Could not estimate the '
+                           'normalization factor.'):
+            pol._estimate_normalize_half(psi, flux_o, flux_e)
+
+        flux_o, flux_e = get_flux_oe(1e5, psi, k=1.2, q=0.0130,
+                                     u=-0.021, zero=60)
+        flux_e[np.where(psi // 22.5 == 0)] = np.nan
+        with pytest.raises(ValueError, match='Could not estimate the '
+                           'normalization factor.'):
+            pol._estimate_normalize_half(psi, flux_o, flux_e)
+
+    def test_estimate_normalize_quarter_ok(self):
+        q = 0.0130
+        pol = DummyPolarimeter('quarterwave')
+        k = pol._estimate_normalize_quarter(q)
+        assert_almost_equal(k, (1+0.5*q)/(1-0.5*q))
+
+    def test_check_positions(self):
+        pol = DummyPolarimeter('halfwave')
+        pol._check_positions(np.arange(0, 360, 22.5))
+
+        psi = np.arange(0, 360, 22.5)
+        psi[2] = 45.2
+        with pytest.raises(ValueError, match="Retarder positions must be "
+                           "multiple of 22.5 deg"):
+            pol._check_positions(psi)
+
+    def test_calc_zi(self):
+        pol = DummyPolarimeter('halfwave')
+        psi = np.arange(0, 360, 22.5)
+        flux_o, flux_e = get_flux_oe(1e5, psi, k=1.2, q=0.0130,
+                                     u=-0.021, zero=60)
+        expect = halfwave_model(psi, q=0.0130, u=-0.021, zero=60)
+        zi = pol._calc_zi(flux_o, flux_e, k=1.2)
+        assert_almost_equal(zi, expect)

@@ -146,6 +146,7 @@ class _DualBeamPolarimetry(abc.ABC):
     compute_zero: bool = False  # compute the zero position
     compute_k: bool = False  # compute the normalization constant
     min_snr: float = None  # minimum signal-to-noise ratio
+    psi_deviation: float = 0.1  # max deviation of retarder position
 
     def __post_init__(self):
         if self.retarder not in ['quarterwave', 'halfwave']:
@@ -163,12 +164,32 @@ class _DualBeamPolarimetry(abc.ABC):
         # number of positions per cicle
         self._n_pos = 8 if self.retarder == 'quarterwave' else 4
 
+    def _check_positions(self, psi):
+        """Check if positions are in the correct order."""
+        devs = np.abs(psi/22.5 - np.round(psi/22.5, 0))*22.5
+        if np.any(devs > self.psi_deviation):
+            raise ValueError("Retarder positions must be multiple of 22.5 deg")
+
     def _calc_zi(self, f_ord, f_ext, k):
         """Compute zi from ordinary and extraordinary fluxes."""
-        return (f_ord - f_ext*k)(f_ord + f_ext*k)
+        f_ord = np.array(f_ord, dtype=float)
+        f_ext = np.array(f_ext, dtype=float)
+        return (f_ord - f_ext*k)/(f_ord + f_ext*k)
 
-    def _estimate_normalize_half(self, f_ord, f_ext):
+    def _estimate_normalize_half(self, psi, f_ord, f_ext):
         """Estimate the normalization factor for halfwave retarder."""
+        pos_in_cycle = np.mod(np.floor_divide(psi, 22.5), self._n_pos)
+        pos_in_cycle = pos_in_cycle.astype(int)
+        ford_mean = np.full(self._n_pos, np.nan)
+        fext_mean = np.full(self._n_pos, np.nan)
+
+        for i in range(self._n_pos):
+            ford_mean[i] = np.mean(f_ord[pos_in_cycle == i])
+            fext_mean[i] = np.mean(f_ext[pos_in_cycle == i])
+
+        if np.any(np.isnan(ford_mean)) or np.any(np.isnan(fext_mean)):
+            raise ValueError('Could not estimate the normalization factor.')
+
         return np.sum(f_ord)/np.sum(f_ext)
 
     def _estimate_normalize_quarter(self, q):
@@ -190,13 +211,22 @@ class SLSDualBeamPolarimetry(_DualBeamPolarimetry):
         Retarder type. Must be 'quarterwave' or 'halfwave'.
     k: float (optional)
         Normalization factor. If None, it is estimated from the data.
+        Default is None.
     zero: float (optional)
         Zero position of the retarder in degrees. If None, it is estimated
-        from the data.
+        from the data. Defult is None.
     compute_zero: bool (optional)
-        Fit zero position using the data.
+        Fit zero position using the data. Default is False. Conflicts with
+        ``zero`` argument.
     compute_k: bool (optional)
-        Fit the normalization factor using the data.
+        Fit the normalization factor using the data. Default is False.
+        Conflicts with ``k`` argument.
+    min_snr: float (optional)
+        Minimum signal-to-noise ratio. Points with lower SNR will be discarded.
+        Default is None.
+    psi_deviation: float (optional)
+        Maximum deviation of the psi position from the sequence multiple
+        of 22.5 degrees. Default is 0.1 degrees.
 
     Notes
     -----
