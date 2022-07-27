@@ -72,15 +72,9 @@ class Test_QFloat_UnitsHandling:
     def test_qfloat_same_unit_array(self):
         # like for single values, everything must run as arrays
         qf1 = QFloat(1.0, 0.1, 'm')
-        qf2 = QFloat(np.arange(0, 2000, 100),
-                    np.arange(0, 100, 5),
-                    'cm')
-        qf3 = QFloat([120, 240],
-                    [0.3, 0.6],
-                    's')
-        qf4 = QFloat([2, 10],
-                    [0.01, 0.02],
-                    'min')
+        qf2 = QFloat(np.arange(0, 2000, 100), np.arange(0, 100, 5), 'cm')
+        qf3 = QFloat([120, 240], [0.3, 0.6], 's')
+        qf4 = QFloat([2, 10], [0.01, 0.02], 'min')
 
         # Simplre conversion
         qf_1, qf_2 = same_unit(qf1, qf2, self.test_qfloat_same_unit_array)
@@ -187,28 +181,28 @@ class Test_QFloat_Repr:
         n = np.array([1, 1, 1, 1.01, 1.001, 1.006])
         s = np.array([0.1, 0.01, 1.0, 0.01, 0.01, 0.01])
         assert_equal(repr(QFloat(n, s, 'm')),
-                    '<QFloat\narray([1.0+-0.1, 1.00+-0.01, 1+-1, 1.01+-0.01,'
-                    ' 1.00+-0.01, 1.01+-0.01],\n      dtype=object)\nunit=m>')
+                     '<QFloat\narray([1.0+-0.1, 1.00+-0.01, 1+-1, 1.01+-0.01,'
+                     ' 1.00+-0.01, 1.01+-0.01],\n      dtype=object)\nunit=m>')
 
         qf = QFloat([1, 2, 3, 4, 5], [0.1, 0.2, 0.3, 0.4, 0.5], 'm')
         assert_equal(repr(qf),
-                    '<QFloat\narray([1.0+-0.1, 2.0+-0.2, 3.0+-0.3, 4.0+-0.4, 5.0'
-                    '+-0.5], dtype=object)\nunit=m>')
+                     '<QFloat\narray([1.0+-0.1, 2.0+-0.2, 3.0+-0.3, 4.0+-0.4, 5.0'
+                     '+-0.5], dtype=object)\nunit=m>')
 
         # very large array
         n = np.arange(0, 10000).reshape((100, 100))
         s = n*0.01
         qf = QFloat(n, s, 's')
         assert_equal(repr(qf),
-                    '<QFloat\narray([[0+-0.0, 1.00+-0.01, 2.00+-0.02, ..., 97+-1'
-                    ', 98+-1, 99+-1],\n       [100+-1, 101+-1, 102+-1, ..., 197+'
-                    '-2, 198+-2, 199+-2],\n       [200+-2, 201+-2, 202+-2, ..., '
-                    '297+-3, 298+-3, 299+-3],\n       ...,\n       [9700+-100, 9'
-                    '700+-100, 9700+-100, ..., 9800+-100, 9800+-100,\n        98'
-                    '00+-100],\n       [9800+-100, 9800+-100, 9800+-100, ..., 99'
-                    '00+-100, 9900+-100,\n        9900+-100],\n       [9900+-100'
-                    ', 9900+-100, 9900+-100, ..., 10000+-100, 10000+-100,\n     '
-                    '   10000+-100]], dtype=object)\nunit=s>')
+                     '<QFloat\narray([[0+-0.0, 1.00+-0.01, 2.00+-0.02, ..., 97+-1'
+                     ', 98+-1, 99+-1],\n       [100+-1, 101+-1, 102+-1, ..., 197+'
+                     '-2, 198+-2, 199+-2],\n       [200+-2, 201+-2, 202+-2, ..., '
+                     '297+-3, 298+-3, 299+-3],\n       ...,\n       [9700+-100, 9'
+                     '700+-100, 9700+-100, ..., 9800+-100, 9800+-100,\n        98'
+                     '00+-100],\n       [9800+-100, 9800+-100, 9800+-100, ..., 99'
+                     '00+-100, 9900+-100,\n        9900+-100],\n       [9900+-100'
+                     ', 9900+-100, 9900+-100, ..., 10000+-100, 10000+-100,\n     '
+                     '   10000+-100]], dtype=object)\nunit=s>')
 
 
 class Test_QFloat_Operators:
@@ -304,19 +298,14 @@ class Test_QFloat_Operators:
         qf4 = QFloat(np.ones(10), -np.ones(10)*0.1, 'm')
         assert_equal(qf4.uncertainty, np.ones(10)*0.1)
 
-    @pytest.mark.parametrize('value,expect', [(QFloat(1.0, 0.1, 'm'),
-                                            QFloat(1.0, 0.1, 'm')),
-                                            (1, QFloat(1.0, 0, None)),
-                                            (np.array([1, 2, 3]),
-                                            QFloat([1, 2, 3], unit=None)),
-                                            ('string', 'raise'),
-                                            (None, 'raise'),
-                                            (UnitsError, 'raise'),
-                                            (1.0*units.m,
-                                            QFloat(1.0, 0.0, 'm')),
-                                            (FrameData(1.0, 'm', 'f8', 0.1),
-                                            QFloat(1.0, 0.1, 'm'))
-                                            ])
+    @pytest.mark.parametrize('value,expect', [(QFloat(1.0, 0.1, 'm'), QFloat(1.0, 0.1, 'm')),
+                                              (1, QFloat(1.0, 0, None)),
+                                              (np.array([1, 2, 3]), QFloat([1, 2, 3], unit=None)),
+                                              ('string', 'raise'),
+                                              (None, 'raise'),
+                                              (UnitsError, 'raise'),
+                                              (1.0*units.m, QFloat(1.0, 0.0, 'm')),
+                                              (FrameData(1.0, 'm', 'f8', 0.1), QFloat(1.0, 0.1, 'm'))])
     def test_qfloat_converttoqfloat(self, value, expect):
         if expect == 'raise':
             with pytest.raises(Exception):
@@ -407,9 +396,7 @@ class Test_QFloat_Operators:
 
     def test_qfloat_getitem(self):
         # simple array
-        qf = QFloat([1, 2, 3, 4, 5],
-                    [0.1, 0.2, 0.3, 0.4, 0.5],
-                    's')
+        qf = QFloat([1, 2, 3, 4, 5], [0.1, 0.2, 0.3, 0.4, 0.5], 's')
 
         qf1 = qf[0]
         assert_equal(qf1.nominal, 1)
@@ -436,8 +423,7 @@ class Test_QFloat_Operators:
 
         # 2D array
         qf = QFloat(np.arange(1, 17, 1).reshape((4, 4)),
-                    np.arange(1, 17, 1).reshape((4, 4))*0.01,
-                    'm')
+                    np.arange(1, 17, 1).reshape((4, 4))*0.01, 'm')
 
         qfrow = qf[0]
         assert_equal(qfrow.nominal, [1, 2, 3, 4])
@@ -477,9 +463,7 @@ class Test_QFloat_Operators:
 
     def test_qfloat_setitem(self):
         # simple array
-        qf = QFloat([1, 2, 3, 4, 5],
-                    [0.1, 0.2, 0.3, 0.4, 0.5],
-                    's')
+        qf = QFloat([1, 2, 3, 4, 5], [0.1, 0.2, 0.3, 0.4, 0.5], 's')
         qf[0] = QFloat(10, 0.5, 's')
         qf[-1] = QFloat(-10, unit='min')
         qf[2:4] = QFloat(1, 0.3, 's')
@@ -502,14 +486,11 @@ class Test_QFloat_Operators:
         qf[:, 0] = QFloat(np.arange(1, 5, 1), [0.1, 0.3, 0.9, 0.4], 'm')
         qf[2, 2] = QFloat(1000, 10, 'cm')
         qf[2:, 2:] = QFloat(20, 0.66, 'm')
-        assert_equal(qf.nominal, [[1, 6, 7, 8],
-                                [2, 6, 7, 8],
-                                [3, 10, 20, 20],
-                                [4, 14, 20, 20]])
+        assert_equal(qf.nominal, [[1, 6, 7, 8], [2, 6, 7, 8], [3, 10, 20, 20], [4, 14, 20, 20]])
         assert_almost_equal(qf.uncertainty, [[0.1, 0.4, 0.5, 0.6],
-                                            [0.3, 0.06, 0.07, 0.08],
-                                            [0.9, 0.1, 0.66, 0.66],
-                                            [0.4, 0.14, 0.66, 0.66]])
+                                             [0.3, 0.06, 0.07, 0.08],
+                                             [0.9, 0.1, 0.66, 0.66],
+                                             [0.4, 0.14, 0.66, 0.66]])
         assert_equal(qf.unit, units.m)
 
         with pytest.raises(IndexError):
@@ -658,49 +639,37 @@ class Test_QFloat_Add:
             qf1 + qf4
 
     def test_qfloat_math_add_array(self):
-        qf1 = QFloat([1, 2, 3, 4],
-                    [0.01, 0.02, 0.01, 0.02],
-                    'm')
-        qf2 = QFloat([150, 250, 50, 550],
-                    [0.1, 5, 0.4, 2],
-                    'cm')
+        qf1 = QFloat([1, 2, 3, 4], [0.01, 0.02, 0.01, 0.02], 'm')
+        qf2 = QFloat([150, 250, 50, 550], [0.1, 5, 0.4, 2], 'cm')
         qf3 = QFloat(1, 0.01, 'm')
         qf4 = QFloat(10, 0.1, None)
         qf5 = QFloat(60, 0.001, 's')
 
         res1 = qf1 + qf2
         assert_equal(res1.nominal, [2.5, 4.5, 3.5, 9.5])
-        assert_almost_equal(res1.uncertainty, [0.01004987562112089,
-                                            0.05385164807134505,
-                                            0.010770329614269008,
-                                            0.0282842712474619])
+        assert_almost_equal(res1.uncertainty, [0.01004987562112089, 0.05385164807134505,
+                                               0.010770329614269008, 0.0282842712474619])
         assert_equal(res1.unit, units.m)
 
         # same as above, but in cm
         res2 = qf2 + qf1
         assert_equal(res2.nominal, [250, 450, 350, 950])
-        assert_almost_equal(res2.uncertainty, [1.004987562112089,
-                                            5.385164807134505,
-                                            1.0770329614269008,
-                                            2.82842712474619])
+        assert_almost_equal(res2.uncertainty, [1.004987562112089, 5.385164807134505,
+                                               1.0770329614269008, 2.82842712474619])
         assert_equal(res2.unit, units.cm)
 
         # Numpy behavior is to sum arrays with single numbers
         res3 = qf1 + qf3
         assert_equal(res3.nominal, [2.0, 3.0, 4.0, 5.0])
-        assert_almost_equal(res3.uncertainty, [0.01414213562373095,
-                                            0.022360679774997897,
-                                            0.01414213562373095,
-                                            0.022360679774997897])
+        assert_almost_equal(res3.uncertainty, [0.01414213562373095, 0.022360679774997897,
+                                               0.01414213562373095, 0.022360679774997897])
         assert_equal(res3.unit, units.m)
 
         # So, it should sum numbers with arrays
         res4 = qf3 + qf1
         assert_equal(res4.nominal, [2.0, 3.0, 4.0, 5.0])
-        assert_almost_equal(res4.uncertainty, [0.01414213562373095,
-                                            0.022360679774997897,
-                                            0.01414213562373095,
-                                            0.022360679774997897])
+        assert_almost_equal(res4.uncertainty, [0.01414213562373095, 0.022360679774997897,
+                                               0.01414213562373095, 0.022360679774997897])
         assert_equal(res4.unit, units.m)
 
         # Should fail with incompatible units
@@ -783,16 +752,12 @@ class Test_QFloat_Add:
         assert_equal(id(qf), i)
 
         # Arrays
-        qf = QFloat([1, 2, 3, 4],
-                    [0.01, 0.02, 0.03, 0.04],
-                    'cm')
+        qf = QFloat([1, 2, 3, 4], [0.01, 0.02, 0.03, 0.04], 'cm')
         i = id(qf)
         qf += QFloat(1, 0.01, 'cm')
         assert_equal(qf.nominal, [2, 3, 4, 5])
-        assert_almost_equal(qf.uncertainty, [0.01414213562373095,
-                                            0.022360679774997897,
-                                            0.03162277660168379,
-                                            0.04123105625617661])
+        assert_almost_equal(qf.uncertainty, [0.01414213562373095, 0.022360679774997897,
+                                             0.03162277660168379, 0.04123105625617661])
         assert_equal(qf.unit, units.cm)
         assert_equal(id(qf), i)
 
@@ -827,49 +792,37 @@ class Test_QFloat_Sub:
             qf1 - qf4
 
     def test_qfloat_math_sub_array(self):
-        qf1 = QFloat([1, 2, 3, 4],
-                    [0.01, 0.02, 0.01, 0.02],
-                    'm')
-        qf2 = QFloat([50, 40, 30, 550],
-                    [0.1, 5, 0.4, 2],
-                    'cm')
+        qf1 = QFloat([1, 2, 3, 4], [0.01, 0.02, 0.01, 0.02], 'm')
+        qf2 = QFloat([50, 40, 30, 550], [0.1, 5, 0.4, 2], 'cm')
         qf3 = QFloat(1, 0.01, 'm')
         qf4 = QFloat(10, 0.1, None)
         qf5 = QFloat(60, 0.001, 's')
 
         res1 = qf1 - qf2
         assert_equal(res1.nominal, [0.5, 1.6, 2.7, -1.5])
-        assert_almost_equal(res1.uncertainty, [0.01004987562112089,
-                                            0.05385164807134505,
-                                            0.010770329614269008,
-                                            0.0282842712474619])
+        assert_almost_equal(res1.uncertainty, [0.01004987562112089, 0.05385164807134505,
+                                               0.010770329614269008, 0.0282842712474619])
         assert_equal(res1.unit, units.m)
 
         # same as above, but in cm
         res2 = qf2 - qf1
         assert_equal(res2.nominal, [-50, -160, -270, 150])
-        assert_almost_equal(res2.uncertainty, [1.004987562112089,
-                                            5.385164807134505,
-                                            1.0770329614269008,
-                                            2.82842712474619])
+        assert_almost_equal(res2.uncertainty, [1.004987562112089, 5.385164807134505,
+                                               1.0770329614269008, 2.82842712474619])
         assert_equal(res2.unit, units.cm)
 
         # Numpy behavior is to sum arrays with single numbers
         res3 = qf1 - qf3
         assert_equal(res3.nominal, [0.0, 1.0, 2.0, 3.0])
-        assert_almost_equal(res3.uncertainty, [0.01414213562373095,
-                                            0.022360679774997897,
-                                            0.01414213562373095,
-                                            0.022360679774997897])
+        assert_almost_equal(res3.uncertainty, [0.01414213562373095, 0.022360679774997897,
+                                               0.01414213562373095, 0.022360679774997897])
         assert_equal(res3.unit, units.m)
 
         # So, it should sum numbers with arrays
         res4 = qf3 - qf1
         assert_equal(res4.nominal, [0.0, -1, -2.0, -3.0])
-        assert_almost_equal(res4.uncertainty, [0.01414213562373095,
-                                            0.022360679774997897,
-                                            0.01414213562373095,
-                                            0.022360679774997897])
+        assert_almost_equal(res4.uncertainty, [0.01414213562373095, 0.022360679774997897,
+                                               0.01414213562373095, 0.022360679774997897])
         assert_equal(res4.unit, units.m)
 
         # Should fail with incompatible units
@@ -952,16 +905,14 @@ class Test_QFloat_Sub:
         assert_equal(id(qf), i)
 
         # Arrays
-        qf = QFloat([1, 2, 3, 4],
-                    [0.01, 0.02, 0.03, 0.04],
-                    'cm')
+        qf = QFloat([1, 2, 3, 4], [0.01, 0.02, 0.03, 0.04], 'cm')
         i = id(qf)
         qf -= QFloat(1, 0.01, 'cm')
         assert_equal(qf.nominal, [0, 1, 2, 3])
         assert_almost_equal(qf.uncertainty, [0.01414213562373095,
-                                            0.022360679774997897,
-                                            0.03162277660168379,
-                                            0.04123105625617661])
+                                             0.022360679774997897,
+                                             0.03162277660168379,
+                                             0.04123105625617661])
         assert_equal(qf.unit, units.cm)
         assert_equal(id(qf), i)
 
@@ -1045,29 +996,20 @@ class Test_QFloat_Mul:
 
         res1 = qf1 * qf1
         assert_equal(res1.nominal, [0, 1, 4, 9, 16])
-        assert_almost_equal(res1.uncertainty, [0,
-                                            0.01414213562373095,
-                                            0.0565685424949238,
-                                            0.12727922061357855,
-                                            0.2262741699796952])
+        assert_almost_equal(res1.uncertainty, [0, 0.01414213562373095, 0.0565685424949238,
+                                               0.12727922061357855, 0.2262741699796952])
         assert_equal(res1.unit, units.m*units.m)
 
         res2 = qf1 * qf2
         assert_equal(res2.nominal, [0, 20, 40, 60, 80])
-        assert_almost_equal(res2.uncertainty, [0,
-                                            0.223606797749979,
-                                            0.447213595499958,
-                                            0.6708203932499369,
-                                            0.894427190999916])
+        assert_almost_equal(res2.uncertainty, [0, 0.223606797749979, 0.447213595499958,
+                                               0.6708203932499369, 0.894427190999916])
         assert_equal(res2.unit, units.m*units.s)
         # inverse same
         res3 = qf2 * qf1
         assert_equal(res3.nominal, [0, 20, 40, 60, 80])
-        assert_almost_equal(res3.uncertainty, [0,
-                                            0.223606797749979,
-                                            0.447213595499958,
-                                            0.6708203932499369,
-                                            0.894427190999916])
+        assert_almost_equal(res3.uncertainty, [0, 0.223606797749979, 0.447213595499958,
+                                               0.6708203932499369, 0.894427190999916])
         assert_equal(res3.unit, units.m*units.s)
 
         # with numbers
@@ -1087,14 +1029,10 @@ class Test_QFloat_Mul:
                                     [80, 100, 120, 140],
                                     [160, 180, 200, 220],
                                     [240, 260, 280, 300]])
-        assert_almost_equal(res6.uncertainty, [[0, 0.10002,
-                                                0.20004, 0.30005999],
-                                            [0.40007999, 0.50009999,
-                                                0.60011999, 0.70013999],
-                                            [0.80015998, 0.90017998,
-                                                1.00019998, 1.10021998],
-                                            [1.20023998, 1.30025997,
-                                                1.40027997, 1.50029997]])
+        assert_almost_equal(res6.uncertainty, [[0, 0.10002, 0.20004, 0.30005999],
+                                               [0.40007999, 0.50009999, 0.60011999, 0.70013999],
+                                               [0.80015998, 0.90017998, 1.00019998, 1.10021998],
+                                               [1.20023998, 1.30025997, 1.40027997, 1.50029997]])
         assert_equal(res6.unit, units.km*units.s)
         # inverse same
         res7 = qf3 * qf2
@@ -1102,14 +1040,10 @@ class Test_QFloat_Mul:
                                     [80, 100, 120, 140],
                                     [160, 180, 200, 220],
                                     [240, 260, 280, 300]])
-        assert_almost_equal(res7.uncertainty, [[0, 0.10002, 0.20004,
-                                                0.30005999],
-                                            [0.40007999, 0.50009999,
-                                                0.60011999, 0.70013999],
-                                            [0.80015998, 0.90017998,
-                                                1.00019998, 1.10021998],
-                                            [1.20023998, 1.30025997,
-                                                1.40027997, 1.50029997]])
+        assert_almost_equal(res7.uncertainty, [[0, 0.10002, 0.20004, 0.30005999],
+                                               [0.40007999, 0.50009999, 0.60011999, 0.70013999],
+                                               [0.80015998, 0.90017998, 1.00019998, 1.10021998],
+                                               [1.20023998, 1.30025997, 1.40027997, 1.50029997]])
         assert_equal(res7.unit, units.km*units.s)
 
         # 2D array with numbers
@@ -1311,9 +1245,9 @@ class Test_QFloat_Div:
         qf2 = QFloat(np.arange(1, 5), np.arange(1, 5)*0.01, 's')
         qf3 = QFloat(2, 0.1, 'min')
         qf4 = QFloat(np.arange(1, 17).reshape((4, 4)),
-                    np.arange(1, 17).reshape((4, 4))*0.01, 'km')
+                     np.arange(1, 17).reshape((4, 4))*0.01, 'km')
         qf5 = QFloat(np.arange(1, 17).reshape((4, 4))*4.5,
-                    np.arange(1, 17).reshape((4, 4))*0.01, 'h')
+                     np.arange(1, 17).reshape((4, 4))*0.01, 'h')
 
         res1 = qf1 / qf2
         assert_equal(res1.nominal, np.ones(4)*2)
@@ -1377,9 +1311,9 @@ class Test_QFloat_Div:
         res6 = qf3 / qf2
         assert_almost_equal(res6.nominal, [2, 1, 2/3, 0.5])
         assert_almost_equal(res6.uncertainty, [0.10198039027185571,
-                                            0.050990195135927854,
-                                            0.033993463423951896,
-                                            0.025495097567963927])
+                                               0.050990195135927854,
+                                               0.033993463423951896,
+                                               0.025495097567963927])
         assert_equal(res6.unit, units.min/units.s)
         res6f = qf3 // qf2
         assert_equal(res6f.nominal, [2, 1, 0, 0])
@@ -1474,48 +1408,48 @@ class Test_QFloat_Div:
         qf3 /= qf1
         assert_almost_equal(qf3.nominal, [200, 100, 5])
         assert_almost_equal(qf3.uncertainty, [3.370624736026114,
-                                            1.699673171197595,
-                                            0.08498365855987974])
+                                              1.699673171197595,
+                                              0.08498365855987974])
         assert_equal(qf3.unit, units.kg/units.s)
         assert_equal(i, id(qf3))
         # array / array
         qf3 /= qf4
         assert_almost_equal(qf3.nominal, [20, 5, 50])
         assert_almost_equal(qf3.uncertainty, [0.39193253387682825,
-                                            0.13123346456686352,
-                                            5.071708018234312])
+                                              0.13123346456686352,
+                                              5.071708018234312])
         assert_equal(qf3.unit, units.kg/units.s)
         assert_equal(i, id(qf3))
         # array / number
         qf3 /= 5
         assert_almost_equal(qf3.nominal, [4, 1, 10])
         assert_almost_equal(qf3.uncertainty, [0.07838650677536566,
-                                            0.026246692913372706,
-                                            1.0143416036468624])
+                                              0.026246692913372706,
+                                              1.0143416036468624])
         assert_equal(qf3.unit, units.kg/units.s)
         assert_equal(i, id(qf3))
         # array  / unit
         qf3 /= units.m
         assert_almost_equal(qf3.nominal, [4, 1, 10])
         assert_almost_equal(qf3.uncertainty, [0.07838650677536566,
-                                            0.026246692913372706,
-                                            1.0143416036468624])
+                                              0.026246692913372706,
+                                              1.0143416036468624])
         assert_equal(qf3.unit, units.kg/(units.s*units.m))
         assert_equal(i, id(qf3))
         # array / string
         qf3 /= 's'
         assert_almost_equal(qf3.nominal, [4, 1, 10])
         assert_almost_equal(qf3.uncertainty, [0.07838650677536566,
-                                            0.026246692913372706,
-                                            1.0143416036468624])
+                                              0.026246692913372706,
+                                              1.0143416036468624])
         assert_equal(qf3.unit, units.kg/(units.s*units.s*units.m))
         assert_equal(i, id(qf3))
         # array / quantity
         qf3 /= 1/units.kg
         assert_almost_equal(qf3.nominal, [4, 1, 10])
         assert_almost_equal(qf3.uncertainty, [0.07838650677536566,
-                                            0.026246692913372706,
-                                            1.0143416036468624])
+                                              0.026246692913372706,
+                                              1.0143416036468624])
         assert_equal(qf3.unit, units.kg*units.kg/(units.s*units.s*units.m))
         assert_equal(i, id(qf3))
 
@@ -1715,8 +1649,8 @@ class Test_QFloat_Pow:
         res1 = qf1 ** qf3
         assert_almost_equal(res1.nominal, np.sqrt([2, 3, 4]))
         assert_almost_equal(res1.uncertainty, [0.03668910741328604,
-                                            0.06078995000472617,
-                                            0.07996077052073174])
+                                               0.06078995000472617,
+                                               0.07996077052073174])
         assert_equal(res1.unit, units.m**0.5)
 
         with pytest.raises(ValueError):
@@ -1730,8 +1664,8 @@ class Test_QFloat_Pow:
         res4 = qf1 ** 0.5
         assert_almost_equal(res4.nominal, np.sqrt([2, 3, 4]))
         assert_almost_equal(res4.uncertainty, [0.03535533905932738,
-                                            0.057735026918962574,
-                                            0.075])
+                                               0.057735026918962574,
+                                               0.075])
         assert_equal(res4.unit, units.m**0.5)
 
         # only dimensionless quantity
@@ -1825,36 +1759,36 @@ class Test_QFloat_Pow:
         qf5 **= qf3
         assert_almost_equal(qf5.nominal, np.sqrt([2, 3, 4]))
         assert_almost_equal(qf5.uncertainty, [0.03668910741328604,
-                                            0.06078995000472617,
-                                            0.07996077052073174])
+                                              0.06078995000472617,
+                                              0.07996077052073174])
         assert_equal(qf5.unit, units.m**0.5)
         assert_equal(i, id(qf5))
         qf5 **= qf4
         assert_almost_equal(qf5.nominal, np.square([2, 3, 4]))
         assert_almost_equal(qf5.uncertainty, [0.4153212953387695,
-                                            1.2644622006872943,
-                                            2.5611469725808176])
+                                              1.2644622006872943,
+                                              2.5611469725808176])
         assert_equal(qf5.unit, units.m**2)
         assert_equal(i, id(qf5))
         qf5 **= 3
         assert_almost_equal(qf5.nominal, [64, 729, 4096])
         assert_almost_equal(qf5.uncertainty, [19.935422176260943,
-                                            307.2643147670124,
-                                            1966.960874942068])
+                                              307.2643147670124,
+                                              1966.960874942068])
         assert_equal(qf5.unit, units.m**6)
         assert_equal(i, id(qf5))
         qf5 **= ''
         assert_almost_equal(qf5.nominal, [64, 729, 4096])
         assert_almost_equal(qf5.uncertainty, [19.935422176260943,
-                                            307.2643147670124,
-                                            1966.960874942068])
+                                              307.2643147670124,
+                                              1966.960874942068])
         assert_equal(qf5.unit, units.m**6)
         assert_equal(i, id(qf5))
         qf5 **= units.dimensionless_unscaled
         assert_almost_equal(qf5.nominal, [64, 729, 4096])
         assert_almost_equal(qf5.uncertainty, [19.935422176260943,
-                                            307.2643147670124,
-                                            1966.960874942068])
+                                              307.2643147670124,
+                                              1966.960874942068])
         assert_equal(qf5.unit, units.m**6)
         assert_equal(i, id(qf5))
 
@@ -1873,9 +1807,7 @@ class Test_QFloat_PosNeg:
         assert_equal(qfn2.uncertainty, 0.1)
         assert_equal(qfn2.unit, units.m)
 
-        qf3 = QFloat([-2, 3, -5, 10],
-                    [0.1, 0.4, 0.3, -0.1],
-                    'm')
+        qf3 = QFloat([-2, 3, -5, 10], [0.1, 0.4, 0.3, -0.1], 'm')
         qfn3 = -qf3
         assert_equal(qfn3.nominal, [2, -3, 5, -10])
         assert_equal(qfn3.uncertainty, [0.1, 0.4, 0.3, 0.1])
@@ -1894,9 +1826,7 @@ class Test_QFloat_PosNeg:
         assert_equal(qfn2.uncertainty, 0.1)
         assert_equal(qfn2.unit, units.m)
 
-        qf3 = QFloat([-2, 3, -5, 10],
-                    [0.1, 0.4, 0.3, -0.1],
-                    'm')
+        qf3 = QFloat([-2, 3, -5, 10], [0.1, 0.4, 0.3, -0.1], 'm')
         qfn3 = +qf3
         assert_equal(qfn3.nominal, [-2, 3, -5, 10])
         assert_equal(qfn3.uncertainty, [0.1, 0.4, 0.3, 0.1])
@@ -1915,9 +1845,7 @@ class Test_QFloat_PosNeg:
         assert_equal(qfn2.uncertainty, 0.1)
         assert_equal(qfn2.unit, units.m)
 
-        qf3 = QFloat([-2, 3, -5, 10],
-                    [0.1, 0.4, 0.3, -0.1],
-                    'm')
+        qf3 = QFloat([-2, 3, -5, 10], [0.1, 0.4, 0.3, -0.1], 'm')
         qfn3 = abs(qf3)
         assert_equal(qfn3.nominal, [2, 3, 5, 10])
         assert_equal(qfn3.uncertainty, [0.1, 0.4, 0.3, 0.1])
