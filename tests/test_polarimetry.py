@@ -27,7 +27,8 @@ def get_flux_oe(flux, psi, k, q, u, v=None, zero=0):
 
 
 class DummyPolarimeter(_DualBeamPolarimetry):
-    pass
+    def compute( self, psi, f_ord, f_ext, f_ord_error=None, f_ext_error=None):
+        return
 
 
 def test_compute_theta():
@@ -209,7 +210,7 @@ class Test_ModelHalf:
         assert_almost_equal(fit, [q, u], decimal=3)
 
 
-class Test_DualBeamPolarimetry:
+class Test_DummyPolarimetry:
     @pytest.mark.parametrize('kwargs', [{}, {'zero': 60},
                                         {'zero': 60, 'k': 1.2},
                                         {'zero': 60, 'k': 1.2, 'min_snr': 80},

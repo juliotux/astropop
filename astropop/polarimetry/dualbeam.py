@@ -196,6 +196,10 @@ class _DualBeamPolarimetry(abc.ABC):
         """Estimate the normalization factor for quarterwave retarder."""
         return (1+0.5*q)/(1-0.5*q)
 
+    @abc.abstractmethod
+    def compute(self, psi, f_ord, f_ext, f_ord_error=None, f_ext_error=None):
+        """Compute the Stokes params from ordinary and extraordinary fluxes."""
+
 
 @dataclass
 class SLSDualBeamPolarimetry(_DualBeamPolarimetry):
@@ -241,6 +245,11 @@ class SLSDualBeamPolarimetry(_DualBeamPolarimetry):
     ----------
     .. [1] https://ui.adsabs.harvard.edu/abs/2019PASP..131b4501N
     """
+    def compute(self, psi, f_ord, f_ext, f_ord_error=None, f_ext_error=None):
+        """Compute the Stokes params from ordinary and extraordinary fluxes."""
+        self._check_positions(psi)
+        f_ord = QFloat(f_ord, uncertainty=f_ord_error)
+        f_ext = QFloat(f_ext, uncertainty=f_ext_error)
 
 
 @dataclass
