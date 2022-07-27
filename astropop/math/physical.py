@@ -292,7 +292,7 @@ class QFloat():
         if value is None:
             raise ValueError('value must be not None.')
         for i in value, uncertainty:
-            if not np.isreal(i):
+            if not np.any(np.isreal(i)):
                 raise TypeError('value and uncertainty must be real numbers, '
                                 'or arrays of real numbers.')
         return value, uncertainty, unit
