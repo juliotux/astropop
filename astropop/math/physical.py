@@ -253,8 +253,9 @@ class QFloat():
 
     Parameters
     ----------
-    value : number or array_like
-        Nominal value(s) of the quantity.
+    value : number, `~astropop.math.QFloat` or array_like
+        Nominal value(s) of the quantity. Must be a real number, array of real
+        numbers or a QFloat.
     uncertainty : number, array_like or `None` (optional)
         Uncertainty value of the quantity. If `None`, the quantity will be
         considered with no errors. Must match `value` shape.
@@ -273,7 +274,7 @@ class QFloat():
     _unit = None
 
     def __init__(self, value, uncertainty=None, unit=None):
-        value, uncertainty, unit = self._check_input(value, uncertainty, unit)
+        value, uncertainty, unit = self._check_inputs(value, uncertainty, unit)
         self._value = value
         self.uncertainty = uncertainty
         self.unit = unit
