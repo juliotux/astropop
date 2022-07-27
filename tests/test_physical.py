@@ -13,6 +13,7 @@ from astropop.testing import *
 
 # pylint: disable=no-member, pointless-statement
 
+
 class Test_QFloat_UnitsHandling:
     def test_qfloat_same_unit(self):
         qf1 = QFloat(1.0, 0.1, 'm')
@@ -511,6 +512,7 @@ class Test_QFloat_Operators:
         assert_equal(len(QFloat(np.zeros((10, 5)), np.zeros((10, 5)), 'm')), 10)
         assert_equal(len(QFloat(np.zeros((10, 5)), np.zeros((10, 5)), 'm')[0]), 5)
 
+
 class Test_QFloat_Comparison:
     def test_qfloat_comparison_equality_same_unit(self):
         # These numbers must not be equal, but equal within errors.
@@ -993,7 +995,7 @@ class Test_QFloat_Mul:
         qf1 = QFloat(np.arange(5), np.arange(5)*0.01, 'm')
         qf2 = QFloat(20, 0.1, 's')
         qf3 = QFloat(np.arange(16).reshape((4, 4)),
-                    np.arange(16).reshape((4, 4))*0.0001, 'km')
+                     np.arange(16).reshape((4, 4))*0.0001, 'km')
 
         res1 = qf1 * qf1
         assert_equal(res1.nominal, [0, 1, 4, 9, 16])
@@ -1050,14 +1052,14 @@ class Test_QFloat_Mul:
         # 2D array with numbers
         res8 = 3 * qf3
         assert_equal(res8.nominal,
-                    np.arange(16).reshape((4, 4))*3)
+                     np.arange(16).reshape((4, 4))*3)
         assert_almost_equal(res8.uncertainty,
                             np.arange(16).reshape((4, 4))*0.0001*3)
         assert_equal(res8.unit, units.km)
         # same inverse
         res9 = qf3 * 3
         assert_equal(res9.nominal,
-                    np.arange(16).reshape((4, 4))*3)
+                     np.arange(16).reshape((4, 4))*3)
         assert_almost_equal(res9.uncertainty,
                             np.arange(16).reshape((4, 4))*0.0001*3)
         assert_equal(res9.unit, units.km)
