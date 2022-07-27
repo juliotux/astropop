@@ -219,8 +219,10 @@ class Test_QFloat_Operators:
 
         # setting nominal resets the uncertainty
         assert_equal(qf.nominal, 5.0)
-        with pytest.raises(ValueError):
+
+        with pytest.raises(TypeError):
             qf.nominal = None
+
         assert_equal(qf.nominal, 5.0)
         qf.nominal = 10.0
         assert_equal(qf.nominal, 10.0)
