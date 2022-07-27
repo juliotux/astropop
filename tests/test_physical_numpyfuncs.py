@@ -14,6 +14,15 @@ from astropop.testing import *
 class TestQFloatNumpyArrayFuncs:
     """Test numpy array functions for numpy comatibility."""
 
+    def test_error_not_handled(self):
+        # handled QFloat must be ok
+        qf = QFloat([1.0, 2.0, 3.0], [0.1, 0.2, 0.3], "m")
+        res = np.sqrt(qf)
+
+        # not handled QFloat must raise
+        with pytest.raises(TypeError):
+            np.frexp(qf)
+
     def test_qfloat_np_append(self):
         qf1 = QFloat([1.0, 2.0, 3.0], [0.1, 0.2, 0.3], unit="m")
         qf2 = QFloat([1.0], [0.1], unit="km")

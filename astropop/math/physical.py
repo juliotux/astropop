@@ -6,7 +6,6 @@ Simplified version of `uncertainties` python package with some
 `~astropy.units` addings, in a much more free form.
 """
 
-import copy
 import numbers
 from functools import partial
 from astropy import units
