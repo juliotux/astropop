@@ -789,9 +789,8 @@ def _qfloat_insert(qf, obj, values, axis=None):
 
 # TODO:
 # Numpy ufuncs:
-#             - fmod, divmod, fabs, rint, sign, exp, exp2,
-#             - expm1, log1p, sqrt, square, cbrt,
-#             - hypot, maximum, minimum, fmax, fmin
+#             - fmod, divmod, fabs, rint, sign, cbrt,
+#             - maximum, minimum, fmax, fmin
 #             - isfinit, isinf, isnan, signbit, copysign, modf,
 #               floor, ceil, trunc
 
@@ -883,9 +882,11 @@ _ufunc_translate = {
     'negative': QFloat.__neg__,
     'positive': QFloat.__pos__,
     'power': QFloat.__pow__,
+    'mod': QFloat.__mod__,
     'remainder': QFloat.__mod__,
     'subtract': QFloat.__sub__,
     'true_divide': QFloat.__truediv__,
+    'divmod': lambda x, y: (QFloat.__floordiv__(x, y), QFloat.__mod__(x, y)),
 }
 
 
@@ -908,6 +909,7 @@ def _general_ufunc_wrapper(numpy_ufunc):
 _general_ufunc_wrapper(np.add)
 _general_ufunc_wrapper(np.absolute)
 _general_ufunc_wrapper(np.divide)
+_general_ufunc_wrapper(np.divmod)
 _general_ufunc_wrapper(np.float_power)
 _general_ufunc_wrapper(np.floor_divide)
 _general_ufunc_wrapper(np.mod)

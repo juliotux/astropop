@@ -752,9 +752,27 @@ class TestQFloatNumpyUfuncs:
             # out argument should fail
             func(qf1, qf2, out=[])
 
-    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_divmod(self):
-        raise NotImplementedError
+        qf1 = QFloat(2.0, 0.2, 'm')
+        qf2 = QFloat(1.0, 0.1, 'm')
+        qf3 = QFloat([1, 2, 4], [0.1, 0.2, 0.4], 'cm')
+        qf4 = QFloat(1.0, 0.1, 's')
+
+        res = np.divmod(qf1, qf2)
+        assert_equal(res[0], np.floor_divide(qf1, qf2))
+        assert_equal(res[1], np.remainder(qf1, qf2))
+
+        res = np.divmod(qf1, qf3)
+        assert_equal(res[0], np.floor_divide(qf1, qf3))
+        assert_equal(res[1], np.remainder(qf1, qf3))
+
+        res = np.divmod(qf3, qf1)
+        assert_equal(res[0], np.floor_divide(qf3, qf1))
+        assert_equal(res[1], np.remainder(qf3, qf1))
+
+        res = np.divmod(qf1, qf4)
+        assert_equal(res[0], np.floor_divide(qf1, qf4))
+        assert_equal(res[1], np.remainder(qf1, qf4))
 
     def test_qfloat_np_exp(self):
         qf1 = QFloat(2.0, 0.2)
