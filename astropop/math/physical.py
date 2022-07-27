@@ -275,8 +275,8 @@ class QFloat():
 
     def __init__(self, value, uncertainty=None, unit=None):
         value, uncertainty, unit = self._check_inputs(value, uncertainty, unit)
-        self._value = value
-        self.uncertainty = uncertainty
+        self._nominal = value
+        self._set_uncert(uncertainty)
         self.unit = unit
 
     def _check_inputs(self, value, uncertainty=None, unit=None):
@@ -295,6 +295,7 @@ class QFloat():
             if not np.any(np.isreal(i)):
                 raise TypeError('value and uncertainty must be real numbers, '
                                 'or arrays of real numbers.')
+        value = np.array(value) if check_iterable(value) else float(value)
         return value, uncertainty, unit
 
     def _set_uncert(self, value):

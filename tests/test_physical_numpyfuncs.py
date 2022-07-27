@@ -399,12 +399,9 @@ class TestQFloatNumpyArrayFuncs:
         assert_equal(res.shape, shp)
 
         shp = (0,)
-        tgt = np.array([])
-        res = np.resize(qf, shp)
-        assert_almost_equal(res.nominal, tgt)
-        assert_almost_equal(res.std_dev, tgt * 0.1)
-        assert_equal(res.unit, qf.unit)
-        assert_equal(res.shape, shp)
+        # must fail due to empty array (not real)
+        with pytest.raises(TypeError):
+            res = np.resize(qf, shp)
 
     def test_qfloat_np_roll(self):
         arr = np.arange(10)
