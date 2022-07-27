@@ -218,6 +218,17 @@ class CrossCorrelationRegister(_BaseRegister):
     the DFT only in a small neighborhood of that estimate by means of a
     matrix-multiply DFT[1]_.
 
+    Parameters
+    ----------
+    upsample_factor : int (optional)
+        Upsampling image factor. Images will be Registered to within
+        ``1 / upsample_factor`` of a pixel.
+        Default: 1 (no upsampling)
+    space : {'real', 'fourier'} (optional)
+        Defines how the algorithm interprets input data. "real" means
+        data will be FFT'd to compute the correlation, while "fourier"
+        data will bypass FFT of input data. Case insensitive.
+
     References
     ----------
     .. [1] :DOI:`10.1364/OL.33.000156`
@@ -226,19 +237,6 @@ class CrossCorrelationRegister(_BaseRegister):
     _name = 'cross-correlation'
 
     def __init__(self, upsample_factor=1, space='real'):
-        """Initialize a CrossCorrelationRegister instance.
-
-        Parameters
-        ----------
-        upsample_factor : int (optional)
-            Upsampling image factor. Images will be Registered to within
-            ``1 / upsample_factor`` of a pixel.
-            Default: 1 (no upsampling)
-        space : {'real', 'fourier'} (optional)
-            Defines how the algorithm interprets input data. "real" means
-            data will be FFT'd to compute the correlation, while "fourier"
-            data will bypass FFT of input data. Case insensitive.
-        """
         from skimage.registration import phase_cross_correlation
 
         self._pcc = partial(phase_cross_correlation, space=space,
@@ -268,6 +266,24 @@ class AsterismRegister(_BaseRegister):
     in the work. This may allow a better result in the Register, according our
     experiments.
 
+    Parameters
+    ----------
+    max_control_points : int, optional
+        Maximum control points (stars) used in asterism matching.
+        Default: 50
+    detection_threshold : int, optional
+        Minimum SNR detection threshold.
+        Default: 5
+    detection_function : {'sepfind', 'starfind', 'daofind'} (optional)
+        Detection function to use.
+        Default: 'sepfind'
+    detection_kwargs : dict (optional)
+        Keyword arguments to pass to the detection function.
+
+    Raises
+    ------
+    ImportError: if astroalign is not installed
+
     References
     ----------
     .. [1] :DOI:`10.1016/j.ascom.2020.100384`
@@ -277,26 +293,6 @@ class AsterismRegister(_BaseRegister):
 
     def __init__(self, max_control_points=50, detection_threshold=5,
                  detection_function='sepfind', **detection_kwargs):
-        """Initialize the AsterismRegister instance.
-
-        Parameters
-        ----------
-        max_control_points : int, optional
-            Maximum control points (stars) used in asterism matching.
-            Default: 50
-        detection_threshold : int, optional
-            Minimum SNR detection threshold.
-            Default: 5
-        detection_function : {'sepfind', 'starfind', 'daofind'} (optional)
-            Detection function to use.
-            Default: 'sepfind'
-        detection_kwargs : dict (optional)
-            Keyword arguments to pass to the detection function.
-
-        Raises
-        ------
-        ImportError: if astroalign is not installed
-        """
         try:
             import astroalign
         except ImportError:
