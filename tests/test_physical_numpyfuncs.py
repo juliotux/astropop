@@ -755,17 +755,99 @@ class TestQFloatNumpyUfuncs:
     def test_qfloat_np_divmod(self):
         raise NotImplementedError
 
-    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_exp(self):
-        raise NotImplementedError
+        qf1 = QFloat(2.0, 0.2)
+        qf2 = QFloat(1.0, 0.1)
+        qf3 = QFloat([1, 2, 4], [0.1, 0.2, 0.4])
+        qf4 = QFloat(1.0, 0.1, 's')
+        qf5 = QFloat(1.0)
 
-    @pytest.mark.skip(reason="Not Implemented Yet")
+        res = np.exp(qf1)
+        assert_equal(res.nominal, np.exp(2.0))
+        assert_almost_equal(res.std_dev, 0.2*np.exp(2.0))
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
+        res = np.exp(qf2)
+        assert_equal(res.nominal, np.exp(1.0))
+        assert_almost_equal(res.std_dev, 0.1*np.exp(1.0))
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
+        res = np.exp(qf3)
+        assert_equal(res.nominal, np.exp(qf3.nominal))
+        assert_almost_equal(res.std_dev, np.exp(qf3.nominal)*qf3.std_dev)
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
+        with pytest.raises(UnitsError, match='log is only defined for '
+                           'dimensionless quantities.'):
+            res = np.log(qf4)
+
+        res = np.exp(qf5)
+        assert_equal(res.nominal, np.exp(1.0))
+        assert_almost_equal(res.std_dev, 0.0)
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
     def test_qfloat_np_exp2(self):
-        raise NotImplementedError
+        qf1 = QFloat(2.0, 0.2)
+        qf2 = QFloat(1.0, 0.1)
+        qf3 = QFloat([1, 2, 4], [0.1, 0.2, 0.4])
+        qf4 = QFloat(1.0, 0.1, 's')
+        qf5 = QFloat(1.0)
 
-    @pytest.mark.skip(reason="Not Implemented Yet")
+        res = np.exp2(qf1)
+        assert_equal(res.nominal, np.exp2(2.0))
+        assert_almost_equal(res.std_dev, 0.2*np.exp2(2.0)*np.log(2))
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
+        res = np.exp2(qf2)
+        assert_equal(res.nominal, np.exp2(1.0))
+        assert_almost_equal(res.std_dev, 0.1*np.exp2(1.0)*np.log(2))
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
+        res = np.exp2(qf3)
+        assert_equal(res.nominal, np.exp2(qf3.nominal))
+        assert_almost_equal(res.std_dev,
+                            np.exp2(qf3.nominal)*qf3.std_dev*np.log(2))
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
+        with pytest.raises(UnitsError, match='exp2 is only defined for '
+                           'dimensionless quantities.'):
+            res = np.exp2(qf4)
+
+        res = np.exp2(qf5)
+        assert_equal(res.nominal, np.exp2(1.0))
+        assert_almost_equal(res.std_dev, 0.0)
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
     def test_qfloat_np_expm1(self):
-        raise NotImplementedError
+        qf1 = QFloat(2.0, 0.2)
+        qf2 = QFloat(1.0, 0.1)
+        qf3 = QFloat([1, 2, 4], [0.1, 0.2, 0.4])
+        qf4 = QFloat(1.0, 0.1, 's')
+        qf5 = QFloat(1.0)
+
+        res = np.expm1(qf1)
+        assert_equal(res.nominal, np.expm1(2.0))
+        assert_almost_equal(res.std_dev, 0.2*np.exp(2.0))
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
+        res = np.expm1(qf2)
+        assert_equal(res.nominal, np.expm1(1.0))
+        assert_almost_equal(res.std_dev, 0.1*np.exp(1.0))
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
+        res = np.expm1(qf3)
+        assert_equal(res.nominal, np.expm1(qf3.nominal))
+        assert_almost_equal(res.std_dev, np.exp(qf3.nominal)*qf3.std_dev)
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
+        with pytest.raises(UnitsError, match='log is only defined for '
+                           'dimensionless quantities.'):
+            res = np.log(qf4)
+
+        res = np.expm1(qf5)
+        assert_equal(res.nominal, np.expm1(1.0))
+        assert_almost_equal(res.std_dev, 0.0)
+        assert_equal(res.unit, units.dimensionless_unscaled)
 
     @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_fabs(self):
@@ -866,21 +948,133 @@ class TestQFloatNumpyUfuncs:
     def test_qfloat_np_isnan(self):
         raise NotImplementedError
 
-    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_log(self):
-        raise NotImplementedError
+        qf1 = QFloat(2.0, 0.2)
+        qf2 = QFloat(1.0, 0.1)
+        qf3 = QFloat([1, 2, 4], [0.1, 0.2, 0.4])
+        qf4 = QFloat(1.0, 0.1, 's')
+        qf5 = QFloat(1.0)
 
-    @pytest.mark.skip(reason="Not Implemented Yet")
+        res = np.log(qf1)
+        assert_equal(res.nominal, np.log(2.0))
+        assert_almost_equal(res.std_dev, 0.2/2.0)
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
+        res = np.log(qf2)
+        assert_equal(res.nominal, np.log(1.0))
+        assert_almost_equal(res.std_dev, 0.1/1.0)
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
+        res = np.log(qf3)
+        assert_equal(res.nominal, np.log([1, 2, 4]))
+        assert_almost_equal(res.std_dev,
+                            qf3.std_dev/qf3.nominal)
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
+        with pytest.raises(UnitsError, match='log is only defined for '
+                           'dimensionless quantities.'):
+            res = np.log(qf4)
+
+        res = np.log(qf5)
+        assert_equal(res.nominal, np.log(1.0))
+        assert_almost_equal(res.std_dev, 0.0)
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
     def test_qfloat_np_log2(self):
-        raise NotImplementedError
+        qf1 = QFloat(2.0, 0.2)
+        qf2 = QFloat(1.0, 0.1)
+        qf3 = QFloat([1, 2, 4], [0.1, 0.2, 0.4])
+        qf4 = QFloat(1.0, 0.1, 's')
+        qf5 = QFloat(1.0)
 
-    @pytest.mark.skip(reason="Not Implemented Yet")
+        res = np.log2(qf1)
+        assert_equal(res.nominal, np.log2(2.0))
+        assert_almost_equal(res.std_dev, 0.2/(2.0*np.log(2)))
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
+        res = np.log2(qf2)
+        assert_equal(res.nominal, np.log2(1.0))
+        assert_almost_equal(res.std_dev, 0.1/np.log(2))
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
+        res = np.log2(qf3)
+        assert_equal(res.nominal, np.log2([1, 2, 4]))
+        assert_almost_equal(res.std_dev,
+                            qf3.std_dev/(qf3.nominal*np.log(2)))
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
+        with pytest.raises(UnitsError, match='log2 is only defined for '
+                           'dimensionless quantities.'):
+            res = np.log2(qf4)
+
+        res = np.log2(qf5)
+        assert_equal(res.nominal, np.log2(1.0))
+        assert_almost_equal(res.std_dev, 0.0)
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
     def test_qfloat_np_log10(self):
-        raise NotImplementedError
+        qf1 = QFloat(2.0, 0.2)
+        qf2 = QFloat(1.0, 0.1)
+        qf3 = QFloat([1, 2, 4], [0.1, 0.2, 0.4])
+        qf4 = QFloat(1.0, 0.1, 's')
+        qf5 = QFloat(1.0)
 
-    @pytest.mark.skip(reason="Not Implemented Yet")
+        res = np.log10(qf1)
+        assert_equal(res.nominal, np.log10(2.0))
+        assert_almost_equal(res.std_dev, 0.2/(2.0*np.log(10)))
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
+        res = np.log10(qf2)
+        assert_equal(res.nominal, np.log10(1.0))
+        assert_almost_equal(res.std_dev, 0.1/np.log(10))
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
+        res = np.log10(qf3)
+        assert_equal(res.nominal, np.log10([1, 2, 4]))
+        assert_almost_equal(res.std_dev,
+                            qf3.std_dev/(qf3.nominal*np.log(10)))
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
+        with pytest.raises(UnitsError, match='log10 is only defined for '
+                           'dimensionless quantities.'):
+            res = np.log10(qf4)
+
+        res = np.log10(qf5)
+        assert_equal(res.nominal, np.log10(1.0))
+        assert_almost_equal(res.std_dev, 0.0)
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
     def test_qfloat_np_log1p(self):
-        raise NotImplementedError
+        qf1 = QFloat(2.0, 0.2)
+        qf2 = QFloat(1.0, 0.1)
+        qf3 = QFloat([1, 2, 4], [0.1, 0.2, 0.4])
+        qf4 = QFloat(1.0, 0.1, 's')
+        qf5 = QFloat(1.0)
+
+        res = np.log(qf1)
+        assert_equal(res.nominal, np.log(2.0))
+        assert_almost_equal(res.std_dev, 0.2/2.0)
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
+        res = np.log(qf2)
+        assert_equal(res.nominal, np.log(1.0))
+        assert_almost_equal(res.std_dev, 0.1/1.0)
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
+        res = np.log(qf3)
+        assert_equal(res.nominal, np.log([1, 2, 4]))
+        assert_almost_equal(res.std_dev,
+                            qf3.std_dev/qf3.nominal)
+        assert_equal(res.unit, units.dimensionless_unscaled)
+
+        with pytest.raises(UnitsError, match='log is only defined for '
+                           'dimensionless quantities.'):
+            res = np.log(qf4)
+
+        res = np.log(qf5)
+        assert_equal(res.nominal, np.log(1.0))
+        assert_almost_equal(res.std_dev, 0.0)
+        assert_equal(res.unit, units.dimensionless_unscaled)
 
     @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_maximum(self):

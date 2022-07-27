@@ -7,6 +7,7 @@ Simplified version of `uncertainties` python package with some
 """
 
 import numbers
+from functools import partial
 from astropy import units
 from astropy.units.quantity_helper.helpers import get_converters_and_unit
 from astropy.units import UnitsError, Quantity
@@ -788,11 +789,30 @@ def _qfloat_insert(qf, obj, values, axis=None):
 
 # TODO:
 # Numpy ufuncs:
-#             - fmod, divmod, fabs, rint, sign, exp, exp2, log, log2,
-#               log10, expm1, log1p, sqrt, square, cbrt,
+#             - fmod, divmod, fabs, rint, sign, exp, exp2,
+#             - expm1, log1p, sqrt, square, cbrt,
 #             - hypot, maximum, minimum, fmax, fmin
 #             - isfinit, isinf, isnan, signbit, copysign, modf,
 #               floor, ceil, trunc
+
+
+def _qfloat_exp_log(qf, func):
+    """General implementation for exp and log functions."""
+    if qf.unit != units.dimensionless_unscaled:
+        raise UnitsError(f'{func.__name__} is only defined for dimensionless'
+                         ' quantities.')
+    val = func(qf.nominal)
+    std = propagate_1(func.__name__, val, qf.nominal, qf.uncertainty)
+    return QFloat(val, std, units.dimensionless_unscaled)
+
+
+_implements_ufunc(np.exp)(partial(_qfloat_exp_log, func=np.exp))
+_implements_ufunc(np.exp2)(partial(_qfloat_exp_log, func=np.exp2))
+_implements_ufunc(np.expm1)(partial(_qfloat_exp_log, func=np.expm1))
+_implements_ufunc(np.log)(partial(_qfloat_exp_log, func=np.log))
+_implements_ufunc(np.log2)(partial(_qfloat_exp_log, func=np.log2))
+_implements_ufunc(np.log10)(partial(_qfloat_exp_log, func=np.log10))
+_implements_ufunc(np.log1p)(partial(_qfloat_exp_log, func=np.log1p))
 
 
 @_implements_ufunc(np.radians)
