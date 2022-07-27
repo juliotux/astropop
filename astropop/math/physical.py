@@ -280,16 +280,17 @@ class QFloat():
 
     def _check_inputs(self, value, uncertainty=None, unit=None):
         if isinstance(value, QFloat):
+            qf = value
             value = value.nominal
             if uncertainty is not None:
                 raise ValueError('uncertainty must be None if value is a '
                                  'QFloat.')
-            uncertainty = value.uncertainty
+            uncertainty = qf.uncertainty
             if unit is not None:
                 raise ValueError('unit must be None if value is a QFloat.')
-            unit = value.unit
-        if value is None:
-            raise ValueError('value must be not None.')
+            unit = qf.unit
+        if np.any(np.array(value) == None):  # noqa: E711
+            raise TypeError('value must be not None.')
         for i in value, uncertainty:
             if not np.any(np.isreal(i)):
                 raise TypeError('value and uncertainty must be real numbers, '
@@ -309,8 +310,12 @@ class QFloat():
                                  'nominal value: '
                                  f'{np.shape(value)} '
                                  f'{np.shape(self._nominal)}')
+            if not np.any(np.isreal(value)):
+                raise TypeError('uncertainty must be real numbers')
             if check_iterable(self._nominal):
                 # Errors must be always positive
+                value = np.array(value)
+                value[value == None] = 0.0  # noqa: E711
                 self._uncert = np.abs(np.array(value))
             else:
                 self._uncert = float(abs(value))

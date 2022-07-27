@@ -113,6 +113,62 @@ class Test_QFloat_UnitsHandling:
         assert_equal(qf_4.unit, units.s)
 
 
+class Test_QFloat_InitAndSet:
+    @pytest.mark.parametrize('value, uncertainty, unit', [(1.0, 0.1, 'm'),
+                                                          (200, None, None),
+                                                          (120, 0.3, None),
+                                                          (2.0, None, 'm'),
+                                                          (np.arange(10), np.arange(10)*0.1, 'm'),
+                                                          ([1, 2, 3], [0.1, 0.2, 0.3], None),
+                                                          ([1, 2, 3], [0.1, 0.2, 0.3], 'm')])
+    def test_qfloat_init_simple(self, value, uncertainty, unit):
+        qf = QFloat(value, uncertainty, unit)
+        assert_equal(qf.nominal, value)
+        if uncertainty is None:
+            assert_equal(qf.uncertainty, np.zeros_like(value))
+        else:
+            assert_equal(qf.uncertainty, uncertainty)
+        if unit is None:
+            assert_equal(qf.unit, units.dimensionless_unscaled)
+        else:
+            assert_equal(qf.unit, unit)
+
+    @pytest.mark.parametrize('value', ['test', complex(1, 2), None, b'0\x00',
+                                       [0, 'test', 2], [0, None, 0]])
+    def test_qfloat_init_notreal(self, value):
+        with pytest.raises(TypeError):
+            QFloat(value)
+
+    def test_qfloat_init_notreal_uncert(self):
+        with pytest.raises(TypeError):
+            QFloat(1, 'test')
+
+        with pytest.raises(TypeError):
+            QFloat(1, complex(1, 2))
+
+        with pytest.raises(TypeError):
+            QFloat([1, 2, 3], [1, 'Test', 2])
+
+        qf = QFloat([1, 2, 3], [1, None, 3])
+        assert_equal(qf.nominal, [1, 2, 3])
+        assert_equal(qf.uncertainty, [1, 0, 3])
+
+    def test_qfloat_init_qfloat(self):
+        qf1 = QFloat(1.0, 0.1, 'm')
+        qf2 = QFloat(qf1)
+        assert_equal(qf2.nominal, 1.0)
+        assert_equal(qf2.uncertainty, 0.1)
+        assert_equal(qf2.unit, units.m)
+        assert_is_not(qf2, qf1)
+
+    def test_qfloat_init_qfloat_conflicts(self):
+        qf = QFloat(1.0, 0.1, 'm')
+        with pytest.raises(ValueError):
+            QFloat(qf, unit='m')
+        with pytest.raises(ValueError):
+            QFloat(qf, uncertainty=0.1)
+
+
 class Test_QFloat_Repr:
     def test_qfloat_repr(self):
         assert_equal(repr(QFloat(1.0, 0.1, 'm')), '<QFloat 1.0+-0.1 m>')
@@ -472,12 +528,6 @@ class Test_QFloat_Operators:
         # same behavior of numpy
         assert_equal(len(QFloat(np.zeros((10, 5)), np.zeros((10, 5)), 'm')), 10)
         assert_equal(len(QFloat(np.zeros((10, 5)), np.zeros((10, 5)), 'm')[0]), 5)
-
-##############################################################################
-# Simple math operations -----------------------------------------------------
-##############################################################################
-
-# Simple math comparisons -----------------------------------------------------
 
 class Test_QFloat_Comparison:
     def test_qfloat_comparison_equality_same_unit(self):
