@@ -234,10 +234,11 @@ class Test_QFloat_Operators:
         assert_almost_equal(qf.std_dev, [0.4, 0.5, 0.6])
         qf.std_dev = [0.1, 0.2, 0.3]
         assert_almost_equal(qf.std_dev, [0.1, 0.2, 0.3])
-
         assert_almost_equal(qf.nominal, [1, 2, 3])
-        with pytest.raises(ValueError):
+
+        with pytest.raises(TypeError):
             qf.nominal = None
+
         assert_almost_equal(qf.nominal, [1, 2, 3])
         qf.nominal = [4, 5, 6]
         assert_almost_equal(qf.nominal, [4, 5, 6])
