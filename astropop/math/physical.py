@@ -305,13 +305,13 @@ class QFloat():
             else:
                 self._uncert = 0.0
         else:
+            if not np.any(np.isreal(value)):
+                raise TypeError('uncertainty must be real numbers')
             if np.shape(value) != np.shape(self._nominal):
                 raise ValueError('Uncertainty with shape different from '
                                  'nominal value: '
                                  f'{np.shape(value)} '
                                  f'{np.shape(self._nominal)}')
-            if not np.any(np.isreal(value)):
-                raise TypeError('uncertainty must be real numbers')
             if check_iterable(self._nominal):
                 # Errors must be always positive
                 value = np.array(value)
@@ -321,13 +321,18 @@ class QFloat():
                 self._uncert = float(abs(value))
 
     def _set_nominal(self, value):
+        uncertainty = None
+        unit = None
         if isinstance(value, tuple):
-            value, uncertainty, unit = self._check_inputs(*value)
-        else:
-            value, uncertainty, unit = self._check_inputs(value)
+            if len(value) == 2:
+                value, uncertainty = value
+            else:
+                value, uncertainty, unit = value
+        value, uncertainty, unit = self._check_inputs(value, uncertainty, unit)
         self._nominal = value
         self._set_uncert(uncertainty)
-        self.unit = unit
+        if unit is not None:
+            self.unit = unit
 
     @property
     def uncertainty(self):

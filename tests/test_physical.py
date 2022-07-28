@@ -148,6 +148,9 @@ class Test_QFloat_InitAndSet:
         assert_equal(qf.nominal, [1, 2, 3])
         assert_equal(qf.uncertainty, [1, 0, 3])
 
+        with pytest.raises(TypeError):
+            qf.uncertainty = [1, 'Test', 3]
+
     def test_qfloat_init_qfloat(self):
         qf1 = QFloat(1.0, 0.1, 'm')
         qf2 = QFloat(qf1)
@@ -252,6 +255,67 @@ class Test_QFloat_Operators:
         assert_equal(qf.value, [4, 5, 6])
         with pytest.raises(AttributeError):
             qf.value = 0
+
+    def test_qfloat_set_nominal(self):
+        qf = QFloat(5.0, 0.025, 'm')
+        qf.nominal = 10.0
+        assert_equal(qf.nominal, 10.0)
+        assert_equal(qf.std_dev, 0.0)
+        assert_equal(qf.uncertainty, 0.0)
+
+        # with arrays
+        qf = QFloat([1, 2, 3], [0.1, 0.2, 0.3], 'm')
+        qf.nominal = [4, 5, 6]
+        assert_almost_equal(qf.nominal, [4, 5, 6])
+        assert_almost_equal(qf.std_dev, [0, 0, 0])
+        assert_almost_equal(qf.uncertainty, [0, 0, 0])
+        assert_equal(qf.unit, units.m)
+
+        # tuple for (nominal, uncertainty)
+        qf = QFloat(5.0, 0.025, 'm')
+        qf.nominal = (10.0, 0.1)
+        assert_equal(qf.nominal, 10.0)
+        assert_equal(qf.uncertainty, 0.1)
+        assert_equal(qf.unit, units.m)
+
+        # tuple for (nominal, uncertainty, unit)
+        qf = QFloat(5.0, 0.025, 'm')
+        qf.nominal = (10.0, 0.1, 's')
+        assert_equal(qf.nominal, 10.0)
+        assert_equal(qf.uncertainty, 0.1)
+        assert_equal(qf.unit, units.s)
+
+        # raise non real
+        with pytest.raises(TypeError):
+            qf.nominal = None
+        with pytest.raises(TypeError):
+            qf.nominal = [1, 'test', 2]
+
+    def test_qfloat_set_uncertainty(self):
+        qf = QFloat(5.0, 0.025, 'm')
+        qf.uncertainty = 0.1
+        assert_equal(qf.uncertainty, 0.1)
+        assert_equal(qf.std_dev, 0.1)
+
+        # with arrays
+        qf = QFloat([1, 2, 3], [0.1, 0.2, 0.3], 'm')
+        qf.uncertainty = [0.4, 0.5, 0.6]
+        assert_almost_equal(qf.uncertainty, [0.4, 0.5, 0.6])
+        assert_almost_equal(qf.std_dev, [0.4, 0.5, 0.6])
+        qf.uncertainty = None
+        assert_almost_equal(qf.uncertainty, [0, 0, 0])
+
+        # raise non real
+        with pytest.raises(TypeError):
+            qf.uncertainty = 'test'
+        with pytest.raises(TypeError):
+            qf.uncertainty = [1, 'test', 2]
+
+        # raise invalid shape
+        with pytest.raises(ValueError):
+            qf.uncertainty = [1, 2, 3, 4]
+        with pytest.raises(ValueError):
+            qf.uncertainty = 1
 
     def test_qfloat_properties_reset(self):
         qf = QFloat(5.0, 0.025, 'm')
