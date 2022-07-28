@@ -777,11 +777,8 @@ _array_func_simple_wrapper(np.transpose)
 
 @_implements_array_func(np.round)
 @_implements_array_func(np.around)
-def _qfloat_round(qf, decimals=0, out=None):
+def _qfloat_round(qf, decimals=0):
     """Implement np.round for qfloats."""
-    # out is ignored
-    if out is not None:
-        raise ValueError('For QFloat, out is ignored.')
     nominal = np.round(qf.nominal, decimals)
     std = np.round(qf.uncertainty, decimals)
     return QFloat(nominal, std, qf.unit)
