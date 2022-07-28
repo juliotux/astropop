@@ -126,6 +126,13 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto', gain=1.0,
     -------
     res_ap : `~astropy.table.Table`
         Table containing all aperture photometry informations.
+        - ``x``, ``y``: position of the sources
+        - ``aperture``: aperture radius
+        - ``flux``: flux of the sources
+        - ``flux_error``: flux error of the sources
+        - ``sky``: sky background value
+        - ``sky_error``: sky background error
+        - ``flag``: flag for the sources
     """
     res_ap = Table()
 
