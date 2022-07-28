@@ -156,14 +156,9 @@ class _QFloatFormatter():
     def __repr__(self):
         return f"{self}"
 
-    def __str__(self):
-        return f"{self}"
-
 
 def _create_formater(nominal, std):
     """Create _QFloatFormater handling lists."""
-    if np.shape(nominal) != np.shape(std):
-        raise ValueError('nominal and std values are incompatilbe.')
     if check_iterable(nominal):
         return [_create_formater(n, s) for n, s in zip(nominal, std)]
     return _QFloatFormatter(nominal, std)
