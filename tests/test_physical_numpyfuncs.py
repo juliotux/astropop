@@ -23,6 +23,11 @@ class TestQFloatNumpyArrayFuncs:
         with pytest.raises(TypeError):
             np.frexp(qf)
 
+    def test_error_only_call_method(self):
+        qf = QFloat([1.0, 2.0, 3.0], [0.1, 0.2, 0.3], "m")
+        with pytest.raises(TypeError):
+            np.sin.at(qf, 0)
+
     def test_qfloat_np_append(self):
         qf1 = QFloat([1.0, 2.0, 3.0], [0.1, 0.2, 0.3], unit="m")
         qf2 = QFloat([1.0], [0.1], unit="km")
