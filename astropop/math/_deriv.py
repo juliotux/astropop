@@ -90,8 +90,8 @@ derivatives = {
     'exp2': (lambda x: np.exp2(x)*np.log(2)),
     'fabs': (_deriv_fabs),
     'log': (lambda x: 1/x),  # for np, log=ln
-    'log10': (lambda x: 1/x/np.log(10)),
-    'log2': (lambda x: 1/x/np.log(10)),
+    'log10': (lambda x: 1/(x*np.log(10.0))),
+    'log2': (lambda x: 1/(x*np.log(2.0))),
     'log1p': (lambda x: 1/(1+x)),
     'sin': (np.cos),
     'sinh': (np.cosh),
@@ -108,7 +108,7 @@ def propagate_1(func, fx, x, sx):
     func: string
         Function name to perform error propagation. Must be in derivatives
         keys.
-    fxy: float or array_like
+    fx: float or array_like
         Numerical result of f(x, y).
     x: float or array_like
         Variable of the function.
