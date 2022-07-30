@@ -7,6 +7,7 @@ Simplified version of `uncertainties` python package with some
 """
 
 import numbers
+from functools import partial
 from astropy import units
 from astropy.units.quantity_helper.helpers import get_converters_and_unit
 from astropy.units import UnitsError, Quantity
@@ -155,14 +156,9 @@ class _QFloatFormatter():
     def __repr__(self):
         return f"{self}"
 
-    def __str__(self):
-        return f"{self}"
-
 
 def _create_formater(nominal, std):
     """Create _QFloatFormater handling lists."""
-    if np.shape(nominal) != np.shape(std):
-        raise ValueError('nominal and std values are incompatilbe.')
     if check_iterable(nominal):
         return [_create_formater(n, s) for n, s in zip(nominal, std)]
     return _QFloatFormatter(nominal, std)
@@ -251,8 +247,9 @@ class QFloat():
 
     Parameters
     ----------
-    value : number or array_like
-        Nominal value(s) of the quantity.
+    value : number, `~astropop.math.QFloat` or array_like
+        Nominal value(s) of the quantity. Must be a real number, array of real
+        numbers or a QFloat.
     uncertainty : number, array_like or `None` (optional)
         Uncertainty value of the quantity. If `None`, the quantity will be
         considered with no errors. Must match `value` shape.
@@ -271,9 +268,30 @@ class QFloat():
     _unit = None
 
     def __init__(self, value, uncertainty=None, unit=None):
-        self.nominal = value
-        self.uncertainty = uncertainty
+        value, uncertainty, unit = self._check_inputs(value, uncertainty, unit)
+        self._nominal = value
+        self._set_uncert(uncertainty)
         self.unit = unit
+
+    def _check_inputs(self, value, uncertainty=None, unit=None):
+        if isinstance(value, QFloat):
+            qf = value
+            value = value.nominal
+            if uncertainty is not None:
+                raise ValueError('uncertainty must be None if value is a '
+                                 'QFloat.')
+            uncertainty = qf.uncertainty
+            if unit is not None:
+                raise ValueError('unit must be None if value is a QFloat.')
+            unit = qf.unit
+        if np.any(np.array(value) == None):  # noqa: E711
+            raise TypeError('value must be not None.')
+        for i in value, uncertainty:
+            if not np.any(np.isreal(i)):
+                raise TypeError('value and uncertainty must be real numbers, '
+                                'or arrays of real numbers.')
+        value = np.array(value) if check_iterable(value) else float(value)
+        return value, uncertainty, unit
 
     def _set_uncert(self, value):
         if value is None:
@@ -282,6 +300,8 @@ class QFloat():
             else:
                 self._uncert = 0.0
         else:
+            if not np.any(np.isreal(value)):
+                raise TypeError('uncertainty must be real numbers')
             if np.shape(value) != np.shape(self._nominal):
                 raise ValueError('Uncertainty with shape different from '
                                  'nominal value: '
@@ -289,20 +309,25 @@ class QFloat():
                                  f'{np.shape(self._nominal)}')
             if check_iterable(self._nominal):
                 # Errors must be always positive
+                value = np.array(value)
+                value[value == None] = 0.0  # noqa: E711
                 self._uncert = np.abs(np.array(value))
             else:
                 self._uncert = float(abs(value))
 
     def _set_nominal(self, value):
-        if value is None:
-            raise ValueError('Nominal value cannot be None')
-        if check_iterable(value):
-            self._nominal = np.array(value)
-        else:
-            self._nominal = value
-
-        self.uncertainty = None  # always value is reset, uncertainty resets
-        # No unit changes
+        uncertainty = None
+        unit = None
+        if isinstance(value, tuple):
+            if len(value) == 2:
+                value, uncertainty = value
+            else:
+                value, uncertainty, unit = value
+        value, uncertainty, unit = self._check_inputs(value, uncertainty, unit)
+        self._nominal = value
+        self._set_uncert(uncertainty)
+        if unit is not None:
+            self.unit = unit
 
     @property
     def uncertainty(self):
@@ -690,13 +715,9 @@ class QFloat():
 # TODO:
 # Array functions:
 #             - copyto, broadcast, broadcast_to
-#             - trunc, ceil
 #             - sum, prod, nanprod, nansum, cumprod, cumsum, nancumprod,
-#             - nancumsum, diff, ediff1d, cross, square
+#             - nancumsum, diff, ediff1d, cross
 #             - concatenate, stack, block, vstack, hstack, dstack, columnstack
-# FIXME:
-# These array functions seems to not be viable in our work.
-# - atleast_1d, atleast_2d, atleast_3d
 
 @_implements_array_func(np.shape)
 def _qfloat_shape(qf):
@@ -756,11 +777,8 @@ _array_func_simple_wrapper(np.transpose)
 
 @_implements_array_func(np.round)
 @_implements_array_func(np.around)
-def _qfloat_round(qf, decimals=0, out=None):
+def _qfloat_round(qf, decimals=0):
     """Implement np.round for qfloats."""
-    # out is ignored
-    if out is not None:
-        raise ValueError('For QFloat, out is ignored.')
     nominal = np.round(qf.nominal, decimals)
     std = np.round(qf.uncertainty, decimals)
     return QFloat(nominal, std, qf.unit)
@@ -786,13 +804,65 @@ def _qfloat_insert(qf, obj, values, axis=None):
     return QFloat(nominal, std, qf1.unit)
 
 
-# TODO:
-# Numpy ufuncs:
-#             - fmod, divmod, fabs, rint, sign, exp, exp2, log, log2,
-#               log10, expm1, log1p, sqrt, square, cbrt,
-#             - hypot, maximum, minimum, fmax, fmin
-#             - isfinit, isinf, isnan, signbit, copysign, modf,
-#               floor, ceil, trunc
+def _implements_ufunc_on_nominal(func):
+    """Wraps ufuncs only on the nominal value and don't return QFloat."""
+    def wrapper(qf, *args, **kwargs):
+        return func(qf.nominal, *args, **kwargs)
+    _implements_ufunc(func)(wrapper)
+
+
+_implements_ufunc_on_nominal(np.isnan)
+_implements_ufunc_on_nominal(np.isinf)
+_implements_ufunc_on_nominal(np.isfinite)
+_implements_ufunc_on_nominal(np.isneginf)
+_implements_ufunc_on_nominal(np.isposinf)
+_implements_ufunc_on_nominal(np.isreal)
+_implements_ufunc_on_nominal(np.iscomplex)
+_implements_ufunc_on_nominal(np.isscalar)
+_implements_ufunc_on_nominal(np.signbit)
+_implements_ufunc_on_nominal(np.sign)
+
+
+def _qfloat_exp_log(qf, func):
+    """General implementation for exp and log functions."""
+    if qf.unit != units.dimensionless_unscaled:
+        raise UnitsError(f'{func.__name__} is only defined for dimensionless'
+                         ' quantities.')
+    val = func(qf.nominal)
+    std = propagate_1(func.__name__, val, qf.nominal, qf.uncertainty)
+    return QFloat(val, std, units.dimensionless_unscaled)
+
+
+_implements_ufunc(np.exp)(partial(_qfloat_exp_log, func=np.exp))
+_implements_ufunc(np.exp2)(partial(_qfloat_exp_log, func=np.exp2))
+_implements_ufunc(np.expm1)(partial(_qfloat_exp_log, func=np.expm1))
+_implements_ufunc(np.log)(partial(_qfloat_exp_log, func=np.log))
+_implements_ufunc(np.log2)(partial(_qfloat_exp_log, func=np.log2))
+_implements_ufunc(np.log10)(partial(_qfloat_exp_log, func=np.log10))
+_implements_ufunc(np.log1p)(partial(_qfloat_exp_log, func=np.log1p))
+
+
+def _qfloat_floor_wrapper(qf, func):
+    """General implementation for floor, ceil and trunc."""
+    return QFloat(func(qf.nominal), np.round(qf.uncertainty, 0), qf.unit)
+
+
+_implements_ufunc(np.floor)(partial(_qfloat_floor_wrapper, func=np.floor))
+_implements_ufunc(np.ceil)(partial(_qfloat_floor_wrapper, func=np.ceil))
+_implements_ufunc(np.trunc)(partial(_qfloat_floor_wrapper, func=np.trunc))
+
+
+def _qfloat_only_nominal_wrapper(qf, func):
+    """General implementation for isfinite, isinf, isnan."""
+    return func(qf.nominal)
+
+
+_implements_ufunc(np.isfinite)(partial(_qfloat_only_nominal_wrapper,
+                                       func=np.isfinite))
+_implements_ufunc(np.isinf)(partial(_qfloat_only_nominal_wrapper,
+                                    func=np.isinf))
+_implements_ufunc(np.isnan)(partial(_qfloat_only_nominal_wrapper,
+                                    func=np.isnan))
 
 
 @_implements_ufunc(np.radians)
@@ -863,9 +933,11 @@ _ufunc_translate = {
     'negative': QFloat.__neg__,
     'positive': QFloat.__pos__,
     'power': QFloat.__pow__,
+    'mod': QFloat.__mod__,
     'remainder': QFloat.__mod__,
     'subtract': QFloat.__sub__,
     'true_divide': QFloat.__truediv__,
+    'divmod': lambda x, y: (QFloat.__floordiv__(x, y), QFloat.__mod__(x, y)),
 }
 
 
@@ -880,7 +952,7 @@ def _general_ufunc_wrapper(numpy_ufunc):
     ufunc_name = numpy_ufunc.__name__
     true_func = _ufunc_translate[ufunc_name]
 
-    def ufunc_wrapper(*inputs, **kwargs):
+    def ufunc_wrapper(*inputs):
         return true_func(*inputs)
     _implements_ufunc(numpy_ufunc)(ufunc_wrapper)
 
@@ -888,6 +960,7 @@ def _general_ufunc_wrapper(numpy_ufunc):
 _general_ufunc_wrapper(np.add)
 _general_ufunc_wrapper(np.absolute)
 _general_ufunc_wrapper(np.divide)
+_general_ufunc_wrapper(np.divmod)
 _general_ufunc_wrapper(np.float_power)
 _general_ufunc_wrapper(np.floor_divide)
 _general_ufunc_wrapper(np.mod)
@@ -901,15 +974,15 @@ _general_ufunc_wrapper(np.true_divide)
 
 
 @_implements_ufunc(np.square)
-def _qfloat_square(qf, *args, **kwargs):
+def _qfloat_square(qf):
     return qf * qf
 
 
 @_implements_ufunc(np.sqrt)
-def _qfloat_sqrt(qf, *args, **kwargs):
+def _qfloat_sqrt(qf):
     return qf**0.5
 
 
 @_implements_ufunc(np.hypot)
-def _qfloat_hypot(qf1, qf2, *args, **kwargs):
+def _qfloat_hypot(qf1, qf2):
     return np.sqrt(qf1**2 + qf2**2)

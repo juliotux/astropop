@@ -185,8 +185,15 @@ The current supported ufuncs are:
 - `~numpy.deg2rad`
 - `~numpy.degrees`
 - `~numpy.divide` (`~numpy.true_divide`)
+- `~numpy.exp`
+- `~numpy.exp2`
+- `~numpy.expm1`
 - `~numpy.floor_divide`
 - `~numpy.hypot`
+- `~numpy.log`
+- `~numpy.log10`
+- `~numpy.log1p`
+- `~numpy.log2`
 - `~numpy.negative`
 - `~numpy.positive`
 - `~numpy.power` (`~numpy.float_power`)
@@ -314,4 +321,11 @@ These comparisons can only be performed by same dimension measurements. If incom
 Physical Quantities API
 -----------------------
 
-.. TODO:: Put properly API link here
+.. autoclass:: astropop.math.physical.QFloat
+    :members:
+    :undoc-members:
+    :show-inheritance:
+    :inherited-members:
+.. autofunction:: astropop.math.physical.equal_within_errors
+.. autofunction:: astropop.math.physical.qfloat
+.. autofunction:: astropop.math.physical.same_unit
