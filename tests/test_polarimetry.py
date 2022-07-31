@@ -27,7 +27,7 @@ def get_flux_oe(flux, psi, k, q, u, v=None, zero=0):
 
 
 class DummyPolarimeter(_DualBeamPolarimetry):
-    def compute( self, psi, f_ord, f_ext, f_ord_error=None, f_ext_error=None):
+    def compute(self, psi, f_ord, f_ext, f_ord_error=None, f_ext_error=None):
         return
 
 
@@ -171,7 +171,7 @@ class Test_ModelHalf:
         expect = np.array([0.01168653, 0.02175833, -0.01168653, -0.02175833,
                            0.01168653, 0.02175833, -0.01168653, -0.02175833,
                            0.01168653, 0.02175833, -0.01168653, -0.02175833,
-                           0.01168653, 0.02175833, -0.01168653, -0.02175833,])
+                           0.01168653, 0.02175833, -0.01168653, -0.02175833])
 
         psi = np.arange(0, 360, 22.5)
         zi = halfwave_model(psi, q=q, u=u, zero=zero)
@@ -183,7 +183,7 @@ class Test_ModelHalf:
         expect = np.array([0.01168653, 0.02175833, -0.01168653, -0.02175833,
                            0.01168653, 0.02175833, -0.01168653, -0.02175833,
                            0.01168653, 0.02175833, -0.01168653, -0.02175833,
-                           0.01168653, 0.02175833, -0.01168653, -0.02175833,])
+                           0.01168653, 0.02175833, -0.01168653, -0.02175833])
 
         psi = np.arange(0, 360, 22.5)*units.degree
         zero = 60*units.degree
