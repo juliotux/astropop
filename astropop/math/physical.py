@@ -668,7 +668,7 @@ class QFloat():
     @require_qfloat
     def __pow__(self, other):
         # Important: different from normal arrays, QFloat cannot be raises
-        # to an array due to inconsistencies in unit. Each element will
+        # to an array due to inconsistencies in unit. Each element could
         # have it's own unit.
         if other.unit != units.dimensionless_unscaled or \
            not np.isscalar(other.nominal):
@@ -923,6 +923,17 @@ _inverse_trigonometric_simple_wrapper(np.arccosh)
 _inverse_trigonometric_simple_wrapper(np.arctanh)
 
 
+@_implements_ufunc(np.arctan2)
+def _qfloat_arctan2(qf1, qf2):
+    """Compute the arctangent of qf1/qf2."""
+    # The 2 values must be in the same unit.
+    qf2 = qf2.to(qf1.unit)
+    nominal = np.arctan2(qf1.nominal, qf2.nominal)
+    std = propagate_2('arctan2', nominal, qf1.nominal, qf2.nominal,
+                      qf1.std_dev, qf2.std_dev)
+    return QFloat(nominal, std, units.radian)
+
+
 _ufunc_translate = {
     'add': QFloat.__add__,
     'absolute': QFloat.__abs__,
@@ -985,4 +996,8 @@ def _qfloat_sqrt(qf):
 
 @_implements_ufunc(np.hypot)
 def _qfloat_hypot(qf1, qf2):
-    return np.sqrt(qf1**2 + qf2**2)
+    qf2 = qf2.to(qf1.unit)
+    nominal = np.hypot(qf1.nominal, qf2.nominal)
+    std = propagate_2('hypot', nominal, qf1.nominal, qf2.nominal,
+                      qf1.std_dev, qf2.std_dev)
+    return QFloat(nominal, std, qf1.unit)

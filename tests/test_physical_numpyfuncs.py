@@ -1726,3 +1726,18 @@ class TestQFloatNumpyUfuncTrigonometric:
         with pytest.raises(NotImplementedError):
             # out argument should fail
             np.arctanh(qf, out=[])
+
+    def test_qfloat_np_arctan2(self):
+        qf1 = QFloat(1.0, 0.01)
+        qf2 = QFloat(0.0, 0.01)
+        res = np.arctan2(qf1, qf2)
+        assert_almost_equal(res.nominal, 1.57079633)
+        assert_almost_equal(res.std_dev, 0.01)
+        assert_equal(res.unit, units.Unit('rad'))
+
+        qf1 = QFloat([0.5, 1.0, 10], [0.01, 0.2, 0.3])
+        qf2 = QFloat([0.1, 0.5, 1.0], [0.01, 0.2, 0.3])
+        res = np.arctan2(qf1, qf2)
+        assert_almost_equal(res.nominal, [1.373401, 1.107149, 1.471128])
+        assert_almost_equal(res.std_dev, [0.019612, 0.178885, 0.029851])
+        assert_equal(res.unit, units.Unit('rad'))
