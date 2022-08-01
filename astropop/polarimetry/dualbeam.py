@@ -6,7 +6,9 @@ import numpy as np
 from dataclasses import dataclass
 from astropy.table import Table
 from scipy.spatial import cKDTree
+from scipy.optimize import curve_fit
 from astropy import units
+from functools import partial
 
 from ..logger import logger
 from ..math.physical import QFloat
@@ -23,7 +25,7 @@ def _compute_theta(q, u):
     # do not allow negative values
     if theta < 0:
         theta += 180
-    return theta*units.degree
+    return theta
 
 
 def estimate_dxdy(x, y, steps=[100, 30, 5, 3], bins=30, dist_limit=100):
@@ -137,6 +139,45 @@ def halfwave_model(psi, q, u, zero=None):
 
 
 @dataclass
+class StokesParameters:
+    """Store the Stokes parameters results from dual beam polarimeters.
+
+    Parameters
+    ----------
+    q, u, v: `~astropop.math.QFloat`
+        Stokes parameters.
+    retarder: str
+        'quarterwave' or 'halfwave'
+    k: float
+        Normalization constant used to compute zi.
+    zero: float
+        Zero position of the retarder in degrees.
+    zi: `~astropop.math.QFloat`
+        Relative difference of fluxes between ordinary and extraordinary beams.
+    """
+
+    retarder: str
+    q: QFloat
+    u: QFloat
+    v: QFloat = None
+    k: float = 1.0
+    zero: float = 0.0
+    zi: QFloat = None
+
+    @property
+    def p(self):
+        """Linear polarization level."""
+        return np.hypot(self.q, self.u)
+
+    @property
+    def theta(self):
+        """Angle between Stokes parameters."""
+        theta = _compute_theta(self.q.nominal, self.u.nominal)
+        err = 28.6*self.p.std_dev/self.p.nominal
+        return QFloat(theta, err, 'deg')
+
+
+@dataclass
 class _DualBeamPolarimetry(abc.ABC):
     """Base class for polarimetry computation."""
 
@@ -166,14 +207,13 @@ class _DualBeamPolarimetry(abc.ABC):
 
     def _check_positions(self, psi):
         """Check if positions are in the correct order."""
+        # Only positions multiple of 22.5 degrees are allowed
         devs = np.abs(psi/22.5 - np.round(psi/22.5, 0))*22.5
         if np.any(devs > self.psi_deviation):
             raise ValueError("Retarder positions must be multiple of 22.5 deg")
 
     def _calc_zi(self, f_ord, f_ext, k):
         """Compute zi from ordinary and extraordinary fluxes."""
-        f_ord = np.array(f_ord, dtype=float)
-        f_ext = np.array(f_ext, dtype=float)
         return (f_ord - f_ext*k)/(f_ord + f_ext*k)
 
     def _estimate_normalize_half(self, psi, f_ord, f_ext):
@@ -250,6 +290,47 @@ class SLSDualBeamPolarimetry(_DualBeamPolarimetry):
         self._check_positions(psi)
         f_ord = QFloat(f_ord, uncertainty=f_ord_error)
         f_ext = QFloat(f_ext, uncertainty=f_ext_error)
+
+        if self.retarder == 'halfwave':
+            return self._half_compute(psi, f_ord, f_ext)
+        if self.retarder == 'quarterwave':
+            return self._quarter_compute(psi, f_ord, f_ext)
+
+    def _half_fit(self, psi, zi, zero=None):
+        """Fit the model for halfwave retarder."""
+        # change the model to do not have to fit the zero position
+        model = partial(halfwave_model, zero=zero)
+        errors = zi.std_dev
+        if np.all(errors > 0):
+            fitter = partial(curve_fit, sigma=errors)
+        else:
+            fitter = curve_fit
+            logger.info('Errors will not be considered in the fit.')
+
+        # fit the model
+        (q, u), pcov = fitter(model, psi, zi.nominal, method='trf',
+                              bounds=([-1, -1], [1, 1]))
+        # Errors are the diagonal of the covariance matrix
+        q_err, u_err = np.sqrt(np.diag(pcov))
+
+        # use qfloat for fitted values
+        return QFloat(q, uncertainty=q_err), QFloat(u, uncertainty=u_err)
+
+    def _half_compute(self, psi, f_ord, f_ext):
+        """Compute the Stokes params for halfwave retarder."""
+        # estimate normalization factor
+        if self.k is not None:
+            k = self.k
+        elif self.compute_k:
+            k = self._estimate_normalize_half(psi, f_ord, f_ext)
+        else:
+            k = 1.0
+
+        # compute Stokes params
+        zi = self._calc_zi(f_ord, f_ext, k)
+        q, u = self._half_fit(psi, zi, self.zero)
+        return StokesParameters('halfwave', q=q, u=u, v=None, k=k,
+                                zero=self.zero, zi=zi)
 
 
 @dataclass

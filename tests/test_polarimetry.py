@@ -8,7 +8,9 @@ from astropop.polarimetry.dualbeam import match_pairs, estimate_dxdy, \
                                           halfwave_model, \
                                           _DualBeamPolarimetry, \
                                           SLSDualBeamPolarimetry, \
-                                          PCCDDualBealPlarimetry
+                                          PCCDDualBealPlarimetry, \
+                                          StokesParameters
+from astropop.math import QFloat
 from astropy import units
 from astropop.testing import *
 from scipy.optimize import curve_fit
@@ -315,3 +317,101 @@ class Test_DummyPolarimetry:
         expect = halfwave_model(psi, q=0.0130, u=-0.021, zero=60)
         zi = pol._calc_zi(flux_o, flux_e, k=1.2)
         assert_almost_equal(zi, expect)
+
+
+class Test_StokesParameters:
+    def test_initialize_halfwave(self):
+        q = QFloat(0.0130, 0.001)
+        u = QFloat(-0.021, 0.001)
+
+        # V is not needed
+        pol = StokesParameters(retarder='halfwave', q=q, u=u)
+        assert_equal(pol.q, q)
+        assert_equal(pol.u, u)
+        assert_is_none(pol.v)
+        assert_equal(pol.retarder, 'halfwave')
+        assert_equal(pol.k, 1.0)
+        assert_equal(pol.zero, 0.0)
+
+    def test_initialize_halfwave_kzero(self):
+        q = QFloat(0.0130, 0.001)
+        u = QFloat(-0.021, 0.001)
+        k = QFloat(1.2, 0.001)
+        zero = QFloat(60, 0.001)
+
+        # V is not needed
+        pol = StokesParameters(retarder='halfwave', q=q, u=u, k=k, zero=zero)
+        assert_equal(pol.q, q)
+        assert_equal(pol.u, u)
+        assert_is_none(pol.v)
+        assert_equal(pol.retarder, 'halfwave')
+        assert_equal(pol.k, k)
+        assert_equal(pol.zero, zero)
+
+    def test_initialize_quarterwave(self):
+        q = QFloat(0.0130, 0.001)
+        u = QFloat(-0.021, 0.001)
+        v = QFloat(0.021, 0.001)
+
+        # V is needed
+        pol = StokesParameters(retarder='quarterwave', q=q, u=u, v=v)
+        assert_equal(pol.q, q)
+        assert_equal(pol.u, u)
+        assert_equal(pol.v, v)
+        assert_equal(pol.retarder, 'quarterwave')
+        assert_equal(pol.k, 1.0)
+        assert_equal(pol.zero, 0.0)
+
+    def test_initialize_quarterwave_kzero(self):
+        q = QFloat(0.0130, 0.001)
+        u = QFloat(-0.021, 0.001)
+        v = QFloat(0.021, 0.001)
+        k = QFloat(1.2, 0.001)
+        zero = QFloat(60, 0.001)
+
+        # V is needed
+        pol = StokesParameters(retarder='quarterwave', q=q, u=u, v=v, k=k,
+                                zero=zero)
+        assert_equal(pol.q, q)
+        assert_equal(pol.u, u)
+        assert_equal(pol.v, v)
+        assert_equal(pol.retarder, 'quarterwave')
+        assert_equal(pol.k, k)
+        assert_equal(pol.zero, zero)
+
+    def test_stokes_properties(self):
+        q = QFloat(0.0130, 0.001)
+        u = QFloat(-0.021, 0.001)
+        v = QFloat(0.021, 0.001)
+        pol = StokesParameters(retarder='quarterwave', q=q, u=u, v=v)
+
+        assert_less(pol.p-0.0246981, 0.00001)
+        assert_less(pol.theta-150.8797*units.degree, 0.001*units.degree)
+
+
+class Test_SLSPolarimetry:
+    def test_fit_half(self):
+        q = 0.0130
+        u = -0.021
+        psi = np.arange(0, 360, 22.5)
+        flux_o, flux_e = get_flux_oe(1e5, psi, k=1.0, q=q, u=u, zero=0)
+        pol = SLSDualBeamPolarimetry(retarder='halfwave', k=1.0)
+        p = pol.compute(psi, flux_o, flux_e,
+                        f_ord_error=[50]*16, f_ext_error=[50]*16)
+        assert_almost_equal(p.q.nominal, q)
+        assert_almost_equal(p.u.nominal, u)
+        assert_almost_equal(p.k, 1.0)
+        assert_is_none(p.zero)
+
+    def test_fit_half_no_errors(self):
+        q = 0.0130
+        u = -0.021
+        psi = np.arange(0, 360, 22.5)
+        flux_o, flux_e = get_flux_oe(1e5, psi, k=1.0, q=q, u=u, zero=0)
+        pol = SLSDualBeamPolarimetry(retarder='halfwave', k=1.0)
+        p = pol.compute(psi, flux_o, flux_e)
+        assert_almost_equal(p.q.nominal, q)
+        assert_almost_equal(p.u.nominal, u)
+        assert_almost_equal(p.k, 1.0)
+        assert_is_none(p.zero)
+
