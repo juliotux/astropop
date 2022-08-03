@@ -154,6 +154,8 @@ class StokesParameters:
         Zero position of the retarder in degrees.
     zi: `~astropop.math.QFloat`
         Relative difference of fluxes between ordinary and extraordinary beams.
+    psi: array_like
+        Array of retarder positions in degrees.
     """
 
     retarder: str
@@ -163,6 +165,7 @@ class StokesParameters:
     k: float = 1.0
     zero: float = 0.0
     zi: QFloat = None
+    psi: QFloat = None
 
     @property
     def p(self):
@@ -183,8 +186,7 @@ class _DualBeamPolarimetry(abc.ABC):
 
     retarder: str  # 'quarterwave' or 'halfwave'
     k: float = None  # global normalization constant
-    zero: float = None  # zero position of the retarder
-    compute_zero: bool = False  # compute the zero position
+    zero: float = None  # zero position of the retarder. If not set, computed.
     compute_k: bool = False  # compute the normalization constant
     min_snr: float = None  # minimum signal-to-noise ratio
     psi_deviation: float = 0.1  # max deviation of retarder position
@@ -196,11 +198,6 @@ class _DualBeamPolarimetry(abc.ABC):
             self.zero = self.zero.to(units.degree).value
         if self.k is not None and self.compute_k:
             raise ValueError('k and compute_k cannot be used together.')
-        if self.zero is not None and self.compute_zero:
-            raise ValueError('zero and compute_zero cannot be used together.')
-
-        if self.compute_zero and self.retarder == 'halfwave':
-            raise ValueError('Half-wave retarder cannot compute zero.')
 
         # number of positions per cicle
         self._n_pos = 8 if self.retarder == 'quarterwave' else 4
@@ -285,6 +282,7 @@ class SLSDualBeamPolarimetry(_DualBeamPolarimetry):
     ----------
     .. [1] https://ui.adsabs.harvard.edu/abs/2019PASP..131b4501N
     """
+
     def compute(self, psi, f_ord, f_ext, f_ord_error=None, f_ext_error=None):
         """Compute the Stokes params from ordinary and extraordinary fluxes."""
         self._check_positions(psi)
@@ -296,16 +294,21 @@ class SLSDualBeamPolarimetry(_DualBeamPolarimetry):
         if self.retarder == 'quarterwave':
             return self._quarter_compute(psi, f_ord, f_ext)
 
-    def _half_fit(self, psi, zi, zero=None):
-        """Fit the model for halfwave retarder."""
-        # change the model to do not have to fit the zero position
-        model = partial(halfwave_model, zero=zero)
+    def _get_fitter(self, zi):
+        """Get the fitter function."""
         errors = zi.std_dev
         if np.all(errors > 0):
             fitter = partial(curve_fit, sigma=errors)
         else:
             fitter = curve_fit
             logger.info('Errors will not be considered in the fit.')
+        return fitter
+
+    def _half_fit(self, psi, zi):
+        """Fit the model for halfwave retarder."""
+        # change the model to do not have to fit the zero position
+        model = partial(halfwave_model, zero=self.zero)
+        fitter = self._get_fitter(zi)
 
         # fit the model
         (q, u), pcov = fitter(model, psi, zi.nominal, method='trf',
@@ -328,49 +331,54 @@ class SLSDualBeamPolarimetry(_DualBeamPolarimetry):
 
         # compute Stokes params
         zi = self._calc_zi(f_ord, f_ext, k)
-        q, u = self._half_fit(psi, zi, self.zero)
+        q, u = self._half_fit(psi, zi)
         return StokesParameters('halfwave', q=q, u=u, v=None, k=k,
                                 zero=self.zero, zi=zi)
 
+    def _quarter_fit(self, psi, zi):
+        # if zero is not set, estimate it from the data
+        if self.zero is not None:
+            model = partial(quarterwave_model, zero=self.zero)
+            bounds = ([-1, -1, -1], [1, 1, 1])
+            pnames = ['q', 'u', 'v']
+        else:
+            model = quarterwave_model
+            bounds = ([-1, -1, -1, 0], [1, 1, 1, 180])
+            pnames = ['q', 'u', 'v', 'zero']
+            logger.info('Zero position not set. Computing it from the data.')
 
-@dataclass
-class PCCDDualBealPlarimetry(_DualBeamPolarimetry):
-    """Polarimetry computation using PCCDPACK algorithms.
+        fitter = self._get_fitter(zi)
+        params, pcov = fitter(model, psi, zi.nominal, method='trf',
+                              bounds=bounds)
+        stokes = {pnames[i]: QFloat(params[i], uncertainty=np.sqrt(pcov[i, i]))
+                  for i in range(len(pnames))}
+        return stokes
 
-    PCCDPACK algorithms are described by [1]_ and [2]_.
+    def _quarter_compute(self, psi, f_ord, f_ext, max_iters=1000,
+                         tolerance=1e-8):
+        """Compute the Stokes params for quarterwave retarder."""
+        # iterate over k until the diference previous and current values is
+        # smaller than the tolerance
+        k = 1.0
+        previous = {'q': 0, 'u': 0, 'v': 0}
+        for i in range(max_iters):
+            current = {'q': 0, 'u': 0, 'v': 0}
+            # compute Stokes params, dict(q, u, v, zero)
+            zi = self._calc_zi(f_ord, f_ext, k)
+            params = self._quarter_fit(psi, zi)
+            current = {k: v.nominal for k, v in params.items()}
 
-    Parameters
-    ----------
-    retarder: str
-        Retarder type. Must be 'quarterwave' or 'halfwave'.
-    k: float (optional)
-        Normalization factor. If None, it is estimated from the data.
-    zero: float (optional)
-        Zero position of the retarder in degrees. If None, it is estimated
-        from the data.
-    compute_zero: bool (optional)
-        Fit zero position using the data.
-    compute_k: bool (optional)
-        Fit the normalization factor using the data.
+            # check if the difference is smaller than the tolerance
+            if np.allclose([current[i] for i in previous.keys()],
+                           [previous[i] for i in previous.keys()],
+                           atol=tolerance):
+                # add the zero if not fitted
+                if len(current) == 3:
+                    current['zero'] = self.zero
+                return StokesParameters('quarterwave', **params,
+                                        k=k, zi=zi, psi=psi)
+            # update previous values
+            previous = {i: current[i] for i in previous.keys()}
+            k = self._estimate_normalize_quarter(current['q'])
 
-    References
-    ----------
-    .. [1] https://ui.adsabs.harvard.edu/abs/1984PASP...96..383M
-    .. [2] https://ui.adsabs.harvard.edu/abs/1998A&A...335..979R
-    """
-
-    def _half_compute(self, psi, zi):
-        """Compute stokes parameters for halfwave retarder."""
-        n = len(psi)
-        q = (2.0/n) * np.nansum(zi*np.cos(4*np.radians(psi)))
-        u = (2.0/n) * np.nansum(zi*np.sin(4*np.radians(psi)))
-        return q, u
-
-    def _quarter_compute(self, psi, zi):
-        """Compute stokes parameters for quarterwave retarder."""
-        # FIXME: the sums is from 0 to 7, 1-cycle only
-        psi = np.radians(psi)
-        q = 1.0/3 * np.nansum(zi*np.square(np.cos(2*psi)))
-        u = np.nansum(zi*np.sin(2*psi)*np.cos(2*psi))
-        v = -1.0/4 * np.nansum(zi*np.sin(2*psi))
-        return q, u, v
+        raise RuntimeError(f'Could not converge after {max_iters} iterations.')

@@ -8,7 +8,6 @@ from astropop.polarimetry.dualbeam import match_pairs, estimate_dxdy, \
                                           halfwave_model, \
                                           _DualBeamPolarimetry, \
                                           SLSDualBeamPolarimetry, \
-                                          PCCDDualBealPlarimetry, \
                                           StokesParameters
 from astropop.math import QFloat
 from astropy import units
@@ -238,20 +237,10 @@ class Test_DummyPolarimetry:
         else:
             assert_false(pol.compute_k)
 
-    def test_initialize_compute_zero(self):
-        # quarterwae ok
-        pol = DummyPolarimeter('quarterwave', compute_zero=True)
-        with pytest.raises(ValueError, match='Half-wave retarder cannot '
-                           'compute zero.'):
-            DummyPolarimeter('halfwave', compute_zero=True)
-
     def test_initialize_error_redundancy(self):
         with pytest.raises(ValueError, match='k and compute_k cannot be used '
                            'together.'):
             DummyPolarimeter('halfwave', k=1.2, compute_k=True)
-        with pytest.raises(ValueError, match='zero and compute_zero cannot be'
-                           ' used together.'):
-            DummyPolarimeter('halfwave', zero=60, compute_zero=True)
 
     def test_initialize_error_retarder(self):
         with pytest.raises(ValueError, match="Retarder dummy unknown."):
@@ -415,3 +404,20 @@ class Test_SLSPolarimetry:
         assert_almost_equal(p.k, 1.0)
         assert_is_none(p.zero)
 
+    def test_fit_quarter(self):
+        q = 0.0130
+        u = -0.027
+        v = 0.021
+        zero = 60
+
+        psi = np.arange(0, 360, 22.5)
+        flux_o, flux_e = get_flux_oe(1e5, psi, k=1.0, q=q, u=u, v=v, zero=zero)
+        pol = SLSDualBeamPolarimetry(retarder='quarterwave', k=1.0, zero=60)
+        p = pol.compute(psi, flux_o, flux_e,
+                        f_ord_error=[50]*16, f_ext_error=[50]*16)
+
+        assert_almost_equal(p.q.nominal, q)
+        assert_almost_equal(p.u.nominal, u)
+        assert_almost_equal(p.v.nominal, v)
+        assert_almost_equal(p.k, 1.0)
+        assert_almost_equal(p.zero, zero)
