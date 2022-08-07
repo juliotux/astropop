@@ -417,7 +417,7 @@ class Test_SLSPolarimetry:
         p = pol.compute(psi, flux_o, flux_e,
                         f_ord_error=[50]*16, f_ext_error=[50]*16)
 
-        assert_almost_equal(p.q.nominal, 0.0078, decimal=5)
+        assert_almost_equal(p.q.nominal, 0.0130)
         assert_almost_equal(p.u.nominal, u)
         assert_almost_equal(p.v.nominal, v)
         assert_almost_equal(p.k, 1.0, decimal=2)

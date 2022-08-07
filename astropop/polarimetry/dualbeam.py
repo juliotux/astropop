@@ -283,7 +283,7 @@ class _DualBeamPolarimetry(abc.ABC):
                                         k=k, zi=zi, psi=psi)
             # update previous values
             previous = {i: current[i] for i in previous.keys()}
-            k = self._estimate_normalize_quarter(current['q'])
+            k *= self._estimate_normalize_quarter(current['q'])
 
         raise RuntimeError(f'Could not converge after {self.max_iters} '
                            'iterations.')
