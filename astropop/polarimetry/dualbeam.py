@@ -22,9 +22,11 @@ def _compute_theta(q, u):
     """Compute theta using Q and U, considering quadrants and max 180 value."""
     # numpy arctan2 already looks for quadrants and is defined in [-pi, pi]
     theta = np.degrees(0.5*np.arctan2(u, q))
+    if not hasattr(theta, 'unit'):
+        theta = theta*units.degree
     # do not allow negative values
-    if theta < 0:
-        theta += 180
+    if theta < 0*units.degree:
+        theta += 180*units.degree
     return theta
 
 
