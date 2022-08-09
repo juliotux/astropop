@@ -237,8 +237,8 @@ class _DualBeamPolarimetry(abc.ABC):
         """Estimate the normalization factor for quarterwave retarder."""
         ratio = self._estimate_normalize_half(psi, f_ord, f_ext)
         q_norm = (1+0.5*q)/(1-0.5*q)
-        # if (ratio < 1 and q < 0) or (ratio > 1 and q > 0):
-        #     q_norm = 1/q_norm
+        if (ratio < 1 and q < 0) or (ratio > 1 and q > 0):
+            q_norm = 1/q_norm
         return ratio*q_norm
 
     def _half_compute(self, psi, f_ord, f_ext):
