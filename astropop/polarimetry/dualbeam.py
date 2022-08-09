@@ -231,9 +231,13 @@ class _DualBeamPolarimetry(abc.ABC):
 
         return np.sum(f_ord)/np.sum(f_ext)
 
-    def _estimate_normalize_quarter(self, q):
+    def _estimate_normalize_quarter(self, psi, f_ord, f_ext, q):
         """Estimate the normalization factor for quarterwave retarder."""
-        return (1+0.5*q)/(1-0.5*q)
+        ratio = self._estimate_normalize_half(psi, f_ord, f_ext)
+        q_norm = (1+0.5*q)/(1-0.5*q)
+        if (ratio < 1 and q < 0) or (ratio > 1 and q > 0):
+            q_norm = 1/q_norm
+        return ratio*q_norm
 
     def _half_compute(self, psi, f_ord, f_ext):
         """Compute the Stokes params for halfwave retarder."""
@@ -283,7 +287,10 @@ class _DualBeamPolarimetry(abc.ABC):
                                         k=k, zi=zi, psi=psi)
             # update previous values
             previous = {i: current[i] for i in previous.keys()}
-            k *= self._estimate_normalize_quarter(current['q'])
+
+            # re-estimate k based on current q value
+            k = self._estimate_normalize_quarter(psi, f_ord, f_ext,
+                                                 current['q'])
 
         raise RuntimeError(f'Could not converge after {self.max_iters} '
                            'iterations.')
