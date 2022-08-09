@@ -804,6 +804,25 @@ def _qfloat_insert(qf, obj, values, axis=None):
     return QFloat(nominal, std, qf1.unit)
 
 
+@_implements_array_func(np.sum)
+def _qfloat_sum(qf, axis=None):
+    """Implement np.sum for qfloats."""
+    nominal = np.sum(qf.nominal, axis=axis)
+    std = np.sqrt(np.sum(np.square(qf.uncertainty), axis=axis))
+    return QFloat(nominal, std, qf.unit)
+
+
+@_implements_array_func(np.mean)
+def _qfloat_mean(qf, axis=None):
+    """Implement np.mean for qfloats."""
+    nominal = np.mean(qf.nominal, axis=axis)
+    # error of average = std_dev/sqrt(N)
+    std = np.std(qf.nominal, axis=axis)
+    # N is determined by the number of elements in the axis
+    std /= np.sqrt(np.sum(np.ones_like(qf.nominal), axis=axis))
+    return QFloat(nominal, std, qf.unit)
+
+
 def _implements_ufunc_on_nominal(func):
     """Wraps ufuncs only on the nominal value and don't return QFloat."""
     def wrapper(qf, *args, **kwargs):
