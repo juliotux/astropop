@@ -28,8 +28,11 @@ def get_flux_oe(flux, psi, k, q, u, v=None, zero=0):
 
 
 class DummyPolarimeter(_DualBeamPolarimetry):
-    def compute(self, psi, f_ord, f_ext, f_ord_error=None, f_ext_error=None):
-        return
+    def _half_fit(self, psi, zi):
+        """Fit the Stokes params for halfwave retarder."""
+
+    def _quarter_fit(self, psi, zi):
+        """Fit the Stokes params for quarterwave retarder."""
 
 
 def test_compute_theta():
@@ -402,6 +405,19 @@ class Test_SLSPolarimetry:
         assert_almost_equal(p.q.nominal, q)
         assert_almost_equal(p.u.nominal, u)
         assert_almost_equal(p.k, 1.0)
+        assert_is_none(p.zero)
+
+    def test_fit_half_estimate_k(self):
+        q = 0.0130
+        u = -0.021
+        psi = np.arange(0, 360, 22.5)
+        flux_o, flux_e = get_flux_oe(1e5, psi, k=1.2, q=q, u=u, zero=0)
+        pol = SLSDualBeamPolarimetry(retarder='halfwave', compute_k=True)
+        p = pol.compute(psi, flux_o, flux_e,
+                        f_ord_error=[50]*16, f_ext_error=[50]*16)
+        assert_almost_equal(p.q.nominal, q)
+        assert_almost_equal(p.u.nominal, u)
+        assert_almost_equal(p.k, 1.2)
         assert_is_none(p.zero)
 
     def test_fit_quarter(self):
