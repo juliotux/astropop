@@ -417,7 +417,7 @@ class Test_SLSPolarimetry:
                         f_ord_error=[50]*16, f_ext_error=[50]*16)
         assert_almost_equal(p.q.nominal, q)
         assert_almost_equal(p.u.nominal, u)
-        assert_almost_equal(p.k, 1.2)
+        assert_almost_equal(p.k.nominal, 1.2)
         assert_is_none(p.zero)
 
     def test_fit_quarter(self):
@@ -436,5 +436,5 @@ class Test_SLSPolarimetry:
         assert_almost_equal(p.q.nominal, 0.0130)
         assert_almost_equal(p.u.nominal, u)
         assert_almost_equal(p.v.nominal, v)
-        assert_almost_equal(p.k, 1.0, decimal=2)
+        assert_almost_equal(p.k.nominal, 1.0, decimal=2)
         assert_almost_equal(p.zero, zero)
