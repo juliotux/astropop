@@ -31,6 +31,9 @@ def sky_annulus(data, x, y, r_ann, algorithm='mmm', mask=None):
         mode) should be better for populated fields, while 'sigmaclip'
         (clipped mean) should be better for sparse fields.
         Default: 'mmm'
+     mask : np.ndarray (optional)
+        Mask badpixels and problematic ccd areas.
+        Default: 'None'
 
     Returns
     -------
@@ -94,7 +97,8 @@ def sky_annulus(data, x, y, r_ann, algorithm='mmm', mask=None):
 
 def aperture_photometry(data, x, y, r='auto', r_ann='auto', gain=1.0,
                         readnoise=None, mask=None, sky_algorithm='mmm'):
-    """Perform aperture photometry using sep.
+    """Perform aperture photometry using sep. Output units (ADU or e-) will 
+    be the same as input.
 
     Parameters
     ----------
@@ -114,10 +118,13 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto', gain=1.0,
         Default: 'auto'
     gain : float (optional)
         Gain to correctly calculate the error.
+        Default: 1.0
     readnoise : float (optional)
         Readnoise of the image to correctly calculate the error.
+        Default: 'None'
     mask : np.ndarray (optional)
         Mask badpixels and problematic ccd areas.
+        Default: 'None'
     sky_algorithm : 'mmm' or 'sigmaclip'
         Algorith to calculate the background value. 'mmm' (mean, median,
         mode) should be better for populated fields, while 'sigmaclip'
