@@ -137,10 +137,10 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto', gain=1.0,
         Table containing all aperture photometry informations.
         - ``x``, ``y``: position of the sources
         - ``aperture``: aperture radius
-        - ``flux``: flux of the sources
-        - ``flux_error``: flux error of the sources
-        - ``sky``: sky background value
-        - ``sky_error``: sky background error
+        - ``flux``: flux of the sources with bkg subtracted
+        - ``flux_error``: flux error of the sources with bkg subtracted
+        - ``sky``: sky background value by pixel
+        - ``sky_error``: sky background error by pixel
         - ``flag``: flag for the sources
     """
     res_ap = Table()
