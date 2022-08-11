@@ -31,9 +31,9 @@ def sky_annulus(data, x, y, r_ann, algorithm='mmm', mask=None):
         mode) should be better for populated fields, while 'sigmaclip'
         (clipped mean) should be better for sparse fields.
         Default: 'mmm'
-     mask : np.ndarray (optional)
+     mask : `~nnumpy.ndarray` (optional)
         Mask badpixels and problematic ccd areas.
-        Default: 'None'
+        Default: `None`
 
     Returns
     -------
@@ -102,18 +102,18 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto', gain=1.0,
 
     Parameters
     ----------
-    data : np.ndarray
+    data : `~nnumpy.ndarray`
         2D image data for photometry
     x, y : array_like
         Positions of the sources
     r : float or 'auto' (optional)
-        Aperture radius. If `auto`, the value will be estimated based in
+        Aperture radius. If 'auto', the value will be estimated based in
         the median gaussian FWHM of the sources in the image
         (r=0.6731*GFWHM).
         Default: 'auto'
-    r_ann : array_like([float, float]), None or 'auto' (optional)
+    r_ann : array_like([float, float]), `None` or 'auto' (optional)
         Annulus radii (r_in, r_out) for local background extraction.
-        If `auto`, the annulus will be set based on aperture as (4*r, 6*r).
+        If 'auto', the annulus will be set based on aperture as (4*r, 6*r).
         If None, no local background subtraction will be performed.
         Default: 'auto'
     gain : float (optional)
@@ -121,10 +121,10 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto', gain=1.0,
         Default: 1.0
     readnoise : float (optional)
         Readnoise of the image to correctly calculate the error.
-        Default: 'None'
-    mask : np.ndarray (optional)
+        Default: `None`
+    mask : `~nnumpy.ndarray` (optional)
         Mask badpixels and problematic ccd areas.
-        Default: 'None'
+        Default: `None`
     sky_algorithm : 'mmm' or 'sigmaclip'
         Algorith to calculate the background value. 'mmm' (mean, median,
         mode) should be better for populated fields, while 'sigmaclip'
