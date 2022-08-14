@@ -287,9 +287,15 @@ class Test_DummyPolarimetry:
 
     def test_estimate_normalize_quarter_ok(self):
         q = 0.0130
+        pol = DummyPolarimeter('halfwave')
+        psi = np.arange(0, 360, 22.5)
+        flux_o, flux_e = get_flux_oe(1e5, psi, k=1.2, q=0.0130,
+                                     u=-0.021, zero=60)
+
         pol = DummyPolarimeter('quarterwave')
-        k = pol._estimate_normalize_quarter(q)
-        assert_almost_equal(k, (1+0.5*q)/(1-0.5*q))
+        k = pol._estimate_normalize_quarter(psi, flux_o, flux_e, q)
+        assert_almost_equal(k,
+                            np.sum(flux_o)/np.sum(flux_e)*(1-0.5*q)/(1+0.5*q))
 
     def test_check_positions(self):
         pol = DummyPolarimeter('halfwave')
