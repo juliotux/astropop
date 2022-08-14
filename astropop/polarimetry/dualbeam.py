@@ -177,7 +177,7 @@ class StokesParameters:
     @property
     def theta(self):
         """Angle between Stokes parameters."""
-        theta = _compute_theta(self.q.nominal, self.u.nominal)
+        theta = _compute_theta(self.q, self.u).nominal
         err = 28.6*self.p.std_dev/self.p.nominal
         return QFloat(theta, err, 'deg')
 

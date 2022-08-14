@@ -377,8 +377,8 @@ class Test_StokesParameters:
         v = QFloat(0.021, 0.001)
         pol = StokesParameters(retarder='quarterwave', q=q, u=u, v=v)
 
-        assert_less(pol.p-0.0246981, 0.00001)
-        assert_less(pol.theta-150.8797*units.degree, 0.001*units.degree)
+        assert_almost_equal(pol.p.nominal, 0.0246981, decimal=3)
+        assert_almost_equal(pol.theta.nominal, 150.8797, decimal=3)
 
 
 class Test_SLSPolarimetry:
