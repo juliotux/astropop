@@ -369,7 +369,7 @@ class Test_StokesParameters:
 
         # V is needed
         pol = StokesParameters(retarder='quarterwave', q=q, u=u, v=v, k=k,
-                                zero=zero)
+                               zero=zero)
         assert_equal(pol.q, q)
         assert_equal(pol.u, u)
         assert_equal(pol.v, v)
