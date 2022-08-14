@@ -433,8 +433,62 @@ class Test_SLSPolarimetry:
         p = pol.compute(psi, flux_o, flux_e,
                         f_ord_error=[50]*16, f_ext_error=[50]*16)
 
-        assert_almost_equal(p.q.nominal, 0.0130)
+        assert_almost_equal(p.q.nominal, q)
         assert_almost_equal(p.u.nominal, u)
         assert_almost_equal(p.v.nominal, v)
         assert_almost_equal(p.k.nominal, 1.0, decimal=2)
         assert_almost_equal(p.zero, zero)
+
+    def test_fit_quarter_no_errors(self):
+        q = 0.0130
+        u = -0.027
+        v = 0.021
+        zero = 60
+
+        psi = np.arange(0, 360, 22.5)
+        flux_o, flux_e = get_flux_oe(1e5, psi, k=1.0, q=q, u=u, v=v, zero=zero)
+        pol = SLSDualBeamPolarimetry(retarder='quarterwave', zero=60,
+                                     compute_k=True)
+        p = pol.compute(psi, flux_o, flux_e)
+
+        assert_almost_equal(p.q.nominal, q)
+        assert_almost_equal(p.u.nominal, u)
+        assert_almost_equal(p.v.nominal, v)
+        assert_almost_equal(p.k.nominal, 1.0, decimal=2)
+        assert_almost_equal(p.zero, zero)
+
+    @pytest.mark.parametrize('k', [0.99, 1.01, 1.03, 0.97])
+    def test_fit_quarter_estimate_k(self, k):
+        q = 0.130
+        u = -0.027
+        v = 0.021
+        zero = 60
+
+        psi = np.arange(0, 360, 22.5)
+        flux_o, flux_e = get_flux_oe(1e5, psi, k=k, q=q, u=u, v=v, zero=zero)
+        pol = SLSDualBeamPolarimetry(retarder='quarterwave', zero=60,
+                                     compute_k=True)
+        p = pol.compute(psi, flux_o, flux_e)
+
+        assert_almost_equal(p.q.nominal, q, decimal=3)
+        assert_almost_equal(p.u.nominal, u, decimal=3)
+        assert_almost_equal(p.v.nominal, v, decimal=3)
+        assert_almost_equal(p.k.nominal, k, decimal=2)
+        assert_almost_equal(p.zero, zero, decimal=3)
+
+    def test_fit_quarter_estimate_zero(self):
+        q = 0.130
+        u = -0.027
+        v = 0.021
+        zero = 60
+
+        psi = np.arange(0, 360, 22.5)
+        flux_o, flux_e = get_flux_oe(1e5, psi, k=1.0, q=q, u=u, v=v, zero=zero)
+        pol = SLSDualBeamPolarimetry(retarder='quarterwave', compute_k=True)
+        p = pol.compute(psi, flux_o, flux_e)
+
+        assert_almost_equal(p.q.nominal, q, decimal=3)
+        assert_almost_equal(p.u.nominal, u, decimal=3)
+        assert_almost_equal(p.v.nominal, v, decimal=3)
+        assert_almost_equal(p.k.nominal, 1.0, decimal=2)
+        assert_almost_equal(p.zero.nominal, zero, decimal=3)

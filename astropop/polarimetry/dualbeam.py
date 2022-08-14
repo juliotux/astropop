@@ -276,15 +276,12 @@ class _DualBeamPolarimetry(abc.ABC):
             # compute Stokes params, dict(q, u, v, zero)
             zi = self._calc_zi(f_ord, f_ext, k)
             params = self._quarter_fit(psi, zi)
-            current = {k: v.nominal for k, v in params.items()}
+            current = {k: params[k].nominal for k in previous.keys()}
             logger.debug('quarterwave iter %i: %s', i, current)
             # check if the difference is smaller than the tolerance
             if np.allclose([current[i] for i in previous.keys()],
                            [previous[i] for i in previous.keys()],
                            atol=self.iter_tolerance):
-                # add the zero if not fitted
-                if len(current) == 3:
-                    current['zero'] = self.zero
                 return StokesParameters('quarterwave', **params,
                                         k=k, zi=zi, psi=psi)
             # update previous values
@@ -409,4 +406,6 @@ class SLSDualBeamPolarimetry(_DualBeamPolarimetry):
                               bounds=bounds)
         stokes = {pnames[i]: QFloat(params[i], uncertainty=np.sqrt(pcov[i, i]))
                   for i in range(len(pnames))}
+        if len(pnames) == 3:
+            stokes['zero'] = self.zero
         return stokes
