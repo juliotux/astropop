@@ -292,10 +292,6 @@ class TestQFloatNumpyArrayFuncs:
         assert_equal(res.std_dev, [[0.3, 0.4], [0.1, 0.2]])
         assert_equal(res.unit, qf.unit)
 
-    @pytest.mark.skip(reason="Not Implemented Yet")
-    def test_qfloat_np_hstack(self):
-        raise NotImplementedError
-
     def test_qfloat_np_insert(self):
         a = np.array([[1, 2], [3, 4], [5, 6]])
         qf = QFloat(a, a * 0.1, "m")
@@ -311,6 +307,20 @@ class TestQFloatNumpyArrayFuncs:
         assert_almost_equal(res.std_dev, [[0.1, 0.1, 0.2],
                                           [0.3, 0.1, 0.4],
                                           [0.5, 0.1, 0.6]])
+        assert_equal(res.unit, qf.unit)
+
+    def test_qfloat_np_mean(self):
+        a = np.arange(8).reshape((2, 4))
+        qf = QFloat(a, a * 0.1, "m")
+
+        res = np.mean(qf)
+        assert_almost_equal(res.nominal, np.mean(a))
+        assert_almost_equal(res.std_dev, np.std(a)/np.sqrt(a.size))
+        assert_equal(res.unit, qf.unit)
+
+        res = np.mean(qf, axis=0)
+        assert_almost_equal(res.nominal, np.mean(a, axis=0))
+        assert_almost_equal(res.std_dev, np.std(a, axis=0)/np.sqrt(2))
         assert_equal(res.unit, qf.unit)
 
     def test_qfloat_np_moveaxis(self):
@@ -578,13 +588,20 @@ class TestQFloatNumpyArrayFuncs:
         assert_almost_equal(res.std_dev, [[0, 0.01, 0.02]])
         assert_equal(res.unit, qf.unit)
 
-    @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_sum(self):
-        raise NotImplementedError
+        arr = np.ones(10).reshape((2, 5))
+        qf = QFloat(arr, arr*0.1, "m")
 
-    @pytest.mark.skip(reason="Not Implemented Yet")
-    def test_qfloat_np_stack(self):
-        raise NotImplementedError
+        res = np.sum(qf)
+        assert_equal(res.nominal, 10)
+        assert_equal(res.std_dev, 0.1*np.sqrt(10))
+        assert_equal(res.unit, qf.unit)
+
+        res = np.sum(qf, axis=0)
+        assert_equal(res.shape, [5])
+        assert_almost_equal(res.nominal, np.ones(5)*2)
+        assert_almost_equal(res.std_dev, np.ones(5)*np.sqrt(2)*0.1)
+        assert_equal(res.unit, qf.unit)
 
     def test_qfloat_np_swapaxes(self):
         arr = np.array([[[0, 1], [2, 3]], [[4, 5], [6, 7]]])
@@ -1726,3 +1743,18 @@ class TestQFloatNumpyUfuncTrigonometric:
         with pytest.raises(NotImplementedError):
             # out argument should fail
             np.arctanh(qf, out=[])
+
+    def test_qfloat_np_arctan2(self):
+        qf1 = QFloat(1.0, 0.01)
+        qf2 = QFloat(0.0, 0.01)
+        res = np.arctan2(qf1, qf2)
+        assert_almost_equal(res.nominal, 1.57079633)
+        assert_almost_equal(res.std_dev, 0.01)
+        assert_equal(res.unit, units.Unit('rad'))
+
+        qf1 = QFloat([0.5, 1.0, 10], [0.01, 0.2, 0.3])
+        qf2 = QFloat([0.1, 0.5, 1.0], [0.01, 0.2, 0.3])
+        res = np.arctan2(qf1, qf2)
+        assert_almost_equal(res.nominal, [1.373401, 1.107149, 1.471128])
+        assert_almost_equal(res.std_dev, [0.019612, 0.178885, 0.029851])
+        assert_equal(res.unit, units.Unit('rad'))

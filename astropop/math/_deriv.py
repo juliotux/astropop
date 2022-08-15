@@ -89,6 +89,8 @@ derivatives = {
     'expm1': (np.exp),
     'exp2': (lambda x: np.exp2(x)*np.log(2)),
     'fabs': (_deriv_fabs),
+    'hypot': [lambda x, y: x/np.hypot(x, y),
+              lambda x, y: y/np.hypot(x, y)],
     'log': (lambda x: 1/x),  # for np, log=ln
     'log10': (lambda x: 1/(x*np.log(10.0))),
     'log2': (lambda x: 1/(x*np.log(2.0))),
