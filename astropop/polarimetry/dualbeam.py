@@ -36,6 +36,22 @@ def estimate_dxdy(x, y, steps=[100, 30, 5, 3], bins=30, dist_limit=100):
     To compute the displacement between the ordinary and extraordinary
     beams, this function computes the most common distances between the
     sources in image, using clipped histograms around the peak.
+
+    Parameters
+    ----------
+    x, y: array_like
+        Arrays of x and y positions of the sources.
+    steps: list of int
+        List of steps to use in the histogram.
+    bins: int
+        Number of bins to use in the histogram.
+    dist_limit: float
+        Maximum distance between the pairs of sources to consider.
+
+    Return
+    ------
+    dx, dy: float
+        Displacement between the ordinary and extraordinary beams.
     """
     def _find_max(d):
         dx = 0
@@ -69,7 +85,27 @@ def estimate_dxdy(x, y, steps=[100, 30, 5, 3], bins=30, dist_limit=100):
 
 
 def match_pairs(x, y, dx, dy, tolerance=1.0):
-    """Match the pairs of ordinary/extraordinary points (x, y)."""
+    """Match the pairs of ordinary/extraordinary points (x, y).
+
+    This function matches the pairs of ordinary and extraordinary points
+    (x, y) using the displacement (dx, dy) between the two beams.
+
+    Parameters
+    ----------
+    x, y: array_like
+        Arrays of x and y positions of the sources.
+    dx, dy: float
+        Displacement between the ordinary and extraordinary beams.
+    tolerance: float
+        Tolerance for the matching.
+
+    Return
+    ------
+    `numpy.ndarray`:
+        Array of the indexes of the matched pairs. Column 'o' contains the
+        indexes of the ordinary points, column 'e' the indexes of the
+        extraordinary points.
+    """
     kd = cKDTree(list(zip(x, y)))
 
     px = np.array(x-dx)
