@@ -295,7 +295,30 @@ class _DualBeamPolarimetry(abc.ABC):
                            'iterations.')
 
     def compute(self, psi, f_ord, f_ext, f_ord_error=None, f_ext_error=None):
-        """Compute the Stokes params from ordinary and extraordinary fluxes."""
+        """Compute the Stokes params from ordinary and extraordinary fluxes.
+
+        Parameters
+        ----------
+        psi : array_like
+            Retarder positions in degrees. Must be multiple of 22.5 degrees.
+        f_ord : array_like
+            Fluxes of ordinary beam. If `~astropop.math.QFloat`, the errors
+            will be considered in the parameters computation.
+        f_ext : array_like
+            Fluxes of extraordinary beam. If `~astropop.math.QFloat`, the
+            errors will be considered in the parameters computation.
+        f_ord_error : array_like, optional
+            Errors of the ordinary fluxes. Conflicts with the error of `f_ord`
+            if it is a `~astropop.math.QFloat`.
+        f_ext_error : array_like, optional
+            Errors of the extraordinary fluxes. Conflicts with the error of
+            `f_ext` if it is a `~astropop.math.QFloat`.
+
+        Returns
+        -------
+        `~astropop.polarimetry.StokesParameters`:
+            Instances containing the computed Stokes Parameters.
+        """
         self._check_positions(psi)
         f_ord = QFloat(f_ord, uncertainty=f_ord_error)
         f_ext = QFloat(f_ext, uncertainty=f_ext_error)
@@ -331,9 +354,9 @@ class SLSDualBeamPolarimetry(_DualBeamPolarimetry):
         Normalization factor. If None, it is estimated from the data.
         Default is None.
     zero: float (optional)
-        Zero position of the retarder in degrees. If None, it is estimated
-        from the data. Defult is None. If None, it is estimated from the data
-        on quarterwave retarders and will be zero for halfwave retarders.
+        Zero position of the retarder in degrees. Defult is None. If None,
+        it will be estimated from the data on quarterwave retarders and will be
+        zero for halfwave retarders.
     compute_k: bool (optional)
         Fit the normalization factor using the data. Default is False.
         Conflicts with ``k`` argument.
