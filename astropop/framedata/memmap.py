@@ -154,14 +154,15 @@ class MemMapArray:
         if data is None:
             self._contained = None
         else:
-            if hasattr(data, 'dtype'):
-                dtype = dtype or data.dtype
-            else:
+            if not hasattr(data, 'dtype'):
                 data = np.array(data)
-                dtype = dtype or data.dtype
+            dtype = dtype or data.dtype
             # Default dtype
             dtype = dtype or 'float64'
             self._contained = np.array(data, dtype=dtype)
+            # ensure native byteorder
+            if not self._contained.dtype.isnative:
+                self._contained = self._contained.byteswap().newbyteorder()
         self.set_filename(filename)
         self._file_lock = True
 
@@ -270,6 +271,11 @@ class MemMapArray:
             adata = data
             if isinstance(data, MemMapArray):
                 adata = data._contained
+            if not hasattr(adata, 'dtype'):
+                adata = np.array(adata)
+            if not adata.dtype.isnative:
+                adata = adata.byteswap().newbyteorder()
+                dtype = adata.dtype
             if self.memmap:
                 name = self.filename
                 mm = self._contained

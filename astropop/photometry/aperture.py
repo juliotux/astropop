@@ -13,7 +13,9 @@ from ..fits_utils import imhdus
 
 
 def sky_annulus(data, x, y, r_ann, algorithm='mmm', mask=None):
-    """Determine the sky value of a single pixel based on a sky annulus.
+    """Determine the sky value of a single pixel based on a sky annulus
+       and obtains the sky value by calculating the median of annulus pixels
+       or by the MMM mode estimator from DAOPHOT (3*median - 2*mean).
 
     Parameters
     ----------

@@ -3,101 +3,30 @@
 
 import abc
 import numpy as np
-from astropy.modeling.fitting import LevMarLSQFitter
+from dataclasses import dataclass
 from astropy.table import Table
 from scipy.spatial import cKDTree
-from astropy.modeling import custom_model
+from scipy.optimize import curve_fit
+from astropy import units
+from functools import partial
 
 from ..logger import logger
+from ..math.physical import QFloat
 
 
-# TODO: Reimplement normalization
-# TODO: Implement generic retarder
-# TODO: Implement quarter-wave for MBR84
-# TODO: Plotting stuff here?
-
-__all__ = ['compute_theta', 'reduced_chi2', 'estimate_dxdy', 'match_pairs',
-           'MBR84DualBeamPolarimetry', 'SLSDualBeamPolarimetry',
-           'HalfWaveModel', 'QuarterWaveModel']
+__all__ = ['estimate_dxdy', 'match_pairs',
+           'quarterwave_model', 'halfwave_model']
 
 
-def check_shapes(func):
-    """Check if all the shapes matches between the data.
-
-    Also puts everything in np.arrays.
-    """
-    def wrapper(self, psi, ford, fext, ford_err=None,
-                fext_err=None, *args, **kwargs):
-        psi = np.array(psi)
-        ford = np.array(ford)
-        fext = np.array(fext)
-        # Shapes must match. If A==B and B==C, so A==C
-        if psi.shape != ford.shape or ford.shape != fext.shape:
-            raise ValueError('psi, ford and fext have incompatible '
-                             f'shapes {psi.shape} {ford.shape} {fext.shape}')
-
-        # Put everything in 2D arrays.
-        if psi.ndim == 1:
-            psi = np.array([psi])
-            ford = np.array([ford])
-            fext = np.array([fext])
-        elif psi.ndim != 2:
-            raise ValueError('psi, ford and fext have wrong number of '
-                             f'dimensions: {psi.ndim}')
-        # Check if errors matches
-        if ford_err is None or fext_err is None:
-            ford_err = None
-            fext_err = None
-        else:
-            ford_err = np.array(ford_err)
-            fext_err = np.array(fext_err)
-            # Both shapes must match
-            if ford_err.shape != fext_err.shape:
-                raise ValueError('Fluxes errors have inconpatible shapes. '
-                                 f'{ford_err.shape} {fext_err.shape}')
-            # Put everything in 2D arrays.
-            if ford_err.ndim == 1:
-                ford_err = np.array([ford_err])
-                fext_err = np.array([fext_err])
-
-        if ford.shape != ford_err.shape and ford_err is not None:
-            raise ValueError('Ordinary flux and error have incompatible'
-                             f' shapes {ford.shape} {ford_err.shape}')
-        if fext.shape != fext_err.shape and fext_err is not None:
-            raise ValueError('Extraodinary flux and error have incompatible '
-                             f'shapes {fext.shape} {fext_err.shape}')
-
-        return func(self, psi, ford, fext, ford_err,
-                    fext_err, *args, **kwargs)
-    wrapper.__doc__ = func.__doc__
-    return wrapper
-
-
-def reduced_chi2(psi, z, z_err, q, u, v=None, retarder='half'):
-    """Compute the reduced chi-square for a given model."""
-    if retarder == 'quarter' and v is None:
-        raise ValueError('missing value `v` of circular polarimetry.')
-
-    if retarder == 'half':
-        model = HalfWaveModel(q=q, u=u)
-        npar = 2
-    elif retarder == 'quarter':
-        model = QuarterWaveModel(q=q, u=u, v=v)
-        npar = 3
-
-    z_m = model(psi)
-    nu = len(z_m) - npar
-
-    return np.sum(np.square((z-z_m)/z_err))/nu
-
-
-def compute_theta(q, u):
+def _compute_theta(q, u):
     """Compute theta using Q and U, considering quadrants and max 180 value."""
     # numpy arctan2 already looks for quadrants and is defined in [-pi, pi]
     theta = np.degrees(0.5*np.arctan2(u, q))
+    if not hasattr(theta, 'unit'):
+        theta = theta*units.degree
     # do not allow negative values
-    if theta < 0:
-        theta += 180
+    if theta < 0*units.degree:
+        theta += 180*units.degree
     return theta
 
 
@@ -147,7 +76,7 @@ def match_pairs(x, y, dx, dy, tolerance=1.0):
     py = np.array(y-dy)
 
     d, ind = kd.query(list(zip(px, py)), k=1, distance_upper_bound=tolerance,
-                      n_jobs=-1)
+                      workers=-1)
 
     o = np.arange(len(x))[np.where(d <= tolerance)]
     e = np.array(ind[np.where(d <= tolerance)])
@@ -158,296 +87,325 @@ def match_pairs(x, y, dx, dy, tolerance=1.0):
     return result.as_array()
 
 
-def _quarter(psi, q=1.0, u=1.0, v=1.0):
-    """Polarimetry z(psi) model for quarter wavelenght retarder.
+def quarterwave_model(psi, q, u, v, zero=0):
+    """Compute polarimetry z(psi) model for quarter wavelength retarder.
 
-    Z= Q*cos(2psi)**2 + U*sin(2psi)*cos(2psi) - V*sin(2psi)
-    psi in degrees.
+    Z(psi) = Q*cos(2psi)**2 + U*sin(2psi)*cos(2psi) - V*sin(2psi)
+
+    Parameters
+    ----------
+    psi: array_like
+        Array of retarder positions in degrees.
+    q, u, v: float
+        Stokes parameters
+    zero: float
+        Zero position of the retarder in degrees.
+
+    Return
+    ------
+    z: array_like
+        Array of polarimetry values.
     """
+    if zero is not None:
+        psi = psi+zero  # avoid inplace modification
     psi = np.radians(psi)
     psi2 = 2*psi
-    z = q*(np.cos(psi2)**2) + u*np.sin(psi2)*np.cos(psi2) - v*np.sin(psi2)
-    return z
+    zi = q*(np.cos(psi2)**2) + u*np.sin(psi2)*np.cos(psi2) - v*np.sin(psi2)
+    return zi
 
 
-def _quarter_deriv(psi, q=1.0, u=1.0, v=1.0):
-    psi = np.radians(psi)
-    x = 2*psi
-    dq = np.cos(x)**2
-    du = 0.5*np.sin(2*x)
-    dv = -np.sin(2*x)
-    return (dq, du, dv)
+def halfwave_model(psi, q, u, zero=None):
+    """Compute polarimetry z(psi) model for half wavelength retarder.
 
+    Z(psi) = Q*cos(4*psi) + U*sin(4*psi)
 
-def _half(psi, q=1.0, u=1.0):
-    """Polarimetry z(psi) model for half wavelenght retarder.
+    Parameters
+    ----------
+    psi: array_like
+        Array of retarder positions in degrees.
+    q, u: float
+        Stokes parameters
+    zero: float (optional)
+        Zero angle of the retarder position.
 
-    Z(I)= Q*cos(4psi(I)) + U*sin(4psi(I))
-    psi in degrees.
+    Return
+    ------
+    z: array_like
+        Array of polarimetry values.
     """
+    if zero is not None:
+        psi = psi+zero  # avoid inplace modification
     psi = np.radians(psi)
-    return q*np.cos(4*psi) + u*np.sin(4*psi)
+    zi = q*np.cos(4*psi) + u*np.sin(4*psi)
+    return zi
 
 
-def _half_deriv(psi, q=1.0, u=1.0):
-    psi = np.radians(psi)
-    return (np.cos(4*psi), np.sin(4*psi))
+@dataclass
+class StokesParameters:
+    """Store the Stokes parameters results from dual beam polarimeters.
+
+    Parameters
+    ----------
+    q, u, v: `~astropop.math.QFloat`
+        Stokes parameters.
+    retarder: str
+        'quarterwave' or 'halfwave'
+    k: float
+        Normalization constant used to compute zi.
+    zero: float
+        Zero position of the retarder in degrees.
+    zi: `~astropop.math.QFloat`
+        Relative difference of fluxes between ordinary and extraordinary beams.
+    psi: array_like
+        Array of retarder positions in degrees.
+    """
+
+    retarder: str
+    q: QFloat
+    u: QFloat
+    v: QFloat = None
+    k: float = 1.0
+    zero: float = 0.0
+    zi: QFloat = None
+    psi: QFloat = None
+
+    @property
+    def p(self):
+        """Linear polarization level."""
+        return np.hypot(self.q, self.u)
+
+    @property
+    def theta(self):
+        """Angle between Stokes parameters."""
+        theta = _compute_theta(self.q, self.u).nominal
+        err = 28.6*self.p.std_dev/self.p.nominal
+        return QFloat(theta, err, 'deg')
 
 
-HalfWaveModel = custom_model(_half, fit_deriv=_half_deriv)
-QuarterWaveModel = custom_model(_quarter, fit_deriv=_quarter_deriv)
-
-
-class DualBeamPolarimetryBase(abc.ABC):
+@dataclass
+class _DualBeamPolarimetry(abc.ABC):
     """Base class for polarimetry computation."""
 
-    def __init__(self, retarder, normalize=True, positions=None, min_snr=None,
-                 filter_negative=True, global_k=None):
-        self._retarder = retarder
-        self._min_snr = min_snr
-        self._normalize = normalize
-        self._filter_negative = filter_negative
-        self._global_k = global_k
-        self._logger = logger
+    retarder: str  # 'quarterwave' or 'halfwave'
+    k: float = None  # global normalization constant
+    zero: float = None  # zero position of the retarder. If not set, computed.
+    compute_k: bool = False  # compute the normalization constant
+    min_snr: float = None  # minimum signal-to-noise ratio
+    psi_deviation: float = 0.1  # max deviation of retarder position
+    iter_tolerance: float = 1e-5  # maximum tolerance on the iterative fitting
+    max_iters: int = 100  # maximum number of iterations
 
-    @property
-    def retarder(self):
-        """Retarder used for polarimetry computations."""
-        return self._retarder
+    def __post_init__(self):
+        if self.retarder not in ['quarterwave', 'halfwave']:
+            raise ValueError(f"Retarder {self.retarder} unknown.")
+        if isinstance(self.zero, (QFloat, units.Quantity)):
+            self.zero = self.zero.to(units.degree).value
+        if self.k is not None and self.compute_k:
+            raise ValueError('k and compute_k cannot be used together.')
 
-    @property
-    def min_snr(self):
-        """Minimal SNR which will be returned. Bellow, return NaN."""
-        return self._min_snr
+        # number of positions per cicle
+        self._n_pos = 8 if self.retarder == 'quarterwave' else 4
 
-    @property
-    def normalize(self):
-        """Normalize of beams enabled."""
-        return self._normalize
+    def _check_positions(self, psi):
+        """Check if positions are in the correct order."""
+        # Only positions multiple of 22.5 degrees are allowed
+        devs = np.abs(psi/22.5 - np.round(psi/22.5, 0))*22.5
+        if np.any(devs > self.psi_deviation):
+            raise ValueError("Retarder positions must be multiple of 22.5 deg")
 
-    @property
-    def filter_negative(self):
-        """Negative fluxes filtered."""
-        return self._filter_negative
+    def _calc_zi(self, f_ord, f_ext, k):
+        """Compute zi from ordinary and extraordinary fluxes."""
+        return (f_ord - f_ext*k)/(f_ord + f_ext*k)
 
-    @property
-    def global_k(self):
-        """Return the k constant value for all computations."""
-        return self._global_k
+    def _estimate_normalize_half(self, psi, f_ord, f_ext):
+        """Estimate the normalization factor for halfwave retarder."""
+        pos_in_cycle = np.mod(np.floor_divide(psi, 22.5), self._n_pos)
+        pos_in_cycle = pos_in_cycle.astype(int)
+        ford_mean = np.full(self._n_pos, np.nan)
+        fext_mean = np.full(self._n_pos, np.nan)
+
+        for i in range(self._n_pos):
+            ford_mean[i] = np.mean(f_ord[pos_in_cycle == i])
+            fext_mean[i] = np.mean(f_ext[pos_in_cycle == i])
+
+        if np.any(np.isnan(ford_mean)) or np.any(np.isnan(fext_mean)):
+            raise ValueError('Could not estimate the normalization factor.')
+
+        return np.sum(f_ord)/np.sum(f_ext)
+
+    def _estimate_normalize_quarter(self, psi, f_ord, f_ext, q):
+        """Estimate the normalization factor for quarterwave retarder."""
+        ratio = self._estimate_normalize_half(psi, f_ord, f_ext)
+        q_norm = (1+0.5*q)/(1-0.5*q)
+        if (ratio < 1 and q < 0) or (ratio > 1 and q > 0):
+            q_norm = 1/q_norm
+        return ratio*q_norm
+
+    def _half_compute(self, psi, f_ord, f_ext):
+        """Compute the Stokes params for halfwave retarder."""
+        # estimate normalization factor
+        if self.k is not None:
+            k = self.k
+        elif self.compute_k:
+            k = self._estimate_normalize_half(psi, f_ord, f_ext)
+        else:
+            k = 1.0
+
+        # compute Stokes params
+        zi = self._calc_zi(f_ord, f_ext, k)
+        q, u = self._half_fit(psi, zi)
+        return StokesParameters('halfwave', q=q, u=u, v=None, k=k,
+                                zero=self.zero, zi=zi)
+
+    def _quarter_compute(self, psi, f_ord, f_ext):
+        """Compute the Stokes params for quarterwave retarder."""
+        # bypass normalization
+        if not self.compute_k:
+            k = self.k or 1.0
+            zi = self._calc_zi(f_ord, f_ext, k)
+            params = self._quarter_fit(psi, zi)
+            return StokesParameters('quarterwave', **params, k=k,
+                                    zi=zi, psi=psi)
+
+        # iterate over k until the diference previous and current values is
+        # smaller than the tolerance
+        k = 1.0
+        previous = {'q': 0, 'u': 0, 'v': 0}
+        for i in range(self.max_iters):
+            current = {'q': 0, 'u': 0, 'v': 0}
+            # compute Stokes params, dict(q, u, v, zero)
+            zi = self._calc_zi(f_ord, f_ext, k)
+            params = self._quarter_fit(psi, zi)
+            current = {k: params[k].nominal for k in previous.keys()}
+            logger.debug('quarterwave iter %i: %s', i, current)
+            # check if the difference is smaller than the tolerance
+            if np.allclose([current[i] for i in previous.keys()],
+                           [previous[i] for i in previous.keys()],
+                           atol=self.iter_tolerance):
+                return StokesParameters('quarterwave', **params,
+                                        k=k, zi=zi, psi=psi)
+            # update previous values
+            previous = {i: current[i] for i in previous.keys()}
+
+            # re-estimate k based on current q value
+            k = self._estimate_normalize_quarter(psi, f_ord, f_ext,
+                                                 current['q'])
+
+        raise RuntimeError(f'Could not converge after {self.max_iters} '
+                           'iterations.')
+
+    def compute(self, psi, f_ord, f_ext, f_ord_error=None, f_ext_error=None):
+        """Compute the Stokes params from ordinary and extraordinary fluxes."""
+        self._check_positions(psi)
+        f_ord = QFloat(f_ord, uncertainty=f_ord_error)
+        f_ext = QFloat(f_ext, uncertainty=f_ext_error)
+
+        if self.retarder == 'halfwave':
+            return self._half_compute(psi, f_ord, f_ext)
+        if self.retarder == 'quarterwave':
+            return self._quarter_compute(psi, f_ord, f_ext)
 
     @abc.abstractmethod
-    def compute(self, psi, ford, fext, ford_err=None, fext_err=None,
-                logger=None):
-        """Compute the polarimetry."""
+    def _half_fit(self, psi, zi):
+        """Fit the Stokes params for halfwave retarder."""
 
     @abc.abstractmethod
-    def estimate_normalize(self, psi, ford, fext):
-        """Estimate the normalization constant."""
-
-    def calc_z(self, psi, ford, fext, ford_err=None, fext_err=None):
-        """Calculate Z value using ford and fext."""
-        # clean problematic sources (bad sky subtraction, low snr)
-        self._filter_neg(ford, fext)  # inplace
-
-        if self.normalize:
-            if self.global_k is not None:
-                k = self.global_k
-            else:
-                k = self.estimate_normalize(psi, ford, fext)
-        else:
-            k = 1
-
-        z = (ford-(fext*k))/(ford+(fext*k))
-
-        if ford_err is None or fext_err is None:
-            z_err = None
-        else:
-            # Assuming individual z errors from propagation
-            ford_err = np.array(ford_err)
-            fext_err = np.array(fext_err)
-            oi = 2*ford/((ford+fext)**2)
-            ei = -2*fext/((ford+fext)**2)
-            z_err = np.sqrt((oi**2)*(ford_err**2) + ((ei**2)*(fext_err**2)))
-        return z, z_err
-
-    def _filter_neg(self, ford, fext):
-        """Filter the negative values. Inplace."""
-        if self.filter_negative:
-            filt = (ford < 0) | (fext < 0)
-            w = np.where(~filt)
-            ford[w] = np.nan
-            fext[w] = np.nan
+    def _quarter_fit(self, psi, zi):
+        """Fit the Stokes params for quarterwave retarder."""
 
 
-class SLSDualBeamPolarimetry(DualBeamPolarimetryBase):
-    """Compute polarimetry using SLS method.
+@dataclass
+class SLSDualBeamPolarimetry(_DualBeamPolarimetry):
+    """Polarimetry computation for Stokes Least Squares algorithm.
 
-    The Stokes Least Squares (SLS) method consists in fit the relative
-    difference between the ordinary and extraordinary beams to defined
-    equations, that depends on what retarder is being used.
-    The fitting is performed using Levenberg–Marquardt algorith. For half-wave
-    retarders, we use:
+    This method is describe in [1]_ and consists in fitting the data using
+    theoretical models. This method has the advantage of not need particular
+    sets of retarder positions and can handle missing points. More datailed
+    description of fitted equations are given in [2]_ and [3]_.
 
-    Z(I)= Q*cos(4psi(I)) + U*sin(4psi(I))
+    Parameters
+    ----------
+    retarder: str
+        Retarder type. Must be 'quarterwave' or 'halfwave'.
+    k: float (optional)
+        Normalization factor. If None, it is estimated from the data.
+        Default is None.
+    zero: float (optional)
+        Zero position of the retarder in degrees. If None, it is estimated
+        from the data. Defult is None. If None, it is estimated from the data
+        on quarterwave retarders and will be zero for halfwave retarders.
+    compute_k: bool (optional)
+        Fit the normalization factor using the data. Default is False.
+        Conflicts with ``k`` argument.
+    min_snr: float (optional)
+        Minimum signal-to-noise ratio. Points with lower SNR will be discarded.
+        Default is None.
+    psi_deviation: float (optional)
+        Maximum deviation of the psi position from the sequence multiple
+        of 22.5 degrees. Default is 0.1 degrees.
 
-    For quarter wave retarders:
+    Notes
+    -----
+    - The model fitting is performed by `~scipy.optimize.cure_fit` function,
+      using the Trust Region Reflective ``trf`` method.
+    - If ``k`` or ``zero`` arguments are passed, they won't be computed.
+      Instead, the passed values will be used.
+    - If ``compute_k`` is True, the value will be estimated from the data.
+      For halfwave retarders, it will be estimated by the ratio of the total
+      flux of the ordinary flux and the extraordinary flux in all positions
+      [2]_. For quarterwave retarders, it will be estimated in a iterative
+      process described in [4]_.
 
-    Z= Q*cos(2psi)**2 + U*sin(2psi)*cos(2psi) - V*sin(2psi)
-
-    More details can be found Campagnolo 2019 (ads: 2019PASP..131b4501N)
+    References
+    ----------
+    .. [1] https://ui.adsabs.harvard.edu/abs/2019PASP..131b4501N
+    .. [2] https://ui.adsabs.harvard.edu/abs/1984PASP...96..383M
+    .. [3] https://ui.adsabs.harvard.edu/abs/1998A&A...335..979R
+    .. [4] https://ui.adsabs.harvard.edu/abs/2021AJ....161..225L
     """
 
-    def __init__(self, retarder, normalize=True, positions=None, min_snr=None,
-                 filter_negative=True, global_k=None, **kwargs):
-        super(SLSDualBeamPolarimetry, self).__init__(retarder, normalize,
-                                                     positions, min_snr,
-                                                     filter_negative, global_k)
-        if self.retarder == 'half':
-            self._model = HalfWaveModel
-        elif self.retarder == 'quarter':
-            self._model = QuarterWaveModel
-        elif self.retarder == 'other':
-            raise NotImplementedError('Generic retarder not implemented')
+    def _get_fitter(self, zi):
+        """Get the fitter function."""
+        errors = zi.std_dev
+        if np.all(errors > 0):
+            fitter = partial(curve_fit, sigma=errors)
         else:
-            raise ValueError(f'Retarder {self.retarder} not recognized.')
+            fitter = curve_fit
+            logger.info('Errors will not be considered in the fit.')
+        return fitter
 
-    @check_shapes
-    def compute(self, psi, ford, fext, ford_err=None, fext_err=None,
-                logger=None):
-        """Compute the polarimetry.
+    def _half_fit(self, psi, zi):
+        """Fit the model for halfwave retarder."""
+        # change the model to do not have to fit the zero position
+        model = partial(halfwave_model, zero=self.zero)
+        fitter = self._get_fitter(zi)
 
-        Parameters
-        ----------
-        psi : array_like
-            Retarder positions in degrees
-        ford, fext : array_like
-            Fluxes of ordinary (ford) and extraordinary (fext) beams.
-        ford_err, fext_err : array_like
-            Statistical errors of ordinary and extraordinary fluxes.
-        logger : `logging.Logger`
-            Python logger of the function.
+        # fit the model
+        (q, u), pcov = fitter(model, psi, zi.nominal, method='trf',
+                              bounds=([-1, -1], [1, 1]))
+        # Errors are the diagonal of the covariance matrix
+        q_err, u_err = np.sqrt(np.diag(pcov))
 
-        Notes
-        -----
-        * `psi`, `ford` and `fext` must match the dimensions.
+        # use qfloat for fitted values
+        return QFloat(q, uncertainty=q_err), QFloat(u, uncertainty=u_err)
 
-        * If each data have just one dimension, it will be considered
-          a single star.
-
-        * If each data have two dimensions, it will be considered multiple
-          stars, where each line representes one star.
-        """
-        logger = logger or self.logger
-
-        self._filter_neg(ford, fext)  # inplace
-        z, z_err = self.calc_z(psi, ford, fext, ford_err, fext_err)
-
-        n_stars = len(z)
-        logger.info(f'Computing polarimetry for {n_stars} stars.')
-
-        # Variables to store the results
-        res = Table()
-        res['z'] = z
-        res['z_err'] = z_err
-        for i in ('q', 'u'):
-            res[i] = np.zeros(n_stars, dtype='f8')
-            res[i+"_err"] = np.zeros(n_stars, dtype='f8')
-            res[i].fill(np.nan)  # fill with nan to be safer
-            res[i+"_err"].fill(np.nan)
-        if self.retarder != 'half':
-            res['v'] = np.zeros(n_stars, dtype='f8')
-            res['v_err'] = np.zeros(n_stars, dtype='f8')
-            res['v'].fill(np.nan)
-            res['v_err'].fill(np.nan)
-
-        for i in range(n_stars):
-            fitter = LevMarLSQFitter()
-            model = self._model()
-            if z_err is not None:
-                m_fit = fitter(model, psi[i], z[i], weights=1/z_err[i])
-            else:
-                m_fit = fitter(model, psi[i], z[i])
-            info = fitter.fit_info
-            for n, v, err in zip(m_fit.param_names, m_fit.parameters,
-                                 np.sqrt(np.diag(info['param_cov']))):
-                res[n][i] = v
-                res[n+"_err"] = err
-
-        res['p'] = np.hipot(res['q'], res['u'])
-        res['p_err'] = np.sqrt(((res['q']/res['p'])**2)*(res['q_err']**2) +
-                               ((res['u']/res['p'])**2)*(res['u_err']**2))
-        res['theta'] = compute_theta(res['q'], res['u'])
-        res['theta_err'] = 28.65*res['p_err']/res['p']
-
-        return res
-
-
-class MBR84DualBeamPolarimetry(DualBeamPolarimetryBase):
-    """Compute polarimetry using MBR84 method.
-
-    Method Described by Magalhaes et al 1984 (ads string: 1984PASP...96..383M)
-    """
-
-    def __init__(self, retarder, normalize=True, positions=None, min_snr=None,
-                 filter_negative=True, global_k=None, **kwargs):
-        super(SLSDualBeamPolarimetry, self).__init__(retarder, normalize,
-                                                     positions, min_snr,
-                                                     filter_negative, global_k)
-
-    @check_shapes
-    def compute(self, psi, ford, fext, ford_err=None, fext_err=None,
-                logger=None):
-        """Compute the polarimetry.
-
-        Parameters
-        ----------
-        psi : array_like
-            Retarder positions in degrees
-        ford, fext : array_like
-            Fluxes of ordinary (ford) and extraordinary (fext) beams.
-        ford_err, fext_err : array_like
-            Statistical errors of ordinary and extraordinary fluxes.
-        logger : `logging.Logger`
-            Python logger of the function.
-
-        Notes
-        -----
-        * `psi`, `ford` and `fext` must match the dimensions.
-
-        * If each data have just one dimension, it will be considered
-          a single star.
-
-        * If each data have two dimensions, it will be considered multiple
-          stars, where each line representes one star.
-        """
-        logger = logger or self.logger
-        self._filter_neg(ford, fext)  # inplace
-
-        result = Table()
-        z, z_err = self.calc_z(psi, ford, fext, ford_err, fext_err)
-        logger.info(f'Computing polarimetry for {len(z)} stars.')
-
-        if self.retarder == 'half':
-            n = len(z)
-            q = (2.0/n) * np.nansum(z*np.cos(4*psi))
-            u = (2.0/n) * np.nansum(z*np.sin(4*psi))
-            p = np.sqrt(q**2 + u**2)
-
-            a = 2.0/n
-            b = np.sqrt(1.0/(n-2))
-            err = a*np.nansum(z**2)
-            err = err - p**2
-            err = b*np.sqrt(err)
-
-            result['q'] = q
-            result['q_err'] = err
-            result['u'] = u
-            result['u_err'] = err
-            result['p'] = p
-            result['p_err'] = err
-            result['theta'] = compute_theta(q, u)
-            result['theta_err'] = 28.65*err/p
+    def _quarter_fit(self, psi, zi):
+        # if zero is not set, estimate it from the data
+        if self.zero is not None:
+            model = partial(quarterwave_model, zero=self.zero)
+            bounds = ([-1, -1, -1], [1, 1, 1])
+            pnames = ['q', 'u', 'v']
         else:
-            raise ValueError(f'Retarder {self.retarder} not supported')
+            model = quarterwave_model
+            bounds = ([-1, -1, -1, 0], [1, 1, 1, 180])
+            pnames = ['q', 'u', 'v', 'zero']
+            logger.info('Zero position not set. Computing it from the data.')
 
-        return result
+        fitter = self._get_fitter(zi)
+        params, pcov = fitter(model, psi, zi.nominal, method='trf',
+                              bounds=bounds)
+        stokes = {pnames[i]: QFloat(params[i], uncertainty=np.sqrt(pcov[i, i]))
+                  for i in range(len(pnames))}
+        if len(pnames) == 3:
+            stokes['zero'] = self.zero
+        return stokes
