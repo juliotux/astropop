@@ -2,7 +2,8 @@
 """Reduce polarimetry data."""
 
 from .dualbeam import match_pairs, estimate_dxdy, quarterwave_model, \
-                      halfwave_model
+                      halfwave_model, SLSDualBeamPolarimetry
 
 __all__ = ['match_pairs', 'estimate_dxdy',
-           'quarterwave_model', 'halfwave_model']
+           'quarterwave_model', 'halfwave_model',
+           'SLSDualBeamPolarimetry']
