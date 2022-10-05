@@ -36,7 +36,9 @@ def _match_indexes(ra, dec, cat_skycoords, limit_angle):
         List containing the indexes in the catalog that matched the object
         coordinates. If -1, it represents objects not matched.
     """
-    # # Matching using astropy's skycoord can be slow for big catalogs
+    # TODO: make code smarter with bayesian approach and magnitude matching
+
+    # Matching using astropy's skycoord can be slow for big catalogs
     ind, dist, _ = match_coordinates_sky(SkyCoord(ra, dec, unit=('degree',
                                                                  'degree'),
                                                   frame='icrs'),
@@ -70,20 +72,13 @@ class SourcesCatalog:
 
     Parameters
     ----------
-    ids: array (optional)
+    ids: array
         Names or ids of the objects in the catalog.
-    mag: array or `~astropop.math.QFloat` (optional)
-        Photometric magnitude of the object. If a list
-        or array, must be 1-dimensional array containing only the magnitudes.
-        If QFloat, ``mag_error`` and ``mag_unit`` arguments
-        will be ignored. Photometry will be only available if this
-        argument is set.
-    mag_error: array (optional)
-        Photometric magnitude errors in the same unit of the `mag`
-        argument. Ignored if ``mag`` is a QFloat.
-    mag_unit: str, `~astropy.units.Unit` or array (optional)
-        Unit of the photometric magnitude.
-        Ignored if ``mag`` is a QFloat.
+    mag: `dict` (optional)
+        Dictionary of photometric magnitudes for each available filter. The
+        keys are the names of the filters and the values are the photometric
+        magnitudes of the object in a `astropop.math.QFloat` array. Photometry
+        will be only available if this argument is set.
     *args, **kwargs:
         Arguments to be passed to `~astropy.coordinates.SkyCoord`
         initialization. See `~astropy.coordinates.SkyCoord` docs for more
@@ -102,44 +97,61 @@ class SourcesCatalog:
             Celestial frame of coordinates. Default is 'ICRS'
     """
 
-    _ids = None  # Store array of ids
-    _mags = None  # Store QFloat of mags
-    _coords = None  # Store Skycoord of coordinates
-    _query = None  # Store query table
+    _base_table = None  # Store array of ids
+    _mags_table = None  # Store magnitudes with filter colname in QFloat format
 
-    def __init__(self, *args, ids=None, mag=None, mag_error=None,
-                 mag_unit=None, query_table=None, **kwargs):
+    def __init__(self, *args, ids=None, mag=None,
+                 query_table=None, **kwargs):
+        self._base_table = Table()
         # initializate coords and skycoords using default kwargs.
-        self._coords = SkyCoord(*args, **kwargs, copy=True)
+        coords = SkyCoord(*args, **kwargs, copy=True)
 
         # IDs are stored in a numpy 1d-array
         if len(np.shape(ids)) != 1:
             raise ValueError('Sources ID must be a 1d array.')
-        self._ids = np.array(ids)
 
-        # magnitudes are stored as QFloat
-        if isinstance(mag, QFloat):
-            self._mags = mag
-        elif mag is not None:
-            self._mags = QFloat(mag, uncertainty=mag_error, unit=mag_unit)
-        else:
-            self._mags = None
+        if len(ids) != len(coords):
+            raise ValueError('Sources IDs and coordinates must have the same '
+                             'number of elements.')
+
+        # initialize store table
+        self._base_table['id'] = np.array(ids)
+        self._base_table['coords'] = coords
+
+        # magnitudes are stored in a dict of QFloat
+        if not isinstance(mag, dict):
+            raise TypeError('mag must be a dictionary of magnitudes')
+        for i in mag.keys():
+            if len(self._coords[i]) != len(mag[i]):
+                raise ValueError('Lengths of magnitudes must be the same as '
+                                 'the number of sources.')
+            self._add_mags(i, mag[i])
 
         # Store base query table
         if query_table is not None:
             self._query = query_table
 
-    @property
+    def _add_mags(self, band, mag):
+        """Add a mag to the magnitude dict."""
+        # initialize magnitude if not initializated.
+        if self._mags is None:
+            self._mags = Table()
+        # add magnitude to the dict
+        m = QFloat(mag)
+        if len(m) != len(self._base_table):
+            raise ValueError('Lengths of magnitudes must be the same as '
+                             'the number of sources.')
+        self._mags[f'{band}'] = m.nominal
+        self._mags[f'{band}_error'] = m.std_dev
+
     def sources_id(self):
         """Get the list of sources id in catalog."""
-        return copy.copy(self._ids)
+        return self._base_table['id'].value
 
-    @property
     def skycoord(self):
         """Get the sources coordinates in SkyCoord format."""
         return self.get_coordinates()
 
-    @property
     def ra_dec_list(self):
         """Get the sources coordinates in [(ra, dec)] format."""
         sk = self.skycoord
@@ -148,61 +160,38 @@ class SourcesCatalog:
         except TypeError:
             return [(sk.ra.degree, sk.dec.degree)]
 
-    @property
-    def magnitude(self):
-        """Get the sources magnitude in QFloat format."""
-        return copy.copy(self._mags)
+    def magnitude(self, band):
+        """Get the sources magnitude in QFloat format.
 
-    @property
-    def mag_list(self):
-        """Get the sources photometric mag in [(mag, mag_error)] format."""
+        Parameters
+        ----------
+        band : str
+            The band name.
+
+        Returns
+        -------
+        mag : float
+            The sources magnitude in QFloat format.
+        """
+        return QFloat(self._mags[f'{band}'], self._mags[f'{band}_error'],
+                      'mag')
+
+    def mag_list(self, band):
+        """Get the sources photometric mag in [(mag, mag_error)] format.
+
+        Parameters
+        ----------
+        band : str
+            The band name.
+
+        Returns
+        -------
+        mag_list : list
+            List of tuples of (mag, mag_error).
+        """
         if self._mags is None:
             return
-        try:
-            return np.array(list(zip(self._mags.nominal,
-                                     self._mags.uncertainty)))
-        except TypeError:
-            return [(self._mags.nominal, self._mags.uncertainty)]
-
-    @property
-    def table(self):
-        """Get the soures id, coordinates and flux in Table format."""
-        sk = self.skycoord
-        if self.magnitude is None:
-            t = Table({'id': self.sources_id,
-                       'ra': sk.ra.degree,
-                       'dec': sk.dec.degree},
-                      units=(None, 'degree', 'degree'))
-        else:
-            fl = self.magnitude
-            t = Table({'id': self.sources_id,
-                       'ra': sk.ra.degree,
-                       'dec': sk.dec.degree,
-                       'mag': fl.nominal,
-                       'mag_error': fl.uncertainty},
-                      units=(None, 'degree', 'degree', 'mag', 'mag'))
-
-        return t
-
-    @property
-    def array(self):
-        """Get the soures id, coordinates and flux in ndarray format."""
-        return self.table.as_array()
-
-    @property
-    def center(self):
-        """Get the center of the catalog query, in SkyCoord format."""
-        return copy.copy(self._center)
-
-    @property
-    def radius(self):
-        """Get the radius of the catalog query, in Angle format."""
-        return copy.copy(self._radius)
-
-    @property
-    def band(self):
-        """Get the photometric filter/band used in the catalog."""
-        return str(self._band)
+        return list(zip(self._mags[f'{band}'], self._mags[f'{band}_error']))
 
     def copy(self):
         """Copy the current catalog to a new instance."""
@@ -210,10 +199,11 @@ class SourcesCatalog:
 
     def get_coordinates(self, obstime=None):
         """Get the skycoord positions from the catalog."""
+        sk = self._base_table['coords']
         try:
-            return self._coords.apply_space_motion(new_obstime=obstime)
+            return sk.apply_space_motion(new_obstime=obstime)
         except ValueError:
-            return copy.copy(self._coords)
+            return copy.copy(sk)
 
     def match_objects(self, ra, dec, limit_angle, obstime=None, table=False):
         """Match a list of ra, dec objects to this catalog.
@@ -238,24 +228,9 @@ class SourcesCatalog:
         cat_sk = self.get_coordinates(obstime=obstime)
         indexes = _match_indexes(ra, dec, cat_sk,
                                  astroquery_radius(limit_angle))
-        length = len(ra)
-        ids = ['']*length
-        nra = np.full(length, fill_value=np.nan, dtype='f8')
-        ndec = np.full(length, fill_value=np.nan, dtype='f8')
-        mags = np.full(length, fill_value=np.nan, dtype='f4')
-        mags_error = np.full(length, fill_value=np.nan, dtype='f4')
 
-        for i, v in enumerate(indexes):
-            if v != -1:
-                ids[i] = self._ids[v]
-                nra[i] = cat_sk.ra.degree[v]
-                ndec[i] = cat_sk.dec.degree[v]
-                mags[i] = self._mags.nominal[v]
-                mags_error[i] = self._mags.uncertainty[v]
+        raise NotImplementedError
 
-        ncat = SourcesCatalog(nra, ndec, unit='degree', ids=ids,
-                              mag=QFloat(mags, uncertainty=mags_error,
-                                         unit=self._mags.unit))
         if table:
             return ncat.table
         return ncat
@@ -277,11 +252,8 @@ class SourcesCatalog:
         if isinstance(item, int):
             item = [item]
 
-        nc = copy.copy(self)
-        if self._query is not None:
-            nc._query = self._query[item]
-        nc._coords = self._coords[item]
-        nc._ids = self._ids[item]
+        nc = SourcesCatalog.__new__()
+        nc._base_table = self._base_table[item]
         if self._mags is not None:
             nc._mags = self._mags[item]
         return nc
@@ -295,12 +267,12 @@ class _OnlineSourcesCatalog(SourcesCatalog, abc.ABC):
 
     _query = None
 
-    def __init__(self, center, radius, band=None):
+    def __init__(self, center, radius):
         """Query the catalog and create the source catalog instance.
 
         Parameters
         ----------
-        center: string, tuple or `astropy.coordinates.SkyCoord`
+        center: string, tuple or `~astropy.coordinates.SkyCoord`
             The center of the search field.
             If center is a string, can be an object name or the string
             containing the object coordinates. If it is a tuple, have to be
@@ -312,17 +284,9 @@ class _OnlineSourcesCatalog(SourcesCatalog, abc.ABC):
             field mode. If a string value is passed, it must be readable by
             astropy.coordinates.Angle. If a float value is passed, it will
             be interpreted as a decimal degree radius.
-        band: string (optional)
-            For catalogs with photometric information with multiple filters,
-            the desired filter must be passed here.
-            Default: None
         """
         self._center = astroquery_skycoord(center)
         self._radius = astroquery_radius(radius)
-        if band is not None and band not in self.available_filters:
-            raise ValueError(f'Filter {band} not available. Default '
-                             f'filters are {self.available_filters}.')
-        self._band = band
 
         # setup the catalog if needed
         self._setup_catalog()
@@ -330,8 +294,6 @@ class _OnlineSourcesCatalog(SourcesCatalog, abc.ABC):
         # perform the query
         logger.info('Quering region centered at %s with radius %s',
                     self._center, self._radius)
-        logger.info('Using %s filter for photometry information.',
-                    self._band)
         self._do_query()
 
     @abc.abstractmethod
@@ -351,25 +313,3 @@ class _OnlineSourcesCatalog(SourcesCatalog, abc.ABC):
     def available_filters(self):
         """List available filters for the catalog."""
         return copy.copy(self._available_filters)
-
-    def __getitem__(self, item):
-        """Get items from the catalog.
-
-        A new catalog with only the selected sources is returned.
-        If item is a string, a column from the result query will be returned.
-        """
-        if isinstance(item, str):
-            if self._query is None:
-                raise KeyError('Empty query.')
-            return copy.copy(self._query[item])
-
-        if not isinstance(item, (int, list, np.ndarray, slice)):
-            raise KeyError(f"{item}")
-
-        nc = copy.copy(self)
-        nc._query = None
-        nc._coords = self._coords[item]
-        nc._ids = self._ids[item]
-        if self._mags is not None:
-            nc._mags = self._mags[item]
-        return nc
