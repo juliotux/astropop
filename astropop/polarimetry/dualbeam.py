@@ -217,6 +217,8 @@ class _DualBeamPolarimetry(abc.ABC):
             self.zero = self.zero.to(units.degree).value
         if self.k is not None and self.compute_k:
             raise ValueError('k and compute_k cannot be used together.')
+        if not self.compute_k:
+            logger.info('Normalization disabled.')
 
         # number of positions per cicle
         self._n_pos = 8 if self.retarder == 'quarterwave' else 4
@@ -291,8 +293,8 @@ class _DualBeamPolarimetry(abc.ABC):
             # compute Stokes params, dict(q, u, v, zero)
             zi = self._calc_zi(f_ord, f_ext, k)
             params = self._quarter_fit(psi, zi)
-            current = {k: params[k].nominal for k in previous.keys()}
-            logger.debug('quarterwave iter %i: %s', i, params)
+            current = {key: params[key].nominal for key in previous.keys()}
+            logger.debug('quarterwave iter %i: %s', i, params + {'k': k})
             # check if the difference is smaller than the tolerance
             if np.allclose([current[i] for i in previous.keys()],
                            [previous[i] for i in previous.keys()],
@@ -415,7 +417,7 @@ class SLSDualBeamPolarimetry(_DualBeamPolarimetry):
             model = quarterwave_model
             bounds = ([-1, -1, -1, 0], [1, 1, 1, 180])
             pnames = ['q', 'u', 'v', 'zero']
-            logger.info('Zero position not set. Computing it from the data.')
+            logger.debug('Zero position not set. Computing it from the data.')
 
         fitter = self._get_fitter(zi)
         params, pcov = fitter(model, psi, zi.nominal, method='trf',
