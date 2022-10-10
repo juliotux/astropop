@@ -294,7 +294,7 @@ class _DualBeamPolarimetry(abc.ABC):
             zi = self._calc_zi(f_ord, f_ext, k)
             params = self._quarter_fit(psi, zi)
             current = {key: params[key].nominal for key in previous.keys()}
-            logger.debug('quarterwave iter %i: %s', i, params + {'k': k})
+            logger.debug('quarterwave iter %i: %s', i, dict(**params, k=k))
             # check if the difference is smaller than the tolerance
             if np.allclose([current[i] for i in previous.keys()],
                            [previous[i] for i in previous.keys()],
