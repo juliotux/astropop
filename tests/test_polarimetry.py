@@ -400,7 +400,7 @@ class Test_StokesParameters:
         pol = StokesParameters(retarder='quarterwave', q=q, u=u, v=v,
                                zero=zero, zi=zi, psi=psi)
 
-        assert_almost_equal(pol.rms.nominal, 0.00125, decimal=4)
+        assert_almost_equal(pol.rms, 0.00125, decimal=4)
 
 
 class Test_SLSPolarimetry:
