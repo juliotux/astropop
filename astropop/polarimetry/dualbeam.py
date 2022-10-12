@@ -217,6 +217,21 @@ class StokesParameters:
         err = 28.6*self.p.std_dev/self.p.nominal
         return QFloat(theta, err, 'deg')
 
+    @property
+    def rms(self):
+        """Root mean square of the fitting."""
+        if self.zi is None or self.psi is None:
+            raise ValueError('StokesParameters without zi and psi data has no '
+                             'fitting rms')
+
+        if self.retarder == 'quarterwave':
+            model = partial(quarterwave_model, q=self.q, u=self.u, v=self.v,
+                            zero=self.zero)
+        else:
+            model = partial(halfwave_model, q=self.q, u=self.u, zero=self.zero)
+
+        return np.std(self.zi-model(self.psi))
+
 
 @dataclass
 class _DualBeamPolarimetry(abc.ABC):
@@ -238,6 +253,8 @@ class _DualBeamPolarimetry(abc.ABC):
             self.zero = self.zero.to(units.degree).value
         if self.k is not None and self.compute_k:
             raise ValueError('k and compute_k cannot be used together.')
+        if not self.compute_k:
+            logger.info('Normalization disabled.')
 
         # number of positions per cicle
         self._n_pos = 8 if self.retarder == 'quarterwave' else 4
@@ -312,8 +329,8 @@ class _DualBeamPolarimetry(abc.ABC):
             # compute Stokes params, dict(q, u, v, zero)
             zi = self._calc_zi(f_ord, f_ext, k)
             params = self._quarter_fit(psi, zi)
-            current = {k: params[k].nominal for k in previous.keys()}
-            logger.debug('quarterwave iter %i: %s', i, current)
+            current = {key: params[key].nominal for key in previous.keys()}
+            logger.debug('quarterwave iter %i: %s', i, dict(**params, k=k))
             # check if the difference is smaller than the tolerance
             if np.allclose([current[i] for i in previous.keys()],
                            [previous[i] for i in previous.keys()],
@@ -454,11 +471,12 @@ class SLSDualBeamPolarimetry(_DualBeamPolarimetry):
             model = partial(quarterwave_model, zero=self.zero)
             bounds = ([-1, -1, -1], [1, 1, 1])
             pnames = ['q', 'u', 'v']
+            logger.debug('Using fixed value of zero: %s', self.zero)
         else:
             model = quarterwave_model
             bounds = ([-1, -1, -1, 0], [1, 1, 1, 180])
             pnames = ['q', 'u', 'v', 'zero']
-            logger.info('Zero position not set. Computing it from the data.')
+            logger.debug('Zero position not set. Computing it from the data.')
 
         fitter = self._get_fitter(zi)
         params, pcov = fitter(model, psi, zi.nominal, method='trf',
