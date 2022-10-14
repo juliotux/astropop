@@ -169,7 +169,7 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto', gain=1.0,
         res_ap.meta['r_auto'] = True
         logger.debug(f'FWHM:{fwhm} r:{r}')
     
-    res_ap['fwhm'] = fwhm
+    #res_ap['fwhm'] = fwhm
     res_ap['aperture'] = [r]*len(x)
 
     if r_ann == 'auto':
