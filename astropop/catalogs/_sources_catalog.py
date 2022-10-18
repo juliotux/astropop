@@ -13,51 +13,6 @@ from ._online_tools import astroquery_radius, \
                            astroquery_skycoord
 
 
-def _match_indexes(ra, dec, cat_skycoords, limit_angle):
-    """Match list of coordinates with a calatog.
-
-    Parameters
-    ----------
-    ra, dec: list of float
-        List of objects coordinates to be matched in the catalog. All
-        coordinates must be in decimal degrees.
-    cat_ra, cat_dec: list of float
-        List of catalog coordinates. All coordinates must be in decimal
-        degrees.
-    limit_angle: string, float, `~astropy.coordinates.Angle`
-        Angle limit for matching indexes. If string, if must be
-        `~astropy.coordinates.Angle` compatible. If float, it will be
-        interpreted as a decimal degree.
-    logger: `~logging.Logger`
-
-    Returns
-    -------
-    index: `~numpy.ndarray`
-        List containing the indexes in the catalog that matched the object
-        coordinates. If -1, it represents objects not matched.
-    """
-    # TODO: make code smarter with bayesian approach and magnitude matching
-
-    # Matching using astropy's skycoord can be slow for big catalogs
-    ind, dist, _ = match_coordinates_sky(SkyCoord(ra, dec, unit=('degree',
-                                                                 'degree'),
-                                                  frame='icrs'),
-                                         cat_skycoords)
-
-    index = np.zeros(len(ra), dtype=np.int)
-    index.fill(-1)   # a nan index
-
-    lim = Angle(limit_angle)
-    for k in range(len(ra)):
-        if dist[k] <= lim:
-            index[k] = ind[k]
-
-    logger.debug('Matched %s objects in catalog from %s total',
-                 np.sum(index != -1), len(ra))
-
-    return index
-
-
 class SourcesCatalog:
     """Manage and query a catalog of point sources objects.
 
@@ -99,6 +54,7 @@ class SourcesCatalog:
 
     _base_table = None  # Store array of ids
     _mags_table = None  # Store magnitudes with filter colname in QFloat format
+    _query = None  # Query table
 
     def __init__(self, *args, ids=None, mag=None,
                  query_table=None, **kwargs):
@@ -110,39 +66,40 @@ class SourcesCatalog:
         if len(np.shape(ids)) != 1:
             raise ValueError('Sources ID must be a 1d array.')
 
-        if len(ids) != len(coords):
-            raise ValueError('Sources IDs and coordinates must have the same '
-                             'number of elements.')
+        # if len(ids) != len(coords):
+        #     raise ValueError('Sources IDs and coordinates must have the same '
+        #                      'number of elements.')
 
         # initialize store table
         self._base_table['id'] = np.array(ids)
         self._base_table['coords'] = coords
 
-        # magnitudes are stored in a dict of QFloat
-        if not isinstance(mag, dict):
-            raise TypeError('mag must be a dictionary of magnitudes')
-        for i in mag.keys():
-            if len(self._coords[i]) != len(mag[i]):
-                raise ValueError('Lengths of magnitudes must be the same as '
-                                 'the number of sources.')
-            self._add_mags(i, mag[i])
-
         # Store base query table
         if query_table is not None:
             self._query = query_table
 
+        if mag is None:
+            # simply pass if mag is None
+            return
+
+        # magnitudes are stored in a dict of QFloat
+        if not isinstance(mag, dict):
+            raise TypeError('mag must be a dictionary of magnitudes')
+        for i in mag.keys():
+            self._add_mags(i, mag[i])
+
     def _add_mags(self, band, mag):
         """Add a mag to the magnitude dict."""
         # initialize magnitude if not initializated.
-        if self._mags is None:
-            self._mags = Table()
+        if self._mags_table is None:
+            self._mags_table = Table()
         # add magnitude to the dict
         m = QFloat(mag)
         if len(m) != len(self._base_table):
             raise ValueError('Lengths of magnitudes must be the same as '
                              'the number of sources.')
-        self._mags[f'{band}'] = m.nominal
-        self._mags[f'{band}_error'] = m.std_dev
+        self._mags_table[f'{band}'] = m.nominal
+        self._mags_table[f'{band}_error'] = m.std_dev
 
     def sources_id(self):
         """Get the list of sources id in catalog."""
@@ -154,7 +111,7 @@ class SourcesCatalog:
 
     def ra_dec_list(self):
         """Get the sources coordinates in [(ra, dec)] format."""
-        sk = self.skycoord
+        sk = self.skycoord()
         try:
             return np.array(list(zip(sk.ra.degree, sk.dec.degree)))
         except TypeError:
@@ -173,7 +130,8 @@ class SourcesCatalog:
         mag : float
             The sources magnitude in QFloat format.
         """
-        return QFloat(self._mags[f'{band}'], self._mags[f'{band}_error'],
+        return QFloat(self._mags_table[f'{band}'],
+                      self._mags_table[f'{band}_error'],
                       'mag')
 
     def mag_list(self, band):
@@ -189,9 +147,10 @@ class SourcesCatalog:
         mag_list : list
             List of tuples of (mag, mag_error).
         """
-        if self._mags is None:
+        if self._mags_table is None:
             return
-        return list(zip(self._mags[f'{band}'], self._mags[f'{band}_error']))
+        return list(zip(self._mags_table[f'{band}'],
+                        self._mags_table[f'{band}_error']))
 
     def copy(self):
         """Copy the current catalog to a new instance."""
@@ -205,8 +164,12 @@ class SourcesCatalog:
         except ValueError:
             return copy.copy(sk)
 
-    def match_objects(self, ra, dec, limit_angle, obstime=None, table=False):
-        """Match a list of ra, dec objects to this catalog.
+    def match_objects(self, ra, dec, limit_angle, obstime=None):
+        """Find catalog objects matching the given coordinates.
+
+        The matching is performed by getting the nearest catalog object from
+        the ra, dec coordinate within the limit angle. No additional matching
+        criteria is used.
 
         Parameters
         ----------
@@ -221,18 +184,24 @@ class SourcesCatalog:
             Observation time. If passed, it will be used to apply the proper
             motion to the coordinates, if available.
             Default: None
-        table: bool (optional)
-            Return a table instead a source catalog.
-            Default: False
         """
-        cat_sk = self.get_coordinates(obstime=obstime)
-        indexes = _match_indexes(ra, dec, cat_sk,
-                                 astroquery_radius(limit_angle))
+        # Match catalog to the objects using standard SkyCoord algorithm.
+        obj_sk = SkyCoord(ra, dec, unit=['deg', 'deg'])
+        cat_sk = self.get_coordinates(obstime)
+        indx, dist, _ = obj_sk.match_to_catalog_sky(cat_sk)
+        ncat = self.__getitem__(indx)
 
-        raise NotImplementedError
-
-        if table:
-            return ncat.table
+        # Ensure limit_angle is a proper Angle
+        limit = Angle(limit_angle)
+        for i, d in enumerate(dist):
+            if d > limit:
+                # Put null values for non-matched indices
+                ncat._base_table['ids'][i] = ''
+                ncat._base_table['coords'][i] = SkyCoord(np.nan, np.nan,
+                                                         unit='deg')
+                if ncat._mags_table is not None:
+                    nan = [np.nan]*len(self._mags_table.colnames)
+                    ncat._mags_table[i] = nan
         return ncat
 
     def __getitem__(self, item):
@@ -252,14 +221,16 @@ class SourcesCatalog:
         if isinstance(item, int):
             item = [item]
 
-        nc = SourcesCatalog.__new__()
+        nc = super(SourcesCatalog, self).__new__(SourcesCatalog)
         nc._base_table = self._base_table[item]
-        if self._mags is not None:
-            nc._mags = self._mags[item]
+        if self._mags_table is not None:
+            nc._mags_table = self._mags_table[item]
+        if self._query is not None:
+            nc._query = self._query[item]
         return nc
 
     def __len__(self):
-        return len(self._ids)
+        return len(self._base_table)
 
 
 class _OnlineSourcesCatalog(SourcesCatalog, abc.ABC):
