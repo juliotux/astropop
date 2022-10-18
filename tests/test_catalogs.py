@@ -116,8 +116,9 @@ class Test_SourcesCatalog_Conformance:
                            pm_ra_cosdec=sources['pm_ra']*u.Unit('mas/yr'),
                            pm_dec=sources['pm_dec']*u.Unit('mas/yr'))
 
-        assert_is_instance(s.table, Table)
-        assert_equal(s.table.colnames, ['id', 'ra', 'dec', 'mag', 'mag_error'])
+        assert_is_instance(s.table(), Table)
+        assert_equal(s.table().colnames, ['id', 'ra', 'dec', 'V', 'V_error',
+                                          'B', 'B_error'])
 
     def test_sourcescatalog_table_nomag(self):
         s = SourcesCatalog(ids=sources['id'],
@@ -127,15 +128,15 @@ class Test_SourcesCatalog_Conformance:
                            pm_ra_cosdec=sources['pm_ra']*u.Unit('mas/yr'),
                            pm_dec=sources['pm_dec']*u.Unit('mas/yr'))
 
-        assert_is_instance(s.table, Table)
-        assert_equal(s.table.colnames, ['id', 'ra', 'dec'])
+        assert_is_instance(s.table(), Table)
+        assert_equal(s.table().colnames, ['id', 'ra', 'dec'])
 
     def test_sourcescatalog_single_source(self):
         s = SourcesCatalog(ids=['Test'], ra='1d', dec='2d',
-                           mag={'V': QFloat(1, 0.1, 'mag')})
-        assert_equal(s.sources_id, ['Test'])
+                           mag={'V': QFloat([1], [0.1], 'mag')})
+        assert_equal(s.sources_id(), ['Test'])
         assert_equal(s.mag_list('V'), [(1, 0.1)])
-        assert_equal(s.ra_dec_list, [(1, 2)])
+        assert_equal(s.ra_dec_list(), [(1, 2)])
 
     def test_sourcescatalog_store_query(self):
         s = SourcesCatalog(ids=sources['id'],

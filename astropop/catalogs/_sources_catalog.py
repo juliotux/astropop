@@ -66,10 +66,6 @@ class SourcesCatalog:
         if len(np.shape(ids)) != 1:
             raise ValueError('Sources ID must be a 1d array.')
 
-        # if len(ids) != len(coords):
-        #     raise ValueError('Sources IDs and coordinates must have the same '
-        #                      'number of elements.')
-
         # initialize store table
         self._base_table['id'] = np.array(ids)
         self._base_table['coords'] = coords
@@ -149,8 +145,8 @@ class SourcesCatalog:
         """
         if self._mags_table is None:
             return
-        return list(zip(self._mags_table[f'{band}'],
-                        self._mags_table[f'{band}_error']))
+        return np.array(list(zip(self._mags_table[f'{band}'],
+                                 self._mags_table[f'{band}_error'])))
 
     def copy(self):
         """Copy the current catalog to a new instance."""
@@ -231,6 +227,17 @@ class SourcesCatalog:
 
     def __len__(self):
         return len(self._base_table)
+
+    def table(self):
+        t = Table()
+        t['id'] = self._base_table['id']
+        sk = self.skycoord()
+        t['ra'] = sk.ra.degree
+        t['dec'] = sk.dec.degree
+        if self._mags_table is not None:
+            for i in self._mags_table.keys():
+                t[i] = self._mags_table[i]
+        return t
 
 
 class _OnlineSourcesCatalog(SourcesCatalog, abc.ABC):
