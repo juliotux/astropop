@@ -42,8 +42,8 @@ class DummySourcesCatalog(_OnlineSourcesCatalog):
 
     def _do_query(self):
         self._query = Table(sources)
-        mag = QFloat(sources['mag'], uncertainty=sources['mag_error'],
-                     unit='mag')
+        mag = {'V': QFloat(sources['mag'], uncertainty=sources['mag_error'],
+                           unit='mag')}
         SourcesCatalog.__init__(self, ra=sources['ra'],
                                 dec=sources['dec'], unit='degree',
                                 pm_ra_cosdec=sources['pm_ra']*u.Unit('mas/year'),
@@ -174,18 +174,15 @@ class Test_DummySourcesCatalog:
     # Test things handled by the base catalog
     def test_catalog_creation(self):
         c = DummySourcesCatalog(sirius_coords[0], search_radius[0])
-        c = DummySourcesCatalog(sirius_coords[0], search_radius[0], band='B')
+        c = DummySourcesCatalog(sirius_coords[0], search_radius[0])
 
         with pytest.raises(TypeError):
             DummySourcesCatalog()
 
-        with pytest.raises(ValueError, match='Filter C not available.'):
-            DummySourcesCatalog(sirius_coords[0], search_radius[0], band='C')
-
     @pytest.mark.parametrize('radius', search_radius)
     @pytest.mark.parametrize('center', sirius_coords)
     def test_catalog_center_radius(self, center, radius):
-        c = DummySourcesCatalog(center, radius, band='B')
+        c = DummySourcesCatalog(center, radius)
 
         assert_is_instance(c.center, SkyCoord)
         assert_almost_equal(c.center.ra.degree, 101.287155, decimal=3)
@@ -194,67 +191,52 @@ class Test_DummySourcesCatalog:
         assert_is_instance(c.radius, Angle)
         assert_almost_equal(c.radius.degree, 0.1)
 
-        assert_is_instance(c.band, str)
-        assert_equal(c.band, 'B')
-
     def test_catalog_properties(self):
-        c = DummySourcesCatalog(sirius_coords[0], search_radius[0], band='B')
-        assert_is_instance(c.sources_id, np.ndarray)
-        assert_equal(c.sources_id.shape, (4))
-        assert_is_instance(c.skycoord, SkyCoord)
-        assert_is_instance(c.magnitude, QFloat)
-        assert_is_instance(c.ra_dec_list, np.ndarray)
-        assert_equal(c.ra_dec_list.shape, (4, 2))
-        assert_is_instance(c.mag_list, np.ndarray)
-        assert_equal(c.mag_list.shape, (4, 2))
+        c = DummySourcesCatalog(sirius_coords[0], search_radius[0])
+        assert_is_instance(c.sources_id(), np.ndarray)
+        assert_equal(c.sources_id().shape, (4))
+        assert_is_instance(c.skycoord(), SkyCoord)
+        assert_is_instance(c.ra_dec_list(), np.ndarray)
+        assert_equal(c.ra_dec_list().shape, (4, 2))
+        assert_is_instance(c.mag_list('V'), np.ndarray)
+        assert_equal(c.mag_list('V').shape, (4, 2))
 
-        assert_equal(c.sources_id, sources['id'])
-        assert_almost_equal(c.ra_dec_list[:, 0], sources['ra'])
-        assert_almost_equal(c.ra_dec_list[:, 1], sources['dec'])
-        assert_almost_equal(c.mag_list[:, 0], sources['mag'])
-        assert_almost_equal(c.mag_list[:, 1], sources['mag_error'])
+        assert_equal(c.sources_id(), sources['id'])
+        assert_almost_equal(c.ra_dec_list()[:, 0], sources['ra'])
+        assert_almost_equal(c.ra_dec_list()[:, 1], sources['dec'])
+        assert_almost_equal(c.mag_list('V')[:, 0], sources['mag'])
+        assert_almost_equal(c.mag_list('V')[:, 1], sources['mag_error'])
 
     def test_catalog_table(self):
-        c = DummySourcesCatalog(sirius_coords[0], search_radius[0], band='B')
-        t = c.table
+        c = DummySourcesCatalog(sirius_coords[0], search_radius[0])
+        t = c.table()
         assert_is_instance(t, Table)
-        assert_equal(t.colnames, ['id', 'ra', 'dec', 'mag', 'mag_error'])
+        assert_equal(t.colnames, ['id', 'ra', 'dec', 'V', 'V_error'])
         assert_equal(t['id'], sources['id'])
         assert_almost_equal(t['ra'], sources['ra'])
         assert_almost_equal(t['dec'], sources['dec'])
-        assert_almost_equal(t['mag'], sources['mag'])
-        assert_almost_equal(t['mag_error'], sources['mag_error'])
-
-    def test_catalog_array(self):
-        c = DummySourcesCatalog(sirius_coords[0], search_radius[0], band='B')
-        t = c.array
-        assert_is_instance(t, np.ndarray)
-        assert_equal(t['id'], sources['id'])
-        assert_almost_equal(t['ra'], sources['ra'])
-        assert_almost_equal(t['dec'], sources['dec'])
-        assert_almost_equal(t['mag'], sources['mag'])
-        assert_almost_equal(t['mag_error'], sources['mag_error'])
+        assert_almost_equal(t['V'], sources['mag'])
+        assert_almost_equal(t['V_error'], sources['mag_error'])
 
     def test_catalog_getitem_number(self):
-        c = DummySourcesCatalog(sirius_coords[0], search_radius[0], band='B')
+        c = DummySourcesCatalog(sirius_coords[0], search_radius[0])
         nc = c[0]
-        assert_equal(nc.sources_id, sources['id'][0])
-        assert_almost_equal(nc.ra_dec_list,
+        assert_equal(nc.sources_id(), sources['id'][0])
+        assert_almost_equal(nc.ra_dec_list(),
                             [[sources['ra'][0], sources['dec'][0]]])
-        assert_almost_equal(nc.mag_list,
+        assert_almost_equal(nc.mag_list('V'),
                             [[sources['mag'][0], sources['mag_error'][0]]])
 
     def test_catalog_getitem_array(self):
-        c = DummySourcesCatalog(sirius_coords[0], search_radius[0], band='B')
+        c = DummySourcesCatalog(sirius_coords[0], search_radius[0])
         for items in [[2, 3], slice(2, None), np.array([2, 3])]:
             nc = c[items]
             assert_equal(len(nc), 2)
-            assert_equal(nc.sources_id, sources['id'][2:])
-            assert_almost_equal(nc.ra_dec_list[:, 0], sources['ra'][2:])
-            assert_almost_equal(nc.ra_dec_list[:, 1], sources['dec'][2:])
-            assert_almost_equal(nc.mag_list[:, 0], sources['mag'][2:])
-            assert_almost_equal(nc.mag_list[:, 1], sources['mag_error'][2:])
-            assert_is_none(nc._query)
+            assert_equal(nc.sources_id(), sources['id'][2:])
+            assert_almost_equal(nc.ra_dec_list()[:, 0], sources['ra'][2:])
+            assert_almost_equal(nc.ra_dec_list()[:, 1], sources['dec'][2:])
+            assert_almost_equal(nc.mag_list('V')[:, 0], sources['mag'][2:])
+            assert_almost_equal(nc.mag_list('V')[:, 1], sources['mag_error'][2:])
 
         # Ensure error is raised when a list of strings
         with pytest.raises(KeyError):
@@ -264,36 +246,29 @@ class Test_DummySourcesCatalog:
             c[(2, 3)]
 
     def test_catalog_getitem_columns(self):
-        c = DummySourcesCatalog(sirius_coords[0], search_radius[0], band='B')
+        c = DummySourcesCatalog(sirius_coords[0], search_radius[0])
         for i in sources.colnames:
             assert_equal(c[i], sources[i])
 
         with pytest.raises(KeyError):
             c['no column']
 
-    def test_catalog_getitem_emptyquery(self):
-        c = DummySourcesCatalog(sirius_coords[0], search_radius[0], band='B')
-        nc = c[[1, 2]]
-        with pytest.raises(KeyError, match='Empty query.'):
-            nc['id']
-
     def test_catalog_len(self):
-        c = DummySourcesCatalog(sirius_coords[0], search_radius[0], band='B')
+        c = DummySourcesCatalog(sirius_coords[0], search_radius[0])
         assert_equal(len(c), 4)
-        with pytest.raises(TypeError):
-            len(c[0])
+        assert_equal(len(c[0]), 1)
 
     def test_catalog_match_objects(self):
-        c = DummySourcesCatalog(sirius_coords[0], search_radius[0], band='B')
+        c = DummySourcesCatalog(sirius_coords[0], search_radius[0])
         m = c.match_objects([0.52525258, 0.87265989, 4.16526547],
                             [3.65404807, 5.50588171, 3.80703142],
                             limit_angle='1 arcsec')
         assert_is_instance(m, SourcesCatalog)
-        assert_equal(m.sources_id, ['id2', '', 'id4'])
-        assert_almost_equal(m.ra_dec_list[:, 0], [0.52522258, np.nan, 4.16520547])
-        assert_almost_equal(m.ra_dec_list[:, 1], [3.65404807, np.nan, 3.80703142])
-        assert_almost_equal(m.mag_list[:, 0], [3.00, np.nan, 4.81], decimal=2)
-        assert_almost_equal(m.mag_list[:, 1], [0.02, np.nan, 0.03], decimal=2)
+        assert_equal(m.sources_id(), ['id2', '', 'id4'])
+        assert_almost_equal(m.ra_dec_list()[:, 0], [0.52522258, np.nan, 4.16520547])
+        assert_almost_equal(m.ra_dec_list()[:, 1], [3.65404807, np.nan, 3.80703142])
+        assert_almost_equal(m.mag_list('V')[:, 0], [3.00, np.nan, 4.81], decimal=2)
+        assert_almost_equal(m.mag_list('V')[:, 1], [0.02, np.nan, 0.03], decimal=2)
 
     def test_catalog_match_objects_table(self):
         c = DummySourcesCatalog(sirius_coords[0], search_radius[0], band='B')

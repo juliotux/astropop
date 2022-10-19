@@ -5,7 +5,7 @@ import copy
 import abc
 import numpy as np
 from astropy.table import Table
-from astropy.coordinates import SkyCoord, match_coordinates_sky, Angle
+from astropy.coordinates import SkyCoord, Angle
 
 from ..math.physical import QFloat
 from ..logger import logger
@@ -192,7 +192,7 @@ class SourcesCatalog:
         for i, d in enumerate(dist):
             if d > limit:
                 # Put null values for non-matched indices
-                ncat._base_table['ids'][i] = ''
+                ncat._base_table['id'][i] = ''
                 ncat._base_table['coords'][i] = SkyCoord(np.nan, np.nan,
                                                          unit='deg')
                 if ncat._mags_table is not None:
@@ -291,3 +291,11 @@ class _OnlineSourcesCatalog(SourcesCatalog, abc.ABC):
     def available_filters(self):
         """List available filters for the catalog."""
         return copy.copy(self._available_filters)
+
+    @property
+    def center(self):
+        return SkyCoord(self._center)
+
+    @property
+    def radius(self):
+        return Angle(self._radius)
