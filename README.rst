@@ -57,18 +57,18 @@ Bellow we list all the necessary dependencies for the good working of the code. 
 Installation
 ^^^^^^^^^^^^
 
-Astropop can be downloaded from https://github.com/sparc4-dev/astropop. It follows the stadard python package install procedure and is created according [PEP-621](https://peps.python.org/pep-0621/). All requirements can be installed with `pip` or `conda`.
+Astropop can be downloaded from `gh/sparc4-dev/astropop <https://github.com/sparc4-dev/astropop>`_. It follows the stadard python package install procedure. All requirements can be installed with `pip` or `conda`.
 
 Anaconda Environment
 --------------------
 
-We recomend to use a [anaconda](https://www.anaconda.com/) environment to use astropop. Having the anaconda installed, use the following command to install a new `<environment name>` with conda dependencies:
+We recomend to use a `anaconda <https://www.anaconda.com/>`_ environment to use astropop. Having the anaconda installed, use the following command to install a new `<environment name>` with conda dependencies:
 
 .. code-block::
 
     conda create -n <environment name> -c conda-forge python=3.10 astroalign astropy astroquery astroscrappy matplotlib numpy pyyaml reproject scikit-image scikit-learn scipy sep
     
-Once the environment is created, you can[activate the environment](https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#activating-an-environment) and install the astropop with `pip`.
+Once the environment is created, you can `activate the environment <https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#activating-an-environment>`_ and install the astropop with `pip`.
 
 .. code-block::
 
