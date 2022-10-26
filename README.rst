@@ -71,6 +71,7 @@ We recomend to use a [anaconda](https://www.anaconda.com/) environment to use as
 Once the environment is created, you can[activate the environment](https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#activating-an-environment) and install the astropop with `pip`.
 
 .. code-block::
+
    conda activate <environment name>
    
 Stable Version
@@ -79,6 +80,7 @@ Stable Version
 The stable version of astropop is available in [PyPi](https://pypi.org/) and can be installed directly with `pip` command.
 
 .. code-block::
+
    pip install astropop
    
 Development Version
@@ -93,11 +95,13 @@ The development (unstable) version can be installed from the github code. With `
 or
 
 .. code-block::
+
    pip install -U https://github.com/sparc4-dev/astropop/archive/refs/heads/main.zip
    
 or 
 
-.. code-block:
+.. code-block::
+
    git clone git+https://github.com/sparc4-dev/astropop
    cd astropop
    pip install -U .
