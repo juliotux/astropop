@@ -3,7 +3,7 @@ AstroPoP
 
 |GHAction Status| |Codecov Status| |RTD Status| |CODACY|
 
-The (non) famous ASTROnomical POlarimetry and Photometry pipeline. Developed for work with IAGPOL polarimeter at Observatório Pico dos Dias (Brazil), but suitable to be used in other image polarimeters around the world.
+The ASTROnomical POlarimetry and Photometry pipeline. Developed for work with IAGPOL and SPARC4 polarimeters at Observatório Pico dos Dias (Brazil), but suitable to be used in other image polarimeters around the world.
 
 Features
 ^^^^^^^^
@@ -56,34 +56,51 @@ Bellow we list all the necessary dependencies for the good working of the code. 
 
 Installation
 ^^^^^^^^^^^^
-Astropop can be downloaded from https://github.com/sparc4-dev/astropop. For this, type in the terminal:
+
+Astropop can be downloaded from https://github.com/sparc4-dev/astropop. It follows the stadard python package install procedure and is created according [PEP-621](https://peps.python.org/pep-0621/). All requirements can be installed with `pip` or `conda`.
+
+Anaconda Environment
+--------------------
+
+We recomend to use a [anaconda](https://www.anaconda.com/) environment to use astropop. Having the anaconda installed, use the following command to install a new `<environment name>` with conda dependencies:
 
 .. code-block::
 
-    git clone https://github.com/sparc4-dev/astropop
+    conda create -n <environment name> -c conda-forge python=3.10 astroalign astropy astroquery astroscrappy matplotlib numpy pyyaml reproject scikit-image scikit-learn scipy sep
+    
+Once the environment is created, you can[activate the environment](https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#activating-an-environment) and install the astropop with `pip`.
 
-To install Astropop, you should go to the directory where Astropop was cloned, open the terminal in the Astropop directory and follow one of the options bellow:
+.. code-block::
+   conda activate <environment name>
+   
+Stable Version
+--------------
 
-1 – Install using pip:
+The stable version of astropop is available in [PyPi](https://pypi.org/) and can be installed directly with `pip` command.
+
+.. code-block::
+   pip install astropop
+   
+Development Version
+-------------------
+
+The development (unstable) version can be installed from the github code. With `pip`, can be done in any of the 3 ways:
 
 .. code-block::
 
-    pip install -U .
+    pip install -U git+https://github.com/sparc4-dev/astropop
 
-2 – Or, without the pip packet control:
-
-.. code-block::
-
-    python setup.py install
-
-3 – Install using anaconda:
-
-If you do not have anaconda, please visit https://www.anaconda.com/.
-Once the anaconda is installed you can create an Astropop enviroment using:
+or
 
 .. code-block::
+   pip install -U https://github.com/sparc4-dev/astropop/archive/refs/heads/main.zip
+   
+or 
 
-    conda create -n <environment name> -c conda-forge python=3.9 astroalign astropy astroquery astroscrappy matplotlib numpy pyyaml reproject scikit-image scikit-learn scipy sep
+.. code-block:
+   git clone git+https://github.com/sparc4-dev/astropop
+   cd astropop
+   pip install -U .
 
 Citating
 ^^^^^^^^
