@@ -187,14 +187,15 @@ class SourcesCatalog:
         indx, dist, _ = obj_sk.match_to_catalog_sky(cat_sk)
         ncat = self.__getitem__(indx)
 
+        raise NotImplementedError
+
         # Ensure limit_angle is a proper Angle
         limit = Angle(limit_angle)
         for i, d in enumerate(dist):
             if d > limit:
                 # Put null values for non-matched indices
                 ncat._base_table['id'][i] = ''
-                ncat._base_table['coords'][i] = SkyCoord(np.nan, np.nan,
-                                                         unit='deg')
+                # TODO: filter coordinates not working
                 if ncat._mags_table is not None:
                     nan = [np.nan]*len(self._mags_table.colnames)
                     ncat._mags_table[i] = nan

@@ -74,21 +74,19 @@ class SimbadSourcesCatalog(_OnlineSourcesCatalog):
     _available_filters = ['B', 'V', 'R', 'I', 'J', 'H', 'K',
                           'u', 'g', 'r', 'i', 'z']
 
-    @property
     def coordinates_bibcode(self):
         return np.array(self._coords_bib)
 
-    @property
-    def magnitudes_bibcode(self):
-        if self._mags is not None:
-            return np.array(self._mag_bibs)
+    def magnitudes_bibcode(self, band):
+        if self._mags_table is not None:
+            return np.array(self._mags_table[f'{band}_bib'])
 
     def _setup_catalog(self):
         self._s = Simbad()
         self._s.add_votable_fields('pm')
         self._s.ROW_LIMIT = 0
-        if self._band is not None:
-            self._s.add_votable_fields(f'fluxdata({self._band})')
+        for filt in self._available_filters:
+            self._s.add_votable_fields(f'fluxdata({filt})')
 
     def _do_query(self):
         # We query everything in J2000 and query propermotion too
@@ -97,15 +95,13 @@ class SimbadSourcesCatalog(_OnlineSourcesCatalog):
                                        radius=self._radius,
                                        epoch='J2000')
         ids = np.array([string_fix(i) for i in self._query['MAIN_ID']])
-        if self._band is not None:
-            band = self._band
-            mags = np.array(self._query[f'FLUX_{band}'])
+        for band in self._available_filters:
+            m = np.array(self._query[f'FLUX_{band}'])
             mags_error = np.array(self._query[f'FLUX_ERROR_{band}'])
-            mags_unit = self._query[f'FLUX_{band}'].unit
-            mags = qfloat(mags, uncertainty=mags_error, unit=mags_unit)
-            self._mag_bibs = np.array(self._query[f'FLUX_BIBCODE_{band}'])
-        else:
-            mags = None
+            bib = np.array(self._query[f'FLUX_BIBCODE_{band}'])
+            self._mags_table[f'{band}'] = m
+            self._mags_table[f'{band}_error'] = mags_error
+            self._mags_table[f'{band}_bib'] = bib
 
         sk = SkyCoord(self._query['RA'], self._query['DEC'],
                       unit=('hourangle', 'degree'),
@@ -114,4 +110,4 @@ class SimbadSourcesCatalog(_OnlineSourcesCatalog):
                       obstime='J2000.0', frame='icrs')
         self._coords_bib = np.array(self._query['COO_BIBCODE'])
 
-        SourcesCatalog.__init__(self, sk, ids=ids, mag=mags)
+        SourcesCatalog.__init__(self, sk, ids=ids)

@@ -270,29 +270,6 @@ class Test_DummySourcesCatalog:
         assert_almost_equal(m.mag_list('V')[:, 0], [3.00, np.nan, 4.81], decimal=2)
         assert_almost_equal(m.mag_list('V')[:, 1], [0.02, np.nan, 0.03], decimal=2)
 
-    def test_catalog_match_objects_table(self):
-        c = DummySourcesCatalog(sirius_coords[0], search_radius[0], band='B')
-        m = c.match_objects([0.52525258, 0.87265989, 4.16526547],
-                            [3.65404807, 5.50588171, 3.80703142],
-                            limit_angle='1 arcsec',
-                            table=True)
-        assert_is_instance(m, Table)
-        expect = Table({'id': ['id2', '', 'id4'],
-                        'ra': [0.52522258, np.nan, 4.16520547],
-                        'dec': [3.65404807, np.nan, 3.80703142],
-                        'mag': [3.00, np.nan, 4.81],
-                        'mag_error': [0.02, np.nan, 0.03]})
-        assert_equal(m['id'], expect['id'])
-        for k in ['ra', 'dec', 'mag', 'mag_error']:
-            assert_almost_equal(m[k], expect[k])
-
-    def test_catalog_empty_mag(self):
-        c = DummySourcesCatalog(sirius_coords[0], search_radius[0], band='B')
-        c._mags = None
-        assert_is_none(c.magnitude)
-        assert_is_none(c.mag_list)
-        assert_equal(c.table.colnames, ['id', 'ra', 'dec'])
-
 
 @pytest.mark.remote_data
 class Test_Simbad():
