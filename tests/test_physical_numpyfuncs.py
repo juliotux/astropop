@@ -588,6 +588,14 @@ class TestQFloatNumpyArrayFuncs:
         assert_almost_equal(res.std_dev, [[0, 0.01, 0.02]])
         assert_equal(res.unit, qf.unit)
 
+    def test_qfloat_np_std(self):
+        qf = QFloat(np.arange(10), uncertainty=np.arange(10)*0.1)
+        assert_almost_equal(np.std(qf), 2.87228, decimal=4)
+
+        # errors do not enter in the account
+        qf = QFloat(np.arange(10), uncertainty=np.arange(10))
+        assert_almost_equal(np.std(qf), 2.87228, decimal=4)
+
     def test_qfloat_np_sum(self):
         arr = np.ones(10).reshape((2, 5))
         qf = QFloat(arr, arr*0.1, "m")

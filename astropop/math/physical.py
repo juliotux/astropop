@@ -826,6 +826,12 @@ def _qfloat_mean(qf, axis=None):
     return QFloat(nominal, std, qf.unit)
 
 
+@_implements_array_func(np.std)
+def _qfloat_std(qf, axis=None):
+    """Implement np.std for qfloats."""
+    return np.std(qf.nominal, axis=axis)
+
+
 def _implements_ufunc_on_nominal(func):
     """Wraps ufuncs only on the nominal value and don't return QFloat."""
     def wrapper(qf, *args, **kwargs):

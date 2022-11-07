@@ -386,6 +386,22 @@ class Test_StokesParameters:
         assert_almost_equal(pol.p.nominal, 0.0246981, decimal=3)
         assert_almost_equal(pol.theta.nominal, 150.8797, decimal=3)
 
+    def test_stokes_rms(self):
+        q = QFloat(0.0130, 0.001)
+        u = QFloat(-0.021, 0.001)
+        v = QFloat(0.021, 0.001)
+        zero = 0
+        psi = np.arange(0, 360, 22.5)
+        zi = QFloat([0.01285947, -0.01919851, -0.02003721, 0.00249653,
+                     0.01413347, 0.0106049, 0.01869019, 0.03220446,
+                     0.01172209, -0.01887455, -0.01867554, 0.00309657,
+                     0.0109851, 0.01100691, 0.02298037, 0.03058262],
+                    uncertainty=[0.001]*16)
+        pol = StokesParameters(retarder='quarterwave', q=q, u=u, v=v,
+                               zero=zero, zi=zi, psi=psi)
+
+        assert_almost_equal(pol.rms, 0.00125, decimal=4)
+
 
 class Test_SLSPolarimetry:
     def test_fit_half(self):
