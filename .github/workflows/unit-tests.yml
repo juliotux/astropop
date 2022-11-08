@@ -27,7 +27,7 @@ jobs:
         include:
           - name: Python 3.11 with devdeps and online catalogs
             python: '3.11'
-            toxenv: py311-test-devdeps-cat
+            toxenv: py311-test-devdeps-online
 
           - name: Python 3.7 with old deps
             python: '3.7'
@@ -49,9 +49,9 @@ jobs:
             python: '3.10'
             toxenv: py310-test-stabledeps-online
 
-          - name: Python 3.11 with stable deps
+          - name: Python 3.11 with stable deps (online)
             python: '3.11'
-            toxenv: py311-test-stabledeps
+            toxenv: py311-test-stabledeps-online
 
     steps:
     - uses: actions/checkout@v3
