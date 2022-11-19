@@ -200,7 +200,7 @@ class StokesParameters:
     q: QFloat
     u: QFloat
     v: QFloat = None
-    k: QFloat = 1.0
+    k: float = 1.0
     zero: QFloat = 0.0
     zi: QFloat = None
     psi: QFloat = None
@@ -217,14 +217,18 @@ class StokesParameters:
             self.v = QFloat(self.v)
 
         if self.k is not None:
-            self.k = QFloat(self.k)
+            self.k = float(self.k)
         if self.zero is not None:
             self.zero = QFloat(self.zero)
+            if self.zero.unit == units.dimensionless_unscaled:
+                self.zero.unit = 'deg'
 
         if self.zi is not None:
             self.zi = QFloat(self.zi)
         if self.psi is not None:
             self.psi = QFloat(self.psi)
+            if self.psi.unit == units.dimensionless_unscaled:
+                self.psi.unit = 'deg'
 
         if self.psi is not None and self.zero is not None:
             if self.psi.unit != self.zero.unit:
@@ -264,11 +268,11 @@ class StokesParameters:
     def sigma_theor(self):
         """Theoretical sigma of the polarization level."""
         if self.retarder == 'quarterwave':
-            K = np.sqrt(2)
+            k = np.sqrt(2)
         elif self.retarder == 'halfwave':
-            K = 1
-        summed = np.sum(self.zi)
-        return K*summed.uncertainty/summed.nominal
+            k = 1
+        summed = np.sqrt(np.sum(np.square(self.zi.nominal/self.zi.std_dev)))
+        return k/summed
 
 
 @dataclass
@@ -345,8 +349,13 @@ class _DualBeamPolarimetry(abc.ABC):
         # compute Stokes params
         zi = self._calc_zi(f_ord, f_ext, k)
         q, u = self._half_fit(psi, zi)
-        return StokesParameters('halfwave', q=q, u=u, v=None, k=k,
-                                zero=self.zero, psi=psi, zi=zi)
+        if self.zero is not None:
+            zero = QFloat(self.zero, unit='deg')
+        else:
+            zero = None
+        psi = QFloat(psi, unit='deg')
+        return StokesParameters('halfwave', q=q, u=u, v=None, k=QFloat(k),
+                                zero=zero, psi=psi, zi=zi)
 
     def _quarter_compute(self, psi, f_ord, f_ext):
         """Compute the Stokes params for quarterwave retarder."""
@@ -355,35 +364,38 @@ class _DualBeamPolarimetry(abc.ABC):
             k = self.k or 1.0
             zi = self._calc_zi(f_ord, f_ext, k)
             params = self._quarter_fit(psi, zi)
-            return StokesParameters('quarterwave', **params, k=k,
-                                    zi=zi, psi=psi)
+        else:
+            # iterate over k until the diference previous and current values
+            # is smaller than the tolerance
+            k = 1.0
+            previous = {'q': 0, 'u': 0, 'v': 0}
+            converged = False
+            for i in range(self.max_iters):
+                # compute Stokes params, dict(q, u, v, zero)
+                zi = self._calc_zi(f_ord, f_ext, k)
+                params = self._quarter_fit(psi, zi)
+                current = {key: params[key].nominal for key in previous.keys()}
+                logger.debug('quarterwave iter %i: %s', i, dict(**params, k=k))
+                # check if the difference is smaller than the tolerance
+                if np.allclose([current[i] for i in previous.keys()],
+                               [previous[i] for i in previous.keys()],
+                               atol=self.iter_tolerance):
+                    converged = True
+                    continue
 
-        # iterate over k until the diference previous and current values is
-        # smaller than the tolerance
-        k = 1.0
-        previous = {'q': 0, 'u': 0, 'v': 0}
-        for i in range(self.max_iters):
-            current = {'q': 0, 'u': 0, 'v': 0}
-            # compute Stokes params, dict(q, u, v, zero)
-            zi = self._calc_zi(f_ord, f_ext, k)
-            params = self._quarter_fit(psi, zi)
-            current = {key: params[key].nominal for key in previous.keys()}
-            logger.debug('quarterwave iter %i: %s', i, dict(**params, k=k))
-            # check if the difference is smaller than the tolerance
-            if np.allclose([current[i] for i in previous.keys()],
-                           [previous[i] for i in previous.keys()],
-                           atol=self.iter_tolerance):
-                return StokesParameters('quarterwave', **params,
-                                        k=k, zi=zi, psi=psi)
-            # update previous values
-            previous = {i: current[i] for i in previous.keys()}
+                # update previous values
+                previous = {i: current[i] for i in previous.keys()}
 
-            # re-estimate k based on current q value
-            k = self._estimate_normalize_quarter(psi, f_ord, f_ext,
-                                                 current['q'])
-
-        raise RuntimeError(f'Could not converge after {self.max_iters} '
-                           'iterations.')
+                # re-estimate k based on current q value
+                k = self._estimate_normalize_quarter(psi, f_ord, f_ext,
+                                                     current['q'])
+            if not converged:
+                raise RuntimeError(f'Could not converge after {self.max_iters}'
+                                   ' iterations.')
+        zero = params['zero']
+        params['zero'] = QFloat(zero.nominal, zero.uncertainty, 'deg')
+        return StokesParameters('quarterwave', **params, k=k,
+                                zi=zi, psi=QFloat(psi, unit='deg'))
 
     def compute(self, psi, f_ord, f_ext, f_ord_error=None, f_ext_error=None):
         """Compute the Stokes params from ordinary and extraordinary fluxes.
@@ -522,5 +534,5 @@ class SLSDualBeamPolarimetry(_DualBeamPolarimetry):
         stokes = {pnames[i]: QFloat(params[i], uncertainty=np.sqrt(pcov[i, i]))
                   for i in range(len(pnames))}
         if len(pnames) == 3:
-            stokes['zero'] = self.zero
+            stokes['zero'] = QFloat(self.zero)
         return stokes
