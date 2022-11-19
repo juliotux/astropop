@@ -205,6 +205,31 @@ class StokesParameters:
     zi: QFloat = None
     psi: QFloat = None
 
+    def __post_init__(self):
+        # Check if all variables are correct
+        self.retarder = str(self.retarder)
+        if self.retarder not in ('halfwave', 'quarterwave'):
+            raise ValueError('retarder must be halfwave or quarterwave')
+
+        self.q = QFloat(self.q)
+        self.u = QFloat(self.u)
+        if self.v is not None:
+            self.v = QFloat(self.v)
+
+        if self.k is not None:
+            self.k = float(self.k)
+        if self.zero is not None:
+            self.zero = QFloat(self.zero)
+
+        if self.zi is not None:
+            self.zi = QFloat(self.zi)
+        if self.psi is not None:
+            self.psi = QFloat(self.psi)
+
+        if self.psi is not None and self.zero is not None:
+            if self.psi.unit != self.zero.unit:
+                raise ValueError('Psi and Zero have different units.')
+
     @property
     def p(self):
         """Linear polarization level."""
@@ -223,14 +248,27 @@ class StokesParameters:
         if self.zi is None or self.psi is None:
             raise ValueError('StokesParameters without zi and psi data has no '
                              'fitting rms')
+        return np.std(self.zi-self.model(self.psi))
 
+    @property
+    def model(self):
+        """Callable model of the modulation (zi)."""
         if self.retarder == 'quarterwave':
             model = partial(quarterwave_model, q=self.q, u=self.u, v=self.v,
                             zero=self.zero)
         else:
             model = partial(halfwave_model, q=self.q, u=self.u, zero=self.zero)
+        return model
 
-        return np.std(self.zi-model(self.psi))
+    @property
+    def sigma_theor(self):
+        """Theoretical sigma of the polarization level."""
+        if self.retarder == 'quarterwave':
+            K = np.sqrt(2)
+        elif self.retarder == 'halfwave':
+            K = 1
+        summed = np.sum(self.zi)
+        return K*summed.uncertainty/summed.nominal
 
 
 @dataclass
