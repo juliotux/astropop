@@ -346,7 +346,7 @@ class _DualBeamPolarimetry(abc.ABC):
         zi = self._calc_zi(f_ord, f_ext, k)
         q, u = self._half_fit(psi, zi)
         return StokesParameters('halfwave', q=q, u=u, v=None, k=k,
-                                zero=self.zero, zi=zi)
+                                zero=self.zero, psi=psi, zi=zi)
 
     def _quarter_compute(self, psi, f_ord, f_ext):
         """Compute the Stokes params for quarterwave retarder."""
