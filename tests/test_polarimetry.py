@@ -435,6 +435,7 @@ class Test_StokesParameters:
         psi = np.arange(0, 360, 22.5)*units.degree
         assert_almost_equal(p.model(psi), quarterwave_model(psi, 0, 0.1, 0.05))
 
+
 class Test_SLSPolarimetry:
     def test_fit_half(self):
         q = 0.0130
