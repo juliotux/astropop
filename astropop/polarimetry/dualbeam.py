@@ -200,8 +200,8 @@ class StokesParameters:
     q: QFloat
     u: QFloat
     v: QFloat = None
-    k: float = 1.0
-    zero: float = 0.0
+    k: QFloat = 1.0
+    zero: QFloat = 0.0
     zi: QFloat = None
     psi: QFloat = None
 
@@ -217,7 +217,7 @@ class StokesParameters:
             self.v = QFloat(self.v)
 
         if self.k is not None:
-            self.k = float(self.k)
+            self.k = QFloat(self.k)
         if self.zero is not None:
             self.zero = QFloat(self.zero)
 
