@@ -97,7 +97,7 @@ def sky_annulus(data, x, y, r_ann, algorithm='mmm', mask=None):
 
 def aperture_photometry(data, x, y, r='auto', r_ann='auto', gain=1.0,
                         readnoise=None, mask=None, sky_algorithm='mmm'):
-    """Perform aperture photometry using sep. Output units (ADU or e-) will 
+    """Perform aperture photometry using sep. Output units (ADU or e-) will
     be the same as input.
 
     Parameters
@@ -168,8 +168,8 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto', gain=1.0,
         res_ap.meta['fwhm'] = fwhm
         res_ap.meta['r_auto'] = True
         logger.debug(f'FWHM:{fwhm} r:{r}')
-    
-    #res_ap['fwhm'] = fwhm
+
+    # res_ap['fwhm'] = fwhm
     res_ap['aperture'] = [r]*len(x)
 
     if r_ann == 'auto':
