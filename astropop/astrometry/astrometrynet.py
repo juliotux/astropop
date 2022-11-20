@@ -16,10 +16,12 @@ import numpy as np
 
 from astropy.io import fits
 from astropy.wcs import WCS
+from astropy.coordinates import Angle, SkyCoord
+from astropy.units import UnitsError
 
-from .coords_utils import guess_coordinates
+from ..framedata.compat import extract_header_wcs
 from ..logger import logger
-from ..py_utils import check_iterable, run_command
+from ..py_utils import run_command
 
 
 __all__ = ['AstrometrySolver', 'solve_astrometry_xy', 'solve_astrometry_image',
@@ -40,20 +42,48 @@ class AstrometryNetUnsolvedField(CalledProcessError):
         return f"{self.path}: could not solve field"
 
 
-wcs_header_keys = ['CRPIX1', 'CRPIX2', 'CD1_1', 'CD1_2', 'CD2_1', 'CD2_2',
-                   'CRVAL1', 'CRVAL2', 'CTYPE1', 'CTYPE2', 'CUNIT1',
-                   'CUNIT2']
+def _parse_angle(angle, unit=None):
+    """Transform angle in float."""
+    # plate scale
+    # radius
+    # bare ra and dec
+    if isinstance(angle, str):
+        try:
+            angle = Angle(angle)
+        except UnitsError:
+            if unit is not None:
+                angle = Angle(angle, unit=unit)
+    if isinstance(angle, Angle):
+        angle = angle.degree
+    if not isinstance(angle, float):
+        raise ValueError(f'{angle} (type {type(angle)})not recognized as a '
+                         'valid angle.')
 
 
-def clean_previous_wcs(header):
-    """Clean any previous WCS keyowrds in header."""
-    h = fits.Header()
-    for k in header.keys():
-        if k not in wcs_header_keys:
-            indx = header.index(k)
-            card = header.cards[indx]
-            h.append(card)
-    return h
+def _parse_coordinates(coord=None, ra=None, dec=None):
+    """Parse filed center coordinates."""
+    if coord is not None and (ra is not None or dec is not None):
+        raise ValueError('Field center defined by `coord` conflicts with `ra`'
+                         ' and `dec` fields')
+
+    # coord can by a tuple of ra, dec
+    if isinstance(coord, (list, tuple)):
+        ra, dec = coord
+    elif isinstance(coord, SkyCoord):
+        ra = coord.ra.degree
+        dec = coord.dec.degree
+
+    ra = _parse_angle(ra, 'hourangle')
+    dec = _parse_angle(dec, 'degree')
+
+    return {'ra': ra, 'dec': dec}
+
+
+def _parse_pltscl(pltscl, tolerance=0.2):
+    """Parse plate scale."""
+    low = pltscl*(1-tolerance)
+    hi = pltscl*(1+tolerance)
+    return {'scale-low': low, 'scale-high': hi, 'scale-units': 'arcsecperpix'}
 
 
 class AstrometrySolver():
@@ -61,7 +91,6 @@ class AstrometrySolver():
     For convenience, all the auxiliary files will be deleted, except you
     specify to keep it with 'keep_files'.
     """
-    _defaults = None
 
     def __init__(self, astrometry_command=_solve_field,
                  defaults=None, keep_files=False):
@@ -75,85 +104,6 @@ class AstrometrySolver():
         self._keep = keep_files
         self.logger = logger
 
-    def _guess_coordinates(self, header, ra_key='RA', dec_key='DEC'):
-        """Guess the field center based in header keys."""
-        ra = header.get(ra_key)
-        dec = header.get(dec_key)
-        return guess_coordinates(ra, dec)
-
-    def _guess_field_params(self, header, image_params):
-        """Guess the approximate field parameters from the header.
-
-        The estimated parameters are:
-            coordinates : 'ra' and 'dec'
-            plate scale : 'scale-units', 'scale-high', 'scale-low'
-        """
-        options = {}
-        keys = image_params.keys()
-        if 'ra' in keys and 'dec' in keys:
-            try:
-                ra = float(image_params.get('ra'))
-                dec = float(image_params.get('dec'))
-                self.logger.info("Usign given field coordinates: %s %s",
-                                 ra, dec)
-                options['ra'] = ra
-                options['dec'] = dec
-            except ValueError:
-                self.logger.warning('Could not convert field coordinates to'
-                                    ' decimal degrees. Ignoring it: %s %s',
-                                    ra, dec)
-        elif 'ra_key' in keys and 'dec_key' in keys:
-            self.logger.info("Figuring out field center coordinates")
-            try:
-                coords = self._guess_coordinates(header,
-                                                 image_params.get('ra_key'),
-                                                 image_params.get('dec_key'))
-                options['ra'] = coords.ra.degree
-                options['dec'] = coords.dec.degree
-            except KeyError:
-                self.logger.warning("Cannot understand coordinates in"
-                                    " FITS header")
-        else:
-            self.logger.warning("Astrometry.net will try to solve without the"
-                                " field center")
-
-        if 'pltscl' in keys:
-            try:
-                pltscl = image_params.get('pltscl')
-                if check_iterable(pltscl):
-                    pltscl = [float(i) for i in pltscl]
-                else:
-                    pltscl = float(image_params.get('pltscl'))
-                    pltscl = [0.8*pltscl, 1.2*pltscl]
-                pltscl = np.array(sorted(pltscl))
-                self.logger.info("Usign given plate scale: %s", pltscl)
-            except ValueError:
-                self.logger.warning('Plate scale value not recognized.'
-                                    ' Ignoring it. %s', pltscl)
-        elif 'pltscl_key' in keys:
-            self.logger.info("Figuring out the plate scale from FITS header")
-            try:
-                pltscl = header[image_params.get('pltscl_key')]
-                pltscl = float(pltscl)
-            except KeyError:
-                self.logger.warning("Cannot understand plate scale in FITS"
-                                    " header")
-        try:
-            options['scale-high'] = pltscl[1]
-            options['scale-low'] = pltscl[0]
-            options['scale-units'] = 'arcsecperpix'
-        except NameError:
-            self.logger.warning('Astrometry.net will be run without plate'
-                                ' scale.')
-
-        if 'ra' in options.keys():
-            if 'radius' in keys:
-                options['radius'] = float(image_params.get('radius', 1.0))
-            else:
-                options['radius'] = 1.0
-
-        return options
-
     def solve_field(self, filename, output_file=None, wcs=False,
                     image_params=None, solve_params=None, scamp_basename=None,
                     **kwargs):
@@ -161,9 +111,6 @@ class AstrometrySolver():
         """Try to solve an image using the astrometry.net.
 
         The image params can be:
-            'ra_key' : header key for RA
-            'dec_key' : header key for DEC
-            'pltscl_key' : header key for plate scale
             'ra' : approximate center of the image in RA in decimal degrees
             'dec' : approximate center of the image in DEC in decimal degrees
             'pltscl' : plate scale of the image in arcsec/px
@@ -183,30 +130,11 @@ class AstrometrySolver():
             information from astrometry.net. If return_wcs=True, a WCS
             object will be returned.
         """
-        if image_params is None:
-            image_params = {}
         if solve_params is None:
             solve_params = {}
 
         options = copy.copy(self._defaults)
         options.update(solve_params)
-
-        if scamp_basename is not None:
-            options['scamp-ref'] = scamp_basename + ".ref"
-            options['scamp-config'] = scamp_basename + ".scamp"
-            options['scamp'] = scamp_basename + ".cat"
-
-        if output_file is not None:
-            options['new-fits'] = output_file
-
-        try:
-            field_params = self._guess_field_params(fits.getheader(filename),
-                                                    image_params=image_params)
-        except (OSError, IOError):
-            self.logger.warning('Could not guess field center and plate scale.'
-                                ' Running in slow mode.')
-            field_params = {}
-        options.update(field_params)
 
         solved_header = self._run_solver(filename, params=options, **kwargs)
 
@@ -312,14 +240,11 @@ def solve_astrometry_xy(x, y, flux, image_header, image_width, image_height,
       * pltscl: plate scale (arcsec/px)
       * ra: right ascension (decimal degrees)
       * dec: declination (decimal degrees)
-      * pltscl_key: header key for plate scale
-      * ra_key: header key for right ascension
-      * dec_key: header key for declination
       * radius: maximum search radius
     """
     if image_params is None:
         image_params = {}
-    image_header = clean_previous_wcs(image_header)
+    image_header, _ = extract_header_wcs(image_header)
     f = NamedTemporaryFile(suffix='.xyls')
     create_xyls(f.name, x, y, flux, image_width, image_height,
                 header=image_header)
@@ -335,9 +260,6 @@ def solve_astrometry_image(filename, return_wcs=False, image_params=None,
         pltscl: plate scale (arcsec/px)
         ra: right ascension (decimal degrees)
         dec: declination (decimal degrees)
-        pltscl_key: header key for plate scale
-        ra_key: header key for right ascension
-        dec_key: header key for declination
         radius: maximum search radius
     """
     if image_params is None:
@@ -354,14 +276,11 @@ def solve_astrometry_hdu(hdu, return_wcs=False, image_params=None,
         pltscl: plate scale (arcsec/px)
         ra: right ascension (decimal degrees)
         dec: declination (decimal degrees)
-        pltscl_key: header key for plate scale
-        ra_key: header key for right ascension
-        dec_key: header key for declination
         radius: maximum search radius
     """
     if image_params is None:
         image_params = {}
-    hdu.header = clean_previous_wcs(hdu.header)
+    hdu.header, _ = extract_header_wcs(hdu.header)
     f = NamedTemporaryFile(suffix='.fits')
     hdu = fits.PrimaryHDU(hdu.data, header=hdu.header)
     hdu.writeto(f.name)
