@@ -105,9 +105,8 @@ class AstrometrySolver():
         self.logger = logger
 
     def solve_field(self, filename, output_file=None, wcs=False,
-                    image_params=None, solve_params=None, scamp_basename=None,
+                    image_params=None, solve_params=None,
                     **kwargs):
-        # TODO: put some of these arguments in a config file
         """Try to solve an image using the astrometry.net.
 
         The image params can be:
