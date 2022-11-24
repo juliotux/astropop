@@ -318,6 +318,10 @@ class Test_DummyPolarimetry:
 
 
 class Test_StokesParameters:
+    def test_stokes_invalid_retarder(self):
+        with pytest.raises(ValueError, match='retarder must be'):
+            StokesParameters('thirdwave', 0, 1)
+
     def test_initialize_halfwave(self):
         q = QFloat(0.0130, 0.001)
         u = QFloat(-0.021, 0.001)
@@ -401,6 +405,17 @@ class Test_StokesParameters:
                                zero=zero, zi=zi, psi=psi)
 
         assert_almost_equal(pol.rms, 0.00125, decimal=4)
+
+    def test_stokes_rms_no_zi_psi(self):
+        with pytest.raises(ValueError, match='without zi and psi data'):
+            p = StokesParameters('halfwave', 0, 1)
+            p.rms
+        with pytest.raises(ValueError, match='without zi and psi data'):
+            p = StokesParameters('halfwave', 0, 1, psi=[0]*16)
+            p.rms
+        with pytest.raises(ValueError, match='without zi and psi data'):
+            p = StokesParameters('halfwave', 0, 1, zi=[0]*16)
+            p.rms
 
     def test_stokes_sigma_theor(self):
         flux = QFloat([1]*16, [0.001]*16)
