@@ -237,7 +237,15 @@ class StokesParameters:
             if self.psi.unit != self.zero.unit:
                 raise ValueError('Psi and Zero have different units.')
 
-        # TODO: assert lenghts
+        # flux, zi and psi must have the same dimensions if exists
+        length = None
+        for i in (self.psi, self.zi, self.flux):
+            if i is not None:
+                if length is None:
+                    length = len(i)
+                elif len(i) != length:
+                    raise ValueError('psi, zi and flux must have the same '
+                                     'dimensions')
 
     @property
     def p(self):

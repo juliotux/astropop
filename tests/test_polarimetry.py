@@ -432,6 +432,29 @@ class Test_StokesParameters:
         psi = np.arange(0, 360, 22.5)*units.degree
         assert_almost_equal(p.model(psi), quarterwave_model(psi, 0, 0.1, 0.05))
 
+    def test_stokes_parameters_error_dimensions(self):
+        psi = np.arange(0, 360, 22.5)*units.degree
+        zi = quarterwave_model(psi, 0, 0.1, 0.05)
+        flux = [1e5]*len(psi)
+
+        p = StokesParameters('quarterwave', 0, 0.1, flux=flux, psi=psi, zi=zi)
+        p = StokesParameters('quarterwave', 0, 0.1, flux=flux, psi=psi)
+        p = StokesParameters('quarterwave', 0, 0.1, psi=psi, zi=zi)
+        p = StokesParameters('quarterwave', 0, 0.1, flux=flux, zi=zi)
+        p = StokesParameters('quarterwave', 0, 0.1, flux=flux)
+        p = StokesParameters('quarterwave', 0, 0.1, psi=psi)
+        p = StokesParameters('quarterwave', 0, 0.1, zi=zi)
+
+        with pytest.raises(ValueError, match='same dimensions'):
+            StokesParameters('quarterwave', 0, 0.1, flux=flux, psi=psi,
+                             zi=zi[:14])
+        with pytest.raises(ValueError, match='same dimensions'):
+            StokesParameters('quarterwave', 0, 0.1, flux=flux[:10], psi=psi,
+                             zi=zi)
+        with pytest.raises(ValueError, match='same dimensions'):
+            StokesParameters('quarterwave', 0, 0.1, flux=flux, psi=psi[:10],
+                             zi=zi)
+
 
 class Test_SLSPolarimetry:
     def test_fit_half(self):
