@@ -491,6 +491,7 @@ class Test_SLSPolarimetry:
         assert_equal(p.psi.unit, units.degree)
         assert_almost_equal(p.zi.nominal, (flux_o-flux_e)/(flux_o+flux_e))
         assert_equal(p.zi.unit, units.dimensionless_unscaled)
+        assert_almost_equal(p.flux.nominal, [1e5]*len(psi))
 
     def test_fit_half_no_errors(self):
         q = 0.0130
@@ -534,6 +535,42 @@ class Test_SLSPolarimetry:
         assert_almost_equal(p.zi.nominal, zi)
         assert_equal(p.zi.unit, units.dimensionless_unscaled)
 
+    def test_fit_half_no_k(self):
+        q = 0.02
+        u = 0.01
+        psi = np.arange(0, 360, 22.5)
+        flux_o, flux_e = get_flux_oe(1e5, psi, k=1, q=q, u=u, zero=0)
+        zi = (flux_o-flux_e)/(flux_o+flux_e)
+        pol = SLSDualBeamPolarimetry(retarder='halfwave', compute_k=False)
+        p = pol.compute(psi, flux_o, flux_e,
+                        f_ord_error=[50]*16, f_ext_error=[50]*16)
+        # k must default to 1
+        assert_almost_equal(p.q.nominal, q)
+        assert_almost_equal(p.u.nominal, u)
+        for i in (p.q, p.u):
+            assert_equal(i.unit, units.dimensionless_unscaled)
+        assert_almost_equal(p.k, 1.0)
+        assert_is_none(p.zero)
+
+    def test_fit_half_zero(self):
+        q = 0.02
+        u = 0.01
+        psi = np.arange(0, 360, 22.5)
+        zero = 60
+        flux_o, flux_e = get_flux_oe(1e5, psi, k=1, q=q, u=u, zero=60)
+        zi = (flux_o-flux_e)/(flux_o+flux_e)
+        pol = SLSDualBeamPolarimetry(retarder='halfwave', compute_k=True,
+                                     zero=60)
+        p = pol.compute(psi, flux_o, flux_e,
+                        f_ord_error=[50]*16, f_ext_error=[50]*16)
+        # k must default to 1
+        assert_almost_equal(p.q.nominal, q)
+        assert_almost_equal(p.u.nominal, u)
+        for i in (p.q, p.u):
+            assert_equal(i.unit, units.dimensionless_unscaled)
+        assert_almost_equal(p.k, 1.0)
+        assert_equal(p.zero, QFloat(60, 0, 'degree'))
+
     def test_fit_quarter(self):
         q = 0.0130
         u = -0.027
@@ -560,6 +597,7 @@ class Test_SLSPolarimetry:
         assert_equal(p.psi.unit, units.degree)
         assert_almost_equal(p.zi.nominal, (flux_o-flux_e)/(flux_o+flux_e))
         assert_equal(p.zi.unit, units.dimensionless_unscaled)
+        assert_almost_equal(p.flux.nominal, [1e5]*len(psi))
 
     def test_fit_quarter_no_errors(self):
         q = 0.0130
@@ -615,6 +653,28 @@ class Test_SLSPolarimetry:
         assert_almost_equal(p.zi.nominal, zi, decimal=4)
         assert_equal(p.zi.unit, units.dimensionless_unscaled)
 
+    def test_fit_quarter_no_k(self):
+        q = 0.0130
+        u = -0.027
+        v = 0.021
+        zero = 60
+
+        psi = np.arange(0, 360, 22.5)
+        flux_o, flux_e = get_flux_oe(1e5, psi, k=1.0, q=q, u=u, v=v, zero=zero)
+        pol = SLSDualBeamPolarimetry(retarder='quarterwave', zero=60,
+                                     compute_k=False)
+        p = pol.compute(psi, flux_o, flux_e,
+                        f_ord_error=[50]*16, f_ext_error=[50]*16)
+
+        assert_almost_equal(p.q.nominal, q)
+        assert_almost_equal(p.u.nominal, u)
+        assert_almost_equal(p.v.nominal, v)
+        for i in (p.q, p.u, p.v):
+            assert_equal(i.unit, units.dimensionless_unscaled)
+        assert_almost_equal(p.k, 1.0)
+        assert_almost_equal(p.zero.nominal, zero)
+        assert_equal(p.zero.unit, units.degree)
+
     def test_fit_quarter_estimate_zero(self):
         q = 0.130
         u = -0.027
@@ -639,3 +699,15 @@ class Test_SLSPolarimetry:
         assert_equal(p.psi.unit, units.degree)
         assert_almost_equal(p.zi.nominal, (flux_o-flux_e)/(flux_o+flux_e))
         assert_equal(p.zi.unit, units.dimensionless_unscaled)
+
+    def test_fit_quarter_no_converge(self):
+        q = 0.02
+        u = 0.0
+        v = 0.0
+        zero = 60
+        psi = np.arange(0, 360, 22.5)
+        flux_o, flux_e = get_flux_oe(1e5, psi, k=1.0, q=q, u=u, v=v, zero=zero)
+        pol = SLSDualBeamPolarimetry(retarder='quarterwave', compute_k=True,
+                                     zero=None, max_iters=1)
+        with pytest.raises(RuntimeError, match='Could not converge after'):
+            p = pol.compute(psi, flux_o, flux_e)
