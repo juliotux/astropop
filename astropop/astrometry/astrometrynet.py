@@ -62,7 +62,6 @@ solve_filed_params = {
     'resort': 'sort the star brightnesses by background-subtracted '
               'flux; the default is to sort using acompromise between '
               'background-subtracted and non-background-subtracted flux',
-    'no-plots': "don't create any plots of the results",
     'fits-image': "assume the input files are FITS images",
     'timestamp': "add timestamps to log messages",
     'parity': '<pos/neg> only check for matches with positive/negative parity'
@@ -358,64 +357,112 @@ def create_xyls(fname, x, y, flux, imagew, imageh, header=None, dtype='f8'):
     f.writeto(fname)
 
 
-def solve_astrometry_xy(x, y, flux, image_header, image_width, image_height,
-                        return_wcs=False, image_params=None,
-                        **kwargs):
-    """Solve astrometry from a (x,y) sources list.
+def solve_astrometry_xy(x, y, flux, width, height,
+                        image_header=None, options=None,
+                        command=_solve_field):
+    """Solve astrometry from a (x,y) sources list using astrometry.net.
 
-    Notes
-    -----
-    - image_params are:
-      * pltscl: plate scale (arcsec/px)
-      * ra: right ascension (decimal degrees)
-      * dec: declination (decimal degrees)
-      * radius: maximum search radius
+    Parameters
+    ----------
+    x: array-like
+        x positions of the sources in the image.
+    y: array-like
+        y positions of the sources in the image.
+    flux: array_like
+        Estimated fluxes of the sources. A higher value indicates a brighter
+        star.
+    width: int
+        Image width.
+    height: int
+        Image height.
+    image_header: `~astropy.fits.Header` (optional)
+        Original image header.
+    options: dict
+        Dictionary of ``solve-field`` options. See
+        `~astropop.astrometry.astrometrynet.print_options_help` for all
+        available options. The most useful are:
+        - center or ra and dec: field center
+        - radius: maximum search radius
+        - scale: pixel scale in arcsec/pixel
+        - tweak-order: SIP order to fit
+    command: str
+        Full path of astrometry.net ``solve-field`` command.
+
+    Returns
+    -------
+    `~astropop.astrometry.AstrometricSolution`
+        Astrometric solution ot the field.
     """
-    if image_params is None:
-        image_params = {}
+    if options is None:
+        options = {}
     image_header, _ = extract_header_wcs(image_header)
     f = NamedTemporaryFile(suffix='.xyls')
-    create_xyls(f.name, x, y, flux, image_width, image_height,
+    create_xyls(f.name, x, y, flux, width, height,
                 header=image_header)
     solver = AstrometrySolver()
-    return solver.solve_field(f.name, wcs=return_wcs,
-                              image_params=image_params, **kwargs)
+    return solver.solve_field(f.name, options=options)
 
 
-def solve_astrometry_image(filename, return_wcs=False, image_params=None,
-                           **kwargs):
+def solve_astrometry_image(filename, options=None, command=_solve_field):
+    """Solve astrometry from an image using astrometry.net.
+
+    Parameters
+    ----------
+    filename: str
+        Path to the image to solve.
+    options: dict
+        Dictionary of ``solve-field`` options. See
+        `~astropop.astrometry.astrometrynet.print_options_help` for all
+        available options. The most useful are:
+        - center or ra and dec: field center
+        - radius: maximum search radius
+        - scale: pixel scale in arcsec/pixel
+        - tweak-order: SIP order to fit
+    command: str
+        Full path of astrometry.net ``solve-field`` command.
+
+    Returns
+    -------
+    `~astropop.astrometry.AstrometricSolution`
+        Astrometric solution ot the field.
     """
-    image_params are:
-        pltscl: plate scale (arcsec/px)
-        ra: right ascension (decimal degrees)
-        dec: declination (decimal degrees)
-        radius: maximum search radius
-    """
-    if image_params is None:
-        image_params = {}
+    if options is None:
+        options = {}
     solver = AstrometrySolver()
-    return solver.solve_field(filename, wcs=return_wcs,
-                              image_params=image_params, **kwargs)
+    return solver.solve_field(filename, options=options)
 
 
-def solve_astrometry_hdu(hdu, return_wcs=False, image_params=None,
-                         **kwargs):
+def solve_astrometry_hdu(hdu, options=None, command=_solve_field):
+    """Solve astrometry from a `~astropy.fits.ImageHDU` using astrometry.net.
+
+    Parameters
+    ----------
+    hdu: `astropy.fits.ImageHDU`
+        FITS hdu containing the image to solve.
+    options: dict
+        Dictionary of ``solve-field`` options. See
+        `~astropop.astrometry.astrometrynet.print_options_help` for all
+        available options. The most useful are:
+        - center or ra and dec: field center
+        - radius: maximum search radius
+        - scale: pixel scale in arcsec/pixel
+        - tweak-order: SIP order to fit
+    command: str
+        Full path of astrometry.net ``solve-field`` command.
+
+    Returns
+    -------
+    `~astropop.astrometry.AstrometricSolution`
+        Astrometric solution ot the field.
     """
-    image_params are:
-        pltscl: plate scale (arcsec/px)
-        ra: right ascension (decimal degrees)
-        dec: declination (decimal degrees)
-        radius: maximum search radius
-    """
-    if image_params is None:
-        image_params = {}
+    if options is None:
+        options = {}
     hdu.header, _ = extract_header_wcs(hdu.header)
     f = NamedTemporaryFile(suffix='.fits')
     hdu = fits.PrimaryHDU(hdu.data, header=hdu.header)
     hdu.writeto(f.name)
     solver = AstrometrySolver()
-    return solver.solve_field(f.name, wcs=return_wcs,
-                              image_params=image_params, **kwargs)
+    return solver.solve_field(f.name, options=options)
 
 
 def fit_wcs(x, y, ra, dec, image_width, image_height, sip=False,
