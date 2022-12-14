@@ -194,14 +194,17 @@ class StokesParameters:
         Relative difference of fluxes between ordinary and extraordinary beams.
     psi: array_like
         Array of retarder positions in degrees.
+    flux: `~astropop.math.QFloat` (optional)
+        Sum of ordinary and extraordinary counts in each retarder position.
     """
 
-    retarder: str
+    retarder: str  # 'quarterwave' or 'halfwave'
     q: QFloat
     u: QFloat
     v: QFloat = None
     k: float = 1.0
     zero: QFloat = 0.0
+    flux: QFloat = None
     zi: QFloat = None
     psi: QFloat = None
 
@@ -234,6 +237,16 @@ class StokesParameters:
             if self.psi.unit != self.zero.unit:
                 raise ValueError('Psi and Zero have different units.')
 
+        # flux, zi and psi must have the same dimensions if exists
+        length = None
+        for i in (self.psi, self.zi, self.flux):
+            if i is not None:
+                if length is None:
+                    length = len(i)
+                elif len(i) != length:
+                    raise ValueError('psi, zi and flux must have the same '
+                                     'dimensions')
+
     @property
     def p(self):
         """Linear polarization level."""
@@ -265,13 +278,17 @@ class StokesParameters:
         return model
 
     @property
-    def sigma_theor(self):
+    def theor_sigma(self):
         """Theoretical sigma of the polarization level."""
         if self.retarder == 'quarterwave':
             k = np.sqrt(2)
         elif self.retarder == 'halfwave':
             k = 1
-        summed = np.sqrt(np.sum(np.square(self.zi.nominal/self.zi.std_dev)))
+        if self.flux is None:
+            raise ValueError('The theoretical sigma is only available when '
+                             'fluxes are present.')
+        ratio = self.flux.nominal/self.flux.std_dev
+        summed = np.sqrt(np.sum(np.square(ratio)))
         return k/summed
 
 
@@ -338,6 +355,7 @@ class _DualBeamPolarimetry(abc.ABC):
 
     def _half_compute(self, psi, f_ord, f_ext):
         """Compute the Stokes params for halfwave retarder."""
+        fluxes = f_ord + f_ext
         # estimate normalization factor
         if self.k is not None:
             k = self.k
@@ -355,10 +373,11 @@ class _DualBeamPolarimetry(abc.ABC):
             zero = None
         psi = QFloat(psi, unit='deg')
         return StokesParameters('halfwave', q=q, u=u, v=None, k=QFloat(k),
-                                zero=zero, psi=psi, zi=zi)
+                                zero=zero, psi=psi, zi=zi, flux=fluxes)
 
     def _quarter_compute(self, psi, f_ord, f_ext):
         """Compute the Stokes params for quarterwave retarder."""
+        fluxes = f_ord + f_ext
         # bypass normalization
         if not self.compute_k:
             k = self.k or 1.0
@@ -395,7 +414,8 @@ class _DualBeamPolarimetry(abc.ABC):
         zero = params['zero']
         params['zero'] = QFloat(zero.nominal, zero.uncertainty, 'deg')
         return StokesParameters('quarterwave', **params, k=k,
-                                zi=zi, psi=QFloat(psi, unit='deg'))
+                                zi=zi, psi=QFloat(psi, unit='deg'),
+                                flux=fluxes)
 
     def compute(self, psi, f_ord, f_ext, f_ord_error=None, f_ext_error=None):
         """Compute the Stokes params from ordinary and extraordinary fluxes.
