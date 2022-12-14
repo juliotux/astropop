@@ -229,26 +229,16 @@ class AstrometrySolver():
             Name of the file to be solved. Can be a fits image or a xyls
             sources file.
         options: `dict` (optional)
-            Dictionary containing the options to be passed to ``solve-field``
-            command. See `~astropop.astrometry.AstometrySolver.options` for
-            detailed description of all accepted arguments.
+            Dictionary of ``solve-field`` options. See
+            `~astropop.astrometry.astrometrynet.print_options_help` for all
+            available options. The most useful are:
+            - center or ra and dec: field center
+            - radius: maximum search radius
+            - scale: pixel scale in arcsec/pixel
+            - tweak-order: SIP order to fit
         **kwargs:
             Additional keyword arguments to be passed to
             `~astropop.py_utils.run_command`.
-
-
-        The image params can be:
-            'ra' : approximate center of the image in RA in decimal degrees
-            'dec' : approximate center of the image in DEC in decimal degrees
-            'pltscl' : plate scale of the image in arcsec/px
-            'radius' : maximum radius to search around the center
-
-        The solve_params are additional parameters that will be passed to
-        solve-filed command. They can be:
-            'no-fits2fits', 'overwrite', 'depth', 'no-plot', etc.
-
-        'hdu' defines the number of the HDU to be solved, generally 0 (first)
-        for images.
 
         Returns:
         --------
@@ -264,14 +254,14 @@ class AstrometrySolver():
         n_opt.update(options)
 
         solved_header, coorespond = self._run_solver(filename,
-                                                     params=n_opt,
+                                                     options=n_opt,
                                                      **kwargs)
 
         return AstrometricSolution(WCS(solved_header, relax=True),
                                    header=solved_header,
                                    correspondences=coorespond)
 
-    def _run_solver(self, filename, params, output_dir=None, **kwargs):
+    def _run_solver(self, filename, options, output_dir=None, **kwargs):
         """Run the astrometry.net localy using the given params.
 
         STDOUT and STDERR can be stored in variables for better check after.
@@ -287,7 +277,7 @@ class AstrometrySolver():
 
         args = [self._command, filename, '--dir', output_dir]
 
-        for i, v in params.items():
+        for i, v in options.items():
             ndashes = 1 if len(i) == 1 else 2
             args.append(f"{ndashes * '-'}{i}")
             if v is not None:
@@ -359,7 +349,8 @@ def create_xyls(fname, x, y, flux, imagew, imageh, header=None, dtype='f8'):
 
 def solve_astrometry_xy(x, y, flux, width, height,
                         image_header=None, options=None,
-                        command=_solve_field):
+                        command=_solve_field,
+                        **kwargs):
     """Solve astrometry from a (x,y) sources list using astrometry.net.
 
     Parameters
@@ -399,11 +390,12 @@ def solve_astrometry_xy(x, y, flux, width, height,
     f = NamedTemporaryFile(suffix='.xyls')
     create_xyls(f.name, x, y, flux, width, height,
                 header=image_header)
-    solver = AstrometrySolver()
-    return solver.solve_field(f.name, options=options)
+    solver = AstrometrySolver(astrometry_command=command)
+    return solver.solve_field(f.name, options=options, **kwargs)
 
 
-def solve_astrometry_image(filename, options=None, command=_solve_field):
+def solve_astrometry_image(filename, options=None, command=_solve_field,
+                           **kwargs):
     """Solve astrometry from an image using astrometry.net.
 
     Parameters
@@ -428,11 +420,11 @@ def solve_astrometry_image(filename, options=None, command=_solve_field):
     """
     if options is None:
         options = {}
-    solver = AstrometrySolver()
-    return solver.solve_field(filename, options=options)
+    solver = AstrometrySolver(astrometry_command=command)
+    return solver.solve_field(filename, options=options, **kwargs)
 
 
-def solve_astrometry_hdu(hdu, options=None, command=_solve_field):
+def solve_astrometry_hdu(hdu, options=None, command=_solve_field, **kwargs):
     """Solve astrometry from a `~astropy.fits.ImageHDU` using astrometry.net.
 
     Parameters
@@ -461,8 +453,8 @@ def solve_astrometry_hdu(hdu, options=None, command=_solve_field):
     f = NamedTemporaryFile(suffix='.fits')
     hdu = fits.PrimaryHDU(hdu.data, header=hdu.header)
     hdu.writeto(f.name)
-    solver = AstrometrySolver()
-    return solver.solve_field(f.name, options=options)
+    solver = AstrometrySolver(astrometry_command=command)
+    return solver.solve_field(f.name, options=options, **kwargs)
 
 
 def fit_wcs(x, y, ra, dec, image_width, image_height, sip=False,
