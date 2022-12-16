@@ -34,7 +34,7 @@ _solve_field = shutil.which('solve-field')
 
 _center_help = 'only search in indexes within `radius` of the field center ' \
                'given by `ra` and `dec`'
-solve_filed_params = {
+solve_field_params = {
     'center': '<SkyCoord or [ra, dec]>' + _center_help,
     'ra': '<Angle, float degrees or hh:mm:ss>' + _center_help,
     'dec': '<Angle, float degrees or +-hh:mm:ss>' + _center_help,
@@ -94,7 +94,9 @@ solve_filed_params = {
                   ' header before solving',
     'xscale': '<factor> for rectangular pixels: factor to apply to measured X'
               ' positions to make pixels square',
-    'fields': '<number or range> the FITS extension(s) to solve, inclusive'
+    'fields': '<number or range> the FITS extension(s) to solve, inclusive',
+    'no-plots': 'don\'t create any plots of the results',
+    'overwrite': 'overwrite output files if they already exist'
 }
 
 
@@ -124,6 +126,7 @@ def _parse_angle(angle, unit=None):
     if not isinstance(angle, float):
         raise ValueError(f'{angle} (type {type(angle)})not recognized as a '
                          'valid angle.')
+    return float(angle)
 
 
 def _parse_coordinates(coord=None, ra=None, dec=None):
@@ -208,15 +211,15 @@ class AstrometrySolver():
         Keep the temporary files after finish.
     """
 
-    def __init__(self, astrometry_command=_solve_field,
+    def __init__(self, solve_field=_solve_field,
                  defaults=None, keep_files=False):
         # declare the defaults here to be safer
-        self._defaults = {'no-plot': None, 'overwrite': None}
+        self._defaults = {'no-plots': None, 'overwrite': None}
         if defaults is None:
             defaults = {}
         self._defaults.update(defaults)
 
-        self._command = astrometry_command
+        self._command = solve_field
         self._keep = keep_files
         self.logger = logger
 
@@ -261,27 +264,53 @@ class AstrometrySolver():
                                    header=solved_header,
                                    correspondences=coorespond)
 
-    def _run_solver(self, filename, options, output_dir=None, **kwargs):
-        """Run the astrometry.net localy using the given params.
-
-        STDOUT and STDERR can be stored in variables for better check after.
-        """
-        basename = os.path.basename(filename)
-        root, _ = os.path.splitext(basename)
+    def _get_output_dir(self, root, output_dir):
+        """Check output directory and create the temporary directory."""
         if output_dir is None:
             output_dir = mkdtemp(prefix=root + '_', suffix='_astrometry.net')
             tmp_dir = True
         else:
             tmp_dir = False
+        return output_dir, tmp_dir
+
+    def _parse_options(self, options):
+        """Parse and check all known options."""
+        for key in options.keys():
+            if key not in solve_field_params:
+                raise KeyError(f'option {key} not supported.')
+
+        args = []
+        # parse center
+        if 'center' in options or ('ra' in options and 'dec' in options):
+            center = _parse_coordinates(options.pop('center', None),
+                                        options.pop('ra', None),
+                                        options.pop('dec', None))
+            args += ['--ra', str(center['ra']),
+                     '--dec', str(center['dec'])]
+        else:
+            logger.info('Astrometry solving with blind field center.')
+
+        # parse plate scale
+
+        return args
+
+    def _run_solver(self, filename, options, output_dir=None, **kwargs):
+        """Run the astrometry.net localy using the given params.
+
+        STDOUT and STDERR can be stored in variables for better check after
+        using kwargs.
+        """
+        basename = os.path.basename(filename)
+        root, _ = os.path.splitext(basename)
+        output_dir, tmp_dir = self._get_output_dir(root, output_dir)
         solved_file = os.path.join(output_dir, root + '.solved')
+        correspond = os.path.join(output_dir, root + '.corr')
 
         args = [self._command, filename, '--dir', output_dir]
+        args += self._parse_options(options)
+        args += ['--corr', correspond]
 
-        for i, v in options.items():
-            ndashes = 1 if len(i) == 1 else 2
-            args.append(f"{ndashes * '-'}{i}")
-            if v is not None:
-                args.append(str(v))
+        print(args)
 
         try:
             process, _, _ = run_command(args, **kwargs)
@@ -293,8 +322,9 @@ class AstrometrySolver():
                 if ord(fd.read()) != 1:
                     raise AstrometryNetUnsolvedField(filename)
             solved_wcs_file = os.path.join(output_dir, root + '.wcs')
-            self.logger.info('Loading solved header from %s', solved_wcs_file)
+            self.logger.debug('Loading solved header from %s', solved_wcs_file)
             solved_header = fits.getheader(solved_wcs_file, 0)
+            print(open(correspond, 'rb').read())
 
             # remove the tree if the file is temporary and not set to keep
             if not self._keep and tmp_dir:
