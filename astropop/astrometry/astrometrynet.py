@@ -29,7 +29,6 @@ __all__ = ['AstrometrySolver', 'solve_astrometry_xy', 'solve_astrometry_image',
            'create_xyls', 'AstrometryNetUnsolvedField']
 
 
-_fit_wcs = shutil.which('fit-wcs')
 _solve_field = shutil.which('solve-field')
 
 _center_help = 'only search in indexes within `radius` of the field center ' \
