@@ -107,7 +107,8 @@ def print_options_help():
         print(f"'{k}': {v}")
 
 
-print_options_help.__doc__ = print_options_help()
+print_options_help.__doc__ = "\n".join([f"'{k}': {v}" for k, v in
+                                        solve_field_params.items()])
 
 
 class AstrometryNetUnsolvedField(CalledProcessError):
@@ -393,26 +394,25 @@ class AstrometrySolver():
 
 
 def create_xyls(fname, x, y, flux, imagew, imageh, header=None, dtype='f8'):
-    '''
-    Create and save the xyls file to run in astrometry.net
+    """Create and save the xyls file to run in astrometry.net
 
-    Parameters:
-    -----------
-    fname : str
+    Parameters
+    ----------
+    fname: str
         The path to save the .xyls file.
-    x : array_like
+    x: array_like
         X coordinates of the sources.
-    y : array_like
+    y: array_like
         Y coordinates of the sources.
-    flux : array_like
+    flux: array_like
         Estimated flux of the sources.
-    imagew : float or int
+    imagew: float or int
         Width of the original image. `IMAGEW` header field of .xyls
-    imageh : float or int
+    imageh: float or int
         Height of the original image. `IMAGEH` header field of .xyls
-    dtype : `numpy.dtype`, optional
+    dtype: `~numpy.dtype`, optional
         Data type of the fields. Default: 'f8'
-    '''
+    """
     head = {'IMAGEW': imagew,
             'IMAGEH': imageh}
     sort = np.argsort(flux)
