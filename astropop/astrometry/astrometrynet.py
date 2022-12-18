@@ -96,7 +96,9 @@ solve_field_params = {
               ' positions to make pixels square',
     'fields': '<number or range> the FITS extension(s) to solve, inclusive',
     'no-plots': 'don\'t create any plots of the results',
-    'overwrite': 'overwrite output files if they already exist'
+    'overwrite': 'overwrite output files if they already exist',
+    'width': '<pixels>: specify the field width',
+    'height': '<pixels>: specify the field height'
 }
 
 
@@ -173,10 +175,9 @@ class AstrometricSolution():
     _header = None
     _corr = None
 
-    def __init__(self, wcs, header=None, correspondences=None):
-        self._wcs = WCS(wcs)
-        if header is not None:
-            self._header = fits.Header(header)
+    def __init__(self, header, correspondences=None):
+        self._wcs = WCS(header, relax=True)
+        self._header = fits.Header(header)
         if correspondences is not None:
             self._corr = Table(correspondences)
 
@@ -260,8 +261,7 @@ class AstrometrySolver():
                                                      options=n_opt,
                                                      **kwargs)
 
-        return AstrometricSolution(WCS(solved_header, relax=True),
-                                   header=solved_header,
+        return AstrometricSolution(header=solved_header,
                                    correspondences=coorespond)
 
     def _get_output_dir(self, root, output_dir):
@@ -292,6 +292,12 @@ class AstrometrySolver():
 
         # parse plate scale
 
+        for key, value in options.items():
+            if value is None:
+                args.append(f'--{key}')
+            else:
+                args += [f'--{key}', str(value)]
+
         return args
 
     def _run_solver(self, filename, options, output_dir=None, **kwargs):
@@ -310,13 +316,8 @@ class AstrometrySolver():
         args += self._parse_options(options)
         args += ['--corr', correspond]
 
-        print(args)
-
         try:
             process, _, _ = run_command(args, **kwargs)
-            if process.returncode != 0:
-                raise CalledProcessError(process.returncode, self._command)
-
             # .solved file must exist and contain a binary one
             with open(solved_file, 'rb') as fd:
                 if ord(fd.read()) != 1:
@@ -324,13 +325,13 @@ class AstrometrySolver():
             solved_wcs_file = os.path.join(output_dir, root + '.wcs')
             self.logger.debug('Loading solved header from %s', solved_wcs_file)
             solved_header = fits.getheader(solved_wcs_file, 0)
-            print(open(correspond, 'rb').read())
+            corr = Table.read(correspond)
 
             # remove the tree if the file is temporary and not set to keep
             if not self._keep and tmp_dir:
                 shutil.rmtree(output_dir)
 
-            return solved_header
+            return solved_header, corr
 
         except CalledProcessError as e:
             if not self._keep and tmp_dir:
@@ -416,11 +417,16 @@ def solve_astrometry_xy(x, y, flux, width, height,
     """
     if options is None:
         options = {}
-    image_header, _ = extract_header_wcs(image_header)
+    if image_header is not None:
+        image_header, _ = extract_header_wcs(image_header)
+    else:
+        image_header = fits.Header()
+
     f = NamedTemporaryFile(suffix='.xyls')
     create_xyls(f.name, x, y, flux, width, height,
                 header=image_header)
-    solver = AstrometrySolver(astrometry_command=command)
+    solver = AstrometrySolver(solve_field=command)
+    options.update({'width': width, 'height': height})
     return solver.solve_field(f.name, options=options, **kwargs)
 
 
@@ -450,7 +456,7 @@ def solve_astrometry_image(filename, options=None, command=_solve_field,
     """
     if options is None:
         options = {}
-    solver = AstrometrySolver(astrometry_command=command)
+    solver = AstrometrySolver(solve_field=command)
     return solver.solve_field(filename, options=options, **kwargs)
 
 
@@ -483,43 +489,5 @@ def solve_astrometry_hdu(hdu, options=None, command=_solve_field, **kwargs):
     f = NamedTemporaryFile(suffix='.fits')
     hdu = fits.PrimaryHDU(hdu.data, header=hdu.header)
     hdu.writeto(f.name)
-    solver = AstrometrySolver(astrometry_command=command)
+    solver = AstrometrySolver(solve_field=command)
     return solver.solve_field(f.name, options=options, **kwargs)
-
-
-def fit_wcs(x, y, ra, dec, image_width, image_height, sip=False,
-            command=_fit_wcs, **kwargs):
-    """Run astrometry.net fit-wcs command
-
-    sip is sip order, int
-    """
-    solved_wcs_file = NamedTemporaryFile(prefix='fitwcs', suffix='.wcs')
-    tmp_table = NamedTemporaryFile(prefix='fitwcs_xyrd', suffix='.fits')
-
-    xyrd = np.array(list(zip(x, y, ra, dec)),
-                    np.dtype([('FIELD_X', 'f8'), ('FIELD_Y', 'f8'),
-                              ('INDEX_RA', 'f8'), ('INDEX_DEC', 'f8')]))
-    f = fits.HDUList([fits.PrimaryHDU(),
-                      fits.BinTableHDU(xyrd)])
-    logger.debug('Saving xyrd to %s', tmp_table.name)
-    f.writeto(tmp_table.name)
-
-    args = [command]
-    args += ['-c', tmp_table.name]
-
-    if sip:
-        args += ['-s', str(sip), '-W', str(image_width), '-H',
-                 str(image_height)]
-    args += ['-o', solved_wcs_file.name]
-
-    try:
-        process, _, _ = run_command(args, **kwargs)
-        if process.returncode != 0:
-            raise CalledProcessError(process.returncode, args)
-        logger.info('Loading solved header from %s', solved_wcs_file.name)
-        solved_header = fits.getheader(solved_wcs_file.name, 0)
-    except Exception as e:
-        raise AstrometryNetUnsolvedField("Could not fit wcs to this lists."
-                                         f" Error: {e}")
-
-    return WCS(solved_header, relax=True)
