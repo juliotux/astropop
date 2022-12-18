@@ -1,7 +1,9 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 """Small python addons to be used in astropop."""
 
+from os import linesep
 import subprocess
+import asyncio
 import shlex
 from numbers import Number
 
@@ -12,6 +14,9 @@ from .logger import logger, resolve_level_string
 __all__ = ['string_fix', 'process_list', 'check_iterable',
            'batch_key_replace', 'IndexedDict', 'check_number',
            'broadcast']
+
+
+STREAM_LIMIT = 2**23  # 8 MB
 
 
 def process_list(func, iterator, *args, **kwargs):
@@ -214,40 +219,107 @@ def batch_key_replace(dictionary, key=None):
         return
 
 
+async def _read_stream(stream, callback):
+    """Read stream buffers."""
+    # TODO: when deprcate py37
+    # while (line := await stream.readline()):
+    #     callback(line)
+    while True:
+        line = await stream.readline()
+        if line:
+            callback(line)
+        else:
+            break
+
+
+async def _subprocess(args, stdout, stderr, stdout_loglevel, stderr_loglevel,
+                      logger, **kwargs):
+    """Execute subprocesses."""
+    def proccess_out(line, std_l, loglevel):
+        line = line.decode("utf-8").strip('\n')
+        std_l.append(line)
+        logger.log(loglevel, line)
+
+    proc = await asyncio.create_subprocess_shell(
+        shlex.join(args), limit=STREAM_LIMIT,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+        **kwargs)
+
+    tasks = []
+    loop = asyncio.get_running_loop()
+    if proc.stdout:
+        t = loop.create_task(_read_stream(proc.stdout,
+                                          lambda x:
+                                          proccess_out(x, stdout,
+                                                       stdout_loglevel)))
+        tasks.append(t)
+    if proc.stderr:
+        t = loop.create_task(_read_stream(proc.stderr,
+                                          lambda x:
+                                          proccess_out(x, stderr,
+                                                       stderr_loglevel)))
+        tasks.append(t)
+    await asyncio.wait(set(tasks))
+
+    return subprocess.CompletedProcess(args=args,
+                                       returncode=await proc.wait(),
+                                       stdout=linesep.join(stdout) + linesep,
+                                       stderr=linesep.join(stderr) + linesep)
+
+
 def run_command(args, stdout=None, stderr=None, stdout_loglevel='DEBUG',
-                stderr_loglevel='ERROR', **kwargs):
-    """Run a command in command line with logging."""
+                stderr_loglevel='ERROR', logger=logger, **kwargs):
+    """Run a command in command line with logging.
+
+    Parameters
+    ----------
+    args: list of strings or string
+        Full command, with arguments, to be executed.
+    stdout: list (optional)
+        List to store the stdout of the command. If None, a new list will be
+        created.
+    stderr: list (optional)
+        List to store the stderr of the command. If None, a new list will be
+        created.
+    stdout_loglevel: string (optional)
+        Log level to print the stdout lines. Default is 'DEBUG'.
+    stderr_loglevel: string (optional)
+        Log level to print the stderr lines. Default is 'ERROR'.
+    logger: `~logging.Logger` (optional)
+        Custom logger to print the outputs.
+    **kwargs: dict (optional)
+        Additional arguments to be passed to `~asyncio.create_subprocess_shell`
+
+    Returns:
+        `~subprocess.CompletedProcess` results of the execution.
+    """
 
     # Put the cmd in python list, required
     if isinstance(args, (str, bytes)):
         logger.debug('Converting string using shlex')
         args = shlex.split(args)
 
-    ps = {
-        'out': {'log': resolve_level_string(stdout_loglevel), 'list': stdout},
-        'err': {'log': resolve_level_string(stderr_loglevel), 'list': stderr}
-    }
+    stdout_loglevel = resolve_level_string(stdout_loglevel)
+    stderr_loglevel = resolve_level_string(stderr_loglevel)
+    if stdout is None:
+        stdout = []
+    if stderr is None:
+        stderr = []
 
-    logger.log(ps['out']['log'], 'Runing: %s', " ".join(args))
+    logger.info('Runing: %s', " ".join(args))
     # Run the command
-    proc = subprocess.Popen(args, stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE,
-                            **kwargs)
-    while True:
-        output = proc.stdout.readline().decode('utf-8').strip()
-        err = proc.stderr.readline().decode('utf-8').strip()
-        if output == '' and err == '' and proc.poll() is not None:
-            break
-        if output:
-            logger.log(ps['out']['log'], output)
-            if ps['out']['list'] is not None:
-                ps['out']['list'].append(output)
-        if err:
-            logger.log(ps['err']['log'], err)
-            if ps['err']['list'] is not None:
-                ps['err']['list'].append(err)
-
-    logger.log(ps['out']['log'], "Done with process: %s", " ".join(args))
+    loc_logger = logger.getChild(args[0])
+    proc = _subprocess(args, stdout, stderr, stdout_loglevel, stderr_loglevel,
+                       logger=loc_logger, **kwargs)
+    result = asyncio.run(proc)
+    # restore original args to mimic subproces.run()
+    result.args = args
+    if result.returncode != 0:
+        raise subprocess.CalledProcessError(result.returncode, args,
+                                            output=result.stdout,
+                                            stderr=result.stderr)
+    logger.info("Done with process: %s", " ".join(args))
 
     return proc, stdout, stderr
 
