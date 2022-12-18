@@ -3,7 +3,6 @@
 
 from os import linesep
 import subprocess
-from contextlib import suppress
 import asyncio
 import shlex
 from numbers import Number
