@@ -16,9 +16,6 @@ __all__ = ['string_fix', 'process_list', 'check_iterable',
            'broadcast']
 
 
-STREAM_LIMIT = 2**23  # 8 MB
-
-
 def process_list(func, iterator, *args, **kwargs):
     """Run a function func for all i in a iterator list.
 
@@ -241,7 +238,8 @@ async def _subprocess(args, stdout, stderr, stdout_loglevel, stderr_loglevel,
         logger.log(loglevel, line)
 
     proc = await asyncio.create_subprocess_shell(
-        shlex.join(args), limit=STREAM_LIMIT,
+        shlex.join(args),
+        limit=2**23,  # 8 MB
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
         **kwargs)
