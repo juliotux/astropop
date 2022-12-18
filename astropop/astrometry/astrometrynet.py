@@ -131,11 +131,18 @@ def _parse_angle(angle, unit=None):
     return float(angle)
 
 
-def _parse_coordinates(coord=None, ra=None, dec=None):
+def _parse_coordinates(options):
     """Parse filed center coordinates."""
+    coord = options.pop('center', None)
+    ra = options.pop('ra', None)
+    dec = options.pop('dec', None)
+
     if coord is not None and (ra is not None or dec is not None):
         raise ValueError('Field center defined by `coord` conflicts with `ra`'
                          ' and `dec` fields')
+    if coord is None and (ra is None or dec is None):
+        logger.info('Astrometry solving with blind field center.')
+        return []
 
     # coord can by a tuple of ra, dec
     if isinstance(coord, (list, tuple)):
@@ -147,14 +154,50 @@ def _parse_coordinates(coord=None, ra=None, dec=None):
     ra = _parse_angle(ra, 'hourangle')
     dec = _parse_angle(dec, 'degree')
 
-    return {'ra': ra, 'dec': dec}
+    return ['--ra', str(ra), '--dec', str(dec)]
 
 
-def _parse_pltscl(pltscl, tolerance=0.2):
+def _parse_pltscl(options):
     """Parse plate scale."""
-    low = pltscl*(1-tolerance)
-    hi = pltscl*(1+tolerance)
-    return {'scale-low': low, 'scale-high': hi, 'scale-units': 'arcsecperpix'}
+    low = options.pop('scale-low', None)
+    hi = options.pop('scale-hi', None)
+    units = options.pop('scale-units', None)
+    pltscl = options.pop('scale', None)
+    tolerance = options.pop('scale-tolerance', 0.2)
+
+    if pltscl is not None and (low is not None or hi is not None):
+        raise ValueError("'scale' is in conflict with 'scale-low' and"
+                         " 'scale-hi' options. Use one or another.")
+    if low is not None and hi is not None and units is None:
+        raise ValueError("When using 'scale-low' and 'scale-hi' options you "
+                         "must specify 'scale-units' too.")
+
+    if pltscl is not None:
+        low = pltscl*(1-tolerance)
+        hi = pltscl*(1+tolerance)
+        units = units or 'arcsecperpix'
+
+    return ['--scale-low', low, '--scale-high', hi, '--scale-units', units]
+
+
+def _parse_crpix(options):
+    center = False
+    if 'crpix-center' in options:
+        center = True
+        options.remove('crpix-center')
+
+    crpix_x = options.pop('crpix-x', None)
+    crpix_y = options.pop('crpix-y', None)
+
+    if center and (crpix_x is not None and crpix_y is not None):
+        raise ValueError('crpix-center is in conflict with crpix-x and '
+                         'crpix-y. Use one or another.')
+
+    if center:
+        return ['crpix-center']
+    elif crpix_x is not None and crpix_y is not None:
+        return ['crpix-x', crpix_x, 'crpix-y', crpix_y]
+    return []
 
 
 class AstrometricSolution():
@@ -222,7 +265,6 @@ class AstrometrySolver():
 
         self._command = solve_field
         self._keep = keep_files
-        self.logger = logger
 
     def solve_field(self, filename, options=None, **kwargs):
         """Try to solve an image using the astrometry.net.
@@ -280,22 +322,18 @@ class AstrometrySolver():
                 raise KeyError(f'option {key} not supported.')
 
         args = []
-        # parse center
-        if 'center' in options or ('ra' in options and 'dec' in options):
-            center = _parse_coordinates(options.pop('center', None),
-                                        options.pop('ra', None),
-                                        options.pop('dec', None))
-            args += ['--ra', str(center['ra']),
-                     '--dec', str(center['dec'])]
-        else:
-            logger.info('Astrometry solving with blind field center.')
-
-        # parse plate scale
+        args += _parse_coordinates(options)  # parse center
+        args += _parse_pltscl(options)  # parse plate scale
+        if 'radius' in options:  # parse radius
+            args += ['--radius', _parse_angle(options.pop('radius', None))]
+        args += _parse_crpix(options)  # parse crpix
 
         for key, value in options.items():
             if value is None:
                 args.append(f'--{key}')
             else:
+                if isinstance(value, (list, tuple)):
+                    value = ",".join(value)
                 args += [f'--{key}', str(value)]
 
         return args
@@ -323,7 +361,7 @@ class AstrometrySolver():
                 if ord(fd.read()) != 1:
                     raise AstrometryNetUnsolvedField(filename)
             solved_wcs_file = os.path.join(output_dir, root + '.wcs')
-            self.logger.debug('Loading solved header from %s', solved_wcs_file)
+            logger.debug('Loading solved header from %s', solved_wcs_file)
             solved_header = fits.getheader(solved_wcs_file, 0)
             corr = Table.read(correspond)
 
