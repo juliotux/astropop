@@ -102,6 +102,14 @@ solve_field_params = {
 }
 
 
+def print_options_help():
+    for k, v in solve_field_params.items():
+        print(f"'{k}': {v}")
+
+
+print_options_help.__doc__ = print_options_help()
+
+
 class AstrometryNetUnsolvedField(CalledProcessError):
     """Raised if Astrometry.net could not solve the field."""
 
@@ -251,6 +259,7 @@ class AstrometrySolver():
         Default arguments to be passed to ``solve-field`` program. If not set,
         arguments ``no-plot`` and ``overwrite`` will be used. Use only double
         dashed arguments, ignoring the dashed in the `dict` keys.
+        See `~astropop.astrometry.astrometrynet.print_options_help`
     keep_files: bool (optional)
         Keep the temporary files after finish.
     """
