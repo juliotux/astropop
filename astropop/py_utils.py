@@ -3,6 +3,7 @@
 
 from os import linesep
 import subprocess
+from contextlib import suppress
 import asyncio
 import shlex
 from numbers import Number
@@ -266,6 +267,27 @@ async def _subprocess(args, stdout, stderr, stdout_loglevel, stderr_loglevel,
                                        stderr=linesep.join(stderr) + linesep)
 
 
+def _run_async_task(task):
+    """Run async task and avoid problems with Jupyter."""
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = None
+
+    # patch asyncio when running inside Jupyter or other running loop
+    if loop and loop.is_running():
+        try:
+            import nest_asyncio
+        except ImportError:
+            raise ImportError('To run this command inside a running async '
+                              'loop, like Jupyter Notebook, you need to '
+                              'install `nest-asyncio` package. ')
+        nest_asyncio.apply()
+
+    task = asyncio.ensure_future(task)
+    return loop.run_until_complete(task)
+
+
 def run_command(args, stdout=None, stderr=None, stdout_loglevel='DEBUG',
                 stderr_loglevel='ERROR', logger=logger, **kwargs):
     """Run a command in command line with logging.
@@ -289,10 +311,10 @@ def run_command(args, stdout=None, stderr=None, stdout_loglevel='DEBUG',
     **kwargs: dict (optional)
         Additional arguments to be passed to `~asyncio.create_subprocess_shell`
 
-    Returns:
+    Returns
+    -------
         `~subprocess.CompletedProcess` results of the execution.
     """
-
     # Put the cmd in python list, required
     if isinstance(args, (str, bytes)):
         logger.debug('Converting string using shlex')
@@ -307,10 +329,11 @@ def run_command(args, stdout=None, stderr=None, stdout_loglevel='DEBUG',
 
     logger.info('Runing: %s', " ".join(args))
     # Run the command
-    loc_logger = logger.getChild(args[0])
+    loc_logger = logger
     proc = _subprocess(args, stdout, stderr, stdout_loglevel, stderr_loglevel,
                        logger=loc_logger, **kwargs)
-    result = asyncio.run(proc)
+
+    result = _run_async_task(proc)
     # restore original args to mimic subproces.run()
     result.args = args
     if result.returncode != 0:
@@ -319,7 +342,7 @@ def run_command(args, stdout=None, stderr=None, stdout_loglevel='DEBUG',
                                             stderr=result.stderr)
     logger.info("Done with process: %s", " ".join(args))
 
-    return proc, stdout, stderr
+    return result, stdout, stderr
 
 
 class IndexedDict(dict):
