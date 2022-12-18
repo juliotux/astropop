@@ -185,6 +185,9 @@ def _parse_pltscl(options):
         hi = pltscl*(1+tolerance)
         units = units or 'arcsecperpix'
 
+    if low is None or hi is None:
+        return []
+
     return ['--scale-low', low, '--scale-high', hi, '--scale-units', units]
 
 
