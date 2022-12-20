@@ -92,7 +92,6 @@ class Test_MemMapArray:
         a[0][:] = 20
         assert_equal(a[0], [20, 20, 20, 20, 20, 20])
 
-
     def test_enable_disable_memmap(self, tmpdir):
         f = os.path.join(tmpdir, 'npn_empty.npy')
         arr = [[0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5]]

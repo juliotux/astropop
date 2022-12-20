@@ -592,7 +592,7 @@ class Test_ImCombiner_LoadImages():
         n = 10
         d = np.ones((10, 10))
         li = [FrameData(d, unit='adu', uncertainty=d, cache_folder=tmp,
-                       cache_filename=f'test{i}') for i in range(n)]
+                        cache_filename=f'test{i}') for i in range(n)]
 
         comb = ImCombiner(use_disk_cache=disk_cache)
         # must start empty
