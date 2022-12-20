@@ -705,11 +705,11 @@ class QFloat():
 
     @require_qfloat
     def __int__(self):
-        return np.intc(self.nominal)
+        return int(self.nominal)
 
     @require_qfloat
     def __float__(self):
-        return np.float_(self.nominal)
+        return float(self.nominal)
 
 
 # TODO:
