@@ -103,7 +103,7 @@ jobs:
     - name: Install dependencies
       shell: bash -l {0}
       run: |
-        conda install -y -q astropy numpy==1.22 scipy astroquery scikit-image scikit-learn pytz pyyaml astroscrappy astroalign sep reproject astrometry
+        conda install -y -q astropy numpy scipy astroquery scikit-image scikit-learn pytz pyyaml astroscrappy astroalign sep reproject astrometry
         conda install -y -q pytest pytest-astropy pytest-remotedata flaky
         pip install coveralls
     - name: Print versions
