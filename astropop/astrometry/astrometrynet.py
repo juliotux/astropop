@@ -22,7 +22,7 @@ from astropy.units import UnitsError
 
 from ..framedata.compat import extract_header_wcs
 from ..logger import logger
-from ..py_utils import run_command
+from ..py_utils import run_command, check_number
 
 
 __all__ = ['AstrometrySolver', 'solve_astrometry_xy', 'solve_astrometry_image',
@@ -128,9 +128,13 @@ def _parse_angle(angle, unit=None):
     if isinstance(angle, str):
         try:
             angle = Angle(angle)
-        except UnitsError:
+        except UnitsError as e:
             if unit is not None:
                 angle = Angle(angle, unit=unit)
+            else:
+                raise e
+    if check_number(angle) and unit is not None:
+        angle = Angle(angle, unit=unit)
     if isinstance(angle, Angle):
         angle = angle.degree
     if not isinstance(angle, float):
@@ -158,9 +162,10 @@ def _parse_coordinates(options):
     elif isinstance(coord, SkyCoord):
         ra = coord.ra.degree
         dec = coord.dec.degree
-
-    ra = _parse_angle(ra, 'hourangle')
-    dec = _parse_angle(dec, 'degree')
+    if isinstance(ra, str):
+        ra = _parse_angle(ra, 'hourangle')
+    if isinstance(dec, str):
+        dec = _parse_angle(dec, 'degree')
 
     return ['--ra', str(ra), '--dec', str(dec)]
 
@@ -195,19 +200,19 @@ def _parse_crpix(options):
     center = False
     if 'crpix-center' in options:
         center = True
-        options.remove('crpix-center')
+        options.pop('crpix-center')
 
     crpix_x = options.pop('crpix-x', None)
     crpix_y = options.pop('crpix-y', None)
 
     if center and (crpix_x is not None and crpix_y is not None):
-        raise ValueError('crpix-center is in conflict with crpix-x and '
+        raise ValueError('crpix-center is in conflicts with crpix-x and '
                          'crpix-y. Use one or another.')
 
     if center:
-        return ['crpix-center']
+        return ['--crpix-center']
     elif crpix_x is not None and crpix_y is not None:
-        return ['crpix-x', crpix_x, 'crpix-y', crpix_y]
+        return ['--crpix-x', float(crpix_x), '--crpix-y', float(crpix_y)]
     return []
 
 

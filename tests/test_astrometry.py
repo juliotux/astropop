@@ -12,11 +12,16 @@ from astropy.io import fits
 from astropy.table import Table
 from astropy.nddata.ccddata import _generate_wcs_and_update_header
 from astropy.wcs import WCS
+from astropy import units
 
 from astropop.astrometry.astrometrynet import _solve_field, \
                                               solve_astrometry_image, \
                                               solve_astrometry_xy, \
                                               solve_astrometry_hdu
+from astropop.astrometry.astrometrynet import _parse_angle, \
+                                              _parse_coordinates, \
+                                              _parse_crpix, \
+                                              _parse_pltscl
 from astropop.astrometry.manual_wcs import wcs_from_coords
 from astropop.astrometry.coords_utils import guess_coordinates
 from astropop.photometry.aperture import aperture_photometry
@@ -58,6 +63,72 @@ skip_astrometry = pytest.mark.skipif("_solve_field is None or "
 
 @skip_astrometry
 class Test_AstrometrySolver:
+    @pytest.mark.parametrize('angle,unit,fail', [(Angle(1.0, 'degree'), None, False),
+                                                 (1.0, None, False),
+                                                 ('1 degree', None, False),
+                                                 ('1 deg', None, False),
+                                                 (np.radians(1.0), 'radian', False),
+                                                 ('not angle', None, True),
+                                                 ('01:00:00', 'deg', False),
+                                                 ('00:04:00', 'hourangle', False),
+                                                 ('1 yr', None, True),
+                                                 ('60 min', None, False)])
+    def test_parse_angle(self, angle, unit, fail):
+        if not fail:
+            assert_almost_equal(_parse_angle(angle, unit), 1.0)
+        else:
+            with pytest.raises((units.UnitsError, ValueError)):
+                _parse_angle(angle)
+
+    @pytest.mark.parametrize('options', [{'center': SkyCoord(1, 1, unit='deg')},
+                                         {'ra': 1.0, 'dec': 1.0},
+                                         {'ra': '00:04:00', 'dec': '01:00:00'},
+                                         {'ra': '00h04m00s', 'dec': '01d00m00s'},
+                                         {'center': (1.0, 1.0)}])
+    def test_parse_center(self, options):
+        args = _parse_coordinates(options)
+        # this options must be popped
+        assert_not_in('center', options)
+        assert_not_in('ra', options)
+        assert_not_in('dec', options)
+        assert_equal(args[0], '--ra')
+        assert_equal(args[2], '--dec')
+        assert_almost_equal(float(args[1]), 1.0)
+        assert_almost_equal(float(args[3]), 1.0)
+
+    def test_parse_center_fails(self):
+        assert_equal(_parse_coordinates({}), [])
+
+        with pytest.raises(ValueError, match='conflicts with'):
+            _parse_coordinates({'center': (1.0, 1.0),
+                                'ra': 1.0, 'dec': 1.0})
+
+    @pytest.mark.skip
+    def test_parse_pltscl(self):
+        # TODO:
+        pass
+
+    def test_parse_crpix_center(self):
+        opt = {'crpix-center': None}
+        arg = _parse_crpix(opt)
+        assert_equal(arg, ['--crpix-center'])
+        assert_not_in('crpix-center', opt)
+
+    @pytest.mark.parametrize('x,y', [(1.0, 1.0), (1, 1), ('1', '1')])
+    def test_parse_crpix_xy(self, x, y):
+        opt = {'crpix-x': x, 'crpix-y': y}
+        arg = _parse_crpix(opt)
+        assert_not_in('crpix-x', opt)
+        assert_not_in('crpix-y', opt)
+        assert_equal(arg[0], '--crpix-x')
+        assert_equal(arg[2], '--crpix-y')
+        assert_almost_equal(float(arg[1]), 1.0)
+        assert_almost_equal(float(arg[3]), 1.0)
+
+    def test_parse_crpix_fails(self):
+        with pytest.raises(ValueError, match='conflicts with'):
+            _parse_crpix({'crpix-center': None, 'crpix-x': 1, 'crpix-y': 1})
+
     def test_solve_astrometry_hdu(self, tmpdir):
         data, index = get_image_index()
         hdu = fits.open(data)[0]
