@@ -247,6 +247,7 @@ class Test_Broadcast():
 
         assert_equal(bc.iters, [np.arange(10), [3]*10, [2]*10])
 
+
 class Test_IndexedDict():
     def test_indexeddict_create(self):
         d = dict(a=1, b=2, c=3)

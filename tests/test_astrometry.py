@@ -142,7 +142,7 @@ class Test_AstrometrySolver:
         assert_is_instance(result.header, fits.Header)
         assert_is_instance(result.correspondences, Table)
         for k in ['field_x', 'field_y', 'index_x', 'index_y',
-                'field_ra', 'field_dec', 'index_ra', 'index_dec']:
+                  'field_ra', 'field_dec', 'index_ra', 'index_dec']:
             assert_in(k, result.correspondences.colnames)
 
     def test_solve_astrometry_xyl(self, tmpdir):
@@ -151,18 +151,18 @@ class Test_AstrometrySolver:
         header, wcs = _generate_wcs_and_update_header(hdu.header)
         hdu.header = header
         sources = starfind(hdu.data, 10, np.median(hdu.data),
-                        np.std(hdu.data), 4)
+                           np.std(hdu.data), 4)
         phot = aperture_photometry(hdu.data, sources['x'], sources['y'])
         imw, imh = hdu.data.shape
         result = solve_astrometry_xy(phot['x'], phot['y'], phot['flux'],
-                                    width=imw, height=imh)
+                                     width=imw, height=imh)
         assert_true(isinstance(result.wcs, WCS))
         assert_equal(result.wcs.naxis, 2)
         compare_wcs(wcs, result.wcs)
         assert_is_instance(result.header, fits.Header)
         assert_is_instance(result.correspondences, Table)
         for k in ['field_x', 'field_y', 'index_x', 'index_y',
-                'field_ra', 'field_dec', 'index_ra', 'index_dec']:
+                  'field_ra', 'field_dec', 'index_ra', 'index_dec']:
             assert_in(k, result.correspondences.colnames)
 
     def test_solve_astrometry_image(self, tmpdir):
@@ -177,7 +177,7 @@ class Test_AstrometrySolver:
         assert_is_instance(result.header, fits.Header)
         assert_is_instance(result.correspondences, Table)
         for k in ['field_x', 'field_y', 'index_x', 'index_y',
-                'field_ra', 'field_dec', 'index_ra', 'index_dec']:
+                  'field_ra', 'field_dec', 'index_ra', 'index_dec']:
             assert_in(k, result.correspondences.colnames)
 
 
@@ -330,13 +330,13 @@ class Test_GuessCoords:
         ra = "1 00 00"
         dec = "-43 30 00"
         assert_almost_equal(guess_coordinates(ra, dec, skycoord=False),
-                                (15.0, -43.5))
+                            (15.0, -43.5))
 
     def test_guess_coords_hexa_dots(self):
         ra = "1:00:00"
         dec = "-43:30:00"
         assert_almost_equal(guess_coordinates(ra, dec, skycoord=False),
-                                (15.0, -43.5))
+                            (15.0, -43.5))
 
     def test_guess_coords_skycord_float(self):
         ra = 10.0
