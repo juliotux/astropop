@@ -23,8 +23,8 @@ from astropop.logger import logger, log_to_list
                                     ('AB', False),
                                     ([1, 2, 3], False),
                                     (np.array([1, 2]), False),
-                                    (np.int('3'), True),
-                                    (np.float(3), True),
+                                    (np.int_('3'), True),
+                                    (np.float_(3), True),
                                     (False, False),
                                     ((1, 2, 3), False)])
 def test_check_number(v, exp):
