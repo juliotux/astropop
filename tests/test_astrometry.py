@@ -128,6 +128,7 @@ class Test_AstrometrySolver:
     def test_parse_crpix_fails(self):
         with pytest.raises(ValueError, match='conflicts with'):
             _parse_crpix({'crpix-center': None, 'crpix-x': 1, 'crpix-y': 1})
+        assert_equal(_parse_crpix({}), [])
 
     def test_solve_astrometry_hdu(self, tmpdir):
         data, index = get_image_index()
