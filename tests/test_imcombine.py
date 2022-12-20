@@ -223,7 +223,7 @@ class Test_ImCombineConformance():
     def test_creation_error_dtype(self):
         msg = "Only float dtypes are allowed in ImCombiner."
         with pytest.raises(ValueError, match=msg):
-            ImCombiner(dtype=np.int)
+            ImCombiner(dtype=np.int_)
         with pytest.raises(ValueError, match=msg):
             ImCombiner(dtype=np.int16)
 

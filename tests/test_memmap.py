@@ -849,18 +849,18 @@ def test_math_redirects(tmpdir, memmap):
         # TODO: diagonal
         # TODO: trace
 
-    x = np.random.randint(9, size=(3, 3)).astype(np.float)
+    x = np.random.randint(9, size=(3, 3)).astype(np.float_)
     y = MemMapArray(x, filename=f, memmap=memmap)
     check_arr(x, y)
 
-    x = np.zeros((5, 5)).astype(np.float)
+    x = np.zeros((5, 5)).astype(np.float_)
     y = MemMapArray(x, filename=f, memmap=memmap)
     check_arr(x, y)
 
-    x = np.ones((5, 5)).astype(np.float)
+    x = np.ones((5, 5)).astype(np.float_)
     y = MemMapArray(x, filename=f, memmap=memmap)
     check_arr(x, y)
 
-    x = np.arange(20).astype(np.float)
+    x = np.arange(20).astype(np.float_)
     y = MemMapArray(x, filename=f, memmap=memmap)
     check_arr(x, y)
