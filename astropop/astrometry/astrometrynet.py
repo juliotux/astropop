@@ -39,7 +39,7 @@ solve_field_params = {
     'dec': '<Angle, float degrees or +-hh:mm:ss>' + _center_help,
     'radius': 'Angle or float degrees> ' + _center_help,
     'plate-scale': '<arcsec/pix> guess pixel scale in arcsec/pix. Alternative to '
-             'scale-low, scale-high and scale-unit',
+                   'scale-low, scale-high and scale-unit',
     'scale-tolerance': '<float> fraction tolerance for scale for lower and '
                        'upper limits.',
     'scale-low': '<float scale>lower bound of image scale estimate',
