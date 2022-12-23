@@ -3,8 +3,6 @@
 
 import pytest
 import shlex
-import asyncio
-import subprocess
 from astropop.py_utils import string_fix, process_list, \
                               check_iterable, batch_key_replace, \
                               run_command, IndexedDict, check_number, \
@@ -56,12 +54,14 @@ class Test_RunCommand():
             ["bash", "-c", 'echo "this is an error" 1>&2'])
 
     def test_nested_async(self):
+        import asyncio
         async def async_func():
             run_command(['ls', '/'])
 
         asyncio.run(async_func())
 
     def test_process_error(self):
+        import subprocess
         with pytest.raises(subprocess.CalledProcessError):
             run_command('python -c "import sys; sys.exit(1000)"')
 
