@@ -3,6 +3,7 @@
 
 import pytest
 import shlex
+import asyncio
 from astropop.py_utils import string_fix, process_list, \
                               check_iterable, batch_key_replace, \
                               run_command, IndexedDict, check_number, \
@@ -52,6 +53,12 @@ class Test_RunCommand():
            "bash -c 'for i in {1..10}; do echo \"$i\"; sleep 0.1; done'")
     com2 = ("bash -c 'echo \"this is an error\" 1>&2'",
             ["bash", "-c", 'echo "this is an error" 1>&2'])
+
+    def test_nested_async(self):
+        async def async_func():
+            run_command(['ls', '/'])
+
+        asyncio.run(async_func())
 
     @pytest.mark.parametrize('com', com)
     def test_run_command(self, com):
