@@ -263,6 +263,28 @@ class AstrometrySolver():
     solve_field: string (optional)
         ``solve-field`` command from astrometry.net package. If not set, it
         will be determined by `~shutil.which` function.
+    config_file: string (optional)
+        Name of the astrometry.net configuration file. If not set, the
+        default installed file will be used.
+    config: dict (optional)
+        Config parameters for astrometry.net. If None is passed, the parameters
+        will be read from the default astrometry.cfg file. The config params
+        are:
+        cpu_limit: int
+            Maximum CPU time to spend on a field, in seconds.
+        inparallel: bool
+            Check indexes in parallel. Only enable it if you have memory to
+            store all indexes.
+        minwidth and maxwidth: int
+            If no scale estimate is given, use these limits on field width in
+            deg.
+        depths: int or list(int)
+            If no depths are given, use these.
+        add_path: string or list(string)
+            Location of astrometry.net index files. If None provided, default
+            astrometry.net "$prefix/data" directory will be used.
+        index: string or list(string)
+            Explicitly list the indices to load.
     defaults: `dict` (optional)
         Default arguments to be passed to ``solve-field`` program. If not set,
         arguments ``no-plot`` and ``overwrite`` will be used. Use only double
@@ -272,13 +294,15 @@ class AstrometrySolver():
         Keep the temporary files after finish.
     """
 
-    def __init__(self, solve_field=_solve_field,
+    def __init__(self, solve_field=_solve_field, config=None,
                  defaults=None, keep_files=False):
         # declare the defaults here to be safer
         self._defaults = {'no-plots': None, 'overwrite': None}
         if defaults is None:
             defaults = {}
         self._defaults.update(defaults)
+
+        self.config = self._read_config(config)
 
         self._command = solve_field
         self._keep = keep_files
@@ -328,6 +352,7 @@ class AstrometrySolver():
         if output_dir is None:
             output_dir = mkdtemp(prefix=root + '_', suffix='_astrometry.net')
             tmp_dir = True
+            os.makedirs(output_dir, exist_ok=True)
         else:
             tmp_dir = False
         return output_dir, tmp_dir
@@ -355,6 +380,59 @@ class AstrometrySolver():
 
         return args
 
+    def _read_config(self, fname=None, config=None):
+        """Read the default configuration file and return the config."""
+
+        if fname is None:
+            prefix = os.path.dirname(os.path.dirname(_solve_field))
+            fname = os.path.join(prefix, 'etc', 'astrometry.cfg')
+        default = open(fname, 'r')
+
+        cfg = {}
+        for line in default.readlines():
+            # just use line before "#"
+            line = line.split("#")[0].strip()
+            if line == "":
+                continue
+            param = line.split(" ")[0]
+            argument = line[len(param)+1:].strip()
+            if argument == "":
+                argument = None
+            if param == 'depths':
+                argument = [int(i) for i in argument.split(" ") if i.strip()]
+            if param == 'add_path' or param == 'index':
+                if param not in cfg:
+                    cfg[param] = []
+                cfg[param].append(argument)
+            else:
+                cfg[param] = argument
+
+        if config is not None:
+            for k, v in config.items():
+                if k == 'add_path' or k == 'index':
+                    if np.isscalar(v):
+                        v = [v]
+                    cfg[k].extend(v)
+                else:
+                    cfg[k] = v
+
+        return cfg
+
+    def _write_config(self, fname):
+        """Create the astrometry.cfg file for the run."""
+        f = open(fname, 'w')
+        for k, v in self.config.items():
+            if k in ['inparallel', 'autoindex']:
+                f.write(f'{k}\n')
+            elif k in ['index', 'add_path']:
+                for i in v:
+                    f.write(f'{k} {i}\n')
+            elif k == 'depths':
+                f.write(f'{k} {" ".join(v)}\n')
+            else:
+                f.write(f'{k} {v}\n')
+        f.close()
+
     def _run_solver(self, filename, options, output_dir=None, **kwargs):
         """Run the astrometry.net localy using the given params.
 
@@ -365,9 +443,12 @@ class AstrometrySolver():
         root, _ = os.path.splitext(basename)
         output_dir, tmp_dir = self._get_output_dir(root, output_dir)
         solved_file = os.path.join(output_dir, root + '.solved')
+        config_file = os.path.join(output_dir, root + '.cfg')
+        self._write_config(config_file)
         correspond = os.path.join(output_dir, root + '.corr')
 
         args = [self._command, filename, '--dir', output_dir]
+        args += ['--config', config_file]
         args += self._parse_options(options)
         args += ['--corr', correspond]
 

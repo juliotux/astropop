@@ -17,7 +17,9 @@ from astropy import units
 from astropop.astrometry.astrometrynet import _solve_field, \
                                               solve_astrometry_image, \
                                               solve_astrometry_xy, \
-                                              solve_astrometry_hdu
+                                              solve_astrometry_hdu, \
+                                              AstrometrySolver, \
+                                              AstrometricSolution
 from astropop.astrometry.astrometrynet import _parse_angle, \
                                               _parse_coordinates, \
                                               _parse_crpix, \
@@ -129,6 +131,85 @@ class Test_AstrometrySolver:
         with pytest.raises(ValueError, match='conflicts with'):
             _parse_crpix({'crpix-center': None, 'crpix-x': 1, 'crpix-y': 1})
         assert_equal(_parse_crpix({}), [])
+
+    def test_read_cfg(self):
+        a = AstrometrySolver()  # read the default configuration
+        cfg = a._read_config()
+        assert_not_in('index', cfg)
+        assert_not_in('inparallel', cfg)
+        assert_not_in('', cfg)
+        assert_not_in('minwidth', cfg)
+        assert_not_in('maxwidth', cfg)
+        assert_equal(cfg['cpulimit'], '300')
+        assert_is_none(cfg['autoindex'])
+        assert_equal(len(cfg['add_path']), 1)
+
+    def test_read_cfg_fname(self, tmpdir):
+        fname = tmpdir / 'test.cfg'
+        f = open(fname, 'w')
+        f.write("inparallel\n")
+        f.write(" minwidth 0.1 \n")
+        f.write(" maxwidth 180\n")
+        f.write("depths 10 20 30 40   50 60\n")
+        f.write("cpulimit   300\n")
+        f.write("\n\n")
+        f.write("# comment\n")
+        f.write("add_path /data  # commented path\n")
+        f.write("add_path /data1\n")
+        f.write("#add_path /data2\n")  # data2 will not be present
+        f.write("autoindex\n")
+        f.write("index index-219\n")
+        f.write("index index-220\n")
+        f.write("index index-221\n")
+        f.write("# index index-222\n")  # 222 will not be present
+        f.close()
+
+        a = AstrometrySolver()
+        cfg = a._read_config(fname)
+        assert_not_equal("", cfg)
+        assert_is_none(cfg['inparallel'])
+        assert_equal(cfg['minwidth'], '0.1')
+        assert_equal(cfg['maxwidth'], '180')
+        assert_equal(cfg['depths'], [10, 20, 30, 40, 50, 60])
+        assert_equal(cfg['cpulimit'], '300')
+        assert_equal(cfg['add_path'], ['/data', '/data1'])
+        assert_equal(cfg['index'], ['index-219', 'index-220', 'index-221'])
+        assert_is_none(cfg['autoindex'])
+
+    def test_read_cfg_with_options(self, tmpdir):
+        fname = tmpdir / 'test.cfg'
+        f = open(fname, 'w')
+        f.write("inparallel\n")
+        f.write(" minwidth 0.1 \n")
+        f.write(" maxwidth 180\n")
+        f.write("depths 10 20 30 40   50 60\n")
+        f.write("cpulimit   300\n")
+        f.write("\n\n")
+        f.write("# comment\n")
+        f.write("add_path /data  # commented path\n")
+        f.write("add_path /data1\n")
+        f.write("#add_path /data2\n")  # data2 will not be present
+        f.write("autoindex\n")
+        f.write("index index-219\n")
+        f.write("index index-220\n")
+        f.write("index index-221\n")
+        f.write("# index index-222\n")  # 222 will not be present
+        f.close()
+
+        a = AstrometrySolver()
+        cfg = a._read_config(fname, {'depths': [10, 30, 50],
+                                     'add_path': '/data3',
+                                     'index': ['indx4', 'indx5']})
+        assert_not_equal("", cfg)
+        assert_is_none(cfg['inparallel'])
+        assert_equal(cfg['minwidth'], '0.1')
+        assert_equal(cfg['maxwidth'], '180')
+        assert_equal(cfg['depths'], [10, 30, 50])
+        assert_equal(cfg['cpulimit'], '300')
+        assert_equal(cfg['add_path'], ['/data', '/data1', '/data3'])
+        assert_equal(cfg['index'], ['index-219', 'index-220', 'index-221',
+                                    'indx4', 'indx5'])
+        assert_is_none(cfg['autoindex'])
 
     def test_solve_astrometry_hdu(self, tmpdir):
         data, index = get_image_index()
