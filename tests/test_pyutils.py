@@ -4,6 +4,7 @@
 import pytest
 import shlex
 import asyncio
+import subprocess
 from astropop.py_utils import string_fix, process_list, \
                               check_iterable, batch_key_replace, \
                               run_command, IndexedDict, check_number, \
@@ -59,6 +60,10 @@ class Test_RunCommand():
             run_command(['ls', '/'])
 
         asyncio.run(async_func())
+
+    def test_process_error(self):
+        with pytest.raises(subprocess.CalledProcessError):
+            run_command('python -c "import sys; sys.exit(1000)"')
 
     @pytest.mark.parametrize('com', com)
     def test_run_command(self, com):
