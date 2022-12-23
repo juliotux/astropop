@@ -428,7 +428,7 @@ class AstrometrySolver():
                 for i in v:
                     f.write(f'{k} {i}\n')
             elif k == 'depths':
-                f.write(f'{k} {" ".join(v)}\n')
+                f.write(f'{k} {" ".join([str(i) for i in v])}\n')
             else:
                 f.write(f'{k} {v}\n')
         f.close()

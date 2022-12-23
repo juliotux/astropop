@@ -211,6 +211,29 @@ class Test_AstrometrySolver:
                                     'indx4', 'indx5'])
         assert_is_none(cfg['autoindex'])
 
+    def test_write_config(self, tmpdir):
+        fname = tmpdir / 'test.cfg'
+
+        a = AstrometrySolver()
+        a.config = {'inparallel': None,
+                    'autoindex': None,
+                    'cpulimit': 300,
+                    'minwidth': 0.1,
+                    'maxwidth': 180,
+                    'depths': [20, 40, 60],
+                    'index': ['011', '012'],
+                    'add_path': ['/path1', '/path2']}
+        a._write_config(fname)
+
+        with open(fname, 'r') as f:
+            for line in f.readlines():
+                assert_in(line.strip('\n'), ['autoindex', 'inparallel',
+                                             'cpulimit 300', 'minwidth 0.1',
+                                             'maxwidth 180', 'depths 20 40 60',
+                                             'index 011', 'index 012',
+                                             'add_path /path1',
+                                             'add_path /path2'])
+
     def test_solve_astrometry_hdu(self, tmpdir):
         data, index = get_image_index()
         hdu = fits.open(data)[0]
