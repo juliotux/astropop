@@ -38,7 +38,7 @@ solve_field_params = {
     'ra': '<Angle, float degrees or hh:mm:ss>' + _center_help,
     'dec': '<Angle, float degrees or +-hh:mm:ss>' + _center_help,
     'radius': 'Angle or float degrees> ' + _center_help,
-    'scale': '<arcsec/pix> guess pixel scale in arcsec/pix. Alternative to '
+    'plate-scale': '<arcsec/pix> guess pixel scale in arcsec/pix. Alternative to '
              'scale-low, scale-high and scale-unit',
     'scale-tolerance': '<float> fraction tolerance for scale for lower and '
                        'upper limits.',
@@ -173,13 +173,13 @@ def _parse_coordinates(options):
 def _parse_pltscl(options):
     """Parse plate scale."""
     low = options.pop('scale-low', None)
-    hi = options.pop('scale-hi', None)
+    hi = options.pop('scale-high', None)
     units = options.pop('scale-units', None)
-    pltscl = options.pop('scale', None)
+    pltscl = options.pop('plate-scale', None)
     tolerance = options.pop('scale-tolerance', 0.2)
 
     if pltscl is not None and (low is not None or hi is not None):
-        raise ValueError("'scale' is in conflict with 'scale-low' and"
+        raise ValueError("'plate-scale' is in conflict with 'scale-low' and"
                          " 'scale-hi' options. Use one or another.")
     if low is not None and hi is not None and units is None:
         raise ValueError("When using 'scale-low' and 'scale-hi' options you "

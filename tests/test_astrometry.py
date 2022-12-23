@@ -63,7 +63,6 @@ skip_astrometry = pytest.mark.skipif("_solve_field is None or "
                                      "False)")
 
 
-@skip_astrometry
 class Test_AstrometrySolver:
     @pytest.mark.parametrize('angle,unit,fail', [(Angle(1.0, 'degree'), None, False),
                                                  (1.0, None, False),
@@ -105,10 +104,45 @@ class Test_AstrometrySolver:
             _parse_coordinates({'center': (1.0, 1.0),
                                 'ra': 1.0, 'dec': 1.0})
 
-    @pytest.mark.skip
     def test_parse_pltscl(self):
-        # TODO:
-        pass
+        def _assert(options, expect):
+            args = _parse_pltscl(option)
+            assert_equal(args[0], expect[0])
+            assert_almost_equal(float(args[1]), float(expect[1]))
+            assert_equal(args[2], expect[2])
+            assert_almost_equal(float(args[3]), float(expect[3]))
+            assert_equal(args[4], expect[4])
+            assert_equal(args[5], expect[5])
+
+        option = {'plate-scale': 0.2, 'scale-tolerance': 0.2}
+        expect = ['--scale-low', '0.16', '--scale-high', '0.24',
+                  '--scale-units', 'arcsecperpix']
+        _assert(option, expect)
+
+        # default tolerance is 0.2
+        option = {'plate-scale': 0.2}
+        expect = ['--scale-low', '0.16', '--scale-high', '0.24',
+                  '--scale-units', 'arcsecperpix']
+        _assert(option, expect)
+
+        # another unit
+        option = {'plate-scale': 0.2, 'scale-units': 'degreeperpix'}
+        expect = ['--scale-low', '0.16', '--scale-high', '0.24',
+                  '--scale-units', 'degreeperpix']
+        _assert(option, expect)
+
+        # low and high
+        option = {'scale-low': 1, 'scale-high': 2, 'scale-units': 'arcsecperpix'}
+        expect = ['--scale-low', '1', '--scale-high', '2',
+                  '--scale-units', 'arcsecperpix']
+        _assert(option, expect)
+
+    def test_parse_scale_errors(self):
+        assert_equal(_parse_pltscl({}), [])
+        with pytest.raises(ValueError, match='is in conflict with'):
+            _parse_pltscl({'plate-scale': 1, 'scale-low': 1, 'scale-high': 1})
+        with pytest.raises(ValueError, match='must specify'):
+            _parse_pltscl({'scale-low': 1, 'scale-high': 1})
 
     def test_parse_crpix_center(self):
         opt = {'crpix-center': None}
@@ -132,6 +166,7 @@ class Test_AstrometrySolver:
             _parse_crpix({'crpix-center': None, 'crpix-x': 1, 'crpix-y': 1})
         assert_equal(_parse_crpix({}), [])
 
+    @skip_astrometry
     def test_read_cfg(self):
         a = AstrometrySolver()  # read the default configuration
         cfg = a._read_config()
@@ -144,6 +179,7 @@ class Test_AstrometrySolver:
         assert_is_none(cfg['autoindex'])
         assert_equal(len(cfg['add_path']), 1)
 
+    @skip_astrometry
     def test_read_cfg_fname(self, tmpdir):
         fname = tmpdir / 'test.cfg'
         f = open(fname, 'w')
@@ -176,6 +212,7 @@ class Test_AstrometrySolver:
         assert_equal(cfg['index'], ['index-219', 'index-220', 'index-221'])
         assert_is_none(cfg['autoindex'])
 
+    @skip_astrometry
     def test_read_cfg_with_options(self, tmpdir):
         fname = tmpdir / 'test.cfg'
         f = open(fname, 'w')
@@ -211,6 +248,7 @@ class Test_AstrometrySolver:
                                     'indx4', 'indx5'])
         assert_is_none(cfg['autoindex'])
 
+    @skip_astrometry
     def test_write_config(self, tmpdir):
         fname = tmpdir / 'test.cfg'
 
@@ -234,6 +272,7 @@ class Test_AstrometrySolver:
                                              'add_path /path1',
                                              'add_path /path2'])
 
+    @skip_astrometry
     def test_solve_astrometry_hdu(self, tmpdir):
         data, index = get_image_index()
         hdu = fits.open(data)[0]
@@ -249,6 +288,7 @@ class Test_AstrometrySolver:
                   'field_ra', 'field_dec', 'index_ra', 'index_dec']:
             assert_in(k, result.correspondences.colnames)
 
+    @skip_astrometry
     def test_solve_astrometry_xyl(self, tmpdir):
         data, index = get_image_index()
         hdu = fits.open(data)[0]
@@ -269,6 +309,7 @@ class Test_AstrometrySolver:
                   'field_ra', 'field_dec', 'index_ra', 'index_dec']:
             assert_in(k, result.correspondences.colnames)
 
+    @skip_astrometry
     def test_solve_astrometry_image(self, tmpdir):
         data, index = get_image_index()
         hdu = fits.open(data)[0]
