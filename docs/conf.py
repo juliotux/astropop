@@ -1,6 +1,3 @@
-import sys, os, re
-import sphinx_rtd_theme
-
 # Minimum version, enforced by sphinx
 needs_sphinx = '4.3.0'
 
@@ -36,7 +33,7 @@ master_doc = 'index'
 
 # Project info
 project = 'astropop'
-copyright = '2018-2021, Julio Campagnolo and contributors'
+copyright = '2018-2023, Julio Campagnolo and contributors'
 import astropop
 version = astropop.__version__.split('-', 1)[0]
 # The full version, including alpha/beta/rc tags.
@@ -48,7 +45,6 @@ exclude_patterns = ['_templates', '_build', 'Thumbs.db', '.DS_Store']
 pygments_style = 'sphinx'
 html_theme = 'pydata_sphinx_theme'
 html_static_path = ['_static']
-imgmath_image_format = 'svg'
 htmlhelp_basename = 'astropop'
 
 autosummary_generate = True
