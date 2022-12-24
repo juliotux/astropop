@@ -38,8 +38,8 @@ solve_field_params = {
     'ra': '<Angle, float degrees or hh:mm:ss>' + _center_help,
     'dec': '<Angle, float degrees or +-hh:mm:ss>' + _center_help,
     'radius': 'Angle or float degrees> ' + _center_help,
-    'plate-scale': '<arcsec/pix> guess pixel scale in arcsec/pix. Alternative to '
-                   'scale-low, scale-high and scale-unit',
+    'plate-scale': '<arcsec/pix> guess pixel scale in arcsec/pix. Alternative '
+                   'to scale-low, scale-high and scale-unit',
     'scale-tolerance': '<float> fraction tolerance for scale for lower and '
                        'upper limits.',
     'scale-low': '<float scale>lower bound of image scale estimate',
@@ -102,12 +102,12 @@ solve_field_params = {
 
 
 def print_options_help():
+    print("Options\n-------")
     for k, v in solve_field_params.items():
-        print(f"'{k}': {v}")
+        print(f"{k}\n    {v}")
 
 
-print_options_help.__doc__ = "\n".join([f"'{k}': {v}" for k, v in
-                                        solve_field_params.items()])
+print_options_help.__doc__ = print_options_help()
 
 
 class AstrometryNetUnsolvedField(CalledProcessError):
@@ -221,10 +221,8 @@ class AstrometricSolution():
 
     Parameters
     ----------
-    wcs: `~astropy.wcs.WCS`
-        World Coordinate System (wcs) object containing the solved solution.
     header: `~astropy.io.fits.Header` (optional)
-        Astrometric solved fits header.
+        Astrometric solved fits header. WCS will be extrated from it.
     correspondences: `~astropy.table.Table` (optional)
         A table containing the matched correspondences between the (x, y)
         positions and the matched (ra, dec) catalog coordinates.
@@ -242,14 +240,18 @@ class AstrometricSolution():
 
     @property
     def wcs(self):
+        """World Coordinate System `~astropy.coordinates.WCS` solution."""
         return copy.deepcopy(self._wcs)
 
     @property
     def header(self):
+        """`~astropy.io.fits.Header` containing the astrometric solution."""
         return copy.deepcopy(self._header)
 
     @property
     def correspondences(self):
+        """Correspondece `~astropy.table.Table` between image stars and
+        ``astrometry.net`` index objects."""
         return copy.deepcopy(self._corr)
 
 
@@ -268,23 +270,7 @@ class AstrometrySolver():
         default installed file will be used.
     config: dict (optional)
         Config parameters for astrometry.net. If None is passed, the parameters
-        will be read from the default astrometry.cfg file. The config params
-        are:
-        cpu_limit: int
-            Maximum CPU time to spend on a field, in seconds.
-        inparallel: bool
-            Check indexes in parallel. Only enable it if you have memory to
-            store all indexes.
-        minwidth and maxwidth: int
-            If no scale estimate is given, use these limits on field width in
-            deg.
-        depths: int or list(int)
-            If no depths are given, use these.
-        add_path: string or list(string)
-            Location of astrometry.net index files. If None provided, default
-            astrometry.net "$prefix/data" directory will be used.
-        index: string or list(string)
-            Explicitly list the indices to load.
+        will be read from the default astrometry.cfg file.
     defaults: `dict` (optional)
         Default arguments to be passed to ``solve-field`` program. If not set,
         arguments ``no-plot`` and ``overwrite`` will be used. Use only double
@@ -292,6 +278,25 @@ class AstrometrySolver():
         See `~astropop.astrometry.astrometrynet.print_options_help`
     keep_files: bool (optional)
         Keep the temporary files after finish.
+
+    Notes
+    -----
+    - Configuration parameters are:
+        - cpu_limit: int
+            Maximum CPU time to spend on a field, in seconds.
+        - inparallel: bool
+            Check indexes in parallel. Only enable it if you have memory to
+            store all indexes.
+        - minwidth and maxwidth: int
+            If no scale estimate is given, use these limits on field width in
+            deg.
+        - depths: int or list(int)
+            If no depths are given, use these.
+        - add_path: string or list(string)
+            Location of astrometry.net index files. If None provided, default
+            astrometry.net "$prefix/data" directory will be used.
+        - index: string or list(string)
+            Explicitly list the indices to load.
     """
 
     def __init__(self, solve_field=_solve_field, config=None,
@@ -312,10 +317,10 @@ class AstrometrySolver():
 
         Parameters
         ----------
-        filename: str
+        filename : str
             Name of the file to be solved. Can be a fits image or a xyls
             sources file.
-        options: `dict` (optional)
+        options : `dict` (optional)
             Dictionary of ``solve-field`` options. See
             `~astropop.astrometry.astrometrynet.print_options_help` for all
             available options. The most useful are:
@@ -323,13 +328,13 @@ class AstrometrySolver():
             - radius: maximum search radius
             - scale: pixel scale in arcsec/pixel
             - tweak-order: SIP order to fit
-        **kwargs:
+        **kwargs :
             Additional keyword arguments to be passed to
             `~astropop.py_utils.run_command`.
 
-        Returns:
-        --------
-        `~astropop.astrometry.AstrometricSolution`
+        Returns
+        -------
+        solution : `~astropop.astrometry.AstrometricSolution`
             Astrometric solution class containing the solved header,
             the `~astropy.wcs.WCS` solved class and the correspondence table
             between the sources and the catalog.
