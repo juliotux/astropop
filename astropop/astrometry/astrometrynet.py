@@ -214,15 +214,14 @@ solve_field_params = {
 }
 
 
-def print_options_help():
+def get_options_help():
     s = "Notes\n-----\n\nThe supported options are:\n"
     for k, v in solve_field_params.items():
         s += f"    {k}: {v[0]}\n        {v[1]}\n"
-    print(s)
     return s
 
 
-print_options_help.__doc__ = print_options_help()
+get_options_help.__doc__ = get_options_help()
 
 
 class AstrometryNetUnsolvedField(CalledProcessError):
@@ -437,7 +436,7 @@ class AstrometrySolver():
             sources file.
         options : `dict` (optional)
             Dictionary of ``solve-field`` options. See
-            `~astropop.astrometry.astrometrynet.print_options_help` for all
+            `~astropop.astrometry.astrometrynet.get_options_help` for all
             available options. The most useful are:
             - center or ra and dec: field center
             - radius: maximum search radius
@@ -466,6 +465,10 @@ class AstrometrySolver():
 
         return AstrometricSolution(header=solved_header,
                                    correspondences=coorespond)
+
+    def print_options_help(self):
+        """Print the available options for ``solve-field``."""
+        print(get_options_help())
 
     def _get_output_dir(self, root, output_dir):
         """Check output directory and create the temporary directory."""

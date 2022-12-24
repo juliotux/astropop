@@ -5,6 +5,8 @@
 .. |imcombine| replace:: :function:`~astropop.image_processing.imarith.imcombine`
 .. |ImCombiner| replace:: :class:`~astropop.image_processing.imarith.ImCombiner`
 .. |imarith| replace:: :function:`~astropop.image_processing.imarith.imarith`
+.. |AstrometricSolution| replace:: :class:`~astropop.astrometry.AstrometricSolution`
+.. |AstrometrySolver| replace:: :class:`~astropop.astrometry.AstrometrySolver`
 
 .. |astropy| replace:: Astropy
 .. |CCDData| replace:: :class:`~astropy.nddata.ccddata.CCDData`
@@ -12,7 +14,10 @@
 .. |Header| replace:: :class:`~astropy.io.fits.Header`
 .. |Quantity| replace:: :class:`~astropy.units.Quantity`
 .. |UnitsError| replace:: :class:`~astropy.units.UnitsError`
+.. |WCS| replace:: :class:`~astropy.wcs.WCS`
 
 .. |uncertainties| replace:: Uncertainties
 
 .. |numpy| replace:: Numpy
+
+.. _astrometry.net: https://astrometry.net
