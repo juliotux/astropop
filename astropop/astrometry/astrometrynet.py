@@ -102,9 +102,11 @@ solve_field_params = {
 
 
 def print_options_help():
-    print("Notes\n-----\n\nThe supported options are:\n")
+    s = "Notes\n-----\n\nThe supported options are:\n"
     for k, v in solve_field_params.items():
-        print(f"{k}\n    {v}\n")
+        s += f"{k}\n    {v}\n"
+    print(s)
+    return s
 
 
 print_options_help.__doc__ = print_options_help()
