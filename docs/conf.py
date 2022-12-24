@@ -1,15 +1,11 @@
 import sys, os, re
 import sphinx_rtd_theme
 
-if not os.path.exists('api'):
-    os.mkdir('api')
-
 # Minimum version, enforced by sphinx
-needs_sphinx = '2.2.0'
+needs_sphinx = '4.3.0'
 
 extensions = [
-    # 'sphinx.ext.autodoc',
-    'sphinxcontrib.napoleon',  # use napoleon to compatibility
+    'sphinx.ext.autodoc',
     'sphinx.ext.intersphinx',
     'sphinx.ext.coverage',
     'sphinx.ext.autosummary',
@@ -17,15 +13,15 @@ extensions = [
     'sphinx.ext.graphviz',
     'sphinx.ext.ifconfig',
     'sphinx.ext.todo',
+    'sphinx.ext.mathjax',
+    'sphinx_automodapi.automodapi',
+    'sphinx_automodapi.smart_resolver',
+    'numpydoc',
     'matplotlib.sphinxext.plot_directive',
     'IPython.sphinxext.ipython_console_highlighting',
     'IPython.sphinxext.ipython_directive',
-    'sphinx.ext.imgmath',
     'nbsphinx',
 ]
-
-napoleon_use_rtype = False
-napoleon_use_ivar = True
 
 nbsphinx_allow_errors = True
 nbsphinx_execute = 'never'
@@ -50,8 +46,7 @@ today_fmt = '%B %d, %Y'
 # General theme infos
 exclude_patterns = ['_templates', '_build', 'Thumbs.db', '.DS_Store']
 pygments_style = 'sphinx'
-html_theme = "sphinx_rtd_theme"
-# html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+html_theme = 'pydata_sphinx_theme'
 html_static_path = ['_static']
 imgmath_image_format = 'svg'
 htmlhelp_basename = 'astropop'

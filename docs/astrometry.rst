@@ -6,4 +6,5 @@ Astrometry Calibration
 Astrometry API
 --------------
 
-.. TODO:: Put properly API link here
+.. automodapi:: astropop.astrometry
+    :no-inheritance-diagram:

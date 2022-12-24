@@ -40,4 +40,5 @@ To perform sigma clipping, it is recomended to use ``median`` as central tendenc
 Imarith API
 -----------
 
-.. TODO:: Put properly API link here
+.. automodapi:: astropop.image
+    :no-inheritance-diagram:
