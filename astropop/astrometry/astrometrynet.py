@@ -34,77 +34,190 @@ _solve_field = shutil.which('solve-field')
 _center_help = 'only search in indexes within `radius` of the field center ' \
                'given by `ra` and `dec`'
 solve_field_params = {
-    'center': '<SkyCoord or [ra, dec]>' + _center_help,
-    'ra': '<Angle, float degrees or hh:mm:ss>' + _center_help,
-    'dec': '<Angle, float degrees or +-hh:mm:ss>' + _center_help,
-    'radius': 'Angle or float degrees> ' + _center_help,
-    'plate-scale': '<arcsec/pix> guess pixel scale in arcsec/pix. Alternative '
-                   'to scale-low, scale-high and scale-unit',
-    'scale-tolerance': '<float> fraction tolerance for scale for lower and '
-                       'upper limits.',
-    'scale-low': '<float scale>lower bound of image scale estimate',
-    'scale-high': '<float scale> upper bound of image scale estimate',
-    'scale-units': '<units> in what units are the lower and upper bounds?'
-                   '\nchoices:\n'
-                   '"degwidth", "degw", "dw"   : width of the image, '
-                   'in degrees (default)\n"arcminwidth", "amw", "aw" : width'
-                   ' of the image, in arcminutes\n"arcsecperpix", "app": '
-                   'arcseconds per pixel\n"focalmm": 35-mm (width-based)'
-                   ' equivalent focal length',
-    'depth': '<int or range> number of field objects to look at, or range '
-             'of numbers; 1 is the brightest star, so "depth=10" or '
-             '"depth=\'1-10\'" mean look at the top ten brightest stars.',
-    'objs': '<int> cut the source list to have this many items (after '
-            'sorting, if applicable).',
-    'cpulimit': '<int seconds> give up solving after the specified number of'
-                ' seconds of CPU time',
-    'resort': 'sort the star brightnesses by background-subtracted '
-              'flux; the default is to sort using acompromise between '
-              'background-subtracted and non-background-subtracted flux',
-    'fits-image': "assume the input files are FITS images",
-    'timestamp': "add timestamps to log messages",
-    'parity': '<pos/neg> only check for matches with positive/negative parity'
-              ' (default: try both)',
-    'code-tolerance': '<distance> matching distance for quads (default: 0.01)',
-    'pixel-error': '<pixels> for verification, size of pixel positional error'
-                   '(default: 1)',
-    'quad-size-min': '<fraction> minimum size of quads to try, as a fraction'
-                     'of the smaller image dimension, (default: 0.1)',
-    'quad-size-max': '<fraction> maximum size of quads to try, as a fraction'
-                     'of the image hypotenuse, default 1.0',
-    'extension': '<int> FITS extension to read image from.',
-    'invert': 'invert the image (for black-on-white images)',
-    'downsample': '<int> downsample the image by factor <int> before running'
-                  'source extraction',
-    'no-background-subtraction': "don't try to estimate a smoothly-varying sky"
-                                 ' background during source extraction.',
-    'sigma': '<float> set the noise level in the image',
-    'nsigma': 'number of sigma for a source detection; default 8',
-    'no-remove-lines': "don't remove horizontal and vertical overdensities of"
-                       " sources.",
-    'uniformize': '<int> select sources uniformly using roughly this many '
-                  'boxes (0=disable; default 10)',
-    'crpix-center': 'set the WCS reference point to the image center',
-    'crpix-x': 'set the WCS reference point to the given position',
-    'crpix-y': 'set the WCS reference point to the given position',
-    'no-tweak': "don't fine-tune WCS by computing a SIP polynomial",
-    'tweak-order': '<int> polynomial order of SIP WCS corrections',
-    'predistort': '<filename>: apply the inverse distortion in this SIP WCS'
-                  ' header before solving',
-    'xscale': '<factor> for rectangular pixels: factor to apply to measured X'
-              ' positions to make pixels square',
-    'fields': '<number or range> the FITS extension(s) to solve, inclusive',
-    'no-plots': 'don\'t create any plots of the results',
-    'overwrite': 'overwrite output files if they already exist',
-    'width': '<pixels>: specify the field width',
-    'height': '<pixels>: specify the field height'
+    'center': (
+        '<SkyCoord or [ra, dec]>',
+        _center_help
+    ),
+    'ra': (
+        '<Angle, float degrees or hh:mm:ss>',
+        _center_help
+    ),
+    'dec': (
+        '<Angle, float degrees or +-dd:mm:ss>',
+        _center_help
+    ),
+    'radius': (
+        'Angle or float degrees> ',
+        _center_help
+    ),
+    'plate-scale': (
+        '<arcsec/pix>',
+        'guess pixel scale in arcsec/pix. Alternative to scale-low, scale-high'
+        ' and scale-unit'
+    ),
+    'scale-tolerance': (
+        '<float>',
+        'fraction tolerance for scale for lower and upper limits.'
+    ),
+    'scale-low': (
+        '<float scale>',
+        'lower bound of image scale estimate'
+    ),
+    'scale-high': (
+        '<float scale>',
+        'upper bound of image scale estimate'
+    ),
+    'scale-units': (
+        '<units>',
+        'in what units are the lower and upper bounds? Coices are:'
+        'degwidth", "degw", "dw" for width of the image, '
+        'in degrees (default); "arcminwidth", "amw", "aw" for width'
+        ' of the image, in arcminutes; "arcsecperpix", "app" for '
+        'arcseconds per pixel and "focalmm" 35-mm (width-based)'
+        ' equivalent focal length'
+    ),
+    'depth': (
+        '<int or range>',
+        'number of field objects to look at, or range of numbers; 1 is the '
+        'brightest star, so "depth=10" or "depth=\'1-10\'" mean look at the '
+        'top ten brightest stars.'
+    ),
+    'objs': (
+        '<int>',
+        'cut the source list to have this many items (after  sorting, '
+        'if applicable).'
+    ),
+    'cpulimit': (
+        '<int seconds>',
+        'give up solving after the specified number of  seconds of CPU time'
+    ),
+    'resort': (
+        None,
+        'sort the star brightnesses by background-subtracted  flux; the '
+        'default is to sort using acompromise between background-subtracted '
+        'and non-background-subtracted flux'
+    ),
+    'fits-image': (
+        None,
+        "assume the input files are FITS images"
+    ),
+    'timestamp': (
+        None,
+        "add timestamps to log messages"
+    ),
+    'parity': (
+        '<pos/neg>',
+        'only check for matches with positive/negative parity (default try '
+        'both)'
+    ),
+    'code-tolerance': (
+        '<distance>',
+        'matching distance for quads (defaultis 0.01)'
+    ),
+    'pixel-error': (
+        '<pixels>',
+        'for verification, size of pixel positional error (default: 1)'
+    ),
+    'quad-size-min': (
+        '<fraction>',
+        'minimum size of quads to try, as a fraction of the smaller image '
+        'dimension, (default is 0.1)'
+    ),
+    'quad-size-max': (
+        '<fraction>',
+        'maximum size of quads to try, as a fraction of the image hypotenuse, '
+        'default 1.0'
+    ),
+    'extension': (
+        '<int>',
+        'FITS extension to read image from.'
+    ),
+    'invert': (
+        None,
+        'invert the image (for black-on-white images)'
+    ),
+    'downsample': (
+        '<int>',
+        'downsample the image by factor <int> before running source extraction'
+    ),
+    'no-background-subtraction': (
+        None,
+        "don't try to estimate a smoothly-varying sky background during source"
+        ' extraction.'
+    ),
+    'sigma': (
+        '<float>',
+        'set the noise level in the image'
+    ),
+    'nsigma': (
+        '<int>',
+        'number of sigma for a source detection; default 8'
+    ),
+    'no-remove-lines': (
+        None,
+        "don't remove horizontal and vertical overdensities of  sources."
+    ),
+    'uniformize': (
+        '<int>',
+        'select sources uniformly using roughly this many boxes (0=disable; '
+        'default 10)'
+    ),
+    'crpix-center': (
+        None,
+        'set the WCS reference point to the image center'
+    ),
+    'crpix-x': (
+        '<float>',
+        'set the WCS reference point to the given position'
+    ),
+    'crpix-y': (
+        '<float>',
+        'set the WCS reference point to the given position'
+    ),
+    'no-tweak': (
+        None,
+        "don't fine-tune WCS by computing a SIP polynomial"
+    ),
+    'tweak-order': (
+        '<int>',
+        'polynomial order of SIP WCS corrections'
+    ),
+    'predistort': (
+        '<filename>',
+        'apply the inverse distortion in this SIP WCS header before solving'
+    ),
+    'xscale': (
+        '<factor>',
+        'for rectangular pixels: factor to apply to measured X positions to'
+        ' make pixels square'
+    ),
+    'fields': (
+        '<number or range>',
+        'the FITS extension(s) to solve, inclusive'
+    ),
+    'no-plots': (
+        None,
+        "don't create any plots of the results"
+    ),
+    'overwrite': (
+        None,
+        'overwrite output files if they already exist'
+    ),
+    'width': (
+        '<pixels>',
+        'specify the field width'
+    ),
+    'height': (
+        '<pixels>',
+        'specify the field height'
+    )
 }
 
 
 def print_options_help():
     s = "Notes\n-----\n\nThe supported options are:\n"
     for k, v in solve_field_params.items():
-        s += f"{k}\n    {v}\n"
+        s += f"    {k}: {v[0]}\n        {v[1]}\n"
     print(s)
     return s
 
