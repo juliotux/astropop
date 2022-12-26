@@ -26,7 +26,8 @@ from ..py_utils import run_command, check_number
 
 
 __all__ = ['AstrometrySolver', 'solve_astrometry_xy', 'solve_astrometry_image',
-           'create_xyls', 'AstrometryNetUnsolvedField']
+           'solve_astrometry_framedata', 'create_xyls',
+           'AstrometryNetUnsolvedField']
 
 
 _solve_field = shutil.which('solve-field')
@@ -70,17 +71,17 @@ solve_field_params = {
     'scale-units': (
         '<units>',
         'in what units are the lower and upper bounds? Coices are:'
-        'degwidth", "degw", "dw" for width of the image, '
-        'in degrees (default); "arcminwidth", "amw", "aw" for width'
-        ' of the image, in arcminutes; "arcsecperpix", "app" for '
-        'arcseconds per pixel and "focalmm" 35-mm (width-based)'
+        '``degwidth``, ``degw``, ``dw`` for width of the image, '
+        'in degrees (default); ``arcminwidth``, ``amw``, ``aw`` for width'
+        ' of the image, in arcminutes; ``arcsecperpix``, ``app`` for '
+        'arcseconds per pixel and ``focalmm`` 35-mm (width-based)'
         ' equivalent focal length'
     ),
     'depth': (
         '<int or range>',
         'number of field objects to look at, or range of numbers; 1 is the '
-        'brightest star, so "depth=10" or "depth=\'1-10\'" mean look at the '
-        'top ten brightest stars.'
+        'brightest star, so ``depth=10`` or ``depth=\'1-10\'`` mean look at '
+        'the top ten brightest stars.'
     ),
     'objs': (
         '<int>',
@@ -112,21 +113,21 @@ solve_field_params = {
     ),
     'code-tolerance': (
         '<distance>',
-        'matching distance for quads (defaultis 0.01)'
+        'matching distance for quads (default=0.01)'
     ),
     'pixel-error': (
         '<pixels>',
-        'for verification, size of pixel positional error (default: 1)'
+        'for verification, size of pixel positional error (default=1)'
     ),
     'quad-size-min': (
         '<fraction>',
         'minimum size of quads to try, as a fraction of the smaller image '
-        'dimension, (default is 0.1)'
+        'dimension, (default=0.1)'
     ),
     'quad-size-max': (
         '<fraction>',
         'maximum size of quads to try, as a fraction of the image hypotenuse, '
-        'default 1.0'
+        'default=1.0'
     ),
     'extension': (
         '<int>',
@@ -160,7 +161,7 @@ solve_field_params = {
     'uniformize': (
         '<int>',
         'select sources uniformly using roughly this many boxes (0=disable; '
-        'default 10)'
+        'default=10)'
     ),
     'crpix-center': (
         None,
@@ -210,6 +211,10 @@ solve_field_params = {
     'height': (
         '<pixels>',
         'specify the field height'
+    ),
+    'index-path': (
+        '<path or list of paths>',
+        'Location of astrometry.net index files.'
     )
 }
 
@@ -365,7 +370,23 @@ class AstrometricSolution():
     @property
     def correspondences(self):
         """Correspondece `~astropy.table.Table` between image stars and
-        ``astrometry.net`` index objects."""
+        ``astrometry.net`` index objects.
+
+        This property is not so smart. It just returns a copy of the table
+        passed as input. If this is an ``astrometry.net`` correspondences
+        table, it will have the following columns:
+
+        - field_x and field_y
+            Image coordinates of each star in the solved image.
+        - index_x and index_y
+            X and Y coordinates of matched stars in the index file used to
+            solve the image.
+        - field_ra and field_dec
+            Physical RA and DEC solved coordinates of each star in the image.
+        - index_ra and index_dec
+            Physical RA and DEC of the matched star in the index file used to
+            solve the image.
+        """
         return copy.deepcopy(self._corr)
 
 
@@ -413,7 +434,7 @@ class AstrometrySolver():
             Explicitly list the indices to load.
     """
 
-    def __init__(self, solve_field=_solve_field, config=None,
+    def __init__(self, solve_field=None, config=None,
                  defaults=None, keep_files=False):
         # declare the defaults here to be safer
         self._defaults = {'no-plots': None, 'overwrite': None}
@@ -423,7 +444,7 @@ class AstrometrySolver():
 
         self.config = self._read_config(config)
 
-        self._command = solve_field
+        self._command = solve_field or _solve_field
         self._keep = keep_files
 
     def solve_field(self, filename, options=None, **kwargs):
@@ -490,7 +511,8 @@ class AstrometrySolver():
         args += _parse_coordinates(options)  # parse center
         args += _parse_pltscl(options)  # parse plate scale
         if 'radius' in options:  # parse radius
-            args += ['--radius', _parse_angle(options.pop('radius', None))]
+            args += ['--radius',
+                     str(_parse_angle(options.pop('radius', None)))]
         args += _parse_crpix(options)  # parse crpix
 
         for key, value in options.items():
@@ -636,9 +658,19 @@ def create_xyls(fname, x, y, flux, imagew, imageh, header=None, dtype='f8'):
     f.writeto(fname)
 
 
+def _wrapper_config(options):
+    """Pop and return proper options and config helper."""
+    options = options or {}
+    indx_files = options.pop('index-path', None)
+    config = None
+    if indx_files is not None:
+        config = {'add_path': indx_files}
+    return options, config
+
+
 def solve_astrometry_xy(x, y, flux, width, height,
                         image_header=None, options=None,
-                        command=_solve_field,
+                        command=None,
                         **kwargs):
     """Solve astrometry from a (x,y) sources list using astrometry.net.
 
@@ -665,6 +697,7 @@ def solve_astrometry_xy(x, y, flux, width, height,
         - radius: maximum search radius
         - scale: pixel scale in arcsec/pixel
         - tweak-order: SIP order to fit
+        - index-path: path to index files
     command: str
         Full path of astrometry.net ``solve-field`` command.
 
@@ -673,8 +706,7 @@ def solve_astrometry_xy(x, y, flux, width, height,
     `~astropop.astrometry.AstrometricSolution`
         Astrometric solution ot the field.
     """
-    if options is None:
-        options = {}
+    options, config = _wrapper_config(options)
     if image_header is not None:
         image_header, _ = extract_header_wcs(image_header)
     else:
@@ -683,9 +715,40 @@ def solve_astrometry_xy(x, y, flux, width, height,
     f = NamedTemporaryFile(suffix='.xyls')
     create_xyls(f.name, x, y, flux, width, height,
                 header=image_header)
-    solver = AstrometrySolver(solve_field=command)
+    solver = AstrometrySolver(solve_field=command, config=config)
     options.update({'width': width, 'height': height})
     return solver.solve_field(f.name, options=options, **kwargs)
+
+
+def solve_astrometry_framedata(frame, options=None, command=None,
+                               **kwargs):
+    """Solve astrometry from a `~astropop.framedata.FrameData`.
+
+    Parameters
+    ----------
+    frame: `~astropop.framedata.FrameData`
+        Image to be solved.
+    options: dict
+        Dictionary of ``solve-field`` options. See
+        `~astropop.astrometry.astrometrynet.print_options_help` for all
+        available options. The most useful are:
+        - center or ra and dec: field center
+        - radius: maximum search radius
+        - scale: pixel scale in arcsec/pixel
+        - tweak-order: SIP order to fit
+    command: str
+        Full path of astrometry.net ``solve-field`` command.
+
+    Returns
+    -------
+    `~astropop.astrometry.AstrometricSolution`
+        Astrometric solution ot the field.
+    """
+    f = NamedTemporaryFile(sufix='.fits')
+    frame.write(f)
+    options, config = _wrapper_config(options)
+    solver = AstrometrySolver(solve_field=command, config=config)
+    return solver.solve_field(f, options=options, **kwargs)
 
 
 def solve_astrometry_image(filename, options=None, command=_solve_field,
@@ -712,13 +775,12 @@ def solve_astrometry_image(filename, options=None, command=_solve_field,
     `~astropop.astrometry.AstrometricSolution`
         Astrometric solution ot the field.
     """
-    if options is None:
-        options = {}
-    solver = AstrometrySolver(solve_field=command)
+    options, config = _wrapper_config(options)
+    solver = AstrometrySolver(solve_field=command, config=config)
     return solver.solve_field(filename, options=options, **kwargs)
 
 
-def solve_astrometry_hdu(hdu, options=None, command=_solve_field, **kwargs):
+def solve_astrometry_hdu(hdu, options=None, command=None, **kwargs):
     """Solve astrometry from a `~astropy.fits.ImageHDU` using astrometry.net.
 
     Parameters
@@ -741,11 +803,10 @@ def solve_astrometry_hdu(hdu, options=None, command=_solve_field, **kwargs):
     `~astropop.astrometry.AstrometricSolution`
         Astrometric solution ot the field.
     """
-    if options is None:
-        options = {}
+    options, config = _wrapper_config(options)
     hdu.header, _ = extract_header_wcs(hdu.header)
     f = NamedTemporaryFile(suffix='.fits')
     hdu = fits.PrimaryHDU(hdu.data, header=hdu.header)
     hdu.writeto(f.name)
-    solver = AstrometrySolver(solve_field=command)
+    solver = AstrometrySolver(solve_field=command, config=config)
     return solver.solve_field(f.name, options=options, **kwargs)
