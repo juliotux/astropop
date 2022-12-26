@@ -212,7 +212,7 @@ class Test_AstrometrySolver:
         assert_equal(cfg['index'], ['index-219', 'index-220', 'index-221'])
         assert_true(cfg['autoindex'])
 
-    # @skip_astrometry
+    @skip_astrometry
     def test_read_cfg_with_options(self, tmpdir):
         fname = tmpdir / 'test.cfg'
         f = open(fname, 'w')
