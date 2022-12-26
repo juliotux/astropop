@@ -11,34 +11,19 @@ Astropop Documentation
 For Users
 ***************
 
+The users documentation, focused on the modules technical details, API usage and examples can be found in our user guide:
+
+.. toctree::
+    :maxdepth: 1
+
+    user_guide.rst
+
 For end users that just want to reduce their data using ASTROPOP, you can follow our reduction examples on this documentations:
 
 .. toctree::
     :maxdepth: 1
 
     ipynb/diy_reduction_script.ipynb
-
-
-API level documentation and technical details for each module you can find in specific documentation listed bellow.
-
-.. toctree::
-    :maxdepth: 1
-
-    logger
-    framedata
-    memmap
-    pipelines
-    fits_utils
-    py_utils
-    catalogs
-    physical
-    testing
-    imarith
-    ccdprocessing
-    registering
-    photometry
-    polarimetry
-    astrometry
 
 
 ***************
@@ -54,12 +39,4 @@ Developer Docs
 API
 ***************
 
-.. TODO:: auto generate full astropop summary
-
-***************
-Index
-***************
-
-* :ref:`genindex`
 * :ref:`modindex`
-* :ref:`search`

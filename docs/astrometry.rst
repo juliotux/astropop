@@ -146,7 +146,7 @@ Using keyword arguments to be passed to |run_command| you can store ``stdout`` a
     Solving...
     Reading file "/tmp/M20_test_file_6kk3quwg_astrometry.net/M20_test_file.axy"...
     Verifying WCS using indices with quads of size [6, 60] arcmin
-    Verifying WCS with index 1 of 1 (/home/julio/.anaconda/envs/astropop/data/index-4107.fits)
+    Verifying WCS with index 1 of 1 (/data/index-4107.fits)
     Verifying WCS of field 1.
       log-odds ratio 536.02 (6.17207e+232), 66 match, 0 conflict, 93 distractors, 68 index.
       RA,Dec = (270.675,-22.9719), pixel scale 1.75781 arcsec/pix.
@@ -162,9 +162,15 @@ Using keyword arguments to be passed to |run_command| you can store ``stdout`` a
     Field parity: pos
     Creating new FITS file "/tmp/M20_test_file_6kk3quwg_astrometry.net/M20_test_file.new"...
 
-.. TODO:: config examples
+Also, you can pass any parameter of ``astrometry.cfg`` file to the options. These parameters will be organized and a custom configuration file will be created, enabling these options only for that run. Manual edition of the config is also available using `~astropop.astrometry.AstrometrySolver.config` dictionary.
 
-Additional Python formats, like |ImageHDU|, |FrameData|, and ``(x, y, flux)`` arrays are supported trough hepler functions, described in the section bellow.
+.. code-block:: python
+
+    >>> solver = AstrometrySolver(config={'index': 'index-401.fits', 'add_path': ['/data1', '/data2']})
+    >>> solver.config['inparallel'] = False
+    >>> solution = solver.solve_field(filename, options={'add_path': '/home/user/gaia-indexes', 'autoindex': True})
+
+Additional Python inputs, like |ImageHDU|, |FrameData|, and ``(x, y, flux)`` arrays are supported trough hepler functions, described in the section bellow.
 
 Type-specific helper functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -187,7 +193,9 @@ Each function has its own specific arguments, but all of them have the same opti
 Supported ``solve-field`` options
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The |astropop| `astrometry.net`_ wrapper don't support all `solve-field` command-line interface options. Also, we added a new ``index-path`` option to set a custom path for index files.
+The |astropop| `astrometry.net`_ wrapper don't support all `solve-field` command-line interface options.
+
+Also, we added the possibility to add any ``astrometry.cfg`` configuration file parameter to options. These configuration parameters will be read and popped out from options, a new config file will be created and used just for that run.
 
 The supported options can be print in the screen using `~astropop.astrometry.AstrometrySolver.print_options_help` or `~astropop.astrometry.astrometrynet.get_options_help` funtions. They are described bellow.
 
