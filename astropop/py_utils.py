@@ -13,7 +13,7 @@ from .logger import logger, resolve_level_string
 
 __all__ = ['string_fix', 'process_list', 'check_iterable',
            'batch_key_replace', 'IndexedDict', 'check_number',
-           'broadcast']
+           'broadcast', 'run_command']
 
 
 def process_list(func, iterator, *args, **kwargs):
@@ -74,8 +74,8 @@ def check_iterable(value):
     The checking process is done by trying the `iter` method of Python and
     matching if the value is a string or not.
 
-    Parametes
-    ---------
+    Parameters
+    ----------
     value: any
         Value to be checked if it is iterable.
 
