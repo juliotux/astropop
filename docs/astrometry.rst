@@ -27,9 +27,13 @@ Installing astrometry.net
 
 For `Anaconda <https://anaconda.com>`_ users, the project `conda-forge <https://conda-forge.org/>`_, that is a collection of community maintaned packages, provide a simplier way to install `astrometry.net`_ inside conda environments. You just need to:
 
+.. code-block:: bash
+
     conda install -c conda-forge astrometry
 
 or, withing a specific separated environment, use:
+
+.. code-block:: bash
 
     conda install -n <environment_name> -c conda-forge astrometry
 

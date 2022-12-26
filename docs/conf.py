@@ -73,5 +73,6 @@ intersphinx_mapping = {
     "scipy": ("https://docs.scipy.org/doc/scipy/reference", None),
     "matplotlib": ("https://matplotlib.org/", None),
     "astropy": ('http://docs.astropy.org/en/latest/', None),
-    'astroquery': ('https://astroquery.readthedocs.io/en/latest/', None)
+    'astroquery': ('https://astroquery.readthedocs.io/en/latest/', None),
+    'uncertainties': ('https://uncertainties-python-package.readthedocs.io/en/latest/', None)
 }
