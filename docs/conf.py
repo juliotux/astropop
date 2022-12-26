@@ -1,3 +1,9 @@
+import sys
+import os
+
+ap_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(ap_dir)
+
 # Minimum version, enforced by sphinx
 needs_sphinx = '4.3.0'
 
@@ -9,6 +15,7 @@ extensions = [
     'sphinx.ext.doctest',
     'sphinx.ext.graphviz',
     'sphinx.ext.ifconfig',
+    'sphinx.ext.extlinks',
     'sphinx.ext.todo',
     'sphinx.ext.mathjax',
     'sphinx_automodapi.automodapi',
@@ -20,9 +27,19 @@ extensions = [
     'nbsphinx',
 ]
 
+extlinks = {
+    'doi': ('https://dx.doi.org/%s', 'doi:'),
+}
+
 nbsphinx_allow_errors = True
 nbsphinx_execute = 'never'
 nbsphinx_kernel_name = 'python3'
+
+todo_include_todos = True
+
+numpydoc_show_class_members = False
+numpydoc_attributes_as_param_list = False
+# numpydoc_xref_aliases = {}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -55,5 +72,6 @@ intersphinx_mapping = {
     "numpy": ("https://docs.scipy.org/doc/numpy/", None),
     "scipy": ("https://docs.scipy.org/doc/scipy/reference", None),
     "matplotlib": ("https://matplotlib.org/", None),
-    "astropy": ('http://docs.astropy.org/en/latest/', None)
+    "astropy": ('http://docs.astropy.org/en/latest/', None),
+    'astroquery': ('https://astroquery.readthedocs.io/en/latest/', None)
 }

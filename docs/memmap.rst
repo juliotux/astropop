@@ -63,4 +63,5 @@ Math Operations
 MemMapArray API
 ---------------
 
-.. TODO:: Put properly API link here
+.. automodapi:: astropop.framedata.memmap
+    :no-inheritance-diagram:

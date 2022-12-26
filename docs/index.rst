@@ -5,8 +5,7 @@ Astropop Documentation
 .. warning::
     Documentation outdated. Do not use it. We are rewriting it!
 
-.. TODO::
-    Insert detailed install instructions here
+.. TODO:: Insert detailed install instructions here
 
 ***************
 For Users
@@ -55,10 +54,7 @@ Developer Docs
 API
 ***************
 
-.. toctree::
-    :maxdepth: 1
-
-    api
+.. TODO:: auto generate full astropop summary
 
 ***************
 Index
