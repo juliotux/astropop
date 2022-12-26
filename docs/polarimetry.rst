@@ -5,4 +5,6 @@ Polarimetry Processing
 
 Polarimetry API
 ---------------
-.. TODO:: Put properly API link here
+
+.. automodapi:: astropop.polarimetry
+    :no-inheritance-diagram:

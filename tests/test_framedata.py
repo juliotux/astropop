@@ -607,7 +607,7 @@ class Test_FrameData_Creation():
         assert_almost_equal(a, f.data)
         assert_almost_equal(b, f.mask)
         assert_equal(f.unit, u.adu)
-        assert_true(np.issubdtype(f.mask.dtype, np.bool))
+        assert_true(np.issubdtype(f.mask.dtype, np.bool_))
         assert_equal(f.meta['observer'], meta['observer'])
         assert_equal(f.meta['very long key'], meta['very long key'])
 

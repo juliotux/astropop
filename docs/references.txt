@@ -1,18 +1,33 @@
-.. |astropop| replace:: :module: `~astropop`
-.. |FrameData| replace:: :class:`~astropop.framedata.FrameData`
-.. |MemMapArray| replace:: :class:`~astropop.framedata.MemMapArray`
-.. |QFloat| replace:: :class:`~astropop.math.physical.QFloat`
-.. |imcombine| replace:: :function:`~astropop.image_processing.imarith.imcombine`
-.. |ImCombiner| replace:: :class:`~astropop.image_processing.imarith.ImCombiner`
-.. |imarith| replace:: :function:`~astropop.image_processing.imarith.imarith`
+.. |astropop| replace:: `~astropop`
+.. |FrameData| replace:: `~astropop.framedata.FrameData`
+.. |MemMapArray| replace:: `~astropop.framedata.memmap.MemMapArray`
+.. |QFloat| replace:: `~astropop.math.physical.QFloat`
+.. |imcombine| replace:: `~astropop.image.imcombine.imcombine`
+.. |ImCombiner| replace:: `~astropop.image.imcombine.ImCombiner`
+.. |imarith| replace:: `~astropop.image.imarith.imarith`
+.. |AstrometricSolution| replace:: `~astropop.astrometry.AstrometricSolution`
+.. |AstrometrySolver| replace:: `~astropop.astrometry.AstrometrySolver`
+.. |run_command| replace:: `~astropop.py_utils.run_command`
 
-.. |astropy| replace:: Astropy
-.. |CCDData| replace:: :class:`~astropy.nddata.ccddata.CCDData`
-.. |HDUList| replace:: :class:`~astropy.io.fits.HDUList`
-.. |Header| replace:: :class:`~astropy.io.fits.Header`
-.. |Quantity| replace:: :class:`~astropy.units.Quantity`
-.. |UnitsError| replace:: :class:`~astropy.units.UnitsError`
+.. |astropy| replace:: `~astropy`
+.. |CCDData| replace:: `~astropy.nddata.ccddata.CCDData`
+.. |HDUList| replace:: `~astropy.io.fits.HDUList`
+.. |ImageHDU| replace:: `~astropy.io.fits.ImageHDU`
+.. |Header| replace:: `~astropy.io.fits.Header`
+.. |Quantity| replace:: `~astropy.units.Quantity`
+.. |UnitsError| replace:: `~astropy.units.UnitsError`
+.. |WCS| replace:: `~astropy.wcs.WCS`
+.. |Table| replace:: `~astropy.table.Table`
+.. |Unit| replace:: `~astropy.units.Unit`
+.. |dimensionless_angles| replace:: `~astropy.units.dimensionless_angles`
+.. |dimensionless_unscaled| replace:: `~astropy.units.dimensionless_unscaled`
 
-.. |uncertainties| replace:: Uncertainties
+.. |uncertainties| replace:: `~uncertainties`
 
-.. |numpy| replace:: Numpy
+.. |numpy| replace:: `~numpy`
+.. |dtype| replace:: `~numpy.dtype`
+.. |memmap| replace:: `~numpy.memmap`
+.. |ndarray| replace:: `~numpy.ndarray`
+.. |ufunc| replace:: `~numpy.ufunc`
+
+.. _astrometry.net: https://astrometry.net

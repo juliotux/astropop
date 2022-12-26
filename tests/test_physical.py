@@ -1931,7 +1931,7 @@ class Test_QFloat_Types:
             float(qf2)
 
     def test_qfloat_math_int(self):
-        qf1 = QFloat(1.5, 0.4, 'm')
+        qf1 = QFloat(1.0, 0.4, 'm')
         qf2 = QFloat([1.4, 2.5, 3.6], [0.2, 0.3, 0.4], 's')
 
         assert_equal(int(qf1), 1)
