@@ -171,12 +171,12 @@ class Test_AstrometrySolver:
         a = AstrometrySolver()  # read the default configuration
         cfg = a._read_config()
         assert_not_in('index', cfg)
-        assert_not_in('inparallel', cfg)
+        assert_false(cfg['inparallel'])
         assert_not_in('', cfg)
         assert_not_in('minwidth', cfg)
         assert_not_in('maxwidth', cfg)
         assert_equal(cfg['cpulimit'], '300')
-        assert_is_none(cfg['autoindex'])
+        assert_true(cfg['autoindex'])
         assert_equal(len(cfg['add_path']), 1)
 
     @skip_astrometry
@@ -203,16 +203,16 @@ class Test_AstrometrySolver:
         a = AstrometrySolver()
         cfg = a._read_config(fname)
         assert_not_equal("", cfg)
-        assert_is_none(cfg['inparallel'])
+        assert_true(cfg['inparallel'])
         assert_equal(cfg['minwidth'], '0.1')
         assert_equal(cfg['maxwidth'], '180')
         assert_equal(cfg['depths'], [10, 20, 30, 40, 50, 60])
         assert_equal(cfg['cpulimit'], '300')
         assert_equal(cfg['add_path'], ['/data', '/data1'])
         assert_equal(cfg['index'], ['index-219', 'index-220', 'index-221'])
-        assert_is_none(cfg['autoindex'])
+        assert_true(cfg['autoindex'])
 
-    @skip_astrometry
+    # @skip_astrometry
     def test_read_cfg_with_options(self, tmpdir):
         fname = tmpdir / 'test.cfg'
         f = open(fname, 'w')
@@ -238,7 +238,7 @@ class Test_AstrometrySolver:
                                      'add_path': '/data3',
                                      'index': ['indx4', 'indx5']})
         assert_not_equal("", cfg)
-        assert_is_none(cfg['inparallel'])
+        assert_true(cfg['inparallel'])
         assert_equal(cfg['minwidth'], '0.1')
         assert_equal(cfg['maxwidth'], '180')
         assert_equal(cfg['depths'], [10, 30, 50])
@@ -246,15 +246,15 @@ class Test_AstrometrySolver:
         assert_equal(cfg['add_path'], ['/data', '/data1', '/data3'])
         assert_equal(cfg['index'], ['index-219', 'index-220', 'index-221',
                                     'indx4', 'indx5'])
-        assert_is_none(cfg['autoindex'])
+        assert_true(cfg['autoindex'])
 
     @skip_astrometry
     def test_write_config(self, tmpdir):
         fname = tmpdir / 'test.cfg'
 
         a = AstrometrySolver()
-        a.config = {'inparallel': None,
-                    'autoindex': None,
+        a.config = {'inparallel': False,
+                    'autoindex': True,
                     'cpulimit': 300,
                     'minwidth': 0.1,
                     'maxwidth': 180,
