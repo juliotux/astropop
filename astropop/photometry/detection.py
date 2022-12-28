@@ -688,7 +688,7 @@ def calc_fwhm(data, x, y, box_size=25, model='gaussian', min_fwhm=3.0):
     x, y: array_like
         x, y centroid position.
     box_size: `int` (optional)
-        Size of background boxes in pixels.
+        Size of the box, in pixels, to fit the model.
         Default: 25
     model: {`gaussian`, `moffat`}
         Choose a Gaussian or Moffat model.
@@ -731,7 +731,7 @@ def recenter_sources(data, x, y, box_size=25, model='gaussian'):
     x, y: array_like
         x, y centroid position.
     box_size: `int` (optional)
-        Size of background boxes in pixels.
+        Size of the box, in pixels, to fit the model.
         Default: 25
     model: `str`
         Choose a Gaussian or Moffat model.

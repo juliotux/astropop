@@ -6,4 +6,5 @@ Catalogs Data
 Catalogs API
 ------------
 
-.. TODO:: Put properly API link here
+.. automodapi:: astropop.catalogs
+    :no-inheritance-diagram:

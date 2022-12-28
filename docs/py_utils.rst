@@ -6,4 +6,5 @@ Python Utilities
 Python Utils API
 ----------------
 
-.. TODO:: Put properly API link here
+.. automodapi:: astropop.py_utils
+    :no-inheritance-diagram:

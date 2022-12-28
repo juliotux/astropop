@@ -127,7 +127,7 @@ class _QFloatFormatter():
 
     def round(self):
         try:
-            first_digit = -np.int(np.floor(np.log10(np.abs(self._s))))
+            first_digit = -np.int_(np.floor(np.log10(np.abs(self._s))))
             self._n = np.around(self._n, first_digit)
             self._s = np.around(self._s, first_digit)
             self._d = first_digit
@@ -708,11 +708,11 @@ class QFloat():
 
     @require_qfloat
     def __int__(self):
-        return np.int(self.nominal)
+        return int(self.nominal)
 
     @require_qfloat
     def __float__(self):
-        return np.float(self.nominal)
+        return float(self.nominal)
 
 
 # TODO:

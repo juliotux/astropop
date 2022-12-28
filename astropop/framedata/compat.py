@@ -291,7 +291,7 @@ def _to_hdu(frame, hdu_uncertainty=_HDU_UNCERT, hdu_mask=_HDU_MASK,
 
     if hdu_mask is not None and not frame._mask.empty:
         mask = frame.mask
-        if np.issubdtype(mask.dtype, np.bool):
+        if np.issubdtype(mask.dtype, np.bool_):
             # Fits do not support bool
             mask = mask.astype('uint8')
         hdul.append(fits.ImageHDU(mask, name=hdu_mask))

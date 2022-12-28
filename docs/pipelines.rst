@@ -6,4 +6,5 @@ Pipelines
 Pipelines API
 -------------
 
-.. TODO:: Put properly API link here
+.. automodapi:: astropop.pipelines
+    :no-inheritance-diagram:

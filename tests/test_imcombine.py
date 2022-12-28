@@ -223,7 +223,7 @@ class Test_ImCombineConformance():
     def test_creation_error_dtype(self):
         msg = "Only float dtypes are allowed in ImCombiner."
         with pytest.raises(ValueError, match=msg):
-            ImCombiner(dtype=np.int)
+            ImCombiner(dtype=np.int_)
         with pytest.raises(ValueError, match=msg):
             ImCombiner(dtype=np.int16)
 
@@ -368,13 +368,13 @@ class Test_ImCombineConformance():
     def test_check_consistency(self):
         n = 10
         d = np.ones((10, 10))
-        l = [FrameData(d, unit='adu') for i in range(n)]
+        li = [FrameData(d, unit='adu') for i in range(n)]
         comb = ImCombiner()
         # empty should raise
         with pytest.raises(ValueError, match='Combiner have no images.'):
             comb._check_consistency()
 
-        comb._load_images(l)
+        comb._load_images(li)
         # nothing should raise
         comb._check_consistency()
 
@@ -392,11 +392,11 @@ class Test_ImCombineConformance():
     def test_invalid_method(self):
         n = 10
         d = np.ones((10, 10))
-        l = [FrameData(d, unit='adu') for i in range(n)]
+        li = [FrameData(d, unit='adu') for i in range(n)]
         comb = ImCombiner()
         with pytest.raises(ValueError, match='hulk-smash is not a valid '
                            'combining method.'):
-            comb.combine(l, method='hulk-smash')
+            comb.combine(li, method='hulk-smash')
 
 
 class Test_ImCombiner_ChunkYielder():
@@ -404,13 +404,13 @@ class Test_ImCombiner_ChunkYielder():
     def test_chunk_yielder_f64(self, method):
         n = 100
         d = np.random.random((100, 100)).astype(np.float64)
-        l = [FrameData(d, unit='adu') for i in range(n)]
+        li = [FrameData(d, unit='adu') for i in range(n)]
         # data size = 8 000 000 = 8 bytes * 100 * 100 * 100
         # mask size = 1 000 000 = 1 bytes * 100 * 100 * 100
         # total size = 9 000 000
 
         comb = ImCombiner(max_memory=1e6, dtype=np.float64)
-        comb._load_images(l)
+        comb._load_images(li)
 
         logs = []
         lh = log_to_list(logger, logs, False)
@@ -441,7 +441,7 @@ class Test_ImCombiner_ChunkYielder():
 
         # this should not split into chunks
         comb = ImCombiner(max_memory=1e8)
-        comb._load_images(l)
+        comb._load_images(li)
 
         i = 0
         for chunk, unct, slc in comb._chunk_yielder(method=method):
@@ -457,13 +457,13 @@ class Test_ImCombiner_ChunkYielder():
         # using float32, the number of chunks are almost halved
         n = 100
         d = np.random.random((100, 100)).astype(np.float64)
-        l = [FrameData(d, unit='adu') for i in range(n)]
+        li = [FrameData(d, unit='adu') for i in range(n)]
         # data size = 4 000 000 = 4 bytes * 100 * 100 * 100
         # mask size = 1 000 000 = 1 bytes * 100 * 100 * 100
         # total size = 5 000 000
 
         comb = ImCombiner(max_memory=1e6, dtype=np.float32)
-        comb._load_images(l)
+        comb._load_images(li)
 
         logs = []
         lh = log_to_list(logger, logs, False)
@@ -494,7 +494,7 @@ class Test_ImCombiner_ChunkYielder():
 
         # this should not split into chunks
         comb = ImCombiner(max_memory=1e8)
-        comb._load_images(l)
+        comb._load_images(li)
 
         i = 0
         for chunk, unct, slc in comb._chunk_yielder(method=method):
@@ -510,7 +510,7 @@ class Test_ImCombiner_ChunkYielder():
         # using float32, the number of chunks are almost halved
         n = 100
         d = np.random.random((100, 100)).astype(np.float64)
-        l = [FrameData(d, unit='adu') for i in range(n)]
+        li = [FrameData(d, unit='adu') for i in range(n)]
         # data size = 4 000 000 = 4 bytes * 100 * 100 * 100
         # mask size = 1 000 000 = 1 bytes * 100 * 100 * 100
         # total size = 5 000 000
@@ -525,7 +525,7 @@ class Test_ImCombiner_ChunkYielder():
         # x_step = 1
         # y_step = 45
         comb = ImCombiner(max_memory=1e5, dtype=np.float32)
-        comb._load_images(l)
+        comb._load_images(li)
         i = 0
         for chunk, unct, slc in comb._chunk_yielder(method='median'):
             i += 1
@@ -545,15 +545,15 @@ class Test_ImCombiner_ChunkYielder():
         n = 100
         d = np.random.random((100, 100)).astype(np.float64)
         u = np.random.random((100, 100)).astype(np.float64)
-        l = [FrameData(d, uncertainty=u, unit='adu') for i in range(n)]
+        li = [FrameData(d, uncertainty=u, unit='adu') for i in range(n)]
 
         # simple sum with uncertainties
         comb = ImCombiner(max_memory=2e6, dtype=np.float64)
-        comb._load_images(l)
+        comb._load_images(li)
         i = 0
         for chunk, unct, slc in comb._chunk_yielder(method='sum'):
             i += 1
-            for k,un in zip(chunk, unct):
+            for k, un in zip(chunk, unct):
                 assert_in(k.shape, ((7, 100), (2, 100)))
                 assert_almost_equal(k, d[slc])
                 assert_almost_equal(un, u[slc])
@@ -566,9 +566,9 @@ class Test_ImCombiner_ChunkYielder():
         level = logger.getEffectiveLevel()
         logger.setLevel('DEBUG')
 
-        l[5].uncertainty = None
+        li[5].uncertainty = None
         comb = ImCombiner(max_memory=2e6, dtype=np.float64)
-        comb._load_images(l)
+        comb._load_images(li)
         i = 0
         for chunk, unct, slc in comb._chunk_yielder(method='sum'):
             i += 1
@@ -591,14 +591,14 @@ class Test_ImCombiner_LoadImages():
         tmp = tmpdir.strpath
         n = 10
         d = np.ones((10, 10))
-        l = [FrameData(d, unit='adu', uncertainty=d, cache_folder=tmp,
-                       cache_filename=f'test{i}') for i in range(n)]
+        li = [FrameData(d, unit='adu', uncertainty=d, cache_folder=tmp,
+                        cache_filename=f'test{i}') for i in range(n)]
 
         comb = ImCombiner(use_disk_cache=disk_cache)
         # must start empty
         assert_equal(len(comb._images), 0)
         assert_is_none(comb._buffer)
-        comb._load_images(l)
+        comb._load_images(li)
         assert_equal(len(comb._images), n)
         assert_is_none(comb._buffer)
         for i, v in enumerate(comb._images):
@@ -628,12 +628,12 @@ class Test_ImCombiner_LoadImages():
         tmp = tmpdir.strpath
         n = 10
         d = np.ones((10, 10))
-        l = [os.path.join(tmp, f'fits_test{i}') for i in range(n)]
-        for f in l:
+        li = [os.path.join(tmp, f'fits_test{i}') for i in range(n)]
+        for f in li:
             fits.PrimaryHDU(d).writeto(f)
 
         comb = ImCombiner(use_disk_cache=disk_cache)
-        comb._load_images(l)
+        comb._load_images(li)
 
         assert_equal(len(comb._images), n)
         assert_is_none(comb._buffer)
@@ -651,10 +651,10 @@ class Test_ImCombiner_LoadImages():
     def test_image_loading_fitshdu(self, disk_cache):
         n = 10
         d = np.ones((10, 10))
-        l = [fits.PrimaryHDU(d) for i in range(n)]
+        li = [fits.PrimaryHDU(d) for i in range(n)]
 
         comb = ImCombiner(use_disk_cache=disk_cache)
-        comb._load_images(l)
+        comb._load_images(li)
 
         assert_equal(len(comb._images), n)
         assert_is_none(comb._buffer)
@@ -844,7 +844,6 @@ class Test_ImCombiner_Combine():
             assert_almost_equal(res.uncertainty, std)
             assert_equal(res.meta['astropop imcombine nimages'], n)
             assert_equal(res.meta['astropop imcombine method'], method)
-
 
 
 class Test_ImCombiner_HeaderMerging():

@@ -9,13 +9,21 @@ from astroquery.skyview import SkyView
 from astropy.coordinates import Angle, SkyCoord
 from astropy.config import get_cache_dir
 from astropy.io import fits
+from astropy.table import Table
 from astropy.nddata.ccddata import _generate_wcs_and_update_header
 from astropy.wcs import WCS
+from astropy import units
 
-from astropop.astrometry.astrometrynet import _solve_field, fit_wcs, \
+from astropop.astrometry.astrometrynet import _solve_field, \
                                               solve_astrometry_image, \
                                               solve_astrometry_xy, \
-                                              solve_astrometry_hdu
+                                              solve_astrometry_hdu, \
+                                              AstrometrySolver, \
+                                              AstrometricSolution
+from astropop.astrometry.astrometrynet import _parse_angle, \
+                                              _parse_coordinates, \
+                                              _parse_crpix, \
+                                              _parse_pltscl
 from astropop.astrometry.manual_wcs import wcs_from_coords
 from astropop.astrometry.coords_utils import guess_coordinates
 from astropop.photometry.aperture import aperture_photometry
@@ -55,281 +63,464 @@ skip_astrometry = pytest.mark.skipif("_solve_field is None or "
                                      "False)")
 
 
-@skip_astrometry
-@pytest.mark.remote_data
-def test_solve_astrometry_hdu(tmpdir):
-    data, index = get_image_index()
-    hdu = fits.open(data)[0]
-    header, wcs = _generate_wcs_and_update_header(hdu.header)
-    hdu.header = header
-    nwcs = solve_astrometry_hdu(hdu, return_wcs=True)
-    assert_true(isinstance(nwcs, WCS))
-    assert_equal(nwcs.naxis, 2)
-    compare_wcs(wcs, nwcs)
+class Test_AstrometrySolver:
+    @pytest.mark.parametrize('angle,unit,fail', [(Angle(1.0, 'degree'), None, False),
+                                                 (1.0, None, False),
+                                                 ('1 degree', None, False),
+                                                 ('1 deg', None, False),
+                                                 (np.radians(1.0), 'radian', False),
+                                                 ('not angle', None, True),
+                                                 ('01:00:00', 'deg', False),
+                                                 ('00:04:00', 'hourangle', False),
+                                                 ('1 yr', None, True),
+                                                 ('60 min', None, False)])
+    def test_parse_angle(self, angle, unit, fail):
+        if not fail:
+            assert_almost_equal(_parse_angle(angle, unit), 1.0)
+        else:
+            with pytest.raises((units.UnitsError, ValueError)):
+                _parse_angle(angle)
+
+    @pytest.mark.parametrize('options', [{'center': SkyCoord(1, 1, unit='deg')},
+                                         {'ra': 1.0, 'dec': 1.0},
+                                         {'ra': '00:04:00', 'dec': '01:00:00'},
+                                         {'ra': '00h04m00s', 'dec': '01d00m00s'},
+                                         {'center': (1.0, 1.0)}])
+    def test_parse_center(self, options):
+        args = _parse_coordinates(options)
+        # this options must be popped
+        assert_not_in('center', options)
+        assert_not_in('ra', options)
+        assert_not_in('dec', options)
+        assert_equal(args[0], '--ra')
+        assert_equal(args[2], '--dec')
+        assert_almost_equal(float(args[1]), 1.0)
+        assert_almost_equal(float(args[3]), 1.0)
+
+    def test_parse_center_fails(self):
+        assert_equal(_parse_coordinates({}), [])
+
+        with pytest.raises(ValueError, match='conflicts with'):
+            _parse_coordinates({'center': (1.0, 1.0),
+                                'ra': 1.0, 'dec': 1.0})
+
+    def test_parse_pltscl(self):
+        def _assert(options, expect):
+            args = _parse_pltscl(option)
+            assert_equal(args[0], expect[0])
+            assert_almost_equal(float(args[1]), float(expect[1]))
+            assert_equal(args[2], expect[2])
+            assert_almost_equal(float(args[3]), float(expect[3]))
+            assert_equal(args[4], expect[4])
+            assert_equal(args[5], expect[5])
+
+        option = {'plate-scale': 0.2, 'scale-tolerance': 0.2}
+        expect = ['--scale-low', '0.16', '--scale-high', '0.24',
+                  '--scale-units', 'arcsecperpix']
+        _assert(option, expect)
+
+        # default tolerance is 0.2
+        option = {'plate-scale': 0.2}
+        expect = ['--scale-low', '0.16', '--scale-high', '0.24',
+                  '--scale-units', 'arcsecperpix']
+        _assert(option, expect)
+
+        # another unit
+        option = {'plate-scale': 0.2, 'scale-units': 'degreeperpix'}
+        expect = ['--scale-low', '0.16', '--scale-high', '0.24',
+                  '--scale-units', 'degreeperpix']
+        _assert(option, expect)
+
+        # low and high
+        option = {'scale-low': 1, 'scale-high': 2, 'scale-units': 'arcsecperpix'}
+        expect = ['--scale-low', '1', '--scale-high', '2',
+                  '--scale-units', 'arcsecperpix']
+        _assert(option, expect)
+
+    def test_parse_scale_errors(self):
+        assert_equal(_parse_pltscl({}), [])
+        with pytest.raises(ValueError, match='is in conflict with'):
+            _parse_pltscl({'plate-scale': 1, 'scale-low': 1, 'scale-high': 1})
+        with pytest.raises(ValueError, match='must specify'):
+            _parse_pltscl({'scale-low': 1, 'scale-high': 1})
+
+    def test_parse_crpix_center(self):
+        opt = {'crpix-center': None}
+        arg = _parse_crpix(opt)
+        assert_equal(arg, ['--crpix-center'])
+        assert_not_in('crpix-center', opt)
+
+    @pytest.mark.parametrize('x,y', [(1.0, 1.0), (1, 1), ('1', '1')])
+    def test_parse_crpix_xy(self, x, y):
+        opt = {'crpix-x': x, 'crpix-y': y}
+        arg = _parse_crpix(opt)
+        assert_not_in('crpix-x', opt)
+        assert_not_in('crpix-y', opt)
+        assert_equal(arg[0], '--crpix-x')
+        assert_equal(arg[2], '--crpix-y')
+        assert_almost_equal(float(arg[1]), 1.0)
+        assert_almost_equal(float(arg[3]), 1.0)
+
+    def test_parse_crpix_fails(self):
+        with pytest.raises(ValueError, match='conflicts with'):
+            _parse_crpix({'crpix-center': None, 'crpix-x': 1, 'crpix-y': 1})
+        assert_equal(_parse_crpix({}), [])
+
+    @skip_astrometry
+    def test_read_cfg(self):
+        a = AstrometrySolver()  # read the default configuration
+        cfg = a._read_config()
+        assert_not_in('index', cfg)
+        assert_false(cfg['inparallel'])
+        assert_not_in('', cfg)
+        assert_not_in('minwidth', cfg)
+        assert_not_in('maxwidth', cfg)
+        assert_equal(cfg['cpulimit'], '300')
+        assert_true(cfg['autoindex'])
+        assert_equal(len(cfg['add_path']), 1)
+
+    @skip_astrometry
+    def test_read_cfg_fname(self, tmpdir):
+        fname = tmpdir / 'test.cfg'
+        f = open(fname, 'w')
+        f.write("inparallel\n")
+        f.write(" minwidth 0.1 \n")
+        f.write(" maxwidth 180\n")
+        f.write("depths 10 20 30 40   50 60\n")
+        f.write("cpulimit   300\n")
+        f.write("\n\n")
+        f.write("# comment\n")
+        f.write("add_path /data  # commented path\n")
+        f.write("add_path /data1\n")
+        f.write("#add_path /data2\n")  # data2 will not be present
+        f.write("autoindex\n")
+        f.write("index index-219\n")
+        f.write("index index-220\n")
+        f.write("index index-221\n")
+        f.write("# index index-222\n")  # 222 will not be present
+        f.close()
+
+        a = AstrometrySolver()
+        cfg = a._read_config(fname)
+        assert_not_equal("", cfg)
+        assert_true(cfg['inparallel'])
+        assert_equal(cfg['minwidth'], '0.1')
+        assert_equal(cfg['maxwidth'], '180')
+        assert_equal(cfg['depths'], [10, 20, 30, 40, 50, 60])
+        assert_equal(cfg['cpulimit'], '300')
+        assert_equal(cfg['add_path'], ['/data', '/data1'])
+        assert_equal(cfg['index'], ['index-219', 'index-220', 'index-221'])
+        assert_true(cfg['autoindex'])
+
+    @skip_astrometry
+    def test_read_cfg_with_options(self, tmpdir):
+        fname = tmpdir / 'test.cfg'
+        f = open(fname, 'w')
+        f.write("inparallel\n")
+        f.write(" minwidth 0.1 \n")
+        f.write(" maxwidth 180\n")
+        f.write("depths 10 20 30 40   50 60\n")
+        f.write("cpulimit   300\n")
+        f.write("\n\n")
+        f.write("# comment\n")
+        f.write("add_path /data  # commented path\n")
+        f.write("add_path /data1\n")
+        f.write("#add_path /data2\n")  # data2 will not be present
+        f.write("autoindex\n")
+        f.write("index index-219\n")
+        f.write("index index-220\n")
+        f.write("index index-221\n")
+        f.write("# index index-222\n")  # 222 will not be present
+        f.close()
+
+        a = AstrometrySolver()
+        cfg = a._read_config(fname, {'depths': [10, 30, 50],
+                                     'add_path': '/data3',
+                                     'index': ['indx4', 'indx5']})
+        assert_not_equal("", cfg)
+        assert_true(cfg['inparallel'])
+        assert_equal(cfg['minwidth'], '0.1')
+        assert_equal(cfg['maxwidth'], '180')
+        assert_equal(cfg['depths'], [10, 30, 50])
+        assert_equal(cfg['cpulimit'], '300')
+        assert_equal(cfg['add_path'], ['/data', '/data1', '/data3'])
+        assert_equal(cfg['index'], ['index-219', 'index-220', 'index-221',
+                                    'indx4', 'indx5'])
+        assert_true(cfg['autoindex'])
+
+    @skip_astrometry
+    def test_write_config(self, tmpdir):
+        fname = tmpdir / 'test.cfg'
+
+        a = AstrometrySolver()
+        a.config = {'inparallel': False,
+                    'autoindex': True,
+                    'cpulimit': 300,
+                    'minwidth': 0.1,
+                    'maxwidth': 180,
+                    'depths': [20, 40, 60],
+                    'index': ['011', '012'],
+                    'add_path': ['/path1', '/path2']}
+        a._write_config(fname)
+
+        with open(fname, 'r') as f:
+            for line in f.readlines():
+                assert_in(line.strip('\n'), ['autoindex', 'inparallel',
+                                             'cpulimit 300', 'minwidth 0.1',
+                                             'maxwidth 180', 'depths 20 40 60',
+                                             'index 011', 'index 012',
+                                             'add_path /path1',
+                                             'add_path /path2'])
+
+    @skip_astrometry
+    def test_solve_astrometry_hdu(self, tmpdir):
+        data, index = get_image_index()
+        hdu = fits.open(data)[0]
+        header, wcs = _generate_wcs_and_update_header(hdu.header)
+        hdu.header = header
+        result = solve_astrometry_hdu(hdu)
+        assert_true(isinstance(result.wcs, WCS))
+        assert_equal(result.wcs.naxis, 2)
+        compare_wcs(wcs, result.wcs)
+        assert_is_instance(result.header, fits.Header)
+        assert_is_instance(result.correspondences, Table)
+        for k in ['field_x', 'field_y', 'index_x', 'index_y',
+                  'field_ra', 'field_dec', 'index_ra', 'index_dec']:
+            assert_in(k, result.correspondences.colnames)
+
+    @skip_astrometry
+    def test_solve_astrometry_xyl(self, tmpdir):
+        data, index = get_image_index()
+        hdu = fits.open(data)[0]
+        header, wcs = _generate_wcs_and_update_header(hdu.header)
+        hdu.header = header
+        sources = starfind(hdu.data, 10, np.median(hdu.data),
+                           np.std(hdu.data), 4)
+        phot = aperture_photometry(hdu.data, sources['x'], sources['y'])
+        imw, imh = hdu.data.shape
+        result = solve_astrometry_xy(phot['x'], phot['y'], phot['flux'],
+                                     width=imw, height=imh)
+        assert_true(isinstance(result.wcs, WCS))
+        assert_equal(result.wcs.naxis, 2)
+        compare_wcs(wcs, result.wcs)
+        assert_is_instance(result.header, fits.Header)
+        assert_is_instance(result.correspondences, Table)
+        for k in ['field_x', 'field_y', 'index_x', 'index_y',
+                  'field_ra', 'field_dec', 'index_ra', 'index_dec']:
+            assert_in(k, result.correspondences.colnames)
+
+    @skip_astrometry
+    def test_solve_astrometry_image(self, tmpdir):
+        data, index = get_image_index()
+        hdu = fits.open(data)[0]
+        header, wcs = _generate_wcs_and_update_header(hdu.header)
+        hdu.header = header
+        name = tmpdir.join('testimage.fits').strpath
+        hdu.writeto(name)
+        result = solve_astrometry_image(name)
+        compare_wcs(wcs, result.wcs)
+        assert_is_instance(result.header, fits.Header)
+        assert_is_instance(result.correspondences, Table)
+        for k in ['field_x', 'field_y', 'index_x', 'index_y',
+                  'field_ra', 'field_dec', 'index_ra', 'index_dec']:
+            assert_in(k, result.correspondences.colnames)
 
 
-@skip_astrometry
-@pytest.mark.remote_data
-def test_solve_astrometry_xyl(tmpdir):
-    data, index = get_image_index()
-    hdu = fits.open(data)[0]
-    header, wcs = _generate_wcs_and_update_header(hdu.header)
-    hdu.header = header
-    sources = starfind(hdu.data, 10, np.median(hdu.data),
-                       np.std(hdu.data), 4)
-    phot = aperture_photometry(hdu.data, sources['x'], sources['y'])
-    imw, imh = hdu.data.shape
-    nwcs = solve_astrometry_xy(phot['x'], phot['y'], phot['flux'], header,
-                               imw, imh, return_wcs=True)
-    assert_is_instance(nwcs, WCS)
-    assert_equal(nwcs.naxis, 2)
-    compare_wcs(wcs, nwcs)
+class Test_ManualWCS:
+    def test_manual_wcs_top(self):
+        # Checked with DS9
+        x, y = (11, 11)
+        ra, dec = (10.0, 0.0)
+        ps = 36  # arcsec/px
+        north = 'top'  # north to right
+        wcs = wcs_from_coords(x, y, ra, dec, ps, north)
+        assert_almost_equal(wcs.all_pix2world(11, 11, 1), (ra, dec))
+        assert_almost_equal(wcs.all_pix2world(11, 21, 1), (10.0, 0.1))
+        assert_almost_equal(wcs.all_pix2world(21, 11, 1), (9.9, 0.0))
+        assert_almost_equal(wcs.all_pix2world(1, 11, 1), (10.1, 0.0))
+        assert_almost_equal(wcs.all_pix2world(11, 1, 1), (10.0, -0.1))
+        assert_almost_equal(wcs.all_pix2world(21, 21, 1), (9.9, 0.1))
+        assert_almost_equal(wcs.all_pix2world(1, 21, 1), (10.1, 0.1))
+        assert_almost_equal(wcs.all_pix2world(1, 1, 1), (10.1, -0.1))
+
+    def test_manual_wcs_left(self):
+        # Checked with DS9
+        x, y = (11, 11)
+        ra, dec = (10.0, 0.0)
+        ps = 36  # arcsec/px
+        north = 'left'  # north to right
+        wcs = wcs_from_coords(x, y, ra, dec, ps, north)
+        assert_almost_equal(wcs.all_pix2world(11, 11, 1), (ra, dec))
+        assert_almost_equal(wcs.all_pix2world(11, 21, 1), (9.9, 0.0))
+        assert_almost_equal(wcs.all_pix2world(21, 11, 1), (10.0, -0.1))
+        assert_almost_equal(wcs.all_pix2world(1, 11, 1), (10.0, 0.1))
+        assert_almost_equal(wcs.all_pix2world(11, 1, 1), (10.1, 0.0))
+        assert_almost_equal(wcs.all_pix2world(21, 21, 1), (9.9, -0.1))
+        assert_almost_equal(wcs.all_pix2world(1, 21, 1), (9.9, 0.1))
+        assert_almost_equal(wcs.all_pix2world(1, 1, 1), (10.1, 0.1))
+
+    def test_manual_wcs_bottom(self):
+        # Checked with DS9
+        x, y = (11, 11)
+        ra, dec = (10.0, 0.0)
+        ps = 36  # arcsec/px
+        north = 'bottom'  # north to right
+        wcs = wcs_from_coords(x, y, ra, dec, ps, north)
+        assert_almost_equal(wcs.all_pix2world(11, 11, 1), (ra, dec))
+        assert_almost_equal(wcs.all_pix2world(11, 21, 1), (10.0, -0.1))
+        assert_almost_equal(wcs.all_pix2world(21, 11, 1), (10.1, 0.0))
+        assert_almost_equal(wcs.all_pix2world(1, 11, 1), (9.9, 0.0))
+        assert_almost_equal(wcs.all_pix2world(11, 1, 1), (10.0, 0.1))
+        assert_almost_equal(wcs.all_pix2world(21, 21, 1), (10.1, -0.1))
+        assert_almost_equal(wcs.all_pix2world(1, 21, 1), (9.9, -0.1))
+        assert_almost_equal(wcs.all_pix2world(1, 1, 1), (9.9, 0.1))
+
+    def test_manual_wcs_right(self):
+        # Checked with DS9
+        x, y = (11, 11)
+        ra, dec = (10.0, 0.0)
+        ps = 36  # arcsec/px
+        north = 'right'
+        wcs = wcs_from_coords(x, y, ra, dec, ps, north)
+        assert_almost_equal(wcs.all_pix2world(11, 11, 1), (ra, dec))
+        assert_almost_equal(wcs.all_pix2world(11, 21, 1), (10.1, 0.0))
+        assert_almost_equal(wcs.all_pix2world(21, 11, 1), (10.0, 0.1))
+        assert_almost_equal(wcs.all_pix2world(1, 11, 1), (10.0, -0.1))
+        assert_almost_equal(wcs.all_pix2world(11, 1, 1), (9.9, 0.))
+        assert_almost_equal(wcs.all_pix2world(21, 21, 1), (10.1, 0.1))
+        assert_almost_equal(wcs.all_pix2world(1, 21, 1), (10.1, -0.1))
+        assert_almost_equal(wcs.all_pix2world(1, 1, 1), (9.9, -0.1))
+
+    def test_manual_wcs_angle(self):
+        # Checked with DS9
+        x, y = (11, 11)
+        ra, dec = (10.0, 0.0)
+        ps = 36  # arcsec/px
+        north = 45
+        wcs = wcs_from_coords(x, y, ra, dec, ps, north)
+        assert_almost_equal(wcs.all_pix2world(11, 11, 1), (ra, dec))
+        assert_almost_equal(wcs.all_pix2world(21, 21, 1), (10.0, 0.14142))
+        assert_almost_equal(wcs.all_pix2world(1, 1, 1), (10.0, -0.14142))
+        assert_almost_equal(wcs.all_pix2world(1, 21, 1), (10.14142, 0.0))
+        assert_almost_equal(wcs.all_pix2world(21, 1, 1), (9.858579, 0.0))
+
+    def test_manual_wcs_top_flip_ra(self):
+        # Checked with DS9
+        x, y = (11, 11)
+        ra, dec = (10.0, 0.0)
+        ps = 36  # arcsec/px
+        north = 'top'
+        flip = 'ra'
+        wcs = wcs_from_coords(x, y, ra, dec, ps, north, flip=flip)
+        assert_almost_equal(wcs.all_pix2world(11, 11, 1), (ra, dec))
+        assert_almost_equal(wcs.all_pix2world(11, 21, 1), (10.0, 0.1))
+        assert_almost_equal(wcs.all_pix2world(21, 11, 1), (10.1, 0.0))
+        assert_almost_equal(wcs.all_pix2world(1, 11, 1), (9.9, 0.0))
+        assert_almost_equal(wcs.all_pix2world(11, 1, 1), (10.0, -0.1))
+        assert_almost_equal(wcs.all_pix2world(21, 21, 1), (10.1, 0.1))
+        assert_almost_equal(wcs.all_pix2world(1, 21, 1), (9.9, 0.1))
+        assert_almost_equal(wcs.all_pix2world(1, 1, 1), (9.9, -0.1))
+
+    def test_manual_wcs_top_flip_dec(self):
+        # Checked with DS9
+        x, y = (11, 11)
+        ra, dec = (10.0, 0.0)
+        ps = 36  # arcsec/px
+        north = 'top'
+        flip = 'dec'
+        wcs = wcs_from_coords(x, y, ra, dec, ps, north, flip=flip)
+        assert_almost_equal(wcs.all_pix2world(11, 11, 1), (ra, dec))
+        assert_almost_equal(wcs.all_pix2world(11, 21, 1), (10.0, -0.1))
+        assert_almost_equal(wcs.all_pix2world(21, 11, 1), (9.9, 0.0))
+        assert_almost_equal(wcs.all_pix2world(1, 11, 1), (10.1, 0.0))
+        assert_almost_equal(wcs.all_pix2world(11, 1, 1), (10.0, 0.1))
+        assert_almost_equal(wcs.all_pix2world(21, 21, 1), (9.9, -0.1))
+        assert_almost_equal(wcs.all_pix2world(1, 21, 1), (10.1, -0.1))
+        assert_almost_equal(wcs.all_pix2world(1, 1, 1), (10.1, 0.1))
+
+    def test_manual_wcs_top_flip_all(self):
+        # Checked with DS9
+        x, y = (11, 11)
+        ra, dec = (10.0, 0.0)
+        ps = 36  # arcsec/px
+        north = 'top'
+        flip = 'all'
+        wcs = wcs_from_coords(x, y, ra, dec, ps, north, flip=flip)
+        assert_almost_equal(wcs.all_pix2world(11, 21, 1), (10.0, -0.1))
+        assert_almost_equal(wcs.all_pix2world(21, 11, 1), (10.1, 0.0))
+        assert_almost_equal(wcs.all_pix2world(1, 11, 1), (9.9, 0.0))
+        assert_almost_equal(wcs.all_pix2world(11, 1, 1), (10.0, 0.1))
+        assert_almost_equal(wcs.all_pix2world(21, 21, 1), (10.1, -0.1))
+        assert_almost_equal(wcs.all_pix2world(1, 21, 1), (9.9, -0.1))
+        assert_almost_equal(wcs.all_pix2world(1, 1, 1), (9.9, 0.1))
+
+    def test_raise_north_angle(self):
+        with pytest.raises(ValueError) as exc:
+            wcs_from_coords(0, 0, 0, 0, 0, 'not a direction')
+            assert_in('invalid value for north', str(exc.value))
 
 
-@skip_astrometry
-@pytest.mark.remote_data
-def test_solve_astrometry_image(tmpdir):
-    data, index = get_image_index()
-    hdu = fits.open(data)[0]
-    header, wcs = _generate_wcs_and_update_header(hdu.header)
-    hdu.header = header
-    name = tmpdir.join('testimage.fits').strpath
-    hdu.writeto(name)
-    nwcs = solve_astrometry_image(name, return_wcs=True)
-    assert_is_instance(nwcs, WCS)
-    assert_equal(nwcs.naxis, 2)
-    compare_wcs(wcs, nwcs)
+class Test_GuessCoords:
+    def test_guess_coords_float(self):
+        ra = 10.0
+        dec = 0.0
+        assert_equal(guess_coordinates(ra, dec, skycoord=False), (ra, dec))
 
+    def test_guess_coords_strfloat(self):
+        ra = "10.0"
+        dec = "-27.0"
+        assert_equal(guess_coordinates(ra, dec, skycoord=False), (10, -27))
 
-@skip_astrometry
-@pytest.mark.remote_data
-def test_fit_wcs(tmpdir):
-    data, index = get_image_index()
-    hdu = fits.open(data)[0]
-    imw, imh = hdu.data.shape
-    header, wcs = _generate_wcs_and_update_header(hdu.header)
-    hdu.header = header
-    sources = starfind(hdu.data, 10, np.median(hdu.data),
-                       np.std(hdu.data), 4)
-    sources['ra'], sources['dec'] = wcs.all_pix2world(sources['x'],
-                                                      sources['y'], 1)
-    nwcs = fit_wcs(sources['x'], sources['y'], sources['ra'], sources['dec'],
-                   imw, imh)
-    assert_is_instance(nwcs, WCS)
-    assert_equal(nwcs.naxis, 2)
-    compare_wcs(wcs, nwcs)
+    def test_guess_coords_hexa_space(self):
+        ra = "1 00 00"
+        dec = "-43 30 00"
+        assert_almost_equal(guess_coordinates(ra, dec, skycoord=False),
+                            (15.0, -43.5))
 
+    def test_guess_coords_hexa_dots(self):
+        ra = "1:00:00"
+        dec = "-43:30:00"
+        assert_almost_equal(guess_coordinates(ra, dec, skycoord=False),
+                            (15.0, -43.5))
 
-def test_manual_wcs_top():
-    # Checked with DS9
-    x, y = (11, 11)
-    ra, dec = (10.0, 0.0)
-    ps = 36  # arcsec/px
-    north = 'top'  # north to right
-    wcs = wcs_from_coords(x, y, ra, dec, ps, north)
-    assert_almost_equal(wcs.all_pix2world(11, 11, 1), (ra, dec))
-    assert_almost_equal(wcs.all_pix2world(11, 21, 1), (10.0, 0.1))
-    assert_almost_equal(wcs.all_pix2world(21, 11, 1), (9.9, 0.0))
-    assert_almost_equal(wcs.all_pix2world(1, 11, 1), (10.1, 0.0))
-    assert_almost_equal(wcs.all_pix2world(11, 1, 1), (10.0, -0.1))
-    assert_almost_equal(wcs.all_pix2world(21, 21, 1), (9.9, 0.1))
-    assert_almost_equal(wcs.all_pix2world(1, 21, 1), (10.1, 0.1))
-    assert_almost_equal(wcs.all_pix2world(1, 1, 1), (10.1, -0.1))
+    def test_guess_coords_skycord_float(self):
+        ra = 10.0
+        dec = 0.0
+        sk = guess_coordinates(ra, dec, skycoord=True)
+        assert_is_instance(sk, SkyCoord)
+        assert_equal(sk.ra.degree, ra)
+        assert_equal(sk.dec.degree, dec)
 
+    def test_guess_coords_skycord_hexa(self):
+        ra = "1:00:00"
+        dec = "00:00:00"
+        sk = guess_coordinates(ra, dec, skycoord=True)
+        assert_is_instance(sk, SkyCoord)
+        assert_true(sk.ra.degree - 15 < 1e-8)
+        assert_true(sk.dec.degree - 0 < 1e-8)
 
-def test_manual_wcs_left():
-    # Checked with DS9
-    x, y = (11, 11)
-    ra, dec = (10.0, 0.0)
-    ps = 36  # arcsec/px
-    north = 'left'  # north to right
-    wcs = wcs_from_coords(x, y, ra, dec, ps, north)
-    assert_almost_equal(wcs.all_pix2world(11, 11, 1), (ra, dec))
-    assert_almost_equal(wcs.all_pix2world(11, 21, 1), (9.9, 0.0))
-    assert_almost_equal(wcs.all_pix2world(21, 11, 1), (10.0, -0.1))
-    assert_almost_equal(wcs.all_pix2world(1, 11, 1), (10.0, 0.1))
-    assert_almost_equal(wcs.all_pix2world(11, 1, 1), (10.1, 0.0))
-    assert_almost_equal(wcs.all_pix2world(21, 21, 1), (9.9, -0.1))
-    assert_almost_equal(wcs.all_pix2world(1, 21, 1), (9.9, 0.1))
-    assert_almost_equal(wcs.all_pix2world(1, 1, 1), (10.1, 0.1))
+    def test_guess_coords_list_hexa(self):
+        ra = ["1:00:00", "2:30:00"]
+        dec = ["00:00:00", "1:00:00"]
+        sra, sdec = guess_coordinates(ra, dec, skycoord=False)
+        assert_almost_equal(sra, [15, 37.5])
+        assert_almost_equal(sdec, [0, 1])
 
+    def test_guess_coords_list_float(self):
+        ra = [10.0, 15, 20]
+        dec = [0.0, 1.0, -1.0]
+        sra, sdec = guess_coordinates(ra, dec, skycoord=False)
+        assert_equal(sra, ra)
+        assert_equal(sdec, dec)
 
-def test_manual_wcs_bottom():
-    # Checked with DS9
-    x, y = (11, 11)
-    ra, dec = (10.0, 0.0)
-    ps = 36  # arcsec/px
-    north = 'bottom'  # north to right
-    wcs = wcs_from_coords(x, y, ra, dec, ps, north)
-    assert_almost_equal(wcs.all_pix2world(11, 11, 1), (ra, dec))
-    assert_almost_equal(wcs.all_pix2world(11, 21, 1), (10.0, -0.1))
-    assert_almost_equal(wcs.all_pix2world(21, 11, 1), (10.1, 0.0))
-    assert_almost_equal(wcs.all_pix2world(1, 11, 1), (9.9, 0.0))
-    assert_almost_equal(wcs.all_pix2world(11, 1, 1), (10.0, 0.1))
-    assert_almost_equal(wcs.all_pix2world(21, 21, 1), (10.1, -0.1))
-    assert_almost_equal(wcs.all_pix2world(1, 21, 1), (9.9, -0.1))
-    assert_almost_equal(wcs.all_pix2world(1, 1, 1), (9.9, 0.1))
+    def test_guess_coords_list_diff(self):
+        ra = np.arange(10)
+        dec = np.arange(15)
+        with pytest.raises(ValueError):
+            guess_coordinates(ra, dec)
 
-
-def test_manual_wcs_right():
-    # Checked with DS9
-    x, y = (11, 11)
-    ra, dec = (10.0, 0.0)
-    ps = 36  # arcsec/px
-    north = 'right'
-    wcs = wcs_from_coords(x, y, ra, dec, ps, north)
-    assert_almost_equal(wcs.all_pix2world(11, 11, 1), (ra, dec))
-    assert_almost_equal(wcs.all_pix2world(11, 21, 1), (10.1, 0.0))
-    assert_almost_equal(wcs.all_pix2world(21, 11, 1), (10.0, 0.1))
-    assert_almost_equal(wcs.all_pix2world(1, 11, 1), (10.0, -0.1))
-    assert_almost_equal(wcs.all_pix2world(11, 1, 1), (9.9, 0.))
-    assert_almost_equal(wcs.all_pix2world(21, 21, 1), (10.1, 0.1))
-    assert_almost_equal(wcs.all_pix2world(1, 21, 1), (10.1, -0.1))
-    assert_almost_equal(wcs.all_pix2world(1, 1, 1), (9.9, -0.1))
-
-
-def test_manual_wcs_angle():
-    # Checked with DS9
-    x, y = (11, 11)
-    ra, dec = (10.0, 0.0)
-    ps = 36  # arcsec/px
-    north = 45
-    wcs = wcs_from_coords(x, y, ra, dec, ps, north)
-    assert_almost_equal(wcs.all_pix2world(11, 11, 1), (ra, dec))
-    assert_almost_equal(wcs.all_pix2world(21, 21, 1), (10.0, 0.14142))
-    assert_almost_equal(wcs.all_pix2world(1, 1, 1), (10.0, -0.14142))
-    assert_almost_equal(wcs.all_pix2world(1, 21, 1), (10.14142, 0.0))
-    assert_almost_equal(wcs.all_pix2world(21, 1, 1), (9.858579, 0.0))
-
-
-def test_manual_wcs_top_flip_ra():
-    # Checked with DS9
-    x, y = (11, 11)
-    ra, dec = (10.0, 0.0)
-    ps = 36  # arcsec/px
-    north = 'top'
-    flip = 'ra'
-    wcs = wcs_from_coords(x, y, ra, dec, ps, north, flip=flip)
-    assert_almost_equal(wcs.all_pix2world(11, 11, 1), (ra, dec))
-    assert_almost_equal(wcs.all_pix2world(11, 21, 1), (10.0, 0.1))
-    assert_almost_equal(wcs.all_pix2world(21, 11, 1), (10.1, 0.0))
-    assert_almost_equal(wcs.all_pix2world(1, 11, 1), (9.9, 0.0))
-    assert_almost_equal(wcs.all_pix2world(11, 1, 1), (10.0, -0.1))
-    assert_almost_equal(wcs.all_pix2world(21, 21, 1), (10.1, 0.1))
-    assert_almost_equal(wcs.all_pix2world(1, 21, 1), (9.9, 0.1))
-    assert_almost_equal(wcs.all_pix2world(1, 1, 1), (9.9, -0.1))
-
-
-def test_manual_wcs_top_flip_dec():
-    # Checked with DS9
-    x, y = (11, 11)
-    ra, dec = (10.0, 0.0)
-    ps = 36  # arcsec/px
-    north = 'top'
-    flip = 'dec'
-    wcs = wcs_from_coords(x, y, ra, dec, ps, north, flip=flip)
-    assert_almost_equal(wcs.all_pix2world(11, 11, 1), (ra, dec))
-    assert_almost_equal(wcs.all_pix2world(11, 21, 1), (10.0, -0.1))
-    assert_almost_equal(wcs.all_pix2world(21, 11, 1), (9.9, 0.0))
-    assert_almost_equal(wcs.all_pix2world(1, 11, 1), (10.1, 0.0))
-    assert_almost_equal(wcs.all_pix2world(11, 1, 1), (10.0, 0.1))
-    assert_almost_equal(wcs.all_pix2world(21, 21, 1), (9.9, -0.1))
-    assert_almost_equal(wcs.all_pix2world(1, 21, 1), (10.1, -0.1))
-    assert_almost_equal(wcs.all_pix2world(1, 1, 1), (10.1, 0.1))
-
-
-def test_manual_wcs_top_flip_all():
-    # Checked with DS9
-    x, y = (11, 11)
-    ra, dec = (10.0, 0.0)
-    ps = 36  # arcsec/px
-    north = 'top'
-    flip = 'all'
-    wcs = wcs_from_coords(x, y, ra, dec, ps, north, flip=flip)
-    assert_almost_equal(wcs.all_pix2world(11, 21, 1), (10.0, -0.1))
-    assert_almost_equal(wcs.all_pix2world(21, 11, 1), (10.1, 0.0))
-    assert_almost_equal(wcs.all_pix2world(1, 11, 1), (9.9, 0.0))
-    assert_almost_equal(wcs.all_pix2world(11, 1, 1), (10.0, 0.1))
-    assert_almost_equal(wcs.all_pix2world(21, 21, 1), (10.1, -0.1))
-    assert_almost_equal(wcs.all_pix2world(1, 21, 1), (9.9, -0.1))
-    assert_almost_equal(wcs.all_pix2world(1, 1, 1), (9.9, 0.1))
-
-
-def test_raise_north_angle():
-    with pytest.raises(ValueError) as exc:
-        wcs_from_coords(0, 0, 0, 0, 0, 'not a direction')
-        assert_in('invalid value for north', str(exc.value))
-
-
-def test_guess_coords_float():
-    ra = 10.0
-    dec = 0.0
-    assert_equal(guess_coordinates(ra, dec, skycoord=False), (ra, dec))
-
-
-def test_guess_coords_strfloat():
-    ra = "10.0"
-    dec = "-27.0"
-    assert_equal(guess_coordinates(ra, dec, skycoord=False), (10, -27))
-
-
-def test_guess_coords_hexa_space():
-    ra = "1 00 00"
-    dec = "-43 30 00"
-    assert_almost_equal(guess_coordinates(ra, dec, skycoord=False),
-                        (15.0, -43.5))
-
-
-def test_guess_coords_hexa_dots():
-    ra = "1:00:00"
-    dec = "-43:30:00"
-    assert_almost_equal(guess_coordinates(ra, dec, skycoord=False),
-                        (15.0, -43.5))
-
-
-def test_guess_coords_skycord_float():
-    ra = 10.0
-    dec = 0.0
-    sk = guess_coordinates(ra, dec, skycoord=True)
-    assert_is_instance(sk, SkyCoord)
-    assert_equal(sk.ra.degree, ra)
-    assert_equal(sk.dec.degree, dec)
-
-
-def test_guess_coords_skycord_hexa():
-    ra = "1:00:00"
-    dec = "00:00:00"
-    sk = guess_coordinates(ra, dec, skycoord=True)
-    assert_is_instance(sk, SkyCoord)
-    assert_true(sk.ra.degree - 15 < 1e-8)
-    assert_true(sk.dec.degree - 0 < 1e-8)
-
-
-def test_guess_coords_list_hexa():
-    ra = ["1:00:00", "2:30:00"]
-    dec = ["00:00:00", "1:00:00"]
-    sra, sdec = guess_coordinates(ra, dec, skycoord=False)
-    assert_almost_equal(sra, [15, 37.5])
-    assert_almost_equal(sdec, [0, 1])
-
-
-def test_guess_coords_list_float():
-    ra = [10.0, 15, 20]
-    dec = [0.0, 1.0, -1.0]
-    sra, sdec = guess_coordinates(ra, dec, skycoord=False)
-    assert_equal(sra, ra)
-    assert_equal(sdec, dec)
-
-
-def test_guess_coords_list_diff():
-    ra = np.arange(10)
-    dec = np.arange(15)
-    with pytest.raises(ValueError):
-        guess_coordinates(ra, dec)
-
-
-def test_guess_coords_list_nolist():
-    ra = np.arange(10)
-    dec = 1
-    with pytest.raises(ValueError):
-        guess_coordinates(ra, dec)
+    def test_guess_coords_list_nolist(self):
+        ra = np.arange(10)
+        dec = 1
+        with pytest.raises(ValueError):
+            guess_coordinates(ra, dec)
