@@ -9,7 +9,6 @@ from astropy import units as u
 from ._sources_catalog import _OnlineSourcesCatalog, SourcesCatalog
 from ._online_tools import _timeout_retry, astroquery_query
 from ..py_utils import string_fix
-from ..math import qfloat
 
 
 __all__ = ['simbad_query_id', 'SimbadSourcesCatalog']

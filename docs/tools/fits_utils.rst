@@ -1,3 +1,5 @@
+.. include:: ../references.txt
+
 FITS file Utilities
 ===================
 

@@ -1,3 +1,5 @@
+.. include:: ../references.txt
+
 CCD Image Processing
 ====================
 

@@ -1,4 +1,4 @@
-.. include:: references.txt
+.. include:: ../references.txt
 
 .. |QFloat.uncertainty| replace:: `~astropop.math.physical.QFloat.uncertainty`
 .. |QFloat.nominal| replace:: `~astropop.math.physical.QFloat.nominal`

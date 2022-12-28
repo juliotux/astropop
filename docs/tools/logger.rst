@@ -1,3 +1,5 @@
+.. include:: ../references.txt
+
 Logging System
 ==============
 
