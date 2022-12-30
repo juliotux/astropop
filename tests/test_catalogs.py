@@ -176,9 +176,13 @@ class Test_SourcesCatalog_Conformance:
                            unit=u.degree,
                            pm_ra_cosdec=sources['pm_ra']*u.Unit('mas/yr'),
                            pm_dec=sources['pm_dec']*u.Unit('mas/yr'),
+                           mag={'V': sources['V'], 'B': sources['B']},
                            query_table=Table(sources))
 
         assert_equal(s['id'], sources['id'])
+        assert_is_instance(s[2]._base_table, Table)
+        assert_is_instance(s[2]._mags_table, Table)
+        assert_is_instance(s[2]._query, Table)
         assert_is_instance(s[2], SourcesCatalog)
         assert_equal(s[2]['ra'], sources['ra'][2])
         assert_equal(len(s[2]), 1)
@@ -201,7 +205,7 @@ class Test_SourcesCatalog_Conformance:
         with pytest.raises(KeyError):
             s[2, 3]  # tuple not accepted
 
-    def test_sourcescatalog_match_object_one_obj(self):
+    def test_sourcescatalog_match_object_multiple_objects(self):
         s = SourcesCatalog(ids=sources['id'],
                            ra=sources['ra'],
                            dec=sources['dec'],
@@ -217,6 +221,24 @@ class Test_SourcesCatalog_Conformance:
         ncat = s.match_objects(ra, dec, '1 arcsec').table()
         expect = s.table()
         expect[2] = [''] + [np.nan]*(len(expect.colnames)-1)
+        assert_equal(ncat['id'], expect['id'])
+        for i in ncat.colnames[1:]:
+            assert_almost_equal(ncat[i], expect[i])
+
+    def test_sourcescatalog_match_object_one(self):
+        s = SourcesCatalog(ids=sources['id'],
+                           ra=sources['ra'],
+                           dec=sources['dec'],
+                           unit=u.degree,
+                           pm_ra_cosdec=sources['pm_ra']*u.Unit('mas/yr'),
+                           pm_dec=sources['pm_dec']*u.Unit('mas/yr'))
+
+        ra = sources['ra'][2]
+        dec = sources['dec'][2]
+
+        ncat = s.match_objects(ra, dec, '1 arcsec').table()
+        expect = s.table()[2]
+        assert_equal(len(ncat), 1)
         assert_equal(ncat['id'], expect['id'])
         for i in ncat.colnames[1:]:
             assert_almost_equal(ncat[i], expect[i])

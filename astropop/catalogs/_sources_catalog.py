@@ -169,7 +169,7 @@ class SourcesCatalog:
         t = {}
         t['ra'] = base.ra
         t['dec'] = base.dec
-        if nulls is not None:
+        if nulls is not None and nulls != []:
             # nan coords for unmatched stars
             null_ra = np.nan*base.ra.unit
             null_dec = np.nan*base.dec.unit
@@ -179,7 +179,7 @@ class SourcesCatalog:
         try:
             t['pm_ra_cosdec'] = base.pm_ra_cosdec
             t['pm_dec'] = base.pm_dec
-            if nulls is not None:
+            if nulls is not None and nulls != []:
                 for i in nulls:
                     # null pm for unmatched stards
                     t['pm_ra_cosdec'][i] = np.nan
@@ -247,11 +247,11 @@ class SourcesCatalog:
             item = [item]
 
         nc = super(SourcesCatalog, self).__new__(SourcesCatalog)
-        nc._base_table = self._base_table[item]
+        nc._base_table = Table(self._base_table[item])
         if self._mags_table is not None:
-            nc._mags_table = self._mags_table[item]
+            nc._mags_table = Table(self._mags_table[item])
         if self._query is not None:
-            nc._query = self._query[item]
+            nc._query = Table(self._query[item])
         return nc
 
     def __len__(self):
