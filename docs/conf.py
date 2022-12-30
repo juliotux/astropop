@@ -55,9 +55,13 @@ today_fmt = '%B %d, %Y'
 exclude_patterns = ['_templates', '_build', 'Thumbs.db', '.DS_Store']
 pygments_style = 'sphinx'
 # html_theme = 'pydata_sphinx_theme'
-html_theme = "sphinx_rtd_theme"
+html_theme = "sphinx_book_theme"
 html_static_path = ['_static']
 htmlhelp_basename = 'astropop'
+html_theme_options = {
+  "show_prev_next": False,
+  "footer_items": ["copyright", "sphinx-version", "theme-version"]
+}
 
 autosummary_generate = True
 
