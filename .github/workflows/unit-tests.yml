@@ -106,6 +106,9 @@ jobs:
       run: |
         conda install -y -q pytest
         conda install -y -q astrometry
+        conda install -y -q astropy scipy numpy matplotlib
+        conda install -y -q scikit-image scikit-learn
+        conda install -y -q sep astroquery astroscrappy
         pip install coveralls .[test]
     - name: Install astropop
       shell: bash -l {0}
