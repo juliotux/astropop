@@ -267,6 +267,7 @@ class SourcesCatalog:
         return len(self._base_table)
 
     def table(self):
+        """This catalog in a `~astropy.table.Table` instance."""
         t = Table()
         t['id'] = self._base_table['id']
         sk = self.skycoord()
@@ -366,12 +367,15 @@ class _OnlineSourcesCatalog(SourcesCatalog, abc.ABC):
 
     @property
     def center(self):
+        """Get the `~astropy.coordinates.SkyCoord` of the query center."""
         return SkyCoord(self._center)
 
     @property
     def radius(self):
+        """Get the `~astropy.coordinates.Angle` of the earch angle limit."""
         return Angle(self._radius)
 
     @property
     def filters(self):
+        """Get the list of all active available filters in the query."""
         return list(self._filters)
