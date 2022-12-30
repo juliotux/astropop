@@ -200,3 +200,23 @@ class Test_SourcesCatalog_Conformance:
 
         with pytest.raises(KeyError):
             s[2, 3]  # tuple not accepted
+
+    def test_sourcescatalog_match_object_one_obj(self):
+        s = SourcesCatalog(ids=sources['id'],
+                           ra=sources['ra'],
+                           dec=sources['dec'],
+                           unit=u.degree,
+                           pm_ra_cosdec=sources['pm_ra']*u.Unit('mas/yr'),
+                           pm_dec=sources['pm_dec']*u.Unit('mas/yr'))
+
+        ra = sources['ra']
+        ra[2] = 8.5
+        dec = sources['dec']
+        dec[2] = 6.2
+
+        ncat = s.match_objects(ra, dec, '1 arcsec').table()
+        expect = s.table()
+        expect[2] = [''] + [np.nan]*(len(expect.colnames)-1)
+        assert_equal(ncat['id'], expect['id'])
+        for i in ncat.colnames[1:]:
+            assert_almost_equal(ncat[i], expect[i])
