@@ -149,13 +149,16 @@ class GSC242SourcesCatalog(_VizierSourcesCatalog):
     @property
     def _columns(self):
         cols = ['+_r', 'GSC2', 'RA_ICRS', 'DE_ICRS', 'pmRA', 'pmDE', 'Epoch']
-        for i in self._available_filters:
+        for i in self.filters:
             cols += [f'{i}mag', f'e_{i}mag']
         return cols
 
     @staticmethod
     def _filter_epoch(query):
-        return Time(query['Epoch'], format='jyear')
+        key = 'Epoch'
+        if key not in query.colnames:
+            key = '_tab1_11'
+        return Time(query[key], format='jyear')
 
     @staticmethod
     def _filter_ids(query):
@@ -167,8 +170,26 @@ class GSC242SourcesCatalog(_VizierSourcesCatalog):
                                    rakey='RA_ICRS', deckey='DE_ICRS')
 
 
+class UCAC5SourcesCatalog(_VizierSourcesCatalog):
+    _table = 'I/340'
+    _available_filters = ['G', 'R', 'J', 'H', 'K', 'f.']
+    _filter_magnitudes = staticmethod(_ucac4_filter_magnitude)
+
+    @staticmethod
+    def _filter_epoch(query):
+        # Gaia epoch of coordinates
+        return Time('J2015.0', format='jyear')
+
+    @staticmethod
+    def _filter_ids(query):
+        return [f'Gaia {string_fix(i)}' for i in list(query['SrcIDgaia'])]
+
+    @staticmethod
+    def _filter_coordinates(query, obstime, frame):
+        return _ucac4_filter_coord(query, obstime, frame,
+                                   rakey='RAgaia', deckey='DEgaia')
+
 # TODO:
-# - UCAC5: I/340
 # - DENIS: B/denis
 # - 2MASS
 # - VSX: B/vsx
