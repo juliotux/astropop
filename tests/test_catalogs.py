@@ -116,20 +116,40 @@ class Test_SourcesCatalog_Conformance:
                            pm_ra_cosdec=sources['pm_ra']*u.Unit('mas/yr'),
                            pm_dec=sources['pm_dec']*u.Unit('mas/yr'))
 
-        assert_is_instance(s.table(), Table)
-        assert_equal(s.table().colnames, ['id', 'ra', 'dec', 'V', 'V_error',
-                                          'B', 'B_error'])
+        tab = s.table()
+        assert_is_instance(tab, Table)
+        assert_equal(tab.colnames, ['id', 'ra', 'dec', 'pm_ra_cosdec',
+                                    'pm_dec', 'V', 'V_error', 'B', 'B_error'])
+        assert_equal(tab['ra'].unit, u.Unit('deg'))
+        assert_equal(tab['dec'].unit, u.Unit('deg'))
+        assert_equal(tab['pm_ra_cosdec'].unit, u.Unit('mas/yr'))
+        assert_equal(tab['pm_dec'].unit, u.Unit('mas/yr'))
+
+    def test_sourcescatalog_table_nopm(self):
+        s = SourcesCatalog(ids=sources['id'],
+                           ra=sources['ra'],
+                           dec=sources['dec'],
+                           unit=u.degree,
+                           mag={'V': sources['V'], 'B': sources['B']})
+
+        tab = s.table()
+        assert_is_instance(tab, Table)
+        assert_equal(tab.colnames, ['id', 'ra', 'dec', 'V', 'V_error',
+                                    'B', 'B_error'])
+        assert_equal(tab['ra'].unit, u.Unit('deg'))
+        assert_equal(tab['dec'].unit, u.Unit('deg'))
 
     def test_sourcescatalog_table_nomag(self):
         s = SourcesCatalog(ids=sources['id'],
                            ra=sources['ra'],
                            dec=sources['dec'],
-                           unit=u.degree,
-                           pm_ra_cosdec=sources['pm_ra']*u.Unit('mas/yr'),
-                           pm_dec=sources['pm_dec']*u.Unit('mas/yr'))
+                           unit=u.degree)
 
-        assert_is_instance(s.table(), Table)
-        assert_equal(s.table().colnames, ['id', 'ra', 'dec'])
+        tab = s.table()
+        assert_is_instance(tab, Table)
+        assert_equal(tab.colnames, ['id', 'ra', 'dec'])
+        assert_equal(tab['ra'].unit, u.Unit('deg'))
+        assert_equal(tab['dec'].unit, u.Unit('deg'))
 
     def test_sourcescatalog_single_source(self):
         s = SourcesCatalog(ids=['Test'], ra='1d', dec='2d',

@@ -160,6 +160,35 @@ class SourcesCatalog:
         except ValueError:
             return copy.copy(sk)
 
+    def _extract_coords(self, nulls=None):
+        """Extract coordinates in the form of a table.
+
+        Nulls is a list of indexes to be set to a nan value.
+        """
+        base = self._base_table['coords']
+        t = {}
+        t['ra'] = base.ra
+        t['dec'] = base.dec
+        if nulls is not None:
+            # nan coords for unmatched stars
+            null_ra = np.nan*base.ra.unit
+            null_dec = np.nan*base.dec.unit
+            for i in nulls:
+                t['ra'][i] = null_ra
+                t['dec'][i] = null_dec
+        try:
+            t['pm_ra_cosdec'] = base.pm_ra_cosdec
+            t['pm_dec'] = base.pm_dec
+            if nulls is not None:
+                for i in nulls:
+                    # null pm for unmatched stards
+                    t['pm_ra_cosdec'][i] = np.nan
+                    t['pm_dec'][i] = np.nan
+        except TypeError:
+            pass
+
+        return t
+
     def match_objects(self, ra, dec, limit_angle, obstime=None):
         """Find catalog objects matching the given coordinates.
 
@@ -187,18 +216,17 @@ class SourcesCatalog:
         indx, dist, _ = obj_sk.match_to_catalog_sky(cat_sk)
         ncat = self.__getitem__(indx)
 
-        raise NotImplementedError
-
-        # Ensure limit_angle is a proper Angle
-        limit = Angle(limit_angle)
-        for i, d in enumerate(dist):
-            if d > limit:
-                # Put null values for non-matched indices
-                ncat._base_table['id'][i] = ''
-                # TODO: filter coordinates not working
-                if ncat._mags_table is not None:
-                    nan = [np.nan]*len(self._mags_table.colnames)
-                    ncat._mags_table[i] = nan
+        # filtering
+        nulls = [i for i, d in enumerate(dist) if d > Angle(limit_angle)]
+        extra = {i: cat_sk.__getattribute__('_'+i)
+                 for i in cat_sk._extra_frameattr_names}
+        coords = self._extract_coords(nulls)
+        for i in nulls:
+            # null values for non-matched stars
+            ncat._base_table['id'][i] = ''
+            if ncat._mags_table is not None:
+                ncat._mags_table[i] = [np.nan]*len(self._mags_table.colnames)
+        ncat._base_table['coords'] = SkyCoord(**coords, **extra)
         return ncat
 
     def __getitem__(self, item):
@@ -233,8 +261,16 @@ class SourcesCatalog:
         t = Table()
         t['id'] = self._base_table['id']
         sk = self.skycoord()
-        t['ra'] = sk.ra.degree
-        t['dec'] = sk.dec.degree
+        t['ra'] = sk.ra
+        t['dec'] = sk.dec
+
+        # only include pm informations if present
+        try:
+            t['pm_ra_cosdec'] = sk.pm_ra_cosdec
+            t['pm_dec'] = sk.pm_dec
+        except TypeError:
+            pass
+
         if self._mags_table is not None:
             for i in self._mags_table.keys():
                 t[i] = self._mags_table[i]
