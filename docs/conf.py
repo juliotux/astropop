@@ -8,18 +8,11 @@ sys.path.append(ap_dir)
 needs_sphinx = '4.3.0'
 
 extensions = [
-    'sphinx.ext.autodoc',
     'sphinx.ext.intersphinx',
-    'sphinx.ext.coverage',
-    'sphinx.ext.autosummary',
-    'sphinx.ext.doctest',
-    'sphinx.ext.graphviz',
-    'sphinx.ext.ifconfig',
     'sphinx.ext.extlinks',
     'sphinx.ext.todo',
     'sphinx.ext.mathjax',
     'sphinx_automodapi.automodapi',
-    'sphinx_automodapi.smart_resolver',
     'numpydoc',
     'matplotlib.sphinxext.plot_directive',
     'IPython.sphinxext.ipython_console_highlighting',
@@ -28,7 +21,8 @@ extensions = [
 ]
 
 extlinks = {
-    'doi': ('https://dx.doi.org/%s', 'doi:'),
+    'doi': ('https://dx.doi.org/%s', 'doi: %s'),
+    'bibcode': ('https://ui.adsabs.harvard.edu/abs/%s', 'bibcode: %s')
 }
 
 nbsphinx_allow_errors = True
@@ -60,7 +54,8 @@ today_fmt = '%B %d, %Y'
 # General theme infos
 exclude_patterns = ['_templates', '_build', 'Thumbs.db', '.DS_Store']
 pygments_style = 'sphinx'
-html_theme = 'pydata_sphinx_theme'
+# html_theme = 'pydata_sphinx_theme'
+html_theme = "sphinx_rtd_theme"
 html_static_path = ['_static']
 htmlhelp_basename = 'astropop'
 

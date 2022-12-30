@@ -34,22 +34,22 @@ class SourcesCatalog:
         keys are the names of the filters and the values are the photometric
         magnitudes of the object in a `astropop.math.QFloat` array. Photometry
         will be only available if this argument is set.
+    ra, dec: array (optional)
+        RA and DEC coordinates of the object. Conflicts with ``coords``
+        argument. If floats, are interpreted as decimal degrees.
+    pm_ra_cosdec, pm_dec: `~astropy.units.Quantity` (optional)
+        Proper motion of both coordinates.
+    unit: `~astropy.units.Unit`, string, or tuple
+        Units for supplied coordinate values.
+    obstime: time-like (optional)
+        Time of observation of the values. Used to compute proper
+        motion on a target observation time.
+    frame: str (optional)
+        Celestial frame of coordinates. Default is 'ICRS'
     *args, **kwargs:
         Arguments to be passed to `~astropy.coordinates.SkyCoord`
         initialization. See `~astropy.coordinates.SkyCoord` docs for more
         details.
-        ra, dec: array (optional)
-            RA and DEC coordinates of the object. Conflicts with ``coords``
-            argument. If floats, are interpreted as decimal degrees.
-        pm_ra_cosdec, pm_dec: `~astropy.units.Quantity` (optional)
-            Proper motion of both coordinates.
-        unit: `~astropy.units.Unit`, string, or tuple
-            Units for supplied coordinate values.
-        obstime: time-like (optional)
-            Time of observation of the values. Used to compute proper
-            motion on a target observation time.
-        frame: str (optional)
-            Celestial frame of coordinates. Default is 'ICRS'
     """
 
     _base_table = None  # Store array of ids

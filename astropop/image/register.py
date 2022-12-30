@@ -231,7 +231,7 @@ class CrossCorrelationRegister(_BaseRegister):
 
     References
     ----------
-    .. [1] :DOI:`10.1364/OL.33.000156`
+    .. [1] :doi:`10.1364/OL.33.000156`
     """
 
     _name = 'cross-correlation'
@@ -286,7 +286,7 @@ class AsterismRegister(_BaseRegister):
 
     References
     ----------
-    .. [1] :DOI:`10.1016/j.ascom.2020.100384`
+    .. [1] :doi:`10.1016/j.ascom.2020.100384`
     """
 
     _name = 'asterism-matching'
