@@ -379,9 +379,8 @@ class Test_Simbad():
 
     def test_simbad_bands_all(self):
         s = SimbadSourcesCatalog(sirius_coords[0], search_radius[0],
-                                  band='all')
+                                 band='all')
         assert_equal(s.filters, s._available_filters)
-        assert_equal(list(s._mags_bib.keys()), s._available_filters)
 
     def test_simbad_coords_bibcode(self):
         s = SimbadSourcesCatalog(sirius_coords[0], '10 arcsec')
