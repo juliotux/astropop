@@ -437,6 +437,16 @@ class Test_Vizier:
 
 @pytest.mark.remote_data
 class Test_Vizier_UCAC4:
+    hd674_mags = {
+        'J': [10.157, 0.02],
+        'H': [10.083, 0.02],
+        'K': [10.029, 0.02],
+        'B': [10.752, 0.01],
+        'V': [10.597, 0.07],
+        'g': [np.nan, np.nan],
+        'r': [np.nan, np.nan],
+        'i': [10.688, 0.01]
+    }
     def test_ucac4_creation_errors(self):
         # Need arguments
         with pytest.raises(TypeError):
@@ -449,46 +459,47 @@ class Test_Vizier_UCAC4:
         # Filter None should pass, no mag data
         UCAC4SourcesCatalog('Sirius', '0.05d', None)
 
-    @pytest.mark.parametrize('band,mag', [('J', [10.157, 0.02]),
-                                          ('H', [10.083, 0.02]),
-                                          ('K', [10.029, 0.02]),
-                                          ('B', [10.752, 0.01]),
-                                          ('V', [10.597, 0.07]),
-                                          ('g', [np.nan, np.nan]),
-                                          ('r', [np.nan, np.nan]),
-                                          ('i', [10.688, 0.01])])
-    def test_ucac4_creation_filters(self, band, mag):
-        c = UCAC4SourcesCatalog(hd674_coords[0], '0.05d', band=band)
+    def test_ucac4_creation_filters(self):
+        c = UCAC4SourcesCatalog(hd674_coords[0], '0.05d')
 
-        assert_equal(c.sources_id[0], 'UCAC4 179-000175')
-        assert_almost_equal(c.mag_list[0], mag)
+        assert_equal(c.sources_id()[0], 'UCAC4 179-000175')
+        for k, v in self.hd674_mags.items():
+            assert_almost_equal(c.mag_list(k)[0], v)
 
     @pytest.mark.parametrize('radius', search_radius)
     @pytest.mark.parametrize('center', sirius_coords)
     def test_ucac4_query_input_types(self, center, radius):
         c = UCAC4SourcesCatalog(center, radius, band='V')
 
-        assert_equal(c.sources_id[0], 'UCAC4 367-016700')
-        assert_almost_equal(c.ra_dec_list[0], [101.28715, -16.7161158], decimal=5)
-        assert_almost_equal(c.mag_list[0], [-1.440, 0.0])
+        assert_equal(c.sources_id()[0], 'UCAC4 367-016700')
+        assert_almost_equal(c.ra_dec_list()[0], [101.28715, -16.7161158], decimal=5)
+        assert_almost_equal(c.mag_list('V')[0], [-1.440, 0.0])
 
     def test_ucac4_properties_types(self):
         s = UCAC4SourcesCatalog(sirius_coords[0],
                                 search_radius[0],
                                 band='V')
 
-        assert_is_instance(s.sources_id, np.ndarray)
-        assert_equal(s.sources_id.shape, (len(s)))
-        assert_is_instance(s.skycoord, SkyCoord)
-        assert_is_instance(s.magnitude, QFloat)
-        assert_is_instance(s.ra_dec_list, np.ndarray)
-        assert_equal(s.ra_dec_list.shape, (len(s), 2))
-        assert_is_instance(s.mag_list, np.ndarray)
-        assert_equal(s.mag_list.shape, (len(s), 2))
+        assert_is_instance(s.sources_id(), np.ndarray)
+        assert_equal(s.sources_id().shape, (len(s)))
+        assert_is_instance(s.skycoord(), SkyCoord)
+        assert_is_instance(s.magnitude('V'), QFloat)
+        assert_is_instance(s.ra_dec_list(), np.ndarray)
+        assert_equal(s.ra_dec_list().shape, (len(s), 2))
+        assert_is_instance(s.mag_list('V'), np.ndarray)
+        assert_equal(s.mag_list('V').shape, (len(s), 2))
 
 
 @pytest.mark.remote_data
 class Test_Vizier_APASS9:
+    hd674_mags = {
+        'B': [10.775, 0.031],
+        'V': [10.626, 0.043],
+        "g": [10.783, 0.104],
+        "r": [10.675, 0.047],
+        "i": [10.726, 0.077]
+    }
+
     def test_apass9_creation_errors(self):
         # Need arguments
         with pytest.raises(TypeError):
@@ -506,34 +517,30 @@ class Test_Vizier_APASS9:
     def test_apass9_query_input_types(self, center, radius):
         c = APASS9SourcesCatalog(center, radius, band='V')
 
-        assert_equal(c.sources_id[0], '')
-        assert_almost_equal(c.ra_dec_list[0], [2.716748, -54.290647], decimal=5)
-        assert_almost_equal(c.mag_list[0], [10.626, 0.043])
+        assert_equal(c.sources_id()[0], '')
+        assert_almost_equal(c.ra_dec_list()[0], [2.716748, -54.290647], decimal=5)
+        assert_almost_equal(c.mag_list('V')[0], [10.626, 0.043])
 
-    @pytest.mark.parametrize('band,mag', [('B', [10.775, 0.031]),
-                                          ('V', [10.626, 0.043]),
-                                          ("g", [10.783, 0.104]),
-                                          ("r", [10.675, 0.047]),
-                                          ("i", [10.726, 0.077])])
-    def test_apass9_creation_filters(self, band, mag):
-        c = APASS9SourcesCatalog(hd674_coords[0], '0.05d', band=band)
+    def test_apass9_creation_filters(self):
+        c = APASS9SourcesCatalog(hd674_coords[0], '0.05d')
 
-        assert_equal(c.sources_id[0], '')
-        assert_almost_equal(c.mag_list[0], mag)
+        assert_equal(c.sources_id()[0], '')
+        for k, v in self.hd674_mags.items():
+            assert_almost_equal(c.mag_list(k)[0], v)
 
     def test_apass9_properties_types(self):
         s = APASS9SourcesCatalog(hd674_coords[0],
                                  search_radius[0],
                                  band='V')
 
-        assert_is_instance(s.sources_id, np.ndarray)
-        assert_equal(s.sources_id.shape, (len(s)))
-        assert_is_instance(s.skycoord, SkyCoord)
-        assert_is_instance(s.magnitude, QFloat)
-        assert_is_instance(s.ra_dec_list, np.ndarray)
-        assert_equal(s.ra_dec_list.shape, (len(s), 2))
-        assert_is_instance(s.mag_list, np.ndarray)
-        assert_equal(s.mag_list.shape, (len(s), 2))
+        assert_is_instance(s.sources_id(), np.ndarray)
+        assert_equal(s.sources_id().shape, (len(s)))
+        assert_is_instance(s.skycoord(), SkyCoord)
+        assert_is_instance(s.magnitude('V'), QFloat)
+        assert_is_instance(s.ra_dec_list(), np.ndarray)
+        assert_equal(s.ra_dec_list().shape, (len(s), 2))
+        assert_is_instance(s.mag_list('V'), np.ndarray)
+        assert_equal(s.mag_list('V').shape, (len(s), 2))
 
 
 @pytest.mark.remote_data

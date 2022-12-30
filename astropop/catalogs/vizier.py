@@ -52,10 +52,14 @@ class _VizierSourcesCatalog(_OnlineSourcesCatalog, abc.ABC):
                                        self._center,
                                        radius=self._radius)[0]
         ids = self._filter_ids(self._query)
-        if self._band is not None:
-            mag = self._filter_magnitudes(self._query, self._band)
-        else:
-            mag = None
+
+        # perform magnitude filtering only if available
+        mag = None
+        for filt in self.filters:
+            if mag is None:
+                mag = {}
+            mag[filt] = self._filter_magnitudes(self._query, filt)
+
         obstime = self._filter_epoch(self._query)
         sk = self._filter_coordinates(self._query, obstime, self._frame)
 
