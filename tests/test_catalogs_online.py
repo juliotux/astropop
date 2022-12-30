@@ -618,6 +618,12 @@ class Test_Vizier_GSC242:
 
 @pytest.mark.remote_data
 class Test_Vizier_GaiaDR3:
+    hd674_mags = {
+        'G': [10.552819, 0.000337826],
+        'BP': [10.649535, 0.00091911],
+        'RP': [10.365023, 0.00060423]
+    }
+
     def test_gaiadr3_creation_errors(self):
         # Need arguments
         with pytest.raises(TypeError):
@@ -630,25 +636,23 @@ class Test_Vizier_GaiaDR3:
         # Filter None should pass, no mag data
         GaiaDR3SourcesCatalog('Sirius', '0.05d', None)
 
-    @pytest.mark.parametrize('band,mag', [('G', [10.552819, 0.000337826]),
-                                          ('BP', [10.649535, 0.00091911]),
-                                          ('RP', [10.365023, 0.00060423])])
-    def test_gaiadr3_creation_filters(self, band, mag):
-        c = GaiaDR3SourcesCatalog(hd674_coords[0], '0.01d', band=band)
+    def test_gaiadr3_creation_filters(self):
+        c = GaiaDR3SourcesCatalog(hd674_coords[0], '0.01d')
 
-        assert_equal(c.sources_id[0], 'Gaia DR3 4923784391133336960')
-        assert_almost_equal(c.mag_list[0], mag)
+        assert_equal(c.sources_id()[0], 'Gaia DR3 4923784391133336960')
+        for k, v in self.hd674_mags.items():
+            assert_almost_equal(c.mag_list(k)[0], v)
 
     def test_gaiadr3_properties_types(self):
         s = GaiaDR3SourcesCatalog(hd674_coords[0],
                                   search_radius[0],
                                   band='G')
 
-        assert_is_instance(s.sources_id, np.ndarray)
-        assert_equal(s.sources_id.shape, (len(s)))
-        assert_is_instance(s.skycoord, SkyCoord)
-        assert_is_instance(s.magnitude, QFloat)
-        assert_is_instance(s.ra_dec_list, np.ndarray)
-        assert_equal(s.ra_dec_list.shape, (len(s), 2))
-        assert_is_instance(s.mag_list, np.ndarray)
-        assert_equal(s.mag_list.shape, (len(s), 2))
+        assert_is_instance(s.sources_id(), np.ndarray)
+        assert_equal(s.sources_id().shape, (len(s)))
+        assert_is_instance(s.skycoord(), SkyCoord)
+        assert_is_instance(s.magnitude('G'), QFloat)
+        assert_is_instance(s.ra_dec_list(), np.ndarray)
+        assert_equal(s.ra_dec_list().shape, (len(s), 2))
+        assert_is_instance(s.mag_list('G'), np.ndarray)
+        assert_equal(s.mag_list('G').shape, (len(s), 2))

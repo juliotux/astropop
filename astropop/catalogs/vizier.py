@@ -54,10 +54,8 @@ class _VizierSourcesCatalog(_OnlineSourcesCatalog, abc.ABC):
         ids = self._filter_ids(self._query)
 
         # perform magnitude filtering only if available
-        mag = None
+        mag = {}
         for filt in self.filters:
-            if mag is None:
-                mag = {}
             mag[filt] = self._filter_magnitudes(self._query, filt)
 
         obstime = self._filter_epoch(self._query)
