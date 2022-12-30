@@ -285,18 +285,17 @@ class Test_Simbad():
         with pytest.raises(TypeError):
             SimbadSourcesCatalog('test')
 
-        with pytest.raises(ValueError, match='Filter None not available.'):
-            SimbadSourcesCatalog('Sirius', '0.05d', band='None')
-        # Filter None should pass, no mag data
-        SimbadSourcesCatalog('Sirius', '0.05d', None)
+        # generic search ok
+        SimbadSourcesCatalog('Sirius', '0.05d')
 
     @pytest.mark.parametrize('radius', search_radius)
     @pytest.mark.parametrize('center', sirius_coords)
     def test_csimbad_creation_params(self, center, radius):
         s = SimbadSourcesCatalog(center, radius)
-        assert_equal(s.sources_id[0], '* alf CMa')
-        assert_almost_equal(s.ra_dec_list[0], [101.287155, -16.7161158], decimal=5)
-        assert_is_none(s.magnitude)
+        assert_equal(s.sources_id()[0], '* alf CMa')
+        assert_almost_equal(s.ra_dec_list()[0], [101.287155, -16.7161158],
+                            decimal=5)
+        assert_almost_equal(s.magnitude('V')[0].nominal, -1.46)
 
         assert_is_instance(s.center, SkyCoord)
         assert_almost_equal(s.center.ra.degree, 101.287155, decimal=3)
@@ -305,45 +304,38 @@ class Test_Simbad():
         assert_is_instance(s.radius, Angle)
         assert_almost_equal(s.radius.degree, 0.1)
 
-    def test_simbad_creation_photometry(self):
-        s = SimbadSourcesCatalog(sirius_coords[0],
-                                 search_radius[0],
-                                 band='V')
-        assert_equal(s.sources_id[0], '* alf CMa')
-        assert_almost_equal(s.ra_dec_list[0], [101.28715, -16.7161158], decimal=5)
-        assert_almost_equal(s.mag_list[0][0], -1.46)
-
     def test_simbad_properties_types(self):
         s = SimbadSourcesCatalog(sirius_coords[0],
-                                 search_radius[0],
-                                 band='V')
+                                 search_radius[0])
 
-        assert_is_instance(s.sources_id, np.ndarray)
-        assert_equal(s.sources_id.shape, (len(s)))
-        assert_is_instance(s.skycoord, SkyCoord)
-        assert_is_instance(s.magnitude, QFloat)
-        assert_is_instance(s.ra_dec_list, np.ndarray)
-        assert_equal(s.ra_dec_list.shape, (len(s), 2))
-        assert_is_instance(s.mag_list, np.ndarray)
-        assert_equal(s.mag_list.shape, (len(s), 2))
-        assert_is_instance(s.coordinates_bibcode, np.ndarray)
-        assert_equal(s.coordinates_bibcode.shape, (len(s),))
-        assert_is_instance(s.magnitudes_bibcode, np.ndarray)
-        assert_equal(s.magnitudes_bibcode.shape, (len(s),))
+        assert_is_instance(s.sources_id(), np.ndarray)
+        assert_equal(s.sources_id().shape, (len(s)))
+        assert_is_instance(s.skycoord(), SkyCoord)
+        assert_is_instance(s.magnitude('V'), QFloat)
+        assert_is_instance(s.ra_dec_list(), np.ndarray)
+        assert_equal(s.ra_dec_list().shape, (len(s), 2))
+        assert_is_instance(s.mag_list('V'), np.ndarray)
+        assert_equal(s.mag_list('V').shape, (len(s), 2))
+        assert_is_instance(s.coordinates_bibcode(), np.ndarray)
+        assert_equal(s.coordinates_bibcode().shape, (len(s),))
+        assert_is_instance(s.magnitudes_bibcode('V'), np.ndarray)
+        assert_equal(s.magnitudes_bibcode('V').shape, (len(s),))
 
     def test_simbad_properties_table(self):
         s = SimbadSourcesCatalog(sirius_coords[0],
-                                 search_radius[0],
-                                 band='V')
-        t = s.table
+                                 search_radius[0])
+        t = s.table()
         assert_is_instance(t, Table)
         assert_equal(len(t), len(s))
-        assert_equal(t.colnames, ['id', 'ra', 'dec', 'mag', 'mag_error'])
+        colnames = ['id', 'ra', 'dec', 'pm_ra_cosdec', 'pm_dec']
+        for i in s._available_filters:
+            colnames += [f'{i}', f'{i}_error', f'{i}_bib']
+        assert_equal(t.colnames, colnames)
         assert_equal(t['id'][0], '* alf CMa')
         assert_almost_equal(t['ra'][0], 101.287155)
         assert_almost_equal(t['dec'][0], -16.7161158)
-        assert_almost_equal(t['mag'][0], -1.46, decimal=2)
-        assert_true(np.isnan(t['mag_error'][0]))
+        assert_almost_equal(t['V'][0], -1.46, decimal=2)
+        assert_true(np.isnan(t['V_error'][0]))
 
 
 @pytest.mark.remote_data

@@ -3,6 +3,7 @@
 
 import numpy as np
 from astropy.coordinates import SkyCoord
+from astropy.table import Table
 from astroquery.simbad import Simbad
 from astropy import units as u
 
@@ -94,6 +95,7 @@ class SimbadSourcesCatalog(_OnlineSourcesCatalog):
                                        radius=self._radius,
                                        epoch='J2000')
         ids = np.array([string_fix(i) for i in self._query['MAIN_ID']])
+        self._mags_table = Table()
         for band in self._available_filters:
             m = np.array(self._query[f'FLUX_{band}'])
             mags_error = np.array(self._query[f'FLUX_ERROR_{band}'])

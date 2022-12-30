@@ -126,9 +126,12 @@ class SourcesCatalog:
         mag : float
             The sources magnitude in QFloat format.
         """
-        return QFloat(self._mags_table[f'{band}'],
-                      self._mags_table[f'{band}_error'],
-                      'mag')
+        try:
+            return QFloat(self._mags_table[f'{band}'],
+                          self._mags_table[f'{band}_error'],
+                          'mag')
+        except KeyError:
+            raise ValueError(f'Filter {band} not available.')
 
     def mag_list(self, band):
         """Get the sources photometric mag in [(mag, mag_error)] format.
@@ -145,8 +148,8 @@ class SourcesCatalog:
         """
         if self._mags_table is None:
             return
-        return np.array(list(zip(self._mags_table[f'{band}'],
-                                 self._mags_table[f'{band}_error'])))
+        mags = self.magnitude(band)
+        return np.array(list(zip(mags.nominal, mags.std_dev)))
 
     def copy(self):
         """Copy the current catalog to a new instance."""
