@@ -42,8 +42,15 @@ class DummySourcesCatalog(_OnlineSourcesCatalog):
 
     def _do_query(self):
         self._query = Table(sources)
-        mag = {'V': QFloat(sources['mag'], uncertainty=sources['mag_error'],
+        mag = {'A': QFloat(sources['mag'], uncertainty=sources['mag_error'],
+                           unit='mag'),
+               'B': QFloat(sources['mag'], uncertainty=sources['mag_error'],
                            unit='mag')}
+        obj_mag = None
+        for i in self.filters:
+            if obj_mag is None:
+                obj_mag = {}
+            obj_mag[i] = mag[i]
         SourcesCatalog.__init__(self, ra=sources['ra'],
                                 dec=sources['dec'], unit='degree',
                                 pm_ra_cosdec=sources['pm_ra']*u.Unit('mas/year'),
@@ -59,14 +66,6 @@ hd674_coords = ["HD 674", "00h10m52s -54d17m26s", [2.716748, -54.290647],
                 np.array([2.716748, -54.290647]), (2.716748, -54.290647),
                 SkyCoord(2.716748, -54.290647, unit='degree')]
 search_radius = ['0.1d', 0.1, Angle('0.1d')]
-
-sources = Table({'id': ['id1', 'id2', 'id3', 'id4'],
-                 'ra': [2.44644404, 0.52522258, 0.64638169, 4.16520547],
-                 'dec': [4.92305031, 3.65404807, 4.50588171, 3.80703142],
-                 'pm_ra': [278.6, 114.3, 8.6, 270.1],
-                 'pm_dec': [25.7, 202.6, 122.3, 256.3],
-                 'mag': [2.16, 3.00, 3.55, 4.81],
-                 'mag_error': [0.01, 0.02, 0.01, 0.03]})
 
 
 @pytest.mark.remote_data
@@ -174,7 +173,10 @@ class Test_DummySourcesCatalog:
     # Test things handled by the base catalog
     def test_catalog_creation(self):
         c = DummySourcesCatalog(sirius_coords[0], search_radius[0])
-        c = DummySourcesCatalog(sirius_coords[0], search_radius[0])
+        assert_is_instance(c, SourcesCatalog)
+        c = DummySourcesCatalog(sirius_coords[0], search_radius[0],
+                                band='A')
+        assert_is_instance(c, SourcesCatalog)
 
         with pytest.raises(TypeError):
             DummySourcesCatalog()
@@ -198,28 +200,29 @@ class Test_DummySourcesCatalog:
         assert_is_instance(c.skycoord(), SkyCoord)
         assert_is_instance(c.ra_dec_list(), np.ndarray)
         assert_equal(c.ra_dec_list().shape, (4, 2))
-        assert_is_instance(c.mag_list('V'), np.ndarray)
-        assert_equal(c.mag_list('V').shape, (4, 2))
+        assert_is_instance(c.mag_list('A'), np.ndarray)
+        assert_equal(c.mag_list('A').shape, (4, 2))
 
         assert_equal(c.sources_id(), sources['id'])
         assert_almost_equal(c.ra_dec_list()[:, 0], sources['ra'])
         assert_almost_equal(c.ra_dec_list()[:, 1], sources['dec'])
-        assert_almost_equal(c.mag_list('V')[:, 0], sources['mag'])
-        assert_almost_equal(c.mag_list('V')[:, 1], sources['mag_error'])
+        assert_almost_equal(c.mag_list('A')[:, 0], sources['mag'])
+        assert_almost_equal(c.mag_list('A')[:, 1], sources['mag_error'])
 
     def test_catalog_table(self):
         c = DummySourcesCatalog(sirius_coords[0], search_radius[0])
         t = c.table()
         assert_is_instance(t, Table)
         assert_equal(t.colnames, ['id', 'ra', 'dec', 'pm_ra_cosdec',
-                                  'pm_dec', 'V', 'V_error'])
+                                  'pm_dec', 'A', 'A_error',
+                                  'B', 'B_error'])
         assert_equal(t['id'], sources['id'])
         assert_almost_equal(t['ra'], sources['ra'])
         assert_almost_equal(t['dec'], sources['dec'])
         assert_almost_equal(t['pm_ra_cosdec'], sources['pm_ra'])
         assert_almost_equal(t['pm_dec'], sources['pm_dec'])
-        assert_almost_equal(t['V'], sources['mag'])
-        assert_almost_equal(t['V_error'], sources['mag_error'])
+        assert_almost_equal(t['A'], sources['mag'])
+        assert_almost_equal(t['B_error'], sources['mag_error'])
 
     def test_catalog_getitem_number(self):
         c = DummySourcesCatalog(sirius_coords[0], search_radius[0])
@@ -227,7 +230,7 @@ class Test_DummySourcesCatalog:
         assert_equal(nc.sources_id(), sources['id'][0])
         assert_almost_equal(nc.ra_dec_list(),
                             [[sources['ra'][0], sources['dec'][0]]])
-        assert_almost_equal(nc.mag_list('V'),
+        assert_almost_equal(nc.mag_list('A'),
                             [[sources['mag'][0], sources['mag_error'][0]]])
 
     def test_catalog_getitem_array(self):
@@ -240,8 +243,8 @@ class Test_DummySourcesCatalog:
             assert_almost_equal(nc.ra_dec_list()[:, 1], sources['dec'][2:])
             assert_almost_equal(nc.table()['pm_ra_cosdec'], sources['pm_ra'][2:])
             assert_almost_equal(nc.table()['pm_dec'], sources['pm_dec'][2:])
-            assert_almost_equal(nc.mag_list('V')[:, 0], sources['mag'][2:])
-            assert_almost_equal(nc.mag_list('V')[:, 1], sources['mag_error'][2:])
+            assert_almost_equal(nc.mag_list('A')[:, 0], sources['mag'][2:])
+            assert_almost_equal(nc.mag_list('A')[:, 1], sources['mag_error'][2:])
 
         # Ensure error is raised when a list of strings
         with pytest.raises(KeyError):
@@ -272,9 +275,42 @@ class Test_DummySourcesCatalog:
         assert_equal(m.sources_id(), ['id2', '', 'id4'])
         assert_almost_equal(m.ra_dec_list()[:, 0], [0.52522258, np.nan, 4.16520547])
         assert_almost_equal(m.ra_dec_list()[:, 1], [3.65404807, np.nan, 3.80703142])
-        assert_almost_equal(m.mag_list('V')[:, 0], [3.00, np.nan, 4.81], decimal=2)
-        assert_almost_equal(m.mag_list('V')[:, 1], [0.02, np.nan, 0.03], decimal=2)
+        assert_almost_equal(m.mag_list('A')[:, 0], [3.00, np.nan, 4.81], decimal=2)
+        assert_almost_equal(m.mag_list('A')[:, 1], [0.02, np.nan, 0.03], decimal=2)
+        assert_almost_equal(m.mag_list('B')[:, 0], [3.00, np.nan, 4.81], decimal=2)
+        assert_almost_equal(m.mag_list('B')[:, 1], [0.02, np.nan, 0.03], decimal=2)
 
+    def test_catalog_band(self):
+        c = DummySourcesCatalog(sirius_coords[0], search_radius[0],
+                                band='A')
+        assert_equal(c.filters, ['A'])
+
+        # default behavior is all
+        c = DummySourcesCatalog(sirius_coords[0], search_radius[0])
+        assert_equal(c.filters, ['A', 'B'])
+        c = DummySourcesCatalog(sirius_coords[0], search_radius[0],
+                                band='all')
+        assert_equal(c.filters, ['A', 'B'])
+
+        # None should have no filters
+        c = DummySourcesCatalog(sirius_coords[0], search_radius[0],
+                                band=None)
+        assert_equal(c.filters, [])
+
+    def test_catalog_invalid_band(self):
+        for i in ['C', ('A', 'C'), ['A', 'C']]:
+            with pytest.raises(ValueError,
+                               match='not available for this catalog'):
+                c = DummySourcesCatalog(sirius_coords[0], search_radius[0],
+                                        band=i)
+        c = DummySourcesCatalog(sirius_coords[0], search_radius[0])
+        with pytest.raises(ValueError, match='not available'):
+            c.mag_list('C')
+
+        D = DummySourcesCatalog
+        D._available_filters = None
+        with pytest.raises(ValueError, match='No filters'):
+            c = D(sirius_coords[0], search_radius[0], band='A')
 
 @pytest.mark.remote_data
 class Test_Simbad():
@@ -291,7 +327,7 @@ class Test_Simbad():
     @pytest.mark.parametrize('radius', search_radius)
     @pytest.mark.parametrize('center', sirius_coords)
     def test_csimbad_creation_params(self, center, radius):
-        s = SimbadSourcesCatalog(center, radius)
+        s = SimbadSourcesCatalog(center, radius, band='V')
         assert_equal(s.sources_id()[0], '* alf CMa')
         assert_almost_equal(s.ra_dec_list()[0], [101.287155, -16.7161158],
                             decimal=5)
@@ -305,8 +341,7 @@ class Test_Simbad():
         assert_almost_equal(s.radius.degree, 0.1)
 
     def test_simbad_properties_types(self):
-        s = SimbadSourcesCatalog(sirius_coords[0],
-                                 search_radius[0])
+        s = SimbadSourcesCatalog(sirius_coords[0], search_radius[0], band='V')
 
         assert_is_instance(s.sources_id(), np.ndarray)
         assert_equal(s.sources_id().shape, (len(s)))
@@ -322,20 +357,43 @@ class Test_Simbad():
         assert_equal(s.magnitudes_bibcode('V').shape, (len(s),))
 
     def test_simbad_properties_table(self):
-        s = SimbadSourcesCatalog(sirius_coords[0],
-                                 search_radius[0])
+        s = SimbadSourcesCatalog(sirius_coords[0], search_radius[0], band='V')
         t = s.table()
         assert_is_instance(t, Table)
         assert_equal(len(t), len(s))
-        colnames = ['id', 'ra', 'dec', 'pm_ra_cosdec', 'pm_dec']
-        for i in s._available_filters:
-            colnames += [f'{i}', f'{i}_error', f'{i}_bib']
+        colnames = ['id', 'ra', 'dec', 'pm_ra_cosdec', 'pm_dec',
+                    'V', 'V_error']
         assert_equal(t.colnames, colnames)
         assert_equal(t['id'][0], '* alf CMa')
         assert_almost_equal(t['ra'][0], 101.287155)
         assert_almost_equal(t['dec'][0], -16.7161158)
         assert_almost_equal(t['V'][0], -1.46, decimal=2)
         assert_true(np.isnan(t['V_error'][0]))
+
+    def test_simbad_default_band(self):
+        s = SimbadSourcesCatalog(sirius_coords[0], search_radius[0])
+        assert_equal(s.filters, [])
+        assert_is_none(s._mags_table)
+        with pytest.raises(ValueError, match='This SourcesCatalog has no'):
+            s.mag_list('V')
+
+    def test_simbad_bands_all(self):
+        s = SimbadSourcesCatalog(sirius_coords[0], search_radius[0],
+                                  band='all')
+        assert_equal(s.filters, s._available_filters)
+        assert_equal(list(s._mags_bib.keys()), s._available_filters)
+
+    def test_simbad_coords_bibcode(self):
+        s = SimbadSourcesCatalog(sirius_coords[0], '10 arcsec')
+        assert_is_instance(s.coordinates_bibcode(), np.ndarray)
+        assert_equal(s.coordinates_bibcode()[0], '2007A&A...474..653V')
+
+    def test_simbad_mags_bibcode(self):
+        s = SimbadSourcesCatalog(sirius_coords[0], '10 arcsec',
+                                 band=['V', 'B', 'R'])
+        assert_equal(s.magnitudes_bibcode('V')[0], '2002yCat.2237....0D')
+        assert_equal(s.magnitudes_bibcode('B')[0], '2002yCat.2237....0D')
+        assert_equal(s.magnitudes_bibcode('R')[0], '2002yCat.2237....0D')
 
 
 @pytest.mark.remote_data

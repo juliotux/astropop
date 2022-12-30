@@ -69,23 +69,53 @@ simbad_query_id = np.vectorize(_simbad_query_id,
 
 
 class SimbadSourcesCatalog(_OnlineSourcesCatalog):
-    """Sources catalog from Simbad plataform."""
+    """Sources catalog from Simbad plataform.
+
+    Parameters
+    ----------
+    center: string, tuple or `~astropy.coordinates.SkyCoord`
+        The center of the search field.
+        If center is a string, can be an object name or the string
+        containing the object coordinates. If it is a tuple, have to be
+        (ra, dec) coordinates, in hexa or decimal degrees format.
+    radius: string, float, `~astropy.coordinates.Angle` (optional)
+        The radius to search. If None, the query will be performed as
+        single object query mode. Else, the query will be performed as
+        field mode. If a string value is passed, it must be readable by
+        astropy.coordinates.Angle. If a float value is passed, it will
+        be interpreted as a decimal degree radius.
+    band: string or list(string) (optional)
+        Filters to query photometric informations. If None, photometric
+        informations will be disabled. If ``'all'`` (default), all
+        available filters will be queried. If a list, all filters in that
+        list will be queried.
+
+    Raises
+    ------
+    ValueError:
+        If a ``band`` not available in the filters is passed.
+    """
 
     _available_filters = ['B', 'V', 'R', 'I', 'J', 'H', 'K',
                           'u', 'g', 'r', 'i', 'z']
+    _mags_bib = None
+
+    def __init__(self, center, radius, band=None):
+        # Just change the default behavior of band to None
+        super(SimbadSourcesCatalog, self).__init__(center, radius, band)
 
     def coordinates_bibcode(self):
-        return np.array(self._coords_bib)
+        return np.array(self._query['COO_BIBCODE'])
 
     def magnitudes_bibcode(self, band):
-        if self._mags_table is not None:
-            return np.array(self._mags_table[f'{band}_bib'])
+        self._ensure_band(band)
+        return np.array(self._query[f'FLUX_BIBCODE_{band}'])
 
     def _setup_catalog(self):
         self._s = Simbad()
         self._s.add_votable_fields('pm')
         self._s.ROW_LIMIT = 0
-        for filt in self._available_filters:
+        for filt in self.filters:
             self._s.add_votable_fields(f'fluxdata({filt})')
 
     def _do_query(self):
@@ -95,20 +125,19 @@ class SimbadSourcesCatalog(_OnlineSourcesCatalog):
                                        radius=self._radius,
                                        epoch='J2000')
         ids = np.array([string_fix(i) for i in self._query['MAIN_ID']])
-        self._mags_table = Table()
-        for band in self._available_filters:
+        for band in self.filters:
+            if self._mags_table is None:
+                self._mags_table = Table()
+                self._mags_bib = {}
             m = np.array(self._query[f'FLUX_{band}'])
             mags_error = np.array(self._query[f'FLUX_ERROR_{band}'])
-            bib = np.array(self._query[f'FLUX_BIBCODE_{band}'])
             self._mags_table[f'{band}'] = m
             self._mags_table[f'{band}_error'] = mags_error
-            self._mags_table[f'{band}_bib'] = bib
 
         sk = SkyCoord(self._query['RA'], self._query['DEC'],
                       unit=('hourangle', 'degree'),
                       pm_ra_cosdec=self._query['PMRA'],
                       pm_dec=self._query['PMDEC'],
                       obstime='J2000.0', frame='icrs')
-        self._coords_bib = np.array(self._query['COO_BIBCODE'])
 
         SourcesCatalog.__init__(self, sk, ids=ids)

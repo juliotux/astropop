@@ -97,6 +97,14 @@ class SourcesCatalog:
         self._mags_table[f'{band}'] = m.nominal
         self._mags_table[f'{band}_error'] = m.std_dev
 
+    def _ensure_band(self, band):
+        """Ensure there is a mags_table and band is in it."""
+        if self._mags_table is None:
+            raise ValueError('This SourcesCatalog has no photometic '
+                             'information.')
+        if band not in self._mags_table.colnames:
+            raise ValueError(f'{band} not available.')
+
     def sources_id(self):
         """Get the list of sources id in catalog."""
         return self._base_table['id'].value
@@ -126,12 +134,10 @@ class SourcesCatalog:
         mag : float
             The sources magnitude in QFloat format.
         """
-        try:
-            return QFloat(self._mags_table[f'{band}'],
-                          self._mags_table[f'{band}_error'],
-                          'mag')
-        except KeyError:
-            raise ValueError(f'Filter {band} not available.')
+        self._ensure_band(band)
+        return QFloat(self._mags_table[f'{band}'],
+                      self._mags_table[f'{band}_error'],
+                      'mag')
 
     def mag_list(self, band):
         """Get the sources photometric mag in [(mag, mag_error)] format.
@@ -146,8 +152,6 @@ class SourcesCatalog:
         mag_list : list
             List of tuples of (mag, mag_error).
         """
-        if self._mags_table is None:
-            return
         mags = self.magnitude(band)
         return np.array(list(zip(mags.nominal, mags.std_dev)))
 
@@ -229,6 +233,8 @@ class SourcesCatalog:
             ncat._base_table['id'][i] = ''
             if ncat._mags_table is not None:
                 ncat._mags_table[i] = [np.nan]*len(self._mags_table.colnames)
+            if ncat._query is not None:
+                ncat._query[i] = list(*np.zeros(1, dtype=ncat._query.dtype))
         ncat._base_table['coords'] = SkyCoord(**coords, **extra)
         return ncat
 
@@ -284,8 +290,9 @@ class _OnlineSourcesCatalog(SourcesCatalog, abc.ABC):
     """Sources Catalog based on online queries."""
 
     _query = None
+    _available_filters = None
 
-    def __init__(self, center, radius):
+    def __init__(self, center, radius, band='all'):
         """Query the catalog and create the source catalog instance.
 
         Parameters
@@ -295,16 +302,26 @@ class _OnlineSourcesCatalog(SourcesCatalog, abc.ABC):
             If center is a string, can be an object name or the string
             containing the object coordinates. If it is a tuple, have to be
             (ra, dec) coordinates, in hexa or decimal degrees format.
-        radius: string, float, `~astropy.coordinates.Angle`
-                or None (optional)
+        radius: string, float, `~astropy.coordinates.Angle` (optional)
             The radius to search. If None, the query will be performed as
             single object query mode. Else, the query will be performed as
             field mode. If a string value is passed, it must be readable by
             astropy.coordinates.Angle. If a float value is passed, it will
             be interpreted as a decimal degree radius.
+        band: string or list(string) (optional)
+            Filters to query photometric informations. If None, photometric
+            informations will be disabled. If ``'all'`` (default), all
+            available filters will be queried. If a list, all filters in that
+            list will be queried.
+
+        Raises
+        ------
+        ValueError:
+            If a ``band`` not available in the filters is passed.
         """
         self._center = astroquery_skycoord(center)
         self._radius = astroquery_radius(radius)
+        self._filters = self._setup_filters(band)
 
         # setup the catalog if needed
         self._setup_catalog()
@@ -313,6 +330,21 @@ class _OnlineSourcesCatalog(SourcesCatalog, abc.ABC):
         logger.info('Quering region centered at %s with radius %s',
                     self._center, self._radius)
         self._do_query()
+
+    def _setup_filters(self, band):
+        """Setup and check available filters."""
+        if self._available_filters is None and band not in (None, 'all'):
+            raise ValueError('No filters available for this catalog.')
+        if band is None:
+            return []
+        if band == 'all':
+            # [] for None available filters
+            return copy.copy(self._available_filters) or []
+        band = np.atleast_1d(band)
+        for i in np.atleast_1d(band):
+            if i not in self._available_filters:
+                raise ValueError(f'Filter {i} not available for this catalog')
+        return list(band)
 
     @abc.abstractmethod
     def _setup_catalog(self):
@@ -339,3 +371,7 @@ class _OnlineSourcesCatalog(SourcesCatalog, abc.ABC):
     @property
     def radius(self):
         return Angle(self._radius)
+
+    @property
+    def filters(self):
+        return list(self._filters)
