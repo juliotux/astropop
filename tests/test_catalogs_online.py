@@ -211,10 +211,13 @@ class Test_DummySourcesCatalog:
         c = DummySourcesCatalog(sirius_coords[0], search_radius[0])
         t = c.table()
         assert_is_instance(t, Table)
-        assert_equal(t.colnames, ['id', 'ra', 'dec', 'V', 'V_error'])
+        assert_equal(t.colnames, ['id', 'ra', 'dec', 'pm_ra_cosdec',
+                                  'pm_dec', 'V', 'V_error'])
         assert_equal(t['id'], sources['id'])
         assert_almost_equal(t['ra'], sources['ra'])
         assert_almost_equal(t['dec'], sources['dec'])
+        assert_almost_equal(t['pm_ra_cosdec'], sources['pm_ra'])
+        assert_almost_equal(t['pm_dec'], sources['pm_dec'])
         assert_almost_equal(t['V'], sources['mag'])
         assert_almost_equal(t['V_error'], sources['mag_error'])
 
@@ -235,6 +238,8 @@ class Test_DummySourcesCatalog:
             assert_equal(nc.sources_id(), sources['id'][2:])
             assert_almost_equal(nc.ra_dec_list()[:, 0], sources['ra'][2:])
             assert_almost_equal(nc.ra_dec_list()[:, 1], sources['dec'][2:])
+            assert_almost_equal(nc.table()['pm_ra_cosdec'], sources['pm_ra'][2:])
+            assert_almost_equal(nc.table()['pm_dec'], sources['pm_dec'][2:])
             assert_almost_equal(nc.mag_list('V')[:, 0], sources['mag'][2:])
             assert_almost_equal(nc.mag_list('V')[:, 1], sources['mag_error'][2:])
 

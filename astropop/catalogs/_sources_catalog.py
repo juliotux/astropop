@@ -160,12 +160,12 @@ class SourcesCatalog:
         except ValueError:
             return copy.copy(sk)
 
-    def _extract_coords(self, nulls=None):
+    def _extract_coords(self, ncat, nulls=None):
         """Extract coordinates in the form of a table.
 
         Nulls is a list of indexes to be set to a nan value.
         """
-        base = self._base_table['coords']
+        base = ncat._base_table['coords']
         t = {}
         t['ra'] = base.ra
         t['dec'] = base.dec
@@ -220,7 +220,7 @@ class SourcesCatalog:
         nulls = [i for i, d in enumerate(dist) if d > Angle(limit_angle)]
         extra = {i: cat_sk.__getattribute__('_'+i)
                  for i in cat_sk._extra_frameattr_names}
-        coords = self._extract_coords(nulls)
+        coords = self._extract_coords(ncat, nulls)
         for i in nulls:
             # null values for non-matched stars
             ncat._base_table['id'][i] = ''
