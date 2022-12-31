@@ -312,6 +312,7 @@ class Test_DummySourcesCatalog:
         with pytest.raises(ValueError, match='No filters'):
             c = D(sirius_coords[0], search_radius[0], band='A')
 
+
 @pytest.mark.remote_data
 class Test_Simbad():
     def test_simbad_creation_errors(self):
@@ -446,6 +447,7 @@ class Test_Vizier_UCAC4:
         'r': [np.nan, np.nan],
         'i': [10.688, 0.01]
     }
+
     def test_ucac4_creation_errors(self):
         # Need arguments
         with pytest.raises(TypeError):
