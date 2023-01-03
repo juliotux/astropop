@@ -3,6 +3,7 @@
 
 import abc
 import numpy as np
+import yaml
 from astropy.coordinates import SkyCoord
 from astroquery.vizier import Vizier
 from astropy.time import Time
@@ -13,15 +14,44 @@ from ..py_utils import string_fix
 from ..math import qfloat
 
 
-__all__ = ['UCAC4SourcesCatalog', 'APASS9SourcesCatalog']
+__all__ = ['_VizierSourcesCatalog']
 
 
 class _VizierSourcesCatalog(_OnlineSourcesCatalog, abc.ABC):
-    """Sources catalog from Vizier plataform."""
+    """Sources catalog from Vizier plataform.
 
-    _table = None
-    _frame = 'icrs'
-    _columns = ['+_r', '**']
+    Parameters
+    ----------
+    config_file: string
+        Yaml configuration file containing the parameters to be used
+        for catalog queries, like table id, column names, etc.
+    center: string, tuple or `~astropy.coordinates.SkyCoord`
+        The center of the search field.
+        If center is a string, can be an object name or the string
+        containing the object coordinates. If it is a tuple, have to be
+        (ra, dec) coordinates, in hexa or decimal degrees format.
+    radius: string, float, `~astropy.coordinates.Angle` (optional)
+        The radius to search. If None, the query will be performed as
+        single object query mode. Else, the query will be performed as
+        field mode. If a string value is passed, it must be readable by
+        astropy.coordinates.Angle. If a float value is passed, it will
+        be interpreted as a decimal degree radius.
+    band: string or list(string) (optional)
+        Filters to query photometric informations. If None, photometric
+        informations will be disabled. If ``'all'`` (default), all
+        available filters will be queried. If a list, all filters in that
+        list will be queried.
+
+    Raises
+    ------
+    ValueError:
+        If a ``band`` not available in the filters is passed.
+    """
+
+    def __init__(self, config_file, *args, **kwargs):
+        self._conf = yaml.safe_load(config_file)
+        self._setup_vizier()
+        super().__init__(*args, **kwargs)
 
     @staticmethod
     @abc.abstractmethod
@@ -189,8 +219,42 @@ class UCAC5SourcesCatalog(_VizierSourcesCatalog):
         return _ucac4_filter_coord(query, obstime, frame,
                                    rakey='RAgaia', deckey='DEgaia')
 
-# TODO:
-# - DENIS: B/denis
-# - 2MASS
-# - VSX: B/vsx
-# - GCVS: B/gcvs
+
+class DENISSourcesCatalog(_VizierSourcesCatalog):
+    _table = 'B/denis'
+
+
+class TwoMASSSourcesCatalog(_VizierSourcesCatalog):
+    _table = 'II/246/out'
+
+
+class VSXSourcesCatalog(_VizierSourcesCatalog):
+    _table = 'B/vsx'
+
+
+class GCVSSourcesCatalog(_VizierSourcesCatalog):
+    _table = 'B/gcvs'
+
+
+class AllWISESourcesCatalog(_VizierSourcesCatalog):
+    _table = 'II/328/allwise'
+
+
+class WISESourcesCatalog(_VizierSourcesCatalog):
+    _table = 'II/311/wise'
+
+
+class UnWISESourcesCatalog(_VizierSourcesCatalog):
+    _table = 'II/363/unwise'
+
+
+class CatWISE2020SourcesCatalog(_VizierSourcesCatalog):
+    _table = 'cat/II/365'
+
+
+class HipparcosSourcesCatalog(_VizierSourcesCatalog):
+    _table = 'I/239/hip_main'
+
+
+class TychoSourcesCatalog(_VizierSourcesCatalog):
+    _table = 'I/239/tyc_main'
