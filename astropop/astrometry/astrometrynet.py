@@ -343,7 +343,8 @@ def _parse_pltscl(options):
     if low is None or hi is None:
         return []
 
-    return ['--scale-low', low, '--scale-high', hi, '--scale-units', units]
+    return ['--scale-low', str(low), '--scale-high', str(hi),
+            '--scale-units', str(units)]
 
 
 def _parse_crpix(options):
@@ -611,7 +612,7 @@ class AstrometrySolver():
             # if 'index' in config:
             #     cfg['autoindex'] = False
             if 'add_path' in config:
-                cfg['add_path'].extend(config.pop('add_path'))
+                cfg['add_path'].extend(np.atleast_1d(config.pop('add_path')))
             cfg.update(config)
         return config
 
@@ -805,11 +806,11 @@ def solve_astrometry_framedata(frame, options=None, command=None,
     `~astropop.astrometry.AstrometricSolution`
         Astrometric solution ot the field.
     """
-    f = NamedTemporaryFile(sufix='.fits')
-    frame.write(f)
+    f = NamedTemporaryFile(suffix='.fits')
+    frame.write(f.name)
     options = options or {}
     solver = AstrometrySolver(solve_field=command)
-    return solver.solve_field(f, options=options, **kwargs)
+    return solver.solve_field(f.name, options=options, **kwargs)
 
 
 def solve_astrometry_image(filename, options=None, command=_solve_field,
