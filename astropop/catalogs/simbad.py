@@ -98,7 +98,6 @@ class SimbadSourcesCatalog(_OnlineSourcesCatalog):
 
     _available_filters = ['B', 'V', 'R', 'I', 'J', 'H', 'K',
                           'u', 'g', 'r', 'i', 'z']
-    _mags_bib = None
 
     def __init__(self, center, radius, band=None):
         # Just change the default behavior of band to None
