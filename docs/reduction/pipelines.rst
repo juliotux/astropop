@@ -8,5 +8,4 @@ Pipelines
 Pipelines API
 -------------
 
-.. automodapi:: astropop.pipelines
-    :no-inheritance-diagram:
+.. TODO:: Write pipelines design and documentation

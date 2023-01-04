@@ -494,6 +494,12 @@ class SLSDualBeamPolarimetry(_DualBeamPolarimetry):
     psi_deviation: float (optional)
         Maximum deviation of the psi position from the sequence multiple
         of 22.5 degrees. Default is 0.1 degrees.
+    iter_tolerance: float (optional)
+        When fitting the parameter for quarterwave retarders, the iteration
+        stops when the difference between the previous and the current
+        parameters is less than this tolerance. Default is 1e-5.
+    max_iters: int (optional)
+        Maximum number of iterations. Default is 100.
 
     Notes
     -----
