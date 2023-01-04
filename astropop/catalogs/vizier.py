@@ -1,9 +1,10 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 """Query and match objects in Vizier catalogs."""
 
-import abc
+from os import path
 import numpy as np
 import yaml
+import functools
 from astropy.coordinates import SkyCoord
 from astroquery.vizier import Vizier
 from astropy.time import Time
@@ -14,15 +15,15 @@ from ..py_utils import string_fix
 from ..math import qfloat
 
 
-__all__ = ['_VizierSourcesCatalog']
+__all__ = ['VizierSourcesCatalog']
 
 
-class _VizierSourcesCatalog(_OnlineSourcesCatalog, abc.ABC):
+class VizierSourcesCatalog(_OnlineSourcesCatalog):
     """Sources catalog from Vizier plataform.
 
     Parameters
     ----------
-    config_file: string
+    config_file: string or dict
         Yaml configuration file containing the parameters to be used
         for catalog queries, like table id, column names, etc.
     center: string, tuple or `~astropy.coordinates.SkyCoord`
@@ -49,38 +50,100 @@ class _VizierSourcesCatalog(_OnlineSourcesCatalog, abc.ABC):
     """
 
     def __init__(self, config_file, *args, **kwargs):
-        self._conf = yaml.safe_load(config_file)
-        self._setup_vizier()
+        with open(config_file, 'r') as f:
+            self._conf = yaml.safe_load(f)
+        self._table = self._conf['table']
+        self._columns = self._conf['columns']
+        self._available_filters = list(self._conf['available_filters'].keys())
+        if self._conf['magnitudes'].get('mag_column'):
+            mag_key = self._conf['magnitudes']['mag_column']
+            for i in self._available_filters:
+                self._columns.append(mag_key.format(band=i))
+        if self._conf['magnitudes'].get('err_mag_column'):
+            err_mag_key = self._conf['magnitudes']['err_mag_column']
+            for i in self._available_filters:
+                self._columns.append(err_mag_key.format(band=i))
+
+        self._setup_catalog()
         super().__init__(*args, **kwargs)
 
-    @staticmethod
-    @abc.abstractmethod
-    def _filter_magnitudes(query, band):
+    def _filter_magnitudes(self, query, band):
         """Get the qfloat magnitudes."""
+        mag_key = self._conf['magnitudes']['mag_column'].format(band=band)
+        err_mag_key = self._conf['magnitudes']['err_mag_column']
+        err_mag_key = err_mag_key.format(band=band)
 
-    @staticmethod
-    @abc.abstractmethod
-    def _filter_coordinates(query, obstime, frame):
+        unit = query[mag_key].unit
+        mag = np.array(query[mag_key])
+        if err_mag_key in query.colnames:
+            err_unit = query[err_mag_key].unit
+            mag_err = np.array(query[err_mag_key])
+            mag_err = np.array([float(i) if i != '' else np.nan
+                                for i in mag_err])
+            if str(err_unit) == 'cmag':
+                mag_err /= 100.0
+        else:
+            mag_err = None
+        return qfloat(mag, uncertainty=mag_err, unit=unit)
+
+    def _filter_coordinates(self, query, obstime, frame):
         """Get the SkyCoord coordinates."""
+        rakey = self._conf['coordinates']['ra_column']
+        deckey = self._conf['coordinates']['dec_column']
+        ra = np.array(query[rakey])*query[rakey].unit
+        dec = np.array(query[deckey])*query[deckey].unit
+        if 'pm_ra_column' in query.colnames and \
+           'pm_dec_column' in query.colnames:
+            pmrakey = self._conf['coordinates']['pm_ra_column']
+            pmdeckey = self._conf['coordinates']['pm_dec_column']
+            pmra = np.array(query[pmrakey])*query[pmrakey].unit
+            pmdec = np.array(query[pmdeckey])*query[pmdeckey].unit
+            return SkyCoord(ra, dec, frame=frame, obstime=obstime,
+                            pm_ra_cosdec=pmra, pm_dec=pmdec)
+        else:
+            return SkyCoord(ra, dec, frame=frame, obstime=obstime)
 
-    @staticmethod
-    @abc.abstractmethod
-    def _filter_ids(query):
+    def _filter_ids(self, query):
         """Get the id names for the objects."""
+        ids = self._conf['ids']
+        if ids is None:
+            return ['']*len(query)
 
-    @staticmethod
-    @abc.abstractmethod
-    def _filter_epoch(query):
+        prepend = self._conf['ids'].get('prepend', None)
+        id_key = self._conf['ids'].get('column', None)
+
+        if prepend:
+            return [f'{prepend} {string_fix(i)}' for i in query[id_key]]
+        else:
+            return [f'{string_fix(i)}' for i in query[id_key]]
+
+    def _filter_epoch(self, query):
         """Get the epoch for the coordinates."""
+        ep = self._conf.get('epoch', None)
+        if ep is None:
+            # when no epoch information is available
+            return
+        if 'value' in ep:
+            # fixed value
+            return Time(ep['value'], format=ep['format'])
+        if 'column' in ep:
+            # value from
+            column = np.atleast_1d(ep['column'])
+            for i in column:
+                if i in query.colnames:
+                    return Time(query[i], format=ep['format'])
 
     def _setup_catalog(self):
         self._v = Vizier(catalog=self._table, columns=self._columns)
         self._v.ROW_LIMIT = -1
 
     def _do_query(self):
-        self._query = astroquery_query(self._v.query_region,
-                                       self._center,
-                                       radius=self._radius)[0]
+        q = astroquery_query(self._v.query_region,
+                             self._center,
+                             radius=self._radius)
+        if len(q) == 0:
+            raise RuntimeError('An error occured during online query.')
+        self._query = q[0]
         ids = self._filter_ids(self._query)
 
         # perform magnitude filtering only if available
@@ -89,172 +152,16 @@ class _VizierSourcesCatalog(_OnlineSourcesCatalog, abc.ABC):
             mag[filt] = self._filter_magnitudes(self._query, filt)
 
         obstime = self._filter_epoch(self._query)
-        sk = self._filter_coordinates(self._query, obstime, self._frame)
+        frame = self._conf['coordinates'].get('frame', 'icrs')
+        sk = self._filter_coordinates(self._query, obstime, frame)
 
         SourcesCatalog.__init__(self, sk, ids=ids, mag=mag)
 
 
-def _ucac4_filter_coord(query, obstime, frame,
-                        rakey='RAJ2000', deckey='DEJ2000',
-                        pmrakey='pmRA', pmdeckey='pmDE'):
-    ra = np.array(query[rakey])*query[rakey].unit
-    dec = np.array(query[deckey])*query[deckey].unit
-    pmra = np.array(query[pmrakey])*query[pmrakey].unit
-    pmdec = np.array(query[pmdeckey])*query[pmdeckey].unit
-    return SkyCoord(ra, dec, frame=frame, obstime=obstime,
-                    pm_ra_cosdec=pmra, pm_dec=pmdec)
-
-
-def _ucac4_filter_magnitude(query, band):
-    unit = query[f'{band}mag'].unit
-    mag = np.array(query[f'{band}mag'])
-    if f'e_{band}mag' in query.colnames:
-        err_unit = query[f'e_{band}mag'].unit
-        mag_err = np.array(query[f'e_{band}mag'])
-        mag_err = np.array([float(i) if i != '' else np.nan
-                            for i in mag_err])
-        if str(err_unit) == 'cmag':
-            mag_err /= 100.0
-    else:
-        mag_err = None
-    return qfloat(mag, uncertainty=mag_err, unit=unit)
-
-
-class UCAC4SourcesCatalog(_VizierSourcesCatalog):
-    _table = 'UCAC4'
-    _filter_coordinates = staticmethod(_ucac4_filter_coord)
-    _filter_magnitudes = staticmethod(_ucac4_filter_magnitude)
-    _available_filters = ['J', 'H', 'K', 'B', 'V', 'g', 'r', 'i']
-
-    @staticmethod
-    def _filter_ids(query):
-        return [f'UCAC4 {string_fix(i)}' for i in list(query['UCAC4'])]
-
-    @staticmethod
-    def _filter_epoch(query):
-        return Time(query['EpRA'], format='jyear')
-
-    @property
-    def _columns(self):
-        cols = ['+_r', 'UCAC4', 'RAJ2000', 'DEJ2000', 'pmRA', 'pmDE', 'EpRA']
-        for i in self._available_filters:
-            cols += [f'{i}mag', f'e_{i}mag']
-        return cols
-
-
-class APASS9SourcesCatalog(_VizierSourcesCatalog):
-    _table = 'apass9'
-    _available_filters = ['V', 'B', "g", "r", "i"]
-    _columns = ['+_r', '**']
-
-    @staticmethod
-    def _filter_coordinates(query, obstime, frame):
-        ra = np.array(query['RAJ2000'])*query['RAJ2000'].unit
-        dec = np.array(query['DEJ2000'])*query['DEJ2000'].unit
-        return SkyCoord(ra, dec, frame=frame, obstime=obstime)
-
-    @staticmethod
-    def _filter_ids(query):
-        return ['']*len(query)
-
-    @staticmethod
-    def _filter_epoch(query):
-        return None
-
-    @staticmethod
-    def _filter_magnitudes(query, band):
-        if band in ['g', 'r', 'i']:
-            band = f'{band}_'
-        return _ucac4_filter_magnitude(query, band)
-
-
-class GSC242SourcesCatalog(_VizierSourcesCatalog):
-    _table = 'I/353/gsc242'
-    _available_filters = ['G', 'Bj', 'Fpg', 'Epg', 'Npg',
-                          'U', 'B', 'V', 'u', 'g', 'r', 'i', 'z',
-                          'y', 'J', 'H', 'Ks', 'Z', 'Y', 'W1', 'W2',
-                          'W3', 'W4', 'FUV', 'NUV', 'RP', 'BP']
-    _filter_magnitudes = staticmethod(_ucac4_filter_magnitude)
-
-    @property
-    def _columns(self):
-        cols = ['+_r', 'GSC2', 'RA_ICRS', 'DE_ICRS', 'pmRA', 'pmDE', 'Epoch']
-        for i in self.filters:
-            cols += [f'{i}mag', f'e_{i}mag']
-        return cols
-
-    @staticmethod
-    def _filter_epoch(query):
-        key = 'Epoch'
-        if key not in query.colnames:
-            key = '_tab1_11'
-        return Time(query[key], format='jyear')
-
-    @staticmethod
-    def _filter_ids(query):
-        return [f'GSC2 {string_fix(i)}' for i in list(query['GSC2'])]
-
-    @staticmethod
-    def _filter_coordinates(query, obstime, frame):
-        return _ucac4_filter_coord(query, obstime, frame,
-                                   rakey='RA_ICRS', deckey='DE_ICRS')
-
-
-class UCAC5SourcesCatalog(_VizierSourcesCatalog):
-    _table = 'I/340'
-    _available_filters = ['G', 'R', 'J', 'H', 'K', 'f.']
-    _filter_magnitudes = staticmethod(_ucac4_filter_magnitude)
-
-    @staticmethod
-    def _filter_epoch(query):
-        # Gaia epoch of coordinates
-        return Time('J2015.0', format='jyear')
-
-    @staticmethod
-    def _filter_ids(query):
-        return [f'Gaia {string_fix(i)}' for i in list(query['SrcIDgaia'])]
-
-    @staticmethod
-    def _filter_coordinates(query, obstime, frame):
-        return _ucac4_filter_coord(query, obstime, frame,
-                                   rakey='RAgaia', deckey='DEgaia')
-
-
-class DENISSourcesCatalog(_VizierSourcesCatalog):
-    _table = 'B/denis'
-
-
-class TwoMASSSourcesCatalog(_VizierSourcesCatalog):
-    _table = 'II/246/out'
-
-
-class VSXSourcesCatalog(_VizierSourcesCatalog):
-    _table = 'B/vsx'
-
-
-class GCVSSourcesCatalog(_VizierSourcesCatalog):
-    _table = 'B/gcvs'
-
-
-class AllWISESourcesCatalog(_VizierSourcesCatalog):
-    _table = 'II/328/allwise'
-
-
-class WISESourcesCatalog(_VizierSourcesCatalog):
-    _table = 'II/311/wise'
-
-
-class UnWISESourcesCatalog(_VizierSourcesCatalog):
-    _table = 'II/363/unwise'
-
-
-class CatWISE2020SourcesCatalog(_VizierSourcesCatalog):
-    _table = 'cat/II/365'
-
-
-class HipparcosSourcesCatalog(_VizierSourcesCatalog):
-    _table = 'I/239/hip_main'
-
-
-class TychoSourcesCatalog(_VizierSourcesCatalog):
-    _table = 'I/239/tyc_main'
+def __getattr__(name):
+    filename = path.join(path.dirname(__file__), f'vizier_catalogs/{name}.yml')
+    if path.exists(filename):
+        class NewViz(VizierSourcesCatalog):
+            def __init__(self, *args, **kwargs):
+                super(NewViz, self).__init__(filename, *args, **kwargs)
+        return NewViz

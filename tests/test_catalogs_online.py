@@ -7,10 +7,7 @@ from astropy.table import Table
 from astropy.coordinates import SkyCoord, Angle
 from astropy import units as u
 from astropop.catalogs.simbad import SimbadSourcesCatalog, simbad_query_id
-from astropop.catalogs.vizier import _VizierSourcesCatalog, \
-                                     UCAC4SourcesCatalog, \
-                                     APASS9SourcesCatalog, \
-                                     GSC242SourcesCatalog
+from astropop.catalogs import vizier
 from astropop.catalogs.tap import GaiaDR3SourcesCatalog
 from astropop.catalogs._online_tools import _timeout_retry, \
                                             _fix_query_table, \
@@ -427,14 +424,6 @@ class Test_SimbadQueryID:
         assert_equal(res, name)
 
 
-class Test_Vizier:
-    def test_vizier_need_initialization(self):
-        with pytest.raises(TypeError, match='with abstract methods'):
-            _VizierSourcesCatalog(sirius_coords[0],
-                                  search_radius[0],
-                                  band=None)
-
-
 @pytest.mark.remote_data
 class Test_Vizier_UCAC4:
     hd674_mags = {
@@ -451,17 +440,17 @@ class Test_Vizier_UCAC4:
     def test_ucac4_creation_errors(self):
         # Need arguments
         with pytest.raises(TypeError):
-            UCAC4SourcesCatalog()
+            vizier.ucac4()
         with pytest.raises(TypeError):
-            UCAC4SourcesCatalog('test')
+            vizier.ucac4('test')
 
         with pytest.raises(ValueError, match='Filter None not available.'):
-            UCAC4SourcesCatalog('Sirius', '0.05d', band='None')
+            vizier.ucac4('Sirius', '0.05d', band='None')
         # Filter None should pass, no mag data
-        UCAC4SourcesCatalog('Sirius', '0.05d', None)
+        vizier.ucac4('Sirius', '0.05d', None)
 
     def test_ucac4_creation_filters(self):
-        c = UCAC4SourcesCatalog(hd674_coords[0], '0.05d')
+        c = vizier.ucac4(hd674_coords[0], '0.05d')
 
         assert_equal(c.sources_id()[0], 'UCAC4 179-000175')
         for k, v in self.hd674_mags.items():
@@ -470,14 +459,14 @@ class Test_Vizier_UCAC4:
     @pytest.mark.parametrize('radius', search_radius)
     @pytest.mark.parametrize('center', sirius_coords)
     def test_ucac4_query_input_types(self, center, radius):
-        c = UCAC4SourcesCatalog(center, radius, band='V')
+        c = vizier.ucac4(center, radius, band='V')
 
         assert_equal(c.sources_id()[0], 'UCAC4 367-016700')
         assert_almost_equal(c.ra_dec_list()[0], [101.28715, -16.7161158], decimal=5)
         assert_almost_equal(c.mag_list('V')[0], [-1.440, 0.0])
 
     def test_ucac4_properties_types(self):
-        s = UCAC4SourcesCatalog(sirius_coords[0],
+        s = vizier.ucac4(sirius_coords[0],
                                 search_radius[0],
                                 band='V')
 
@@ -496,41 +485,41 @@ class Test_Vizier_APASS9:
     hd674_mags = {
         'B': [10.775, 0.031],
         'V': [10.626, 0.043],
-        "g": [10.783, 0.104],
-        "r": [10.675, 0.047],
-        "i": [10.726, 0.077]
+        "g_": [10.783, 0.104],
+        "r_": [10.675, 0.047],
+        "i_": [10.726, 0.077]
     }
 
     def test_apass9_creation_errors(self):
         # Need arguments
         with pytest.raises(TypeError):
-            APASS9SourcesCatalog()
+            vizier.apass9()
         with pytest.raises(TypeError):
-            APASS9SourcesCatalog('test')
+            vizier.apass9('test')
 
         with pytest.raises(ValueError, match='Filter None not available.'):
-            APASS9SourcesCatalog('Sirius', '0.05d', band='None')
+            vizier.apass9('Sirius', '0.05d', band='None')
         # Filter None should pass, no mag data
-        APASS9SourcesCatalog('Sirius', '0.05d', None)
+        vizier.apass9('Sirius', '0.05d', None)
 
     @pytest.mark.parametrize('radius', search_radius)
     @pytest.mark.parametrize('center', hd674_coords)
     def test_apass9_query_input_types(self, center, radius):
-        c = APASS9SourcesCatalog(center, radius, band='V')
+        c = vizier.apass9(center, radius, band='V')
 
         assert_equal(c.sources_id()[0], '')
         assert_almost_equal(c.ra_dec_list()[0], [2.716748, -54.290647], decimal=5)
         assert_almost_equal(c.mag_list('V')[0], [10.626, 0.043])
 
     def test_apass9_creation_filters(self):
-        c = APASS9SourcesCatalog(hd674_coords[0], '0.05d')
+        c = vizier.apass9(hd674_coords[0], '0.05d')
 
         assert_equal(c.sources_id()[0], '')
         for k, v in self.hd674_mags.items():
             assert_almost_equal(c.mag_list(k)[0], v)
 
     def test_apass9_properties_types(self):
-        s = APASS9SourcesCatalog(hd674_coords[0],
+        s = vizier.apass9(hd674_coords[0],
                                  search_radius[0],
                                  band='V')
 
@@ -577,34 +566,34 @@ class Test_Vizier_GSC242:
     def test_gsc242_creation_errors(self):
         # Need arguments
         with pytest.raises(TypeError):
-            GSC242SourcesCatalog()
+            vizier.gsc242()
         with pytest.raises(TypeError):
-            GSC242SourcesCatalog('test')
+            vizier.gsc242('test')
 
         with pytest.raises(ValueError, match='Filter None not available.'):
-            GSC242SourcesCatalog('Sirius', '0.05d', band='None')
+            vizier.gsc242('Sirius', '0.05d', band='None')
         # Filter None should pass, no mag data
-        GSC242SourcesCatalog('Sirius', '0.05d', None)
+        vizier.gsc242('Sirius', '0.05d', None)
 
     @pytest.mark.parametrize('radius', search_radius)
     @pytest.mark.parametrize('center', hd674_coords)
     def test_gsc242_query_input_types(self, center, radius):
-        c = GSC242SourcesCatalog(center, radius, band='V')
+        c = vizier.gsc242(center, radius, band='V')
 
         assert_equal(c.sources_id()[0], 'GSC2 S17J000168')
         assert_almost_equal(c.ra_dec_list()[0], [2.7168074, -54.2906086], decimal=5)
         assert_almost_equal(c.mag_list('V')[0], [10.626, 0.043])
 
     def test_gsc242_creation_filters(self):
-        c = GSC242SourcesCatalog(hd674_coords[0], '0.05d')
+        c = vizier.gsc242(hd674_coords[0], '0.05d')
 
         assert_equal(c.sources_id()[0], 'GSC2 S17J000168')
         for k, v in self.hd674_mags.items():
             assert_almost_equal(c.mag_list(k)[0], v)
 
     def test_gsc242_properties_types(self):
-        s = GSC242SourcesCatalog(hd674_coords[0],
-                                 search_radius[0],
+        s = vizier.gsc242(hd674_coords[0],
+                        search_radius[0],
                                  band='V')
 
         assert_is_instance(s.sources_id(), np.ndarray)
