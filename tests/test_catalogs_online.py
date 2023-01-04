@@ -466,9 +466,7 @@ class Test_Vizier_UCAC4:
         assert_almost_equal(c.mag_list('V')[0], [-1.440, 0.0])
 
     def test_ucac4_properties_types(self):
-        s = vizier.ucac4(sirius_coords[0],
-                                search_radius[0],
-                                band='V')
+        s = vizier.ucac4(sirius_coords[0], search_radius[0], band='V')
 
         assert_is_instance(s.sources_id(), np.ndarray)
         assert_equal(s.sources_id().shape, (len(s)))
@@ -519,9 +517,7 @@ class Test_Vizier_APASS9:
             assert_almost_equal(c.mag_list(k)[0], v)
 
     def test_apass9_properties_types(self):
-        s = vizier.apass9(hd674_coords[0],
-                                 search_radius[0],
-                                 band='V')
+        s = vizier.apass9(hd674_coords[0], search_radius[0], band='V')
 
         assert_is_instance(s.sources_id(), np.ndarray)
         assert_equal(s.sources_id().shape, (len(s)))
@@ -592,9 +588,7 @@ class Test_Vizier_GSC242:
             assert_almost_equal(c.mag_list(k)[0], v)
 
     def test_gsc242_properties_types(self):
-        s = vizier.gsc242(hd674_coords[0],
-                        search_radius[0],
-                                 band='V')
+        s = vizier.gsc242(hd674_coords[0], search_radius[0], band='V')
 
         assert_is_instance(s.sources_id(), np.ndarray)
         assert_equal(s.sources_id().shape, (len(s)))
