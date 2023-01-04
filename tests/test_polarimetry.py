@@ -318,6 +318,10 @@ class Test_DummyPolarimetry:
 
 
 class Test_StokesParameters:
+    def test_stokes_invalid_retarder(self):
+        with pytest.raises(ValueError, match='retarder must be'):
+            StokesParameters('thirdwave', 0, 1)
+
     def test_initialize_halfwave(self):
         q = QFloat(0.0130, 0.001)
         u = QFloat(-0.021, 0.001)
@@ -329,13 +333,13 @@ class Test_StokesParameters:
         assert_is_none(pol.v)
         assert_equal(pol.retarder, 'halfwave')
         assert_equal(pol.k, 1.0)
-        assert_equal(pol.zero, 0.0)
+        assert_equal(pol.zero, QFloat(0.0, unit='deg'))
 
     def test_initialize_halfwave_kzero(self):
         q = QFloat(0.0130, 0.001)
         u = QFloat(-0.021, 0.001)
         k = QFloat(1.2, 0.001)
-        zero = QFloat(60, 0.001)
+        zero = QFloat(60, 0.001, unit='deg')
 
         # V is not needed
         pol = StokesParameters(retarder='halfwave', q=q, u=u, k=k, zero=zero)
@@ -343,7 +347,7 @@ class Test_StokesParameters:
         assert_equal(pol.u, u)
         assert_is_none(pol.v)
         assert_equal(pol.retarder, 'halfwave')
-        assert_equal(pol.k, k)
+        assert_equal(pol.k, k.nominal)
         assert_equal(pol.zero, zero)
 
     def test_initialize_quarterwave(self):
@@ -358,14 +362,14 @@ class Test_StokesParameters:
         assert_equal(pol.v, v)
         assert_equal(pol.retarder, 'quarterwave')
         assert_equal(pol.k, 1.0)
-        assert_equal(pol.zero, 0.0)
+        assert_equal(pol.zero, QFloat(0.0, unit='deg'))
 
     def test_initialize_quarterwave_kzero(self):
         q = QFloat(0.0130, 0.001)
         u = QFloat(-0.021, 0.001)
         v = QFloat(0.021, 0.001)
         k = QFloat(1.2, 0.001)
-        zero = QFloat(60, 0.001)
+        zero = QFloat(60, 0.001, unit='deg')
 
         # V is needed
         pol = StokesParameters(retarder='quarterwave', q=q, u=u, v=v, k=k,
@@ -374,7 +378,7 @@ class Test_StokesParameters:
         assert_equal(pol.u, u)
         assert_equal(pol.v, v)
         assert_equal(pol.retarder, 'quarterwave')
-        assert_equal(pol.k, k)
+        assert_equal(pol.k, k.nominal)
         assert_equal(pol.zero, zero)
 
     def test_stokes_properties(self):
@@ -385,6 +389,86 @@ class Test_StokesParameters:
 
         assert_almost_equal(pol.p.nominal, 0.0246981, decimal=3)
         assert_almost_equal(pol.theta.nominal, 150.8797, decimal=3)
+
+    def test_stokes_rms(self):
+        q = QFloat(0.0130, 0.001)
+        u = QFloat(-0.021, 0.001)
+        v = QFloat(0.021, 0.001)
+        zero = 0
+        psi = np.arange(0, 360, 22.5)
+        zi = QFloat([0.01285947, -0.01919851, -0.02003721, 0.00249653,
+                     0.01413347, 0.0106049, 0.01869019, 0.03220446,
+                     0.01172209, -0.01887455, -0.01867554, 0.00309657,
+                     0.0109851, 0.01100691, 0.02298037, 0.03058262],
+                    uncertainty=[0.001]*16)
+        pol = StokesParameters(retarder='quarterwave', q=q, u=u, v=v,
+                               zero=zero, zi=zi, psi=psi)
+
+        assert_almost_equal(pol.rms, 0.00125, decimal=4)
+
+    def test_stokes_rms_no_zi_psi(self):
+        with pytest.raises(ValueError, match='without zi and psi data'):
+            p = StokesParameters('halfwave', 0, 1)
+            p.rms
+        with pytest.raises(ValueError, match='without zi and psi data'):
+            p = StokesParameters('halfwave', 0, 1, psi=[0]*16)
+            p.rms
+        with pytest.raises(ValueError, match='without zi and psi data'):
+            p = StokesParameters('halfwave', 0, 1, zi=[0]*16)
+            p.rms
+
+    def test_stokes_sigma_theor(self):
+        flux = QFloat([1]*16, [0.001]*16)
+
+        p = StokesParameters('halfwave', 0, 1, flux=flux)
+        # 0.001/sqrt(16)
+        assert_almost_equal(p.theor_sigma, 0.00025)
+
+        p = StokesParameters('quarterwave', 0, 1, flux=flux)
+        # sqrt(2)*0.001/sqrt(16)
+        assert_almost_equal(p.theor_sigma, 0.00025*np.sqrt(2))
+
+        flux = QFloat([1]*8, [0.001]*8)
+        p = StokesParameters('halfwave', 0, 1, flux=flux)
+        # 0.001/sqrt(8)
+        assert_almost_equal(p.theor_sigma, 0.001/np.sqrt(8))
+
+        p = StokesParameters('quarterwave', 0, 1, flux=flux)
+        # sqrt(2)*0.001/sqrt(16)
+        assert_almost_equal(p.theor_sigma, np.sqrt(2)*0.001/np.sqrt(8))
+
+    def test_stokes_model_halfwave(self):
+        p = StokesParameters('halfwave', 0, 0.1)
+        psi = np.arange(0, 360, 22.5)*units.degree
+        assert_almost_equal(p.model(psi).nominal, halfwave_model(psi, 0, 0.1))
+
+    def test_stokes_model_quarterwave(self):
+        p = StokesParameters('quarterwave', 0, 0.1, 0.05)
+        psi = np.arange(0, 360, 22.5)*units.degree
+        assert_almost_equal(p.model(psi), quarterwave_model(psi, 0, 0.1, 0.05))
+
+    def test_stokes_parameters_error_dimensions(self):
+        psi = np.arange(0, 360, 22.5)*units.degree
+        zi = quarterwave_model(psi, 0, 0.1, 0.05)
+        flux = [1e5]*len(psi)
+
+        p = StokesParameters('quarterwave', 0, 0.1, flux=flux, psi=psi, zi=zi)
+        p = StokesParameters('quarterwave', 0, 0.1, flux=flux, psi=psi)
+        p = StokesParameters('quarterwave', 0, 0.1, psi=psi, zi=zi)
+        p = StokesParameters('quarterwave', 0, 0.1, flux=flux, zi=zi)
+        p = StokesParameters('quarterwave', 0, 0.1, flux=flux)
+        p = StokesParameters('quarterwave', 0, 0.1, psi=psi)
+        p = StokesParameters('quarterwave', 0, 0.1, zi=zi)
+
+        with pytest.raises(ValueError, match='same dimensions'):
+            StokesParameters('quarterwave', 0, 0.1, flux=flux, psi=psi,
+                             zi=zi[:14])
+        with pytest.raises(ValueError, match='same dimensions'):
+            StokesParameters('quarterwave', 0, 0.1, flux=flux[:10], psi=psi,
+                             zi=zi)
+        with pytest.raises(ValueError, match='same dimensions'):
+            StokesParameters('quarterwave', 0, 0.1, flux=flux, psi=psi[:10],
+                             zi=zi)
 
 
 class Test_SLSPolarimetry:
@@ -398,33 +482,94 @@ class Test_SLSPolarimetry:
                         f_ord_error=[50]*16, f_ext_error=[50]*16)
         assert_almost_equal(p.q.nominal, q)
         assert_almost_equal(p.u.nominal, u)
+        for i in (p.q, p.u):
+            assert_equal(i.unit, units.dimensionless_unscaled)
         assert_almost_equal(p.k, 1.0)
         assert_is_none(p.zero)
+
+        assert_almost_equal(p.psi.nominal, psi)
+        assert_equal(p.psi.unit, units.degree)
+        assert_almost_equal(p.zi.nominal, (flux_o-flux_e)/(flux_o+flux_e))
+        assert_equal(p.zi.unit, units.dimensionless_unscaled)
+        assert_almost_equal(p.flux.nominal, [1e5]*len(psi))
 
     def test_fit_half_no_errors(self):
         q = 0.0130
         u = -0.021
         psi = np.arange(0, 360, 22.5)
         flux_o, flux_e = get_flux_oe(1e5, psi, k=1.0, q=q, u=u, zero=0)
+        zi = (flux_o-flux_e)/(flux_o+flux_e)
         pol = SLSDualBeamPolarimetry(retarder='halfwave', k=1.0)
         p = pol.compute(psi, flux_o, flux_e)
         assert_almost_equal(p.q.nominal, q)
         assert_almost_equal(p.u.nominal, u)
+        for i in (p.q, p.u):
+            assert_equal(i.unit, units.dimensionless_unscaled)
         assert_almost_equal(p.k, 1.0)
         assert_is_none(p.zero)
+
+        assert_almost_equal(p.psi.nominal, psi)
+        assert_equal(p.psi.unit, units.degree)
+        assert_almost_equal(p.zi.nominal, (flux_o-flux_e)/(flux_o+flux_e))
+        assert_equal(p.zi.unit, units.dimensionless_unscaled)
 
     def test_fit_half_estimate_k(self):
         q = 0.0130
         u = -0.021
         psi = np.arange(0, 360, 22.5)
-        flux_o, flux_e = get_flux_oe(1e5, psi, k=1.2, q=q, u=u, zero=0)
+        k = 1.2
+        flux_o, flux_e = get_flux_oe(1e5, psi, k=k, q=q, u=u, zero=0)
+        zi = (flux_o-flux_e*k)/(flux_o+flux_e*k)
         pol = SLSDualBeamPolarimetry(retarder='halfwave', compute_k=True)
         p = pol.compute(psi, flux_o, flux_e,
                         f_ord_error=[50]*16, f_ext_error=[50]*16)
         assert_almost_equal(p.q.nominal, q)
         assert_almost_equal(p.u.nominal, u)
-        assert_almost_equal(p.k.nominal, 1.2)
+        for i in (p.q, p.u):
+            assert_equal(i.unit, units.dimensionless_unscaled)
+        assert_almost_equal(p.k, k)
         assert_is_none(p.zero)
+
+        assert_almost_equal(p.psi.nominal, psi)
+        assert_equal(p.psi.unit, units.degree)
+        assert_almost_equal(p.zi.nominal, zi)
+        assert_equal(p.zi.unit, units.dimensionless_unscaled)
+
+    def test_fit_half_no_k(self):
+        q = 0.02
+        u = 0.01
+        psi = np.arange(0, 360, 22.5)
+        flux_o, flux_e = get_flux_oe(1e5, psi, k=1, q=q, u=u, zero=0)
+        zi = (flux_o-flux_e)/(flux_o+flux_e)
+        pol = SLSDualBeamPolarimetry(retarder='halfwave', compute_k=False)
+        p = pol.compute(psi, flux_o, flux_e,
+                        f_ord_error=[50]*16, f_ext_error=[50]*16)
+        # k must default to 1
+        assert_almost_equal(p.q.nominal, q)
+        assert_almost_equal(p.u.nominal, u)
+        for i in (p.q, p.u):
+            assert_equal(i.unit, units.dimensionless_unscaled)
+        assert_almost_equal(p.k, 1.0)
+        assert_is_none(p.zero)
+
+    def test_fit_half_zero(self):
+        q = 0.02
+        u = 0.01
+        psi = np.arange(0, 360, 22.5)
+        zero = 60
+        flux_o, flux_e = get_flux_oe(1e5, psi, k=1, q=q, u=u, zero=60)
+        zi = (flux_o-flux_e)/(flux_o+flux_e)
+        pol = SLSDualBeamPolarimetry(retarder='halfwave', compute_k=True,
+                                     zero=60)
+        p = pol.compute(psi, flux_o, flux_e,
+                        f_ord_error=[50]*16, f_ext_error=[50]*16)
+        # k must default to 1
+        assert_almost_equal(p.q.nominal, q)
+        assert_almost_equal(p.u.nominal, u)
+        for i in (p.q, p.u):
+            assert_equal(i.unit, units.dimensionless_unscaled)
+        assert_almost_equal(p.k, 1.0)
+        assert_equal(p.zero, QFloat(60, 0, 'degree'))
 
     def test_fit_quarter(self):
         q = 0.0130
@@ -442,8 +587,17 @@ class Test_SLSPolarimetry:
         assert_almost_equal(p.q.nominal, q)
         assert_almost_equal(p.u.nominal, u)
         assert_almost_equal(p.v.nominal, v)
-        assert_almost_equal(p.k.nominal, 1.0, decimal=2)
-        assert_almost_equal(p.zero, zero)
+        for i in (p.q, p.u, p.v):
+            assert_equal(i.unit, units.dimensionless_unscaled)
+        assert_almost_equal(p.k, 1.0, decimal=2)
+        assert_almost_equal(p.zero.nominal, zero)
+        assert_equal(p.zero.unit, units.degree)
+
+        assert_almost_equal(p.psi.nominal, psi)
+        assert_equal(p.psi.unit, units.degree)
+        assert_almost_equal(p.zi.nominal, (flux_o-flux_e)/(flux_o+flux_e))
+        assert_equal(p.zi.unit, units.dimensionless_unscaled)
+        assert_almost_equal(p.flux.nominal, [1e5]*len(psi))
 
     def test_fit_quarter_no_errors(self):
         q = 0.0130
@@ -460,8 +614,16 @@ class Test_SLSPolarimetry:
         assert_almost_equal(p.q.nominal, q)
         assert_almost_equal(p.u.nominal, u)
         assert_almost_equal(p.v.nominal, v)
-        assert_almost_equal(p.k.nominal, 1.0, decimal=2)
-        assert_almost_equal(p.zero, zero)
+        for i in (p.q, p.u, p.v):
+            assert_equal(i.unit, units.dimensionless_unscaled)
+        assert_almost_equal(p.k, 1.0, decimal=2)
+        assert_almost_equal(p.zero.nominal, zero)
+        assert_equal(p.zero.unit, units.degree)
+
+        assert_almost_equal(p.psi.nominal, psi)
+        assert_equal(p.psi.unit, units.degree)
+        assert_almost_equal(p.zi.nominal, (flux_o-flux_e)/(flux_o+flux_e))
+        assert_equal(p.zi.unit, units.dimensionless_unscaled)
 
     @pytest.mark.parametrize('k', [0.99, 1.01, 1.03, 0.97])
     def test_fit_quarter_estimate_k(self, k):
@@ -474,13 +636,44 @@ class Test_SLSPolarimetry:
         flux_o, flux_e = get_flux_oe(1e5, psi, k=k, q=q, u=u, v=v, zero=zero)
         pol = SLSDualBeamPolarimetry(retarder='quarterwave', zero=60,
                                      compute_k=True)
+        zi = (flux_o-flux_e*k)/(flux_o+flux_e*k)
         p = pol.compute(psi, flux_o, flux_e)
 
         assert_almost_equal(p.q.nominal, q, decimal=3)
         assert_almost_equal(p.u.nominal, u, decimal=3)
         assert_almost_equal(p.v.nominal, v, decimal=3)
-        assert_almost_equal(p.k.nominal, k, decimal=2)
-        assert_almost_equal(p.zero, zero, decimal=3)
+        for i in (p.q, p.u, p.v):
+            assert_equal(i.unit, units.dimensionless_unscaled)
+        assert_almost_equal(p.k, k, decimal=2)
+        assert_almost_equal(p.zero.nominal, zero, decimal=3)
+        assert_equal(p.zero.unit, units.degree)
+
+        assert_almost_equal(p.psi.nominal, psi)
+        assert_equal(p.psi.unit, units.degree)
+        assert_almost_equal(p.zi.nominal, zi, decimal=4)
+        assert_equal(p.zi.unit, units.dimensionless_unscaled)
+
+    def test_fit_quarter_no_k(self):
+        q = 0.0130
+        u = -0.027
+        v = 0.021
+        zero = 60
+
+        psi = np.arange(0, 360, 22.5)
+        flux_o, flux_e = get_flux_oe(1e5, psi, k=1.0, q=q, u=u, v=v, zero=zero)
+        pol = SLSDualBeamPolarimetry(retarder='quarterwave', zero=60,
+                                     compute_k=False)
+        p = pol.compute(psi, flux_o, flux_e,
+                        f_ord_error=[50]*16, f_ext_error=[50]*16)
+
+        assert_almost_equal(p.q.nominal, q)
+        assert_almost_equal(p.u.nominal, u)
+        assert_almost_equal(p.v.nominal, v)
+        for i in (p.q, p.u, p.v):
+            assert_equal(i.unit, units.dimensionless_unscaled)
+        assert_almost_equal(p.k, 1.0)
+        assert_almost_equal(p.zero.nominal, zero)
+        assert_equal(p.zero.unit, units.degree)
 
     def test_fit_quarter_estimate_zero(self):
         q = 0.130
@@ -496,5 +689,25 @@ class Test_SLSPolarimetry:
         assert_almost_equal(p.q.nominal, q, decimal=3)
         assert_almost_equal(p.u.nominal, u, decimal=3)
         assert_almost_equal(p.v.nominal, v, decimal=3)
-        assert_almost_equal(p.k.nominal, 1.0, decimal=2)
+        for i in (p.q, p.u, p.v):
+            assert_equal(i.unit, units.dimensionless_unscaled)
+        assert_almost_equal(p.k, 1.0, decimal=2)
         assert_almost_equal(p.zero.nominal, zero, decimal=3)
+        assert_equal(p.zero.unit, units.degree)
+
+        assert_almost_equal(p.psi.nominal, psi)
+        assert_equal(p.psi.unit, units.degree)
+        assert_almost_equal(p.zi.nominal, (flux_o-flux_e)/(flux_o+flux_e))
+        assert_equal(p.zi.unit, units.dimensionless_unscaled)
+
+    def test_fit_quarter_no_converge(self):
+        q = 0.02
+        u = 0.0
+        v = 0.0
+        zero = 60
+        psi = np.arange(0, 360, 22.5)
+        flux_o, flux_e = get_flux_oe(1e5, psi, k=1.0, q=q, u=u, v=v, zero=zero)
+        pol = SLSDualBeamPolarimetry(retarder='quarterwave', compute_k=True,
+                                     zero=None, max_iters=1)
+        with pytest.raises(RuntimeError, match='Could not converge after'):
+            p = pol.compute(psi, flux_o, flux_e)

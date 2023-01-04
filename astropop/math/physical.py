@@ -127,7 +127,7 @@ class _QFloatFormatter():
 
     def round(self):
         try:
-            first_digit = -np.int(np.floor(np.log10(np.abs(self._s))))
+            first_digit = -np.int_(np.floor(np.log10(np.abs(self._s))))
             self._n = np.around(self._n, first_digit)
             self._s = np.around(self._s, first_digit)
             self._d = first_digit
@@ -705,11 +705,11 @@ class QFloat():
 
     @require_qfloat
     def __int__(self):
-        return np.int(self.nominal)
+        return int(self.nominal)
 
     @require_qfloat
     def __float__(self):
-        return np.float(self.nominal)
+        return float(self.nominal)
 
 
 # TODO:
@@ -821,6 +821,12 @@ def _qfloat_mean(qf, axis=None):
     # N is determined by the number of elements in the axis
     std /= np.sqrt(np.sum(np.ones_like(qf.nominal), axis=axis))
     return QFloat(nominal, std, qf.unit)
+
+
+@_implements_array_func(np.std)
+def _qfloat_std(qf, axis=None):
+    """Implement np.std for qfloats."""
+    return np.std(qf.nominal, axis=axis)
 
 
 def _implements_ufunc_on_nominal(func):

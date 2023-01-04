@@ -1,35 +1,45 @@
-import sys, os, re
-import sphinx_rtd_theme
+import sys
+import os
 
-if not os.path.exists('api'):
-    os.mkdir('api')
+ap_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(ap_dir)
 
 # Minimum version, enforced by sphinx
-needs_sphinx = '2.2.0'
+needs_sphinx = '4.3.0'
 
 extensions = [
-    # 'sphinx.ext.autodoc',
-    'sphinxcontrib.napoleon',  # use napoleon to compatibility
+    'sphinx.ext.autodoc',
     'sphinx.ext.intersphinx',
     'sphinx.ext.coverage',
     'sphinx.ext.autosummary',
     'sphinx.ext.doctest',
     'sphinx.ext.graphviz',
     'sphinx.ext.ifconfig',
+    'sphinx.ext.extlinks',
     'sphinx.ext.todo',
+    'sphinx.ext.mathjax',
+    'sphinx_automodapi.automodapi',
+    'sphinx_automodapi.smart_resolver',
+    'numpydoc',
     'matplotlib.sphinxext.plot_directive',
     'IPython.sphinxext.ipython_console_highlighting',
     'IPython.sphinxext.ipython_directive',
-    'sphinx.ext.imgmath',
     'nbsphinx',
 ]
 
-napoleon_use_rtype = False
-napoleon_use_ivar = True
+extlinks = {
+    'doi': ('https://dx.doi.org/%s', 'doi:'),
+}
 
 nbsphinx_allow_errors = True
 nbsphinx_execute = 'never'
 nbsphinx_kernel_name = 'python3'
+
+todo_include_todos = True
+
+numpydoc_show_class_members = False
+numpydoc_attributes_as_param_list = False
+# numpydoc_xref_aliases = {}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -40,7 +50,7 @@ master_doc = 'index'
 
 # Project info
 project = 'astropop'
-copyright = '2018-2021, Julio Campagnolo and contributors'
+copyright = '2018-2023, Julio Campagnolo and contributors'
 import astropop
 version = astropop.__version__.split('-', 1)[0]
 # The full version, including alpha/beta/rc tags.
@@ -50,10 +60,8 @@ today_fmt = '%B %d, %Y'
 # General theme infos
 exclude_patterns = ['_templates', '_build', 'Thumbs.db', '.DS_Store']
 pygments_style = 'sphinx'
-html_theme = "sphinx_rtd_theme"
-# html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+html_theme = 'pydata_sphinx_theme'
 html_static_path = ['_static']
-imgmath_image_format = 'svg'
 htmlhelp_basename = 'astropop'
 
 autosummary_generate = True
@@ -64,5 +72,7 @@ intersphinx_mapping = {
     "numpy": ("https://docs.scipy.org/doc/numpy/", None),
     "scipy": ("https://docs.scipy.org/doc/scipy/reference", None),
     "matplotlib": ("https://matplotlib.org/", None),
-    "astropy": ('http://docs.astropy.org/en/latest/', None)
+    "astropy": ('http://docs.astropy.org/en/latest/', None),
+    'astroquery': ('https://astroquery.readthedocs.io/en/latest/', None),
+    'uncertainties': ('https://uncertainties-python-package.readthedocs.io/en/latest/', None)
 }

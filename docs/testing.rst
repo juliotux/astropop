@@ -22,23 +22,5 @@ For all the functions, check the API.
 Testing Helpers API
 -------------------
 
-.. autofunction:: astropop.testing.assert_true
-.. autofunction:: astropop.testing.assert_false
-.. autofunction:: astropop.testing.assert_equal
-.. autofunction:: astropop.testing.assert_not_equal
-.. autofunction:: astropop.testing.assert_almost_equal
-.. autofunction:: astropop.testing.assert_is
-.. autofunction:: astropop.testing.assert_is_not
-.. autofunction:: astropop.testing.assert_is_instance
-.. autofunction:: astropop.testing.assert_is_not_instance
-.. autofunction:: astropop.testing.assert_in
-.. autofunction:: astropop.testing.assert_not_in
-.. autofunction:: astropop.testing.assert_greater
-.. autofunction:: astropop.testing.assert_greater_equal
-.. autofunction:: astropop.testing.assert_less
-.. autofunction:: astropop.testing.assert_less_equal
-.. autofunction:: astropop.testing.assert_raises
-.. autofunction:: astropop.testing.assert_raises_regex
-.. autofunction:: astropop.testing.assert_warns
-.. autofunction:: astropop.testing.assert_no_warnings
-
+.. automodapi:: astropop.testing
+    :no-inheritance-diagram:

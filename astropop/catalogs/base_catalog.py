@@ -47,7 +47,7 @@ def match_indexes(ra, dec, cat_ra, cat_dec, limit_angle):
                                                   unit=('degree', 'degree'),
                                                   frame='icrs'))
 
-    index = np.zeros(len(ra), dtype=np.int)
+    index = np.zeros(len(ra), dtype=np.int_)
     index.fill(-1)   # a nan index
 
     lim = Angle(limit_angle)

@@ -23,8 +23,8 @@ from astropop.logger import logger, log_to_list
                                     ('AB', False),
                                     ([1, 2, 3], False),
                                     (np.array([1, 2]), False),
-                                    (np.int('3'), True),
-                                    (np.float(3), True),
+                                    (np.int_('3'), True),
+                                    (np.float_(3), True),
                                     (False, False),
                                     ((1, 2, 3), False)])
 def test_check_number(v, exp):
@@ -52,6 +52,19 @@ class Test_RunCommand():
            "bash -c 'for i in {1..10}; do echo \"$i\"; sleep 0.1; done'")
     com2 = ("bash -c 'echo \"this is an error\" 1>&2'",
             ["bash", "-c", 'echo "this is an error" 1>&2'])
+
+    # This test break all the others
+    # def test_nested_async(self):
+    #     import asyncio
+    #     async def async_func():
+    #         run_command(['ls', '/'])
+
+    #     asyncio.run(async_func())
+
+    def test_process_error(self):
+        import subprocess
+        with pytest.raises(subprocess.CalledProcessError):
+            run_command('python -c "import sys; sys.exit(1000)"')
 
     @pytest.mark.parametrize('com', com)
     def test_run_command(self, com):
@@ -246,6 +259,7 @@ class Test_Broadcast():
         bc = broadcast(np.arange(10), 3, 2)
 
         assert_equal(bc.iters, [np.arange(10), [3]*10, [2]*10])
+
 
 class Test_IndexedDict():
     def test_indexeddict_create(self):
