@@ -83,6 +83,13 @@ jobs:
         # setup.cfg and pyproject.toml have versioning info that would
         # impact the tox environment.
         key: ${{ matrix.toxenv }}-${{ hashFiles('pyproject.toml', 'setup.cfg') }}
+    - name: Cache astropy cache
+      uses: actions/cache@v3
+      with:
+        path: ~astropy
+        # setup.cfg and pyproject.toml have versioning info that would
+        # impact the tox environment.
+        key: ${{ matrix.toxenv }}-${{ hashFiles('pyproject.toml', 'setup.cfg') }}
     - name: Run tests
       run: tox -v -e ${{ matrix.toxenv }}
 
@@ -108,13 +115,17 @@ jobs:
         python-version: "3.11"
     - name: Cache conda
       uses: actions/cache@v2
-      env:
-        # Increase this value to reset cache if etc/example-environment.yml has not changed
-        CACHE_NUMBER: 0
       with:
         path: ~/conda_pkgs_dir
         key:
           ${{ runner.os }}-conda-${{ hashFiles('pyproject.toml', 'setup.cfg') }}
+    - name: Cache astropy cache
+      uses: actions/cache@v3
+      with:
+        path: ~astropy
+        # setup.cfg and pyproject.toml have versioning info that would
+        # impact the tox environment.
+        key: ${{ matrix.toxenv }}-${{ hashFiles('pyproject.toml', 'setup.cfg') }}
     - name: Install dependencies
       shell: bash -l {0}
       run: |
