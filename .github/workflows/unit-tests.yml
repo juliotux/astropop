@@ -114,7 +114,7 @@ jobs:
         channels: conda-forge,defaults
         python-version: "3.11"
     - name: Cache conda
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: ~/conda_pkgs_dir
         key:
