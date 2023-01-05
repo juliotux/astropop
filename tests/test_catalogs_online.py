@@ -784,3 +784,55 @@ class Test_WISEVizierSourcesCatalog:
         assert_equal(s.ra_dec_list().shape, (len(s), 2))
         assert_is_instance(s.mag_list('W1'), np.ndarray)
         assert_equal(s.mag_list('W1').shape, (len(s), 2))
+
+
+class Test_AllWISEVizierSourcesCatalog:
+    hd674_mags = {
+        'W1': [10.026, 0.023],
+        'W2': [10.044, 0.020],
+        'W3': [10.043, 0.051],
+        'W4': [8.522, np.nan],
+        'J': [10.157, 0.021],
+        'H': [10.083, 0.022],
+        'K': [10.029, 0.021]
+    }
+
+    def test_allwise_creation_errors(self):
+        # Need arguments
+        with pytest.raises(TypeError):
+            vizier.allwise()
+        with pytest.raises(TypeError):
+            vizier.allwise('test')
+
+        with pytest.raises(ValueError, match='Filter None not available.'):
+            vizier.allwise('Sirius', '0.05d', band='None')
+        # Filter None should pass, no mag data
+        vizier.allwise('Sirius', '0.05d', None)
+
+    def test_allwise_creation_filters(self):
+        c = vizier.allwise(hd674_coords[0], '0.05d')
+
+        assert_equal(c.sources_id()[0], 'AllWISE J001052.02-541726.3')
+        for k, v in self.hd674_mags.items():
+            assert_almost_equal(c.mag_list(k)[0], v)
+
+    @pytest.mark.parametrize('radius', search_radius)
+    @pytest.mark.parametrize('center', sirius_coords)
+    def test_allwise_query_input_types(self, center, radius):
+        c = vizier.allwise(center, radius, band='W1')
+
+        assert_equal(c.sources_id()[0], 'AllWISE J064508.94-164303.4')
+        assert_almost_equal(c.ra_dec_list()[0], [101.2872632, -16.7176349], decimal=5)
+        assert_almost_equal(c.mag_list('W1')[0], [1.883, np.nan])
+
+    def test_allwise_properties_types(self):
+        s = vizier.allwise(sirius_coords[0], search_radius[0], band='W1')
+
+        assert_is_instance(s.sources_id(), np.ndarray)
+        assert_equal(s.sources_id().shape, (len(s)))
+        assert_is_instance(s.skycoord(), SkyCoord)
+        assert_is_instance(s.magnitude('W1'), QFloat)
+        assert_is_instance(s.ra_dec_list(), np.ndarray)
+        assert_equal(s.ra_dec_list().shape, (len(s), 2))
+        assert_is_instance(s.mag_list('W1'), np.ndarray)
+        assert_equal(s.mag_list('W1').shape, (len(s), 2))
