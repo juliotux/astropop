@@ -76,8 +76,13 @@ jobs:
     - name: Install graphviz dependency
       if: "endsWith(matrix.toxenv, 'build_docs')"
       run: sudo apt-get -y install graphviz
-    - name: Print package versions
-      run: pip list
+    - name: Cache tox environments
+      uses: actions/cache@v3
+      with:
+        path: .tox
+        # setup.cfg and pyproject.toml have versioning info that would
+        # impact the tox environment.
+        key: ${{ matrix.toxenv }}-${{ hashFiles('pyproject.toml', 'setup.cfg') }}
     - name: Run tests
       run: tox -v -e ${{ matrix.toxenv }}
 
