@@ -1,5 +1,6 @@
 ---
 table: 'II/336/apass9'
+description: 'AAVSO Photometric All Sky Survey (APASS) DR9 (Henden+, 2016)'
 columns: ['+_r', '**']  # not so many columns
 available_filters: {
   'B': 'Johnson B-band magnitude',

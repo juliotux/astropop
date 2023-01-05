@@ -1,5 +1,6 @@
 ---
 table: 'ucac5'
+description: 'UCAC5 Catalogue (Zacharias+ 2017)'
 columns: ['+r', '**']
 available_filters: {
   'G': 'Gaia G magnitude',

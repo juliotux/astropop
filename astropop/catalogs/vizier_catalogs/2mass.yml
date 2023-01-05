@@ -1,2 +1,3 @@
 ---
-table = 'II/246/out'
+table: 'II/246/out'
+description: '2MASS All-Sky Catalog of Point Sources (Cutri+ 2003)'

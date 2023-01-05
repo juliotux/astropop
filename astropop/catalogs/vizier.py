@@ -1,7 +1,7 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 """Query and match objects in Vizier catalogs."""
 
-from os import path
+from os import path, listdir
 import numpy as np
 import yaml
 import functools
@@ -156,6 +156,20 @@ class VizierSourcesCatalog(_OnlineSourcesCatalog):
         sk = self._filter_coordinates(self._query, obstime, frame)
 
         SourcesCatalog.__init__(self, sk, ids=ids, mag=mag)
+
+
+def list_vizier_catalogs():
+    root = path.join(path.dirname(__file__), 'vizier_catalogs')
+    catalogs = 'Available pre-configured Vizier catalogs are:'
+    for i in listdir(root):
+        with open(path.join(root, i), 'r') as f:
+            y = yaml.safe_load(f)
+            catalogs += f'\n    {i.replace(".yml", "")}: '
+            catalogs += f'{y.get("description", "")}'
+    return catalogs
+
+
+list_vizier_catalogs.__doc__ = "Notes\n-----\n" + list_vizier_catalogs()
 
 
 def __getattr__(name):
