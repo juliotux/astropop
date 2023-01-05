@@ -684,3 +684,51 @@ class Test_VSXVizierCatalog:
 
         assert_equal(s.sources_id()[0], 'VSX 234935')
         assert_equal(s['Name'][0], 'SMC V2018')
+
+
+class Test_2MASSVizierSourcesCatalog:
+    hd674_mags = {
+        'J': [10.157, 0.021],
+        'H': [10.083, 0.022],
+        'K': [10.029, 0.021]
+    }
+
+    def test_twomass_creation_errors(self):
+        # Need arguments
+        with pytest.raises(TypeError):
+            vizier.twomass()
+        with pytest.raises(TypeError):
+            vizier.twomass('test')
+
+        with pytest.raises(ValueError, match='Filter None not available.'):
+            vizier.twomass('Sirius', '0.05d', band='None')
+        # Filter None should pass, no mag data
+        vizier.twomass('Sirius', '0.05d', None)
+
+    def test_twomass_creation_filters(self):
+        c = vizier.twomass(hd674_coords[0], '0.05d')
+
+        assert_equal(c.sources_id()[0], '2MASS 00105201-5417264')
+        for k, v in self.hd674_mags.items():
+            assert_almost_equal(c.mag_list(k)[0], v)
+
+    @pytest.mark.parametrize('radius', search_radius)
+    @pytest.mark.parametrize('center', sirius_coords)
+    def test_twomass_query_input_types(self, center, radius):
+        c = vizier.twomass(center, radius, band='J')
+
+        assert_equal(c.sources_id()[0], '2MASS 06450887-1642566')
+        assert_almost_equal(c.ra_dec_list()[0], [101.286999, -16.715742], decimal=5)
+        assert_almost_equal(c.mag_list('J')[0], [-1.391, 0.109])
+
+    def test_twomass_properties_types(self):
+        s = vizier.twomass(sirius_coords[0], search_radius[0], band='J')
+
+        assert_is_instance(s.sources_id(), np.ndarray)
+        assert_equal(s.sources_id().shape, (len(s)))
+        assert_is_instance(s.skycoord(), SkyCoord)
+        assert_is_instance(s.magnitude('J'), QFloat)
+        assert_is_instance(s.ra_dec_list(), np.ndarray)
+        assert_equal(s.ra_dec_list().shape, (len(s), 2))
+        assert_is_instance(s.mag_list('J'), np.ndarray)
+        assert_equal(s.mag_list('J').shape, (len(s), 2))
