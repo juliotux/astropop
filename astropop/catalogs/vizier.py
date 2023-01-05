@@ -86,6 +86,7 @@ class VizierSourcesCatalog(_OnlineSourcesCatalog):
 
         unit = query[mag_key].unit
         mag = np.array(query[mag_key])
+        mag_err = None
         if err_mag_key in query.colnames:
             err_unit = query[err_mag_key].unit
             mag_err = np.array(query[err_mag_key])
@@ -93,8 +94,6 @@ class VizierSourcesCatalog(_OnlineSourcesCatalog):
                                 for i in mag_err])
             if str(err_unit) == 'cmag':
                 mag_err /= 100.0
-        else:
-            mag_err = None
         return qfloat(mag, uncertainty=mag_err, unit=unit)
 
     def _filter_coordinates(self, query, obstime, frame):
@@ -111,8 +110,7 @@ class VizierSourcesCatalog(_OnlineSourcesCatalog):
             pmdec = np.array(query[pmdeckey])*query[pmdeckey].unit
             return SkyCoord(ra, dec, frame=frame, obstime=obstime,
                             pm_ra_cosdec=pmra, pm_dec=pmdec)
-        else:
-            return SkyCoord(ra, dec, frame=frame, obstime=obstime)
+        return SkyCoord(ra, dec, frame=frame, obstime=obstime)
 
     def _filter_ids(self, query):
         """Get the id names for the objects."""
@@ -125,8 +123,7 @@ class VizierSourcesCatalog(_OnlineSourcesCatalog):
 
         if prepend:
             return [f'{prepend} {string_fix(i)}' for i in query[id_key]]
-        else:
-            return [f'{string_fix(i)}' for i in query[id_key]]
+        return [f'{string_fix(i)}' for i in query[id_key]]
 
     def _filter_epoch(self, query):
         """Get the epoch for the coordinates."""
