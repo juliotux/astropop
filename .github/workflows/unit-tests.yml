@@ -148,7 +148,7 @@ jobs:
         pytest --pyargs ./tests ./docs --remote-data --reruns=1 --reruns-delay 10 --cov astropop --cov-config=./setup.cfg
         coverage xml -o ./coverage.xml
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v2
+      uses: codecov/codecov-action@v3
       with:
         file: ./coverage.xml
     - name: Upload coverage to Coveralls
