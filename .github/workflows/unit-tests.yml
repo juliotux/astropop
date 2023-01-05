@@ -86,7 +86,7 @@ jobs:
     - name: Cache astropy cache
       uses: actions/cache@v3
       with:
-        path: ~astropy
+        path: ~/.astropy
         # setup.cfg and pyproject.toml have versioning info that would
         # impact the tox environment.
         key: ${{ matrix.toxenv }}-${{ hashFiles('pyproject.toml', 'setup.cfg') }}
@@ -122,7 +122,7 @@ jobs:
     - name: Cache astropy cache
       uses: actions/cache@v3
       with:
-        path: ~astropy
+        path: ~/.astropy
         # setup.cfg and pyproject.toml have versioning info that would
         # impact the tox environment.
         key: conda-astropy-${{ hashFiles('pyproject.toml', 'setup.cfg') }}
