@@ -4,7 +4,6 @@
 from os import path, listdir
 import numpy as np
 import yaml
-import functools
 from astropy.coordinates import SkyCoord
 from astroquery.vizier import Vizier
 from astropy.time import Time
