@@ -52,19 +52,31 @@ class VizierSourcesCatalog(_OnlineSourcesCatalog):
         with open(config_file, 'r') as f:
             self._conf = yaml.safe_load(f)
         self._table = self._conf['table']
-        self._columns = self._conf['columns']
-        self._available_filters = list(self._conf['available_filters'].keys())
-        if self._conf['magnitudes'].get('mag_column'):
-            mag_key = self._conf['magnitudes']['mag_column']
-            for i in self._available_filters:
-                self._columns.append(mag_key.format(band=i))
-        if self._conf['magnitudes'].get('err_mag_column'):
-            err_mag_key = self._conf['magnitudes']['err_mag_column']
-            for i in self._available_filters:
-                self._columns.append(err_mag_key.format(band=i))
+        self._available_filters = self._get_available_filters()
+        self._columns = self._conf['columns'] + self._get_mag_columns()
 
         self._setup_catalog()
         super().__init__(*args, **kwargs)
+
+    def _get_available_filters(self):
+        """Get the available filters."""
+        filters = self._conf.get('available_filters', None)
+        if filters is None:
+            return
+        return list(filters.keys())
+
+    def _get_mag_columns(self):
+        mag_conf = self._conf.get('magnitudes')
+        mag_cols = []
+        if mag_conf is not None:
+            mag_key = mag_conf.get('mag_column', None)
+            mag_cols.extend([mag_key.format(band=i)
+                             for i in self._available_filters])
+            err_mag_key = mag_conf.get('err_mag_column', None)
+            if err_mag_key is not None:
+                mag_cols.extend([err_mag_key.format(band=i)
+                                 for i in self._available_filters])
+        return mag_cols
 
     def _filter_magnitudes(self, query, band):
         """Get the qfloat magnitudes."""

@@ -640,3 +640,47 @@ class Test_Vizier_GaiaDR3:
         assert_equal(s.ra_dec_list().shape, (len(s), 2))
         assert_is_instance(s.mag_list('G'), np.ndarray)
         assert_equal(s.mag_list('G').shape, (len(s), 2))
+
+
+@pytest.mark.remote_data
+class Test_VSXVizierCatalog:
+    def test_vsx_creation_errors(self):
+        # Need arguments
+        with pytest.raises(TypeError):
+            vizier.vsx()
+        with pytest.raises(TypeError):
+            vizier.vsx('test')
+
+        with pytest.raises(ValueError, match='No filters available'):
+            vizier.vsx('Sirius', '0.05d', band='None')
+        # Filter None should pass, no mag data
+        vizier.vsx('Sirius', '0.05d', None)
+
+    def test_vsx_creation_filters(self):
+        with pytest.raises(ValueError, match='No filters available'):
+            vizier.vsx('Sirius', '0.05d', band='V')
+
+        # none and all should pass
+        vizier.vsx('Sirius', '0.05d', band=None)
+        vizier.vsx('Sirius', '0.05d', band='all')
+
+    def test_vsx_properties_types(self):
+        s = vizier.vsx('RMC 40', search_radius[0])
+
+        assert_is_instance(s.sources_id(), np.ndarray)
+        assert_equal(s.sources_id().shape, (len(s)))
+        assert_is_instance(s.skycoord(), SkyCoord)
+        assert_is_instance(s.ra_dec_list(), np.ndarray)
+        assert_equal(s.ra_dec_list().shape, (len(s), 2))
+
+        # since no filters are available
+        with pytest.raises(ValueError, match=' no photometic information.'):
+            s.magnitude('V')
+        with pytest.raises(ValueError, match=' no photometic information.'):
+            s.mag_list('V')
+
+    def test_vsx_getting_ids(self):
+        s = vizier.vsx('RMC 40', '10 arcsec')
+
+        assert_equal(s.sources_id()[0], 'VSX 234935')
+        assert_equal(s['Name'][0], 'SMC V2018')
