@@ -424,6 +424,15 @@ class Test_SimbadQueryID:
         assert_equal(res, name)
 
 
+class Test_VizierGeneral:
+    def test_print_available_catalogs(self):
+        assert_is_instance(vizier.list_vizier_catalogs(), str)
+        assert_equal(vizier.list_vizier_catalogs()[:45],
+                     'Available pre-configured Vizier catalogs are:')
+        assert_equal(vizier.list_vizier_catalogs.__doc__,
+                     'Notes\n-----\n'+vizier.list_vizier_catalogs())
+
+
 @pytest.mark.remote_data
 class Test_Vizier_UCAC4:
     hd674_mags = {
