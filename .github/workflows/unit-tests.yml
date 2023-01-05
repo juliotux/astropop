@@ -191,7 +191,7 @@ jobs:
         path: .tox
         # setup.cfg and pyproject.toml have versioning info that would
         # impact the tox environment.
-        key: build_docs-astropy-${{ hashFiles('pyproject.toml', 'setup.cfg') }
+        key: build_docs-astropy-${{ hashFiles('pyproject.toml', 'setup.cfg') }}
     - name: Run tests
       shell: bash -l {0}
       run: tox -v -e build_docs
