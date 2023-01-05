@@ -1,3 +1,5 @@
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fjuliotux%2Fastropop.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fjuliotux%2Fastropop?ref=badge_shield)
+
 AstroPoP
 ========
 
@@ -171,3 +173,7 @@ Documentation (not complete yet) can be found at `astropop.readthedocs.io <https
 
 .. |CODACY|  image:: https://app.codacy.com/project/badge/Grade/ab9d4647935d4b33aee0544b6957d7a7
     :target: https://www.codacy.com/gh/sparc4-dev/astropop/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=sparc4-dev/astropop&amp;utm_campaign=Badge_Grade
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fjuliotux%2Fastropop.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fjuliotux%2Fastropop?ref=badge_large)
