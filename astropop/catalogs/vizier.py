@@ -91,8 +91,8 @@ class VizierSourcesCatalog(_OnlineSourcesCatalog):
         deckey = self._conf['coordinates']['dec_column']
         ra = np.array(query[rakey])*query[rakey].unit
         dec = np.array(query[deckey])*query[deckey].unit
-        if 'pm_ra_column' in query.colnames and \
-           'pm_dec_column' in query.colnames:
+        if 'pm_ra_column' in self._conf['coordinates'] and \
+           'pm_dec_column' in self._conf['coordinates']:
             pmrakey = self._conf['coordinates']['pm_ra_column']
             pmdeckey = self._conf['coordinates']['pm_dec_column']
             pmra = np.array(query[pmrakey])*query[pmrakey].unit
