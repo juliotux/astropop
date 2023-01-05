@@ -61,7 +61,6 @@ def _simbad_query_id(ra, dec, limit_angle, name_order=None):
             for k in ids:
                 if i+' ' in k:
                     return _strip_spaces(k)
-    return None
 
 
 simbad_query_id = np.vectorize(_simbad_query_id,
