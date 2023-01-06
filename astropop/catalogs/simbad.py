@@ -16,25 +16,7 @@ __all__ = ['simbad_query_id', 'SimbadSourcesCatalog']
 
 
 def _simbad_query_id(ra, dec, limit_angle, name_order=None):
-    """Query name ids for a star in Simbad.
-
-    Parameters
-    ----------
-    ra, dec : `float`
-        RA and DEC decimal degrees coordinates to query.
-    limit_angle : string, float, `~astropy.coordinates.Angle`
-        Maximum radius for search.
-    name_order : `list`, optional
-        Order of priority of name prefixes to query.
-        Default: None
-    simbad : `~astroquery.simbad.Simbad`, optional
-        `~astroquery.simbad.Simbad` to be used in query.
-
-    Returns
-    -------
-    `str`
-        The ID of the object.
-    """
+    """Query name ids for a star in Simbad. See simbad_query_id."""
     if name_order is None:
         name_order = ['MAIN_ID', 'NAME', 'HD', 'HR', 'HYP', 'TYC', 'AAVSO']
 
@@ -63,8 +45,31 @@ def _simbad_query_id(ra, dec, limit_angle, name_order=None):
                     return _strip_spaces(k)
 
 
-simbad_query_id = np.vectorize(_simbad_query_id,
-                               excluded=['limit_angle', 'name_order'])
+def simbad_query_id(*args, **kwargs):
+    """Query name ids for a star in Simbad.
+
+    Parameters
+    ----------
+    ra, dec : `float` or list(`float`)
+        RA and DEC decimal degrees coordinates to query. If more than one
+        object is queried, ra and dec must be lists of the same length.
+    limit_angle : string, float, `~astropy.coordinates.Angle`
+        Maximum radius for search.
+    name_order : `list`, optional
+        Order of priority of name prefixes to query.
+        Default: None
+    simbad : `~astroquery.simbad.Simbad`, optional
+        `~astroquery.simbad.Simbad` to be used in query.
+
+    Returns
+    -------
+    `str` or list(`str`)
+        The ID of each object queried. If a single object is queried,
+        a string is returned. If a list of objects is queried, a list
+        of strings is returned.
+    """
+    f = np.vectorize(_simbad_query_id, excluded=['limit_angle', 'name_order'])
+    return f(*args, **kwargs)
 
 
 class SimbadSourcesCatalog(_OnlineSourcesCatalog):
