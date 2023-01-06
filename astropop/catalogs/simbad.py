@@ -56,10 +56,9 @@ def simbad_query_id(*args, **kwargs):
     limit_angle : string, float, `~astropy.coordinates.Angle`
         Maximum radius for search.
     name_order : `list`, optional
-        Order of priority of name prefixes to query.
+        Order of priority of name prefixes to query. None will use the default
+        order of ['MAIN_ID', 'NAME', 'HD', 'HR', 'HYP', 'TYC', 'AAVSO'].
         Default: None
-    simbad : `~astroquery.simbad.Simbad`, optional
-        `~astroquery.simbad.Simbad` to be used in query.
 
     Returns
     -------
