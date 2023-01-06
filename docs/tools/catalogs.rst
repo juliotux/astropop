@@ -5,17 +5,16 @@ Catalogs Data
 
 .. TODO:: Write catalogs documentation
 
-Catalogs API
-------------
+.. toctree::
+   :maxdepth: 1
+
+   catalog/simbad.rst
+   catalog/vizier.rst
+   catalog/gaia.rst
 
 .. automodapi:: astropop.catalogs
     :no-inheritance-diagram:
 
-.. automodapi:: astropop.catalogs.simbad
-    :no-inheritance-diagram:
 
-.. automodapi:: astropop.catalogs.vizier
-    :no-inheritance-diagram:
 
-.. automodapi:: astropop.catalogs.tap
-    :no-inheritance-diagram:
+
