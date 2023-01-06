@@ -168,12 +168,12 @@ class VizierSourcesCatalog(_OnlineSourcesCatalog):
 
 def list_vizier_catalogs():
     root = path.join(path.dirname(__file__), 'vizier_catalogs')
-    catalogs = 'Available pre-configured Vizier catalogs are:'
+    catalogs = 'Available pre-configured Vizier catalogs are:\n'
     for i in listdir(root):
         with open(path.join(root, i), 'r') as f:
             y = yaml.safe_load(f)
-            catalogs += f'\n    {i.replace(".yml", "")}: '
-            catalogs += f'{y.get("description", "")}'
+            catalogs += f'    {i.replace(".yml", "")}:\n'
+            catalogs += f'         {y.get("description", "")}\n'
     return catalogs
 
 
