@@ -8,7 +8,7 @@ from astropy.coordinates import SkyCoord, Angle
 from astropy import units as u
 from astropop.catalogs.simbad import SimbadSourcesCatalog, simbad_query_id
 from astropop.catalogs import vizier
-from astropop.catalogs.tap import GaiaDR3SourcesCatalog
+from astropop.catalogs.gaia import GaiaDR3SourcesCatalog
 from astropop.catalogs._online_tools import _timeout_retry, \
                                             _fix_query_table, \
                                             get_center_radius, \
