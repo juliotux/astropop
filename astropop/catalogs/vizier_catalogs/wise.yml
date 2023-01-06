@@ -1,5 +1,6 @@
 ---
 table: 'II/311/wise'
+bibcode: '2012yCat.2311....0C'
 description: 'WISE All-Sky Data Release (Cutri+ 2012)'
 columns: ['+_r', '**']
 available_filters: {

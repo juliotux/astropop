@@ -1,6 +1,7 @@
 ---
 table: 'ucac4'
 description: "UCAC4 Catalogue (Zacharias+, 2012)"
+bibcode: "2012yCat.1322....0Z"
 columns: ['+_r', 'UCAC4', 'RAJ2000', 'DEJ2000', 'pmRA', 'pmDE', 'EpRA']
 available_filters: {
   'J': '2MASS J magnitude (1.2um)',

@@ -1,5 +1,6 @@
 ---
 table: 'I/353/gsc242'
+bibcode: '2008AJ....136..735L'
 description: 'The Guide Star Catalog, Version 2.4.2 (GSC2.4.2) (STScI, 2020)'
 columns: ['+_r', 'GSC2', 'RA_ICRS', 'DE_ICRS', 'pmRA', 'pmDE', 'Epoch']
 available_filters: {

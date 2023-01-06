@@ -1,5 +1,6 @@
 ---
 table: 'ucac5'
+bibcode: "2017yCat.1340....0Z"
 description: 'UCAC5 Catalogue (Zacharias+ 2017)'
 columns: ['+r', '**']
 available_filters: {

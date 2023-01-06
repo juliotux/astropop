@@ -18,7 +18,7 @@ __all__ = ['VizierSourcesCatalog']
 
 
 class VizierSourcesCatalog(_OnlineSourcesCatalog):
-    """Sources catalog from Vizier plataform.
+    """Sources catalog from Vizier plataform. See `help()` for details.
 
     Parameters
     ----------
@@ -49,6 +49,7 @@ class VizierSourcesCatalog(_OnlineSourcesCatalog):
     """
 
     def __init__(self, config_file, *args, **kwargs):
+        self.name = path.basename(config_file).strip('.yml').strip('.yaml')
         with open(config_file, 'r') as f:
             self._conf = yaml.safe_load(f)
         self._table = self._conf['table']
@@ -165,6 +166,15 @@ class VizierSourcesCatalog(_OnlineSourcesCatalog):
 
         SourcesCatalog.__init__(self, sk, ids=ids, mag=mag)
 
+    def help(self):
+        """Print the help for the catalog."""
+        help = f"``{self.name}``: {self._conf['description']}\n"
+        help += f"bibcode: {self._conf['bibcode']}\n\n"
+        help += "Available filters are:\n^^^^^^^^^^^^^^^^^^^^^^\n"
+        for i in self._conf['available_filters']:
+            help += f"  - {i} : {self._conf['available_filters'][i]}\n"
+        return help
+
 
 def list_vizier_catalogs():
     root = path.join(path.dirname(__file__), 'vizier_catalogs')
@@ -172,7 +182,8 @@ def list_vizier_catalogs():
     for i in listdir(root):
         with open(path.join(root, i), 'r') as f:
             y = yaml.safe_load(f)
-            catalogs += f'    {i.replace(".yml", "")}:\n'
+            catalogs += f'    ``{i.replace(".yml", "")}``:'
+            catalogs += f' ``{y.get("bibcode", "")}``\n'
             catalogs += f'         {y.get("description", "")}\n'
     return catalogs
 
@@ -186,4 +197,6 @@ def __getattr__(name):
         class NewViz(VizierSourcesCatalog):
             def __init__(self, *args, **kwargs):
                 super(NewViz, self).__init__(filename, *args, **kwargs)
+        NewViz.__doc__ = f"``{name}`` Vizier catalog."
+        NewViz.__doc__ += VizierSourcesCatalog.__doc__
         return NewViz

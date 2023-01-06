@@ -1,5 +1,6 @@
 ---
 table: 'II/246/out'
+bibcode: '2003yCat.2246....0C'
 description: '2MASS All-Sky Catalog of Point Sources (Cutri+ 2003)'
 columns: ['+_r', '**']
 available_filters: {

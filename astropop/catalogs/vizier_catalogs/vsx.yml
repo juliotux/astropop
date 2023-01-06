@@ -1,5 +1,6 @@
 ---
 table: 'B/vsx'
+bibcode: "2015yCat....102027W"
 description: 'AAVSO International Variable Star Index VSX (Watson+, 2006-)'
 columns: ['+_r', '**']
 available_filters:
