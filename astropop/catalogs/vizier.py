@@ -49,7 +49,7 @@ class VizierSourcesCatalog(_OnlineSourcesCatalog):
     """
 
     def __init__(self, config_file, *args, **kwargs):
-        self.name = path.basename(config_file).strip('.yml').strip('.yaml')
+        self.name = path.splitext(path.basename(config_file))[0]
         with open(config_file, 'r') as f:
             self._conf = yaml.safe_load(f)
         self._table = self._conf['table']
@@ -168,11 +168,14 @@ class VizierSourcesCatalog(_OnlineSourcesCatalog):
 
     def help(self):
         """Print the help for the catalog."""
-        help = f"``{self.name}``: {self._conf['description']}\n"
+        help = f"{self.name}: {self._conf['description']}\n"
         help += f"bibcode: {self._conf['bibcode']}\n\n"
-        help += "Available filters are:\n^^^^^^^^^^^^^^^^^^^^^^\n"
-        for i in self._conf['available_filters']:
-            help += f"  - {i} : {self._conf['available_filters'][i]}\n"
+        if self._available_filters:
+            help += "Available filters are:\n"
+            for i in self._conf['available_filters']:
+                help += f"  - {i}: {self._conf['available_filters'][i]}\n"
+        else:
+            help += "This catalog has no photometric informations."
         return help
 
 

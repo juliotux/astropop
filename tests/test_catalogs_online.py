@@ -486,6 +486,13 @@ class Test_Vizier_UCAC4:
         assert_is_instance(s.mag_list('V'), np.ndarray)
         assert_equal(s.mag_list('V').shape, (len(s), 2))
 
+    def test_ucac4_help(self):
+        help = vizier.ucac4('hd 674', '10 arcsec').help()
+        assert_equal(help[:5], 'ucac4')
+        assert_in('Available filters are:', help)
+        for i in self.hd674_mags.keys():
+            assert_in(f'  - {i}:', help)
+
 
 @pytest.mark.remote_data
 class Test_Vizier_APASS9:
@@ -536,6 +543,13 @@ class Test_Vizier_APASS9:
         assert_equal(s.ra_dec_list().shape, (len(s), 2))
         assert_is_instance(s.mag_list('V'), np.ndarray)
         assert_equal(s.mag_list('V').shape, (len(s), 2))
+
+    def test_apass9_help(self):
+        help = vizier.apass9('hd 674', '10 arcsec').help()
+        assert_equal(help[:6], 'apass9')
+        assert_in('Available filters are:', help)
+        for i in self.hd674_mags.keys():
+            assert_in(f'  - {i}:', help)
 
 
 @pytest.mark.remote_data
@@ -607,6 +621,13 @@ class Test_Vizier_GSC242:
         assert_equal(s.ra_dec_list().shape, (len(s), 2))
         assert_is_instance(s.mag_list('V'), np.ndarray)
         assert_equal(s.mag_list('V').shape, (len(s), 2))
+
+    def test_gsc242_help(self):
+        help = vizier.gsc242('hd 674', '10 arcsec').help()
+        assert_equal(help[:6], 'gsc242')
+        assert_in('Available filters are:', help)
+        for i in self.hd674_mags.keys():
+            assert_in(f'  - {i}:', help)
 
 
 @pytest.mark.remote_data
@@ -694,6 +715,11 @@ class Test_VSXVizierCatalog:
         assert_equal(s.sources_id()[0], 'VSX 234935')
         assert_equal(s['Name'][0], 'SMC V2018')
 
+    def test_vsx_help(self):
+        help = vizier.vsx('RMC 40', '10 arcsec').help()
+        assert_equal(help[:3], 'vsx')
+        assert_in("This catalog has no photometric informations.", help)
+
 
 class Test_2MASSVizierSourcesCatalog:
     hd674_mags = {
@@ -741,6 +767,13 @@ class Test_2MASSVizierSourcesCatalog:
         assert_equal(s.ra_dec_list().shape, (len(s), 2))
         assert_is_instance(s.mag_list('J'), np.ndarray)
         assert_equal(s.mag_list('J').shape, (len(s), 2))
+
+    def test_twomass_help(self):
+        help = vizier.twomass('hd 674', '10 arcsec').help()
+        assert_equal(help[:7], 'twomass')
+        assert_in('Available filters are:', help)
+        for i in self.hd674_mags.keys():
+            assert_in(f'  - {i}:', help)
 
 
 class Test_WISEVizierSourcesCatalog:
@@ -794,6 +827,13 @@ class Test_WISEVizierSourcesCatalog:
         assert_is_instance(s.mag_list('W1'), np.ndarray)
         assert_equal(s.mag_list('W1').shape, (len(s), 2))
 
+    def test_wise_help(self):
+        help = vizier.wise('hd 674', '10 arcsec').help()
+        assert_equal(help[:4], 'wise')
+        assert_in('Available filters are:', help)
+        for i in self.hd674_mags.keys():
+            assert_in(f'  - {i}:', help)
+
 
 class Test_AllWISEVizierSourcesCatalog:
     hd674_mags = {
@@ -845,3 +885,10 @@ class Test_AllWISEVizierSourcesCatalog:
         assert_equal(s.ra_dec_list().shape, (len(s), 2))
         assert_is_instance(s.mag_list('W1'), np.ndarray)
         assert_equal(s.mag_list('W1').shape, (len(s), 2))
+
+    def test_allwise_help(self):
+        help = vizier.allwise('hd 674', '10 arcsec').help()
+        assert_equal(help[:7], 'allwise')
+        assert_in('Available filters are:', help)
+        for i in self.hd674_mags.keys():
+            assert_in(f'  - {i}:', help)
