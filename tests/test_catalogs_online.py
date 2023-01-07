@@ -897,3 +897,57 @@ class Test_AllWISEVizierSourcesCatalog:
         assert_in('Available filters are:', help)
         for i in self.hd674_mags.keys():
             assert_in(f'  - {i}:', help)
+
+
+class Test_AllWISEVizierSourcesCatalog:
+    hd674_mags = {
+        'BT': [10.809, 0.034],
+        'VT': [10.589, 0.037]
+    }
+
+    def test_tycho2_creation_errors(self):
+        # Need arguments
+        with pytest.raises(TypeError):
+            vizier.tycho2()
+        with pytest.raises(TypeError):
+            vizier.tycho2('test')
+
+        with pytest.raises(ValueError, match='Filter None not available.'):
+            vizier.tycho2('Sirius', '0.05d', band='None')
+        # Filter None should pass, no mag data
+        vizier.tycho2('HD 674', '0.05d', None)
+
+    def test_tycho2_creation_filters(self):
+        c = vizier.tycho2(hd674_coords[0], '0.05d')
+
+        assert_equal(c.sources_id()[0], 'TYC 8464-1386-1')
+        for k, v in self.hd674_mags.items():
+            assert_almost_equal(c.mag_list(k)[0], v)
+
+    @pytest.mark.parametrize('radius', search_radius)
+    @pytest.mark.parametrize('center', hd674_coords)
+    def test_tycho2_query_input_types(self, center, radius):
+        c = vizier.tycho2(center, radius, band='VT')
+
+        assert_equal(c.sources_id()[0], 'TYC 8464-1386-1')
+        assert_almost_equal(c.ra_dec_list()[0], [2.71675147	, -54.29065894], decimal=5)
+        assert_almost_equal(c.mag_list('VT')[0], self.hd674_mags['VT'])
+
+    def test_tycho2_properties_types(self):
+        s = vizier.tycho2(hd674_coords[0], search_radius[0], band='VT')
+
+        assert_is_instance(s.sources_id(), np.ndarray)
+        assert_equal(s.sources_id().shape, (len(s)))
+        assert_is_instance(s.skycoord(), SkyCoord)
+        assert_is_instance(s.magnitude('VT'), QFloat)
+        assert_is_instance(s.ra_dec_list(), np.ndarray)
+        assert_equal(s.ra_dec_list().shape, (len(s), 2))
+        assert_is_instance(s.mag_list('VT'), np.ndarray)
+        assert_equal(s.mag_list('VT').shape, (len(s), 2))
+
+    def test_tycho2_help(self):
+        help = vizier.tycho2('hd 674', '10 arcsec').help()
+        assert_equal(help[:6], 'tycho2')
+        assert_in('Available filters are:', help)
+        for i in self.hd674_mags.keys():
+            assert_in(f'  - {i}:', help)

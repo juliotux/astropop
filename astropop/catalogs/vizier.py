@@ -122,9 +122,16 @@ class VizierSourcesCatalog(_OnlineSourcesCatalog):
         prepend = self._conf['ids'].get('prepend', None)
         id_key = self._conf['ids'].get('column', None)
 
+        if not np.isscalar(id_key):
+            sep = self._conf['ids'].get('separator', '-')
+            ids = [(string_fix(j) for j in i) for i in query[id_key]]
+            ids = [sep.join(list(i)) for i in ids]
+        else:
+            ids = [f'{string_fix(i)}' for i in query[id_key]]
+
         if prepend:
-            return [f'{prepend} {string_fix(i)}' for i in query[id_key]]
-        return [f'{string_fix(i)}' for i in query[id_key]]
+            return [f'{prepend} {string_fix(i)}' for i in ids]
+        return ids
 
     def _filter_epoch(self, query):
         """Get the epoch for the coordinates."""
