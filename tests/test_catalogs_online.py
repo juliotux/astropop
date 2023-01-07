@@ -432,6 +432,11 @@ class Test_VizierGeneral:
         assert_equal(vizier.list_vizier_catalogs.__doc__,
                      'Notes\n-----\n'+vizier.list_vizier_catalogs())
 
+    def test_query_fail(self):
+        with pytest.raises(RuntimeError,
+                           match='An error occured during online query.'):
+            vizier.vsx('HD 674', '0 arcsec')
+
 
 @pytest.mark.remote_data
 class Test_Vizier_UCAC4:
