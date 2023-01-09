@@ -130,7 +130,7 @@ class VizierSourcesCatalog(_OnlineSourcesCatalog):
             ids = [f'{string_fix(i)}' for i in query[id_key]]
 
         if prepend:
-            return [f'{prepend} {string_fix(i)}' for i in ids]
+            ids = [f'{prepend} {string_fix(i)}' for i in ids]
         return ids
 
     def _filter_epoch(self, query):
