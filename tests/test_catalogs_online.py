@@ -435,7 +435,7 @@ class Test_VizierGeneral:
     def test_query_fail(self):
         with pytest.raises(RuntimeError,
                            match='An error occured during online query.'):
-            vizier.vsx('HD 674', '0 arcsec')
+            vizier.vsx('HD 674', '0.5 arcsec')
 
 
 @pytest.mark.remote_data
@@ -930,7 +930,8 @@ class Test_AllWISEVizierSourcesCatalog:
         c = vizier.tycho2(center, radius, band='VT')
 
         assert_equal(c.sources_id()[0], 'TYC 8464-1386-1')
-        assert_almost_equal(c.ra_dec_list()[0], [2.71675147, -54.29065894], decimal=5)
+        assert_almost_equal(c.ra_dec_list()[0], [2.71675147, -54.29065894],
+                            decimal=5)
         assert_almost_equal(c.mag_list('VT')[0], self.hd674_mags['VT'])
 
     def test_tycho2_properties_types(self):
