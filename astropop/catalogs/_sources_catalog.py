@@ -32,7 +32,7 @@ class SourcesCatalog:
     mag: `dict` (optional)
         Dictionary of photometric magnitudes for each available filter. The
         keys are the names of the filters and the values are the photometric
-        magnitudes of the object in a `astropop.math.QFloat` array. Photometry
+        magnitudes of the object in a `~astropop.math.QFloat` array. Photometry
         will be only available if this argument is set.
     ra, dec: array (optional)
         RA and DEC coordinates of the object. Conflicts with ``coords``
