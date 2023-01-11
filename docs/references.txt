@@ -1,4 +1,4 @@
-.. |astropop| replace:: `~astropop`
+.. |astropop| replace:: :mod:`astropop`
 .. |AstrometricSolution| replace:: `~astropop.astrometry.AstrometricSolution`
 .. |AstrometrySolver| replace:: `~astropop.astrometry.AstrometrySolver`
 .. |FrameData| replace:: `~astropop.framedata.FrameData`
@@ -10,7 +10,7 @@
 .. |run_command| replace:: `~astropop.py_utils.run_command`
 .. |SourcesCatalog| replace:: `~astropop.catalogs.SourcesCatalog`
 
-.. |astropy| replace:: `~astropy`
+.. |astropy| replace:: :mod:`astropy`
 .. |CCDData| replace:: `~astropy.nddata.ccddata.CCDData`
 .. |dimensionless_angles| replace:: `~astropy.units.dimensionless_angles`
 .. |dimensionless_unscaled| replace:: `~astropy.units.dimensionless_unscaled`
@@ -24,11 +24,11 @@
 .. |UnitsError| replace:: `~astropy.units.UnitsError`
 .. |WCS| replace:: `~astropy.wcs.WCS`
 
-.. |astroquery| replace:: `~astroquery`
+.. |astroquery| replace:: :mod:`astroquery`
 
-.. |uncertainties| replace:: `~uncertainties`
+.. |uncertainties| replace:: :mod:`uncertainties`
 
-.. |numpy| replace:: `~numpy`
+.. |numpy| replace:: :mod:`numpy`
 .. |dtype| replace:: `~numpy.dtype`
 .. |memmap| replace:: `~numpy.memmap`
 .. |ndarray| replace:: `~numpy.ndarray`

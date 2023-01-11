@@ -46,6 +46,10 @@ class SourcesCatalog:
         motion on a target observation time.
     frame: str (optional)
         Celestial frame of coordinates. Default is 'ICRS'
+    query_table: `~astropy.table.Table` (optional)
+        Optional table containing additional informations you may want to use
+        for the sources. It must have the same number and order of the sources
+        in the catalog.
     *args, **kwargs:
         Arguments to be passed to `~astropy.coordinates.SkyCoord`
         initialization. See `~astropy.coordinates.SkyCoord` docs for more
