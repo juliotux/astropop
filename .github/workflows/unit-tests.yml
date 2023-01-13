@@ -82,14 +82,14 @@ jobs:
         path: .tox
         # setup.cfg and pyproject.toml have versioning info that would
         # impact the tox environment.
-        key: ${{ matrix.toxenv }}-astropy-${{ hashFiles('pyproject.toml', 'setup.cfg') }}
+        key: ${{ github.ref }}-${{ matrix.toxenv }}-astropy-${{ hashFiles('pyproject.toml', 'setup.cfg') }}
     - name: Cache astropy cache
       uses: actions/cache@v3
       with:
         path: ~/.astropy
         # setup.cfg and pyproject.toml have versioning info that would
         # impact the tox environment.
-        key: ${{ matrix.toxenv }}-${{ hashFiles('pyproject.toml', 'setup.cfg') }}
+        key: ${{ github.ref }}-${{ matrix.toxenv }}-${{ hashFiles('pyproject.toml', 'setup.cfg') }}
     - name: Run tests
       run: tox -v -e ${{ matrix.toxenv }}
 
@@ -110,13 +110,13 @@ jobs:
       with:
         path: ~/conda_pkgs_dir
         key:
-          ${{ runner.os }}-${{ runner.arch }}-${{ steps.get-date.outputs.today }}-conda-${{ hashFiles('pyproject.toml', 'setup.cfg') }}
+          ${{ runner.os }}-${{ runner.arch }}-conda-${{ hashFiles('pyproject.toml', 'setup.cfg') }}
     - name: Cache env
       uses: actions/cache@v3
       with:
         path: ${{ env.CONDA }}/envs
         key:
-          ${{ runner.os }}-${{ runner.arch }}-${{ steps.get-date.outputs.today }}-conda-envs-${{ hashFiles('pyproject.toml', 'setup.cfg') }}
+          ${{ github.ref }}-${{ runner.os }}-${{ runner.arch }}-${{ steps.get-date.outputs.today }}-conda-envs-${{ hashFiles('pyproject.toml', 'setup.cfg') }}
     - uses: conda-incubator/setup-miniconda@v2
       with:
         miniforge-variant: Mambaforge
