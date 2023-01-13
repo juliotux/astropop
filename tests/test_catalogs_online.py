@@ -430,6 +430,7 @@ class Test_VizierGeneral:
         assert_equal(vizier.list_vizier_catalogs()[:45],
                      'Available pre-configured Vizier catalogs are:')
         assert_equal(vizier.list_vizier_catalogs.__doc__,
+                     "List available vizier catalogs\n\n"
                      'Notes\n-----\n'+vizier.list_vizier_catalogs())
 
     def test_query_fail(self):
