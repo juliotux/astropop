@@ -8,7 +8,7 @@ Astropop has its own logger, with special abillities, by default.
 
 It hierits Python's default logger module (not Astropy's one), due to bugs found in Astropy. It allows multiple childres, like for pipeline products, and have the special abillity to log to a list, for after use.
 
-Using logger are far recommended over simple ``print()`` funtions, due to level filtering, storing, properly displaying, etc. The log levels are:
+Using logger are far recommended over simple ``print`` funtions, due to level filtering, storing, properly displaying, etc. The log levels are:
 
 =============  =======  =======================================================
 ``DEBUG``       ``10``  Diagnostic informations. Very verbose level.
@@ -36,10 +36,6 @@ You are now read to print simple logging::
     ERROR: Matrix error. Agents needeed. [unknown]
 
 The general behavior of Astropop logger is the same of Python default logger, very well documentated in `Python Log docs <https://docs.python.org/3/library/logging.html>`_.
-
-
-Logger API
-----------
 
 .. automodapi:: astropop.logger
     :no-inheritance-diagram:
