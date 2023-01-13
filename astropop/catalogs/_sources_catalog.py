@@ -76,6 +76,7 @@ class SourcesCatalog:
 
         # Store base query table
         if query_table is not None:
+            # TODO: check query_table length to match the sources
             self._query = query_table
 
         if mag is None:
@@ -93,6 +94,8 @@ class SourcesCatalog:
         # initialize magnitude if not initializated.
         if self._mags_table is None:
             self._mags_table = Table()
+
+        # TODO: if list of tuples (mag, err), split it
         # add magnitude to the dict
         m = QFloat(mag)
         if len(m) != len(self._base_table):
@@ -289,6 +292,11 @@ class SourcesCatalog:
             for i in self._mags_table.keys():
                 t[i] = self._mags_table[i]
         return t
+
+    @property
+    def query_table(self):
+        """The query table."""
+        return Table(self._query)
 
 
 class _OnlineSourcesCatalog(SourcesCatalog, abc.ABC):
