@@ -132,7 +132,7 @@ jobs:
         path: ~/.astropy
         # setup.cfg and pyproject.toml have versioning info that would
         # impact the tox environment.
-        key: conda-astropy-${{ hashFiles('pyproject.toml', 'setup.cfg') }}
+        key: ${{ github.ref }}-conda-astropy
     - name: Install dependencies
       shell: bash -l {0}
       run: |
