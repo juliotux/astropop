@@ -1,6 +1,7 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 # flake8: noqa: F403, F405
 
+import os
 import pytest
 import numpy as np
 from astropy.table import Table
@@ -437,6 +438,15 @@ class Test_VizierGeneral:
         with pytest.raises(RuntimeError,
                            match='An error occured during online query.'):
             vizier.vsx('HD 674', '0.5 arcsec')
+
+    def test_create_with_file(self):
+        file = os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                            'astropop', 'catalogs', 'vizier_catalogs', 'ucac4.yml')
+        file = os.path.abspath(file)
+        cat = vizier.VizierSourcesCatalog(file, 'HD 674', '0.5 arcsec')
+        assert_equal(cat.name, 'ucac4')
+        assert_equal(cat._conf['description'], "UCAC4 Catalogue (Zacharias+, 2012)")
+        assert_in('ucac4', cat.help())
 
 
 @pytest.mark.remote_data
