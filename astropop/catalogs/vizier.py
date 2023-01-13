@@ -14,7 +14,20 @@ from ..py_utils import string_fix
 from ..math import qfloat
 
 
-__all__ = ['VizierSourcesCatalog']
+__all__ = ['VizierSourcesCatalog', 'list_vizier_catalogs']
+
+
+def _print_help(name, conf, available_filters):
+    """Print the help for a catalog."""
+    help = f"{name}: {conf['description']}\n"
+    help += f"bibcode: {conf['bibcode']}\n\n"
+    if available_filters:
+        help += "Available filters are:\n"
+        for i in conf['available_filters']:
+            help += f"  - {i}: {conf['available_filters'][i]}\n"
+    else:
+        help += "This catalog has no photometric informations."
+    return help
 
 
 class VizierSourcesCatalog(_OnlineSourcesCatalog):
@@ -175,15 +188,7 @@ class VizierSourcesCatalog(_OnlineSourcesCatalog):
 
     def help(self):
         """Print the help for the catalog."""
-        help = f"{self.name}: {self._conf['description']}\n"
-        help += f"bibcode: {self._conf['bibcode']}\n\n"
-        if self._available_filters:
-            help += "Available filters are:\n"
-            for i in self._conf['available_filters']:
-                help += f"  - {i}: {self._conf['available_filters'][i]}\n"
-        else:
-            help += "This catalog has no photometric informations."
-        return help
+        return _print_help(self.name, self._conf, self._available_filters)
 
 
 def list_vizier_catalogs():
@@ -192,8 +197,8 @@ def list_vizier_catalogs():
     for i in listdir(root):
         with open(path.join(root, i), 'r') as f:
             y = yaml.safe_load(f)
-            catalogs += f'    ``{i.replace(".yml", "")}``:'
-            catalogs += f' ``{y.get("bibcode", "")}``\n'
+            catalogs += f'    `{i.replace(".yml", "")}`:'
+            catalogs += f' :bibcode:`{y.get("bibcode", "")}`\n'
             catalogs += f'         {y.get("description", "")}\n'
     return catalogs
 
@@ -207,6 +212,17 @@ def __getattr__(name):
         class NewViz(VizierSourcesCatalog):
             def __init__(self, *args, **kwargs):
                 super(NewViz, self).__init__(filename, *args, **kwargs)
+
+        conf = yaml.safe_load(open(filename, 'r'))
+        available_filters = conf.get('available_filters', None)
+        if available_filters:
+            available_filters = list(available_filters.keys())
+
+        # help function accessed before instance creation
+        def help():
+            return _print_help(name, conf, available_filters)
+
         NewViz.__doc__ = f"``{name}`` Vizier catalog."
+        NewViz.help = staticmethod(help)
         NewViz.__doc__ += VizierSourcesCatalog.__doc__
         return NewViz
