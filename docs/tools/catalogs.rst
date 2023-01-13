@@ -16,24 +16,29 @@ The |SourcesCatalog| class is created by providing almost the same arguments as 
 
 If you want to create a basic astrometric catalog without photometric data, simply pass a list of object ``ids`` and the appropriate astrometric information, as shown in the example provided.
 
-.. jupyter-execute::
+.. ipython:: python
 
     from astropop.catalogs import SourcesCatalog
-    cat = SourcesCatalog(ids=['a', 'b', 'c'], ra=[1, 2, 3], dec=[4, 5, 6], unit='deg')
+    cat = SourcesCatalog(ids=['a', 'b', 'c'], ra=[1, 2, 3],
+                         dec=[4, 5, 6], unit='deg')
     cat.table()
 
 For the additional magnitudes, a dictionary must be passed, with one list of magnitudes for each filter. The dictionary keys are the filter names, and the values are the corresponding lists of magnitudes. The example below shows how to create a catalog with three filters, ``'g'``, ``'r'``, and ``'i'``. These lists can be plain values for magnitudes without errors, or |QFloat| objects for magnitudes with errors. If errors are present, they will be extracted and stored in the ``*_error`` columns. If no errors are present, the ``*_error`` columns will be filled with zeros.
 
-.. jupyter-execute::
+.. ipython:: python
 
-    cat = SourcesCatalog(ids=['a', 'b', 'c'], ra=[1, 2, 3], dec=[4, 5, 6], unit='deg', \
-                         mag={'g': [1, 2, 3], 'r': [4, 5, 6], 'i': [7, 8, 9]})
+    cat = SourcesCatalog(ids=['a', 'b', 'c'], ra=[1, 2, 3],
+                         dec=[4, 5, 6], unit='deg',
+                         mag={'g': [1, 2, 3],
+                              'r': [4, 5, 6],
+                              'i': [7, 8, 9]})
     cat.table()
 
-.. jupyter-execute::
+.. ipython:: python
 
     from astropop.math import QFloat
-    cat = SourcesCatalog(ids=['a', 'b', 'c'], ra=[1, 2, 3], dec=[4, 5, 6], unit='deg', \
+    cat = SourcesCatalog(ids=['a', 'b', 'c'], ra=[1, 2, 3],
+                         dec=[4, 5, 6], unit='deg',
                          mag={'g': QFloat([1, 2, 3], [0.1, 0.2, 0.3]),
                               'r': QFloat([4, 5, 6], [0.4, 0.5, 0.6]),
                               'i': QFloat([7, 8, 9], [0.7, 0.8, 0.9])})
@@ -41,15 +46,14 @@ For the additional magnitudes, a dictionary must be passed, with one list of mag
 
 An optional table with additional informations can be passed as ``query_table`` argument. This table will be accessed only by ``query_table`` property and will also be filtered for cross-matching. However, it cannot be used for automatic extraction the default |SourcesCatalog| data.
 
-.. jupyter-execute::
+.. ipython:: python
 
     from astropy.table import Table
-    cat = SourcesCatalog(ids=['a', 'b', 'c'], ra=[1, 2, 3], dec=[4, 5, 6], unit='deg', \
-                         query_table=Table({'id': ['a', 'b', 'c'], 'z': [1, 2, 3]}))
+    cat = SourcesCatalog(ids=['a', 'b', 'c'], ra=[1, 2, 3],
+                         dec=[4, 5, 6], unit='deg',
+                         query_table=Table({'id': ['a', 'b', 'c'],
+                                            'z': [1, 2, 3]}))
     cat.table()
-
-.. jupyter-execute::
-
     cat.query_table
 
 
@@ -63,20 +67,12 @@ Coordinates
 
 Coordinates can be accessed using the `~astropop.catalogs.SourcesCatalog.skycoord`, `~astropop.catalogs.SourcesCatalog.ra_dec_list` and `~astropop.catalogs.SourcesCatalog.get_coordinates` functions. The difference is that in the first a |SkyCoord| object is returned, while in the second a list of tuples is returned. The last function is useful to get coordinates in |SkyCoord| format with space motion applied.
 
-.. jupyter-execute::
+.. ipython:: python
 
-    cat = SourcesCatalog(ids=['a', 'b', 'c'], \
-                         ra=[1, 2, 3], \
-                         dec=[4, 5, 6], \
-                         unit='deg')
+    cat = SourcesCatalog(ids=['a', 'b', 'c'], ra=[1, 2, 3],
+                         dec=[4, 5, 6], unit='deg')
     cat.skycoord()
-
-.. jupyter-execute::
-
     cat.ra_dec_list()
-
-.. jupyter-execute::
-
     cat.get_coordinates()
 
 Soures IDs
@@ -84,9 +80,10 @@ Soures IDs
 
 Sources IDs can be accessed using the `~astropop.catalogs.SourcesCatalog.sources_id` property.
 
-.. jupyter-execute::
+.. ipython:: python
 
-    cat = SourcesCatalog(ids=['a', 'b', 'c'], ra=[1, 2, 3], dec=[4, 5, 6], unit='deg')
+    cat = SourcesCatalog(ids=['a', 'b', 'c'], ra=[1, 2, 3],
+                         dec=[4, 5, 6], unit='deg')
     cat.sources_id()
 
 Magnitudes
@@ -94,14 +91,15 @@ Magnitudes
 
 Magnitudes can be either accessed using `~astropop.catalogs.SourcesCatalog.magnitude` or `~astropop.catalogs.SourcesCatalog.mag_list` functions. For both of them, the ``band`` argument must be passed to access the magnitudes in a given filter. The difference is that the first function returns a |QFloat| object, while the second returns a list of tuples containing (magnitude, error). If the ``band`` argument is not passed, an error is raised. Also, the filter must be available in the catalog.
 
-.. jupyter-execute::
+.. ipython:: python
+    :okwarning:
 
-    cat = SourcesCatalog(ids=['a', 'b', 'c'], ra=[1, 2, 3], dec=[4, 5, 6], unit='deg', \
-                         mag={'g': [1, 2, 3], 'r': [4, 5, 6], 'i': [7, 8, 9]})
+    cat = SourcesCatalog(ids=['a', 'b', 'c'], ra=[1, 2, 3],
+                         dec=[4, 5, 6], unit='deg',
+                         mag={'g': [1, 2, 3],
+                              'r': [4, 5, 6],
+                              'i': [7, 8, 9]})
     cat.magnitude('g')
-
-.. jupyter-execute::
-
     cat.mag_list('g')
 
 Summary Table
@@ -114,24 +112,26 @@ Object Matching
 
 To identify a list of sources in a |SourcesCatalog|, you can use the `~astropop.catalogs.SourcesCatalog.match_objects` method. In this method, lists of ``ra`` and ``dec`` coordinates are passed and the catalog will find the closest sources within a ``limit_angle`` radius around them. A new |SourcesCatalog| instance is returned, containing only the matched sources in the exact order of the ``ra`` and ``dec`` lists passed to the method. To handle high proper motion, ``obstime`` argument can also be passed, but only is applied when proper motion is available in the catalog.
 
-.. jupyter-execute::
+.. ipython:: python
 
-    cat = SourcesCatalog(ids=['a', 'b', 'c'], ra=[1, 2, 3], dec=[4, 5, 6], unit='deg')
+    cat = SourcesCatalog(ids=['a', 'b', 'c'], ra=[1, 2, 3],
+                         dec=[4, 5, 6], unit='deg')
     matched = cat.match_objects([1, 3], [4, 6], limit_angle='1 arcmin')
     matched.table()
 
 Magnitudes and additional ``query_table`` informations are also filtered and returned in the exact same order of the ``ra`` and ``dec`` lists passed to the method.
 
-.. jupyter-execute::
+.. ipython:: python
 
-    cat = SourcesCatalog(ids=['a', 'b', 'c'], ra=[1, 2, 3], dec=[4, 5, 6], unit='deg', \
-                         mag={'g': [1, 2, 3], 'r': [4, 5, 6], 'i': [7, 8, 9]}, \
-                         query_table=Table({'id': ['a', 'b', 'c'], 'z': [1, 2, 3]}))
+    cat = SourcesCatalog(ids=['a', 'b', 'c'], ra=[1, 2, 3],
+                         dec=[4, 5, 6], unit='deg',
+                         mag={'g': [1, 2, 3],
+                              'r': [4, 5, 6],
+                              'i': [7, 8, 9]},
+                         query_table=Table({'id': ['a', 'b', 'c'],
+                                            'z': [1, 2, 3]}))
     matched = cat.match_objects([1, 3], [4, 6], limit_angle='1 arcmin')
     matched.table()
-
-.. jupyter-execute::
-
     matched.query_table
 
 Online Catalogs

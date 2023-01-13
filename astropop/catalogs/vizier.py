@@ -203,7 +203,8 @@ def list_vizier_catalogs():
     return catalogs
 
 
-list_vizier_catalogs.__doc__ = "Notes\n-----\n" + list_vizier_catalogs()
+list_vizier_catalogs.__doc__ = "List available vizier catalogs\n\n"
+list_vizier_catalogs.__doc__ += "Notes\n-----\n" + list_vizier_catalogs()
 
 
 def __getattr__(name):

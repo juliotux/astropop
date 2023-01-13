@@ -12,10 +12,39 @@ from ._online_tools import astroquery_query, string_fix
 from ..math import QFloat
 
 
-__all__ = ['GaiaDR3SourcesCatalog']
+__all__ = ['GaiaDR3SourcesCatalog', 'gaiadr3']
 
 
 class GaiaDR3SourcesCatalog(_OnlineSourcesCatalog):
+    """Sources catalog from Gaia-DR3 catalog.
+
+    This class just wraps around `~astroquery.gaia.Gaia` class.
+
+    Parameters
+    ----------
+    center: string, tuple or `~astropy.coordinates.SkyCoord`
+        The center of the search field.
+        If center is a string, can be an object name or the string
+        containing the object coordinates. If it is a tuple, have to be
+        (ra, dec) coordinates, in hexa or decimal degrees format.
+    radius: string, float, `~astropy.coordinates.Angle` (optional)
+        The radius to search. If None, the query will be performed as
+        single object query mode. Else, the query will be performed as
+        field mode. If a string value is passed, it must be readable by
+        astropy.coordinates.Angle. If a float value is passed, it will
+        be interpreted as a decimal degree radius.
+    band: string or list(string) (optional)
+        Filters to query photometric informations. If None, photometric
+        informations will be disabled. If ``'all'`` (default), all
+        available filters will be queried. If a list, all filters in that
+        list will be queried. By default, all filters are available.
+
+    Raises
+    ------
+    ValueError:
+        If a ``band`` not available in the filters is passed.
+    """
+
     _available_filters = ['G', 'BP', 'RP']
     _columns = ['DESIGNATION', 'ref_epoch', 'ra', 'dec', 'pmra', 'pmdec',
                 'phot_g_mean_mag', 'phot_bp_mean_mag', 'phot_rp_mean_mag',
@@ -52,3 +81,6 @@ class GaiaDR3SourcesCatalog(_OnlineSourcesCatalog):
             mag[f] = self._filter_magnitudes(self._query, f)
 
         SourcesCatalog.__init__(self, sk, ids=ids, mag=mag)
+
+
+gaiadr3 = GaiaDR3SourcesCatalog

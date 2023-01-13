@@ -29,16 +29,14 @@ Using Logger
 
 To use the logger, just import it and set a log level:
 
-.. jupyter-execute::
-    :stderr:
+.. ipython:: python
 
     from astropop.logger import logger
     logger.setLevel('WARN')
 
 You are now read to print simple logging:
 
-.. jupyter-execute::
-    :stderr:
+.. ipython:: python
 
     logger.error('Matrix error. Agents needeed.')
 

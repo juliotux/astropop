@@ -12,7 +12,7 @@ from ._online_tools import _timeout_retry, astroquery_query
 from ..py_utils import string_fix
 
 
-__all__ = ['simbad_query_id', 'SimbadSourcesCatalog']
+__all__ = ['simbad_query_id', 'SimbadSourcesCatalog', 'simbad']
 
 
 def _simbad_query_id(ra, dec, limit_angle, name_order=None):
@@ -93,10 +93,10 @@ class SimbadSourcesCatalog(_OnlineSourcesCatalog):
         astropy.coordinates.Angle. If a float value is passed, it will
         be interpreted as a decimal degree radius.
     band: string or list(string) (optional)
-        Filters to query photometric informations. If None, photometric
+        Filters to query photometric informations. If `None`, photometric
         informations will be disabled. If ``'all'`` (default), all
         available filters will be queried. If a list, all filters in that
-        list will be queried.
+        list will be queried. By default, `None`.
 
     Raises
     ------

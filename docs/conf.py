@@ -3,6 +3,7 @@ import os
 
 ap_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(ap_dir)
+sys.tracebacklimit = 0
 
 # Minimum version, enforced by sphinx
 needs_sphinx = '4.3.0'
@@ -13,7 +14,6 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.mathjax',
     'sphinx_automodapi.automodapi',
-    'jupyter_sphinx',
     'numpydoc',
     'matplotlib.sphinxext.plot_directive',
     'IPython.sphinxext.ipython_console_highlighting',
