@@ -13,6 +13,7 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.mathjax',
     'sphinx_automodapi.automodapi',
+    'jupyter_sphinx',
     'numpydoc',
     'matplotlib.sphinxext.plot_directive',
     'IPython.sphinxext.ipython_console_highlighting',
@@ -22,7 +23,7 @@ extensions = [
 
 extlinks = {
     'doi': ('https://dx.doi.org/%s', 'doi: %s'),
-    'bibcode': ('https://ui.adsabs.harvard.edu/abs/%s', 'bibcode: %s')
+    'bibcode': ('https://ui.adsabs.harvard.edu/abs/%s', '%s')
 }
 
 nbsphinx_allow_errors = True
