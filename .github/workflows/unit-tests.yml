@@ -82,14 +82,14 @@ jobs:
         path: .tox
         # setup.cfg and pyproject.toml have versioning info that would
         # impact the tox environment.
-        key: ${{ github.ref }}-${{ matrix.toxenv }}-astropy-${{ hashFiles('pyproject.toml', 'setup.cfg') }}
+        key: ${{ github.ref }}-${{ matrix.toxenv }}-tox-${{ hashFiles('setup.cfg') }}
     - name: Cache astropy cache
       uses: actions/cache@v3
       with:
         path: ~/.astropy
         # setup.cfg and pyproject.toml have versioning info that would
         # impact the tox environment.
-        key: ${{ github.ref }}-${{ matrix.toxenv }}-${{ hashFiles('pyproject.toml', 'setup.cfg') }}
+        key: ${{ github.ref }}-${{ matrix.toxenv }}-astropycache
     - name: Run tests
       run: tox -v -e ${{ matrix.toxenv }}
 
