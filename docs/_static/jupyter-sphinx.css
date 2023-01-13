@@ -93,6 +93,7 @@ div.jupyter_container .hll {
 }
 .jupyter_container .output {
     border: none;
+    margin: 4px 4px 10px 4px;
 }
 .jupyter_container div.output pre {
     background-color: white;
