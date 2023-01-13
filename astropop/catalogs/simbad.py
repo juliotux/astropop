@@ -20,6 +20,8 @@ def _simbad_query_id(ra, dec, limit_angle, name_order=None):
     if name_order is None:
         name_order = ['MAIN_ID', 'NAME', 'HD', 'HR', 'HYP', 'TYC', 'AAVSO']
 
+    name_order = np.atleast_1d(name_order)
+
     s = Simbad()
 
     def _strip_spaces(name):
@@ -45,7 +47,7 @@ def _simbad_query_id(ra, dec, limit_angle, name_order=None):
                     return _strip_spaces(k)
 
 
-def simbad_query_id(*args, **kwargs):
+def simbad_query_id(ra, dec, limit_angle, name_order=None):
     """Query name ids for a star in Simbad.
 
     Parameters
@@ -68,7 +70,10 @@ def simbad_query_id(*args, **kwargs):
         of strings is returned.
     """
     f = np.vectorize(_simbad_query_id, excluded=['limit_angle', 'name_order'])
-    return f(*args, **kwargs)
+    query = f(ra, dec, limit_angle, name_order=name_order)
+    if query.size == 1:
+        return str(query)
+    return list(query)
 
 
 class SimbadSourcesCatalog(_OnlineSourcesCatalog):
@@ -143,3 +148,6 @@ class SimbadSourcesCatalog(_OnlineSourcesCatalog):
                       obstime='J2000.0', frame='icrs')
 
         SourcesCatalog.__init__(self, sk, ids=ids)
+
+
+simbad = SimbadSourcesCatalog
