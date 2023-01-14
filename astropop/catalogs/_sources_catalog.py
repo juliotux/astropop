@@ -123,10 +123,7 @@ class SourcesCatalog:
     def ra_dec_list(self):
         """Get the sources coordinates in [(ra, dec)] format."""
         sk = self.skycoord()
-        try:
-            return np.array(list(zip(sk.ra.degree, sk.dec.degree)))
-        except TypeError:
-            return [(sk.ra.degree, sk.dec.degree)]
+        return np.array(list(zip(sk.ra.degree, sk.dec.degree)))
 
     def magnitude(self, band):
         """Get the sources magnitude in QFloat format.
