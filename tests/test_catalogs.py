@@ -169,6 +169,30 @@ class Test_SourcesCatalog_Conformance:
         assert_equal(s['id'], sources['id'])
         assert_equal(s[2]['ra'], sources['ra'][2])
 
+    def test_sourcescatalog_get_query(self):
+        s = SourcesCatalog(ids=sources['id'],
+                           ra=sources['ra'],
+                           dec=sources['dec'],
+                           unit=u.degree,
+                           pm_ra_cosdec=sources['pm_ra']*u.Unit('mas/yr'),
+                           pm_dec=sources['pm_dec']*u.Unit('mas/yr'),
+                           query_table=Table(sources))
+
+        assert_is_instance(s.query_table, Table)
+        assert_equal(s.query_table.colnames, sources.colnames)
+        assert_equal(s.query_table['id'], sources['id'])
+
+    def test_sourcescatalog_get_query_colnames(self):
+        s = SourcesCatalog(ids=sources['id'],
+                           ra=sources['ra'],
+                           dec=sources['dec'],
+                           unit=u.degree,
+                           pm_ra_cosdec=sources['pm_ra']*u.Unit('mas/yr'),
+                           pm_dec=sources['pm_dec']*u.Unit('mas/yr'),
+                           query_table=Table(sources))
+
+        assert_equal(s.query_colnames, sources.colnames)
+
     def test_sourcescatalog_getitem(self):
         s = SourcesCatalog(ids=sources['id'],
                            ra=sources['ra'],
@@ -204,6 +228,18 @@ class Test_SourcesCatalog_Conformance:
 
         with pytest.raises(KeyError):
             s[2, 3]  # tuple not accepted
+
+    def test_sourcescatalog_filters(self):
+        s = SourcesCatalog(ids=sources['id'],
+                           ra=sources['ra'],
+                           dec=sources['dec'],
+                           unit=u.degree,
+                           pm_ra_cosdec=sources['pm_ra']*u.Unit('mas/yr'),
+                           pm_dec=sources['pm_dec']*u.Unit('mas/yr'),
+                           mag={'V': sources['V'], 'B': sources['B']},
+                           query_table=Table(sources))
+
+        assert_equal(s.filters, ['V', 'B'])
 
     def test_sourcescatalog_match_object_multiple_objects(self):
         s = SourcesCatalog(ids=sources['id'],
@@ -242,3 +278,59 @@ class Test_SourcesCatalog_Conformance:
         assert_equal(ncat['id'], expect['id'])
         for i in ncat.colnames[1:]:
             assert_almost_equal(ncat[i], expect[i])
+
+    def test_sourcescatalog_match_object_no_pm(self):
+        s = SourcesCatalog(ids=sources['id'],
+                           ra=sources['ra'],
+                           dec=sources['dec'],
+                           unit=u.degree)
+
+        ra = sources['ra'][2]
+        dec = sources['dec'][2]
+
+        ncat = s.match_objects(ra, dec, '1 arcsec').table()
+        expect = s.table()[2]
+        assert_equal(len(ncat), 1)
+        assert_equal(ncat['id'], expect['id'])
+        for i in ncat.colnames[1:]:
+            assert_almost_equal(ncat[i], expect[i])
+
+    def test_sourcescatalog_ensure_mag_dict(self):
+        with pytest.raises(TypeError, match='mag must be a dict'):
+            s = SourcesCatalog(ids=sources['id'],
+                               ra=sources['ra'],
+                               dec=sources['dec'],
+                               unit=u.degree,
+                               mag=sources['V'])
+
+    def test_sourcescatalog_ensure_mag_lenght(self):
+        with pytest.raises(ValueError, match='Lengths of magnitudes must be'):
+            s = SourcesCatalog(ids=sources['id'],
+                               ra=sources['ra'],
+                               dec=sources['dec'],
+                               unit=u.degree,
+                               mag={'V': sources['V'][:-2]})
+
+    def test_sourcescatalog_single_object(self):
+        s = SourcesCatalog(ids=[sources['id'][2]],
+                           ra=sources['ra'][2],
+                           dec=sources['dec'][2],
+                           unit=u.degree,
+                           pm_ra_cosdec=sources['pm_ra'][2]*u.Unit('mas/yr'),
+                           pm_dec=sources['pm_dec'][2]*u.Unit('mas/yr'))
+
+        assert_equal(s.sources_id(), [sources['id'][2]])
+        assert_almost_equal(s.ra_dec_list(),
+                            [(sources['ra'][2], sources['dec'][2])])
+
+    def test_sourcescatalog_copy(self):
+        s = SourcesCatalog(ids=sources['id'],
+                           ra=sources['ra'],
+                           dec=sources['dec'],
+                           unit=u.degree,
+                           pm_ra_cosdec=sources['pm_ra']*u.Unit('mas/yr'),
+                           pm_dec=sources['pm_dec']*u.Unit('mas/yr'))
+
+        s2 = s.copy()
+        assert_equal(s2.sources_id(), s.sources_id())
+        assert_almost_equal(s2.ra_dec_list(), s.ra_dec_list())

@@ -109,7 +109,7 @@ class SourcesCatalog:
         if self._mags_table is None:
             raise ValueError('This SourcesCatalog has no photometic '
                              'information.')
-        if band not in self._mags_table.colnames:
+        if band not in self.filters:
             raise ValueError(f'{band} not available.')
 
     def sources_id(self):
@@ -296,7 +296,20 @@ class SourcesCatalog:
     @property
     def query_table(self):
         """The query table."""
-        return Table(self._query)
+        if self._query is not None:
+            return Table(self._query)
+
+    @property
+    def query_colnames(self):
+        """Get column names from query"""
+        if self._query is not None:
+            return copy.copy(self._query.colnames)
+
+    @property
+    def filters(self):
+        """Get the list of all active available filters in the query."""
+        if self._mags_table is not None:
+            return [i for i in self._mags_table.keys() if '_error' not in i]
 
 
 class _OnlineSourcesCatalog(SourcesCatalog, abc.ABC):
@@ -366,11 +379,6 @@ class _OnlineSourcesCatalog(SourcesCatalog, abc.ABC):
     @abc.abstractmethod
     def _do_query(self):
         """Query the catalog. Must end with the catalog initialization."""
-
-    @property
-    def query_colnames(self):
-        """Get column names from query"""
-        return copy.copy(self._query.colnames)
 
     @property
     def available_filters(self):

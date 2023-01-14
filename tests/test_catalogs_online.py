@@ -393,6 +393,13 @@ class Test_Simbad():
         assert_equal(s.magnitudes_bibcode('B')[0], '2002yCat.2237....0D')
         assert_equal(s.magnitudes_bibcode('R')[0], '2002yCat.2237....0D')
 
+    def test_simbad_available_filters(self):
+        s = SimbadSourcesCatalog(sirius_coords[0], '10 arcsec',
+                                 band=['V', 'B', 'R'])
+        assert_equal(s.available_filters,
+                     ['B', 'V', 'R', 'I', 'J', 'H', 'K',
+                      'u', 'g', 'r', 'i', 'z'])
+
 
 @pytest.mark.remote_data
 class Test_SimbadQueryID:
@@ -509,6 +516,15 @@ class Test_Vizier_UCAC4:
         for i in self.hd674_mags.keys():
             assert_in(f'  - {i}:', help)
 
+    def test_ucac4_properties(self):
+        s = vizier.ucac4(sirius_coords[0], search_radius[0], band=['V'])
+        assert_equal(s.available_filters,
+                     ['J', 'H', 'K', 'B', 'V', 'g', 'r', 'i'])
+        assert_equal(s.name, 'ucac4')
+        assert_is_instance(s.center, SkyCoord)
+        assert_is_instance(s.radius, Angle)
+        assert_equal(s.filters, ['V'])
+
 
 @pytest.mark.remote_data
 class Test_Vizier_APASS9:
@@ -566,6 +582,15 @@ class Test_Vizier_APASS9:
         assert_in('Available filters are:', help)
         for i in self.hd674_mags.keys():
             assert_in(f'  - {i}:', help)
+
+    def test_apass9_properties(self):
+        s = vizier.apass9(hd674_coords[0], search_radius[0], band=['V'])
+        assert_equal(s.available_filters,
+                     ['B', 'V', "g_", "r_", "i_"])
+        assert_equal(s.name, 'apass9')
+        assert_is_instance(s.center, SkyCoord)
+        assert_is_instance(s.radius, Angle)
+        assert_equal(s.filters, ['V'])
 
 
 @pytest.mark.remote_data
@@ -645,47 +670,16 @@ class Test_Vizier_GSC242:
         for i in self.hd674_mags.keys():
             assert_in(f'  - {i}:', help)
 
-
-@pytest.mark.remote_data
-class Test_Vizier_GaiaDR3:
-    hd674_mags = {
-        'G': [10.552819, 0.000337826],
-        'BP': [10.649535, 0.00091911],
-        'RP': [10.365023, 0.00060423]
-    }
-
-    def test_gaiadr3_creation_errors(self):
-        # Need arguments
-        with pytest.raises(TypeError):
-            GaiaDR3SourcesCatalog()
-        with pytest.raises(TypeError):
-            GaiaDR3SourcesCatalog('test')
-
-        with pytest.raises(ValueError, match='Filter None not available.'):
-            GaiaDR3SourcesCatalog('Sirius', '0.05d', band='None')
-        # Filter None should pass, no mag data
-        GaiaDR3SourcesCatalog('Sirius', '0.05d', None)
-
-    def test_gaiadr3_creation_filters(self):
-        c = GaiaDR3SourcesCatalog(hd674_coords[0], '0.01d')
-
-        assert_equal(c.sources_id()[0], 'Gaia DR3 4923784391133336960')
-        for k, v in self.hd674_mags.items():
-            assert_almost_equal(c.mag_list(k)[0], v)
-
-    def test_gaiadr3_properties_types(self):
-        s = GaiaDR3SourcesCatalog(hd674_coords[0],
-                                  search_radius[0],
-                                  band='G')
-
-        assert_is_instance(s.sources_id(), np.ndarray)
-        assert_equal(s.sources_id().shape, (len(s)))
-        assert_is_instance(s.skycoord(), SkyCoord)
-        assert_is_instance(s.magnitude('G'), QFloat)
-        assert_is_instance(s.ra_dec_list(), np.ndarray)
-        assert_equal(s.ra_dec_list().shape, (len(s), 2))
-        assert_is_instance(s.mag_list('G'), np.ndarray)
-        assert_equal(s.mag_list('G').shape, (len(s), 2))
+    def test_gsc242_properties(self):
+        s = vizier.gsc242(hd674_coords[0], search_radius[0], band=['V'])
+        assert_equal(s.available_filters,
+                     ['G', 'RP', 'BP', 'Bj', 'Fpg', 'Epg', 'Npg', 'U', 'B', 'V', 'u',
+                      'g', 'r', 'i', 'z', 'y', 'J', 'H', 'Ks', 'Z', 'Y', 'W1', 'W2',
+                      'W3', 'W4', 'FUV', 'NUV'])
+        assert_equal(s.name, 'gsc242')
+        assert_is_instance(s.center, SkyCoord)
+        assert_is_instance(s.radius, Angle)
+        assert_equal(s.filters, ['V'])
 
 
 @pytest.mark.remote_data
@@ -735,6 +729,14 @@ class Test_VSXVizierCatalog:
         help = vizier.vsx('RMC 40', '10 arcsec').help()
         assert_equal(help[:3], 'vsx')
         assert_in("This catalog has no photometric informations.", help)
+
+    def test_vsx_properties(self):
+        s = vizier.vsx('RMC 40', '10 arcsec')
+        assert_equal(s.available_filters, [])
+        assert_equal(s.name, 'vsx')
+        assert_is_instance(s.center, SkyCoord)
+        assert_is_instance(s.radius, Angle)
+        assert_equal(s.filters, [])
 
 
 class Test_2MASSVizierSourcesCatalog:
@@ -790,6 +792,14 @@ class Test_2MASSVizierSourcesCatalog:
         assert_in('Available filters are:', help)
         for i in self.hd674_mags.keys():
             assert_in(f'  - {i}:', help)
+
+    def test_twomass_properties(self):
+        s = vizier.twomass('hd 674', '10 arcsec')
+        assert_equal(s.available_filters, ['J', 'H', 'K'])
+        assert_equal(s.name, 'twomass')
+        assert_is_instance(s.center, SkyCoord)
+        assert_is_instance(s.radius, Angle)
+        assert_equal(s.filters, ['J', 'H', 'K'])
 
 
 class Test_WISEVizierSourcesCatalog:
@@ -850,6 +860,14 @@ class Test_WISEVizierSourcesCatalog:
         for i in self.hd674_mags.keys():
             assert_in(f'  - {i}:', help)
 
+    def test_wise_properties(self):
+        s = vizier.wise('hd 674', '10 arcsec', band=['W1', 'W2', 'W3', 'W4'])
+        assert_equal(s.available_filters, ['W1', 'W2', 'W3', 'W4', 'J', 'H', 'K'])
+        assert_equal(s.name, 'wise')
+        assert_is_instance(s.center, SkyCoord)
+        assert_is_instance(s.radius, Angle)
+        assert_equal(s.filters, ['W1', 'W2', 'W3', 'W4'])
+
 
 class Test_AllWISEVizierSourcesCatalog:
     hd674_mags = {
@@ -909,8 +927,16 @@ class Test_AllWISEVizierSourcesCatalog:
         for i in self.hd674_mags.keys():
             assert_in(f'  - {i}:', help)
 
+    def test_allwise_properties(self):
+        s = vizier.allwise('hd 674', '10 arcsec', band=['W1', 'W2', 'W3', 'W4'])
+        assert_equal(s.available_filters, ['W1', 'W2', 'W3', 'W4', 'J', 'H', 'K'])
+        assert_equal(s.name, 'allwise')
+        assert_is_instance(s.center, SkyCoord)
+        assert_is_instance(s.radius, Angle)
+        assert_equal(s.filters, ['W1', 'W2', 'W3', 'W4'])
 
-class Test_AllWISEVizierSourcesCatalog:
+
+class Test_Tycho2VizierSourcesCatalog:
     hd674_mags = {
         'BT': [10.809, 0.034],
         'VT': [10.589, 0.037]
@@ -963,3 +989,61 @@ class Test_AllWISEVizierSourcesCatalog:
         assert_in('Available filters are:', help)
         for i in self.hd674_mags.keys():
             assert_in(f'  - {i}:', help)
+
+    def test_tycho2_properties(self):
+        s = vizier.tycho2('hd 674', '10 arcsec', band=['BT', 'VT'])
+        assert_equal(s.available_filters, ['BT', 'VT'])
+        assert_equal(s.name, 'tycho2')
+        assert_is_instance(s.center, SkyCoord)
+        assert_is_instance(s.radius, Angle)
+        assert_equal(s.filters, ['BT', 'VT'])
+
+
+@pytest.mark.remote_data
+class Test_Vizier_GaiaDR3:
+    hd674_mags = {
+        'G': [10.552819, 0.000337826],
+        'BP': [10.649535, 0.00091911],
+        'RP': [10.365023, 0.00060423]
+    }
+
+    def test_gaiadr3_creation_errors(self):
+        # Need arguments
+        with pytest.raises(TypeError):
+            GaiaDR3SourcesCatalog()
+        with pytest.raises(TypeError):
+            GaiaDR3SourcesCatalog('test')
+
+        with pytest.raises(ValueError, match='Filter None not available.'):
+            GaiaDR3SourcesCatalog('Sirius', '0.05d', band='None')
+        # Filter None should pass, no mag data
+        GaiaDR3SourcesCatalog('Sirius', '0.05d', None)
+
+    def test_gaiadr3_creation_filters(self):
+        c = GaiaDR3SourcesCatalog(hd674_coords[0], '0.01d')
+
+        assert_equal(c.sources_id()[0], 'Gaia DR3 4923784391133336960')
+        for k, v in self.hd674_mags.items():
+            assert_almost_equal(c.mag_list(k)[0], v)
+
+    def test_gaiadr3_properties_types(self):
+        s = GaiaDR3SourcesCatalog(hd674_coords[0],
+                                  search_radius[0],
+                                  band='G')
+
+        assert_is_instance(s.sources_id(), np.ndarray)
+        assert_equal(s.sources_id().shape, (len(s)))
+        assert_is_instance(s.skycoord(), SkyCoord)
+        assert_is_instance(s.magnitude('G'), QFloat)
+        assert_is_instance(s.ra_dec_list(), np.ndarray)
+        assert_equal(s.ra_dec_list().shape, (len(s), 2))
+        assert_is_instance(s.mag_list('G'), np.ndarray)
+        assert_equal(s.mag_list('G').shape, (len(s), 2))
+
+    def test_gaiadr3_properties(self):
+        s = GaiaDR3SourcesCatalog(hd674_coords[0], search_radius[0], band=['G'])
+        assert_equal(s.available_filters,
+                     ['G', 'BP', 'RP'])
+        assert_is_instance(s.center, SkyCoord)
+        assert_is_instance(s.radius, Angle)
+        assert_equal(s.filters, ['G'])
