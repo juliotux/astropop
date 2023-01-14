@@ -1,0 +1,25 @@
+---
+table: 'I/259/tyc2'
+bibcode: "2000A&A...355L..27H"
+description: 'The Tycho-2 Catalogue (Hog+ 2000)'
+columns: ['+_r', '**']
+available_filters: {
+  'BT': 'Tycho-2 BT magnitude',
+  'VT': 'Tycho-2 VT magnitude'
+}
+coordinates:
+  ra_column: 'RAmdeg'
+  dec_column: 'DEmdeg'
+  pm_ra_column: 'pmRA'
+  pm_dec_column: 'pmDE'
+  frame: 'icrs'
+magnitudes:
+  mag_column: '{band}mag'
+  err_mag_column: 'e_{band}mag'
+epoch:
+  value: 2000.0
+  format: 'jyear'
+ids:
+  prepend: 'TYC'
+  column: ['TYC1', 'TYC2', 'TYC3']
+  separator: '-'

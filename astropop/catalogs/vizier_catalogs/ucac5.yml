@@ -1,0 +1,27 @@
+---
+table: 'ucac5'
+bibcode: "2017yCat.1340....0Z"
+description: 'UCAC5 Catalogue (Zacharias+ 2017)'
+columns: ['+r', '**']
+available_filters: {
+  'G': 'Gaia G magnitude',
+  'R': 'Photographic R magnitude from NOMAD',
+  'J': '2MASS J magnitude',
+  'H': '2MASS H magnitude',
+  'K': '2MASS K magnitude',
+  'f.': 'Means UCAC model magnitude'
+}
+coordinates:
+  ra_column: 'RAgaia'
+  dec_column: 'DEgaia'
+  pm_ra_column: 'pmRA'
+  pm_dec_column: 'pmDE'
+magnitudes:
+  mag_column: '{band}mag'
+  err_mag_column: 'e_{band}mag'
+epoch:
+  value: 'J2015.0'
+  format: 'jyear'
+ids:
+  prepend: 'Gaia'
+  column: 'SrcIDgaia'

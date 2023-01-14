@@ -1,0 +1,30 @@
+---
+table: 'ucac4'
+description: "UCAC4 Catalogue (Zacharias+, 2012)"
+bibcode: "2012yCat.1322....0Z"
+columns: ['+_r', 'UCAC4', 'RAJ2000', 'DEJ2000', 'pmRA', 'pmDE', 'EpRA']
+available_filters: {
+  'J': '2MASS J magnitude (1.2um)',
+  'H': '2MASS H magnitude (1.6um)',
+  'K': '2MASS Ks magnitude (2.2um)',
+  'B': 'B magnitude from APASS',
+  'V': 'V magnitude from APASS',
+  'g': 'g magnitude from APASS',
+  'r': 'r magnitude from APASS',
+  'i': 'i magnitude from APASS'
+}
+coordinates:
+  ra_column: 'RAJ2000'
+  dec_column: 'DEJ2000'
+  pm_ra_column: 'pmRA'
+  pm_dec_column: 'pmDE'
+  frame: 'icrs'
+magnitudes:
+  mag_column: '{band}mag'
+  err_mag_column: 'e_{band}mag'
+epoch:
+  column: 'EpRA'
+  format: 'jyear'
+ids:
+  prepend: 'UCAC4'
+  column: 'UCAC4'

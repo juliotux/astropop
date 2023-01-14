@@ -1,211 +1,229 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 """Query and match objects in Vizier catalogs."""
 
-import copy
+from os import path, listdir
 import numpy as np
-from astroquery.vizier import Vizier, VizierClass
+import yaml
+from astropy.coordinates import SkyCoord
+from astroquery.vizier import Vizier
+from astropy.time import Time
 
-from .base_catalog import _BasePhotometryCatalog
-from ._online_tools import astroquery_radius, \
-                           astroquery_skycoord
+from ._sources_catalog import _OnlineSourcesCatalog, SourcesCatalog
+from ._online_tools import astroquery_query
+from ..py_utils import string_fix
+from ..math import qfloat
 
 
-__all__ = ['VizierCatalogClass', 'UCAC5Catalog',
-           'UCAC4Catalog', 'GSC23Catalog', 'APASSCalatolg',
-           'DENISCatalog', 'TWOMASSCatalog']
+__all__ = ['VizierSourcesCatalog', 'list_vizier_catalogs']
 
 
-class VizierCatalogClass(_BasePhotometryCatalog):
-    """Base class to handle with Vizier online catalogs."""
+def _print_help(name, conf, available_filters):
+    """Print the help for a catalog."""
+    help = f"{name}: {conf['description']}\n"
+    help += f"bibcode: {conf['bibcode']}\n\n"
+    if available_filters:
+        help += "Available filters are:\n"
+        for i in conf['available_filters']:
+            help += f"  - {i}: {conf['available_filters'][i]}\n"
+    else:
+        help += "This catalog has no photometric informations."
+    return help
 
-    vizier_table = None
-    id_key = None
-    ra_key = 'RAJ2000'
-    dec_key = 'DEJ2000'
-    flux_key = None
-    flux_error_key = None
-    flux_unit = None
-    available_filters = None
-    type = 'online'
-    prepend_id_key = False
-    bibcode = None
-    _valid_init_kwargs = set(['vizier_table', 'id_key', 'ra_key', 'dec_key',
-                              'flux_key', 'flux_error_key', 'flux_unit',
-                              'prepend_id_key', 'available_filters',
-                              'bibcode', 'comment'])
-    _last_query_info = None
-    _last_query_table = None
-    _vizier = None
 
-    def __init__(self, **kwargs):
-        for i, v in kwargs.items():
-            if i in self._valid_init_kwargs:
-                self.__setattr__(i, v)
-            else:
-                raise ValueError('Invalid parameter {} passed to'
-                                 ' VizierCatalogClass')
+class VizierSourcesCatalog(_OnlineSourcesCatalog):
+    """Sources catalog from Vizier plataform. See `help()` for details.
 
-    @property
-    def vizier(self):
-        """Query operator instance."""
-        if self._vizier is None:
-            self._vizier = Vizier()
-            self._vizier.ROW_LIMIT = -1
-        return copy.copy(self._vizier)
+    Parameters
+    ----------
+    config_file: string or dict
+        Yaml configuration file containing the parameters to be used
+        for catalog queries, like table id, column names, etc.
+    center: string, tuple or `~astropy.coordinates.SkyCoord`
+        The center of the search field.
+        If center is a string, can be an object name or the string
+        containing the object coordinates. If it is a tuple, have to be
+        (ra, dec) coordinates, in hexa or decimal degrees format.
+    radius: string, float, `~astropy.coordinates.Angle` (optional)
+        The radius to search. If None, the query will be performed as
+        single object query mode. Else, the query will be performed as
+        field mode. If a string value is passed, it must be readable by
+        astropy.coordinates.Angle. If a float value is passed, it will
+        be interpreted as a decimal degree radius.
+    band: string or list(string) (optional)
+        Filters to query photometric informations. If None, photometric
+        informations will be disabled. If ``'all'`` (default), all
+        available filters will be queried. If a list, all filters in that
+        list will be queried.
 
-    @vizier.setter
-    def vizier(self, value):
-        if not isinstance(value, VizierClass):
-            raise ValueError(f'{value} is not a VizierClass instance.')
-        self._vizier = value
+    Raises
+    ------
+    ValueError:
+        If a ``band`` not available in the filters is passed.
+    """
 
-    def _flux_keys(self, band):
-        flux_key = self.flux_key.format(band=band)
-        if self.flux_error_key is not None:
-            flux_error_key = self.flux_error_key.format(band=band)
+    def __init__(self, config_file, *args, **kwargs):
+        self.name = path.splitext(path.basename(config_file))[0]
+        with open(config_file, 'r') as f:
+            self._conf = yaml.safe_load(f)
+        self._table = self._conf['table']
+        self._available_filters = self._get_available_filters()
+        self._columns = self._conf['columns'] + self._get_mag_columns()
+
+        self._setup_catalog()
+        super().__init__(*args, **kwargs)
+
+    def _get_available_filters(self):
+        """Get the available filters."""
+        filters = self._conf.get('available_filters', None)
+        if filters is None:
+            return
+        return list(filters.keys())
+
+    def _get_mag_columns(self):
+        mag_conf = self._conf.get('magnitudes')
+        mag_cols = []
+        if mag_conf is not None:
+            mag_key = mag_conf.get('mag_column', None)
+            mag_cols.extend([mag_key.format(band=i)
+                             for i in self._available_filters])
+            err_mag_key = mag_conf.get('err_mag_column', None)
+            if err_mag_key is not None:
+                mag_cols.extend([err_mag_key.format(band=i)
+                                 for i in self._available_filters])
+        return mag_cols
+
+    def _filter_magnitudes(self, query, band):
+        """Get the qfloat magnitudes."""
+        mag_key = self._conf['magnitudes']['mag_column'].format(band=band)
+        err_mag_key = self._conf['magnitudes']['err_mag_column']
+        err_mag_key = err_mag_key.format(band=band)
+
+        unit = query[mag_key].unit
+        mag = np.array(query[mag_key])
+        mag_err = None
+        if err_mag_key in query.colnames:
+            err_unit = query[err_mag_key].unit
+            mag_err = np.array(query[err_mag_key])
+            mag_err = np.array([float(i) if i != '' else np.nan
+                                for i in mag_err])
+            if str(err_unit) == 'cmag':
+                mag_err /= 100.0
+        return qfloat(mag, uncertainty=mag_err, unit=unit)
+
+    def _filter_coordinates(self, query, obstime, frame):
+        """Get the SkyCoord coordinates."""
+        rakey = self._conf['coordinates']['ra_column']
+        deckey = self._conf['coordinates']['dec_column']
+        ra = np.array(query[rakey])*query[rakey].unit
+        dec = np.array(query[deckey])*query[deckey].unit
+        if 'pm_ra_column' in self._conf['coordinates'] and \
+           'pm_dec_column' in self._conf['coordinates']:
+            pmrakey = self._conf['coordinates']['pm_ra_column']
+            pmdeckey = self._conf['coordinates']['pm_dec_column']
+            pmra = np.array(query[pmrakey])*query[pmrakey].unit
+            pmdec = np.array(query[pmdeckey])*query[pmdeckey].unit
+            return SkyCoord(ra, dec, frame=frame, obstime=obstime,
+                            pm_ra_cosdec=pmra, pm_dec=pmdec)
+        return SkyCoord(ra, dec, frame=frame, obstime=obstime)
+
+    def _filter_ids(self, query):
+        """Get the id names for the objects."""
+        ids = self._conf['ids']
+        if ids is None:
+            return ['']*len(query)
+
+        prepend = self._conf['ids'].get('prepend', None)
+        id_key = self._conf['ids'].get('column', None)
+
+        if not np.isscalar(id_key):
+            sep = self._conf['ids'].get('separator', '-')
+            ids = [(string_fix(j) for j in i) for i in query[id_key]]
+            ids = [sep.join(list(i)) for i in ids]
         else:
-            flux_error_key = None
-        return flux_key, flux_error_key
+            ids = [f'{string_fix(i)}' for i in query[id_key]]
 
-    def query_object(self, center):
-        """Query a single object in the catalog."""
-        center = astroquery_skycoord(center)
-        return self._query(self.vizier.query_object,
-                           center, catalog=self.vizier_table)[0]
+        if prepend:
+            ids = [f'{prepend} {string_fix(i)}' for i in ids]
+        return ids
 
-    def query_region(self, center, radius):
-        """Query all objects in a region."""
-        radius = astroquery_radius(radius)
-        center = astroquery_skycoord(center)
-        viz = self.vizier
-        return self._query(viz.query_region,
-                           center, radius,
-                           catalog=self.vizier_table)[0]
+    def _filter_epoch(self, query):
+        """Get the epoch for the coordinates."""
+        ep = self._conf.get('epoch', None)
+        if ep is None:
+            # when no epoch information is available
+            return
+        if 'value' in ep:
+            # fixed value
+            return Time(ep['value'], format=ep['format'])
+        if 'column' in ep:
+            # value from
+            column = np.atleast_1d(ep['column'])
+            for i in column:
+                if i in query.colnames:
+                    return Time(query[i], format=ep['format'])
 
-    def _id_resolve(self, idn):
-        if self.prepend_id_key:
-            if isinstance(self.prepend_id_key, (str, bytes)):
-                id_key = self.prepend_id_key
-            else:
-                id_key = self.id_key
-            idn = [f"{id_key} {i}" for i in idn]
-            idn = np.array(idn)
-        return idn
+    def _setup_catalog(self):
+        self._v = Vizier(catalog=self._table, columns=self._columns)
+        self._v.ROW_LIMIT = -1
 
-    def filter_flux(self, band, query=None):
-        """Filter the flux data of a query."""
-        self.check_filter(band)
-        flux_key, flux_error_key = self._flux_keys(band)
-        if query is None:
-            query = self._last_query_table
+    def _do_query(self):
+        q = astroquery_query(self._v.query_region,
+                             self._center,
+                             radius=self._radius)
+        if len(q) == 0:
+            raise RuntimeError('An error occured during online query.')
+        self._query = q[0]
+        ids = self._filter_ids(self._query)
 
-        flux = np.array(query[flux_key].data)
-        try:
-            flux_error = np.array(query[flux_error_key].data)
-        except KeyError:
-            flux_error = np.array([np.nan]*len(flux))
+        # perform magnitude filtering only if available
+        mag = {}
+        for filt in self.filters:
+            mag[filt] = self._filter_magnitudes(self._query, filt)
 
-        return flux, flux_error
+        obstime = self._filter_epoch(self._query)
+        frame = self._conf['coordinates'].get('frame', 'icrs')
+        sk = self._filter_coordinates(self._query, obstime, frame)
 
-    def match_objects(self, ra, dec, band=None, limit_angle='2 arcsec'):
-        """Match objects from RA DEC list with this catalog."""
-        flux_keys = ['flux', 'flux_error']
-        table_props = [('id', ''), ('ra', np.nan), ('dec', np.nan),
-                       ('flux', np.nan), ('flux_error', np.nan)]
-        res = self._match_objects(ra, dec, band, limit_angle,
-                                  flux_keys, table_props)
+        SourcesCatalog.__init__(self, sk, ids=ids, mag=mag)
 
-        return res
+    def help(self):
+        """Print the help for the catalog."""
+        return _print_help(self.name, self._conf, self._available_filters)
 
 
-UCAC4Catalog = VizierCatalogClass(available_filters=["B", "V", "g", "r", "i"],
-                                  vizier_table="I/322A",
-                                  prepend_id_key=True,
-                                  id_key="UCAC4",
-                                  ra_key="RAJ2000",
-                                  dec_key="DEJ2000",
-                                  flux_key="{band}mag",
-                                  flux_error_key="e_{band}mag",
-                                  flux_unit="mag",
-                                  bibcode="2013AJ....145...44Z",
-                                  comment="Magnitudes from APASS")
+def list_vizier_catalogs():
+    root = path.join(path.dirname(__file__), 'vizier_catalogs')
+    catalogs = 'Available pre-configured Vizier catalogs are:\n'
+    for i in listdir(root):
+        with open(path.join(root, i), 'r') as f:
+            y = yaml.safe_load(f)
+            catalogs += f'    `{i.replace(".yml", "")}`:'
+            catalogs += f' :bibcode:`{y.get("bibcode", "")}`\n'
+            catalogs += f'         {y.get("description", "")}\n'
+    return catalogs
 
 
-UCAC5Catalog = VizierCatalogClass(available_filters=["Gaia", "R", "f."],
-                                  vizier_table="I/340",
-                                  prepend_id_key=True,
-                                  id_key='SrcIDgaia',
-                                  ra_key="RAJ2000",
-                                  dec_key="DEJ2000",
-                                  flux_key="{band}mag",
-                                  flux_error_key="e_{band}mag",
-                                  flux_unit="mag",
-                                  bibcode="2017yCat.1340....0Z",
-                                  comment="Rmag from NOMAD")
+list_vizier_catalogs.__doc__ = "List available vizier catalogs\n\n"
+list_vizier_catalogs.__doc__ += "Notes\n-----\n" + list_vizier_catalogs()
 
 
-APASSCalatolg = VizierCatalogClass(available_filters=["B", "V", "g'",
-                                                      "r'", "i'"],
-                                   vizier_table="II/336/apass9",
-                                   prepend_id_key=False,
-                                   id_key=-1,
-                                   ra_key="RAJ2000",
-                                   dec_key="DEJ2000",
-                                   flux_key="{band}mag",
-                                   flux_error_key="e_{band}mag",
-                                   flux_unit="mag",
-                                   bibcode="2016yCat.2336....0H",
-                                   comment="g', r' and i' magnitudes in"
-                                           " AB system")
+def __getattr__(name):
+    filename = path.join(path.dirname(__file__), f'vizier_catalogs/{name}.yml')
+    if path.exists(filename):
+        class NewViz(VizierSourcesCatalog):
+            def __init__(self, *args, **kwargs):
+                super(NewViz, self).__init__(filename, *args, **kwargs)
 
+        conf = yaml.safe_load(open(filename, 'r'))
+        available_filters = conf.get('available_filters', None)
+        if available_filters:
+            available_filters = list(available_filters.keys())
 
-DENISCatalog = VizierCatalogClass(available_filters=["I", "J", "K"],
-                                  vizier_table="B/denis",
-                                  prepend_id_key=True,
-                                  id_key="DENIS",
-                                  ra_key="RAJ2000",
-                                  dec_key="DEJ2000",
-                                  flux_key="{band}mag",
-                                  flux_error_key="e_{band}mag",
-                                  flux_unit="mag",
-                                  bibcode="2005yCat.2263....0T",
-                                  comment="Id, Jd, Kd may differ a bit "
-                                          "from 2MASS catalog")
+        # help function accessed before instance creation
+        def help():
+            return _print_help(name, conf, available_filters)
 
-
-TWOMASSCatalog = VizierCatalogClass(available_filters=["I", "J", "K"],
-                                    vizier_table="B/denis",
-                                    prepend_id_key='2MASS',
-                                    id_key="_2MASS",
-                                    ra_key="RAJ2000",
-                                    dec_key="DEJ2000",
-                                    flux_key="{band}mag",
-                                    flux_error_key="e_{band}mag",
-                                    flux_unit="mag",
-                                    bibcode="2003yCat.2246....0C",
-                                    comment="")
-
-
-class _GCS23Catalog(VizierCatalogClass):
-    available_filters = ["U", "B", "Bj", "V", "R", "F", "N"]
-    vizier_table = "I/305/out"
-    prepend_id_key = False
-    id_key = 'GSC2.3'
-    ra_key = "RAJ2000"
-    dec_key = "DEJ2000"
-    flux_key = "{band}mag"
-    flux_error_key = "e_{band}mag"
-    flux_unit = "mag"
-    bibcode = "2008AJ....136..735L"
-    comment = "Hubble Guide Star Catalog 2.3.2 (STScI, 2006)." \
-              " R magnitude was assumed to be equal to F magnitude."
-    filt_conversion = {'R': 'F',
-                       'Bj': 'j'}
-
-    def _flux_keys(self, band):
-        if band in self.filt_conversion.keys():
-            band = self.filt_conversion[band]
-        return VizierCatalogClass._flux_keys(self, band)
-
-
-GSC23Catalog = _GCS23Catalog()
+        NewViz.__doc__ = f"``{name}`` Vizier catalog."
+        NewViz.help = staticmethod(help)
+        NewViz.__doc__ += VizierSourcesCatalog.__doc__
+        return NewViz

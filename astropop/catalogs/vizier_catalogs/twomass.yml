@@ -1,0 +1,23 @@
+---
+table: 'II/246/out'
+bibcode: '2003yCat.2246....0C'
+description: '2MASS All-Sky Catalog of Point Sources (Cutri+ 2003)'
+columns: ['+_r', '**']
+available_filters: {
+  'J': '2MASS J magnitude (1.2um)',
+  'H': '2MASS H magnitude (1.6um)',
+  'K': '2MASS Ks magnitude (2.2um)'
+}
+coordinates:
+  ra_column: 'RAJ2000'
+  dec_column: 'DEJ2000'
+  frame: 'icrs'
+magnitudes:
+  mag_column: '{band}mag'
+  err_mag_column: 'e_{band}mag'
+epoch:
+  column: 'JD'
+  format: 'jd'
+ids:
+  prepend: '2MASS'
+  column: '_2MASS'

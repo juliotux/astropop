@@ -1,0 +1,51 @@
+---
+table: 'I/353/gsc242'
+bibcode: '2008AJ....136..735L'
+description: 'The Guide Star Catalog, Version 2.4.2 (GSC2.4.2) (STScI, 2020)'
+columns: ['+_r', 'GSC2', 'RA_ICRS', 'DE_ICRS', 'pmRA', 'pmDE', 'Epoch']
+available_filters: {
+  'G': 'Gaia G band magnitude',
+  'RP': 'Gaia Rp band magnitude',
+  'BP': 'Gaia Bp band magnitude',
+  # 'O': 'Photographic O band magnitude', OMag
+  'Bj': 'Photographic Blue magnitude',
+  # 'Vpg': 'Photographic V band magnitude', VpgMag
+  'Fpg': 'Photographic Red magnitude',
+  'Epg': 'Photographic E band magnitude',
+  'Npg': 'Photographic Near-IR magnitude',
+  'U': 'U band magnitude',
+  'B': 'B band magnitude',
+  'V': 'V band magnitude',
+  'u': 'SDSS u band magnitude',
+  'g': 'SDSS g band magnitude',
+  'r': 'SDSS r band magnitude',
+  'i': 'SDSS i band magnitude',
+  'z': 'SDSS z band magnitude',
+  'y': 'PanSTARRS y band magnitude',
+  'J': '2MASS J band magnitude',
+  'H': '2MASS H band magnitude',
+  'Ks': '2MASS Ks band magnitude',
+  'Z': 'VISTA Z band magnitude',
+  'Y': 'VISTA Y band magnitude',
+  'W1': 'WISE W1 (3.4um) band magnitude',
+  'W2': 'WISE W2 (4.6um) band magnitude',
+  'W3': 'WISE W3 (12um) band magnitude',
+  'W4': 'WISE W4 (22um) band magnitude',
+  'FUV': 'GALEX FUV band magnitude',
+  'NUV': 'GALEX NUV band magnitude'
+}
+coordinates:
+  ra_column: 'RA_ICRS'
+  dec_column: 'DE_ICRS'
+  pm_ra_column: 'pmRA'
+  pm_dec_column: 'pmDE'
+  frame: 'icrs'
+magnitudes:
+  mag_column: '{band}mag'
+  err_mag_column: 'e_{band}mag'
+epoch:
+  column: ['Epoch', '_tab1_11']
+  format: 'jyear'
+ids:
+  prepend: 'GSC2'
+  column: 'GSC2'

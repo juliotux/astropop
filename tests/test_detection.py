@@ -17,6 +17,7 @@ from astropy.stats import gaussian_fwhm_to_sigma
 
 from astropop.testing import *
 
+
 def gen_bkg(size, level, rdnoise, rng_seed=123, dtype='f8'):
     """Generate a simple background image."""
     # create a level image
@@ -362,7 +363,6 @@ class Test_Background():
         # assert_almost_equal(rms, np.ones(size)*rdnoise, decimal=-1)
 
 
-@pytest.mark.flaky(max_runs=10, min_passes=1)
 class Test_SEP_Detection():
     # segmentation detection. Must detect all shapes of sources
 
@@ -481,7 +481,6 @@ class Test_SEP_Detection():
         assert_almost_equal(sources[0]['y'], pos[1], decimal=2)
 
 
-@pytest.mark.flaky(max_runs=10, min_passes=1)
 class Test_DAOFind_Detection():
     # DAOFind detection. Only round unsturaded stars
 
@@ -772,7 +771,6 @@ class Test_DAOFind_Detection():
         assert_almost_equal(sources[0]['y'], pos[1], decimal=2)
 
 
-@pytest.mark.flaky(max_runs=10, min_passes=1)
 class Test_StarFind():
     # Our combined iterative method
 
@@ -800,7 +798,7 @@ class Test_StarFind():
         fwhm = calc_fwhm(im, x, y, box_size=25, model='gaussian', min_fwhm=3.0)
         assert_almost_equal(fwhm, 2.35*sigma, decimal=0)
 
-    pytest.mark.skip('Wrong new centers?')
+    @pytest.mark.skip('Wrong new centers?')
     def test_starfind_recenter_sources(self):
         size = (256, 256)
         number = 10

@@ -290,7 +290,10 @@ class QFloat():
             if not np.any(np.isreal(i)):
                 raise TypeError('value and uncertainty must be real numbers, '
                                 'or arrays of real numbers.')
-        value = np.array(value) if check_iterable(value) else float(value)
+        if check_iterable(value):
+            value = np.array(value, dtype=float)
+        else:
+            value = float(value)
         return value, uncertainty, unit
 
     def _set_uncert(self, value):

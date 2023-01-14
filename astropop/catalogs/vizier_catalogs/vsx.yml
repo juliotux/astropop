@@ -1,0 +1,15 @@
+---
+table: 'B/vsx'
+bibcode: "2015yCat....102027W"
+description: 'AAVSO International Variable Star Index VSX (Watson+, 2006-)'
+columns: ['+_r', '**']
+available_filters:
+coordinates:
+  ra_column: 'RAJ2000'
+  dec_column: 'DEJ2000'
+  frame: 'icrs'
+magnitudes:
+epoch:
+ids:
+  prepend: 'VSX'
+  column: 'OID'

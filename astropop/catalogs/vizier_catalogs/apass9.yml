@@ -1,0 +1,22 @@
+---
+table: 'II/336/apass9'
+bibcode: '2015AAS...22533616H'
+description: 'AAVSO Photometric All Sky Survey (APASS) DR9 (Henden+, 2016)'
+columns: ['+_r', '**']  # not so many columns
+available_filters: {
+  'B': 'Johnson B-band magnitude',
+  'V': 'Johnson V-band magnitude',
+  'g_': "g'-band AB magnitude, Sloan filter",
+  'r_': "r'-band AB magnitude, Sloan filter",
+  'i_': "i'-band AB magnitude, Sloan filter"
+}
+coordinates:
+  ra_column: 'RAJ2000'
+  dec_column: 'DEJ2000'
+magnitudes:
+  mag_column: '{band}mag'
+  err_mag_column: 'e_{band}mag'
+epoch:
+  column: 'EpRA'
+  format: 'jyear'
+ids:

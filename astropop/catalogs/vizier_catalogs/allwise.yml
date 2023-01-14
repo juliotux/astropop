@@ -1,0 +1,27 @@
+---
+table: 'II/328/allwise'
+bibcode: '2014yCat.2328....0C'
+description: 'The AllWISE data Release (updated version, 16-Feb-2021)'
+columns: ['+_r', '**']
+available_filters: {
+  'W1': 'WISE/W1 magnitude (3.35um) Red values correspond to upper limits (S/N<2)',
+  'W2': 'WISE/W2 magnitude (4.6um) Red values correspond to upper limits (S/N<2)',
+  'W3': 'WISE/W3 magnitude (11.6um) Red values correspond to upper limits (S/N<2)',
+  'W4': 'WISE/W4 magnitude (22.1um) Red values correspond to upper limits (S/N<2)',
+  'J': '2MASS J magnitude (1.25um) Red values correspond to upper limits (S/N<2)',
+  'H': '2MASS H magnitude (1.65um) Red values correspond to upper limits (S/N<2)',
+  'K': '2MASS Ks magnitude (2.17um) Red values correspond to upper limits (S/N<2)'
+}
+coordinates:
+  ra_column: 'RAJ2000'
+  dec_column: 'DEJ2000'
+  pm_ra_column: 'pmRA'
+  pm_dec_column: 'pmDE'
+  frame: 'icrs'
+magnitudes:
+  mag_column: '{band}mag'
+  err_mag_column: 'e_{band}mag'
+epoch:
+ids:
+  prepend: 'AllWISE'
+  column: 'AllWISE'

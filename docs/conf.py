@@ -3,23 +3,17 @@ import os
 
 ap_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(ap_dir)
+sys.tracebacklimit = 0
 
 # Minimum version, enforced by sphinx
 needs_sphinx = '4.3.0'
 
 extensions = [
-    'sphinx.ext.autodoc',
     'sphinx.ext.intersphinx',
-    'sphinx.ext.coverage',
-    'sphinx.ext.autosummary',
-    'sphinx.ext.doctest',
-    'sphinx.ext.graphviz',
-    'sphinx.ext.ifconfig',
     'sphinx.ext.extlinks',
     'sphinx.ext.todo',
     'sphinx.ext.mathjax',
     'sphinx_automodapi.automodapi',
-    'sphinx_automodapi.smart_resolver',
     'numpydoc',
     'matplotlib.sphinxext.plot_directive',
     'IPython.sphinxext.ipython_console_highlighting',
@@ -28,7 +22,8 @@ extensions = [
 ]
 
 extlinks = {
-    'doi': ('https://dx.doi.org/%s', 'doi:'),
+    'doi': ('https://dx.doi.org/%s', 'doi: %s'),
+    'bibcode': ('https://ui.adsabs.harvard.edu/abs/%s', '%s')
 }
 
 nbsphinx_allow_errors = True
@@ -60,9 +55,14 @@ today_fmt = '%B %d, %Y'
 # General theme infos
 exclude_patterns = ['_templates', '_build', 'Thumbs.db', '.DS_Store']
 pygments_style = 'sphinx'
-html_theme = 'pydata_sphinx_theme'
+# html_theme = 'pydata_sphinx_theme'
+html_theme = "sphinx_book_theme"
 html_static_path = ['_static']
 htmlhelp_basename = 'astropop'
+html_theme_options = {
+  "show_prev_next": False,
+  "footer_items": ["copyright", "sphinx-version", "theme-version"]
+}
 
 autosummary_generate = True
 
