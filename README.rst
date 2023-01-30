@@ -46,7 +46,7 @@ Bellow we list all the necessary dependencies for the good working of the code. 
 
 - numpy >= 1.17;
 
-- scikit-image;
+- scikit-image = 0.18.3;
 
 - scikit-learn;
 
