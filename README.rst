@@ -46,7 +46,7 @@ Bellow we list all the necessary dependencies for the good working of the code. 
 
 - numpy >= 1.17;
 
-- scikit-image = 0.18.3;
+- scikit-image < 0.19 (see `scikit-image issue #6456 <https://github.com/scikit-image/scikit-image/issues/6456>`_);
 
 - scikit-learn;
 
@@ -67,22 +67,22 @@ We recomend to use a `anaconda <https://www.anaconda.com/>`_ environment to use 
 .. code-block::
 
     conda create -n <environment name> -c conda-forge python=3.10 astroalign astropy astroquery astroscrappy matplotlib numpy pyyaml reproject scikit-image scikit-learn scipy sep
-    
+
 Once the environment is created, you can `activate the environment <https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#activating-an-environment>`_ and install the astropop with `pip`.
 
 .. code-block::
 
    conda activate <environment name>
-   
+
 Stable Version
 --------------
 
-The stable version of astropop is available in [PyPi](https://pypi.org/) and can be installed directly with `pip` command.
+The stable version of astropop is available in `PyPi <https://pypi.org/>`_ and can be installed directly with `pip` command.
 
 .. code-block::
 
    pip install astropop
-   
+
 Development Version
 -------------------
 
@@ -97,8 +97,8 @@ or
 .. code-block::
 
    pip install -U https://github.com/sparc4-dev/astropop/archive/refs/heads/main.zip
-   
-or 
+
+or
 
 .. code-block::
 
