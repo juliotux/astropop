@@ -421,21 +421,29 @@ class Test_StokesParameters:
         flux = QFloat([1]*16, [0.001]*16)
 
         p = StokesParameters('halfwave', 0, 1, flux=flux)
-        # 0.001/sqrt(16)
-        assert_almost_equal(p.theor_sigma, 0.00025)
-
-        p = StokesParameters('quarterwave', 0, 1, flux=flux)
         # sqrt(2)*0.001/sqrt(16)
-        assert_almost_equal(p.theor_sigma, 0.00025*np.sqrt(2))
+        assert_almost_equal(p.theor_sigma['p'], np.sqrt(2)*0.00025)
+        assert_almost_equal(p.theor_sigma['q'], np.sqrt(2)*0.00025)
+        assert_almost_equal(p.theor_sigma['u'], np.sqrt(2)*0.00025)
+
+        p = StokesParameters('quarterwave', q=0.1, u=0.1, v=0.1, flux=flux)
+        assert_almost_equal(p.theor_sigma['q'], 0.0003972760)
+        assert_almost_equal(p.theor_sigma['u'], 0.0006533854)
+        assert_almost_equal(p.theor_sigma['v'], 0.0003697723)
+        assert_almost_equal(p.theor_sigma['p'], 0.0005407128)
 
         flux = QFloat([1]*8, [0.001]*8)
         p = StokesParameters('halfwave', 0, 1, flux=flux)
         # 0.001/sqrt(8)
-        assert_almost_equal(p.theor_sigma, 0.001/np.sqrt(8))
+        assert_almost_equal(p.theor_sigma['p'], np.sqrt(2)*0.001/np.sqrt(8))
+        assert_almost_equal(p.theor_sigma['q'], np.sqrt(2)*0.001/np.sqrt(8))
+        assert_almost_equal(p.theor_sigma['u'], np.sqrt(2)*0.001/np.sqrt(8))
 
-        p = StokesParameters('quarterwave', 0, 1, flux=flux)
-        # sqrt(2)*0.001/sqrt(16)
-        assert_almost_equal(p.theor_sigma, np.sqrt(2)*0.001/np.sqrt(8))
+        p = StokesParameters('quarterwave', q=0.1, u=0.1, v=0.1, flux=flux)
+        assert_almost_equal(p.theor_sigma['q'], np.sqrt(2)*0.0003972760)
+        assert_almost_equal(p.theor_sigma['u'], np.sqrt(2)*0.0006533854)
+        assert_almost_equal(p.theor_sigma['v'], np.sqrt(2)*0.0003697723)
+        assert_almost_equal(p.theor_sigma['p'], np.sqrt(2)*0.0005407128)
 
     def test_stokes_model_halfwave(self):
         p = StokesParameters('halfwave', 0, 0.1)

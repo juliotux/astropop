@@ -285,16 +285,23 @@ class StokesParameters:
         theor_sigma = K*1/sqrt(sum(flux_i^2/sigma_flux_i^2))
         where K is 1 for halfwave retarders and sqrt2 for quarterwave.
         """
-        if self.retarder == 'quarterwave':
-            k = np.sqrt(2)
-        elif self.retarder == 'halfwave':
-            k = 1
         if self.flux is None:
             raise ValueError('The theoretical sigma is only available when '
                              'fluxes are present.')
         ratio = self.flux.nominal/self.flux.std_dev
-        summed = np.sqrt(np.sum(np.square(ratio)))
-        return k/summed
+        snr = np.sqrt(np.sum(np.square(ratio)))
+        if self.retarder == 'halfwave':
+            sigma = np.sqrt(2)/snr
+            return {'q': sigma, 'u': sigma, 'p': sigma}
+        if self.retarder == 'quarterwave':
+            sigma_q = 1/(np.sqrt(0.396)*snr)
+            sigma_u = 1/(np.sqrt(0.1464)*snr)
+            sigma_p = np.sqrt((self.q.nominal*sigma_q)**2 +
+                              (self.u.nominal*sigma_u)**2)/self.p.nominal
+            return {'q': sigma_q,
+                    'u': sigma_u,
+                    'v': 1/(np.sqrt(0.4571)*snr),
+                    'p': sigma_p}
 
 
 @dataclass

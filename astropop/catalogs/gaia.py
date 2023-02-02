@@ -73,7 +73,7 @@ class GaiaDR3SourcesCatalog(_OnlineSourcesCatalog):
                                        columns=self._columns).results
         sk = SkyCoord(self._query['ra'], self._query['dec'],
                       obstime=Time(self._query['ref_epoch'], format='jyear'))
-        ids = np.array([string_fix(i) for i in self._query['designation']])
+        ids = np.array([string_fix(i) for i in self._query['DESIGNATION']])
 
         # perform magnitude filtering only if available
         mag = {}

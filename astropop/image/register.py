@@ -210,7 +210,7 @@ class _BaseRegister(abc.ABC):
 
 
 class CrossCorrelationRegister(_BaseRegister):
-    """Register images usgin `~skimage.Register.phase_cross_correlation`.
+    """Register images using `~skimage.registration.phase_cross_correlation`.
 
     It uses cross-correlation to find a translation-only transform between
     two images. It obtains an initial estimate of the cross-correlation
@@ -220,14 +220,42 @@ class CrossCorrelationRegister(_BaseRegister):
 
     Parameters
     ----------
-    upsample_factor : int (optional)
-        Upsampling image factor. Images will be Registered to within
-        ``1 / upsample_factor`` of a pixel.
-        Default: 1 (no upsampling)
-    space : {'real', 'fourier'} (optional)
+    upsample_factor : int, optional
+        Upsampling factor. Images will be registered to within
+        ``1 / upsample_factor`` of a pixel. For example
+        ``upsample_factor == 20`` means the images will be registered
+        within 1/20th of a pixel. Default is 1 (no upsampling).
+        Not used if any of ``reference_mask`` or ``moving_mask`` is not None.
+    space : string, one of "real" or "fourier", optional
         Defines how the algorithm interprets input data. "real" means
         data will be FFT'd to compute the correlation, while "fourier"
-        data will bypass FFT of input data. Case insensitive.
+        data will bypass FFT of input data. Case insensitive. Not
+        used if any of ``reference_mask`` or ``moving_mask`` is not
+        None.
+    disambiguate : bool
+        The shift returned by this function is only accurate *modulo* the
+        image shape, due to the periodic nature of the Fourier transform. If
+        this parameter is set to ``True``, the *real* space cross-correlation
+        is computed for each possible shift, and the shift with the highest
+        cross-correlation within the overlapping area is returned.
+    return_error : bool, {"always"}, optional
+        Returns error and phase difference if "always" is given. If False, or
+        either ``reference_mask`` or ``moving_mask`` are given, only the shift
+        is returned.
+    overlap_ratio : float, optional
+        Minimum allowed overlap ratio between images. The correlation for
+        translations corresponding with an overlap ratio lower than this
+        threshold will be ignored. A lower `overlap_ratio` leads to smaller
+        maximum translation, while a higher `overlap_ratio` leads to greater
+        robustness against spurious matches due to small overlap between
+        masked images. Used only if one of ``reference_mask`` or
+        ``moving_mask`` is not None.
+
+    Notes
+    -----
+    - Due to a bug in the `~skimage.registration.phase_cross_correlation`
+      normalization is automatically disabled.
+    - ``return_error`` is set to ``'always'`` to avoid keep compatibility.
 
     References
     ----------
@@ -236,18 +264,19 @@ class CrossCorrelationRegister(_BaseRegister):
 
     _name = 'cross-correlation'
 
-    def __init__(self, upsample_factor=1, space='real'):
+    def __init__(self, **kwargs):
+        import skimage
         from skimage.registration import phase_cross_correlation
-
-        self._pcc = partial(phase_cross_correlation, space=space,
-                            upsample_factor=upsample_factor,
-                            return_error=False)
+        if skimage.__version__ >= '0.19':
+            kwargs['normalization'] = None
+        kwargs['return_error'] = 'always'
+        self._pcc = partial(phase_cross_correlation, **kwargs)
 
     def _compute_transform(self, image1, image2, mask1=None, mask2=None):
         if mask1 is not None or mask2 is not None:
             logger.debug("Masks are ignored in CrossCorrelationRegister.")
         # Masks are ignored by default
-        dy, dx = self._pcc(image1, image2)
+        dy, dx = self._pcc(image1, image2)[0]
         return transform.AffineTransform(translation=(-dx, -dy))
 
 
