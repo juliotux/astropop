@@ -268,7 +268,7 @@ class CrossCorrelationRegister(_BaseRegister):
         import skimage
         from skimage.registration import phase_cross_correlation
         if skimage.__version__ >= '0.19':
-            kwargs['normalize'] = None
+            kwargs['normalization'] = None
         kwargs['return_error'] = 'always'
         self._pcc = partial(phase_cross_correlation, **kwargs)
 
