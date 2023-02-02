@@ -296,7 +296,8 @@ class StokesParameters:
         if self.retarder == 'quarterwave':
             sigma_q = 1/(np.sqrt(0.396)*snr)
             sigma_u = 1/(np.sqrt(0.1464)*snr)
-            sigma_p = np.sqrt((self.q*sigma_q)**2+(self.u*sigma_u)**2)/self.p
+            sigma_p = np.sqrt((self.q.nominal*sigma_q)**2 +
+                              (self.u.nominal*sigma_u)**2)/self.p.nominal
             return {'q': sigma_q,
                     'u': sigma_u,
                     'v': 1/(np.sqrt(0.4571)*snr),
