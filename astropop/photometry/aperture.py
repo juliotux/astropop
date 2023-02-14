@@ -2,97 +2,12 @@
 
 import sep
 import numpy as np
-from scipy.stats import sigmaclip
 from astropy.table import Table
 
-from ..math.array import xy2r, trim_array
 from ._utils import _sep_fix_byte_order
 from .detection import calc_fwhm
 from ..logger import logger
 from ..fits_utils import imhdus
-
-
-def sky_annulus(data, x, y, r_ann, algorithm='mmm', mask=None):
-    """Determine the sky value of a single pixel based on a sky annulus
-       and obtains the sky value by calculating the median of annulus pixels
-       or by the MMM mode estimator from DAOPHOT (3*median - 2*mean).
-
-    Parameters
-    ----------
-    data : `~nnumpy.ndarray`
-        2D image data for photometry
-    x, y : array_like
-        Positions of the sources
-    r_ann : array_like([float, float])
-        Annulus radius (intern and extern) to calculate the background
-        value
-    algorithm : 'mmm' or 'sigmaclip' (optional)
-        Algorith to calculate the background value. 'mmm' (mean, median,
-        mode) should be better for populated fields, while 'sigmaclip'
-        (clipped mean) should be better for sparse fields.
-        Default: 'mmm'
-     mask : `~nnumpy.ndarray` (optional)
-        Mask badpixels and problematic ccd areas.
-        Default: `None`
-
-    Returns
-    -------
-    sky : array_like
-        The computed value of sky for each (x, y) source.
-    sky_error : array_like
-        The error of sky value, computed as the sigma cliped stddev.
-    """
-    # TODO: this code needs optimization for faster work
-    if len(x) != len(y):
-        raise ValueError('x and y variables don\'t have the same lenght.')
-
-    if len(r_ann) != 2:
-        raise ValueError('r_ann must have two components (r_in, r_out)')
-
-    sky = np.zeros_like(x, dtype='f8')
-    sky.fill(np.nan)
-    sky_error = np.zeros_like(x, dtype='f8')
-    sky_error.fill(np.nan)
-
-    box_size = 2*int(np.max(r_ann)+2)  # Ensure the aperture is entirely in box
-    r_ann = sorted(r_ann)
-
-    indices = np.indices(data.shape)
-    for i in range(len(x)):
-        xi, yi = x[i]-0.5, y[i]-0.5  # needed to check pixel centers
-        d, ix, iy = trim_array(data, box_size, (xi, yi), indices)
-        if mask is not None:
-            m = np.ravel(mask[iy, ix])
-        r, f = xy2r(ix, iy, d, xi, yi)
-
-        # Filter only values inside the annulus
-        # To think: this do not perform subpixel, just check the pixel center
-        filt = (r >= r_ann[0]) & (r <= r_ann[1])
-        # mask nans here to go faster
-        filt = filt & ~np.isnan(f)
-        if mask is not None:
-            filt = filt & ~m
-        f = f[np.where(filt)]
-        if len(f) < 1:
-            logger.warn('No pixels for sky subtraction found at position'
-                        f' {x[i]}x{y[i]}.')
-            sky[i] = 0
-            sky_error[i] = 0
-        else:
-            for _ in range(3):
-                f, _, _ = sigmaclip(f)
-            mean = np.nanmean(f)
-            median = np.nanmedian(f)
-            sky_error[i] = np.nanstd(f)
-            if algorithm == 'mmm':
-                # mimic daophot using sigmaclip
-                sky[i] = 3*median - 2*mean  # mmm mode estimator
-            elif algorithm == 'sigmaclip':
-                sky[i] = mean
-            else:
-                raise ValueError(f'Sky algorithm {algorithm} not supported.')
-
-    return sky, sky_error
 
 
 def aperture_photometry(data, x, y, r='auto', r_ann='auto', gain=1.0,
@@ -122,7 +37,7 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto', gain=1.0,
     readnoise : float (optional)
         Readnoise of the image to correctly calculate the error.
         Default: `None`
-    mask : `~nnumpy.ndarray` (optional)
+    mask : `~numpy.ndarray` (optional)
         Mask badpixels and problematic ccd areas.
         Default: `None`
     sky_algorithm : 'mmm' or 'sigmaclip'
