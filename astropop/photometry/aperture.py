@@ -10,6 +10,21 @@ from ..logger import logger
 from ..fits_utils import imhdus
 
 
+class PhotometryFlags:
+    """Flags for aperture photometry.
+
+    For subclassing, please set values higher than 1 << 4
+    """
+    # 0: No problems found
+    OK = 0
+    # 1: At least one pixel in the aperture was removed
+    REMOVED_PIXEL_IN_APERTURE = 1 << 0
+    # 2: At least one pixel in the aperture was interpolated
+    INTERPOLATED_PIXEL_IN_APERTURE = 1 << 1
+    # 3: At least one pixel in the aperture was out of bounds of the image
+    OUT_OF_BOUNDS = 1 << 2
+
+
 def aperture_photometry(data, x, y, r='auto', r_ann='auto', gain=1.0,
                         readnoise=None, mask=None, sky_algorithm='mmm'):
     """Perform aperture photometry using sep. Output units (ADU or e-) will

@@ -18,7 +18,7 @@ from .compat import _to_ccddata, _to_hdu, _merge_and_clean_header, _write_fits
 from .._unit_property import unit_property
 
 
-__all__ = ['FrameData']
+__all__ = ['FrameData', 'PixelMaskFlags']
 
 
 def _get_shape(d):
@@ -144,6 +144,20 @@ def setup_filename(frame, cache_folder=None, filename=None):
     frame.cache_filename = filename
 
     return os.path.join(cache_folder, filename)
+
+
+class PixelMaskFlags:
+    """Flags for pixel masking.
+
+    For subclassing, use values higher than 1 << 5.
+    """
+    OK = 0
+    DEAD = 1 << 0
+    BAD = 1 << 1
+    SATURATED = 1 << 2
+    INTERPOLATED = 1 << 3
+    COSMIC_RAY = 1 << 4
+    OUT_OF_BOUNDS = 1 << 5
 
 
 @unit_property
