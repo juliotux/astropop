@@ -149,15 +149,15 @@ def setup_filename(frame, cache_folder=None, filename=None):
 class PixelMaskFlags:
     """Flags for pixel masking.
 
-    For subclassing, use values higher than 1 << 5.
+    For subclassing, use values higher than 1 << 6.
     """
-    OK = 0
-    DEAD = 1 << 0
-    BAD = 1 << 1
-    SATURATED = 1 << 2
-    INTERPOLATED = 1 << 3
-    COSMIC_RAY = 1 << 4
-    OUT_OF_BOUNDS = 1 << 5
+    DEAD = 1 << 0  # dead pixel
+    BAD = 1 << 1  # bad pixel
+    SATURATED = 1 << 2  # saturated pixel, above a threshold level
+    INTERPOLATED = 1 << 3  # pixel interpolated from neighbors
+    COSMIC_RAY = 1 << 4  # cosmic ray
+    OUT_OF_BOUNDS = 1 << 5  # registered image. Pixel is out of the bounds
+    MASKED = 1 << 6  # not specified
 
 
 @unit_property
@@ -184,8 +184,9 @@ class FrameData:
         Mandatory dtype of uncertainty.
     mask : array_like or `None` (optional)
         Frame mask.
-    m_dtype : string or `~numpy.dtype` (optional)
-        Mandatory dtype of mask. Default `bool`compilant
+    flags : array_like or `None` (optional)
+        Pixel flags for the frame. See `~astropop.FrameData.PixelMaskFlags`.
+        for values.
     wcs : `dict`, `~astropy.fits.Header` or `~astropy.wcs.WCS` (optional)
         World Coordinate System of the image.
     meta or header: `dict` or `astropy.fits.Header` (optional)
@@ -208,12 +209,10 @@ class FrameData:
       `~astropop.ccd_processing.imarith` module.
     """
 
-    # TODO: write_fits
-
     _memmapping = False
     _unit = None
     _data = None
-    _mask = None
+    _flags = None
     _unct = None
     _wcs = None
     _meta = None
@@ -223,7 +222,7 @@ class FrameData:
 
     def __init__(self, data, unit=None, dtype=None,
                  uncertainty=None, u_dtype=None,
-                 mask=None, m_dtype=bool,
+                 mask=None, flags=None, m_dtype=bool,
                  wcs=None, meta=None, header=None,
                  cache_folder=None, cache_filename=None,
                  use_memmap_backend=False, origin_filename=None):
@@ -251,6 +250,7 @@ class FrameData:
                 mask = dmask
         if mask is None:  # Default do not mask anything
             mask = False
+        # TODO: insert flags here
 
         # raise errors if incompatible shapes
         data, uncertainty, mask = shape_consistency(data, uncertainty, mask)
@@ -259,7 +259,7 @@ class FrameData:
         self.unit = unit
         self._data.reset_data(data, dtype)
         self._unct.reset_data(uncertainty, u_dtype)
-        # Masks can also be flags (uint8)
+        # TODO: change mask to flags
         self._mask.reset_data(mask, m_dtype)
 
         # avoiding security problems
@@ -293,6 +293,7 @@ class FrameData:
         else:
             nu = None
         if self._mask is not None:
+            # TODO: changing to flags
             self._mask.disable_memmap(remove=True)
             nm = self._mask._contained
         else:
@@ -300,6 +301,7 @@ class FrameData:
 
         self._data = MemMapArray(nd, filename=cache_file + '.data')
         self._unct = MemMapArray(nu, filename=cache_file + '.unct')
+        # TODO: change to flags
         self._mask = MemMapArray(nm, filename=cache_file + '.mask')
 
     @property
@@ -422,13 +424,11 @@ class FrameData:
 
     @property
     def mask(self):
-        """Access mask data."""
-        return self._mask
+        """Access mask data, boolean values. True for masked pixels."""
+        return np.bool_(self._flags)
 
-    @mask.setter
-    def mask(self, value):
-        _, _, value = shape_consistency(self.data, None, value)
-        self._mask.reset_data(value)
+    # TODO: mask setter removed. Change it to flags setter or flags add
+    # TODO: mask_flags(flags) -> return a image with specific flags
 
     def astype(self, dtype):
         """Return a copy of the current FrameData with new dtype in data."""
@@ -445,6 +445,7 @@ class FrameData:
             Default: `None`
         """
         data = np.array(self._data) if not self._data.empty else None
+        # TODO: change to flags
         mask = np.array(self._mask) if not self._mask.empty else None
         unct = np.array(self._unct) if not self._unct.empty else None
         unit = self._unit
@@ -484,11 +485,13 @@ class FrameData:
         if filename is None and cache_folder is None:
             self._data.enable_memmap()
             self._unct.enable_memmap()
+            # TODO: change to flags
             self._mask.enable_memmap()
         else:
             cache_file = setup_filename(self, cache_folder, filename)
             self._update_cache_files(cache_file)
             self._data.enable_memmap(cache_file + '.data')
+            # TODO: change to flags
             self._mask.enable_memmap(cache_file + '.mask')
             self._unct.enable_memmap(cache_file + '.unct')
         self._memmapping = True
@@ -496,6 +499,7 @@ class FrameData:
     def disable_memmap(self):
         """Disable frame file memmapping (load to memory)."""
         self._data.disable_memmap(remove=True)
+        # TODO: change to flags
         self._mask.disable_memmap(remove=True)
         self._unct.disable_memmap(remove=True)
         self._memmapping = False

@@ -15,13 +15,11 @@ class PhotometryFlags:
 
     For subclassing, please set values higher than 1 << 4
     """
-    # 0: No problems found
-    OK = 0
     # 1: At least one pixel in the aperture was removed
     REMOVED_PIXEL_IN_APERTURE = 1 << 0
     # 2: At least one pixel in the aperture was interpolated
     INTERPOLATED_PIXEL_IN_APERTURE = 1 << 1
-    # 3: At least one pixel in the aperture was out of bounds of the image
+    # 4: At least one pixel in the aperture was out of bounds of the image
     OUT_OF_BOUNDS = 1 << 2
 
 
