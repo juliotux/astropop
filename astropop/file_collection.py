@@ -60,14 +60,43 @@ _columns_col = 'column'
 
 
 class FitsFileGroup():
-    """Easy handle groups of fits files."""
+    """Easy handle groups of fits files.
+
+    Parameters
+    ----------
+    location : str, optional
+        Location of the fits files. If not specified, the files must be
+        specified in the files parameter.
+    files : list, optional
+        List of files to be included in the group. If not specified, the
+        location parameter must be specified.
+    ext : int, optional
+        FITS extension to be used. Default is 0.
+    compression : bool, optional
+        If True, add compression file name extensions to the list of
+        extensions to be searched. Default is False.
+    database : str, optional
+        SQLite database to be used to store the information. Default is
+        ':memory:', which means that the database will be stored in memory.
+    glob_include : str, optional
+        Glob pattern to include files. Default is None.
+    glob_exclude : str, optional
+        Glob pattern to exclude files. Default is None.
+    fits_ext : str, optional
+        FITS file name extension to be used. Default is None, wich means
+        that the default extensions will be used.
+    show_progress_bar : bool, optional
+        If True, show a progress bar while reading the files. Default is
+        False. Requires ``tqdm`` module. May not be compatible with every mod.
+    """
 
     def __init__(self, location=None, files=None, ext=0,
                  compression=False, database=':memory:', **kwargs):
         self._ext = ext
         self._extensions = kwargs.get('fits_ext', None)
-        self._include = kwargs.get('glob_include')
-        self._exclude = kwargs.get('glob_exclude')
+        self._include = kwargs.get('glob_include', None)
+        self._exclude = kwargs.get('glob_exclude', None)
+        self._progress = kwargs.get('show_progress_bar', False)
 
         self._db = SQLDatabase(database)
         if database == ':memory:':
@@ -132,6 +161,7 @@ class FitsFileGroup():
     @property
     def files(self):
         """List files in the group."""
+        # TODO: very slow due to excess of queries in large databases
         return [self.full_path(i) for i in range(len(self))]
 
     @property
@@ -190,8 +220,11 @@ class FitsFileGroup():
         location = location or self._location
         compression = compression or self._compression
         files = self._list_files(files, location, compression)
-        for i, f in enumerate(files):
-            logger.info('reading file %i from %i: %s', i, len(files), f)
+        if self._progress:
+            from tqdm.contrib import tenumerate as enum
+        else:
+            enum = enumerate
+        for i, f in enum(files):
             try:
                 self.add_file(f)
             except Exception as e:
@@ -240,7 +273,7 @@ class FitsFileGroup():
         if isinstance(file, int):
             file = self._table[_files_col][file]
         if self._db_dir is not None:
-            return os.path.join(self._db_dir, file)
+            return os.path.abspath(os.path.join(self._db_dir, file))
         return file
 
     def relative_path(self, file):
