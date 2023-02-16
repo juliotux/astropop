@@ -410,6 +410,36 @@ class Test_SQLDatabase_Creation_Modify:
         assert_equal(db2.get_column('test', 'a').values, [23, 49, 61, 65])
         assert_equal(db2.get_column('test', 'b').values, [24, 50, 62, 66])
 
+    def test_sql_delete_row(self):
+        db = SQLDatabase(':memory:')
+        db.add_table('test')
+        db.add_column('test', 'a', [1, 3, 5])
+        db.add_column('test', 'b', [2, 4, 6])
+
+        db.delete_row('test', 1)
+        assert_equal(db.get_column('test', 'a').values, [1, 5])
+        assert_equal(db.get_column('test', 'b').values, [2, 6])
+
+        with pytest.raises(IndexError):
+            db.delete_row('test', 2)
+        with pytest.raises(IndexError):
+            db.delete_row('test', -4)
+
+    def test_sql_delete_column(self):
+        db = SQLDatabase(':memory:')
+        db.add_table('test')
+        db.add_column('test', 'a', [1, 3, 5])
+        db.add_column('test', 'b', [2, 4, 6])
+
+        db.delete_column('test', 'b')
+        assert_equal(db.column_names('test'), ['a'])
+        assert_equal(db.get_column('test', 'a').values, [1, 3, 5])
+
+        with pytest.raises(KeyError, match='does not exist'):
+            db.delete_column('test', 'b')
+        with pytest.raises(ValueError, match='protected name'):
+            db.delete_column('test', 'table')
+
 
 class Test_SQLDatabase_Access:
     def test_sql_get_table(self):

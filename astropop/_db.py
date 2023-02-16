@@ -780,6 +780,19 @@ class SQLDatabase:
         if data is not None:
             self.set_column(table, column, data)
 
+    def delete_column(self, table, column):
+        """Delete a column from a table."""
+        self._check_table(table)
+
+        if column in (_ID_KEY, 'table', 'default'):
+            raise ValueError(f"{column} is a protected name.")
+        if column not in self.column_names(table):
+            raise KeyError(f'Column "{column}" does not exist.')
+
+        comm = f"ALTER TABLE {table} DROP COLUMN '{column}' ;"
+        logger.debug('deleting column "%s" from table "%s"', column, table)
+        self.execute(comm)
+
     def add_rows(self, table, data, add_columns=False, skip_sanitize=False):
         """Add a dict row to a table.
 
@@ -816,6 +829,13 @@ class SQLDatabase:
 
         raise TypeError('data must be a dict, list, or numpy array. '
                         f'Not {type(data)}.')
+
+    def delete_row(self, table, index):
+        """Delete a row from the table."""
+        self._check_table(table)
+        row = _fix_row_index(index, len(self[table]))
+        comm = f"DELETE FROM {table} WHERE {_ID_KEY}={row+1};"
+        self.execute(comm)
 
     def drop_table(self, table):
         """Drop a table from the database."""
