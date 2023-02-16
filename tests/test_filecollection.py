@@ -324,6 +324,34 @@ class Test_FitsFileGroup():
                       ['bias', 'flat', 'Moon'])
             assert_equal(len(i), 10)
 
+    def test_fg_remove_file_int(self, tmpdir):
+        tmpdir, flist = tmpdir
+        fg = FitsFileGroup(location=tmpdir/'fits', compression=False)
+
+        fg.remove_file(0)
+        assert_equal(len(fg), 29)
+        assert_equal(fg.files, flist['fits'][1:])
+
+        fg.remove_file(-1)
+        assert_equal(len(fg), 28)
+        assert_equal(fg.files, flist['fits'][1:-1])
+
+    def test_fg_remove_file_str(self, tmpdir):
+        tmpdir, flist = tmpdir
+        fg = FitsFileGroup(location=tmpdir/'fits', compression=False)
+
+        fg.remove_file(flist['fits'][0])
+        assert_equal(len(fg), 29)
+        assert_equal(fg.files, flist['fits'][1:])
+
+        fg.remove_file(flist['fits'][-1])
+        assert_equal(len(fg), 28)
+        assert_equal(fg.files, flist['fits'][1:-1])
+
+        with pytest.raises(ValueError, match='file not in group'):
+            fg.remove_file('NonExistingFile')
+
+
 class Test_ListFitsFiles():
     def test_list_custom_extension(self, tmpdir):
         tmpdir, flist = tmpdir

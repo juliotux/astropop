@@ -259,6 +259,24 @@ class FitsFileGroup():
         hdr.pop('', None)
         self._table.add_rows(hdr, add_columns=True)
 
+    def remove_file(self, file):
+        """Remove a file from the group.
+
+        Parameters
+        ----------
+        file : str or int
+            If string, the file name with absolute path or relative to the
+            filegroup location. If int, the index of the file.
+        """
+        if isinstance(file, int):
+            index = file
+        else:
+            file = self.relative_path(file)
+            if file not in self._table[_files_col]:
+                raise ValueError(f'{file} file not in group')
+            index = self._table.index_of({_files_col: file})
+        self._table.delete_row(index)
+
     def full_path(self, file):
         """Get the full path of a file in the group.
 
