@@ -161,8 +161,7 @@ class FitsFileGroup():
     @property
     def files(self):
         """List files in the group."""
-        # TODO: very slow due to excess of queries in large databases
-        return [self.full_path(i) for i in range(len(self))]
+        return [self.full_path(i) for i in self.values(_files_col)]
 
     @property
     def summary(self):
