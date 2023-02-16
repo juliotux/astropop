@@ -93,10 +93,13 @@ class FitsFileGroup():
     def __init__(self, location=None, files=None, ext=0,
                  compression=False, database=':memory:', **kwargs):
         self._ext = ext
-        self._extensions = kwargs.get('fits_ext', None)
-        self._include = kwargs.get('glob_include', None)
-        self._exclude = kwargs.get('glob_exclude', None)
-        self._progress = kwargs.get('show_progress_bar', False)
+        self._extensions = kwargs.pop('fits_ext', None)
+        self._include = kwargs.pop('glob_include', None)
+        self._exclude = kwargs.pop('glob_exclude', None)
+        self._progress = kwargs.pop('show_progress_bar', False)
+
+        for i in kwargs.keys():
+            raise ValueError('Unknown parameter: {}'.format(i))
 
         self._db = SQLDatabase(database)
         if database == ':memory:':
