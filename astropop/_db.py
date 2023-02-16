@@ -198,6 +198,16 @@ class SQLTable:
             data = self._colmap.map_row(data)
         self._db.set_row(self._name, row, data)
 
+    def delete_column(self, column):
+        """Delete a given column from the table."""
+        if self._colmap is not None:
+            column = self._colmap.get_column_name(column)
+        self._db.delete_column(self._name, column)
+
+    def delete_row(self, row):
+        """Delete all rows from the table."""
+        self._db.delete_row(self._name, row)
+
     def index_of(self, where):
         """Get the index of the rows that match the given condition."""
         if self._colmap is not None:
@@ -735,6 +745,18 @@ class SQLDatabase:
         comm += ';'
         self.executemany(comm, data)
 
+    def _get_indexes(self, table):
+        """Get the indexes of the table."""
+        comm = f"SELECT {_ID_KEY} FROM {table};"
+        return [i[0] for i in self.execute(comm)]
+
+    def _update_indexes(self, table):
+        """Update the indexes of the table."""
+        rows = list(range(1, self.count(table) + 1))
+        origin = self._get_indexes(table)
+        comm = f"UPDATE {table} SET {_ID_KEY} = ? WHERE {_ID_KEY} = ?;"
+        self.executemany(comm, zip(rows, origin))
+
     def add_table(self, table, columns=None, data=None):
         """Create a table in database."""
         logger.debug('Initializing "%s" table.', table)
@@ -836,6 +858,7 @@ class SQLDatabase:
         row = _fix_row_index(index, len(self[table]))
         comm = f"DELETE FROM {table} WHERE {_ID_KEY}={row+1};"
         self.execute(comm)
+        self._update_indexes(table)
 
     def drop_table(self, table):
         """Drop a table from the database."""

@@ -1222,6 +1222,41 @@ class Test_SQLTable:
         assert_equal(table.index_of({'a': 50}), [])
         assert_equal(table.index_of('a < 13'), [0, 1, 2])
 
+    def test_table_delete_row(self):
+        db = self.db
+        table = db['test']
+        assert_is_instance(table, SQLTable)
+
+        table.delete_row(0)
+        expect = np.transpose([np.arange(11, 20), np.arange(21, 30)])
+        assert_equal(table.column_names, ['a', 'b'])
+        assert_equal(table.values, expect)
+
+        table.delete_row(-1)
+        expect = np.transpose([np.arange(11, 19), np.arange(21, 29)])
+        assert_equal(table.column_names, ['a', 'b'])
+        assert_equal(table.values, expect)
+
+        with pytest.raises(IndexError):
+            table.delete_row(10)
+        with pytest.raises(IndexError):
+            table.delete_row(-11)
+
+    def test_table_delete_column(self):
+        db = self.db
+        table = db['test']
+        assert_is_instance(table, SQLTable)
+
+        table.delete_column('a')
+        expect = np.transpose([np.arange(20, 30)])
+        assert_equal(table.column_names, ['b'])
+        assert_equal(table.values, expect)
+
+        with pytest.raises(KeyError):
+            table.delete_column('a')
+        with pytest.raises(KeyError):
+            table.delete_column('c')
+
 
 class Test_SQLColumn:
     @property
