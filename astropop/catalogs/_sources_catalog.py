@@ -125,6 +125,14 @@ class SourcesCatalog:
         sk = self.skycoord()
         return np.array(list(zip(sk.ra.degree, sk.dec.degree)))
 
+    def ra(self):
+        """Get the sources right ascension in degrees."""
+        return np.array(self.skycoord().ra.degree)
+
+    def dec(self):
+        """Get the sources declination in degrees."""
+        return np.array(self.skycoord().dec.degree)
+
     def magnitude(self, band):
         """Get the sources magnitude in QFloat format.
 

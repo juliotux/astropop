@@ -75,6 +75,13 @@ Coordinates can be accessed using the `~astropop.catalogs.SourcesCatalog.skycoor
     cat.ra_dec_list()
     cat.get_coordinates()
 
+You can also access separated arrays for RA and Dec coordinates using the `~astropop.catalogs.SourcesCatalog.ra` and `~astropop.catalogs.SourcesCatalog.dec` properties.
+
+.. ipython:: python
+
+    cat.ra()
+    cat.dec()
+
 Soures IDs
 ^^^^^^^^^^
 
