@@ -254,9 +254,12 @@ class FitsFileGroup():
         file = self.relative_path(file)
         hdr = {_files_col: file}
         hdr.update(dict(header))
+
+        # get rid of comments, history and empty keys
         hdr.pop('COMMENT', None)
         hdr.pop('HISTORY', None)
         hdr.pop('', None)
+
         self._table.add_rows(hdr, add_columns=True)
 
     def remove_file(self, file):
