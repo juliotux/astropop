@@ -34,6 +34,8 @@ Dependencies
 
 Some of astropop dependencies (numpy, astropy, scipy, astroscrappy) need gcc to get build. Make sure gcc is installed properly in your system.
 
+There is nothing that prevent astropop itself to run on Windows. However, due to problems that comes from dependencies, mainly numpy and astrometry.net, astropop is currently supported only on Linux and Mac.
+
 Bellow we list all the necessary dependencies for the good working of the code. Note that this can be changed with the time.
 
 - astroalign;
