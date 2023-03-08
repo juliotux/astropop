@@ -104,7 +104,7 @@ or
 
 .. code-block::
 
-   git clone git+https://github.com/sparc4-dev/astropop
+   git clone https://github.com/sparc4-dev/astropop
    cd astropop
    pip install -U .
 
