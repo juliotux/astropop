@@ -28,6 +28,10 @@ This software is intended to provide a full pipeline to reduce raw polarimetry a
 
 - Automatic photometry calibration using online catalogs.
 
+Support and Community
+^^^^^^^^^^^^^^^^^^^^^
+
+We have a community of people using astropop to perform data reduction. Also, we use this community to offer support for astropop users. Join the community at `astropop-users Google-Groups <https://groups.google.com/g/astropop-users>`_
 
 Dependencies
 ^^^^^^^^^^^^
