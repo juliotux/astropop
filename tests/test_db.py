@@ -1259,6 +1259,16 @@ class Test_SQLTable:
         with pytest.raises(IndexError):
             table.delete_row(-11)
 
+    def test_table_delete_rows_indexer_robustness(self):
+        db = self.db
+        table = db['test']
+
+        # Test that the row index is updated correctly after deleting rows
+        row = table[5]
+        table.delete_row(4)
+        assert_equal(row.index, 4)
+        assert_equal(table[4].values, row.values)
+
     def test_table_delete_column(self):
         db = self.db
         table = db['test']

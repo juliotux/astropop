@@ -25,6 +25,26 @@ class _SQLViewerBase:
         raise NotImplementedError('Cannot copy SQL viewing classes.')
 
 
+class _SQLRowIndexer(_SQLViewerBase):
+    """A class for indexing SQL rows. Safer method while removing rows.
+
+    Index is obtained by indexof(self).
+
+    Parameters
+    ----------
+    row_list: list
+        The list of `_SQLRowIndexer` to get the index of.
+    """
+
+    def __init__(self, row_list):
+        self._row_list = row_list
+
+    @property
+    def index(self):
+        """Get the index of the row."""
+        return self._row_list.index(self)
+
+
 class SQLColumnMap():
     """Map keywords to SQL columns."""
 
@@ -375,7 +395,7 @@ class SQLColumn(_SQLViewerBase):
 class SQLRow(_SQLViewerBase):
     """Handle and SQL table row interfacing with the DB."""
 
-    def __init__(self, db, table, row, colmap=None):
+    def __init__(self, db, table, row_indexer, colmap=None):
         """Initialize the row.
 
         Parameters
@@ -384,12 +404,12 @@ class SQLRow(_SQLViewerBase):
             The parent database object.
         table : str
             The name of the table in the database.
-        row : int
+        row_indexer : `~astropop._db._SQLRowIndexer`
             The row index in the table.
         """
         self._db = db
         self._table = table
-        self._row = row
+        self._row_indexer = row_indexer
         self._colmap = colmap
 
     @property
@@ -413,7 +433,7 @@ class SQLRow(_SQLViewerBase):
     @property
     def index(self):
         """Get the index of the current row."""
-        return self._row
+        return self._row_indexer.index
 
     @property
     def keys(self):
@@ -436,7 +456,7 @@ class SQLRow(_SQLViewerBase):
             if self._colmap is not None:
                 column = self._colmap.get_column_name(key)
             try:
-                return self._db.get_item(self._table, column, self._row)
+                return self._db.get_item(self._table, column, self.index)
             except ValueError:
                 raise KeyError(f'{key}')
         if isinstance(key, (int, np.int_)):
@@ -466,7 +486,7 @@ class SQLRow(_SQLViewerBase):
 
     def __repr__(self):
         """Get a string representation of the row."""
-        s = f"{self.__class__.__name__} {self._row} in table '{self._table}' "
+        s = f"{self.__class__.__name__} {self.index} in table '{self._table}' "
         s += self.as_dict().__repr__()
         return s
 
@@ -577,6 +597,9 @@ class SQLDatabase:
         self._con = sql.connect(self._db)
         self._cur = self._con.cursor()
         self.autocommit = autocommit
+
+        self._row_indexes = {}
+        self._build_row_indexes()
 
     def execute(self, command, arguments=None):
         """Execute a SQL command in the database."""
@@ -755,6 +778,10 @@ class SQLDatabase:
         comm += ';'
         self.executemany(comm, data)
 
+        # Update the row indexes
+        rl = self._row_indexes[table]
+        rl.extend([_SQLRowIndexer(rl) for i in range(len(data))])
+
     def _get_indexes(self, table):
         """Get the indexes of the table."""
         comm = f"SELECT {_ID_KEY} FROM {table};"
@@ -766,6 +793,16 @@ class SQLDatabase:
         origin = self._get_indexes(table)
         comm = f"UPDATE {table} SET {_ID_KEY} = ? WHERE {_ID_KEY} = ?;"
         self.executemany(comm, zip(rows, origin))
+
+    def _build_row_indexes(self):
+        """Build the row indexes."""
+        for table in self.table_names:
+            size = self.count(table)
+            # Create the list that must be passed to _SQLRowIndexer
+            rl = [None]*len(size)
+            self._row_indexes[table] = rl
+            for i in range(size):
+                self._row_indexes[table][i] = _SQLRowIndexer(rl)
 
     def add_table(self, table, columns=None, data=None):
         """Create a table in database."""
@@ -787,6 +824,9 @@ class SQLDatabase:
         comm += "\n);"
 
         self.execute(comm)
+
+        # Add the row indexer list
+        self._row_indexes[table] = []
 
         if data is not None:
             self.add_rows(table, data, add_columns=True)
@@ -868,6 +908,7 @@ class SQLDatabase:
         row = _fix_row_index(index, len(self[table]))
         comm = f"DELETE FROM {table} WHERE {_ID_KEY}={row+1};"
         self.execute(comm)
+        self._row_indexes[table].pop(row)
         self._update_indexes(table)
 
     def drop_table(self, table):
@@ -875,6 +916,7 @@ class SQLDatabase:
         self._check_table(table)
         comm = f"DROP TABLE {table};"
         self.execute(comm)
+        del self._row_indexes[table]
 
     def get_table(self, table, column_map=None):
         """Get a table from the database."""
@@ -885,7 +927,8 @@ class SQLDatabase:
         """Get a row from the table."""
         self._check_table(table)
         index = _fix_row_index(index, len(self[table]))
-        return SQLRow(self, table, index, colmap=column_map)
+        row = self._row_indexes[table][index]
+        return SQLRow(self, table, row, colmap=column_map)
 
     def get_column(self, table, column):
         """Get a column from the table."""
