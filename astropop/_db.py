@@ -15,7 +15,17 @@ __all__ = ['SQLDatabase', 'SQLTable', 'SQLRow', 'SQLColumn', 'SQLColumnMap']
 _ID_KEY = '__id__'
 
 
-class SQLColumnMap:
+class _SQLViewerBase:
+    """Memview for SQL data. Not allowed to copy."""
+
+    def __copy__(self):
+        raise NotImplementedError('Cannot copy SQL viewing classes.')
+
+    def __deepcopy__(self, memo):
+        raise NotImplementedError('Cannot copy SQL viewing classes.')
+
+
+class SQLColumnMap():
     """Map keywords to SQL columns."""
 
     def __init__(self, db, map_table, map_key, map_column):
@@ -104,7 +114,7 @@ class SQLColumnMap:
         raise TypeError('Only dict is supported')
 
 
-class SQLTable:
+class SQLTable(_SQLViewerBase):
     """Handle an SQL table operations interfacing with the DB."""
 
     def __init__(self, db, name, colmap=None):
@@ -287,7 +297,7 @@ class SQLTable:
         return s
 
 
-class SQLColumn:
+class SQLColumn(_SQLViewerBase):
     """Handle an SQL column operations interfacing with the DB."""
 
     def __init__(self, db, table, name):
@@ -362,7 +372,7 @@ class SQLColumn:
         return s
 
 
-class SQLRow:
+class SQLRow(_SQLViewerBase):
     """Handle and SQL table row interfacing with the DB."""
 
     def __init__(self, db, table, row, colmap=None):

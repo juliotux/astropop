@@ -9,6 +9,7 @@ import numpy as np
 from astropy.table import Table
 from astropop.testing import *
 import sqlite3
+import copy
 
 
 def test_sanitize_string():
@@ -738,6 +739,14 @@ class Test_SQLRow:
         db.add_column('test', 'b', data=np.arange(20, 30))
         return db
 
+    def test_row_copy_error(self):
+        db = self.db
+        row = db['test'][1]
+        with pytest.raises(NotImplementedError, match='Cannot copy'):
+            copy.copy(row)
+        with pytest.raises(NotImplementedError, match='Cannot copy'):
+            copy.deepcopy(row)
+
     def test_row_basic_properties(self):
         db = self.db
         row = db['test'][0]
@@ -825,6 +834,14 @@ class Test_SQLTable:
         db.add_column('test', 'a', data=np.arange(10, 20))
         db.add_column('test', 'b', data=np.arange(20, 30))
         return db
+
+    def test_table_copy_error(self):
+        db = self.db
+        table = db['test']
+        with pytest.raises(NotImplementedError, match='Cannot copy'):
+            copy.copy(table)
+        with pytest.raises(NotImplementedError, match='Cannot copy'):
+            copy.deepcopy(table)
 
     def test_table_basic_properties(self):
         db = self.db
@@ -1266,6 +1283,14 @@ class Test_SQLColumn:
         db.add_column('test', 'a', data=np.arange(10, 20))
         db.add_column('test', 'b', data=np.arange(20, 30))
         return db
+
+    def test_column_copy_error(self):
+        db = self.db
+        col = db['test']['a']
+        with pytest.raises(NotImplementedError, match='Cannot copy'):
+            copy.copy(col)
+        with pytest.raises(NotImplementedError, match='Cannot copy'):
+            copy.deepcopy(col)
 
     def test_column_basic_properties(self):
         db = self.db
