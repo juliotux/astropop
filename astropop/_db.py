@@ -3,16 +3,117 @@
 
 import sqlite3 as sql
 import numpy as np
+import base64
 from astropy.table import Table
 
 from .logger import logger
-from .py_utils import check_iterable, broadcast
+from .py_utils import broadcast
 
 
-__all__ = ['SQLDatabase', 'SQLTable', 'SQLRow', 'SQLColumn', 'SQLColumnMap']
+__all__ = ['SQLDatabase', 'SQLTable', 'SQLRow', 'SQLColumn']
 
 
 _ID_KEY = '__id__'
+_B32_PREFIX = '__b32c__'
+
+
+def _b32_encode(data):
+    """Encode the data to base32."""
+    # encode and remove padding
+    return base64.b32encode(data.encode()).decode().strip('=')
+
+
+def _b32_decode(data):
+    """Decode the data from base32."""
+    data = data.upper()
+    # check padding
+    if len(data) % 8 != 0:
+        data += '='*(8 - len(data) % 8)
+    return base64.b32decode(data.encode()).decode()
+
+
+def _sanitize_colnames(data, allow_b32_encode=False):
+    """Sanitize the colnames to avoid invalid characteres like '-'."""
+    def _sanitize(key):
+        if len([ch for ch in key if not ch.isalnum() and ch != '_']) != 0:
+            if not allow_b32_encode:
+                raise ValueError(f'Invalid column name: {key}.')
+            key = f"{_B32_PREFIX}{_b32_encode(key)}"
+        return key.lower()
+
+    if isinstance(data, dict):
+        d = data
+        colnames = _sanitize_colnames(list(data.keys()))
+        return dict(zip(colnames, d.values()))
+    if isinstance(data, str):
+        return _sanitize(data)
+    if not isinstance(data, (list, tuple, np.ndarray)):
+        raise TypeError(f'{type(data)} is not supported.')
+
+    return [_sanitize(i) for i in data]
+
+
+def _sanitize_value(data):
+    """Sanitize the value to avoid sql errors."""
+    if data is None or isinstance(data, bytes):
+        return data
+    if isinstance(data, (str, np.str_)):
+        return f"{data}"
+    if np.isscalar(data) and np.isreal(data):
+        if isinstance(data, (int, np.integer)):
+            return int(data)
+        elif isinstance(data, (float, np.floating)):
+            return float(data)
+    if isinstance(data, (bool, np.bool_)):
+        return bool(data)
+    raise TypeError(f'{type(data)} is not supported.')
+
+
+def _fix_row_index(row, length):
+    """Fix the row number to be a valid index."""
+    if row < 0:
+        row += length
+    if row >= length or row < 0:
+        raise IndexError('Row index out of range.')
+    return row
+
+
+def _dict2row(cols, **row):
+    values = [None]*len(cols)
+    for i, c in enumerate(cols):
+        if c in row.keys():
+            values[i] = row[c]
+        else:
+            values[i] = None
+    return values
+
+
+def _parse_where(where):
+    args = None
+    if where is None:
+        _where = None
+    elif isinstance(where, dict):
+        where = _sanitize_colnames(where)
+        for i, (k, v) in enumerate(where.items()):
+            v = _sanitize_value(v)
+            if i == 0:
+                _where = f"{k}=?"
+                args = [v]
+            else:
+                _where += f" AND {k}=?"
+                args.append(v)
+    elif isinstance(where, str):
+        _where = where
+    elif isinstance(where, (list, tuple)):
+        for w in where:
+            if not isinstance(w, str):
+                raise TypeError('if where is a list, it must be a list '
+                                f'of strings. Not {type(w)}.')
+        _where = ' AND '.join(where)
+    else:
+        raise TypeError('where must be a string, list of strings or'
+                        ' dict.')
+    return _where, args
 
 
 class _SQLViewerBase:
@@ -45,99 +146,49 @@ class _SQLRowIndexer(_SQLViewerBase):
         return self._row_list.index(self)
 
 
-class SQLColumnMap():
-    """Map keywords to SQL columns."""
+class _SQLColumnCacher(_SQLViewerBase):
+    """Cache and process column names."""
 
-    def __init__(self, db, map_table, map_key, map_column):
-        self.db = db
-        self.map = db[map_table]
-        self.key = map_key
-        self.col = map_column
+    def __init__(self, db, table, allow_b32_encode=False):
+        self._db = db
+        self._table = table
+        self._columns = {}
+        self._allow_encode = allow_b32_encode
+        self.rebuild_cache()
 
-        self._clear_cache()
+    def get_column(self, name):
+        """Get a column from the cache."""
+        return self._columns[name]
 
-    def add_column(self, name):
-        """Add a new column to the table."""
+    def add_column(self, name, column_name=None):
+        """Add a column to the cache."""
         name = name.lower()
+        if column_name is None:
+            value = _sanitize_colnames(name,
+                                       allow_b32_encode=self._allow_encode)
+        else:
+            value = column_name
+        if name in self._columns.keys():
+            raise KeyError('Column name already exists: {}'.format(name))
+        self._columns[name.lower()] = value
 
-        if name in self.keywords:
-            raise ValueError(f'{name} already exists')
+    def rebuild_cache(self):
+        """Rebuild the cache."""
+        self._columns = {}
+        for name in self._db._query_colnames(self._table):
+            name = name.lower()
+            if self._allow_encode and name.lower().startswith(_B32_PREFIX):
+                name = _b32_decode(name[len(_B32_PREFIX):])
+            self.add_column(name)
 
-        i = len(self.keywords)+1
-        col = f'col_{i}'
-        while col in self.keywords:
-            i += 1
-            col = f'col_{i}'
-
-        self.map.add_rows({self.key: name, self.col: col})
-        self._clear_cache()
-        return col
-
-    def get_column_name(self, item, add_columns=False):
-        """Get the column name for a given keyword."""
-        if check_iterable(item):
-            return [self.get_column_name(i) for i in item]
-
-        item = item.lower()
-        if item not in self.keywords:
-            if add_columns:
-                return self.add_column(item)
-            raise KeyError(f'{item}')
-
-        return self.columns[np.where(self.keywords == item)][0]
-
-    def get_keyword(self, item):
-        """Get the keyword for a given column."""
-        if check_iterable(item):
-            return [self.get_keyword(i) for i in item]
-
-        item = item.lower()
-        if item not in self.columns:
-            raise KeyError(f'{item}')
-
-        return self.keywords[np.where(self.columns == item)][0]
-
-    def _clear_cache(self):
-        self._columns = None
-        self._keywords = None
-
-    @property
     def columns(self):
-        """Get the column names for the table."""
-        if self._columns is None:
-            self._columns = np.array(self.map.select(columns=[self.col]))
-        return self._columns
-
-    @property
-    def keywords(self):
-        """Get the keywords of the columns for the table."""
-        if self._keywords is None:
-            self._keywords = np.array(self.map.select(columns=[self.key]))
-        return self._keywords
-
-    def map_row(self, data, add_columns=False):
-        """Map a row to the columns."""
-        if isinstance(data, dict):
-            d = {}
-            for k, v in data.items():
-                if k in self.keywords or add_columns:
-                    d[self.get_column_name(k, add_columns=add_columns)] = v
-            data = d
-        elif not isinstance(data, list):
-            raise ValueError('Only dict and list are supported')
-        return data
-
-    def parse_where(self, where):
-        """Parse a where clause using column mappring."""
-        if isinstance(where, dict):
-            return {self.get_column_name(k): v for k, v in where.items()}
-        raise TypeError('Only dict is supported')
+        return list(self._columns.keys())
 
 
 class SQLTable(_SQLViewerBase):
     """Handle an SQL table operations interfacing with the DB."""
 
-    def __init__(self, db, name, colmap=None):
+    def __init__(self, db, name):
         """Initialize the table.
 
         Parameters
@@ -149,7 +200,6 @@ class SQLTable(_SQLViewerBase):
         """
         self._db = db
         self._name = name
-        self._colmap = colmap
 
     @property
     def name(self):
@@ -165,8 +215,6 @@ class SQLTable(_SQLViewerBase):
     def column_names(self):
         """Get the column names of the current table."""
         names = self._db.column_names(self._name)
-        if self._colmap is not None:
-            return self._colmap.get_keyword(names)
         return names
 
     @property
@@ -178,12 +226,6 @@ class SQLTable(_SQLViewerBase):
         """Select rows from the table."""
         where = kwargs.pop('where', None)
         order = kwargs.pop('order', None)
-        if self._colmap is not None:
-            if where is not None:
-                where = self._colmap.parse_where(where)
-            if order is not None:
-                order = self._colmap.get_column_name(order)
-
         return self._db.select(self._name, where=where, order=order, **kwargs)
 
     def as_table(self):
@@ -208,30 +250,22 @@ class SQLTable(_SQLViewerBase):
 
     def get_column(self, column):
         """Get a given column from the table."""
-        if self._colmap is not None:
-            column = self._colmap.get_column_name(column)
         return self._db.get_column(self._name, column)
 
     def get_row(self, row):
         """Get a given row from the table."""
-        return self._db.get_row(self._name, row, column_map=self._colmap)
+        return self._db.get_row(self._name, row)
 
     def set_column(self, column, data):
         """Set a given column in the table."""
-        if self._colmap is not None:
-            column = self._colmap.get_column_name(column)
         self._db.set_column(self._name, column, data)
 
     def set_row(self, row, data):
         """Set a given row in the table."""
-        if self._colmap is not None:
-            data = self._colmap.map_row(data)
         self._db.set_row(self._name, row, data)
 
     def delete_column(self, column):
         """Delete a given column from the table."""
-        if self._colmap is not None:
-            column = self._colmap.get_column_name(column)
         self._db.delete_column(self._name, column)
 
     def delete_row(self, row):
@@ -240,8 +274,6 @@ class SQLTable(_SQLViewerBase):
 
     def index_of(self, where):
         """Get the index of the rows that match the given condition."""
-        if self._colmap is not None:
-            where = self._colmap.parse_where(where)
         return self._db.index_of(self._name, where)
 
     def _resolve_tuple(self, key):
@@ -395,7 +427,7 @@ class SQLColumn(_SQLViewerBase):
 class SQLRow(_SQLViewerBase):
     """Handle and SQL table row interfacing with the DB."""
 
-    def __init__(self, db, table, row_indexer, colmap=None):
+    def __init__(self, db, table, row_indexer):
         """Initialize the row.
 
         Parameters
@@ -410,14 +442,11 @@ class SQLRow(_SQLViewerBase):
         self._db = db
         self._table = table
         self._row_indexer = row_indexer
-        self._colmap = colmap
 
     @property
     def column_names(self):
         """Get the column names of the current table."""
         names = self._db.column_names(self._table)
-        if self._colmap is not None:
-            names = self._colmap.get_keyword(names)
         return names
 
     @property
@@ -453,8 +482,6 @@ class SQLRow(_SQLViewerBase):
         """Get a column from the row."""
         if isinstance(key, (str, np.str_)):
             column = key
-            if self._colmap is not None:
-                column = self._colmap.get_column_name(key)
             try:
                 return self._db.get_item(self._table, column, self.index)
             except ValueError:
@@ -469,8 +496,6 @@ class SQLRow(_SQLViewerBase):
             raise KeyError(f'{key}')
 
         column = key = key.lower()
-        if self._colmap is not None:
-            column = self._colmap.get_column_name(key)
         if key not in self.column_names:
             raise KeyError(f'{key}')
         self._db.set_item(self._table, column, self.index, value)
@@ -491,115 +516,45 @@ class SQLRow(_SQLViewerBase):
         return s
 
 
-def _sanitize_colnames(data):
-    """Sanitize the colnames to avoid invalid characteres like '-'."""
-    def _sanitize(key):
-        if len([ch for ch in key if not ch.isalnum() and ch != '_']) != 0:
-            raise ValueError(f'Invalid column name: {key}.')
-        return key.lower()
-
-    if isinstance(data, dict):
-        d = data
-        colnames = _sanitize_colnames(list(data.keys()))
-        return dict(zip(colnames, d.values()))
-    if isinstance(data, str):
-        return _sanitize(data)
-    if not isinstance(data, (list, tuple, np.ndarray)):
-        raise TypeError(f'{type(data)} is not supported.')
-
-    return [_sanitize(i) for i in data]
-
-
-def _sanitize_value(data):
-    """Sanitize the value to avoid sql errors."""
-    if data is None or isinstance(data, bytes):
-        return data
-    if isinstance(data, (str, np.str_)):
-        return f"{data}"
-    if np.isscalar(data) and np.isreal(data):
-        if isinstance(data, (int, np.integer)):
-            return int(data)
-        elif isinstance(data, (float, np.floating)):
-            return float(data)
-    if isinstance(data, (bool, np.bool_)):
-        return bool(data)
-    raise TypeError(f'{type(data)} is not supported.')
-
-
-def _fix_row_index(row, length):
-    """Fix the row number to be a valid index."""
-    if row < 0:
-        row += length
-    if row >= length or row < 0:
-        raise IndexError('Row index out of range.')
-    return row
-
-
-def _dict2row(cols, **row):
-    values = [None]*len(cols)
-    for i, c in enumerate(cols):
-        if c in row.keys():
-            values[i] = row[c]
-        else:
-            values[i] = None
-    return values
-
-
-def _parse_where(where):
-    args = None
-    if where is None:
-        _where = None
-    elif isinstance(where, dict):
-        where = _sanitize_colnames(where)
-        for i, (k, v) in enumerate(where.items()):
-            v = _sanitize_value(v)
-            if i == 0:
-                _where = f"{k}=?"
-                args = [v]
-            else:
-                _where += f" AND {k}=?"
-                args.append(v)
-    elif isinstance(where, str):
-        _where = where
-    elif isinstance(where, (list, tuple)):
-        for w in where:
-            if not isinstance(w, str):
-                raise TypeError('if where is a list, it must be a list '
-                                f'of strings. Not {type(w)}.')
-        _where = ' AND '.join(where)
-    else:
-        raise TypeError('where must be a string, list of strings or'
-                        ' dict.')
-    return _where, args
-
-
 class SQLDatabase:
     """Database creation and manipulation with SQL.
+
+    Parameters
+    ----------
+    db : str
+        The name of the database file. If ':memory:' is given, the
+        database will be created in memory.
+    autocommit : bool (optional)
+        Whether to commit changes to the database after each operation.
+        Defaults to True.
+    allow_colname_encode : bool (optional)
+        If True, column names containing not allowed characters will be encoded
+        to base36 valid names. The column name will be prefixed with
+        '__b36c__' caracters. Defaults to True.
 
     Notes
     -----
     - '__id__' is only for internal indexing. It is ignored on returns.
+    - Any column name with '__b36c__' prefix is expected to be encoded.
+    - The column names are case insensitive.
     """
 
-    def __init__(self, db=':memory:', autocommit=True):
-        """Initialize the database.
-
-        Parameters
-        ----------
-        db : str
-            The name of the database file. If ':memory:' is given, the
-            database will be created in memory.
-        autocommit : bool (optional)
-            Whether to commit changes to the database after each operation.
-            Defaults to True.
-        """
+    def __init__(self, db=':memory:', autocommit=True,
+                 allow_colname_encode=True):
+        # Construct sqlite connection.
         self._db = db
         self._con = sql.connect(self._db)
         self._cur = self._con.cursor()
         self.autocommit = autocommit
+        self._allow_encode = allow_colname_encode
 
+        # Use row indexers to preserve row viewing after table changes.
         self._row_indexes = {}
         self._build_row_indexes()
+
+        # Cache the column names for each table. Speeds up queries.
+        self._column_cache = {}
+        self._build_column_cache()
 
     def execute(self, command, arguments=None):
         """Execute a SQL command in the database."""
@@ -715,12 +670,22 @@ class SQLDatabase:
 
     def column_names(self, table):
         """Get the column names of the table."""
+        return self._column_cache[table].columns()
+
+    def _query_colnames(self, table):
+        """Query raw column names from the database."""
         self._check_table(table)
         comm = "SELECT * FROM "
         comm += f"{table} LIMIT 1;"
         self.execute(comm)
         return [i[0].lower() for i in self._cur.description
                 if i[0].lower() != _ID_KEY.lower()]
+
+    def _build_column_cache(self):
+        """Build the column name cache."""
+        for table in self.table_names:
+            self._column_cache[table] = _SQLColumnCacher(self, table,
+                                                         self._allow_encode)
 
     @property
     def db(self):
@@ -828,6 +793,10 @@ class SQLDatabase:
         # Add the row indexer list
         self._row_indexes[table] = []
 
+        # Add the column cache
+        self._column_cache[table] = _SQLColumnCacher(self, table,
+                                                     self._allow_encode)
+
         if data is not None:
             self.add_rows(table, data, add_columns=True)
 
@@ -843,10 +812,14 @@ class SQLDatabase:
         if column in (_ID_KEY, 'table', 'default'):
             raise ValueError(f"{column} is a protected name.")
 
-        col = _sanitize_colnames([column])[0]
+        col = _sanitize_colnames([column],
+                                 allow_b32_encode=self._allow_encode)[0]
         comm = f"ALTER TABLE {table} ADD COLUMN '{col}' ;"
         logger.debug('adding column "%s" to table "%s"', col, table)
         self.execute(comm)
+
+        # add the column to the cache
+        self._column_cache[table].add_column(column)
 
         # adding the data to the table
         if data is not None:
@@ -918,17 +891,17 @@ class SQLDatabase:
         self.execute(comm)
         del self._row_indexes[table]
 
-    def get_table(self, table, column_map=None):
+    def get_table(self, table):
         """Get a table from the database."""
         self._check_table(table)
-        return SQLTable(self, table, colmap=column_map)
+        return SQLTable(self, table)
 
-    def get_row(self, table, index, column_map=None):
+    def get_row(self, table, index):
         """Get a row from the table."""
         self._check_table(table)
         index = _fix_row_index(index, len(self[table]))
         row = self._row_indexes[table][index]
-        return SQLRow(self, table, row, colmap=column_map)
+        return SQLRow(self, table, row)
 
     def get_column(self, table, column):
         """Get a column from the table."""
@@ -941,13 +914,12 @@ class SQLDatabase:
         """Get an item from the table."""
         self._check_table(table)
         row = _fix_row_index(row, len(self[table]))
-        column = _sanitize_colnames([column])[0]
         return self.get_column(table, column)[row]
 
     def set_item(self, table, column, row, value):
         """Set a value in a cell."""
         row = _fix_row_index(row, self.count(table))
-        column = _sanitize_colnames([column])[0]
+        column = self._column_cache[table].get_column(column)
         value = _sanitize_value(value)
         self.execute(f"UPDATE {table} SET {column}=? "
                      f"WHERE {_ID_KEY}=?;", (value, row+1))
@@ -957,6 +929,7 @@ class SQLDatabase:
         row = _fix_row_index(row, self.count(table))
         colnames = self.column_names(table)
 
+        # TODO: use column caching
         if isinstance(data, dict):
             data = _dict2row(colnames, **data)
         elif isinstance(data, (list, tuple, np.ndarray)):
@@ -970,6 +943,7 @@ class SQLDatabase:
         comm = f"UPDATE {table} SET "
         comm += f"{', '.join(f'{i}=?' for i in colnames)} "
         comm += f" WHERE {_ID_KEY}=?;"
+
         self.execute(comm, tuple(list(map(_sanitize_value, data)) + [row+1]))
 
     def set_column(self, table, column, data):
@@ -984,7 +958,7 @@ class SQLDatabase:
             for i in range(len(data)):
                 self.add_rows(table, {})
 
-        col = _sanitize_colnames([column])[0]
+        col = self._column_cache[table].get_column(column)
         comm = f"UPDATE {table} SET "
         comm += f"{col}=? "
         comm += f" WHERE {_ID_KEY}=?;"
