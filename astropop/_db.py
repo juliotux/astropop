@@ -799,7 +799,7 @@ class SQLDatabase:
         for table in self.table_names:
             size = self.count(table)
             # Create the list that must be passed to _SQLRowIndexer
-            rl = [None]*len(size)
+            rl = [None]*size
             self._row_indexes[table] = rl
             for i in range(size):
                 self._row_indexes[table][i] = _SQLRowIndexer(rl)
