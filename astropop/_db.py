@@ -158,7 +158,6 @@ class _SQLColumnCacher(_SQLViewerBase):
 
     def get_column(self, name):
         """Get a column from the cache."""
-        name = self._check_column(name)
         return self._columns[name]
 
     def add_column(self, name, column_name=None):
@@ -173,13 +172,6 @@ class _SQLColumnCacher(_SQLViewerBase):
             raise KeyError(f'Column name already exists: {name}')
         self._columns[name.lower()] = value
 
-    def remove_column(self, name):
-        """Remove a column from the cache."""
-        name = self._check_column(name)
-        if name not in self._columns.keys():
-            raise KeyError('Column name does not exist: {}'.format(name))
-        self._columns.pop(name)
-
     def rebuild_cache(self):
         """Rebuild the cache."""
         self._columns = {}
@@ -191,13 +183,6 @@ class _SQLColumnCacher(_SQLViewerBase):
 
     def columns(self):
         return list(self._columns.keys())
-
-    def _check_column(self, name):
-        """Check if the column exists."""
-        name = name.lower()
-        if name not in self._columns.keys():
-            raise KeyError('Column name does not exist: {}'.format(name))
-        return name
 
 
 class SQLTable(_SQLViewerBase):
@@ -252,10 +237,15 @@ class SQLTable(_SQLViewerBase):
 
     def add_column(self, name, data=None):
         """Add a column to the table."""
+        if self._colmap is not None:
+            name = self._colmap.add_column(name)
         self._db.add_column(self._name, name, data=data)
 
     def add_rows(self, data, add_columns=False):
         """Add a row to the table."""
+        # If keymappging is used, only dict and list
+        if self._colmap is not None:
+            data = self._colmap.map_row(data, add_columns=add_columns)
         self._db.add_rows(self._name, data, add_columns=add_columns)
 
     def get_column(self, column):
@@ -838,15 +828,15 @@ class SQLDatabase:
     def delete_column(self, table, column):
         """Delete a column from a table."""
         self._check_table(table)
-        column = self._column_cache[table].get_column(column)
 
         if column in (_ID_KEY, 'table', 'default'):
             raise ValueError(f"{column} is a protected name.")
+        if column not in self.column_names(table):
+            raise KeyError(f'Column "{column}" does not exist.')
 
         comm = f"ALTER TABLE {table} DROP COLUMN '{column}' ;"
         logger.debug('deleting column "%s" from table "%s"', column, table)
         self.execute(comm)
-        self._column_cache[table].remove_column(column)
 
     def add_rows(self, table, data, add_columns=False, skip_sanitize=False):
         """Add a dict row to a table.

@@ -355,6 +355,8 @@ class Test_SQLDatabase_Creation_Modify:
 
         with pytest.raises(KeyError, match='does not exist'):
             db.delete_column('test', 'b')
+        with pytest.raises(ValueError, match='protected name'):
+            db.delete_column('test', 'table')
 
 
 class Test_SQLDatabase_Access:
