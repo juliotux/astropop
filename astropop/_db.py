@@ -168,7 +168,7 @@ class _SQLColumnCacher(_SQLViewerBase):
         if self._allow_encode and name.startswith(_B32_PREFIX):
             name = _b32_decode(name[len(_B32_PREFIX):])
         if name in self._columns.keys():
-            raise KeyError('Column name already exists: {}'.format(name))
+            raise KeyError(f'Column name already exists: {name}')
         self._columns[name.lower()] = value
 
     def remove_column(self, name):
@@ -718,7 +718,7 @@ class SQLDatabase:
     def _add_data_dict(self, table, data, add_columns=False,
                        skip_sanitize=False):
         """Add data sotred in a dict to the table."""
-        data = _sanitize_colnames(data)
+        data = _sanitize_colnames(data, allow_b32_encode=self._allow_encode)
         if add_columns:
             self._add_missing_columns(table, data.keys())
 
