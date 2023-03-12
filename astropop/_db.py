@@ -885,7 +885,9 @@ class SQLDatabase:
         """Delete a row from the table."""
         self._check_table(table)
         row = _fix_row_index(index, len(self[table]))
-        comm = f"DELETE FROM {table} WHERE {_ID_KEY}={row+1};"
+        comm = "DELETE FROM"
+        comm += f"{table}"
+        comm += f" WHERE {_ID_KEY}={row+1};"
         self.execute(comm)
         self._row_indexes[table].pop(row)
         self._update_indexes(table)
