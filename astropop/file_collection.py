@@ -141,9 +141,6 @@ class FitsFileGroup():
                                           'EXT': self._ext},
                               add_columns=True)
             self._db.add_column(_metadata, 'FITS_EXT', self._extensions)
-            self._db.add_table(_keycolstable)
-            self._db.add_column(_keycolstable, _keywords_col)
-            self._db.add_column(_keycolstable, _columns_col)
 
         self._include = self._db[_metadata, 'glob_include'][0]
         self._exclude = self._db[_metadata, 'glob_exclude'][0]
