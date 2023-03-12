@@ -2,9 +2,8 @@
 # flake8: noqa: F403, F405
 
 import pytest
-from astropop._db import SQLColumn, SQLRow, SQLTable, \
-                         SQLDatabase, _sanitize_colnames, \
-                         _b32_decode, _b32_encode
+from astropop._db import SQLColumn, SQLRow, SQLTable, _ID_KEY, \
+                         SQLDatabase, _sanitize_colnames
 import numpy as np
 from astropy.table import Table
 from astropop.testing import *
@@ -12,60 +11,17 @@ import sqlite3
 import copy
 
 
-class Test_SanitizeColnames:
-    def test_sanitize_encode_decode(self):
-        for i in ['test-2', 'test!2', 'test@2', 'test#2', 'test$2',
-                  'test&2', 'test*2', 'test(2)', 'test)2', 'test[2]', 'test]2',
-                  'test{2}', 'test}2', 'test|2', 'test\\2', 'test^2', 'test~2',
-                  'test"2', 'test\'2', 'test`2', 'test<2', 'test>2', 'test=2',
-                  'test,2', 'test;2', 'test:2', 'test?2', 'test/2']:
-            result = f'__b32c__{_b32_encode(i)}'.lower()
-            assert_equal(_sanitize_colnames(i, allow_b32_encode=True),
-                         result)
-            assert_equal(_b32_decode(result[8:]), i.lower())
+def test_sanitize_string():
+    for i in ['test-2', 'test!2', 'test@2', 'test#2', 'test$2',
+              'test&2', 'test*2', 'test(2)', 'test)2', 'test[2]', 'test]2',
+              'test{2}', 'test}2', 'test|2', 'test\\2', 'test^2', 'test~2'
+              'test"2', 'test\'2', 'test`2', 'test<2', 'test>2', 'test=2',
+              'test,2', 'test;2', 'test:2', 'test?2', 'test/2']:
+        with pytest.raises(ValueError):
+            _sanitize_colnames(i)
 
-    def test_sanitize_string_fails(self):
-        for i in ['test-2', 'test!2', 'test@2', 'test#2', 'test$2',
-                  'test&2', 'test*2', 'test(2)', 'test)2', 'test[2]', 'test]2',
-                  'test{2}', 'test}2', 'test|2', 'test\\2', 'test^2', 'test~2',
-                  'test"2', 'test\'2', 'test`2', 'test<2', 'test>2', 'test=2',
-                  'test,2', 'test;2', 'test:2', 'test?2', 'test/2']:
-            with pytest.raises(ValueError, match='Invalid column name'):
-                _sanitize_colnames(i)
-
-    def test_sanitize_string_passes(self):
-        for i in ['test', 'test_1', 'test_1_2', 'test_1_2', 'Test', 'Test_1']:
-            assert_equal(_sanitize_colnames(i), i.lower())
-
-    def test_sanitize_list_passes(self):
-        for i in [['test', 'test_1', 'test_1_2', 'test_1_2', 'Test', 'Test_1']]:
-            assert_equal(_sanitize_colnames(i), [j.lower() for j in i])
-
-    def test_sanitize_list_fails(self):
-        for i in ['test-2', 'test!2', 'test@2', 'test#2', 'test$2',
-                  'test&2', 'test*2', 'test(2)', 'test)2', 'test[2]', 'test]2',
-                  'test{2}', 'test}2', 'test|2', 'test\\2', 'test^2', 'test~2',
-                  'test"2', 'test\'2', 'test`2', 'test<2', 'test>2', 'test=2',
-                  'test,2', 'test;2', 'test:2', 'test?2', 'test/2']:
-            with pytest.raises(ValueError, match='Invalid column name'):
-                _sanitize_colnames([i, 'test'])
-            with pytest.raises(ValueError, match='Invalid column name'):
-                _sanitize_colnames(['test', i])
-
-    def test_sanitize_dict_passes(self):
-        d = {'test': 1, 'test_1': 2, 'test_1_2': 3}
-        assert_equal(_sanitize_colnames(d),
-                     {'test': 1, 'test_1': 2, 'test_1_2': 3})
-
-    def test_sanitize_dict_fails(self):
-        d = {'test': 1, 'test_1': 2, 'test_1_2': 3}
-        for i in ['test-2', 'test!2', 'test@2', 'test#2', 'test$2',
-                  'test&2', 'test*2', 'test(2)', 'test)2', 'test[2]', 'test]2',
-                  'test{2}', 'test}2', 'test|2', 'test\\2', 'test^2', 'test~2',
-                  'test"2', 'test\'2', 'test`2', 'test<2', 'test>2', 'test=2',
-                  'test,2', 'test;2', 'test:2', 'test?2', 'test/2']:
-            with pytest.raises(ValueError, match='Invalid column name'):
-                _sanitize_colnames({**d, i: 4})
+    for i in ['test', 'test_1', 'test_1_2', 'test_1_2', 'Test', 'Test_1']:
+        assert_equal(_sanitize_colnames(i), i.lower())
 
 
 class Test_SQLDatabase_Creation_Modify:
@@ -399,31 +355,6 @@ class Test_SQLDatabase_Creation_Modify:
 
         with pytest.raises(KeyError, match='does not exist'):
             db.delete_column('test', 'b')
-
-    def test_sql_add_nonstd_column_keys(self):
-        db = SQLDatabase(':memory:', allow_colname_encode=True)
-        db.add_table('test')
-        db.add_column('test', 'a', [1, 3, 5])
-        db.add_column('test', 'b', [2, 4, 6])
-        db.add_column('test', 'c a', [7, 8, 9])
-        db.add_column('test', 'd-!&*#@%_+=/<>,.?^~`[]{}', [7, 8, 9])
-
-        assert_equal(db.column_names('test'), ['a', 'b', 'c a',
-                                               'd-!&*#@%_+=/<>,.?^~`[]{}'])
-        assert_equal(db.get_column('test', 'c a').values, [7, 8, 9])
-        assert_equal(db.get_column('test', 'd-!&*#@%_+=/<>,.?^~`[]{}').values,
-                     [7, 8, 9])
-
-    def test_sql_add_nonstd_column_keys_fail(self):
-        # Standard behavior is to disallow non-standard column names
-        db = SQLDatabase(':memory:')
-        db.add_table('test')
-        db.add_column('test', 'a', [1, 3, 5])
-        db.add_column('test', 'b', [2, 4, 6])
-        with pytest.raises(ValueError, match='Invalid column name'):
-            db.add_column('test', 'c a', [7, 8, 9])
-        with pytest.raises(ValueError, match='Invalid column name'):
-            db.add_column('test', 'd-!&*#@%_+=/<>,.?^~`[]{}', [7, 8, 9])
 
 
 class Test_SQLDatabase_Access:
