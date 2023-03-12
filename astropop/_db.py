@@ -169,7 +169,7 @@ class _SQLColumnCacher(_SQLViewerBase):
         else:
             value = column_name
         if name in self._columns.keys():
-            raise KeyError(f'Column name already exists: {name}')
+            raise KeyError('Column name already exists: {}'.format(name))
         self._columns[name.lower()] = value
 
     def rebuild_cache(self):
@@ -712,7 +712,7 @@ class SQLDatabase:
     def _add_data_dict(self, table, data, add_columns=False,
                        skip_sanitize=False):
         """Add data sotred in a dict to the table."""
-        data = _sanitize_colnames(data, allow_b32_encode=self._allow_encode)
+        data = _sanitize_colnames(data)
         if add_columns:
             self._add_missing_columns(table, data.keys())
 
