@@ -161,14 +161,12 @@ class _SQLColumnCacher(_SQLViewerBase):
         name = self._check_column(name)
         return self._columns[name]
 
-    def add_column(self, name, column_name=None):
+    def add_column(self, name):
         """Add a column to the cache."""
         name = name.lower()
-        if column_name is None:
-            value = _sanitize_colnames(name,
-                                       allow_b32_encode=self._allow_encode)
-        else:
-            value = column_name
+        value = _sanitize_colnames(name, self._allow_encode)
+        if self._allow_encode and name.startswith(_B32_PREFIX):
+            name = _b32_decode(name[len(_B32_PREFIX):])
         if name in self._columns.keys():
             raise KeyError('Column name already exists: {}'.format(name))
         self._columns[name.lower()] = value
@@ -185,8 +183,6 @@ class _SQLColumnCacher(_SQLViewerBase):
         self._columns = {}
         for name in self._db._query_colnames(self._table):
             name = name.lower()
-            if self._allow_encode and name.lower().startswith(_B32_PREFIX):
-                name = _b32_decode(name[len(_B32_PREFIX):])
             self.add_column(name)
 
     def columns(self):
@@ -550,7 +546,7 @@ class SQLDatabase:
     """
 
     def __init__(self, db=':memory:', autocommit=True,
-                 allow_colname_encode=True):
+                 allow_colname_encode=False):
         # Construct sqlite connection.
         self._db = db
         self._con = sql.connect(self._db)
@@ -915,9 +911,7 @@ class SQLDatabase:
 
     def get_column(self, table, column):
         """Get a column from the table."""
-        column = column.lower()
-        if column not in self.column_names(table):
-            raise KeyError(f"column {column} does not exist.")
+        column = self._column_cache[table].get_column(column)
         return SQLColumn(self, table, column)
 
     def get_item(self, table, column, row):
