@@ -67,10 +67,10 @@ class GaiaDR3SourcesCatalog(_OnlineSourcesCatalog):
         return QFloat(mag, mag_err, unit='mag')
 
     def _do_query(self):
-        self._query = astroquery_query(self._g.cone_search,
+        self._query = astroquery_query(self._g.query_object_async,
                                        self._center,
                                        radius=self._radius,
-                                       columns=self._columns).results
+                                       columns=self._columns)
         sk = SkyCoord(self._query['ra'], self._query['dec'],
                       obstime=Time(self._query['ref_epoch'], format='jyear'))
         ids = np.array([string_fix(i) for i in self._query['DESIGNATION']])
