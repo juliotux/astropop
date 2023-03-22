@@ -1047,3 +1047,9 @@ class Test_Vizier_GaiaDR3:
         assert_is_instance(s.center, SkyCoord)
         assert_is_instance(s.radius, Angle)
         assert_equal(s.filters, ['G'])
+
+    def test_gaiadr3_sources_limit(self):
+        # test for bug #94
+        # when using non-async functions, the output is limited to 2000 sources
+        g = GaiaDR3SourcesCatalog('RMC 40', radius='15 arcmin')
+        assert_greater(len(g), 2001)
