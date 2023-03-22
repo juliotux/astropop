@@ -33,10 +33,6 @@ jobs:
             python: '3.7'
             toxenv: py37-test-olddeps
 
-          - name: Python 3.8 with old deps
-            python: '3.8'
-            toxenv: py38-test-olddeps
-
           - name: Python 3.8 with lts deps (online)
             python: '3.8'
             toxenv: py38-test-ltsdeps-online
