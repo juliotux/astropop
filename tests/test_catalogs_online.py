@@ -1000,7 +1000,7 @@ class Test_Tycho2VizierSourcesCatalog:
 
 
 @pytest.mark.remote_data
-class Test_Vizier_GaiaDR3:
+class Test_GaiaDR3:
     hd674_mags = {
         'G': [10.552819, 0.000337826],
         'BP': [10.649535, 0.00091911],
