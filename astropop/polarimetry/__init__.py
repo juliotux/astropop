@@ -15,7 +15,8 @@ from ..math.physical import QFloat
 
 
 __all__ = ['estimate_dxdy', 'match_pairs',
-           'quarterwave_model', 'halfwave_model']
+           'quarterwave_model', 'halfwave_model',
+           'SLSDualBeamPolarimetry', 'StokesParameters']
 
 
 def _compute_theta(q, u):
