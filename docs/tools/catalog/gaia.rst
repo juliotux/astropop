@@ -47,15 +47,35 @@ The |GaiaDR3SourcesCatalog| class has some additional properties. You can get pa
 
 .. automethod:: astropop.catalogs.gaia.GaiaDR3SourcesCatalog.parallax
 
+.. ipython:: python
+
+    gaia_sources.parallax()
+
 .. automethod:: astropop.catalogs.gaia.GaiaDR3SourcesCatalog.radial_velocity
+
+.. ipython:: python
+
+    gaia_sources.radial_velocity()
 
 Also, important variability and non-punctual flags are available as properties:
 
 .. automethod:: astropop.catalogs.gaia.GaiaDR3SourcesCatalog.phot_variable_flag
 
+.. ipython:: python
+
+    gaia_sources.phot_variable_flag()
+
 .. automethod:: astropop.catalogs.gaia.GaiaDR3SourcesCatalog.non_single_star
 
+.. ipython:: python
+
+    gaia_sources.non_single_star()
+
 .. automethod:: astropop.catalogs.gaia.GaiaDR3SourcesCatalog.in_galaxy_canditates
+
+.. ipython:: python
+
+    gaia_sources.in_galaxy_canditates()
 
 
 .. automodapi:: astropop.catalogs.gaia
