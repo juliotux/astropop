@@ -303,6 +303,15 @@ class StokesParameters:
                     'v': 1/(np.sqrt(0.4571)*snr),
                     'p': sigma_p}
 
+    def __repr__(self):
+        # TODO: fix with significant algarisms after implement it in QFloat
+        s = object.__repr__(self) + '\n'
+        s += f'q={self.q.nominal}+-{self.q.std_dev} '
+        s += f', u={self.u.nominal}+-{self.u.std_dev}'
+        if self.v is not None:
+            s += f' , v={self.v.nominal}+-{self.v.std_dev}'
+        return s
+
 
 @dataclass
 class _DualBeamPolarimetry(abc.ABC):
