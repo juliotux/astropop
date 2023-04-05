@@ -71,11 +71,11 @@ Also, important variability and non-punctual flags are available as properties:
 
     gaia_sources.non_single_star()
 
-.. automethod:: astropop.catalogs.gaia.GaiaDR3SourcesCatalog.in_galaxy_canditates
+.. automethod:: astropop.catalogs.gaia.GaiaDR3SourcesCatalog.in_galaxy_candidates
 
 .. ipython:: python
 
-    gaia_sources.in_galaxy_canditates()
+    gaia_sources.in_galaxy_candidates()
 
 
 .. automodapi:: astropop.catalogs.gaia
