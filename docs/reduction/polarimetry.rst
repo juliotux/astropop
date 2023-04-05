@@ -11,6 +11,14 @@ Polarimetry Processing
 * FORS2 - FORS2, FOcal Reducer/low dispersion Spectrograph 2 at ESO, Chile, in IPOL mode. `link <https://www.eso.org/sci/facilities/paranal/instruments/fors/overview.html>`_
 * POLIMA2 - Optical Dual-Beam Polarizer at OAN-SPM, Mexico. `link <https://www.astrossp.unam.mx/en/users/instruments/ccd-imaging/polima-2>`_
 
+In all this polarimeters, the light beam passed by a retarder and is decomposed in two, ortogonal polarized, beams. So, the ordinary and extraordinary beams produce separated images and all the stars can appear duplicated in the detector. For example, see the image bellow taken from [3]_.
+
+.. figure:: ../_static/le2pol.jpeg
+   :alt: LE2POL image
+   :align: center
+
+   LE2POL image, where all stars are duplicated. So, each star produces one image for each ordinary and extraordinary beams. The image is from [3]_.
+
 Description of the Polarimetry Reduction
 ----------------------------------------
 
@@ -33,7 +41,7 @@ And fits a equation for a given set o positions. There are two equations that ca
 
     import numpy as np
     import matplotlib.pyplot as plt
-    from astropop.polarimetry.dualbeam import halfwave_model
+    from astropop.polarimetry import halfwave_model
 
     psi_lin = np.linspace(0, 360, 600)
     psi_i = np.arange(0, 361, 22.5)
@@ -61,7 +69,7 @@ And fits a equation for a given set o positions. There are two equations that ca
 
     import numpy as np
     import matplotlib.pyplot as plt
-    from astropop.polarimetry.dualbeam import quarterwave_model
+    from astropop.polarimetry import quarterwave_model
 
     psi_lin = np.linspace(0, 360, 600)
     psi_i = np.arange(0, 361, 22.5)
@@ -117,7 +125,6 @@ To compute the Stokes parameters of a given source, |astropop| uses arrays of fl
 
 For example, in this documentation we will use totally fake photometry and random pairs positions to illustrate the polarimetry reduction process.
 
-
 Stokes-Least-Squares Polarimetry Processing
 -------------------------------------------
 
@@ -136,12 +143,14 @@ First of all, lets create the fake data to be used here for example.
   # half-wave plate with only linear polarization
   # q=0.05, u=-0.07
   z_i_half = halfwave_model(psi_i, 0.05, -0.07)
+  z_i_half = np.random.normal(loc=z_i_half, scale=0.005)  # add some noise
   fo_half = flux*(1+z_i_half)/2  # ordinary beam fluxes
   fe_half = flux*(1-z_i_half)/2  # extraordinary beam fluxes
 
   # quarter-wave plate with linear and circular polarization
   # q=0.05, u=-0.07, v=0.08
   z_i_quarter = quarterwave_model(psi_i, 0.05, -0.07, 0.08)
+  z_i_quarter = np.random.normal(loc=z_i_quarter, scale=0.005)  # add some noise
   fo_quarter = flux*(1+z_i_quarter)/2  # ordinary beam fluxes
   fe_quarter = flux*(1-z_i_quarter)/2  # extraordinary beam fluxes
 
@@ -160,6 +169,7 @@ First of all, lets create the fake data to be used here for example.
   # half-wave plate with only linear polarization
   # q=0.05, u=-0.07
   z_i_half = halfwave_model(psi_i, 0.05, -0.07)
+  z_i_half = np.random.normal(loc=z_i_half, scale=0.005)
   fo_half = flux*(1+z_i_half)/2  # ordinary beam fluxes
   fe_half = flux*(1-z_i_half)/2  # extraordinary beam fluxes
   lin_e_half = flux*(1-halfwave_model(lin, 0.05, -0.07))/2
@@ -168,6 +178,7 @@ First of all, lets create the fake data to be used here for example.
   # quarter-wave plate with linear and circular polarization
   # q=0.05, u=-0.07, v=0.08
   z_i_quarter = quarterwave_model(psi_i, 0.05, -0.07, 0.08)
+  z_i_quarter = np.random.normal(loc=z_i_half, scale=0.005)
   fo_quarter = flux*(1+z_i_quarter)/2  # ordinary beam fluxes
   fe_quarter = flux*(1-z_i_quarter)/2  # extraordinary beam fluxes
   lin_e_quarter = flux*(1-quarterwave_model(lin, 0.05, -0.07, 0.08))/2
@@ -204,6 +215,156 @@ First of all, lets create the fake data to be used here for example.
   fig.tight_layout()
   plt.show()
 
+Create an `~astropop.polarimetry.SLSDualBeamPolarimetry`
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The Stokes parameters computation is entirely done by the
+`~astropop.polarimetry.SLSDualBeamPolarimetry` class. This class stores some configuration parameters and process a given set of data using the `~astropop.polarimetry.SLSDualBeamPolarimetry.compute` method. During the instance creation you must choose the type of the retarder used in the observations, between ``halfwave`` and ``quarterwave`` options. Aditional arguments can be passed, like normaliation computation, zero position of retarder, and others. Check the class documentation for more information.
+
+First, you must create a `~astropop.polarimetry.SLSDualBeamPolarimetry` instance with your options. Here are some examples:
+
+.. ipython:: python
+
+  from astropop.polarimetry import SLSDualBeamPolarimetry
+  # half-wave plate
+  s = SLSDualBeamPolarimetry('halfwave')
+  # quarter-wave plate
+  s = SLSDualBeamPolarimetry('quarterwave')
+  # half-wave plate and tell the class to compute the k parameter
+  s = SLSDualBeamPolarimetry('halfwave', compute_k=True)
+  # quarter-wave plate with normalization and zero position at 45 degrees
+  s = SLSDualBeamPolarimetry('quarterwave', compute_k=True, zero=45)
+
+* For normalization, there is two (incompatible) arguments: ``compute_k`` and ``k``. When using ``k=value``, you are setting a fixed value for the normalization constant, so, it will not be computed by the code. For example, if you set ``k=1.05``, it will use this factor in the nromalization. for ``compute_k=True``, the normalization constant will be computed by the code. In general, all instruments we tested have this :math:`k` value very close to 1.0, but using normalization may improve some cases.
+
+* For the zero computation, you can choose between a fixed value of zero, using ``zero=value`` in degrees. So, setting ``zero=30.2`` will force the code to use 30.2° as the zero point of the retarder. When the zero is not specified, there are two behaviors you can expect:
+  - for ``halfwave`` retarders, the code will use 0.0 as the zero position, sice it is not possible to compute it from the data.
+  - for ```quarterwave``` retarders, the code will try to fit the zero together with the Stokes parameters. The code will seek the value the zero inside the limits defined by ``zero_range`` argument. So, if you want the code to find a zero between 0 and 45 degrees, you can set ``zero_range=(0, 45)``. By default, the code will use ``zero_range=(0, 90)``.
+
+.. note::
+
+  - It is important to mention that ``quarterwave`` retarders find the zero position better when circular polarization is present. So, it is recommended that you use a circular polarized star to compute the zero of the instrument and use it for the other stars in the observation.
+  - **For stars that only have linear polarization, the code can compute the zero only if compute_k is set to False.** This happens because the ``zero`` and ``k`` parameters are degenerated in ``quarterwave`` retarders due to the :math:`Q\cos^2{2 \psi_i}`. So, using ``compute_k=True`` and ``zero=None`` will not converge to a solution in this case. For stars with circuar polarimetry, these arguments can be used together and the code will be able to find the zero position and the normalization constant at the same time.
+
+* The iteration process is controlled by 2 arguments: ``iter_tolerance`` and ``max_iters``. ``iter_tolerance`` sets the limit between runs where the code assumes the solution is converged. Like, if the difference between the Stokes parameters of the last two runs is less than ``iter_tolerance``, the code will stop. The ``max_iters`` sets the maximum number of iterations the code will run. By default, ``iter_tolerance=1e-5`` and ``max_iters=100``, which give very good results and are enough for most cases.
+
+Stokes Parameters Computation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The `~astropop.polarimetry.SLSDualBeamPolarimetry.compute` method is the method to be used to compute the Stokes parameters from the flux data. It recieves the list of retarder positions (in degrees) and the lists of ordinary and extraordinary fluxes for a source in each retarder position. Optionally, you can pass the lists of errors in the fluxes, that will be used to weight the least squares fit.
+
+For example, computing the Stokes parameters for the half-wave plate data without errors:
+
+.. ipython:: python
+  :okwarning:
+
+  s = SLSDualBeamPolarimetry('halfwave')
+  result = s.compute(psi_i, fo_half, fe_half)
+  print(result)
+
+And with errors:
+
+.. ipython:: python
+  :okwarning:
+
+  s = SLSDualBeamPolarimetry('quarterwave', zero=0)
+  # let's assume the errors are the square root of the fluxes
+  fo_quarter_err = np.sqrt(fo_quarter)
+  fe_quarter_err = np.sqrt(fe_quarter)
+  result = s.compute(psi_i, fo_quarter, fe_quarter,
+                     fo_quarter_err, fe_quarter_err)
+  print(result)
+
+`~astropop.polarimetry.StokesParameters` class
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The result of `~astropop.polarimetry.SLSDualBeamPolarimetry.compute` is a `~astropop.polarimetry.StokesParameters` instance. This class is just a container that stores relevant parameters of the computation. Both final Stokes parameters (:math:`Q`, `U` and `V`) and intermediate data, like :math:`\psi_i` retarder positions, :math:`Z_i` relative diference of fluxes, zero position and total flux in each position. It also compute some important properties, like position angle of linear polarization :math:`\theta`, linear polarization degree :math:`P` and theoretical error in Stokes parameters. Most of the properties are stored as |QFloat| containers.
+
+The stored parameters are:
+
+.. ipython:: python
+  :okwarning:
+
+  print(f'q={result.q}')
+  print(f'u={result.u}')
+  print(f'v={result.v}')
+  print(f'k={result.k}')
+  print(f'psi={result.psi}')
+  print(f'z_i={result.zi}')
+  print(f'zero={result.zero}')
+  print(f'flux={result.flux}')
+
+The linear polarization level is obtained from :math:`P=\sqrt{Q^2+U^2}` and is accessed by `~astropop.polarimetry.StokesParameters.p` property:
+
+.. ipython:: python
+  :okwarning:
+
+  result.p
+
+The position angle of linear polarization is obtained from :math:`\theta=\frac{1}{2}\tan^{-1}\left(\frac{U}{Q}\right)` and is accessed by `~astropop.polarimetry.StokesParameters.theta` property:
+
+.. ipython:: python
+  :okwarning:
+
+  result.theta
+
+The RMS between the model using computed parameters and the :math:`Z_i` values stored can be accessed directly by `~astropop.polarimetry.StokesParameters.rms` property. It is only available if ``zi`` is stored in the class.
+
+.. ipython:: python
+  :okwarning:
+
+  result.rms
+
+A theoretical expected error based on the fluxes SNR can be also computed by `~astropop.polarimetry.StokesParameters` using `~astropop.polarimetry.StokesParameters.theor_sigma` method. It is only available if ``flux`` is stored in the class.
+
+.. ipython:: python
+  :okwarning:
+
+  result.theor_sigma
+
+The computation of this theoretical error is not trivial. For `halfwave` retarders it is:
+
+.. math::
+
+  \sigma_P = \sigma_Q = \sigma_U = \frac{\sqrt{2}}{SNR}
+
+and for `quarterwave` retarders it is:
+
+.. math::
+
+  \sigma_Q = \frac{1}{\sqrt{0.396} \cdot SNR}
+
+.. math::
+
+  \sigma_U = \frac{1}{\sqrt{0.1464} \cdot SNR}
+
+.. math::
+
+  \sigma_V = \frac{1}{\sqrt{0.4571} \cdot SNR}
+
+.. math::
+
+  \sigma_P = \frac{\sqrt{Q^2 \cdot \sigma_Q^2 + U^2\sigma_U^2}}{P}
+
+Also, a callable model with fixed Stokes parameters can be generated by `~astropop.polarimetry.StokesParameters.model` method. Useful for plotting or data/fitting comparison. The only argument of the callable model is the ``psi`` retarder position.
+
+.. ipython:: python
+  :okwarning:
+
+  plt.figure(figsize=(6, 4));
+  plt.errorbar(result.psi.nominal, result.zi.nominal,
+               yerr=result.zi.std_dev, fmt='o', label='data');
+  line = np.linspace(0, 360, 300);
+  model = result.model(line*result.psi.unit).nominal
+  plt.plot(line, model, '--', label='model');
+  plt.xlabel(r'$\psi$');
+  plt.ylabel(r'$Z_i$');
+  plt.title('Example of data and the callabel model comparison');
+  plt.legend();
+  plt.tight_layout();
+  @savefig stokes_parameters.png
+  plt.show()
+
 
 Helper Tools
 ------------
@@ -236,4 +397,5 @@ Polarimetry API
 ---------------
 
 .. automodapi:: astropop.polarimetry
-    :no-inheritance-diagram:
+  :no-inheritance-diagram:
+  :inherited-members:
