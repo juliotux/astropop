@@ -3,7 +3,8 @@
 
 import abc
 import numpy as np
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import List
 from astropy.table import Table
 from scipy.spatial import cKDTree
 from scipy.optimize import curve_fit
@@ -323,7 +324,7 @@ class _DualBeamPolarimetry(abc.ABC):
     psi_deviation: float = 0.1  # max deviation of retarder position
     iter_tolerance: float = 1e-5  # maximum tolerance on the iterative fitting
     max_iters: int = 100  # maximum number of iterations
-    zero_range = [0, 90]  # range of the zero position
+    zero_range: List = field(default_factory=lambda: [0, 90])  # range of the zero position
 
     def __post_init__(self):
         if self.retarder not in ['quarterwave', 'halfwave']:

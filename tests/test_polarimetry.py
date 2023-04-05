@@ -249,6 +249,13 @@ class Test_DummyPolarimetry:
         with pytest.raises(ValueError, match="Retarder dummy unknown."):
             DummyPolarimeter('dummy')
 
+    def test_initialize_zero_range(self):
+        pol = DummyPolarimeter('halfwave', zero_range=(0, 180))
+        assert_equal(pol.zero_range, (0, 180))
+
+        with pytest.raises(ValueError, match='a list with two elements.'):
+            DummyPolarimeter('halfwave', zero_range=[0])
+
     def test_initialize_zero_quantity(self):
         pol = DummyPolarimeter('halfwave', zero=60*units.degree)
         assert_equal(pol.zero, 60)
@@ -451,6 +458,12 @@ class Test_StokesParameters:
         assert_almost_equal(p.theor_sigma['u'], np.sqrt(2)*0.0006533854)
         assert_almost_equal(p.theor_sigma['v'], np.sqrt(2)*0.0003697723)
         assert_almost_equal(p.theor_sigma['p'], np.sqrt(2)*0.0005407128)
+
+    def test_stokes_sigma_theor_no_flux(self):
+        p = StokesParameters('halfwave', 0, 1)
+        with pytest.raises(ValueError,
+                           match='theoretical sigma is only available when'):
+            p.theor_sigma
 
     def test_stokes_model_halfwave(self):
         p = StokesParameters('halfwave', 0, 0.1)
