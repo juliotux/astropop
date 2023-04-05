@@ -322,6 +322,13 @@ class Test_StokesParameters:
         with pytest.raises(ValueError, match='retarder must be'):
             StokesParameters('thirdwave', 0, 1)
 
+    def test_stokes_invalid_angles(self):
+        with pytest.raises(ValueError,
+                           match='Psi and Zero have different units.'):
+            StokesParameters('halfwave', 0, 1,
+                             psi=np.arange(0, 360, 22.5)*units.deg,
+                             zero=60*units.rad)
+
     def test_initialize_halfwave(self):
         q = QFloat(0.0130, 0.001)
         u = QFloat(-0.021, 0.001)

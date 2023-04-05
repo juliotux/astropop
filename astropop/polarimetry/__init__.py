@@ -11,7 +11,7 @@ from astropy import units
 from functools import partial
 
 from ..logger import logger
-from ..math.physical import QFloat
+from ..math.physical import QFloat, convert_to_qfloat
 
 
 __all__ = ['estimate_dxdy', 'match_pairs',
@@ -215,22 +215,24 @@ class StokesParameters:
         if self.retarder not in ('halfwave', 'quarterwave'):
             raise ValueError('retarder must be halfwave or quarterwave')
 
-        self.q = QFloat(self.q)
-        self.u = QFloat(self.u)
+        self.q = convert_to_qfloat(self.q)
+        self.u = convert_to_qfloat(self.u)
         if self.v is not None:
-            self.v = QFloat(self.v)
+            self.v = convert_to_qfloat(self.v)
 
         if self.k is not None:
             self.k = float(self.k)
+
+        # TODO: make the angle checking smarter
         if self.zero is not None:
-            self.zero = QFloat(self.zero)
+            self.zero = convert_to_qfloat(self.zero)
             if self.zero.unit == units.dimensionless_unscaled:
                 self.zero.unit = 'deg'
 
         if self.zi is not None:
-            self.zi = QFloat(self.zi)
+            self.zi = convert_to_qfloat(self.zi)
         if self.psi is not None:
-            self.psi = QFloat(self.psi)
+            self.psi = convert_to_qfloat(self.psi)
             if self.psi.unit == units.dimensionless_unscaled:
                 self.psi.unit = 'deg'
 
