@@ -43,7 +43,7 @@ def estimate_dxdy(x, y, steps=[100, 30, 5, 3], bins=30, dist_limit=100):
     x, y: array_like
         Arrays of x and y positions of the sources.
     steps: list of int
-        List of steps to use in the histogram.
+        Number of pixels, around the mode, to clip the histogram in each step.
     bins: int
         Number of bins to use in the histogram.
     dist_limit: float
