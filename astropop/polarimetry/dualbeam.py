@@ -316,6 +316,7 @@ class _DualBeamPolarimetry(abc.ABC):
     psi_deviation: float = 0.1  # max deviation of retarder position
     iter_tolerance: float = 1e-5  # maximum tolerance on the iterative fitting
     max_iters: int = 100  # maximum number of iterations
+    zero_range = [0, 90]  # range of the zero position
 
     def __post_init__(self):
         if self.retarder not in ['quarterwave', 'halfwave']:
@@ -326,6 +327,10 @@ class _DualBeamPolarimetry(abc.ABC):
             raise ValueError('k and compute_k cannot be used together.')
         if not self.compute_k:
             logger.info('Normalization disabled.')
+
+        self.zero_range = list(self.zero_range)
+        if not len(self.zero_range) == 2:
+            raise ValueError('Zero range must be a list with two elements.')
 
         # number of positions per cicle
         self._n_pos = 8 if self.retarder == 'quarterwave' else 4
@@ -507,6 +512,9 @@ class SLSDualBeamPolarimetry(_DualBeamPolarimetry):
         parameters is less than this tolerance. Default is 1e-5.
     max_iters: int (optional)
         Maximum number of iterations. Default is 100.
+    zero_range: list([float, float]) (optional)
+        Minimum and maximum acceptable values for the zero position, in
+        degrees. Default is [0, 90].
 
     Notes
     -----
@@ -562,7 +570,8 @@ class SLSDualBeamPolarimetry(_DualBeamPolarimetry):
             logger.debug('Using fixed value of zero: %s', self.zero)
         else:
             model = quarterwave_model
-            bounds = ([-1, -1, -1, 0], [1, 1, 1, 180])
+            bounds = ([-1, -1, -1, self.zero_range[0]],
+                      [1, 1, 1, self.zero_range[1]])
             pnames = ['q', 'u', 'v', 'zero']
             logger.debug('Zero position not set. Computing it from the data.')
 
