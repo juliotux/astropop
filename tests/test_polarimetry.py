@@ -3,12 +3,12 @@
 
 import pytest
 import numpy as np
-from astropop.polarimetry.dualbeam import match_pairs, estimate_dxdy, \
-                                          _compute_theta, quarterwave_model, \
-                                          halfwave_model, \
-                                          _DualBeamPolarimetry, \
-                                          SLSDualBeamPolarimetry, \
-                                          StokesParameters
+from astropop.polarimetry import match_pairs, estimate_dxdy, \
+                                 _compute_theta, quarterwave_model, \
+                                 halfwave_model, \
+                                 _DualBeamPolarimetry, \
+                                 SLSDualBeamPolarimetry, \
+                                 StokesParameters
 from astropop.math import QFloat
 from astropy import units
 from astropop.testing import *
@@ -249,6 +249,13 @@ class Test_DummyPolarimetry:
         with pytest.raises(ValueError, match="Retarder dummy unknown."):
             DummyPolarimeter('dummy')
 
+    def test_initialize_zero_range(self):
+        pol = DummyPolarimeter('halfwave', zero_range=(0, 180))
+        assert_equal(pol.zero_range, (0, 180))
+
+        with pytest.raises(ValueError, match='a list with two elements.'):
+            DummyPolarimeter('halfwave', zero_range=[0])
+
     def test_initialize_zero_quantity(self):
         pol = DummyPolarimeter('halfwave', zero=60*units.degree)
         assert_equal(pol.zero, 60)
@@ -321,6 +328,13 @@ class Test_StokesParameters:
     def test_stokes_invalid_retarder(self):
         with pytest.raises(ValueError, match='retarder must be'):
             StokesParameters('thirdwave', 0, 1)
+
+    def test_stokes_invalid_angles(self):
+        with pytest.raises(ValueError,
+                           match='Psi and Zero have different units.'):
+            StokesParameters('halfwave', 0, 1,
+                             psi=np.arange(0, 360, 22.5)*units.deg,
+                             zero=60*units.rad)
 
     def test_initialize_halfwave(self):
         q = QFloat(0.0130, 0.001)
@@ -445,6 +459,12 @@ class Test_StokesParameters:
         assert_almost_equal(p.theor_sigma['v'], np.sqrt(2)*0.0003697723)
         assert_almost_equal(p.theor_sigma['p'], np.sqrt(2)*0.0005407128)
 
+    def test_stokes_sigma_theor_no_flux(self):
+        p = StokesParameters('halfwave', 0, 1)
+        with pytest.raises(ValueError,
+                           match='theoretical sigma is only available when'):
+            p.theor_sigma
+
     def test_stokes_model_halfwave(self):
         p = StokesParameters('halfwave', 0, 0.1)
         psi = np.arange(0, 360, 22.5)*units.degree
@@ -477,6 +497,18 @@ class Test_StokesParameters:
         with pytest.raises(ValueError, match='same dimensions'):
             StokesParameters('quarterwave', 0, 0.1, flux=flux, psi=psi[:10],
                              zi=zi)
+
+    def test_repr(self):
+        p = StokesParameters('halfwave', 0, 0.1)
+        i = id(p)
+        assert_equal(repr(p), "<astropop.polarimetry.StokesParameters object "
+                     f"at {hex(i)}>\nq=0.0+-0.0 , u=0.1+-0.0")
+
+    def test_repr_with_v(self):
+        p = StokesParameters('quarterwave', 0, 0.1, 0.05)
+        i = id(p)
+        assert_equal(repr(p), "<astropop.polarimetry.StokesParameters object "
+                     f"at {hex(i)}>\nq=0.0+-0.0 , u=0.1+-0.0 , v=0.05+-0.0")
 
 
 class Test_SLSPolarimetry:

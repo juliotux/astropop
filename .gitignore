@@ -27,6 +27,7 @@ MANIFEST
 docs/api
 docs/_api
 docs/_build
+docs/savefig
 
 # Eclipse editor project files
 .project
