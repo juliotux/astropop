@@ -280,12 +280,7 @@ class StokesParameters:
 
     @property
     def theor_sigma(self):
-        """Theoretical sigma of the polarization level.
-
-        It is expressed as:
-        theor_sigma = K*1/sqrt(sum(flux_i^2/sigma_flux_i^2))
-        where K is 1 for halfwave retarders and sqrt2 for quarterwave.
-        """
+        """Theoretical error of stokes parameters from the fluxes SNR."""
         if self.flux is None:
             raise ValueError('The theoretical sigma is only available when '
                              'fluxes are present.')
