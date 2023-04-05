@@ -28,11 +28,55 @@ And fits a equation for a given set o positions. There are two equations that ca
 
     Z_i = Q \cos{4 \psi_i} + U \sin{4 \psi_i}
 
+  .. plot::
+    :include-source: False
+
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from astropop.polarimetry.dualbeam import halfwave_model
+
+    psi_lin = np.linspace(0, 360, 600)
+    psi_i = np.arange(0, 361, 22.5)
+    z_i = halfwave_model(psi_i, 0.12, -0.07)
+    z_lin = halfwave_model(psi_lin, 0.12, -0.07)
+
+    plt.figure(figsize=(5, 3))
+    plt.plot(psi_lin, z_lin, '-', label='Model')
+    plt.plot(psi_i, z_i, 'o', label='Data Points')
+    plt.xlabel(r'$\psi_i$')
+    plt.ylabel(r'$Z_i$')
+    plt.title('Example of half-wave plate\nQ=0.12, U=-0.07')
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
 * For quarter-wave plates, linear and circular polarization is computed, and the equation is:
 
   .. math::
 
     Z_i = Q \cos^2{2 \psi_i} + U \sin{2 \psi_i} \cos{2 \psi_i} - V \sin{2 \psi_i}
+
+  .. plot::
+    :include-source: False
+
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from astropop.polarimetry.dualbeam import quarterwave_model
+
+    psi_lin = np.linspace(0, 360, 600)
+    psi_i = np.arange(0, 361, 22.5)
+    z_i = quarterwave_model(psi_i, 0.05, -0.07, 0.08)
+    z_lin = quarterwave_model(psi_lin, 0.05, -0.07, 0.08)
+
+    plt.figure(figsize=(5, 3))
+    plt.plot(psi_lin, z_lin, '-', label='Model')
+    plt.plot(psi_i, z_i, 'o', label='Data Points')
+    plt.xlabel(r'$\psi_i$')
+    plt.ylabel(r'$Z_i$')
+    plt.legend()
+    plt.title('Example of quarter-wave plate\nQ=0.05, U=-0.07, V=0.08')
+    plt.tight_layout()
+    plt.show()
 
 Where :math:`Q`, :math:`U` and :math:`V` are the linear and circular polarization fractions and $\psi_i$ is the retarder plate position.
 
@@ -67,27 +111,126 @@ However, for circular polarization, the zero offset is important due to the assy
 Polarimetry Reduction in |astropop|
 ===================================
 
-.. TODO:: reduction process
+There are 2 main steps in the polarimetry reduction process: the pairs matching and the Stokes parameters computation.
+
+To compute the Stokes parameters of a given source, |astropop| uses arrays of fluxes and retarder positions. So, it is not directly dependent on the photometry routines to process the data and you can use your own already extracted photometry for this process. Also, our helper functions to match the pairs of ordinary and extraordinary beams also use just arrays of x and y positions, and are not dependent on the photometry routines too. So, **no part of the polarimetry reduction depend on the use of |astropop| for source extraction and photometry and you can use your own data or code in this process**.
+
+For example, in this documentation we will use totally fake photometry and random pairs positions to illustrate the polarimetry reduction process.
+
 
 Stokes-Least-Squares Polarimetry Processing
 -------------------------------------------
 
+The Stokes-Least-Squares (SLS) method is a method to compute the Stokes parameters by fitting the modulation equations described above to the relative flux difference of the data using a least-squares method with Trust Region Reflective algorithm. For a better description and validation of this method, see [5]_.
+
+First of all, lets create the fake data to be used here for example.
+
+.. ipython:: python
+
+  import numpy as np
+  from astropop.polarimetry import halfwave_model, quarterwave_model
+  flux = 1e7  # total flux of the source, in electrons
+  # retarder positions, in degrees
+  psi_i = np.arange(0, 360, 22.5)
+
+  # half-wave plate with only linear polarization
+  # q=0.05, u=-0.07
+  z_i_half = halfwave_model(psi_i, 0.05, -0.07)
+  fo_half = flux*(1+z_i_half)/2  # ordinary beam fluxes
+  fe_half = flux*(1-z_i_half)/2  # extraordinary beam fluxes
+
+  # quarter-wave plate with linear and circular polarization
+  # q=0.05, u=-0.07, v=0.08
+  z_i_quarter = quarterwave_model(psi_i, 0.05, -0.07, 0.08)
+  fo_quarter = flux*(1+z_i_quarter)/2  # ordinary beam fluxes
+  fe_quarter = flux*(1-z_i_quarter)/2  # extraordinary beam fluxes
+
+
+.. plot::
+  :include-source: False
+  :caption: Simulated data for the Stokes-Least-Squares polarimetry processing.
+
+  import numpy as np
+  from astropop.polarimetry import halfwave_model, quarterwave_model
+  flux = 1e7  # total flux of the source, in electrons
+  # retarder positions, in degrees
+  psi_i = np.arange(0, 360, 22.5)
+  lin = np.linspace(0, 360, 360)
+
+  # half-wave plate with only linear polarization
+  # q=0.05, u=-0.07
+  z_i_half = halfwave_model(psi_i, 0.05, -0.07)
+  fo_half = flux*(1+z_i_half)/2  # ordinary beam fluxes
+  fe_half = flux*(1-z_i_half)/2  # extraordinary beam fluxes
+  lin_e_half = flux*(1-halfwave_model(lin, 0.05, -0.07))/2
+  lin_o_half = flux*(1+halfwave_model(lin, 0.05, -0.07))/2
+
+  # quarter-wave plate with linear and circular polarization
+  # q=0.05, u=-0.07, v=0.08
+  z_i_quarter = quarterwave_model(psi_i, 0.05, -0.07, 0.08)
+  fo_quarter = flux*(1+z_i_quarter)/2  # ordinary beam fluxes
+  fe_quarter = flux*(1-z_i_quarter)/2  # extraordinary beam fluxes
+  lin_e_quarter = flux*(1-quarterwave_model(lin, 0.05, -0.07, 0.08))/2
+  lin_o_quarter = flux*(1+quarterwave_model(lin, 0.05, -0.07, 0.08))/2
+
+  fig, ax = plt.subplots(2, 2, figsize=(8, 6), sharex=True, sharey='row')
+  ax[0][0].plot(psi_i, fo_half, 'C0o', label='Ordinary')
+  ax[0][0].plot(psi_i, fe_half, 'C1o', label='Extraordinary')
+  ax[0][0].plot(lin, lin_o_half, 'C0--')
+  ax[0][0].plot(lin, lin_e_half, 'C1--')
+  ax[0][0].legend()
+  ax[0][0].set_title('Half-wave plate\nQ=0.05, U=-0.07')
+  ax[0][0].set_ylabel('Flux (e-)')
+
+  ax[0][1].plot(psi_i, fo_quarter, 'C0o', label='Ordinary')
+  ax[0][1].plot(psi_i, fe_quarter, 'C1o', label='Extraordinary')
+  ax[0][1].plot(lin, lin_o_quarter, 'C0--')
+  ax[0][1].plot(lin, lin_e_quarter, 'C1--')
+  ax[0][1].legend()
+  ax[0][1].set_title('Quarter-wave plate\nQ=0.05, U=-0.07, V=0.08')
+
+  ax[1][0].plot(psi_i, z_i_half, 'C2o')
+  ax[1][0].plot(lin, halfwave_model(lin, 0.05, -0.07), 'C2--')
+  ax[1][0].set_ylabel(r'Relative flux difference ($Z_i$)')
+  ax[1][0].set_xlabel(r'Retarder position $\psi_i$ in (deg)')
+
+  ax[1][1].plot(psi_i, z_i_quarter, 'C2o')
+  ax[1][1].plot(lin, quarterwave_model(lin, 0.05, -0.07, 0.08), 'C2--')
+  ax[1][1].set_xlabel(r'Retarder position $\psi_i$ in (deg)')
+
+  ax[1][0].set_xticks(np.arange(0, 361, 45))
+  ax[1][0].set_xlim(0, 360)
+
+  fig.tight_layout()
+  plt.show()
+
+
 Helper Tools
 ------------
 
+.. ipython:: python
+
+  # random positions for the pairs
+  # 300 pairs of sources in a image of 1024x1024 pixels
+  # dx=25, dy=35
+  x = np.random.uniform(0, 1024, 300)
+  x = np.concatenate((x, x+25))  # x positions of the rouces
+  y = np.random.uniform(0, 1024, 300)
+  y = np.concatenate((y, y+35))  # y positions of the rouces
+
 References
 ----------
-.. [1] Magalhães et al. 1996. `https://ui.adsabs.harvard.edu/abs/1996ASPC...97..118M`_
+.. [1] Magalhães et al. 1996. `bibcode: 1996ASPC...97..118M <https://ui.adsabs.harvard.edu/abs/1996ASPC...97..118M>`_
 
-.. [2] Rodrigues et al. 2011. `https://ui.adsabs.harvard.edu/abs/2012AIPC.1429..252R`_
+.. [2] Rodrigues et al. 2011. `bibcode: 2012AIPC.1429..252R <https://ui.adsabs.harvard.edu/abs/2012AIPC.1429..252R>`_
 
-.. [3] Wiersema et al. 2023. `https://academic.oup.com/rasti/article/2/1/106/7040587`_
+.. [3] Wiersema et al. 2023. `doi: 10.1093/rasti/rzad005 <https://doi.org/10.1093/rasti/rzad005>`_
 
-.. [4] Rodrigues et al. 1998. `https://ui.adsabs.harvard.edu/abs/1998A&A...335..979R`_
+.. [4] Rodrigues et al. 1998. `bibcode: 1998A&A...335..979R <https://ui.adsabs.harvard.edu/abs/1998A&A...335..979R>`_
 
-.. [5] Campagnolo, 2019. `https://ui.adsabs.harvard.edu/abs/2019PASP..131b4501N`_
+.. [5] Campagnolo, 2019. `bibcode: 2019PASP..131b4501N <https://ui.adsabs.harvard.edu/abs/2019PASP..131b4501N>`_
 
-.. [6] Lima et al. 2021. `https://ui.adsabs.harvard.edu/abs/2021AJ....161..225L`_
+.. [6] Lima et al. 2021. `bibcode: 2021AJ....161..225L <https://ui.adsabs.harvard.edu/abs/2021AJ....161..225L>`_
 
 Polarimetry API
 ---------------
