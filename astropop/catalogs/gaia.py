@@ -76,8 +76,9 @@ class GaiaDR3SourcesCatalog(_OnlineSourcesCatalog):
 
     def radial_velocity(self):
         """Return the radial velocity for the sources."""
-        return QFloat(self._query['radial_velocity'],
-                      self._query['radial_velocity_error'],
+        return QFloat(np.array(self._query['radial_velocity'], dtype='f4'),
+                      np.array(self._query['radial_velocity_error'],
+                               dtype='f4'),
                       unit='km/s')
 
     def phot_variable_flag(self):

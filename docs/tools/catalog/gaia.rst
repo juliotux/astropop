@@ -37,7 +37,7 @@ Gaia catalogs can be huge. So, additionally, the initialization of the |GaiaDR3S
 
 .. ipython:: python
 
-    gaia_sources = gaia.gaiadr3('Sirius', radius='60 arcsec', max_g_mag=10)
+    gaia_sources = gaia.gaiadr3('HD 5020', radius='60 arcsec', max_g_mag=10)
     gaia_sources.table()
 
 Additional Catalog Properties
