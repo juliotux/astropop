@@ -166,25 +166,18 @@ First of all, lets create the fake data to be used here for example.
   psi_i = np.arange(0, 360, 22.5)
   lin = np.linspace(0, 360, 360)
 
+  fig, ax = plt.subplots(2, 2, figsize=(8, 6), sharex=True, sharey='row')
+
   # half-wave plate with only linear polarization
   # q=0.05, u=-0.07
-  z_i_half = halfwave_model(psi_i, 0.05, -0.07)
+  params_h = (0.05, -0.07)
+  z_i_half = halfwave_model(psi_i, *params_h)
   z_i_half = np.random.normal(loc=z_i_half, scale=0.005)
   fo_half = flux*(1+z_i_half)/2  # ordinary beam fluxes
   fe_half = flux*(1-z_i_half)/2  # extraordinary beam fluxes
-  lin_e_half = flux*(1-halfwave_model(lin, 0.05, -0.07))/2
-  lin_o_half = flux*(1+halfwave_model(lin, 0.05, -0.07))/2
+  lin_e_half = flux*(1-halfwave_model(lin, *params_h))/2
+  lin_o_half = flux*(1+halfwave_model(lin, *params_h))/2
 
-  # quarter-wave plate with linear and circular polarization
-  # q=0.05, u=-0.07, v=0.08
-  z_i_quarter = quarterwave_model(psi_i, 0.05, -0.07, 0.08)
-  z_i_quarter = np.random.normal(loc=z_i_half, scale=0.005)
-  fo_quarter = flux*(1+z_i_quarter)/2  # ordinary beam fluxes
-  fe_quarter = flux*(1-z_i_quarter)/2  # extraordinary beam fluxes
-  lin_e_quarter = flux*(1-quarterwave_model(lin, 0.05, -0.07, 0.08))/2
-  lin_o_quarter = flux*(1+quarterwave_model(lin, 0.05, -0.07, 0.08))/2
-
-  fig, ax = plt.subplots(2, 2, figsize=(8, 6), sharex=True, sharey='row')
   ax[0][0].plot(psi_i, fo_half, 'C0o', label='Ordinary')
   ax[0][0].plot(psi_i, fe_half, 'C1o', label='Extraordinary')
   ax[0][0].plot(lin, lin_o_half, 'C0--')
@@ -193,6 +186,21 @@ First of all, lets create the fake data to be used here for example.
   ax[0][0].set_title('Half-wave plate\nQ=0.05, U=-0.07')
   ax[0][0].set_ylabel('Flux (e-)')
 
+  ax[1][0].plot(psi_i, z_i_half, 'C2o')
+  ax[1][0].plot(lin, halfwave_model(lin, 0.05, -0.07), 'C2--')
+  ax[1][0].set_ylabel(r'Relative flux difference ($Z_i$)')
+  ax[1][0].set_xlabel(r'Retarder position $\psi_i$ in (deg)')
+
+  # quarter-wave plate with linear and circular polarization
+  # q=0.05, u=-0.07, v=0.08
+  params_q = (0.05, -0.07, 0.08)
+  z_i_quarter = quarterwave_model(psi_i, *params_q)
+  z_i_quarter = np.random.normal(loc=z_i_quarter, scale=0.005)
+  fo_quarter = flux*(1+z_i_quarter)/2  # ordinary beam fluxes
+  fe_quarter = flux*(1-z_i_quarter)/2  # extraordinary beam fluxes
+  lin_e_quarter = flux*(1-quarterwave_model(lin, *params_q))/2
+  lin_o_quarter = flux*(1+quarterwave_model(lin, *params_q))/2
+
   ax[0][1].plot(psi_i, fo_quarter, 'C0o', label='Ordinary')
   ax[0][1].plot(psi_i, fe_quarter, 'C1o', label='Extraordinary')
   ax[0][1].plot(lin, lin_o_quarter, 'C0--')
@@ -200,13 +208,8 @@ First of all, lets create the fake data to be used here for example.
   ax[0][1].legend()
   ax[0][1].set_title('Quarter-wave plate\nQ=0.05, U=-0.07, V=0.08')
 
-  ax[1][0].plot(psi_i, z_i_half, 'C2o')
-  ax[1][0].plot(lin, halfwave_model(lin, 0.05, -0.07), 'C2--')
-  ax[1][0].set_ylabel(r'Relative flux difference ($Z_i$)')
-  ax[1][0].set_xlabel(r'Retarder position $\psi_i$ in (deg)')
-
   ax[1][1].plot(psi_i, z_i_quarter, 'C2o')
-  ax[1][1].plot(lin, quarterwave_model(lin, 0.05, -0.07, 0.08), 'C2--')
+  ax[1][1].plot(lin, quarterwave_model(lin, *params_q), 'C2--')
   ax[1][1].set_xlabel(r'Retarder position $\psi_i$ in (deg)')
 
   ax[1][0].set_xticks(np.arange(0, 361, 45))
