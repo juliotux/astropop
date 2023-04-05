@@ -1000,7 +1000,7 @@ class Test_Tycho2VizierSourcesCatalog:
 
 
 @pytest.mark.remote_data
-class Test_Vizier_GaiaDR3:
+class Test_GaiaDR3:
     hd674_mags = {
         'G': [10.552819, 0.000337826],
         'BP': [10.649535, 0.00091911],
@@ -1039,9 +1039,23 @@ class Test_Vizier_GaiaDR3:
         assert_equal(s.ra_dec_list().shape, (len(s), 2))
         assert_is_instance(s.mag_list('G'), np.ndarray)
         assert_equal(s.mag_list('G').shape, (len(s), 2))
+        # properties only for gaia
+        assert_is_instance(s.parallax(), QFloat)
+        assert_is_instance(s.radial_velocity(), QFloat)
+        # flags
+        assert_is_instance(s.non_single_star(), np.ndarray)
+        assert_equal(s.non_single_star().shape, (len(s),))
+        assert_equal(s.non_single_star().dtype, bool)
+        assert_is_instance(s.phot_variable_flag(), np.ndarray)
+        assert_equal(s.phot_variable_flag().shape, (len(s),))
+        assert_equal(s.phot_variable_flag().dtype, bool)
+        assert_is_instance(s.in_galaxy_candidates(), np.ndarray)
+        assert_equal(s.in_galaxy_candidates().shape, (len(s),))
+        assert_equal(s.in_galaxy_candidates().dtype, bool)
 
     def test_gaiadr3_properties(self):
-        s = GaiaDR3SourcesCatalog(hd674_coords[0], search_radius[0], band=['G'])
+        s = GaiaDR3SourcesCatalog(hd674_coords[0], search_radius[0],
+                                  band=['G'])
         assert_equal(s.available_filters,
                      ['G', 'BP', 'RP'])
         assert_is_instance(s.center, SkyCoord)
@@ -1053,3 +1067,10 @@ class Test_Vizier_GaiaDR3:
         # when using non-async functions, the output is limited to 2000 sources
         g = GaiaDR3SourcesCatalog('RMC 40', radius='15 arcmin')
         assert_greater(len(g), 2001)
+
+    def test_gaiadr3_max_mag(self):
+        s = GaiaDR3SourcesCatalog(hd674_coords[0], '1.0 deg',
+                                  band=['G'], max_g_mag=15)
+        # GAIA DR3 has only 741 sources brighter than 15 mag in this radius
+        assert_less(len(s), 1000)
+        assert_false(np.any(s.magnitude('G').nominal > 15))
