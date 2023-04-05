@@ -3,12 +3,12 @@
 
 import pytest
 import numpy as np
-from astropop.polarimetry.dualbeam import match_pairs, estimate_dxdy, \
-                                          _compute_theta, quarterwave_model, \
-                                          halfwave_model, \
-                                          _DualBeamPolarimetry, \
-                                          SLSDualBeamPolarimetry, \
-                                          StokesParameters
+from astropop.polarimetry import match_pairs, estimate_dxdy, \
+                                 _compute_theta, quarterwave_model, \
+                                 halfwave_model, \
+                                 _DualBeamPolarimetry, \
+                                 SLSDualBeamPolarimetry, \
+                                 StokesParameters
 from astropop.math import QFloat
 from astropy import units
 from astropop.testing import *
