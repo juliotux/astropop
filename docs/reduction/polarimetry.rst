@@ -388,10 +388,10 @@ The `~astropop.polarimetry` module has some helper tools to help with this task.
   y = np.concatenate((y, y+35))  # y positions of the rouces
 
   # plot the sources
-  plt.figure(figsize=(6, 6))
-  plt.plot(x, y, 'ko', ms=5)
+  plt.figure(figsize=(6, 6));
+  plt.plot(x, y, 'ko', ms=5);
   @savefig pairs.png
-  plt.title('Example of the pairs of sources')
+  plt.title('Example of the pairs of sources');
 
 Displacement Computation
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -462,17 +462,17 @@ So, to access the coordinates of the nth pair, you can use the ``pairs['o'][n]``
         f"ordinary: index={index_o} x={x_o:.2f} y={y_o:.2f}\n"
         f"extraordinary: index={index_e} x={x_e:.2f} y={y_e:.2f}")
 
-  plt.figure(figsize=(5, 5))
-  plt.plot(x, y, 'ko', ms=5, alpha=0.5)
-  plt.plot([x_o, x_e], [y_o, y_e], 'r-', lw=2)
+  plt.figure(figsize=(5, 5));
+  plt.plot(x, y, 'ko', ms=5, alpha=0.5);
+  plt.plot([x_o, x_e], [y_o, y_e], 'r-', lw=2);
   @savefig pair_matched.png
-  plt.title(f"Pair n={n} matched")
+  plt.title(f"Pair n={n} matched");
 
 .. ipython:: python
 
   # plot all matched pairs
-  plt.figure(figsize=(5, 5))
-  plt.plot(x, y, 'ko', ms=5, alpha=0.5)
+  plt.figure(figsize=(5, 5));
+  plt.plot(x, y, 'ko', ms=5, alpha=0.5);
   for pair in pairs:
       index_o = pair['o']
       index_e = pair['e']
@@ -483,7 +483,7 @@ So, to access the coordinates of the nth pair, you can use the ``pairs['o'][n]``
       plt.plot([x_o, x_e], [y_o, y_e], 'r-', lw=2)
 
   @savefig all_pairs_matched.png
-  plt.title(f"All pairs matched")
+  plt.title(f"All pairs matched");
 
 References
 ----------
