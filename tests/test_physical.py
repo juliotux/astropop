@@ -166,6 +166,20 @@ class Test_QFloat_InitAndSet:
         with pytest.raises(ValueError):
             QFloat(qf, uncertainty=0.1)
 
+    def test_qfloat_set_sig_digits(self):
+        qf = QFloat(1.0, 0.1, 'm')
+        qf.sig_digits = 2
+        assert_equal(qf.nominal, 1.0)
+        assert_equal(qf.uncertainty, 0.1)
+        assert_equal(qf.unit, units.m)
+        assert_equal(qf.sig_digits, 2)
+
+    def test_qfloat_set_sig_digits_error(self):
+        qf = QFloat(1.0, 0.1, 'm')
+        with pytest.raises(TypeError,
+                           match='sig_digits must be a real number.'):
+            qf.sig_digits = 'k'
+
 
 class Test_QFloat_Repr:
     def test_qfloat_repr_default(self):
