@@ -72,6 +72,20 @@ You also can omit both, like converting a single dimensionless number to QFloat.
     qf = QFloat(1.0)
     qf
 
+Printing and String Representation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+By default, the |QFloat| shows the numbers rounded to the first significant digit of the uncertainty (rounded). This is done to make the representation more readable. But you can set the number of significant digits to show by setting the `~astropop.math.physical.QFloat.sig_digits` property.
+
+.. ipython:: python
+
+    qf = QFloat(1.0583225, 0.0031495756, 'cm')
+    print(qf)
+    qf.sig_digits = 2
+    print(qf)
+    qf.sig_digits = 3
+    print(qf)
+
 Units and Conversion
 --------------------
 
@@ -127,13 +141,15 @@ As example, to sum two |QFloat|, you just need to use the ``+`` operator.
 
 Incorrect dimensionality in operations will raise |UnitsError|.
 
-.. ipython:: python
-    :okexcept:
-    :okwarning:
+.. ipython::
+    :verbatim:
 
-    qf1 = QFloat(3.0, 0.01, 'kg')
-    qf2 = QFloat(5.0, 0.2, 'K')
-    qf1 + qf2
+    In [2]: qf1 = QFloat(3.0, 0.01, 'kg')
+
+    In [3]: qf2 = QFloat(5.0, 0.2, 'K')
+
+    In [4]: qf1 + qf2
+    UnitConversionError: Can only apply 'decorator' function to quantities with compatible dimensions
 
 Supported Numpy Array Operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
