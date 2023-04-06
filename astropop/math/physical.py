@@ -102,10 +102,11 @@ class _QFloatFormatter():
     """
     _rounded = False
 
-    def __init__(self, nominal, std):
+    def __init__(self, nominal, std, sig_digits):
         self._n = nominal
         self._s = std
         self._d = np.nan
+        self._sig_d = sig_digits
 
     @property
     def nominal(self):
@@ -127,11 +128,12 @@ class _QFloatFormatter():
 
     def round(self):
         try:
-            first_digit = -np.int_(np.floor(np.log10(np.abs(self._s))))
-            self._n = np.around(self._n, first_digit)
-            self._s = np.around(self._s, first_digit)
-            self._d = first_digit
-        except (ValueError, ZeroDivisionError, OverflowError):
+            n = -np.int_(np.floor(np.log10(np.abs(self._s))))
+            n += self._sig_d - 1
+            self._n = np.around(self._n, n)
+            self._s = np.around(self._s, n)
+            self._d = n
+        except (ValueError, ZeroDivisionError, OverflowError, RuntimeWarning):
             # Do not change the values
             pass
 
@@ -157,11 +159,12 @@ class _QFloatFormatter():
         return f"{self}"
 
 
-def _create_formater(nominal, std):
+def _create_formater(nominal, std, sig_digits):
     """Create _QFloatFormater handling lists."""
     if check_iterable(nominal):
-        return [_create_formater(n, s) for n, s in zip(nominal, std)]
-    return _QFloatFormatter(nominal, std)
+        return [_create_formater(n, s, sig_digits)
+                for n, s in zip(nominal, std)]
+    return _QFloatFormatter(nominal, std, sig_digits)
 
 
 def same_unit(qfloat1, qfloat2, func=None):
@@ -266,6 +269,7 @@ class QFloat():
     _nominal = None
     _uncert = None
     _unit = None
+    _sig_digits = 1
 
     def __init__(self, value, uncertainty=None, unit=None):
         value, uncertainty, unit = self._check_inputs(value, uncertainty, unit)
@@ -361,11 +365,24 @@ class QFloat():
 
     @property
     def shape(self):
+        """Shape of the quantity."""
         return np.shape(self.nominal)
 
     @property
     def size(self):
+        """Number of elements in the quantity."""
         return np.size(self.nominal)
+
+    @property
+    def sig_digits(self):
+        """Number of significant digits."""
+        return self._sig_digits
+
+    @sig_digits.setter
+    def sig_digits(self, value):
+        if not np.isreal(value):
+            raise TypeError('sig_digits must be a real number.')
+        self._sig_digits = int(value)
 
     def reset(self, value, uncertainty=None, unit=None):
         """Reset all the data.
@@ -412,20 +429,16 @@ class QFloat():
         return self.nominal
 
     def __repr__(self):
-        # FIXME: repr can be very slow for mutch large arrays
-        # repr for arrays
-        if check_iterable(self.nominal):
-            ret = "<QFloat\n"
-            ret2 = _create_formater(self.nominal, self.std_dev)
-            ret2 = np.array(ret2).__repr__()
-            ret2 += f'\nunit={str(self.unit)}'
-        # repr for single values
+        i = hex(id(self))
+        return f'<QFloat at {i}>\n{self.__str__()}'
+
+    def __str__(self):
+        s = _create_formater(self.nominal, self.std_dev, self._sig_digits)
+        if np.isscalar(self.nominal):
+            s = f'{s} {self.unit}'
         else:
-            ret = "<QFloat "
-            ret2 = f"{_QFloatFormatter(self.nominal, self.std_dev)}"
-            ret2 += f' {str(self.unit)}'
-        ret += ret2 + '>'
-        return ret
+            s = np.array(s).__str__() + f' {self.unit}'
+        return s
 
     def __getitem__(self, index):
         """Get one item of given index IF this is iterable."""
