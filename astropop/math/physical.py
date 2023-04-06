@@ -95,76 +95,58 @@ def require_qfloat(func):
     return decorator
 
 
-class _QFloatFormatter():
-    """Simple store for numbers that can be rounded to first digit.
+def _get_round_digit(std, sig):
+    """Get the number of digits to round the error."""
+    return -np.int_(np.floor(np.log10(np.abs(std)))) + sig - 1
 
-    Used mainly for speedup repr and str.
-    """
-    _rounded = False
 
-    def __init__(self, nominal, std, sig_digits):
-        self._n = nominal
-        self._s = std
-        self._d = np.nan
-        self._sig_d = sig_digits
+def _round_to_error(nom, std, sdig):
+    """Round the numbers to the first digit of the error."""
+    try:
+        dig = _get_round_digit(std, sdig)
+        std = np.round(std, dig)
+        # repeat the process for handle std>5 in the first digit cases
+        dig = _get_round_digit(std, sdig)
+        nom = np.round(nom, dig)
+        std = np.round(std, dig)
+    except (ValueError, ZeroDivisionError, OverflowError, RuntimeWarning):
+        # Do not change the values
+        dig = np.nan
+    return nom, std, dig
 
-    @property
-    def nominal(self):
-        if not self._rounded:
-            self.round()
-        return self._n
 
-    @property
-    def std_dev(self):
-        if not self._rounded:
-            self.round()
-        return self._s
+def _format_qfloat(nominal, std_dev, sig_digits, pm_sign='+-'):
+    """Format a qfloat number."""
+    # TODO: scientific notation?
+    # the numbers need to be rounded for larger than one error.
+    nom, std, dig = _round_to_error(nominal, std_dev, sig_digits)
+    if not np.isnan(dig):
+        if dig > 0:
+            return f"{nom:.{int(dig)}f}{pm_sign}{std:.{int(dig)}f}"
+        return f"{nom:.0f}{pm_sign}{std:.0f}"
+    return f"{nom}{pm_sign}{std}"
 
-    @property
-    def digits(self):
-        if not self._rounded:
-            self.round()
-        return self._d
 
-    def round(self):
-        try:
-            n = -np.int_(np.floor(np.log10(np.abs(self._s))))
-            n += self._sig_d - 1
-            self._n = np.around(self._n, n)
-            self._s = np.around(self._s, n)
-            self._d = n
-        except (ValueError, ZeroDivisionError, OverflowError, RuntimeWarning):
-            # Do not change the values
-            pass
+class _FormaterElement:
+    """Class to format a QFloat array."""
 
-    def __format__(self, format_spec):
-        # For not, format do not matter
-        # Positive digits, decimals. Negative digits, integers.
-        nominal = self.nominal
-        std = self.std_dev
-        digits = self.digits
+    __slots__ = ('_value', '_std', '_sig_digits')
 
-        if not np.isnan(digits):
-            if digits > 0:
-                n_part = f"{nominal:.{int(digits)}f}"
-                s_part = f"{std:.{int(digits)}f}"
-            else:
-                n_part = f"{nominal:.0f}"
-                s_part = f"{std:.0f}"
-            return f"{n_part}+-{s_part}"
-
-        return f"{nominal}+-{std}"
+    def __init__(self, value, std, sig_digits):
+        self._value = value
+        self._std = std
+        self._sig_digits = sig_digits
 
     def __repr__(self):
-        return f"{self}"
+        return _format_qfloat(self._value, self._std, self._sig_digits)
 
 
-def _create_formater(nominal, std, sig_digits):
-    """Create _QFloatFormater handling lists."""
-    if check_iterable(nominal):
-        return [_create_formater(n, s, sig_digits)
-                for n, s in zip(nominal, std)]
-    return _QFloatFormatter(nominal, std, sig_digits)
+def _create_formater_array(n, s, digits):
+    """Create an array of _FormaterElements."""
+    if np.isscalar(n):
+        return _FormaterElement(n, s, digits)
+    else:
+        return [_create_formater_array(ni, si, digits) for ni, si in zip(n, s)]
 
 
 def same_unit(qfloat1, qfloat2, func=None):
@@ -433,11 +415,18 @@ class QFloat():
         return f'<QFloat at {i}>\n{self.__str__()}'
 
     def __str__(self):
-        s = _create_formater(self.nominal, self.std_dev, self._sig_digits)
         if np.isscalar(self.nominal):
-            s = f'{s} {self.unit}'
+            s = _format_qfloat(self.nominal, self.uncertainty, self.sig_digits)
+            s += f' {self.unit}'
         else:
-            s = np.array(s).__str__() + f' {self.unit}'
+            opt = np.get_printoptions()
+            a = _create_formater_array(self.nominal, self.uncertainty,
+                                       self.sig_digits)
+            s = np.array2string(np.array(a), separator=', ',
+                                max_line_width=opt['linewidth'],
+                                edgeitems=opt['edgeitems'],
+                                threshold=50)
+            s += f' unit={self.unit}'
         return s
 
     def __getitem__(self, index):

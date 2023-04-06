@@ -168,45 +168,84 @@ class Test_QFloat_InitAndSet:
 
 
 class Test_QFloat_Repr:
-    def test_qfloat_repr(self):
-        assert_equal(repr(QFloat(1.0, 0.1, 'm')), '<QFloat 1.0+-0.1 m>')
-        assert_equal(repr(QFloat(1, 0.1, 'm')), '<QFloat 1.0+-0.1 m>')
-        assert_equal(repr(QFloat(1, 0.01, 'm')), '<QFloat 1.00+-0.01 m>')
-        assert_equal(repr(QFloat(1.00, 0.01, 'm')), '<QFloat 1.00+-0.01 m>')
-        assert_equal(repr(QFloat(1.00, 0.012, 'm')), '<QFloat 1.00+-0.01 m>')
-        assert_equal(repr(QFloat(1.00, 0.016, 'm')), '<QFloat 1.00+-0.02 m>')
-        assert_equal(repr(QFloat(1.002, 0.016, 'm')), '<QFloat 1.00+-0.02 m>')
-        assert_equal(repr(QFloat(1.006, 0.016, 'm')), '<QFloat 1.01+-0.02 m>')
-        assert_equal(repr(QFloat(1.000005, 0.01, 'm')), '<QFloat 1.00+-0.01 m>')
-        assert_equal(repr(QFloat(9999, 1, 'm')), '<QFloat 9999+-1 m>')
-        assert_equal(repr(QFloat(9999, 10, 'm')), '<QFloat 10000+-10 m>')
+    def test_qfloat_repr_default(self):
+        for qf, rep in [(QFloat(1.0, 0.1, 'm'), '1.0+-0.1 m'),
+                        (QFloat(1.0, 0.01, 'm'), '1.00+-0.01 m'),
+                        (QFloat(1.00, 0.01, 'm'), '1.00+-0.01 m'),
+                        (QFloat(1.00, 0.012, 'm'), '1.00+-0.01 m'),
+                        (QFloat(1.00, 0.016, 'm'), '1.00+-0.02 m'),
+                        (QFloat(1.002, 0.016, 'm'), '1.00+-0.02 m'),
+                        (QFloat(1.006, 0.016, 'm'), '1.01+-0.02 m'),
+                        (QFloat(1.000005, 0.01, 'm'), '1.00+-0.01 m'),
+                        (QFloat(1.000005, 0.001, 'm'), '1.000+-0.001 m'),
+                        (QFloat(98, 0.98, 'm'), '98+-1 m'),
+                        (QFloat(98.7, 0.98, 'm'), '99+-1 m'),
+                        (QFloat(9999, 1, 'm'), '9999+-1 m'),
+                        (QFloat(9999, 10, 'm'), '10000+-10 m')]:
+            i = hex(id(qf))
+            assert_equal(repr(qf), f'<QFloat at {i}>\n{rep}')
+
+    def test_qfloat_repr_sig_digits(self):
+        for qf, rep in [(QFloat(1.0, 0.1, 'm'), '1.00+-0.10 m'),
+                        (QFloat(1.0, 0.01, 'm'), '1.000+-0.010 m'),
+                        (QFloat(1.00, 0.01, 'm'), '1.000+-0.010 m'),
+                        (QFloat(1.00, 0.012, 'm'), '1.000+-0.012 m'),
+                        (QFloat(1.00, 0.016, 'm'), '1.000+-0.016 m'),
+                        (QFloat(1.002, 0.016, 'm'), '1.002+-0.016 m'),
+                        (QFloat(1.006, 0.016, 'm'), '1.006+-0.016 m'),
+                        (QFloat(1.000005, 0.01, 'm'), '1.000+-0.010 m'),
+                        (QFloat(1.000005, 0.001, 'm'), '1.0000+-0.0010 m'),
+                        (QFloat(9999, 1, 'm'), '9999.0+-1.0 m'),
+                        (QFloat(9999, 10, 'm'), '9999+-10 m')]:
+            qf.sig_digits = 2
+            i = hex(id(qf))
+            assert_equal(repr(qf), f'<QFloat at {i}>\n{rep}')
 
     def test_qfloat_repr_array(self):
         n = np.array([1, 1, 1, 1.01, 1.001, 1.006])
         s = np.array([0.1, 0.01, 1.0, 0.01, 0.01, 0.01])
-        assert_equal(repr(QFloat(n, s, 'm')),
-                     '<QFloat\narray([1.0+-0.1, 1.00+-0.01, 1+-1, 1.01+-0.01,'
-                     ' 1.00+-0.01, 1.01+-0.01],\n      dtype=object)\nunit=m>')
-
-        qf = QFloat([1, 2, 3, 4, 5], [0.1, 0.2, 0.3, 0.4, 0.5], 'm')
+        qf = QFloat(n, s, 'm')
+        i = hex(id(qf))
         assert_equal(repr(qf),
-                     '<QFloat\narray([1.0+-0.1, 2.0+-0.2, 3.0+-0.3, 4.0+-0.4, 5.0'
-                     '+-0.5], dtype=object)\nunit=m>')
+                     f'<QFloat at {i}>\n'
+                     '[1.0+-0.1, 1.00+-0.01, 1+-1, 1.01+-0.01, '
+                     '1.00+-0.01, 1.01+-0.01] unit=m')
 
-        # very large array
-        n = np.arange(0, 10000).reshape((100, 100))
+        # 1D very large array
+        qf = QFloat(np.arange(1, 601), np.arange(1, 601)*0.01, 'm')
+        i = hex(id(qf))
+        assert_equal(repr(qf),
+                     f'<QFloat at {i}>\n'
+                     '[1.00+-0.01, 2.00+-0.02, 3.00+-0.03, ..., 598+-6, '
+                     '599+-6, 600+-6] unit=m')
+
+        # very large 2D array
+        n = np.arange(1, 10001).reshape((100, 100))
         s = n*0.01
         qf = QFloat(n, s, 's')
+        i = hex(id(qf))
         assert_equal(repr(qf),
-                     '<QFloat\narray([[0.0+-0.0, 1.00+-0.01, 2.00+-0.02, ..., 97+-1'
-                     ', 98+-1, 99+-1],\n       [100+-1, 101+-1, 102+-1, ..., 197+'
-                     '-2, 198+-2, 199+-2],\n       [200+-2, 201+-2, 202+-2, ..., '
-                     '297+-3, 298+-3, 299+-3],\n       ...,\n       [9700+-100, 9'
-                     '700+-100, 9700+-100, ..., 9800+-100, 9800+-100,\n        98'
-                     '00+-100],\n       [9800+-100, 9800+-100, 9800+-100, ..., 99'
-                     '00+-100, 9900+-100,\n        9900+-100],\n       [9900+-100'
-                     ', 9900+-100, 9900+-100, ..., 10000+-100, 10000+-100,\n     '
-                     '   10000+-100]], dtype=object)\nunit=s>')
+                     f'<QFloat at {i}>\n'
+                     '[[1.00+-0.01, 2.00+-0.02, 3.00+-0.03, ..., 98+-1, 99+-1,'
+                     ' 100+-1],\n [101+-1, 102+-1, 103+-1, ..., 198+-2, '
+                     '199+-2, 200+-2],\n [201+-2, 202+-2, 203+-2, ..., '
+                     '298+-3, 299+-3, 300+-3],\n ...,\n [9700+-100, 9700+-100,'
+                     ' 9700+-100, ..., 9800+-100, 9800+-100, 9800+-100],\n'
+                     ' [9800+-100, 9800+-100, 9800+-100, ..., 9900+-100, '
+                     '9900+-100, 9900+-100],\n [9900+-100, 9900+-100, '
+                     '9900+-100, ..., 10000+-100, 10000+-100,\n  10000+-100]] '
+                     'unit=s')
+
+    def test_qfloat_repr_array_sig_digits(self):
+        n = np.array([1, 1, 1, 1.01, 1.001, 1.006])
+        s = np.array([0.12, 0.018, 1.08, 0.0126, 0.01, 0.01])
+        qf = QFloat(n, s, 'm')
+        i = hex(id(qf))
+        qf.sig_digits = 2
+        assert_equal(repr(qf),
+                     f'<QFloat at {i}>\n'
+                     '[1.00+-0.12, 1.000+-0.018, 1.0+-1.1, 1.010+-0.013, '
+                     '1.001+-0.010,\n 1.006+-0.010] unit=m')
 
 
 class Test_QFloat_Operators:
