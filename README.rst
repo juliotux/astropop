@@ -112,7 +112,7 @@ or
    cd astropop
    pip install -U .
 
-Citating
+Citing
 ^^^^^^^^
 
 |ADS|  |PASP|  |arXiv|  |ASCL|
