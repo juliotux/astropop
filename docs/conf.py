@@ -30,6 +30,10 @@ nbsphinx_allow_errors = True
 nbsphinx_execute = 'never'
 nbsphinx_kernel_name = 'python3'
 
+plot_html_show_source_link = False
+plot_include_source = False
+plot_html_show_formats = False
+
 todo_include_todos = True
 
 numpydoc_show_class_members = False

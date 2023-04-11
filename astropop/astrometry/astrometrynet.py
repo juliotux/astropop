@@ -807,7 +807,7 @@ def solve_astrometry_framedata(frame, options=None, command=None,
         Astrometric solution ot the field.
     """
     f = NamedTemporaryFile(suffix='.fits')
-    frame.write(f.name)
+    frame.write(f.name, no_fits_standard_units=True)
     options = options or {}
     solver = AstrometrySolver(solve_field=command)
     return solver.solve_field(f.name, options=options, **kwargs)

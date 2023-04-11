@@ -1,4 +1,1 @@
-comment:
-  layout: "reach,diff,flags,files,footer"
-  behavior: new
-  require_changes: no
+comment: false

@@ -265,7 +265,7 @@ def _to_hdu(frame, hdu_uncertainty=_HDU_UNCERT, hdu_mask=_HDU_MASK,
 
     # Clean header
     header = fits.Header(frame.header)
-    no_fits_std = kwargs.pop('no_fits_standard_units', False)
+    no_fits_std = kwargs.pop('no_fits_standard_units', True)
 
     if frame.wcs is not None:
         header.extend(frame.wcs.to_header(relax=wcs_relax),

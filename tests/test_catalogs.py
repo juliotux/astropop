@@ -35,59 +35,85 @@ class Test_SourcesCatalog_Conformance:
         c = SourcesCatalog('1d 2d', ids=['Test'])
         assert_equal(c.sources_id()[0], 'Test')
         assert_almost_equal(c.ra_dec_list(), [(1, 2)])
+        assert_almost_equal(c.ra(), 1)
+        assert_almost_equal(c.dec(), 2)
 
         c = SourcesCatalog('1d', '2d', ids=['Test'])
         assert_equal(c.sources_id()[0], 'Test')
         assert_almost_equal(c.ra_dec_list(), [(1, 2)])
+        assert_almost_equal(c.ra(), 1)
+        assert_almost_equal(c.dec(), 2)
 
         c = SourcesCatalog('1d0m0s 2d0m0s', ids=['Test'])
         assert_equal(c.sources_id()[0], 'Test')
         assert_almost_equal(c.ra_dec_list(), [(1, 2)])
+        assert_almost_equal(c.ra(), 1)
+        assert_almost_equal(c.dec(), 2)
 
         c = SourcesCatalog('1d0m0s', '2d0m0s', ids=['Test'])
         assert_equal(c.sources_id()[0], 'Test')
         assert_almost_equal(c.ra_dec_list(), [(1, 2)])
+        assert_almost_equal(c.ra(), 1)
+        assert_almost_equal(c.dec(), 2)
 
         c = SourcesCatalog('1h 2d', ids=['Test'])
         assert_equal(c.sources_id()[0], 'Test')
         assert_almost_equal(c.ra_dec_list(), [(15, 2)])
+        assert_almost_equal(c.ra(), 15)
+        assert_almost_equal(c.dec(), 2)
 
         c = SourcesCatalog('1h', '2d', ids=['Test'])
         assert_equal(c.sources_id()[0], 'Test')
         assert_almost_equal(c.ra_dec_list(), [(15, 2)])
+        assert_almost_equal(c.ra(), 15)
+        assert_almost_equal(c.dec(), 2)
 
         c = SourcesCatalog('1h0m0s 2d0m0s', ids=['Test'])
         assert_equal(c.sources_id()[0], 'Test')
         assert_almost_equal(c.ra_dec_list(), [(15, 2)])
+        assert_almost_equal(c.ra(), 15)
+        assert_almost_equal(c.dec(), 2)
 
         c = SourcesCatalog('1h0m0s', '2d0m0s', ids=['Test'])
         assert_equal(c.sources_id()[0], 'Test')
         assert_almost_equal(c.ra_dec_list(), [(15, 2)])
+        assert_almost_equal(c.ra(), 15)
+        assert_almost_equal(c.dec(), 2)
 
         c = SourcesCatalog('1 00 00 +2 00 00', unit=(u.hour, u.degree),
                            ids=['Test'])
         assert_equal(c.sources_id()[0], 'Test')
         assert_almost_equal(c.ra_dec_list(), [(15, 2)])
+        assert_almost_equal(c.ra(), 15)
+        assert_almost_equal(c.dec(), 2)
 
         c = SourcesCatalog('1 00 00', '+2 00 00', unit=(u.hour, u.degree),
                            ids=['Test'])
         assert_equal(c.sources_id()[0], 'Test')
         assert_almost_equal(c.ra_dec_list(), [(15, 2)])
+        assert_almost_equal(c.ra(), 15)
+        assert_almost_equal(c.dec(), 2)
 
         c = SourcesCatalog('1 00 00 +2 00 00', unit=u.degree,
                            ids=['Test'])
         assert_equal(c.sources_id()[0], 'Test')
         assert_almost_equal(c.ra_dec_list(), [(1, 2)])
+        assert_almost_equal(c.ra(), 1)
+        assert_almost_equal(c.dec(), 2)
 
         c = SourcesCatalog('1 00 00', '+2 00 00', unit=u.degree,
                            ids=['Test'])
         assert_equal(c.sources_id()[0], 'Test')
         assert_almost_equal(c.ra_dec_list(), [(1, 2)])
+        assert_almost_equal(c.ra(), 1)
+        assert_almost_equal(c.dec(), 2)
 
         sk = SkyCoord('1 00 00', '+2 00 00', unit=(u.hour, u.degree))
         c = SourcesCatalog(sk, ids=['Test'])
         assert_equal(c.sources_id()[0], 'Test')
         assert_almost_equal(c.ra_dec_list(), [(15, 2)])
+        assert_almost_equal(c.ra(), 15)
+        assert_almost_equal(c.dec(), 2)
 
     def test_sourcescatalog_property_types(self):
         s = SourcesCatalog(ids=sources['id'],
@@ -106,6 +132,10 @@ class Test_SourcesCatalog_Conformance:
         assert_equal(s.ra_dec_list().shape, (len(s), 2))
         assert_is_instance(s.mag_list('V'), np.ndarray)
         assert_equal(s.mag_list('V').shape, (len(s), 2))
+        assert_is_instance(s.ra(), np.ndarray)
+        assert_equal(s.ra().shape, (len(s),))
+        assert_is_instance(s.dec(), np.ndarray)
+        assert_equal(s.dec().shape, (len(s),))
 
     def test_sourcescatalog_table(self):
         s = SourcesCatalog(ids=sources['id'],
