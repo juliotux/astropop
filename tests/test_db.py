@@ -263,7 +263,7 @@ class Test_SQLDatabase_Creation_Modify:
         db = SQLDatabase(':memory:')
         db.add_table('test')
         db.add_rows('test', {f'col{i}': np.arange(10) for i in range(128)},
-                     add_columns=True)
+                    add_columns=True)
         assert_equal(db.column_names('test'), [f'col{i}' for i in range(128)])
 
         for i, v in enumerate(db.select('test')):
@@ -652,7 +652,6 @@ class Test_SQLDatabase_PropsComms:
 
         a = db.select('test', order='b', where='a < 15')
         assert_equal(a, [(14, 25), (13, 26), (12, 27), (11, 28), (10, 29)])
-
 
         a = db.select('test', order='b', where='a < 15', limit=3)
         assert_equal(a, [(14, 25), (13, 26), (12, 27)])
@@ -1408,6 +1407,7 @@ class Test_SQLColumn:
         column[[2, 4]] = 2
         assert_equal(db.get_column('test', 'a').values, [-1, -1, 2, -1, 2,
                                                          -1, -1, -1, -1, -1])
+
     def test_column_setitem_invalid(self):
         db = self.db
         table = db['test']

@@ -130,7 +130,7 @@ class Test_FitsFileGroup():
         assert_equal(len(fg), 30)
         assert_equal(sorted(fg.files), sorted(flist['fits']))
 
-        #Default is False
+        # Default is False
         fg = FitsFileGroup(location=tmpdir/'fits')
         assert_is_instance(fg, FitsFileGroup)
         assert_equal(len(fg), 30)
