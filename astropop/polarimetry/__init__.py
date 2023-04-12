@@ -303,11 +303,12 @@ class StokesParameters:
                     'p': sigma_p}
 
     def __repr__(self):
-        s = object.__repr__(self) + '\n'
-        s += f'q={self.q} '
-        s += f', u={self.u}'
+        return object.__repr__(self) + '\n' + str(self)
+
+    def __str__(self):
+        s = f'q={self.q}, u={self.u}'
         if self.v is not None:
-            s += f' , v={self.v}'
+            s += f', v={self.v}'
         return s
 
 
