@@ -303,12 +303,12 @@ class StokesParameters:
                     'p': sigma_p}
 
     def __repr__(self):
-        # TODO: fix with significant algarisms after implement it in QFloat
-        s = object.__repr__(self) + '\n'
-        s += f'q={self.q.nominal}+-{self.q.std_dev} '
-        s += f', u={self.u.nominal}+-{self.u.std_dev}'
+        return object.__repr__(self) + '\n' + str(self)
+
+    def __str__(self):
+        s = f'q={self.q}, u={self.u}'
         if self.v is not None:
-            s += f' , v={self.v.nominal}+-{self.v.std_dev}'
+            s += f', v={self.v}'
         return s
 
 
