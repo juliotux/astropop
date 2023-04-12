@@ -417,7 +417,6 @@ class QFloat():
     def __str__(self):
         if np.isscalar(self.nominal):
             s = _format_qfloat(self.nominal, self.uncertainty, self.sig_digits)
-            s += f' {self.unit}'
         else:
             opt = np.get_printoptions()
             a = _create_formater_array(self.nominal, self.uncertainty,
@@ -426,7 +425,12 @@ class QFloat():
                                 max_line_width=opt['linewidth'],
                                 edgeitems=opt['edgeitems'],
                                 threshold=50)
-            s += f' unit={self.unit}'
+        if self.unit != units.dimensionless_unscaled:
+            if not np.isscalar(self.nominal):
+                s += ' unit='
+            else:
+                s += ' '
+            s += f'{self.unit}'
         return s
 
     def __getitem__(self, index):

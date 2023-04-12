@@ -261,6 +261,31 @@ class Test_QFloat_Repr:
                      '[1.00+-0.12, 1.000+-0.018, 1.0+-1.1, 1.010+-0.013, '
                      '1.001+-0.010,\n 1.006+-0.010] unit=m')
 
+    def test_qfloat_str_no_unit(self):
+        qf = QFloat(1.0, 0.1)
+        # must not have space after uncertainty
+        assert_equal(str(qf), '1.0+-0.1')
+
+    def test_qfloat_str(self):
+        qf = QFloat(1.0, 0.1, 'm')
+        assert_equal(str(qf), '1.0+-0.1 m')
+
+    def test_qfloat_str_array(self):
+        n = np.array([1, 1, 1, 1.01, 1.001, 1.006])
+        s = np.array([0.1, 0.01, 1.0, 0.01, 0.01, 0.01])
+        qf = QFloat(n, s, 'm')
+        assert_equal(str(qf),
+                     '[1.0+-0.1, 1.00+-0.01, 1+-1, 1.01+-0.01, 1.00+-0.01, '
+                     '1.01+-0.01] unit=m')
+
+    def test_qfloat_str_array_no_unit(self):
+        n = np.array([1, 1, 1, 1.01, 1.001, 1.006])
+        s = np.array([0.1, 0.01, 1.0, 0.01, 0.01, 0.01])
+        qf = QFloat(n, s)
+        assert_equal(str(qf),
+                     '[1.0+-0.1, 1.00+-0.01, 1+-1, 1.01+-0.01, 1.00+-0.01, '
+                     '1.01+-0.01]')
+
 
 class Test_QFloat_Operators:
     def test_qfloat_properties_getset(self):
