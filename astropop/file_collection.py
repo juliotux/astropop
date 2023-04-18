@@ -189,7 +189,21 @@ class FitsFileGroup():
         return len(self._table)
 
     def filtered(self, keywords):
-        """Create a new FitsFileGroup with only filtered files."""
+        """Create a new FitsFileGroup with only filtered files.
+
+        Parameters
+        ----------
+        keywords : dict
+            Dictionary with the keywords to be used to filter the files.
+            The keys are the column names and the values are the values
+            to be used to filter the files.
+
+        Returns
+        -------
+        FitsFileGroup
+            A new FitsFileGroup with only the files that match the
+            keywords.
+        """
         try:
             indexes = self._table.select(columns=[_ID_KEY],
                                          where=keywords)
@@ -201,7 +215,19 @@ class FitsFileGroup():
         return self.__copy__(indexes)
 
     def group_by(self, keywords):
-        """Create FitsFileGroups grouped by keywords."""
+        """Create FitsFileGroups grouped by keywords.
+
+        Parameters
+        ----------
+        keywords : list
+            List of column names to be used to group the files.
+
+        Yields
+        ------
+        FitsFileGroup
+            A new FitsFileGroup with only the files that match the
+            keywords.
+        """
         summary = self.summary
         id_key = 'id'
         while id_key in summary.colnames:
