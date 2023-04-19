@@ -1,5 +1,7 @@
 .. include:: ../references.txt
 
+
+
 Fits File Collections
 =====================
 
@@ -7,7 +9,7 @@ Manage and organize FITS files, specially when working with large databases and 
 
 The basis of this is the |FitsFileGroup| class. It reads FITS files from a folder or a list, and creates a database containing their headers. So, you can easily access the headers and filter files based on their header keywords. This class is also useful to create summaries of the files headers.
 
-This module is mainly designed to work like :class:`ccdproc.ImageFileCollection`, but its main difference is to work with sqlite databases internally, and the hability to work with persistent headers databases. This may speedup some workflows, specially when working with large databases and compressed files, when headers reading can be very slow.
+This module is mainly designed to work like `~ccdproc.ImageFileCollection`, but its main difference is to work with sqlite databases internally, and the hability to work with persistent headers databases. This may speedup some workflows, specially when working with large databases and compressed files, when headers reading can be very slow.
 
 .. note::
 
@@ -69,18 +71,147 @@ Optional keywords also exist to improve the class behavior. The most important a
     In [8]: ffg = FitsFileGroup(location='/path/to/data', glob_exclude='BIAS*')
 
 
-Files Summary
--------------
+Files Summary and Header Keyword Values
+---------------------------------------
 
-Once the files are read, all headers are stored internally in a database. But a |Table| containing all the headers can be accessed using the :attr:`FitsFileGroup.summary` attribute. This table is a copy of the internal database, so modifying it will not affect the database or the filegroup itself.
+Once the files are read, all headers are stored internally in a database. But a |Table| containing all the headers can be accessed using the `~astropop.file_colletcion.FitsFileGroup.summary` attribute. This table is a copy of the internal database, so modifying it will not affect the database or the filegroup itself.
+
+.. ipython::
+    :verbatim:
+
+    In [9]: ffg.summary
+    Out[9]:
+    <Table length=3>
+    FILENAME  EXPTIME  FILTER  OBJECT
+    bytes256 float64  bytes8  bytes8
+    -------- -------- ------- -------
+    file1.fits     1.0     R     star1
+    file2.fits     2.0     G     star2
+    file3.fits     3.0     R     star3
+
+
+Also, a full list of the files can be accessed using the `~astropop.file_colletcion.FitsFileGroup.files` attribute.
+
+.. ipython::
+    :verbatim:
+
+    In [10]: ffg.files
+    Out[10]:
+    ['/path/to/data/file1.fits',
+     '/path/to/data/file2.fits',
+     '/path/to/data/file3.fits']
+
+You can also get a list of the values of a given header keyword using the `~astropop.file_colletcion.FitsFileGroup.values` method. This method returns a list of the values of the given keyword, in the same order as the files in the `~astropop.file_colletcion.FitsFileGroup.files` attribute. If ``unique`` is set to True, only unique values are returned and the order is not guaranteed.
+
+.. ipython::
+    :verbatim:
+
+    In [11]: ffg.values('FILTER')
+    Out[11]: ['R', 'G', 'R']
+
+    In [12]: ffg.values('FILTER', unique=True)
+    Out[12]: ['R', 'G']
 
 
 Adding or Removing Files
 ------------------------
 
+Adding or removing files to the group is done using the `~astropop.file_colletcion.FitsFileGroup.add_file` and `~astropop.file_colletcion.FitsFileGroup.remove_files` methods.
 
-Filtering Files
----------------
+To add a file, use `~astropop.file_colletcion.FitsFileGroup.add_file`. Its only argument is ``file`` to set the file name. Prefer using full (absolute) paths for the file name in this function.
+
+.. ipython::
+    :verbatim:
+
+    In [13]: ffg.add_file('/path/to/data/file4.fits')
+
+    In [14]: ffg.files
+    Out[14]:
+    ['/path/to/data/file1.fits',
+     '/path/to/data/file2.fits',
+     '/path/to/data/file3.fits',
+     '/path/to/data/file4.fits']
+
+For remove a file, the `~astropop.file_colletcion.FitsFileGroup.remove_files` accepts a file name with absolute path, or a path relative to the filegroup location. Prefere using absolute paths for the file name in this function too.
+
+.. ipython::
+    :verbatim:
+
+    In [15]: ffg.remove_files('/path/to/data/file4.fits')
+
+    In [16]: ffg.files
+    Out[16]:
+    ['/path/to/data/file1.fits',
+     '/path/to/data/file2.fits',
+     '/path/to/data/file3.fits']
+
+    In [17]: ffg.remove_files('file1.fits')
+
+    In [18]: ffg.files
+    Out[18]:
+    ['/path/to/data/file2.fits',
+     '/path/to/data/file3.fits']
+
+Adding a Custom Column
+----------------------
+
+It is also possible to add a custom column to the database and use it to filter the files. However, as the |FitsFileGroup| is designed to do not change the files, this column/keyword will not be added to the headers in the files. To do this, use the `~astropop.file_colletcion.FitsFileGroup.add_column` method. This method accepts two arguments: ``name`` to set the column name and ``values`` to set the values of the column. The values must be a list with the same length as the number of files in the filegroup.
+
+.. ipython::
+    :verbatim:
+
+    In [19]: ffg.add_column('CUSTOM', [1, 2, 3])
+
+    In [20]: ffg.summary
+    Out[20]:
+    <Table length=3>
+    FILENAME  EXPTIME  FILTER  OBJECT  CUSTOM
+    bytes256 float64  bytes8  bytes8  int64
+    -------- -------- ------- ------- ------
+    file1.fits     1.0     R     star1      1
+    file2.fits     2.0     G     star2      2
+    file3.fits     3.0     R     star3      3
+
+    In [21]: ffg.values('CUSTOM')
+    Out[21]: [1, 2, 3]
+
+Filtering and Grouping Files
+----------------------------
+
+The main usage of |FitsFileGroup| is to filter, sort and organize FITS files. There are two ways to organize this files: filtering by certaing keyword values or grouping the files by certain keywords. Both return a new |FitsFileGroup| object.
+
+Filtering by Keyword Values
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The method `~astropop.file_colletcion.FitsFileGroup.filtered` receives a dictionary with the keywords and values to filter the files. So, a new |FitsFileGroup| will be created with only the matched files for all the keywords.
+
+.. ipython::
+    :verbatim:
+
+    In [22]: ffg_filtered = ffg.filtered({'FILTER': 'R', 'EXPTIME': 1.0})
+
+    In [23]: ffg_filtered.files
+    Out[23]: ['/path/to/data/file1.fits']
+
+    In [24]: ffg_filtered.summary
+    Out[24]:
+    <Table length=1>
+    FILENAME  EXPTIME  FILTER  OBJECT  CUSTOM
+    bytes256 float64  bytes8  bytes8  int64
+    -------- -------- ------- ------- ------
+    file1.fits     1.0     R     star1      1
+
+    In [25]: ffg_filtered = ffg.filtered({'FILTER': 'R', 'EXPTIME': 2.0})
+
+    In [26]: ffg_filtered.files
+    Out[26]: []
+
+    In [27]: ffg_filtered.summary
+    Out[27]: <Table length=0>
+
+Grouping Files by Keyword Values
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 
 Iterators
@@ -88,8 +219,8 @@ Iterators
 
 
 
-File Collections API
---------------------
+File Collection API
+-------------------
 
 .. automodapi:: astropop.file_collection
     :no-inheritance-diagram:
