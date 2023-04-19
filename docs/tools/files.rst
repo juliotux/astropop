@@ -209,13 +209,61 @@ The method `~astropop.file_colletcion.FitsFileGroup.filtered` receives a diction
     In [27]: ffg_filtered.summary
     Out[27]: <Table length=0>
 
-Grouping Files by Keyword Values
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Grouping Files
+~~~~~~~~~~~~~~
 
+If you want to not only generate a group of files from a single set of keyword valeus, but instead generate multiple groups of files that have the same values in a set of keywords, you can use the `~astropop.file_colletcion.FitsFileGroup.grouped_by` method. This method `yeilds <https://docs.python.org/3/reference/expressions.html#yield-expressions>`_ a new |FitsFileGroup| object for each group of files.
 
+.. Note::
+
+  Since it returns a generator, you must iterate over it to get the groups, like using ``for`` loop.
+
+.. ipython::
+  :verbatim:
+
+  In [28]: ffg.summary
+  Out[28]:
+  <Table length=6>
+  FILENAME    EXPTIME  FILTER  OBJECT CUSTOM
+  bytes256    float64  bytes8  bytes8  int64
+  --------   -------- ------- ------- ------
+  file1.fits      1.0    R     star1      1
+  file2.fits      2.0    G     star2      1
+  file3.fits      3.0    R     star3      1
+  file4.fits      1.0    R     star1      2
+  file5.fits      2.0    G     star2      2
+  file6.fits      3.0    R     star3      2
+
+  In [29]: for group in ffg.grouped_by(['FILTER']):
+      ...:     print(f'filter {group.values("FILTER")[0]}')
+      ...:     print(f'images {len(group)}')
+      ...:     print(group.summary)
+      ...:     print('-----------------------------------------')
+      ...:
+  filter R
+  images 4
+  <Table length=4>
+  FILENAME    EXPTIME  FILTER  OBJECT CUSTOM
+  bytes256    float64  bytes8  bytes8  int64
+  --------   -------- ------- ------- ------
+  file1.fits      1.0    R     star1      1
+  file3.fits      3.0    R     star3      1
+  file4.fits      1.0    R     star1      2
+  file6.fits      3.0    R     star3      2
+  -----------------------------------------
+  filter G
+  images 2
+  <Table length=2>
+  FILENAME    EXPTIME  FILTER  OBJECT CUSTOM
+  bytes256    float64  bytes8  bytes8  int64
+  --------   -------- ------- ------- ------
+  file2.fits      2.0    G     star2      1
+  file5.fits      2.0    G     star2      2
+  -----------------------------------------
 
 Iterators
 ---------
+
 
 
 

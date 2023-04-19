@@ -262,7 +262,17 @@ class FitsFileGroup():
     def values(self, keyword, unique=False):
         """Return the values of a keyword in the summary.
 
-        If unique, only unique values returned.
+        Parameters
+        ----------
+        keyword : str
+            Name of the keyword to be used to filter the files.
+        unique : bool, optional
+            If unique, only unique values returned.
+
+        Returns
+        -------
+        list
+            List of values for the keyword.
         """
         vals = self._table[keyword].values
         if unique:
@@ -270,11 +280,27 @@ class FitsFileGroup():
         return vals
 
     def add_column(self, name, values=None):
-        """Add a new column to the summary."""
+        """Add a new column to the summary.
+
+        Parameters
+        ----------
+        name : str
+            Name of the column.
+        values : list, optional
+            List of values for the column. If None, the column is
+            initialized with null values.
+        """
         self._table.add_column(name, data=values)
 
     def add_file(self, file):
-        """Add a new file to the group."""
+        """Add a new file to the group.
+
+        Parameters
+        ----------
+        file : str
+            File name with absolute path or relative to the filegroup
+            location.
+        """
         header = fits.open(file)[self._ext].header
         logger.debug('reading file %s', file)
         file = self.relative_path(file)
