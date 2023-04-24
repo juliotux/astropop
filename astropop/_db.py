@@ -1059,17 +1059,8 @@ class SQLDatabase:
                 return self.select(table)
             if len(indx) == 0:
                 return None
-            if len(indx) >= 10000:
-                # too many rows must be divided
-                indx = np.array_split(indx, np.ceil(len(indx)/10000))
-                d = None
-                for i in indx:
-                    if d is None:
-                        d = _get_data(table, i)
-                    else:
-                        np.vstack([d, _get_data(table, i)])
-                return d
-            where = " OR ".join(f"{_ID_KEY}={v+1}" for v in indx)
+            indx = np.array(np.array(indx, dtype=int)+1, dtype=str)
+            where = f"{_ID_KEY} in ({','.join(indx)})"
             return self.select(table, where=where)
 
         # when copying, always copy to memory

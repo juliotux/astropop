@@ -411,6 +411,34 @@ class Test_SQLDatabase_Creation_Modify:
         assert_equal(db2.get_column('test', 'a').values, [23, 49, 61, 65])
         assert_equal(db2.get_column('test', 'b').values, [24, 50, 62, 66])
 
+    def test_sql_copy_more_than_1000(self):
+        db = SQLDatabase(':memory:')
+        db.add_table('test')
+        db.add_column('test', 'a', np.arange(1, 5001, 1))
+        db.add_column('test', 'b', np.arange(2, 5002, 1))
+
+        db2 = db.copy()
+        assert_equal(db2.table_names, ['test'])
+        assert_equal(db2.column_names('test'), ['a', 'b'])
+        assert_equal(db2.get_column('test', 'a').values,
+                     np.arange(1, 5001, 1))
+        assert_equal(db2.get_column('test', 'b').values,
+                     np.arange(2, 5002, 1))
+
+    def test_sql_copy_more_than_1000_indexes(self):
+        db = SQLDatabase(':memory:')
+        db.add_table('test')
+        db.add_column('test', 'a', np.arange(1, 5001, 1))
+        db.add_column('test', 'b', np.arange(2, 5002, 1))
+
+        db2 = db.copy(indexes={'test': np.arange(1000, 2500, 1)})
+        assert_equal(db2.table_names, ['test'])
+        assert_equal(db2.column_names('test'), ['a', 'b'])
+        assert_equal(db2.get_column('test', 'a').values,
+                     np.arange(1001, 2501, 1))
+        assert_equal(db2.get_column('test', 'b').values,
+                     np.arange(1002, 2502, 1))
+
     def test_sql_delete_row(self):
         db = SQLDatabase(':memory:')
         db.add_table('test')
