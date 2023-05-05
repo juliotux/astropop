@@ -16,7 +16,7 @@ from .framedata import check_framedata
 from .py_utils import check_iterable
 from .logger import logger
 
-__all__ = ['list_fits_files', 'FitsFileGroup']
+__all__ = ['FitsFileGroup']
 
 
 def list_fits_files(location, fits_extensions=None,
@@ -60,14 +60,46 @@ _columns_col = 'column'
 
 
 class FitsFileGroup():
-    """Easy handle groups of fits files."""
+    """Easy handle groups of fits files.
+
+    Parameters
+    ----------
+    location : str, optional
+        Location of the fits files. If not specified, the files must be
+        specified in the files parameter.
+    files : list, optional
+        List of files to be included in the group. If not specified, the
+        location parameter must be specified.
+    ext : int, optional
+        FITS extension to be used. Default is 0.
+    compression : bool, optional
+        If True, add compression file name extensions to the list of
+        extensions to be searched. Default is False.
+    database : str, optional
+        SQLite database to be used to store the information. Default is
+        ':memory:', which means that the database will be stored in memory.
+    glob_include : str, optional
+        Glob pattern to include files. Default is None.
+    glob_exclude : str, optional
+        Glob pattern to exclude files. Default is None.
+    fits_ext : str, optional
+        FITS file name extension to be used. Default is None, wich means
+        that the default extensions will be used.
+    show_progress_bar : bool, optional
+        If True, show a progress bar while reading the files. Default is
+        False. Requires ``tqdm`` module. May not be compatible with every mod.
+    """
 
     def __init__(self, location=None, files=None, ext=0,
                  compression=False, database=':memory:', **kwargs):
         self._ext = ext
-        self._extensions = kwargs.get('fits_ext', None)
-        self._include = kwargs.get('glob_include')
-        self._exclude = kwargs.get('glob_exclude')
+        self._extensions = kwargs.pop('fits_ext', None)
+        self._include = kwargs.pop('glob_include', None)
+        self._exclude = kwargs.pop('glob_exclude', None)
+        self._progress = kwargs.pop('show_progress_bar', False)
+
+        for i in kwargs.keys():
+            raise ValueError('Unknown parameter: {}'.format(i))
 
         self._db = SQLDatabase(database)
         if database == ':memory:':
@@ -132,7 +164,7 @@ class FitsFileGroup():
     @property
     def files(self):
         """List files in the group."""
-        return [self.full_path(i) for i in range(len(self))]
+        return [self.full_path(i) for i in self.values(_files_col)]
 
     @property
     def summary(self):
@@ -157,7 +189,21 @@ class FitsFileGroup():
         return len(self._table)
 
     def filtered(self, keywords):
-        """Create a new FitsFileGroup with only filtered files."""
+        """Create a new FitsFileGroup with only filtered files.
+
+        Parameters
+        ----------
+        keywords : dict
+            Dictionary with the keywords to be used to filter the files.
+            The keys are the column names and the values are the values
+            to be used to filter the files.
+
+        Returns
+        -------
+        FitsFileGroup
+            A new FitsFileGroup with only the files that match the
+            keywords.
+        """
         try:
             indexes = self._table.select(columns=[_ID_KEY],
                                          where=keywords)
@@ -169,7 +215,19 @@ class FitsFileGroup():
         return self.__copy__(indexes)
 
     def group_by(self, keywords):
-        """Create FitsFileGroups grouped by keywords."""
+        """Create FitsFileGroups grouped by keywords.
+
+        Parameters
+        ----------
+        keywords : list
+            List of column names to be used to group the files.
+
+        Yields
+        ------
+        FitsFileGroup
+            A new FitsFileGroup with only the files that match the
+            keywords.
+        """
         summary = self.summary
         id_key = 'id'
         while id_key in summary.colnames:
@@ -190,8 +248,11 @@ class FitsFileGroup():
         location = location or self._location
         compression = compression or self._compression
         files = self._list_files(files, location, compression)
-        for i, f in enumerate(files):
-            logger.info('reading file %i from %i: %s', i, len(files), f)
+        if self._progress:
+            from tqdm.contrib import tenumerate as enum
+        else:
+            enum = enumerate
+        for i, f in enum(files):
             try:
                 self.add_file(f)
             except Exception as e:
@@ -201,7 +262,17 @@ class FitsFileGroup():
     def values(self, keyword, unique=False):
         """Return the values of a keyword in the summary.
 
-        If unique, only unique values returned.
+        Parameters
+        ----------
+        keyword : str
+            Name of the keyword to be used to filter the files.
+        unique : bool, optional
+            If unique, only unique values returned.
+
+        Returns
+        -------
+        list
+            List of values for the keyword.
         """
         vals = self._table[keyword].values
         if unique:
@@ -209,20 +280,57 @@ class FitsFileGroup():
         return vals
 
     def add_column(self, name, values=None):
-        """Add a new column to the summary."""
+        """Add a new column to the summary.
+
+        Parameters
+        ----------
+        name : str
+            Name of the column.
+        values : list, optional
+            List of values for the column. If None, the column is
+            initialized with null values.
+        """
         self._table.add_column(name, data=values)
 
     def add_file(self, file):
-        """Add a new file to the group."""
+        """Add a new file to the group.
+
+        Parameters
+        ----------
+        file : str
+            File name with absolute path or relative to the filegroup
+            location.
+        """
         header = fits.open(file)[self._ext].header
         logger.debug('reading file %s', file)
         file = self.relative_path(file)
         hdr = {_files_col: file}
         hdr.update(dict(header))
+
+        # get rid of comments, history and empty keys
         hdr.pop('COMMENT', None)
         hdr.pop('HISTORY', None)
         hdr.pop('', None)
+
         self._table.add_rows(hdr, add_columns=True)
+
+    def remove_file(self, file):
+        """Remove a file from the group.
+
+        Parameters
+        ----------
+        file : str or int
+            If string, the file name with absolute path or relative to the
+            filegroup location. If int, the index of the file.
+        """
+        if isinstance(file, int):
+            index = file
+        else:
+            file = self.relative_path(file)
+            if file not in self._table[_files_col]:
+                raise ValueError(f'{file} file not in group')
+            index = self._table.index_of({_files_col: file})
+        self._table.delete_row(index)
 
     def full_path(self, file):
         """Get the full path of a file in the group.
@@ -240,7 +348,7 @@ class FitsFileGroup():
         if isinstance(file, int):
             file = self._table[_files_col][file]
         if self._db_dir is not None:
-            return os.path.join(self._db_dir, file)
+            return os.path.abspath(os.path.join(self._db_dir, file))
         return file
 
     def relative_path(self, file):

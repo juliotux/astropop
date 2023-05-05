@@ -2,6 +2,7 @@
 .. |AstrometricSolution| replace:: `~astropop.astrometry.AstrometricSolution`
 .. |AstrometrySolver| replace:: `~astropop.astrometry.AstrometrySolver`
 .. |FrameData| replace:: `~astropop.framedata.FrameData`
+.. |FitsFileGroup| replace:: `~astropop.file_collection.FitsFileGroup`
 .. |imarith| replace:: `~astropop.image.imarith.imarith`
 .. |imcombine| replace:: `~astropop.image.imcombine.imcombine`
 .. |ImCombiner| replace:: `~astropop.image.imcombine.ImCombiner`
