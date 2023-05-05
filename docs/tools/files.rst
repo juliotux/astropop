@@ -264,8 +264,74 @@ If you want to not only generate a group of files from a single set of keyword v
 Iterators
 ---------
 
+There are also methods for iterating over the files from a |FitsFileGroup|. All these methods are generators that create temporary objects, that are excluded at the end of each loop, so the memory used is just enough to store the current file. To use them, as any `Python generator <https://docs.python.org/3/howto/functional.html#iterators>`_, you can use it inside a ``for`` loop, use the `next` function to get the next file or create a list with them if you want to keep the objects in memory.
 
+- `~astropop.file_collection.FitsFileGroup.hdus`: Iterates over the files getting the selected hdu. Uses `~astropy.io.fits.open` and can accept any argument that `~astropy.io.fits.open` accepts.
 
+  .. ipython::
+    :verbatim:
+
+    In [30]: for hdu in ffg.hdus(ext=0):
+        ...:     print(hdu)
+        ...:
+    <astropy.io.fits.hdu.image.PrimaryHDU object at 0xabcdef123456>
+    <astropy.io.fits.hdu.image.PrimaryHDU object at 0x654321fedcba>
+    <astropy.io.fits.hdu.image.PrimaryHDU object at 0x123456789abc>
+
+- `~astropop.file_collection.FitsFileGroup.data`: Iterates over the files getting the selected hdu and returning the data. Uses `~astropy.io.fits.getdata` and can accept any argument that `~astropy.io.fits.getdata` accepts.
+
+  .. ipython::
+    :verbatim:
+
+    In [31]: for data in ffg.data(ext=0):
+        ...:     print(data)
+        ...:
+    [[1 2 3]
+     [4 5 6]
+     [7 8 9]]
+    [[1 2 3]
+     [4 5 6]
+     [7 8 9]]
+    [[1 2 3]
+     [4 5 6]
+     [7 8 9]]
+
+- `~astropop.file_collection.FitsFileGroup.headers`: Iterates over the files getting the selected hdu and returning the header. Uses `~astropy.io.fits.getheader` and can accept any argument that `~astropy.io.fits.getheader` accepts.
+
+  .. ipython::
+    :verbatim:
+
+    In [32]: for header in ffg.headers(ext=0):
+        ...:     print(header['FILTER'])
+        ...:
+    R
+    G
+    R
+
+- `~astropop.file_collection.FitsFileGroup.framedata`: Iterate over the files generating |FrameData| objects from them. Use any argument that `~astropop.framedata.util.read_framedata` method.
+
+  .. ipython::
+    :verbatim:
+
+    In [33]: for fd in ffg.framedata():
+        ...:     print(fd)
+        ...:
+    <FrameData object at 0xabcdef123456>
+    <FrameData object at 0x654321fedcba>
+    <FrameData object at 0x123456789abc>
+
+  .. Note::
+
+    If you want to to create a list of |FrameData| for a large number of files, you may fill all available memory. In this case, use ``use_memmap_backend=True`` that will create temporary `memmap <https://numpy.org/doc/stable/reference/generated/numpy.memmap.html>`_ files to store the data. By default, the files will be created on default system temporary directory. You can change this using the ``cache_folder`` argument.
+
+    .. ipython::
+      :verbatim:
+
+      In [34]: ffg.framedata(use_memmap_backend=True, cache_folder='/path/to/my/cache/folder')
+      Out[34]:
+      [<FrameData object at 0xabcdef123456>,
+       <FrameData object at 0x654321fedcba>,
+       <FrameData object at 0x123456789abc>]
 
 File Collection API
 -------------------
