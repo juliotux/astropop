@@ -563,6 +563,8 @@ class SLSDualBeamPolarimetry(_DualBeamPolarimetry):
         # fit the model
         (q, u), pcov = fitter(model, psi, zi.nominal, method='trf',
                               bounds=([-1, -1], [1, 1]))
+        logger.debug("Fitted Parameters [q, u]: %s", (q, u))
+        logger.debug("Covariance Matrix: %s", pcov)
         # Errors are the diagonal of the covariance matrix
         q_err, u_err = np.sqrt(np.diag(pcov))
 
@@ -586,6 +588,8 @@ class SLSDualBeamPolarimetry(_DualBeamPolarimetry):
         fitter = self._get_fitter(zi)
         params, pcov = fitter(model, psi, zi.nominal, method='trf',
                               bounds=bounds)
+        logger.debug("Fitted Parameters %s: %s", pnames, params)
+        logger.debug("Covariance Matrix: %s", pcov)
         stokes = {pnames[i]: QFloat(params[i], uncertainty=np.sqrt(pcov[i, i]))
                   for i in range(len(pnames))}
         if len(pnames) == 3:
