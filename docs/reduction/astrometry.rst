@@ -66,25 +66,16 @@ The `astrometry.net`_ outputs several files, including plots, but, considering t
 
 To manually build an |AstrometricSolution| container, you just need to pass the solved header and, optionally, the correspondences table.
 
-.. code-block:: python
+.. ipython:: python
 
-    >>> from astropop.astrometry import AstrometricSolution
-    >>> from astropy.utils.data import get_pkg_data_filename
-    >>> from astropy.io import fits
-    >>> fn = get_pkg_data_filename('data/j94f05bgq_flt.fits', package='astropy.wcs.tests')
-    >>> header = fits.open(fn)[1].header
-    >>> # Correspondeces is optional
-    >>> solution = AstrometricSolution(header)
-    >>> print(solution.wcs)
-    WCS Keywords
-
-    Number of WCS axes: 2
-    CTYPE : 'RA---TAN-SIP'  'DEC--TAN-SIP'
-    CRVAL : 5.63056810618  -72.05457184278998
-    CRPIX : 2048.0  1024.0
-    CD1_1 CD1_2  : 1.29056256197165e-05  5.95309123310338e-06
-    CD2_1 CD2_2  : 5.0220581265601e-06  -1.2644774105568e-05
-    NAXIS : 1  1
+    from astropop.astrometry import AstrometricSolution
+    from astropy.utils.data import get_pkg_data_filename
+    from astropy.io import fits
+    fn = get_pkg_data_filename('data/j94f05bgq_flt.fits', package='astropy.wcs.tests')
+    header = fits.open(fn)[1].header
+    # Correspondeces is optional
+    solution = AstrometricSolution(header)
+    print(solution.wcs)
 
 Class-like interface
 ~~~~~~~~~~~~~~~~~~~~
@@ -97,52 +88,78 @@ Its job is to organize the inputs, options and configuration files, prepare and 
 
 To run the command, you must create a instance of |AstrometrySolver| and execute it using |solve_field| method. The |solve_field| method has, as main input, a ``filename`` that can be solved by ``solve-field`` `astrometry.net`_ command. There are several types accepted, like FITS files, common images (like .png, .jpg), and XYLS tables. For more information see the `astrometry.net solving documentation <http://astrometry.net/doc/readme.html#solving>`_.
 
-.. code-block:: python
+.. ipython::
+    :verbatim:
 
-    >>> # get the sample image
-    >>> from astroquery.skyview import SkyView
-    >>> from astropy.coordinates import Angle
-    >>> filename = 'M20_test_file.fits'
-    >>> s = SkyView.get_images('M20', radius=Angle('60 arcmin'), pixels=2048, survey='DSS')
-    >>> s[0][0].writeto(filename)
-    >>>
-    >>> # Run the solution
-    >>> from astropop.astrometry import AstrometrySolver
-    >>> solver = AstrometrySolver()
-    >>> solution = solver.solve_field(filename, options={'radius': 5.0})
-    >>>
-    >>> print(solution.wcs)
+    # get the sample image
+    In [2]: from astroquery.skyview import SkyView
+
+    In [3]: from astropy.coordinates import Angle
+
+    In [4]: filename = 'M20_test_file.fits'
+
+    In [5]: s = SkyView.get_images('M20', radius=Angle('60 arcmin'),
+       ...:                        pixels=2048, survey='DSS')
+
+    In [6]: s[0][0].writeto(filename)
+
+    # Run the solution
+    In [8]: from astropop.astrometry import AstrometrySolver
+
+    In [9]: solver = AstrometrySolver()
+
+    In [10]: solution = solver.solve_field(filename,
+       ....:                               options={'radius': 5.0})
+    Out[10]: log messages appear here
+
+    In [11]: solution.wcs
+    Out[11]:
     WCS Keywords
-
     Number of WCS axes: 2
     CTYPE : 'RA---TAN-SIP'  'DEC--TAN-SIP'
-    CRVAL : 270.675234649  -22.9720453505
+    CRVAL : 270.675222111  -22.9719850171
     CRPIX : 1024.5  1024.5
-    CD1_1 CD1_2  : -0.000488288069836  2.96838082223e-08
-    CD2_1 CD2_2  : 1.75150512109e-08  0.000488229177557
+    CD1_1 CD1_2  : -0.000976549933759  1.01589915847e-08
+    CD2_1 CD2_2  : 7.53462015161e-08  0.00097650746147
     NAXIS : 0  0
-    >>> print(solution.correspondences)
+
+    In [12]: solution.correspondences
+    Out[12]:
+    <Table length=253>
          field_x            field_y       ...    FLUX   BACKGROUND
           pixels             pixels       ...  unknown   unknown
+         float64            float64       ...  float32   float32
     ------------------ ------------------ ... --------- ----------
-      1400.20947265625  1416.370361328125 ... 21305.764  1951.2363
-    1106.3133544921875  1160.568115234375 ... 20813.422  2697.5781
-     387.3028259277344  1855.506591796875 ...  21297.04  1875.9609
-     1469.943603515625     601.4697265625 ... 21262.012  1857.9883
+     45.64460754394531  1968.970458984375 ... 21437.375   1706.625
+    1065.0677490234375  1092.709228515625 ... 21186.135  2324.8652
+       705.81591796875 1440.1300048828125 ... 21338.012  1834.9883
+     1705.599365234375 158.44154357910156 ... 21252.873   1919.127
+     787.1795654296875  640.0123291015625 ... 21140.668   1873.332
+    1748.0179443359375  996.6746215820312 ... 20962.152  1870.8477
                    ...                ... ...       ...        ...
-     1852.060791015625   503.335693359375 ...  15150.66  1870.3398
-       822.42333984375    767.77783203125 ...  17838.34  1956.6602
-    1343.3946533203125 1702.3353271484375 ... 17147.498   1886.502
-    1180.2847900390625 408.33721923828125 ... 14450.781  1858.2188
-    Length = 65 rows
+    1808.2672119140625 265.38702392578125 ... 12775.386  1874.6143
+    241.27725219726562  670.1822509765625 ... 13805.926  1879.0742
+    1636.2926025390625 113.85559844970703 ... 12501.093  1906.9072
+      616.659423828125   44.4092903137207 ... 13424.324  1877.6758
+     587.6741943359375   186.121826171875 ...  12751.13  1899.8701
+     2021.401611328125 267.57586669921875 ...  9990.552  1847.4482
+
 
 Using keyword arguments to be passed to |run_command| you can store ``stdout`` and ``stderr`` of ``solve-field`` in lists. Check the API from more details. Also, setting ``stdout_loglevel`` and ``stderr_loglevel`` you can print the live output of the code using `~logging` system.
 
-    >>> solver = AstrometrySolver()
-    >>> stdout = []
-    >>> stderr = []
-    >>> solution = solver.solve_field(filename, options={'radius': 5.0}, stdout=stdout, stderr=stderr)
-    >>> print("\n".join(stdout))
+.. ipython::
+    :verbatim:
+
+    In [2]: solver = AstrometrySolver()
+
+    In [3]: stdout = []
+
+    In [4]: stderr = []
+
+    In [5]: solution = solver.solve_field(filename, options={'radius': 5.0},
+       ...:                               stdout=stdout, stderr=stderr)
+
+    In [6]: print("\n".join(stdout))
     Reading input file 1 of 1: "M20_test_file.fits"...
     Found an existing WCS header, will try to verify it.
     Extracting sources...
@@ -168,11 +185,15 @@ Using keyword arguments to be passed to |run_command| you can store ``stdout`` a
 
 Also, you can pass any parameter of ``astrometry.cfg`` file to the options. These parameters will be organized and a custom configuration file will be created, enabling these options only for that run. Manual edition of the config is also available using `~astropop.astrometry.AstrometrySolver.config` dictionary.
 
-.. code-block:: python
+.. ipython:: python
+    :verbatim:
 
-    >>> solver = AstrometrySolver(config={'index': 'index-401.fits', 'add_path': ['/data1', '/data2']})
-    >>> solver.config['inparallel'] = False
-    >>> solution = solver.solve_field(filename, options={'add_path': '/home/user/gaia-indexes', 'autoindex': True})
+    solver = AstrometrySolver(config={'index': 'index-401.fits',
+                              'add_path': ['/data1', '/data2']})
+    solver.config['inparallel'] = False
+    solution = solver.solve_field(filename,
+                                  options={'add_path': '/home/user/gaia-indexes',
+                                           'autoindex': True})
 
 Additional Python inputs, like |ImageHDU|, |FrameData|, and ``(x, y, flux)`` arrays are supported trough hepler functions, described in the section bellow.
 

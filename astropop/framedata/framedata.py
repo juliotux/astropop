@@ -504,19 +504,11 @@ class FrameData:
         self._unct.disable_memmap(remove=True)
         self._memmapping = False
 
-    def to_hdu(self, **kwargs):
+    def to_hdu(self, wcs_relax=True, no_fits_standard_units=True, **kwargs):
         """Generate an HDUList from this FrameData.
 
         Parameters
         ----------
-        hdu_uncertainty: string, optional
-            Extension name to store the uncertainty. If None,
-            no uncertainty will be stored.
-        hdu_mask: string, optional
-            Extension name to store the mask. If None, no mask
-            will be saved.
-        unit_key: string, optional
-            Header key for physical unit.
         wcs_relax: `bool`, optional.
             Allow non-standard WCS keys.
             Default: `True`
@@ -524,14 +516,24 @@ class FrameData:
             Skip FITS units standard for units. If this options is choose,
             the units will be printed in header as `~astropy.units.Unit`
             compatible string.
-            Default: `False`
+            Default: `True`
+        **kwargs:
+            hdu_uncertainty: string, optional
+                Extension name to store the uncertainty.
+            hdu_mask: string, optional
+                Extension name to store the mask.
+            unit_key: string, optional
+                Header key for physical unit.
+
 
         Returns
         -------
         `~astropy.fits.HDUList` :
             HDU storing all FrameData informations.
         """
-        return _to_hdu(self, **kwargs)
+        return _to_hdu(self, wcs_relax=wcs_relax,
+                       no_fits_standard_units=no_fits_standard_units,
+                       **kwargs)
 
     def __del__(self):
         """Safe destruction of the container."""
@@ -555,7 +557,30 @@ class FrameData:
         return _to_ccddata(self)
 
     def write(self, filename, overwrite=False, **kwargs):
-        """Write frame to a fits file."""
+        """Write frame to a fits file.
+
+        Parameters
+        ----------
+        filename: str
+            Name of the file to write.
+        overwrite: bool, optional
+            If True, overwrite the file if it exists.
+        wcs_relax: `bool`, optional.
+            Allow non-standard WCS keys.
+            Default: `True`
+        no_fits_standard_units: `bool`, optional
+            Skip FITS units standard for units. If this options is choose,
+            the units will be printed in header as `~astropy.units.Unit`
+            compatible string.
+            Default: `True`
+        **kwargs:
+            hdu_uncertainty: string, optional
+                Extension name to store the uncertainty.
+            hdu_mask: string, optional
+                Extension name to store the mask.
+            unit_key: string, optional
+                Header key for physical unit.
+        """
         _write_fits(self, filename, overwrite, **kwargs)
 
     def __copy__(self):

@@ -28,11 +28,17 @@ This software is intended to provide a full pipeline to reduce raw polarimetry a
 
 - Automatic photometry calibration using online catalogs.
 
+Support and Community
+^^^^^^^^^^^^^^^^^^^^^
+
+We have a community of people using astropop to perform data reduction. Also, we use this community to offer support for astropop users. Join the community at `astropop-users Google-Groups <https://groups.google.com/g/astropop-users>`_
 
 Dependencies
 ^^^^^^^^^^^^
 
 Some of astropop dependencies (numpy, astropy, scipy, astroscrappy) need gcc to get build. Make sure gcc is installed properly in your system.
+
+There is nothing that prevent astropop itself to run on Windows. However, due to problems that comes from dependencies, mainly numpy and astrometry.net, astropop is currently supported only on Linux and Mac.
 
 Bellow we list all the necessary dependencies for the good working of the code. Note that this can be changed with the time.
 
@@ -102,11 +108,11 @@ or
 
 .. code-block::
 
-   git clone git+https://github.com/sparc4-dev/astropop
+   git clone https://github.com/sparc4-dev/astropop
    cd astropop
    pip install -U .
 
-Citating
+Citing
 ^^^^^^^^
 
 |ADS|  |PASP|  |arXiv|  |ASCL|

@@ -9,6 +9,7 @@ import numpy as np
 from astropy.table import Table
 from astropop.testing import *
 import sqlite3
+import copy
 
 
 def test_sanitize_string():
@@ -262,7 +263,7 @@ class Test_SQLDatabase_Creation_Modify:
         db = SQLDatabase(':memory:')
         db.add_table('test')
         db.add_rows('test', {f'col{i}': np.arange(10) for i in range(128)},
-                     add_columns=True)
+                    add_columns=True)
         assert_equal(db.column_names('test'), [f'col{i}' for i in range(128)])
 
         for i, v in enumerate(db.select('test')):
@@ -409,6 +410,64 @@ class Test_SQLDatabase_Creation_Modify:
         assert_equal(db2.column_names('test'), ['a', 'b'])
         assert_equal(db2.get_column('test', 'a').values, [23, 49, 61, 65])
         assert_equal(db2.get_column('test', 'b').values, [24, 50, 62, 66])
+
+    def test_sql_copy_more_than_1000(self):
+        db = SQLDatabase(':memory:')
+        db.add_table('test')
+        db.add_column('test', 'a', np.arange(1, 5001, 1))
+        db.add_column('test', 'b', np.arange(2, 5002, 1))
+
+        db2 = db.copy()
+        assert_equal(db2.table_names, ['test'])
+        assert_equal(db2.column_names('test'), ['a', 'b'])
+        assert_equal(db2.get_column('test', 'a').values,
+                     np.arange(1, 5001, 1))
+        assert_equal(db2.get_column('test', 'b').values,
+                     np.arange(2, 5002, 1))
+
+    def test_sql_copy_more_than_1000_indexes(self):
+        db = SQLDatabase(':memory:')
+        db.add_table('test')
+        db.add_column('test', 'a', np.arange(1, 5001, 1))
+        db.add_column('test', 'b', np.arange(2, 5002, 1))
+
+        db2 = db.copy(indexes={'test': np.arange(1000, 2500, 1)})
+        assert_equal(db2.table_names, ['test'])
+        assert_equal(db2.column_names('test'), ['a', 'b'])
+        assert_equal(db2.get_column('test', 'a').values,
+                     np.arange(1001, 2501, 1))
+        assert_equal(db2.get_column('test', 'b').values,
+                     np.arange(1002, 2502, 1))
+
+    def test_sql_delete_row(self):
+        db = SQLDatabase(':memory:')
+        db.add_table('test')
+        db.add_column('test', 'a', [1, 3, 5])
+        db.add_column('test', 'b', [2, 4, 6])
+
+        db.delete_row('test', 1)
+        assert_equal(db.get_column('test', 'a').values, [1, 5])
+        assert_equal(db.get_column('test', 'b').values, [2, 6])
+
+        with pytest.raises(IndexError):
+            db.delete_row('test', 2)
+        with pytest.raises(IndexError):
+            db.delete_row('test', -4)
+
+    def test_sql_delete_column(self):
+        db = SQLDatabase(':memory:')
+        db.add_table('test')
+        db.add_column('test', 'a', [1, 3, 5])
+        db.add_column('test', 'b', [2, 4, 6])
+
+        db.delete_column('test', 'b')
+        assert_equal(db.column_names('test'), ['a'])
+        assert_equal(db.get_column('test', 'a').values, [1, 3, 5])
+
+        with pytest.raises(KeyError, match='does not exist'):
+            db.delete_column('test', 'b')
+        with pytest.raises(ValueError, match='protected name'):
+            db.delete_column('test', 'table')
 
 
 class Test_SQLDatabase_Access:
@@ -622,7 +681,6 @@ class Test_SQLDatabase_PropsComms:
         a = db.select('test', order='b', where='a < 15')
         assert_equal(a, [(14, 25), (13, 26), (12, 27), (11, 28), (10, 29)])
 
-
         a = db.select('test', order='b', where='a < 15', limit=3)
         assert_equal(a, [(14, 25), (13, 26), (12, 27)])
 
@@ -707,6 +765,14 @@ class Test_SQLRow:
         db.add_column('test', 'a', data=np.arange(10, 20))
         db.add_column('test', 'b', data=np.arange(20, 30))
         return db
+
+    def test_row_copy_error(self):
+        db = self.db
+        row = db['test'][1]
+        with pytest.raises(NotImplementedError, match='Cannot copy'):
+            copy.copy(row)
+        with pytest.raises(NotImplementedError, match='Cannot copy'):
+            copy.deepcopy(row)
 
     def test_row_basic_properties(self):
         db = self.db
@@ -795,6 +861,14 @@ class Test_SQLTable:
         db.add_column('test', 'a', data=np.arange(10, 20))
         db.add_column('test', 'b', data=np.arange(20, 30))
         return db
+
+    def test_table_copy_error(self):
+        db = self.db
+        table = db['test']
+        with pytest.raises(NotImplementedError, match='Cannot copy'):
+            copy.copy(table)
+        with pytest.raises(NotImplementedError, match='Cannot copy'):
+            copy.deepcopy(table)
 
     def test_table_basic_properties(self):
         db = self.db
@@ -1192,6 +1266,51 @@ class Test_SQLTable:
         assert_equal(table.index_of({'a': 50}), [])
         assert_equal(table.index_of('a < 13'), [0, 1, 2])
 
+    def test_table_delete_row(self):
+        db = self.db
+        table = db['test']
+        assert_is_instance(table, SQLTable)
+
+        table.delete_row(0)
+        expect = np.transpose([np.arange(11, 20), np.arange(21, 30)])
+        assert_equal(table.column_names, ['a', 'b'])
+        assert_equal(table.values, expect)
+
+        table.delete_row(-1)
+        expect = np.transpose([np.arange(11, 19), np.arange(21, 29)])
+        assert_equal(table.column_names, ['a', 'b'])
+        assert_equal(table.values, expect)
+
+        with pytest.raises(IndexError):
+            table.delete_row(10)
+        with pytest.raises(IndexError):
+            table.delete_row(-11)
+
+    def test_table_delete_rows_indexer_robustness(self):
+        db = self.db
+        table = db['test']
+
+        # Test that the row index is updated correctly after deleting rows
+        row = table[5]
+        table.delete_row(4)
+        assert_equal(row.index, 4)
+        assert_equal(table[4].values, row.values)
+
+    def test_table_delete_column(self):
+        db = self.db
+        table = db['test']
+        assert_is_instance(table, SQLTable)
+
+        table.delete_column('a')
+        expect = np.transpose([np.arange(20, 30)])
+        assert_equal(table.column_names, ['b'])
+        assert_equal(table.values, expect)
+
+        with pytest.raises(KeyError):
+            table.delete_column('a')
+        with pytest.raises(KeyError):
+            table.delete_column('c')
+
 
 class Test_SQLColumn:
     @property
@@ -1201,6 +1320,14 @@ class Test_SQLColumn:
         db.add_column('test', 'a', data=np.arange(10, 20))
         db.add_column('test', 'b', data=np.arange(20, 30))
         return db
+
+    def test_column_copy_error(self):
+        db = self.db
+        col = db['test']['a']
+        with pytest.raises(NotImplementedError, match='Cannot copy'):
+            copy.copy(col)
+        with pytest.raises(NotImplementedError, match='Cannot copy'):
+            copy.deepcopy(col)
 
     def test_column_basic_properties(self):
         db = self.db
@@ -1308,6 +1435,7 @@ class Test_SQLColumn:
         column[[2, 4]] = 2
         assert_equal(db.get_column('test', 'a').values, [-1, -1, 2, -1, 2,
                                                          -1, -1, -1, -1, -1])
+
     def test_column_setitem_invalid(self):
         db = self.db
         table = db['test']

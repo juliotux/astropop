@@ -15,7 +15,37 @@ __all__ = ['SQLDatabase', 'SQLTable', 'SQLRow', 'SQLColumn', 'SQLColumnMap']
 _ID_KEY = '__id__'
 
 
-class SQLColumnMap:
+class _SQLViewerBase:
+    """Memview for SQL data. Not allowed to copy."""
+
+    def __copy__(self):
+        raise NotImplementedError('Cannot copy SQL viewing classes.')
+
+    def __deepcopy__(self, memo):
+        raise NotImplementedError('Cannot copy SQL viewing classes.')
+
+
+class _SQLRowIndexer(_SQLViewerBase):
+    """A class for indexing SQL rows. Safer method while removing rows.
+
+    Index is obtained by indexof(self).
+
+    Parameters
+    ----------
+    row_list: list
+        The list of `_SQLRowIndexer` to get the index of.
+    """
+
+    def __init__(self, row_list):
+        self._row_list = row_list
+
+    @property
+    def index(self):
+        """Get the index of the row."""
+        return self._row_list.index(self)
+
+
+class SQLColumnMap():
     """Map keywords to SQL columns."""
 
     def __init__(self, db, map_table, map_key, map_column):
@@ -104,7 +134,7 @@ class SQLColumnMap:
         raise TypeError('Only dict is supported')
 
 
-class SQLTable:
+class SQLTable(_SQLViewerBase):
     """Handle an SQL table operations interfacing with the DB."""
 
     def __init__(self, db, name, colmap=None):
@@ -198,6 +228,16 @@ class SQLTable:
             data = self._colmap.map_row(data)
         self._db.set_row(self._name, row, data)
 
+    def delete_column(self, column):
+        """Delete a given column from the table."""
+        if self._colmap is not None:
+            column = self._colmap.get_column_name(column)
+        self._db.delete_column(self._name, column)
+
+    def delete_row(self, row):
+        """Delete all rows from the table."""
+        self._db.delete_row(self._name, row)
+
     def index_of(self, where):
         """Get the index of the rows that match the given condition."""
         if self._colmap is not None:
@@ -277,7 +317,7 @@ class SQLTable:
         return s
 
 
-class SQLColumn:
+class SQLColumn(_SQLViewerBase):
     """Handle an SQL column operations interfacing with the DB."""
 
     def __init__(self, db, table, name):
@@ -352,10 +392,10 @@ class SQLColumn:
         return s
 
 
-class SQLRow:
+class SQLRow(_SQLViewerBase):
     """Handle and SQL table row interfacing with the DB."""
 
-    def __init__(self, db, table, row, colmap=None):
+    def __init__(self, db, table, row_indexer, colmap=None):
         """Initialize the row.
 
         Parameters
@@ -364,12 +404,12 @@ class SQLRow:
             The parent database object.
         table : str
             The name of the table in the database.
-        row : int
+        row_indexer : `~astropop._db._SQLRowIndexer`
             The row index in the table.
         """
         self._db = db
         self._table = table
-        self._row = row
+        self._row_indexer = row_indexer
         self._colmap = colmap
 
     @property
@@ -393,7 +433,7 @@ class SQLRow:
     @property
     def index(self):
         """Get the index of the current row."""
-        return self._row
+        return self._row_indexer.index
 
     @property
     def keys(self):
@@ -416,7 +456,7 @@ class SQLRow:
             if self._colmap is not None:
                 column = self._colmap.get_column_name(key)
             try:
-                return self._db.get_item(self._table, column, self._row)
+                return self._db.get_item(self._table, column, self.index)
             except ValueError:
                 raise KeyError(f'{key}')
         if isinstance(key, (int, np.int_)):
@@ -446,7 +486,7 @@ class SQLRow:
 
     def __repr__(self):
         """Get a string representation of the row."""
-        s = f"{self.__class__.__name__} {self._row} in table '{self._table}' "
+        s = f"{self.__class__.__name__} {self.index} in table '{self._table}' "
         s += self.as_dict().__repr__()
         return s
 
@@ -557,6 +597,9 @@ class SQLDatabase:
         self._con = sql.connect(self._db)
         self._cur = self._con.cursor()
         self.autocommit = autocommit
+
+        self._row_indexes = {}
+        self._build_row_indexes()
 
     def execute(self, command, arguments=None):
         """Execute a SQL command in the database."""
@@ -735,6 +778,32 @@ class SQLDatabase:
         comm += ';'
         self.executemany(comm, data)
 
+        # Update the row indexes
+        rl = self._row_indexes[table]
+        rl.extend([_SQLRowIndexer(rl) for i in range(len(data))])
+
+    def _get_indexes(self, table):
+        """Get the indexes of the table."""
+        comm = f"SELECT {_ID_KEY} FROM {table};"
+        return [i[0] for i in self.execute(comm)]
+
+    def _update_indexes(self, table):
+        """Update the indexes of the table."""
+        rows = list(range(1, self.count(table) + 1))
+        origin = self._get_indexes(table)
+        comm = f"UPDATE {table} SET {_ID_KEY} = ? WHERE {_ID_KEY} = ?;"
+        self.executemany(comm, zip(rows, origin))
+
+    def _build_row_indexes(self):
+        """Build the row indexes."""
+        for table in self.table_names:
+            size = self.count(table)
+            # Create the list that must be passed to _SQLRowIndexer
+            rl = [None]*size
+            self._row_indexes[table] = rl
+            for i in range(size):
+                self._row_indexes[table][i] = _SQLRowIndexer(rl)
+
     def add_table(self, table, columns=None, data=None):
         """Create a table in database."""
         logger.debug('Initializing "%s" table.', table)
@@ -755,6 +824,9 @@ class SQLDatabase:
         comm += "\n);"
 
         self.execute(comm)
+
+        # Add the row indexer list
+        self._row_indexes[table] = []
 
         if data is not None:
             self.add_rows(table, data, add_columns=True)
@@ -779,6 +851,19 @@ class SQLDatabase:
         # adding the data to the table
         if data is not None:
             self.set_column(table, column, data)
+
+    def delete_column(self, table, column):
+        """Delete a column from a table."""
+        self._check_table(table)
+
+        if column in (_ID_KEY, 'table', 'default'):
+            raise ValueError(f"{column} is a protected name.")
+        if column not in self.column_names(table):
+            raise KeyError(f'Column "{column}" does not exist.')
+
+        comm = f"ALTER TABLE {table} DROP COLUMN '{column}' ;"
+        logger.debug('deleting column "%s" from table "%s"', column, table)
+        self.execute(comm)
 
     def add_rows(self, table, data, add_columns=False, skip_sanitize=False):
         """Add a dict row to a table.
@@ -817,11 +902,21 @@ class SQLDatabase:
         raise TypeError('data must be a dict, list, or numpy array. '
                         f'Not {type(data)}.')
 
+    def delete_row(self, table, index):
+        """Delete a row from the table."""
+        self._check_table(table)
+        row = _fix_row_index(index, len(self[table]))
+        comm = f"DELETE FROM {table} WHERE {_ID_KEY}={row+1};"
+        self.execute(comm)
+        self._row_indexes[table].pop(row)
+        self._update_indexes(table)
+
     def drop_table(self, table):
         """Drop a table from the database."""
         self._check_table(table)
         comm = f"DROP TABLE {table};"
         self.execute(comm)
+        del self._row_indexes[table]
 
     def get_table(self, table, column_map=None):
         """Get a table from the database."""
@@ -832,7 +927,8 @@ class SQLDatabase:
         """Get a row from the table."""
         self._check_table(table)
         index = _fix_row_index(index, len(self[table]))
-        return SQLRow(self, table, index, colmap=column_map)
+        row = self._row_indexes[table][index]
+        return SQLRow(self, table, row, colmap=column_map)
 
     def get_column(self, table, column):
         """Get a column from the table."""
@@ -963,17 +1059,8 @@ class SQLDatabase:
                 return self.select(table)
             if len(indx) == 0:
                 return None
-            if len(indx) >= 10000:
-                # too many rows must be divided
-                indx = np.array_split(indx, np.ceil(len(indx)/10000))
-                d = None
-                for i in indx:
-                    if d is None:
-                        d = _get_data(table, i)
-                    else:
-                        np.vstack([d, _get_data(table, i)])
-                return d
-            where = " OR ".join(f"{_ID_KEY}={v+1}" for v in indx)
+            indx = np.array(np.array(indx, dtype=int)+1, dtype=str)
+            where = f"{_ID_KEY} in ({','.join(indx)})"
             return self.select(table, where=where)
 
         # when copying, always copy to memory
