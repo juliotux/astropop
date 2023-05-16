@@ -12,7 +12,7 @@ from photutils.centroids import centroid_com, centroid_quadratic, \
 from photutils.utils import calc_total_error, circular_footprint
 
 from astropop import __version__ as astropop_version
-from astropop.photometry.detection import calc_fwhm
+from astropop.photometry.detection import median_fwhm
 from astropop.logger import logger
 from astropop.fits_utils import imhdus
 

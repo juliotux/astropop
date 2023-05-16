@@ -1,15 +1,17 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
-import sep
 import numpy as np
 from astropy.table import Table
 from scipy.optimize import curve_fit
 from photutils.detection import DAOStarFinder
 
-from ._utils import _sep_fix_byte_order
-from ..math.moffat import moffat_r, moffat_fwhm
-from ..math.gaussian import gaussian_r, gaussian_fwhm
-from ..math.array import trim_array, xy2r
+from astropop.math.moffat import moffat_r, moffat_fwhm
+from astropop.math.gaussian import gaussian_r, gaussian_fwhm
+from astropop.math.array import trim_array, xy2r
+
+
+__all__ = ['background', 'segmentation_find', 'daofind', 'starfind',
+           'median_fwhm']
 
 
 _default_sharp = (0.2, 1.0)
@@ -38,22 +40,11 @@ def background(data, box_size=64, filter_size=3, mask=None,
         If True, the algorithm returns a single value for background
         and rms, else, a 2D image with local values will be returned.
     """
-    d = _sep_fix_byte_order(data)
-    if mask is not None:
-        mask = np.array(mask, dtype=bool)
-
-    bkg = sep.Background(d, bw=box_size, bh=box_size,
-                         fw=filter_size, fh=filter_size,
-                         mask=mask)
-
-    if global_bkg:
-        return bkg.globalback, bkg.globalrms
-    return bkg.back(), bkg.rms()
+    raise NotImplementedError
 
 
-def sepfind(data, threshold, background, noise,
-            mask=None, filter_kernel=3,
-            **sep_kwargs):
+def segmentation_find(data, threshold, background, noise,
+                      mask=None, filter_kernel=3, **kwargs):
     """Find sources using SExtractor segmentation algorithm.
 
     Parameters
@@ -83,23 +74,7 @@ def sepfind(data, threshold, background, noise,
     sources: `astropy.table.Table`
         Table with the sources found.
     """
-    d = _sep_fix_byte_order(data)
-    if mask is not None:
-        mask = np.array(mask, dtype=bool)
-
-    # Check if need to create a new kernel
-    if np.isscalar(filter_kernel):
-        filter_kernel = gen_filter_kernel(filter_kernel)
-
-    sep_kwargs['filter_kernel'] = filter_kernel
-
-    sources = sep.extract(d-background, threshold, err=noise, mask=mask,
-                          **sep_kwargs)
-
-    if sep_kwargs.get('segmentation_map', False):
-        sources = sources[0]  # ignore smap
-
-    return Table(sources)
+    raise NotImplementedError
 
 
 def daofind(data, threshold, background, noise, fwhm,
@@ -131,8 +106,8 @@ def daofind(data, threshold, background, noise, fwhm,
     -------
     sources: `astropy.table.Table`
         Table with the sources found.
-
     """
+    raise NotImplementedError
 
 
 def starfind(data, threshold, background, noise, fwhm=None,
@@ -150,8 +125,8 @@ def starfind(data, threshold, background, noise, fwhm=None,
     noise: `int`
         Root-mean-square at each point.
     fwhm: `float` (optional)
-        Full width at half maximum to be used in the convolve filter.
-        No need to be precise and will be recomputed in the function.
+        Initial guess of the FWHM to be used in the convolve filter. No need to
+        be precise. Will be recomputed in the function.
         Default: `None`
     mask: `bool` (optional)
         Boolean mask where 1 pixels are masked out in the background
@@ -170,7 +145,7 @@ def starfind(data, threshold, background, noise, fwhm=None,
     """
     # First, we identify the sources with sepfind (fwhm independent)
     mask = kwargs.get('mask')
-    sources = sepfind(data, threshold, background, noise, mask=mask)
+    sources = segmentation_find(data, threshold, background, noise, mask=mask)
 
     # We compute the median FWHM and perform a optimum daofind extraction
     box_size = 3*fwhm if fwhm is not None else 15  # 3xFWHM seems to be enough
@@ -184,31 +159,6 @@ def starfind(data, threshold, background, noise, fwhm=None,
                 skip_invalid_centroid=kwargs.get('skip_invalid_centroid', 0))
     s.meta['astropop fwhm'] = fwhm
     return s
-
-
-def sources_mask(shape, x, y, a, b, theta, mask=None, scale=1.0):
-    """Create a mask to cover all sources.
-
-    Parameters
-    ----------
-    shape: int or tuple of ints
-        Shape of the new array.
-    x,y: array_like
-        Center of ellipse(s).
-    a, b, theta: array_like (optional)
-        Parameters defining the extent of the ellipe(s).
-    mask: numpy.ndarray (optional)
-        An optional mask.
-        Default: `None`
-    scale: array_like (optional)
-        Scale factor of ellipse(s).
-        Default: 1.0
-    """
-    image = np.zeros(shape, dtype=bool)
-    sep.mask_ellipse(image, x, y, a, b, theta, r=scale)
-    if mask is not None:
-        image |= np.array(mask)
-    return image
 
 
 def _fwhm_loop(model, data, x, y, xc, yc):
@@ -244,7 +194,7 @@ def _fwhm_loop(model, data, x, y, xc, yc):
         return np.nan
 
 
-def calc_fwhm(data, x, y, box_size=25, model='gaussian', min_fwhm=3.0):
+def median_fwhm(data, x, y, box_size=25, model='gaussian', min_fwhm=3.0):
     """Calculate the median FWHM of the image with Gaussian or Moffat fit.
 
     Parameters
