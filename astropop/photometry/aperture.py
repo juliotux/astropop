@@ -249,7 +249,7 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto',
     flags = np.zeros(len(x), dtype=np.int16)
 
     # compute median fwhm for all sources
-    fwhm = calc_fwhm(data, x, y, box_size=box_size, model='gaussian')
+    fwhm = median_fwhm(data, x, y, box_size=box_size, model='gaussian')
 
     # compute the automated aperture radius
     if r == 'auto':
