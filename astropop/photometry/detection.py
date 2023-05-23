@@ -15,39 +15,13 @@ from astropop.math.gaussian import gaussian_r, gaussian_fwhm
 from astropop.math.array import trim_array, xy2r
 
 
-__all__ = ['background', 'segfind', 'daofind', 'starfind',
-           'median_fwhm']
+__all__ = ['segfind', 'daofind', 'starfind', 'median_fwhm']
 
 
 _default_morfology_columns = ['segment_flux', 'fwhm', 'eccentricity',
                               'ellipticity', 'elongation', 'cxx', 'cyy', 'cxy',
                               'semimajor_sigma', 'semiminor_sigma',
                               'orientation']
-
-
-def background(data, box_size=64, filter_size=3, mask=None,
-               global_bkg=True):
-    """Estimate the image background using SExtractor algorithm.
-
-    Parameters
-    ----------
-    data: array_like
-        2D array containing the image to extract the background.
-    box_size: `int` (optional)
-        Size of background boxes in pixels.
-        Default: 64
-    filter_size: `int` (optional)
-        Filter size in boxes unit.
-        Default: 3
-    mask: array_like (optional)
-        Boolean mask where 1 pixels are masked out in the background
-        calculation.
-        Default: `None`
-    global_bkg: `bool`
-        If True, the algorithm returns a single value for background
-        and rms, else, a 2D image with local values will be returned.
-    """
-    raise NotImplementedError
 
 
 @np.deprecate(message='This function will be removed before v1.0',
@@ -359,6 +333,8 @@ def daofind(data, threshold, background, noise, fwhm,
     res['cxy'] = morfology['cxy']
 
     # reorder the sources by flux
+    res.sort('flux', reverse=True)  # Sort the results by flux.
+
     res.sort('flux', reverse=True)
     res['id'] = np.arange(len(res))+1
 
