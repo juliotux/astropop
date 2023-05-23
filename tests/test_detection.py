@@ -4,10 +4,8 @@
 import pytest
 import numpy as np
 
-from astropop.photometry import (background, sepfind, daofind, starfind,
-                                 calc_fwhm, recenter_sources)
-from astropop.photometry.detection import gen_filter_kernel, DAOFind, \
-                                          _sep_fix_byte_order
+from astropop.photometry import (background, segfind, daofind, starfind,
+                                 median_fwhm)
 from astropop.framedata import MemMapArray
 from astropop.math.moffat import moffat_2d
 from astropop.math.gaussian import gaussian_2d
@@ -101,86 +99,6 @@ def gen_image(size, x, y, flux, sky, rdnoise, model='gaussian', **kwargs):
         # restore the negatives
         im[negatives] = -im[negatives]
     return im
-
-
-class Test_Detection_Conformance():
-    # Conformance of secondary functions.
-    def test_gen_kernel(self):
-        assert_equal(gen_filter_kernel(3), [[0, 1, 0],
-                                            [1, 4, 1],
-                                            [0, 1, 0]])
-
-        assert_equal(gen_filter_kernel(5), [[1, 2, 3, 2, 1],
-                                            [2, 4, 6, 4, 2],
-                                            [3, 6, 9, 6, 3],
-                                            [2, 4, 6, 4, 2],
-                                            [1, 2, 3, 2, 1]])
-
-        assert_equal(gen_filter_kernel(7), [[1, 2, 3, 4, 3, 2, 1],
-                                            [2, 4, 6, 8, 6, 4, 2],
-                                            [3, 6, 9, 12, 9, 6, 3],
-                                            [4, 8, 12, 16, 12, 8, 4],
-                                            [3, 6, 9, 12, 9, 6, 3],
-                                            [2, 4, 6, 8, 6, 4, 2],
-                                            [1, 2, 3, 4, 3, 2, 1]])
-
-    @pytest.mark.skip
-    def test_sources_mask(self):
-        pass
-
-
-class Test_SepFixByteOrder():
-    def test_sep_fix_byte_order_memmaparray(self):
-        arr = MemMapArray(np.arange(10).reshape(2, 5))
-        arr1 = _sep_fix_byte_order(arr)
-        assert_equal(arr1, arr)
-        assert_is_instance(arr1, np.ndarray)
-        assert_true(arr1.dtype.isnative)
-        assert_true(arr1.flags['C_CONTIGUOUS'])
-        assert_equal(arr1.dtype, np.dtype('float64'))
-
-    def test_sep_fix_byte_order_f4(self):
-        arr = np.arange(10, dtype='f4').reshape(2, 5)
-        arr1 = _sep_fix_byte_order(arr)
-        assert_equal(arr1, arr)
-        assert_is_instance(arr1, np.ndarray)
-        assert_true(arr1.dtype.isnative)
-        assert_true(arr1.flags['C_CONTIGUOUS'])
-        assert_equal(arr1.dtype, np.dtype('float32'))
-
-    @pytest.mark.parametrize('dtype', ['i1', 'i2', 'i4', 'i8',
-                                       'u1', 'u2', 'u4', 'u8'])
-    def test_sep_fix_byte_order_dtypes(self, dtype):
-        arr = np.arange(10, dtype=dtype).reshape(2, 5)
-        arr1 = _sep_fix_byte_order(arr)
-        assert_equal(arr1, arr)
-        assert_is_instance(arr1, np.ndarray)
-        assert_true(arr1.dtype.isnative)
-        assert_true(arr1.flags['C_CONTIGUOUS'])
-        assert_equal(arr1.dtype, np.dtype('float64'))
-
-    @pytest.mark.parametrize('byteorder', ['>', '<'])
-    @pytest.mark.parametrize('dtype', ['i1', 'i2', 'i4', 'i8',
-                                       'u1', 'u2', 'u4', 'u8',
-                                       'f8'])
-    def test_sep_fix_byte_order_byteorder(self, byteorder, dtype):
-        dtype = f"{byteorder}{dtype}"
-        arr = np.arange(10, dtype=dtype).reshape(2, 5)
-        arr1 = _sep_fix_byte_order(arr)
-        assert_equal(arr1, arr)
-        assert_is_instance(arr1, np.ndarray)
-        assert_true(arr1.dtype.isnative)
-        assert_true(arr1.flags['C_CONTIGUOUS'])
-        assert_equal(arr1.dtype, np.dtype('float64'))
-
-    def test_sep_fix_byte_order_contiguous(self):
-        arr = np.arange(10, dtype='f4').reshape(2, 5).T
-        arr1 = _sep_fix_byte_order(arr)
-        assert_equal(arr1, arr)
-        assert_is_instance(arr1, np.ndarray)
-        assert_true(arr1.dtype.isnative)
-        assert_true(arr1.flags['C_CONTIGUOUS'])
-        assert_equal(arr1.dtype, np.dtype('float32'))
 
 
 class Test_Background():
@@ -363,7 +281,7 @@ class Test_Background():
         # assert_almost_equal(rms, np.ones(size)*rdnoise, decimal=-1)
 
 
-class Test_SEP_Detection():
+class Test_Segmentation_Detection():
     # segmentation detection. Must detect all shapes of sources
 
     def resort_sources(self, x, y, f):
@@ -372,7 +290,7 @@ class Test_SEP_Detection():
         order = np.argsort(y)
         return x[order], y[order], f[order]
 
-    def test_sepfind_one_star(self):
+    def test_segfind_one_star(self):
         size = (128, 128)
         pos = (64, 64)
         sky = 20
@@ -385,13 +303,13 @@ class Test_SEP_Detection():
         im = gen_image(size, [pos[0]], [pos[1]], [flux], sky, rdnoise,
                        model='gaussian', sigma=sigma, theta=theta)
 
-        sources = sepfind(im, threshold, sky, rdnoise)
+        sources = segfind(im, threshold, sky, rdnoise)
 
         assert_equal(len(sources), 1)
         assert_almost_equal(sources['x'][0], 64, decimal=0)
         assert_almost_equal(sources['y'][0], 64, decimal=0)
 
-    def test_sepfind_negative_sky(self):
+    def test_segfind_negative_sky(self):
         size = (128, 128)
         pos = (64, 64)
         sky = 0
@@ -404,13 +322,13 @@ class Test_SEP_Detection():
         im = gen_image(size, [pos[0]], [pos[1]], [flux], sky, rdnoise,
                        model='gaussian', sigma=sigma, theta=theta)
 
-        sources = sepfind(im, threshold, sky, rdnoise)
+        sources = segfind(im, threshold, sky, rdnoise)
 
         assert_equal(len(sources), 1)
         assert_almost_equal(sources['x'][0], 64, decimal=0)
         assert_almost_equal(sources['y'][0], 64, decimal=0)
 
-    def test_sepfind_strong_and_weak(self):
+    def test_segfind_strong_and_weak(self):
         size = (128, 128)
         posx = (60, 90)
         posy = (20, 90)
@@ -422,13 +340,13 @@ class Test_SEP_Detection():
         im = gen_image(size, posx, posy, flux, sky, rdnoise,
                        model='gaussian', sigma=sigma, theta=theta)
 
-        sources = sepfind(im, 3, sky, rdnoise)
+        sources = segfind(im, 3, sky, rdnoise)
 
         assert_equal(len(sources), 2)
         assert_almost_equal(sources['x'], posx, decimal=0)
         assert_almost_equal(sources['y'], posy, decimal=0)
 
-    def test_sepfind_four_stars_fixed_position(self):
+    def test_segfind_four_stars_fixed_position(self):
         size = (1024, 1024)
         posx = (10, 120, 500, 1000)
         posy = (20, 200, 600, 800)
@@ -440,13 +358,13 @@ class Test_SEP_Detection():
         im = gen_image(size, posx, posy, flux, sky, rdnoise,
                        model='gaussian', sigma=sigma, theta=theta)
 
-        sources = sepfind(im, 3, sky, rdnoise)
+        sources = segfind(im, 3, sky, rdnoise)
 
         assert_equal(len(sources), 4)
         assert_almost_equal(sources['x'], posx, decimal=0)
         assert_almost_equal(sources['y'], posy, decimal=0)
 
-    def test_sepfind_multiple_stars(self):
+    def test_segfind_multiple_stars(self):
         size = (1024, 1024)
         number = 15
         low = 2000
@@ -460,7 +378,7 @@ class Test_SEP_Detection():
         im = gen_image(size, x, y, f, sky, rdnoise,
                        model='gaussian', sigma=sigma, theta=theta)
 
-        sources = sepfind(im, 5, sky, rdnoise)
+        sources = segfind(im, 5, sky, rdnoise)
 
         x, y, f = self.resort_sources(x, y, f)
 
@@ -468,13 +386,13 @@ class Test_SEP_Detection():
         assert_almost_equal(sources['x'], x, decimal=0)
         assert_almost_equal(sources['y'], y, decimal=0)
 
-    def test_sepfind_one_star_subpixel(self):
+    def test_segfind_one_star_subpixel(self):
         size = (128, 128)
         pos = (54.32, 47.86)
 
         im = gen_image(size, [pos[0]], [pos[1]], [45000], 800, 0,
                        sigma=[3], skip_poisson=True)
-        sources = sepfind(im, 5, 800, 10)
+        sources = segfind(im, 5, 800, 10)
         assert_equal(len(sources), 1)
         # no error, 2 decimals ok!
         assert_almost_equal(sources[0]['x'], pos[0], decimal=2)
@@ -486,99 +404,9 @@ class Test_DAOFind_Detection():
 
     def resort_sources(self, x, y, f):
         """Random sources are random. We must resort to compare."""
-        # For SEP, resort using x order
+        # Order by flux
         order = np.argsort(y)
         return x[order], y[order], f[order]
-
-    @pytest.mark.parametrize('fwhm', np.arange(1, 9, 1))
-    def test_daofind_constants_calc(self, fwhm):
-        # Compare our constants with D.Jones daofind
-        dao = DAOFind(fwhm)
-
-        maxbox = 13  # Maximum size of convolution box in pixels
-        assert_equal(dao._maxbox, maxbox)
-        radius = np.max([0.637*fwhm, 2.001])
-        assert_equal(dao._radius, radius)
-        radsq = radius**2
-        nhalf = np.min([int(radius), int((maxbox-1)/2.)])
-        assert_equal(dao._nhalf, nhalf)
-        nbox = 2*nhalf + 1  # number of pixels in side of convolution box
-        assert_equal(dao._nbox, nbox)
-
-        sigsq = (fwhm*gaussian_fwhm_to_sigma)**2
-        assert_equal(dao._sigma2, sigsq)
-
-        mask = np.zeros([nbox, nbox], dtype='int8')
-        g = np.zeros([nbox, nbox])  # Gaussian convolution kernel
-        row2 = (np.arange(nbox)-nhalf)**2
-        for i in range(nhalf+1):
-            temp = row2 + i**2
-            g[nhalf-i, :] = temp
-            g[nhalf+i, :] = temp
-        g_row = np.where(g <= radsq)
-        # MASK is complementary to SKIP in Stetson's Fortran
-        mask[g_row[0], g_row[1]] = 1
-        assert_equal(dao._conv_mask, mask)
-        good = np.where(mask)  # Value of c are now equal to distance to center
-        pixels = len(good[0])
-
-        # Compute quantities for centroid computations that can be used for all
-        # stars
-        g = np.exp(-0.5*g/sigsq)
-        assert_equal(dao._g, g)
-
-        xwt = np.zeros([nbox, nbox])
-        wt = nhalf - np.abs(np.arange(nbox)-nhalf) + 1
-        assert_equal(dao._wt, wt)
-        for i in range(nbox):
-            xwt[i, :] = wt
-        assert_equal(dao._xwt, xwt)
-        ywt = np.transpose(xwt)
-        assert_equal(dao._ywt, ywt)
-        sgx = np.sum(g*xwt, 1)
-        assert_equal(dao._sgx, sgx)
-        p = np.sum(wt)
-        assert_equal(dao._p, p)
-        sgy = np.sum(g*ywt, 0)
-        assert_equal(dao._sgy, sgy)
-        sumgx = np.sum(wt*sgy)
-        assert_equal(dao._sumgx, sumgx)
-        sumgy = np.sum(wt*sgx)
-        assert_equal(dao._sumgy, sumgy)
-        sumgsqy = np.sum(wt*sgy*sgy)
-        assert_equal(dao._sumgsqy, sumgsqy)
-        sumgsqx = np.sum(wt*sgx*sgx)
-        assert_equal(dao._sumgsqx, sumgsqx)
-        vec = nhalf - np.arange(nbox)
-        assert_equal(dao._vec, vec)
-        dgdx = sgy*vec
-        assert_equal(dao._dgdx, dgdx)
-        dgdy = sgx*vec
-        assert_equal(dao._dgdy, dgdy)
-        sdgdxs = np.sum(wt*dgdx**2)
-        assert_equal(dao._sdgdxs, sdgdxs)
-        sdgdx = np.sum(wt*dgdx)
-        assert_equal(dao._sdgdx, sdgdx)
-        sdgdys = np.sum(wt*dgdy**2)
-        assert_equal(dao._sdgdys, sdgdys)
-        sdgdy = np.sum(wt*dgdy)
-        assert_equal(dao._sdgdy, sdgdy)
-        sgdgdx = np.sum(wt*sgy*dgdx)
-        assert_equal(dao._sgdgdx, sgdgdx)
-        sgdgdy = np.sum(wt*sgx*dgdy)
-        assert_equal(dao._sgdgdy, sgdgdy)
-
-        c = g*mask  # Convolution kernel now in c
-        sumc = np.sum(c)
-        sumcsq = np.sum(c**2) - sumc**2/pixels
-        sumc = sumc/pixels
-        c[good[0], good[1]] = (c[good[0], good[1]] - sumc)/sumcsq
-        assert_equal(dao._kernel, c)
-        c1 = np.exp(-.5*row2/sigsq)
-        sumc1 = np.sum(c1)/nbox
-        sumc1sq = np.sum(c1**2) - sumc1
-        c1 = (c1-sumc1)/sumc1sq
-        assert_equal(dao._c1, c1)
 
     def test_daofind_sharpness(self):
         # compare my implementation with D.Jones PythonPhot
@@ -795,37 +623,9 @@ class Test_StarFind():
         im = gen_image(size, x, y, f, sky, rdnoise,
                        model='gaussian', sigma=sigma, theta=theta)
 
-        fwhm = calc_fwhm(im, x, y, box_size=25, model='gaussian', min_fwhm=3.0)
+        fwhm = median_fwhm(im, x, y, box_size=25, model='gaussian',
+                           min_fwhm=3.0)
         assert_almost_equal(fwhm, 2.35*sigma, decimal=0)
-
-    @pytest.mark.skip('Wrong new centers?')
-    def test_starfind_recenter_sources(self):
-        size = (256, 256)
-        number = 10
-        sky = 70
-        rdnoise = 20
-        low = 120000
-        high = 320000
-        sigma = 5
-        theta = 0
-
-        x, y, f = gen_position_flux(size, number, low, high, rng_seed=456)
-
-        im = gen_image(size, x, y, f, sky, rdnoise,
-                       model='gaussian', sigma=sigma, theta=theta)
-
-        nx, ny = recenter_sources(im,
-                                  x+np.random.normal(loc=0, scale=1,
-                                                     size=len(x)),
-                                  y+np.random.normal(loc=0, scale=1,
-                                                     size=len(x)),
-                                  box_size=15, model='gaussian')
-
-        assert_equal(len(nx), number)
-        assert_equal(len(ny), number)
-        # TODO: this seems unprecise. Investigate it.
-        assert_almost_equal(nx, x, decimal=-1)
-        assert_almost_equal(ny, y, decimal=-1)
 
     def test_starfind_one_star(self):
         size = (128, 128)
