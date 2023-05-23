@@ -63,27 +63,31 @@ class Test_FrameData_Shape_Consistency():
         unct = np.ones(self.shape)*0.1
         mask = np.zeros(self.shape)
         mask[1:2, 3:4] = 1
-        d, u, m = shape_consistency(data, unct, mask)
+        flags = np.zeros(self.shape)
+        d, u, m, f = shape_consistency(data, unct, mask, flags)
         assert_equal(d, data)
         assert_equal(u, unct)
         assert_equal(m, mask)
+        assert_equal(f, flags)
 
     def test_only_unct(self):
         data = np.zeros(self.shape)
         unct = np.ones(self.shape)*0.1
-        d, u, m = shape_consistency(data, unct, mask=None)
+        d, u, m, f = shape_consistency(data, unct)
         assert_equal(d, data)
         assert_equal(u, unct)
         assert_is_none(m)
+        assert_is_none(f)
 
     def test_only_mask(self):
         data = np.zeros(self.shape)
         mask = np.zeros(self.shape)
         mask[1:2, 3:4] = 1
-        d, u, m = shape_consistency(data, None, mask)
+        d, u, m, f = shape_consistency(data, None, mask)
         assert_equal(d, data)
         assert_is_none(u)
         assert_equal(m, mask)
+        assert_is_none(f)
 
     def test_no_data(self):
         # raises with uncertainty
@@ -92,39 +96,38 @@ class Test_FrameData_Shape_Consistency():
         # raises with mask
         with pytest.raises(ValueError):
             shape_consistency(None, None, 1)
+        # raises with flags
+        with pytest.raises(ValueError):
+            shape_consistency(None, None, None, 1)
 
     def test_all_none(self):
         # all none must return all none
-        d, u, m = shape_consistency()
+        d, u, m, f = shape_consistency()
         assert_is_none(d)
         assert_is_none(u)
         assert_is_none(m)
-
-        # same for only mask=False
-        d, u, m = shape_consistency(mask=False)
-        assert_is_none(d)
-        assert_is_none(u)
-        assert_false(m)
+        assert_is_none(f)
 
     def test_single_value_uncert(self):
         data = np.zeros(self.shape)
         unct = 0.1
-        d, u, m = shape_consistency(data, unct)
+        d, u, m, f = shape_consistency(data, unct)
         assert_equal(d, data)
         assert_equal(u, np.ones(self.shape)*unct)
         assert_is_none(m)
+        assert_is_none(f)
 
     def test_single_value_mask(self):
+        # mask will not create a full array
         data = np.zeros(self.shape)
-        d, u, m = shape_consistency(data, None, False)
-        assert_equal(d, data)
-        assert_is_none(u)
-        assert_equal(m, np.zeros(self.shape, dtype=bool))
+        with pytest.raises(ValueError):
+            shape_consistency(data, None, False)
 
-        d, u, m = shape_consistency(data, None, True)
-        assert_equal(d, data)
-        assert_is_none(u)
-        assert_equal(m, np.ones(self.shape, dtype=bool))
+    def test_single_value_flags(self):
+        # flags will not create a full array
+        data = np.zeros(self.shape)
+        with pytest.raises(ValueError):
+            shape_consistency(data, None, None, 1)
 
     def test_wrong_shape_uncertainty(self):
         data = np.zeros(self.shape)
@@ -137,6 +140,12 @@ class Test_FrameData_Shape_Consistency():
         mask = np.ones((2, 2))
         with pytest.raises(ValueError):
             shape_consistency(data, None, mask)
+
+    def test_wrong_shape_flags(self):
+        data = np.zeros(self.shape)
+        flags = np.ones((2, 2))
+        with pytest.raises(ValueError):
+            shape_consistency(data, flags=flags)
 
 
 class Test_Uncertainty_Unit_Consitency():

@@ -5,7 +5,7 @@ import pytest
 from enum import Flag
 import numpy as np
 
-from astropop.flags import mask_from_flags
+from astropop.flags import mask_from_flags, add_flag_to_array
 from astropop.testing import *
 
 

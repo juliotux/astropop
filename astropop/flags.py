@@ -46,8 +46,6 @@ def mask_from_flags(values, flags_to_mask, allowed_flags_class=None):
                 raise TypeError('All flags must be from the same class')
         flag |= f.value
 
-    mask = np.zeros_like(values, dtype=bool)
-    for flag in flags_to_mask:
-        mask |= np.greater(np.bitwise_and(values, flag.value), 0)
+    mask = np.greater(np.bitwise_and(values, flag.value), 0)
 
     return mask

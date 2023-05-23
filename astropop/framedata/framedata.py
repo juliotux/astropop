@@ -23,46 +23,32 @@ from .._unit_property import unit_property
 __all__ = ['FrameData', 'PixelMaskFlags']
 
 
-def _get_shape(d):
-    if hasattr(d, 'shape'):
-        ds = d.shape
-    else:
-        ds = np.array(d).shape
-    return ds
-
-
-def shape_consistency(data=None, uncertainty=None, mask=None):
+def shape_consistency(data=None, uncertainty=None, mask=None, flags=None):
     """Check shape consistency across `data`, `uncertaitny` and `mask`."""
-    if data is None and uncertainty is not None:
-        raise ValueError('Uncertainty set for an empty data.')
-    if data is None and mask not in (None, False):
-        raise ValueError('Mask set for an empty data.')
+    dshape = np.shape(data)
 
-    dshape = _get_shape(data)
+    def _check(arr, name, replicate=False):
+        if arr is None:
+            return
+        if arr is not None and data is None:
+            raise ValueError(f'{name} set for an empty data.')
+        ashape = np.shape(arr)
 
-    if uncertainty is not None:
-        ushape = _get_shape(uncertainty)
+        # if replicate, create an array full of value
+        if ashape == () and replicate:
+            arr = np.full(dshape, fill_value=arr)
+            ashape = arr.shape
 
-        if ushape == ():
-            uncertainty = np.ones(dshape)*uncertainty
-            ushape = uncertainty.shape
-
-        if ushape != dshape:
-            raise ValueError(f'Uncertainty shape {ushape} don\'t match'
+        if ashape != dshape:
+            raise ValueError(f'{name} shape {ashape} don\'t match'
                              f' Data shape {dshape}.')
+        return arr
 
-    if mask is not None:
-        mshape = _get_shape(mask)
+    uncertainty = _check(uncertainty, 'Uncertainty', replicate=True)
+    mask = _check(mask, 'Mask', replicate=False)
+    flags = _check(flags, 'Flags', replicate=False)
 
-        if mshape == ():
-            mask = np.logical_or(np.zeros(dshape), mask)
-            mshape = mask.shape
-
-        if mask.shape != dshape:
-            raise ValueError(f'Mask shape {mshape} don\'t match'
-                             f' Data shape {dshape}.')
-
-    return data, uncertainty, mask
+    return data, uncertainty, mask, flags
 
 
 def extract_units(data, unit):
@@ -225,7 +211,7 @@ class FrameData:
                  wcs=None, meta=None, header=None,
                  cache_folder=None, cache_filename=None,
                  use_memmap_backend=False, origin_filename=None):
-
+        # TODO: implement pixel list
         self.cache_folder = cache_folder
         self.cache_filename = cache_filename
         self._origin = origin_filename
@@ -247,19 +233,24 @@ class FrameData:
                 mask = np.logical_or(dmask, mask)
             else:
                 mask = dmask
-        if mask is None:  # Default do not mask anything
-            # TODO: handle the mask to flag
-            mask = False
-        # TODO: insert flags here
 
         # raise errors if incompatible shapes
-        data, uncertainty, mask = shape_consistency(data, uncertainty, mask)
+        data, uncertainty, mask, flags = shape_consistency(data, uncertainty,
+                                                           mask, flags)
+        if flags is None:
+            flags = np.zeros_like(data, dtype=np.uint8)
+
         # raise errors if incompatible units
         unit = extract_units(data, unit)
         self.unit = unit
         self._data.reset_data(data, dtype)
         self._unct.reset_data(uncertainty, u_dtype)
         self._flags.reset_data(flags, np.uint8)
+
+        # create flag for masked pixels
+        if mask is not None:
+            mask = np.asarray(mask, dtype=bool)
+            self.add_flags(PixelMaskFlags.MASKED, mask)
 
         # avoiding security problems
         self._history = []
@@ -438,6 +429,33 @@ class FrameData:
         """
         return mask_from_flags(self._flags, flags,
                                allowed_flags_class=PixelMaskFlags)
+
+    @property
+    def flags(self):
+        """Get the flags frame container."""
+        return self._flags
+
+    @flags.setter
+    def flags(self, value):
+        if value is None:
+            self._flags.reset_data(value)
+        else:
+            _, value, _ = shape_consistency(self.data, flags=value)
+            self._flags.reset_data(value, dtype=np.uint8)
+
+    def add_flags(self, flag, where):
+        """Add a given flag to the pixels in the given positions.
+
+        Parameters
+        ----------
+        flag : `PixelMaskFlags`
+            Flag to be added.
+        where : `~numpy.ndarray`
+            Positions where the flag will be added.
+        """
+        if not isinstance(flag, PixelMaskFlags):
+            raise TypeError('Flag must be a PixelMaskFlags instance.')
+        self._flags[where] |= flag.value
 
     def astype(self, dtype):
         """Return a copy of the current FrameData with new dtype in data."""
