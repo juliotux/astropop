@@ -2,6 +2,7 @@
 """Aperture photometry module."""
 
 import numpy as np
+from enum import Flag
 from astropy import __version__ as astropy_version
 from astropy.table import Table
 from astropy.stats import SigmaClip
@@ -20,7 +21,7 @@ from astropop.fits_utils import imhdus
 __all__ = ['aperture_photometry', 'PhotometryFlags']
 
 
-class PhotometryFlags:
+class PhotometryFlags(Flag):
     """Flags for aperture photometry. Do not subclass it."""
 
     # 1: At least one pixel in the aperture was removed or masked
