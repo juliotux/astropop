@@ -8,11 +8,13 @@ import os
 import numpy as np
 import copy as cp
 import tempfile
+from enum import Flag
 from astropy import units as u
 from astropy.io import fits
 from astropy.wcs import WCS
 
 from ..py_utils import check_iterable
+from ..flags import mask_from_flags
 from .memmap import MemMapArray
 from .compat import _to_ccddata, _to_hdu, _merge_and_clean_header, _write_fits
 from .._unit_property import unit_property
@@ -146,11 +148,8 @@ def setup_filename(frame, cache_folder=None, filename=None):
     return os.path.join(cache_folder, filename)
 
 
-class PixelMaskFlags:
-    """Flags for pixel masking.
-
-    For subclassing, use values higher than 1 << 6.
-    """
+class PixelMaskFlags(Flag):
+    """Flags for pixel masking."""
     DEAD = 1 << 0  # dead pixel
     BAD = 1 << 1  # bad pixel
     SATURATED = 1 << 2  # saturated pixel, above a threshold level
@@ -183,7 +182,8 @@ class FrameData:
     u_dtype : string or `~numpy.dtype` (optional)
         Mandatory dtype of uncertainty.
     mask : array_like or `None` (optional)
-        Frame mask.
+        Frame mask. All the masked pixels will be flagged as
+        `PixelMaskFlags.MASKED`.
     flags : array_like or `None` (optional)
         Pixel flags for the frame. See `~astropop.FrameData.PixelMaskFlags`.
         for values.
@@ -221,8 +221,7 @@ class FrameData:
     _comments = None
 
     def __init__(self, data, unit=None, dtype=None,
-                 uncertainty=None, u_dtype=None,
-                 mask=None, flags=None, m_dtype=bool,
+                 uncertainty=None, u_dtype=None, mask=None, flags=None,
                  wcs=None, meta=None, header=None,
                  cache_folder=None, cache_filename=None,
                  use_memmap_backend=False, origin_filename=None):
@@ -249,6 +248,7 @@ class FrameData:
             else:
                 mask = dmask
         if mask is None:  # Default do not mask anything
+            # TODO: handle the mask to flag
             mask = False
         # TODO: insert flags here
 
@@ -259,8 +259,7 @@ class FrameData:
         self.unit = unit
         self._data.reset_data(data, dtype)
         self._unct.reset_data(uncertainty, u_dtype)
-        # TODO: change mask to flags
-        self._mask.reset_data(mask, m_dtype)
+        self._flags.reset_data(flags, np.uint8)
 
         # avoiding security problems
         self._history = []
@@ -292,17 +291,15 @@ class FrameData:
             nu = self._unct._contained
         else:
             nu = None
-        if self._mask is not None:
-            # TODO: changing to flags
-            self._mask.disable_memmap(remove=True)
-            nm = self._mask._contained
+        if self._flags is not None:
+            self._flags.disable_memmap(remove=True)
+            nm = self._flags._contained
         else:
             nm = None
 
         self._data = MemMapArray(nd, filename=cache_file + '.data')
         self._unct = MemMapArray(nu, filename=cache_file + '.unct')
-        # TODO: change to flags
-        self._mask = MemMapArray(nm, filename=cache_file + '.mask')
+        self._flags = MemMapArray(nm, filename=cache_file + '.flags')
 
     @property
     def history(self):
@@ -424,11 +421,23 @@ class FrameData:
 
     @property
     def mask(self):
-        """Access mask data, boolean values. True for masked pixels."""
+        """Mask all flagged pixels. True for masked pixels."""
         return np.bool_(self._flags)
 
-    # TODO: mask setter removed. Change it to flags setter or flags add
-    # TODO: mask_flags(flags) -> return a image with specific flags
+    def mask_flags(self, flags):
+        """Mask pixels with an specific flag.
+
+        Parameters
+        ----------
+        flags: list of `PixelMaskFlags` or `PixelMaskFlags`
+
+        Returns
+        -------
+        mask: `~numpy.ndarray`
+            Masked pixels. True for masked pixels.
+        """
+        return mask_from_flags(self._flags, flags,
+                               allowed_flags_class=PixelMaskFlags)
 
     def astype(self, dtype):
         """Return a copy of the current FrameData with new dtype in data."""
@@ -445,8 +454,7 @@ class FrameData:
             Default: `None`
         """
         data = np.array(self._data) if not self._data.empty else None
-        # TODO: change to flags
-        mask = np.array(self._mask) if not self._mask.empty else None
+        flags = np.array(self._flags) if not self._flags.empty else None
         unct = np.array(self._unct) if not self._unct.empty else None
         unit = self._unit
         wcs = cp.copy(self._wcs)
@@ -464,7 +472,7 @@ class FrameData:
         if cache_fname is not None:
             cache_fname = cache_fname + '_copy'
 
-        nframe = FrameData(data, unit=unit, mask=mask, uncertainty=unct,
+        nframe = FrameData(data, unit=unit, flags=flags, uncertainty=unct,
                            meta=meta, cache_folder=cache_folder,
                            cache_filename=cache_fname, origin_filename=fname)
         nframe.history = hist
@@ -485,22 +493,19 @@ class FrameData:
         if filename is None and cache_folder is None:
             self._data.enable_memmap()
             self._unct.enable_memmap()
-            # TODO: change to flags
-            self._mask.enable_memmap()
+            self._flags.enable_memmap()
         else:
             cache_file = setup_filename(self, cache_folder, filename)
             self._update_cache_files(cache_file)
             self._data.enable_memmap(cache_file + '.data')
-            # TODO: change to flags
-            self._mask.enable_memmap(cache_file + '.mask')
+            self._flags.enable_memmap(cache_file + '.flags')
             self._unct.enable_memmap(cache_file + '.unct')
         self._memmapping = True
 
     def disable_memmap(self):
         """Disable frame file memmapping (load to memory)."""
         self._data.disable_memmap(remove=True)
-        # TODO: change to flags
-        self._mask.disable_memmap(remove=True)
+        self._flags.disable_memmap(remove=True)
         self._unct.disable_memmap(remove=True)
         self._memmapping = False
 
