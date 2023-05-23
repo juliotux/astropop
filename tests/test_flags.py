@@ -27,7 +27,7 @@ class OtherFlags(Flag):
 
 class TestMaskFromFlag:
     @pytest.mark.parametrize('flags', [None, 1, 1.0, 'a', [1, 2, 3],
-                                       [1, 2.0, 3], [1, 'a', 3],])
+                                       [1, 2.0, 3], [1, 'a', 3]])
     def test_non_flag(self, flags):
         data = np.arange(10)
         with pytest.raises(TypeError):
