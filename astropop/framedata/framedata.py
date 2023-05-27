@@ -384,7 +384,7 @@ class FrameData:
         if value is None:
             self._unct.reset_data(value)
         else:
-            _, value, _ = shape_consistency(self.data, value, None)
+            _, value, _, _ = shape_consistency(self.data, value, None)
             value = uncertainty_unit_consistency(self.unit, value)
             self._unct.reset_data(value)
 
@@ -440,7 +440,7 @@ class FrameData:
         if value is None:
             self._flags.reset_data(value)
         else:
-            _, value, _ = shape_consistency(self.data, flags=value)
+            _, _, _, flags = shape_consistency(self.data, flags=value)
             self._flags.reset_data(value, dtype=np.uint8)
 
     def add_flags(self, flag, where):

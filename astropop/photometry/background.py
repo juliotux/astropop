@@ -89,6 +89,6 @@ def background(data, box_size=64, filter_size=3, mask=None,
                        bkgrms_estimator=_rms_methods[rms_method]())
 
     if global_bkg:
-        return bkg.background_median, bkg.background_rms_median
+        return float(bkg.background_median), float(bkg.background_rms_median)
     else:
         return bkg.background, bkg.background_rms
