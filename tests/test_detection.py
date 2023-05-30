@@ -442,10 +442,6 @@ class Test_DAOFind_Detection():
         assert_almost_equal(sources['sharp'], expect_sharp, decimal=1)
 
     def test_daofind_roundness(self):
-        # compare my implementation with D.Jones PythonPhot
-        # without filtering, both have to output the same round/sharp and
-        # the same coordinates for all stars, because use the same algorithm
-
         image_size = (525, 200)
         xpos = np.arange(10)*50 + 25
         ypos = np.ones_like(xpos)*30 + np.arange(len(xpos))*10
