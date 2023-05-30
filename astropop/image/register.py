@@ -8,7 +8,7 @@ import numpy as np
 
 from .processing import trim_image
 from ..logger import logger
-from ..framedata import check_framedata, FrameData
+from ..framedata import check_framedata, FrameData, PixelMaskFlags
 
 
 __all__ = ['CrossCorrelationRegister', 'AsterismRegister',
@@ -66,10 +66,15 @@ class _BaseRegister(abc.ABC):
     _name = None
 
     @staticmethod
-    def _apply_transform_image(image, tform, cval=0):
+    def _apply_transform_image(image, tform, cval=0, order=3):
         """Apply the transform to an image."""
+        # ensure correct data types
+        image = np.array(image)
+        cval = float(cval)
+
+        # apply the transform
         return transform.warp(image, tform, mode='constant', cval=cval,
-                              preserve_range=True)
+                              preserve_range=True, order=order)
 
     @abc.abstractmethod
     def _compute_transform(self, image1, image2, mask1=None, mask2=None):
@@ -131,6 +136,7 @@ class _BaseRegister(abc.ABC):
         if mask2 is None:
             mask2 = np.zeros_like(image2)
 
+        # TODO: consider the mask here
         if cval == 'median':
             cval = np.nanmedian(image2)
         if cval == 'mean':
@@ -141,7 +147,10 @@ class _BaseRegister(abc.ABC):
         logger.info('Registering image with: '
                     'translation=%s, rotation=%.2f°',
                     tform.translation, np.rad2deg(tform.rotation))
-        mask = self._apply_transform_image(mask2, tform, cval=1)
+
+        # use float to get partial covered pixels and mask them
+        mask = self._apply_transform_image(mask2.astype('f8'), tform, cval=1,
+                                           order=0)
         mask = mask > 0
         return reg_image, mask, tform
 
@@ -176,8 +185,7 @@ class _BaseRegister(abc.ABC):
         msk1 = frame1.mask if frame1.mask is None else np.array(frame1.mask)
         msk2 = frame2.mask if frame2.mask is None else np.array(frame2.mask)
 
-        data, mask, tform = self.register_image(im1, im2, msk1, msk2,
-                                                cval=cval)
+        data, _, tform = self.register_image(im1, im2, msk1, msk2, cval=cval)
 
         if inplace:
             reg_frame = frame2
@@ -186,7 +194,11 @@ class _BaseRegister(abc.ABC):
             reg_frame = frame2.copy()
 
         reg_frame.data = data
-        reg_frame.mask = mask
+        f_cval = PixelMaskFlags.OUT_OF_BOUNDS.value
+        # use order=0 and np.uint8 to avoid interpolation and keep the mask
+        reg_frame.flags = self._apply_transform_image(frame2.flags, tform,
+                                                      cval=f_cval,
+                                                      order=0).astype(np.uint8)
 
         if not frame2.uncertainty.empty:
             unct = frame2.get_uncertainty(return_none=False)

@@ -437,8 +437,11 @@ class FrameData:
 
     @flags.setter
     def flags(self, value):
+        if np.array(value).dtype.kind != 'u':
+            raise TypeError('Flags must be an unsigned integer, not '
+                            f'{np.array(value).dtype}.')
         if value is None:
-            self._flags.reset_data(value)
+            self._flags.reset_data(value, dtype=np.uint8)
         else:
             _, _, _, flags = shape_consistency(self.data, flags=value)
             self._flags.reset_data(value, dtype=np.uint8)
