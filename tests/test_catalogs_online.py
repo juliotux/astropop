@@ -66,6 +66,7 @@ hd674_coords = ["HD 674", "00h10m52s -54d17m26s", [2.716748, -54.290647],
 search_radius = ['0.1d', 0.1, Angle('0.1d')]
 
 
+@pytest.mark.flaky(reruns=5)
 @pytest.mark.remote_data
 class Test_OnlineTools:
     def test_timeout_retry_error(self):
@@ -311,6 +312,7 @@ class Test_DummySourcesCatalog:
             c = D(sirius_coords[0], search_radius[0], band='A')
 
 
+@pytest.mark.flaky(reruns=5)
 @pytest.mark.remote_data
 class Test_Simbad():
     def test_simbad_creation_errors(self):
@@ -401,6 +403,7 @@ class Test_Simbad():
                       'u', 'g', 'r', 'i', 'z'])
 
 
+@pytest.mark.flaky(reruns=5)
 @pytest.mark.remote_data
 class Test_SimbadQueryID:
     @pytest.mark.parametrize('order, expect', [(None, 'alf CMa'),
@@ -432,6 +435,7 @@ class Test_SimbadQueryID:
         assert_equal(res, name)
 
 
+@pytest.mark.flaky(reruns=5)
 class Test_VizierGeneral:
     def test_print_available_catalogs(self):
         assert_is_instance(vizier.list_vizier_catalogs(), str)
@@ -456,6 +460,7 @@ class Test_VizierGeneral:
         assert_in('ucac4', cat.help())
 
 
+@pytest.mark.flaky(reruns=5)
 @pytest.mark.remote_data
 class Test_Vizier_UCAC4:
     hd674_mags = {
@@ -526,6 +531,7 @@ class Test_Vizier_UCAC4:
         assert_equal(s.filters, ['V'])
 
 
+@pytest.mark.flaky(reruns=5)
 @pytest.mark.remote_data
 class Test_Vizier_APASS9:
     hd674_mags = {
@@ -593,6 +599,7 @@ class Test_Vizier_APASS9:
         assert_equal(s.filters, ['V'])
 
 
+@pytest.mark.flaky(reruns=5)
 @pytest.mark.remote_data
 class Test_Vizier_GSC242:
     hd674_mags = {
@@ -682,6 +689,7 @@ class Test_Vizier_GSC242:
         assert_equal(s.filters, ['V'])
 
 
+@pytest.mark.flaky(reruns=5)
 @pytest.mark.remote_data
 class Test_VSXVizierCatalog:
     def test_vsx_creation_errors(self):
@@ -739,6 +747,7 @@ class Test_VSXVizierCatalog:
         assert_equal(s.filters, [])
 
 
+@pytest.mark.flaky(reruns=5)
 class Test_2MASSVizierSourcesCatalog:
     hd674_mags = {
         'J': [10.157, 0.021],
@@ -802,6 +811,7 @@ class Test_2MASSVizierSourcesCatalog:
         assert_equal(s.filters, ['J', 'H', 'K'])
 
 
+@pytest.mark.flaky(reruns=5)
 class Test_WISEVizierSourcesCatalog:
     hd674_mags = {
         'W1': [10.013, 0.024],
@@ -869,6 +879,7 @@ class Test_WISEVizierSourcesCatalog:
         assert_equal(s.filters, ['W1', 'W2', 'W3', 'W4'])
 
 
+@pytest.mark.flaky(reruns=5)
 class Test_AllWISEVizierSourcesCatalog:
     hd674_mags = {
         'W1': [10.026, 0.023],
@@ -936,6 +947,7 @@ class Test_AllWISEVizierSourcesCatalog:
         assert_equal(s.filters, ['W1', 'W2', 'W3', 'W4'])
 
 
+@pytest.mark.flaky(reruns=5)
 class Test_Tycho2VizierSourcesCatalog:
     hd674_mags = {
         'BT': [10.809, 0.034],
@@ -999,6 +1011,7 @@ class Test_Tycho2VizierSourcesCatalog:
         assert_equal(s.filters, ['BT', 'VT'])
 
 
+@pytest.mark.flaky(reruns=5)
 @pytest.mark.remote_data
 class Test_GaiaDR3:
     hd674_mags = {
