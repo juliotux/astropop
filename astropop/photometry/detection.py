@@ -122,6 +122,10 @@ def segfind(data, threshold, background, noise, mask=None, fwhm=None, npix=5,
         Default: `None`
     npix: `int` (optional)
         Minimum number of connected pixels to consider a source.
+        Default: `5`
+    deblend: `bool` (optional)
+        If `True`, the algorithm will try to deblend the sources.
+        Default: `True`
 
     Returns
     -------
