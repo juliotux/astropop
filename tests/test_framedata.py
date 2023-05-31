@@ -55,7 +55,7 @@ def test_extract_units(dunit, unit, expected):
         assert_equal(eunit, expected)
 
 
-class Test_FrameData_Shape_Consistency():
+class Test_FrameData_Shape_Consistency:
     shape = (12, 15)
 
     def test_all_ok(self):
@@ -148,7 +148,7 @@ class Test_FrameData_Shape_Consistency():
             shape_consistency(data, flags=flags)
 
 
-class Test_Uncertainty_Unit_Consitency():
+class Test_Uncertainty_Unit_Consitency:
     def test_all_ok_quantity(self):
         unit = 'adu'
         unct = 0.1*u.Unit('adu')
@@ -175,7 +175,7 @@ class Test_Uncertainty_Unit_Consitency():
             uncertainty_unit_consistency(unit, unct)
 
 
-class Test_FrameData_Setup_Filename():
+class Test_FrameData_Setup_Filename:
     fname = 'test_filename.npy'
 
     def frame(self, path):
@@ -224,7 +224,7 @@ class Test_FrameData_Setup_Filename():
                      cache_file)
 
 
-class Test_CheckRead_FrameData():
+class Test_CheckRead_FrameData:
     # TODO: test .fz files and CompImageHDU
 
     def test_check_framedata_framedata(self):
@@ -483,7 +483,7 @@ class Test_CheckRead_FrameData():
             read_framedata(None)
 
 
-class Test_FrameData_Copy():
+class Test_FrameData_Copy:
     def test_copy_simple(self):
         frame = create_framedata()
         ccd_copy = frame.copy()
@@ -564,7 +564,7 @@ class Test_FrameData_Copy():
         assert_path_exists(expect+'.mask')
 
 
-class Test_FrameData_History():
+class Test_FrameData_History:
     def test_framedata_set_history(self):
         frame = create_framedata()
         frame.history = 'once upon a time'
@@ -581,7 +581,24 @@ class Test_FrameData_History():
         assert_equal(frame.history[5],  'computer memory.')
 
 
-class Test_FrameData_Creation():
+class Test_FrameData_Comment:
+    def test_framedata_set_comment(self):
+        frame = create_framedata()
+        frame.comment = 'this is a test'
+        frame.comment = 'to make commenst in astropop'
+        frame.comment = ['that can', 'be lists']
+        frame.comment = ('or also', 'tuples.')
+
+        assert_equal(len(frame.comment), 6)
+        assert_equal(frame.comment[0], 'this is a test')
+        assert_equal(frame.comment[1], 'to make commenst in astropop')
+        assert_equal(frame.comment[2], 'that can')
+        assert_equal(frame.comment[3], 'be lists')
+        assert_equal(frame.comment[4], 'or also')
+        assert_equal(frame.comment[5],  'tuples.')
+
+
+class Test_FrameData_Creation:
     def test_framedata_cration_array(self):
         a = _random_array.copy()
         meta = DEFAULT_HEADER.copy()
@@ -707,7 +724,7 @@ class Test_FrameData_Creation():
         assert_equal(f.mask, expect)
 
 
-class Test_FrameData_WCS():
+class Test_FrameData_WCS:
     def test_wcs_invalid(self):
         frame = create_framedata()
         with pytest.raises(TypeError):
@@ -720,7 +737,7 @@ class Test_FrameData_WCS():
         assert_equal(frame.wcs, wcs)
 
 
-class Test_FrameData_Meta():
+class Test_FrameData_Meta:
     def test_framedata_meta_header(self):
         header = DEFAULT_HEADER.copy()
         meta = {'testing1': 'a', 'testing2': 'b'}
@@ -811,7 +828,7 @@ class Test_FrameData_Meta():
             frame.wcs = 1
 
 
-class Test_FrameData_Uncertainty():
+class Test_FrameData_Uncertainty:
     def test_setting_uncertainty_with_array(self):
         frame = create_framedata()
         frame.uncertainty = None
@@ -847,7 +864,7 @@ class Test_FrameData_Uncertainty():
 
     def test_setting_bad_uncertainty_raises_error(self):
         frame = create_framedata()
-        with pytest.raises(TypeError):
+        with pytest.raises(ValueError, match='could not convert'):
             # Uncertainty is supposed to be an instance of NDUncertainty
             frame.uncertainty = 'not a uncertainty'
 
@@ -880,7 +897,7 @@ class Test_FrameData_Uncertainty():
         assert_equal(frame.get_uncertainty(False), np.ones(shp))
 
 
-class Test_FrameData_FITS():
+class Test_FrameData_FITS:
     def test_to_hdu_defaults(self):
         frame = create_framedata()
         frame.meta = {'observer': 'Edwin Hubble'}
@@ -931,6 +948,15 @@ class Test_FrameData_FITS():
         assert_is_instance(hdul, fits.HDUList)
         assert_equal(hdul[0].header['history'], ['test 1', 'test 2', 'test'])
 
+    def test_to_hdu_comment(self):
+        frame = create_framedata()
+        frame.comment = 'test 1'
+        frame.comment = ['test 2', 'test']
+
+        hdul = frame.to_hdu()
+        assert_is_instance(hdul, fits.HDUList)
+        assert_equal(hdul[0].header['comment'], ['test 1', 'test 2', 'test'])
+
     def test_write_unit_to_hdu(self):
         frame = create_framedata()
         ccd_unit = frame.unit
@@ -939,7 +965,7 @@ class Test_FrameData_FITS():
         assert_equal(hdulist[0].header['bunit'].strip(), ccd_unit.to_string())
 
 
-class Test_FrameData_CCDData():
+class Test_FrameData_CCDData:
     shape = (10, 10)
     meta = {'OBSERVER': 'testing', 'very long keyword': 1}
     unit = 'adu'
@@ -1008,28 +1034,28 @@ class Test_FrameData_CCDData():
         assert_equal(ccd.uncertainty.uncertainty_type, 'std')
 
 
-class Test_FrameData_MemMap():
+class Test_FrameData_MemMap:
     def test_framedata_memmap_default(self):
         frame = create_framedata()
         assert_false(frame._data.memmap)
         assert_false(frame._unct.memmap)
-        assert_false(frame._mask.memmap)
+        assert_false(frame._flags.memmap)
         assert_false(frame._memmapping)
         frame.enable_memmap()
         fname = os.path.join(frame.cache_folder, frame.cache_filename)
         assert_true(frame._data.memmap)
         assert_true(frame._unct.memmap)
-        assert_true(frame._mask.memmap)
+        assert_true(frame._flags.memmap)
         assert_true(frame._memmapping)
         assert_equal(frame._data.filename, fname+'.data')
         assert_equal(frame._unct.filename, fname+'.unct')
-        assert_equal(frame._mask.filename, fname+'.mask')
+        assert_equal(frame._flags.filename, fname+'.flags')
 
     def test_framedata_memmap_setname(self, tmpdir):
         frame = create_framedata()
         assert_false(frame._data.memmap)
         assert_false(frame._unct.memmap)
-        assert_false(frame._mask.memmap)
+        assert_false(frame._flags.memmap)
         assert_false(frame._memmapping)
         c_folder = tmpdir.strpath
         c_file = 'test'
@@ -1037,31 +1063,31 @@ class Test_FrameData_MemMap():
         fname = os.path.join(c_folder, c_file)
         assert_true(frame._data.memmap)
         assert_true(frame._unct.memmap)
-        assert_true(frame._mask.memmap)
+        assert_true(frame._flags.memmap)
         assert_true(frame._memmapping)
         assert_equal(frame._data.filename, fname+'.data')
         assert_equal(frame._unct.filename, fname+'.unct')
-        assert_equal(frame._mask.filename, fname+'.mask')
+        assert_equal(frame._flags.filename, fname+'.flags')
 
     def test_framedata_disable_memmap(self):
         frame = create_framedata()
         assert_false(frame._data.memmap)
         assert_false(frame._unct.memmap)
-        assert_false(frame._mask.memmap)
+        assert_false(frame._flags.memmap)
         assert_false(frame._memmapping)
         frame.enable_memmap()
         assert_true(frame._data.memmap)
         assert_true(frame._unct.memmap)
-        assert_true(frame._mask.memmap)
+        assert_true(frame._flags.memmap)
         assert_true(frame._memmapping)
         frame.disable_memmap()
         assert_false(frame._data.memmap)
         assert_false(frame._unct.memmap)
-        assert_false(frame._mask.memmap)
+        assert_false(frame._flags.memmap)
         assert_false(frame._memmapping)
 
 
-class Test_FrameData_GetSet():
+class Test_FrameData_GetSet:
     def test_set_data_no_unit(self):
         frame = create_framedata()
         frame.data = 1
@@ -1075,7 +1101,7 @@ class Test_FrameData_GetSet():
         assert_equal(frame.unit, 's')
 
 
-class Test_FrameData_MathProps():
+class Test_FrameData_MathProps:
     def test_framedata_median_without_unit(self):
         frame = FrameData([5, 1, 3, 4, 1])
         assert_equal(frame.median(), 3)

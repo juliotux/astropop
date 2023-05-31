@@ -265,7 +265,7 @@ class FrameData:
         if len(history) > 0:
             self.history = history
         if len(comment) > 0:
-            self.comments = comment
+            self.comment = comment
         if wcs is not None:
             self._wcs = wcs
         self._meta = meta
@@ -381,6 +381,12 @@ class FrameData:
 
     @uncertainty.setter
     def uncertainty(self, value):
+        # ensure float values
+        if np.isscalar(value):
+            value = float(value)
+        else:
+            value = np.asarray(value, dtype=self.dtype)
+
         if value is None:
             self._unct.reset_data(value)
         else:
