@@ -333,15 +333,15 @@ class AsterismRegister(_BaseRegister):
     _name = 'asterism-matching'
 
     def __init__(self, max_control_points=50, detection_threshold=5,
-                 detection_function='sepfind', **detection_kwargs):
+                 detection_function='segfind', **detection_kwargs):
         try:
             import astroalign
         except ImportError:
             raise ImportError('AsterismRegister requires astroalign tools.')
 
-        from ..photometry import sepfind, starfind, daofind, background
+        from ..photometry import segfind, starfind, daofind, background
 
-        funcs = {'sepfind': sepfind, 'starfind': starfind, 'daofind': daofind}
+        funcs = {'sepfind': segfind, 'starfind': starfind, 'daofind': daofind}
         self._aa = astroalign
         self._sf = partial(funcs[detection_function], **detection_kwargs)
         self._bkg = background
