@@ -25,35 +25,41 @@ def gen_frame(value, uncertainty=None, unit='adu'):
     return frame
 
 
-def std_test_frame(op, frame1, frame2, result, inplace, handle_mask):
+def std_test_frame(op, frame1, frame2, result, inplace, handle_flags):
     """Standart comparison tests with frames."""
-    if handle_mask:
+    if handle_flags:
         # Use two different masks to check if they are compined
-        mask1 = np.zeros(SHAPE, dtype=bool)
-        mask1[2, 2] = 1
-        frame1.mask = mask1
-
-        exp_mask = np.zeros(SHAPE, dtype=bool)
-        exp_mask[2, 2] = 1
+        flag1 = np.zeros(SHAPE, dtype=np.uint8)
+        flag1[2, 2] = 2
+        flag1[1, 1] = 1
+        frame1.flags = flag1
 
         if isinstance(frame2, FrameData):
             # If frame2 is qfloat, quantity or a number, it don't have mask
-            mask2 = np.zeros(SHAPE, dtype=bool)
-            mask2[3, 3] = 1
-            exp_mask[3, 3] = 1
-            frame2.mask = mask2
+            flag2 = np.zeros(SHAPE, dtype=np.uint8)
+            flag2[3, 3] = 1
+            flag2[2, 2] = 6
+            frame2.flags = flag2
 
-        result.mask = exp_mask
+        exp_flag = np.zeros(SHAPE, dtype=np.uint8)
+        if handle_flags == 'or':
+            exp_flag[1, 1] = 1
+            exp_flag[2, 2] = 6
+            exp_flag[3, 3] = 1
+        elif handle_flags == 'and':
+            exp_flag[2, 2] = 2
+
+        result.flags = exp_flag
 
     res = imarith(frame1, frame2, op, inplace=inplace,
-                  join_masks=handle_mask)
+                  merge_flags=handle_flags)
 
     assert_equal(res.data, result.data)
     assert_almost_equal(res.get_uncertainty(False),
                         result.get_uncertainty(False))
     assert_equal(res.unit, result.unit)
-    if handle_mask:
-        assert_equal(res.mask, result.mask)
+    if handle_flags:
+        assert_equal(res.flags, result.flags)
 
     if inplace:
         assert_is(res, frame1)
@@ -61,87 +67,87 @@ def std_test_frame(op, frame1, frame2, result, inplace, handle_mask):
         assert_is_not(res, frame1)
 
 
-@pytest.mark.parametrize('handle_mask', [True, False])
+@pytest.mark.parametrize('handle_flags', ['and', 'or', 'no_merge'])
 @pytest.mark.parametrize('inplace', [True, False])
 class Test_Imartih_OPs_add:
     op = '+'
 
-    def test_uncertainty_all_none(self, inplace, handle_mask):
+    def test_uncertainty_all_none(self, inplace, handle_flags):
         frame1 = gen_frame(30, None, unit='adu')
         frame2 = gen_frame(10, None, unit='adu')
         result = gen_frame(40, None, unit='adu')
         std_test_frame(self.op, frame1, frame2, result,
-                       inplace=inplace, handle_mask=handle_mask)
+                       inplace=inplace, handle_flags=handle_flags)
 
-    def test_uncertainty_f1_none(self, inplace, handle_mask):
+    def test_uncertainty_f1_none(self, inplace, handle_flags):
         frame1 = gen_frame(30, None, unit='adu')
         frame2 = gen_frame(10, 0, unit='adu')
         result = gen_frame(40, 0, unit='adu')
         std_test_frame(self.op, frame1, frame2, result,
-                       inplace=inplace, handle_mask=handle_mask)
+                       inplace=inplace, handle_flags=handle_flags)
 
-    def test_uncertainty_f2_none(self, inplace, handle_mask):
+    def test_uncertainty_f2_none(self, inplace, handle_flags):
         frame1 = gen_frame(30, 0, unit='adu')
         frame2 = gen_frame(10, None, unit='adu')
         result = gen_frame(40, 0, unit='adu')
         std_test_frame(self.op, frame1, frame2, result,
-                       inplace=inplace, handle_mask=handle_mask)
+                       inplace=inplace, handle_flags=handle_flags)
 
-    def test_uncertainty_f1_set(self, inplace, handle_mask):
+    def test_uncertainty_f1_set(self, inplace, handle_flags):
         frame1 = gen_frame(30, 3, unit='adu')
         frame2 = gen_frame(10, None, unit='adu')
         result = gen_frame(40, 3, unit='adu')
         std_test_frame(self.op, frame1, frame2, result,
-                       inplace=inplace, handle_mask=handle_mask)
+                       inplace=inplace, handle_flags=handle_flags)
 
-    def test_uncertainty_f2_set(self, inplace, handle_mask):
+    def test_uncertainty_f2_set(self, inplace, handle_flags):
         frame1 = gen_frame(30, 0, unit='adu')
         frame2 = gen_frame(10, 3, unit='adu')
         result = gen_frame(40, 3, unit='adu')
         std_test_frame(self.op, frame1, frame2, result,
-                       inplace=inplace, handle_mask=handle_mask)
+                       inplace=inplace, handle_flags=handle_flags)
 
-    def test_uncertainty_all_set(self, inplace, handle_mask):
+    def test_uncertainty_all_set(self, inplace, handle_flags):
         frame1 = gen_frame(30, 3, unit='adu')
         frame2 = gen_frame(10, 4, unit='adu')
         result = gen_frame(40, 5, unit='adu')
         std_test_frame(self.op, frame1, frame2, result,
-                       inplace=inplace, handle_mask=handle_mask)
+                       inplace=inplace, handle_flags=handle_flags)
 
-    def test_zero(self, inplace, handle_mask):
+    def test_zero(self, inplace, handle_flags):
         frame1 = gen_frame(10, unit='adu')
         result = gen_frame(10, unit='adu')
 
         # pure number should fail
         with pytest.raises(UnitsError):
             std_test_frame(self.op, frame1, 0, result,
-                           inplace=inplace, handle_mask=handle_mask)
+                           inplace=inplace, handle_flags=handle_flags)
 
         # quantity must pass
         std_test_frame(self.op, frame1, 0*units.adu, result,
-                       inplace=inplace, handle_mask=handle_mask)
+                       inplace=inplace, handle_flags=handle_flags)
 
         # qfloat must pass
         std_test_frame(self.op, frame1, QFloat(0, unit='adu'), result,
-                       inplace=inplace, handle_mask=handle_mask)
+                       inplace=inplace, handle_flags=handle_flags)
 
-    def test_one(self, inplace, handle_mask):
+    def test_one(self, inplace, handle_flags):
         frame1 = gen_frame(10, unit='adu')
         result = gen_frame(11, unit='adu')
 
         # pure number should fail
         with pytest.raises(UnitsError):
             std_test_frame(self.op, frame1, 1, result,
-                           inplace=inplace, handle_mask=handle_mask)
+                           inplace=inplace, handle_flags=handle_flags)
 
         # quantity must pass
         std_test_frame(self.op, frame1, 1*units.adu, result,
-                       inplace=inplace, handle_mask=handle_mask)
+                       inplace=inplace, handle_flags=handle_flags)
 
         frame1 = gen_frame(10, unit='adu')  # if not do this, result gets wrong on inplace
         # qfloat must pass
         std_test_frame(self.op, frame1, QFloat(1, unit='adu'), result,
-                       inplace=inplace, handle_mask=handle_mask)
+                       inplace=inplace, handle_flags=handle_flags)
 
 
 @pytest.mark.parametrize('handle_mask', [True, False])
