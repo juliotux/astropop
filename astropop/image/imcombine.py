@@ -9,7 +9,7 @@ from astropy.stats import mad_std
 from ..framedata import FrameData, check_framedata
 from ..py_utils import check_iterable, check_number
 from ..logger import logger
-from ..math.array import all_equal
+from ._tools import merge_header, merge_flag
 
 
 # TODO: verify why cache_folder is not being used
@@ -376,7 +376,7 @@ class ImCombiner:
 
         shape = self._images[0].shape
         tot_size = self._images[0].data.nbytes
-        tot_size += self._images[0].mask.nbytes
+        tot_size += self._images[0].flags.nbytes
         tot_size *= len(self._images)
         # uncertainty is ignored
 
@@ -476,42 +476,6 @@ class ImCombiner:
 
         return data, unct
 
-    def _merge_header(self):
-        """Merge headers."""
-        meta = {}
-        if self._header_strategy == 'no_merge':
-            return meta
-
-        logger.debug('Merging headers with %s strategy.',
-                     self._header_strategy)
-
-        if self._header_strategy == 'first':
-            return self._images[0].header
-
-        summary = {h: [] for h in self._images[0].header.keys()}
-        for i in self._images:
-            hdr = i.header
-            for key in hdr.keys():
-                if key not in summary.keys():
-                    summary[key] = []
-                if hdr[key] not in summary[key]:
-                    summary[key].append(hdr[key])
-
-        if self._header_strategy == 'selected_keys':
-            keys = self._header_merge_keys
-        else:
-            keys = summary.keys()
-
-        for k in keys:
-            if all_equal(np.array(summary[k])):
-                meta[k] = summary[k][0]
-            elif self._header_strategy == 'selected_keys':
-                logger.debug('Keyword %s is different across headers. '
-                             'Unsing first one.', k)
-                meta[k] = summary[k][0]
-
-        return meta
-
     def combine(self, image_list, method, **kwargs):
         """Perform the image combining.
 
@@ -560,7 +524,6 @@ class ImCombiner:
         # temp combined data, mask and uncertainty
         data = np.zeros(self._shape, dtype=self._dtype)
         data.fill(np.nan)
-        mask = np.zeros(self._shape, dtype=bool)
         unct = np.zeros(self._shape, dtype=self._dtype)
 
         for self._buffer, self._unct_bf, slc in self._chunk_yielder(method):
@@ -570,15 +533,13 @@ class ImCombiner:
 
             # combine the images and compute the uncertainty
             data[slc], unct[slc] = self._combine(method, **kwargs)
-
-            # combine masks
-            mask[slc] = np.all([np.isnan(i) for i in self._buffer], axis=0)
-            # TODO: flag pixels with NaN as pixels with rejection
+            # TODO: manage masks and flags
 
         n = len(self._images)
-        combined = FrameData(data, unit=self._unit, mask=mask,
-                             uncertainty=unct)
-        combined.meta = self._merge_header()
+        combined = FrameData(data, unit=self._unit, uncertainty=unct)
+        combined.meta = merge_header(*[i.header for i in self._images],
+                                     method=self._header_strategy,
+                                     selected_keys=self._header_keys)
         combined.meta['HIERARCH astropop imcombine nimages'] = n
         combined.meta['HIERARCH astropop imcombine method'] = method
 
