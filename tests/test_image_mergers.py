@@ -2,7 +2,6 @@
 # flake8: noqa: F403, F405
 
 import numpy as np
-from astropy.io.fits.header import Header
 from astropop.image._tools import merge_header, merge_flag
 from astropop.testing import *
 
