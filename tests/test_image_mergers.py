@@ -94,6 +94,23 @@ class TestMergeFlags:
 
         return f1, f2, f3
 
+    def get_flags_4x4_multiple(self):
+        f1 = np.zeros((4, 4), dtype=np.uint8)
+        f1[0, 0] = 1
+        f1[1, 1] = 5
+        f1[2, 2] = 2
+
+        f2 = np.zeros((4, 4), dtype=np.uint8)
+        f2[0, 0] = 2
+        f2[1, 1] = 4
+        f2[3, 3] = 2
+
+        f3 = np.zeros((4, 4), dtype=np.uint8)
+        f3[0, 0] = 1
+        f3[1, 1] = 7
+
+        return f1, f2, f3
+
     def test_merge_flags_and(self):
         fs = self.get_flags_4x4()
         merged = merge_flag(*fs, method='and')
@@ -143,3 +160,43 @@ class TestMergeFlags:
         fs = self.get_flags_4x4()
         with assert_raises(ValueError):
             merge_flag(*fs, method='invalid')
+
+    def test_merge_flags_and_multiple(self):
+        fs = self.get_flags_4x4_multiple()
+        merged = merge_flag(*fs, method='and')
+        expect = np.zeros((4, 4), dtype=np.uint8)
+        expect[1, 1] = 4
+        assert_equal(merged, expect)
+
+    def test_merge_flags_or_multiple(self):
+        fs = self.get_flags_4x4_multiple()
+        merged = merge_flag(*fs, method='or')
+        expect = np.zeros((4, 4), dtype=np.uint8)
+        expect[0, 0] = 3
+        expect[1, 1] = 7
+        expect[2, 2] = 2
+        expect[3, 3] = 2
+        assert_equal(merged, expect)
+
+    def test_merge_flags_or_multiple_2(self):
+        fs = self.get_flags_4x4_multiple()
+        merged = merge_flag(*fs[:2], method='or')
+        expect = np.zeros((4, 4), dtype=np.uint8)
+        expect[0, 0] = 3
+        expect[1, 1] = 5
+        expect[2, 2] = 2
+        expect[3, 3] = 2
+        assert_equal(merged, expect)
+
+    def test_merge_flags_and_multiple_2(self):
+        fs = self.get_flags_4x4_multiple()
+        merged = merge_flag(*fs[:2], method='and')
+        expect = np.zeros((4, 4), dtype=np.uint8)
+        expect[1, 1] = 4
+        assert_equal(merged, expect)
+
+    def test_merge_flags_no_multiple(self):
+        fs = self.get_flags_4x4_multiple()
+        merged = merge_flag(*fs, method='no_merge')
+        expect = np.zeros((4, 4), dtype=np.uint8)
+        assert_equal(merged, expect)
