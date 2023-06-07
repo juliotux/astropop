@@ -1,5 +1,7 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 # flake8: noqa: F403, F405
+# TODO: % and ** functions
+
 
 import pytest
 import numpy as np
@@ -8,9 +10,6 @@ from astropop.image.imarith import imarith
 from astropop.framedata import FrameData
 from astropop.math.physical import UnitsError, units, QFloat
 from astropop.testing import *
-
-
-# TODO: % and ** functions
 
 
 SHAPE = (10, 10)
@@ -33,6 +32,7 @@ def std_test_frame(op, frame1, frame2, result, inplace, handle_flags):
         flag1[2, 2] = 2
         flag1[1, 1] = 1
         frame1.flags = flag1
+        exp_flag = np.zeros(SHAPE, dtype=np.uint8)
 
         if isinstance(frame2, FrameData):
             # If frame2 is qfloat, quantity or a number, it don't have mask
@@ -41,12 +41,14 @@ def std_test_frame(op, frame1, frame2, result, inplace, handle_flags):
             flag2[2, 2] = 6
             frame2.flags = flag2
 
-        exp_flag = np.zeros(SHAPE, dtype=np.uint8)
-        if handle_flags == 'or':
+            if handle_flags == 'and':
+                exp_flag[2, 2] = 2
+            elif handle_flags == 'or':
+                exp_flag[1, 1] = 1
+                exp_flag[2, 2] = 6
+                exp_flag[3, 3] = 1
+        elif handle_flags == 'or':
             exp_flag[1, 1] = 1
-            exp_flag[2, 2] = 6
-            exp_flag[3, 3] = 1
-        elif handle_flags == 'and':
             exp_flag[2, 2] = 2
 
         result.flags = exp_flag
