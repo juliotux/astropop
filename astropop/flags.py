@@ -44,8 +44,8 @@ def mask_from_flags(values, flags_to_mask, allowed_flags_class=None):
         if allowed_flags_class is not None:
             if not isinstance(f, allowed_flags_class):
                 raise TypeError('All flags must be from the same class')
-        flag |= f.value
+        flag |= int(f.value)
 
-    mask = np.greater(np.bitwise_and(values, flag.value), 0)
+    mask = np.greater(np.bitwise_and(values, flag), 0)
 
     return mask
