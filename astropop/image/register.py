@@ -194,7 +194,7 @@ class _BaseRegister(abc.ABC):
             reg_frame = frame2.copy()
 
         reg_frame.data = data
-        f_cval = PixelMaskFlags.OUT_OF_BOUNDS.value
+        f_cval = (PixelMaskFlags.OUT_OF_BOUNDS | PixelMaskFlags.MASKED).value
         # use order=0 and np.uint8 to avoid interpolation and keep the mask
         reg_frame.flags = self._apply_transform_image(frame2.flags, tform,
                                                       cval=f_cval,
@@ -341,7 +341,7 @@ class AsterismRegister(_BaseRegister):
 
         from ..photometry import segfind, starfind, daofind, background
 
-        funcs = {'sepfind': segfind, 'starfind': starfind, 'daofind': daofind}
+        funcs = {'segfind': segfind, 'starfind': starfind, 'daofind': daofind}
         self._aa = astroalign
         self._sf = partial(funcs[detection_function], **detection_kwargs)
         self._bkg = background

@@ -136,13 +136,17 @@ def setup_filename(frame, cache_folder=None, filename=None):
 
 class PixelMaskFlags(Flag):
     """Flags for pixel masking."""
-    DEAD = 1 << 0  # dead pixel
-    BAD = 1 << 1  # bad pixel
-    SATURATED = 1 << 2  # saturated pixel, above a threshold level
-    INTERPOLATED = 1 << 3  # pixel interpolated from neighbors
+    # Type of Masking
+    INTERPOLATED = 1 << 0  # pixel interpolated from neighbors
+    MASKED = 1 << 1  # pixel value removed
+    REMOVED = 1 << 1  # same of masked. Both are equal
+    # Cause of problem
+    DEAD = 1 << 2  # dead pixel
+    BAD = 1 << 3  # bad pixel
+    SATURATED = 1 << 4  # saturated pixel, above a threshold level
     COSMIC_RAY = 1 << 4  # cosmic ray
-    OUT_OF_BOUNDS = 1 << 5  # registered image. Pixel is out of the bounds
-    MASKED = 1 << 6  # not specified
+    OUT_OF_BOUNDS = 1 << 6  # registered image. Pixel is out of the bounds
+    UNSPECIFIED = 1 << 7  # not specified
 
 
 @unit_property
@@ -250,7 +254,8 @@ class FrameData:
         # create flag for masked pixels
         if mask is not None:
             mask = np.asarray(mask, dtype=bool)
-            self.add_flags(PixelMaskFlags.MASKED, mask)
+            self.add_flags(PixelMaskFlags.MASKED | PixelMaskFlags.REMOVED,
+                           mask)
 
         # avoiding security problems
         self._history = []
@@ -418,8 +423,8 @@ class FrameData:
 
     @property
     def mask(self):
-        """Mask all flagged pixels. True for masked pixels."""
-        return np.bool_(self._flags)
+        """Mask all flagged pixels. True for all masked/removed pixels."""
+        return self.mask_flags(PixelMaskFlags.MASKED)
 
     def mask_flags(self, flags):
         """Mask pixels with an specific flag.
