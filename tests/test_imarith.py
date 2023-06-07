@@ -1,8 +1,8 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 # flake8: noqa: F403, F405
 
-import numpy as np
 import pytest
+import numpy as np
 
 from astropop.image.imarith import imarith
 from astropop.framedata import FrameData
@@ -522,3 +522,70 @@ def test_invalid_shapes():
     frame2 = FrameData(np.zeros((5, 5)), unit='')
     with pytest.raises(ValueError):
         imarith(frame1, frame2, '+')
+
+
+
+pars = pytest.mark.parametrize('op,vs', [('+', {'f1': {'v': 30, 'u': 0},
+                                                'f2': {'v': 10, 'u': 0},
+                                                'r': {'v': 40, 'u': 0}}),
+                                         ('+', {'f1': {'v': 30, 'u': 3},
+                                                'f2': {'v': 10, 'u': 4},
+                                                'r': {'v': 40, 'u': 5}}),
+                                         ('-', {'f1': {'v': 30, 'u': 0},
+                                                'f2': {'v': 10, 'u': 0},
+                                                'r': {'v': 20, 'u': 0}}),
+                                         ('-', {'f1': {'v': 30, 'u': 3},
+                                                'f2': {'v': 10, 'u': 4},
+                                                'r': {'v': 20, 'u': 5}}),
+                                         ('*', {'f1': {'v': 5, 'u': 0},
+                                                'f2': {'v': 6, 'u': 0},
+                                                'r': {'v': 30, 'u': 0}}),
+                                         ('*', {'f1': {'v': 5, 'u': 0.3},
+                                                'f2': {'v': 6, 'u': 0.4},
+                                                'r': {'v': 30,
+                                                      'u': 2.690725}}),
+                                         ('/', {'f1': {'v': 10, 'u': 0},
+                                                'f2': {'v': 3, 'u': 0},
+                                                'r': {'v': 3.33333333,
+                                                      'u': 0}}),
+                                         ('/', {'f1': {'v': 10, 'u': 1},
+                                                'f2': {'v': 3, 'u': 0.3},
+                                                'r': {'v': 3.33333333,
+                                                      'u': 0.47140452}}),
+                                         ('//', {'f1': {'v': 10, 'u': 0},
+                                                 'f2': {'v': 3, 'u': 0},
+                                                 'r': {'v': 3.000000,
+                                                       'u': 0}}),
+                                         ('//', {'f1': {'v': 10, 'u': 1},
+                                                 'f2': {'v': 3, 'u': 0.3},
+                                                 'r': {'v': 3.000000,
+                                                       'u': 0.000000}})])
+
+
+@pytest.mark.parametrize('inplace', [True, False])
+@pars
+def test_imarith_ops_frames(op, vs, inplace):
+    def gen_frame(v):
+        # Gen frames with {'v', 'u'} dict
+        shape = (10, 10)
+        if v['u'] is None:
+            frame = FrameData(np.ones(shape, dtype='f8'), unit='adu')
+        else:
+            frame = FrameData(np.ones(shape, dtype='f8'), unit='adu',
+                              uncertainty=v['u'])
+        frame.data[:] = v['v']
+        return frame
+
+    frame1 = gen_frame(vs['f1'])
+    frame2 = gen_frame(vs['f2'])
+    exp_res = gen_frame(vs['r'])
+
+    res = imarith(frame1, frame2, op, inplace=inplace)
+
+    assert_almost_equal(res.data, exp_res.data)
+    assert_almost_equal(res.uncertainty, exp_res.uncertainty)
+
+    if inplace:
+        assert_is(res, frame1)
+    else:
+        assert_is_not(res, frame1)
