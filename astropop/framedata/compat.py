@@ -101,9 +101,15 @@ def extract_header_wcs(header):
 
 def _merge_and_clean_header(meta, header, wcs):
     """Merge meta and header and clean the WCS and spurious keys."""
-    for i in (meta, header, wcs):
-        if not isinstance(i, (dict, fits.Header, WCS)) and i is not None:
-            raise TypeError(f'{i} is not a compatible format.')
+    if not isinstance(meta, (dict, fits.Header)) and meta is not None:
+        raise TypeError('meta must be a dict or fits.Header. '
+                        f'Got {type(meta)}')
+    if not isinstance(header, fits.Header) and header is not None:
+        raise TypeError('header must be a fits.Header. '
+                        f'Got {type(header)}')
+    if not isinstance(wcs, WCS) and wcs is not None:
+        raise TypeError('wcs must be a astropy.wcs.WCS. '
+                        f'Got {type(wcs)}')
 
     if header is not None:
         header = fits.Header(header)
@@ -112,7 +118,15 @@ def _merge_and_clean_header(meta, header, wcs):
         header = fits.Header()
 
     if meta is not None:
+        # strip history and comments from meta and add them after
+        # these keys are dicts and the creation of fits.Header dont handle it
+        history = meta.pop('history', [])
+        comment = meta.pop('comment', [])
         meta = fits.Header(meta)
+        for i in history:
+            meta.add_history(i)
+        for i in comment:
+            meta.add_comment(i)
         meta.strip()
     else:
         meta = fits.Header()
