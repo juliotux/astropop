@@ -287,10 +287,10 @@ class Test_Register_FrameData_List:
 
     def test_error_unkown_algorithm(self):
         with pytest.raises(ValueError, match='Algorithm noexisting unknown.'):
-            register_framedata_list([FrameData(None) for i in range(10)],
+            register_framedata_list([FrameData([[1]]) for i in range(10)],
                                     algorithm='noexisting')
         with pytest.raises(ValueError, match='Algorithm noexisting unknown.'):
-            compute_shift_list([FrameData(None) for i in range(10)],
+            compute_shift_list([FrameData([[1]]) for i in range(10)],
                                algorithm='noexisting')
 
     def test_error_non_framedata(self):

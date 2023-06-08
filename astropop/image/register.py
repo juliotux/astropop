@@ -202,7 +202,7 @@ class _BaseRegister(abc.ABC):
                             PixelMaskFlags.MASKED,
                             mask)
 
-        if not frame2.uncertainty.empty:
+        if frame2.uncertainty is not None:
             unct = frame2.get_uncertainty(return_none=False)
             unct = self._apply_transform_image(unct, tform, cval=np.nan,
                                                order=1)
