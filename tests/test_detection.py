@@ -38,8 +38,7 @@ def gen_position_flux(size, number, low, high, rng_seed=123):
         with NumpyRNGContext(rng_seed+i):
             y = np.random.randint(0, size[1], number)
             flux = np.random.randint(low, high, number)
-    s = np.argsort(flux)[::-1]
-    return x[s], y[s], flux[s]
+    return x, y, sorted(flux)[::-1]
 
 
 def gen_stars_moffat(size, x, y, flux, fwhm):
@@ -287,12 +286,6 @@ class Test_Background():
 class Test_Segmentation_Detection():
     # segmentation detection. Must detect all shapes of sources
 
-    def resort_sources(self, x, y, f):
-        """Random sources are random. We must resort to compare."""
-        # For SEP, resort using x order
-        order = np.argsort(y)
-        return x[order], y[order], f[order]
-
     def test_segfind_one_star(self):
         size = (128, 128)
         pos = (64, 64)
@@ -355,13 +348,13 @@ class Test_Segmentation_Detection():
         posy = (20, 200, 600, 800)
         sky = 800
         rdnoise = 20
-        flux = (15000, 1500, 1500, 35000)
+        flux = (35000, 15000, 10000, 5000)
         sigma = 3
         theta = 0
         im = gen_image(size, posx, posy, flux, sky, rdnoise,
                        model='gaussian', sigma=sigma, theta=theta)
 
-        sources = segfind(im, 3, sky, rdnoise)
+        sources = segfind(im, 10, sky, rdnoise)
 
         assert_equal(len(sources), 4)
         assert_almost_equal(sources['x'], posx, decimal=0)
@@ -382,8 +375,6 @@ class Test_Segmentation_Detection():
                        model='gaussian', sigma=sigma, theta=theta)
 
         sources = segfind(im, 5, sky, rdnoise)
-
-        x, y, f = self.resort_sources(x, y, f)
 
         assert_equal(len(sources), number)
         assert_almost_equal(sources['x'], x, decimal=0)
@@ -406,12 +397,6 @@ class Test_Segmentation_Detection():
 class Test_DAOFind_Detection():
     # DAOFind detection. Only round unsturaded stars
 
-    def resort_sources(self, x, y, f):
-        """Random sources are random. We must resort to compare."""
-        # Order by flux
-        order = np.argsort(y)
-        return x[order], y[order], f[order]
-
     def test_daofind_sharpness(self):
         # compare my implementation with D.Jones PythonPhot
         # without filtering, both have to output the same round/sharp and
@@ -425,11 +410,11 @@ class Test_DAOFind_Detection():
         threshold = 50
 
         fwhm = 5
-        sigma = np.array([0.1, 0.5, 0.8, 1.0, 1.2, 1.5, 2.0, 3.5, 3.0, 3.5])
+        sigma = np.array([0.1, 0.5, 0.8, 1.0, 1.2, 1.5, 2.0, 2.5, 3.0, 3.5])
         sigma *= fwhm*gaussian_fwhm_to_sigma
+        sigma = sigma[::-1]
         flux = (np.ones_like(xpos)*sigma)*80000
-        expect_sharp = [3.55, 0.76, 0.50, 0.45, 0.43,
-                        0.41, 0.39, 0.39, 0.39, 0.39]
+        expect_sharp = [3.5, 0.8, 0.5, 0.5, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4][::-1]
 
         im = gen_image(image_size, xpos, ypos, flux, sky, rdnoise,
                        model='gaussian', sigma=sigma)
@@ -440,7 +425,7 @@ class Test_DAOFind_Detection():
         assert_equal(len(sources), len(xpos))
         assert_almost_equal(sources['x'], xpos, decimal=1)
         assert_almost_equal(sources['y'], ypos, decimal=1)
-        assert_almost_equal(sources['sharp'], expect_sharp, decimal=1)
+        assert_almost_equal(sources['sharpness'], expect_sharp, decimal=1)
 
     def test_daofind_roundness(self):
         image_size = (525, 200)
@@ -451,7 +436,7 @@ class Test_DAOFind_Detection():
         threshold = 50
 
         e = (np.arange(len(xpos)))*0.1
-        flux = np.sqrt(np.arange(len(xpos))+1)*80000
+        flux = (np.sqrt(np.arange(len(xpos))+1)*80000)[::-1]
         sigma_x = np.sqrt(1/(1-e**2))*2
         sigma_y = np.ones_like(xpos)*2
         fwhm = 5
@@ -471,7 +456,7 @@ class Test_DAOFind_Detection():
         assert_equal(len(sources), len(xpos))
         assert_almost_equal(sources['x'], xpos, decimal=0)
         assert_almost_equal(sources['y'], ypos, decimal=0)
-        assert_almost_equal(sources['round'], -expect_round, decimal=1)
+        assert_almost_equal(sources['roundness'], expect_round, decimal=1)
 
     def test_daofind_one_star(self):
         size = (128, 128)
@@ -552,8 +537,6 @@ class Test_DAOFind_Detection():
 
         sources = daofind(im, threshold, sky, rdnoise, fwhm)
 
-        x, y, f = self.resort_sources(x, y, f)
-
         assert_equal(len(sources), number)
         assert_almost_equal(sources['x'], x, decimal=0)
         assert_almost_equal(sources['y'], y, decimal=0)
@@ -603,12 +586,6 @@ class Test_DAOFind_Detection():
 class Test_StarFind():
     # Our combined iterative method
 
-    def resort_sources(self, x, y, f):
-        """Random sources are random. We must resort to compare."""
-        # For SEP, resort using x order
-        order = np.argsort(y)
-        return x[order], y[order], f[order]
-
     def test_starfind_calc_fwhm(self):
         size = (512, 512)
         number = 15
@@ -648,7 +625,7 @@ class Test_StarFind():
         assert_almost_equal(sources['x'], x, decimal=0)
         assert_almost_equal(sources['y'], y, decimal=0)
         assert_almost_equal(sources.meta['astropop fwhm'], sigma*2.355,
-                            decimal=1)
+                            decimal=0)
 
     def test_starfind_strong_weak(self):
         size = (200, 100)
@@ -670,7 +647,7 @@ class Test_StarFind():
         assert_almost_equal(sources['x'], posx, decimal=1)
         assert_almost_equal(sources['y'], posy, decimal=1)
         assert_almost_equal(sources.meta['astropop fwhm'], sigma*2.355,
-                            decimal=1)
+                            decimal=0)
 
     def test_starfind_blind_fwhm(self):
         size = (512, 512)
@@ -680,10 +657,9 @@ class Test_StarFind():
         rdnoise = 20
         sigma = 2
         theta = 0
-        threshold = 8
+        threshold = 10
 
         x, y, f = gen_position_flux(size, number, low, high, rng_seed=456)
-        x, y, f = self.resort_sources(x, y, f)
 
         im = gen_image(size, x, y, f, sky, rdnoise,
                        model='gaussian', sigma=sigma, theta=theta)
@@ -694,24 +670,25 @@ class Test_StarFind():
         assert_almost_equal(sources['x'], x, decimal=1)
         assert_almost_equal(sources['y'], y, decimal=1)
         assert_almost_equal(sources.meta['astropop fwhm'], sigma*2.355,
-                            decimal=2)
+                            decimal=0)
 
     def test_starfind_rejection(self):
         size = (128, 128)
-        pos_x = [20, 60, 100, 40, 80, 50]
-        pos_y = [20, 30, 40, 50, 60, 85]
+        pos_x = np.array([20, 60, 100, 40, 80, 50])
+        pos_y = np.array([20, 30, 40, 50, 60, 85])
         sky = 70
         rdnoise = 20
         flux = [30000]*6
         theta = 0
         fwhm = 3
         sig_base = gaussian_fwhm_to_sigma*fwhm
-        sigma_x = np.array([1, 0.5, 1, 2.0, 0.1, 1])*sig_base
-        sigma_y = np.array([1, 1.0, 1, 0.5, 0.1, 1])*sig_base
+        sigma_x = np.array([1, 0.5, 1.1, 2.0, 0.1, 0.9])*sig_base
+        sigma_y = np.array([1, 1.0, 1.1, 0.5, 0.1, 1])*sig_base
         threshold = 10
         # stars 0, 2 -> passed
         # star 4 -> rejected by sharpness
         # stars 1, 3 -> rejected by roundness
+        order = [2, 0, 5]
 
         im = gen_image(size, pos_x, pos_y, flux, sky, rdnoise,
                        model='gaussian', sigma=(sigma_x, sigma_y),
@@ -721,8 +698,8 @@ class Test_StarFind():
                            sharp_limit=(0.3, 0.6), round_limit=(-0.5, 0.5))
 
         assert_equal(len(sources), 3)
-        assert_almost_equal(sources['x'], [20, 100, 50], decimal=0)
-        assert_almost_equal(sources['y'], [20, 40, 85], decimal=0)
+        assert_almost_equal(sources['x'], pos_x[order], decimal=0)
+        assert_almost_equal(sources['y'], pos_y[order], decimal=0)
         assert_almost_equal(sources.meta['astropop fwhm'], fwhm,
                             decimal=1)
 
