@@ -258,7 +258,7 @@ class Test_Registration:
             assert_is_not(im_reg, im)
         assert_equal(im_reg.data, im.data)
         assert_equal(im_reg.mask, np.zeros_like(im))
-        assert_equal(im_reg.flags, np.zeros_like(im))
+        assert_equal(im_reg.flags, flags)
         assert_equal(im_reg.meta['astropop registration_shift_x'], 0)
         assert_equal(im_reg.meta['astropop registration_shift_y'], 0)
 
