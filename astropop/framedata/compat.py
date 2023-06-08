@@ -121,7 +121,9 @@ def _merge_and_clean_header(meta, header, wcs):
         # strip history and comments from meta and add them after
         # these keys are dicts and the creation of fits.Header dont handle it
         history = meta.pop('history', [])
+        history = list(broadcast(history).iters[0])
         comment = meta.pop('comment', [])
+        comment = list(broadcast(comment).iters[0])
         meta = fits.Header(meta)
         for i in history:
             meta.add_history(i)
@@ -153,6 +155,8 @@ def _merge_and_clean_header(meta, header, wcs):
 
     # extract wcs from header
     meta, wcs_ = extract_header_wcs(meta)
+    if wcs_ and wcs:
+        raise ValueError('meta and wcs offer a WCS. Use only one.')
     wcs = wcs_ if wcs is None else wcs
     return meta, wcs, history, comment
 

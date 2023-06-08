@@ -240,6 +240,12 @@ class Test_MergeAndCleanHeader():
                                 'This is a second comment',
                                 'This is a third comment'])
 
+    def test_extract_wcs_meta_conflict(self):
+        header = fits.Header.fromstring(_base_header+_wcs_no_sip)
+        wcs = WCS(header)
+        with pytest.raises(ValueError, match='meta and wcs'):
+            _merge_and_clean_header(header, None, wcs=wcs)
+
 
 class Test_ExtractHeader():
     def test_extract_header_nowcs(self):

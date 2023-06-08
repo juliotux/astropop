@@ -2,21 +2,16 @@
 # flake8: noqa: F403, F405
 
 import pytest
-import tempfile
-import os
 import numpy as np
-from astropop.framedata import FrameData, check_framedata, read_framedata, \
-                               PixelMaskFlags
-from astropop.math import QFloat
+from astropop.framedata import FrameData, PixelMaskFlags
 from astropy.io import fits
 from astropy.utils import NumpyRNGContext
 from astropy import units as u
 from astropy.wcs import WCS
-from astropy.nddata import CCDData, StdDevUncertainty
 from astropop.testing import *
 
 
-DEFAULT_DATA_SIZE = 100
+DEFAULT_DATA_SIZE = 20
 DEFAULT_HEADER = {'observer': 'astropop', 'very long key': 2}
 
 with NumpyRNGContext(123):
@@ -28,462 +23,106 @@ with NumpyRNGContext(123):
 def create_framedata(**kwargs):
     data = _random_array.copy()
     fake_meta = DEFAULT_HEADER.copy()
-    frame = FrameData(data, unit=u.Unit('adu'), **kwargs)
-    frame.meta = fake_meta
+    fake_meta.update(kwargs.pop('meta', {}))
+    frame = FrameData(data, unit=u.Unit('adu'), meta=fake_meta, **kwargs)
     return frame
 
 
-class Test_CheckRead_FrameData:
-    # TODO: test .fz files and CompImageHDU
+class TestFrameDataCreationMetas:
 
-    def test_check_framedata_framedata(self):
-        frame = create_framedata()
-        fc = check_framedata(frame)
-        fr = read_framedata(frame)
-        # default must not copy
-        assert_is(fc, frame)
-        assert_is(fr, frame)
+    def test_framedata_cration_array_with_meta(self):
+        a = _random_array.copy()
+        meta = DEFAULT_HEADER.copy()
+        f = FrameData(a, meta=meta)
+        assert_equal(f.history, [])
+        assert_equal(f.comment, [])
+        assert_is_none(f.wcs)
+        assert_equal(f.meta['observer'], meta['observer'])
+        assert_equal(f.meta['very long key'], meta['very long key'])
 
-    def test_check_framedata_framedata_copy(self):
-        frame = create_framedata()
-        fc = check_framedata(frame, copy=True)
-        fr = read_framedata(frame, copy=True)
+    def test_framedata_creation_array_meta_with_history(self):
+        a = _random_array.copy()
+        meta = DEFAULT_HEADER.copy()
+        hist = ['test1', 'test2']
+        meta['history'] = hist
+        f = FrameData(a, meta=meta)
+        assert_equal(f.history, hist)
+        assert_equal(f.comment, [])
+        assert_is_none(f.wcs)
+        assert_equal(f.meta['observer'], meta['observer'])
+        assert_equal(f.meta['very long key'], meta['very long key'])
 
-        for f in (fc, fr):
-            assert_is_not(f, frame)
-            assert_is_instance(f, FrameData)
-            assert_equal(f.data, frame.data)
-            assert_equal(f.meta, frame.meta)
-            assert_equal(f.uncertainty, frame.uncertainty)
-            assert_equal(f.mask, frame.mask)
-            assert_equal(f.flags, frame.flags)
-            assert_equal(f.unit, frame.unit)
-            assert_equal(f.history, frame.history)
-            assert_equal(f.wcs, frame.wcs)
+    def test_framedata_creation_array_meta_with_comment(self):
+        a = _random_array.copy()
+        meta = DEFAULT_HEADER.copy()
+        comment = ['test1', 'test2']
+        meta['comment'] = comment
+        f = FrameData(a, meta=meta)
+        assert_equal(f.history, [])
+        assert_equal(f.comment, comment)
+        assert_is_none(f.wcs)
+        assert_equal(f.meta['observer'], meta['observer'])
+        assert_equal(f.meta['very long key'], meta['very long key'])
 
-    def test_check_framedata_framedata_copy_with_dtype(self):
-        frame = create_framedata(uncertainty=1)  # default is float64
-        fc = check_framedata(frame, copy=True, dtype=np.float32)
-        fr = read_framedata(frame, copy=True, dtype=np.float32)
-
-        for f in (fc, fr):
-            assert_is_not(f, frame)
-            assert_is_instance(f, FrameData)
-            assert_almost_equal(f.data, frame.data)
-            assert_equal(f.meta, frame.meta)
-            assert_equal(f.uncertainty, frame.uncertainty)
-            assert_equal(f.mask, frame.mask)
-            assert_equal(f.unit, frame.unit)
-            assert_equal(f.history, frame.history)
-            assert_equal(f.wcs, frame.wcs)
-            assert_equal(f.data.dtype, np.float32)
-            assert_equal(f.uncertainty.dtype, np.float32)
-
-    def test_check_framedata_fits_hdu(self):
-        # meta is messed by fits
-        data = _random_array.copy()
-        hdu = fits.PrimaryHDU(data)
-        fc = check_framedata(hdu)
-        fr = read_framedata(hdu)
-        for f in (fc, fr):
-            assert_is_instance(f, FrameData)
-            assert_equal(f.data, data)
-            assert_equal(f.unit, u.dimensionless_unscaled)
-            assert_true(f._unct.empty)
-            assert_false(np.any(f.mask))
-            assert_equal(f.flags, np.zeros_like(data, dtype=np.uint8))
-
-    def test_check_framedata_fits_hdul_simple(self):
-        # meta is messed by fits
-        data = _random_array.copy()
-        hdul = fits.HDUList([fits.PrimaryHDU(data)])
-        fc = check_framedata(hdul)
-        fr = read_framedata(hdul)
-        for f in (fc, fr):
-            assert_is_instance(f, FrameData)
-            assert_equal(f.data, data)
-            assert_equal(f.unit, u.dimensionless_unscaled)
-            assert_true(f._unct.empty)
-            assert_false(np.any(f.mask))
-            assert_equal(f.flags, np.zeros_like(data, dtype=np.uint8))
-
-    def test_check_framedata_fits_hdul_defaults(self):
-        data = _random_array.copy()
-        header = fits.Header({'bunit': 'adu'})
-        data_hdu = fits.PrimaryHDU(data, header=header)
-        uncert_hdu = fits.ImageHDU(np.ones((DEFAULT_DATA_SIZE,
-                                            DEFAULT_DATA_SIZE)), name='UNCERT')
-        mask = np.zeros((DEFAULT_DATA_SIZE, DEFAULT_DATA_SIZE)).astype('uint8')
-        mask[1:3, 1:3] = 1
-        mask_hdu = fits.ImageHDU(mask, name='MASK')
-        hdul = fits.HDUList([data_hdu, uncert_hdu, mask_hdu])
-
-        expect_flags = np.zeros((DEFAULT_DATA_SIZE,
-                                 DEFAULT_DATA_SIZE)).astype('uint8')
-        expect_flags[1:3, 1:3] = (PixelMaskFlags.MASKED |
-                                  PixelMaskFlags.UNSPECIFIED).value
-
-        fc = check_framedata(hdul)
-        fr = read_framedata(hdul)
-        for f in (fc, fr):
-            assert_is_instance(f, FrameData)
-            assert_equal(f.data, data)
-            assert_equal(f.unit, 'adu')
-            assert_equal(f.uncertainty, np.ones((DEFAULT_DATA_SIZE,
-                                                 DEFAULT_DATA_SIZE)))
-            assert_equal(f.mask, mask)
-            assert_equal(f.flags, expect_flags)
-
-    def test_check_framedata_fits_hdul_keywords(self):
-        uncert_name = 'ASTROPOP_UNCERT'
-        mask_name = 'ASTROPOP_MASK'
-        data_name = 'ASTROPOP_DATA'
-        p_hdu = fits.PrimaryHDU()
-        data = _random_array.copy()
-        header = fits.Header({'astrunit': 'adu'})
-        data_hdu = fits.ImageHDU(data, header=header, name=data_name)
-        uncert_hdu = fits.ImageHDU(np.ones((DEFAULT_DATA_SIZE,
-                                            DEFAULT_DATA_SIZE)),
-                                   name=uncert_name)
-        mask = np.zeros((DEFAULT_DATA_SIZE,
-                         DEFAULT_DATA_SIZE)).astype('uint8')
-        mask[1:3, 1:3] = 1
-        mask_hdu = fits.ImageHDU(mask, name=mask_name)
-        hdul = fits.HDUList([p_hdu, data_hdu, uncert_hdu, mask_hdu])
-
-        fc = check_framedata(hdul, hdu=data_name, unit=None,
-                             hdu_uncertainty=uncert_name, hdu_mask=mask_name,
-                             unit_key='astrunit')
-        fr = read_framedata(hdul, hdu=data_name, unit=None,
-                            hdu_uncertainty=uncert_name, hdu_mask=mask_name,
-                            unit_key='astrunit')
-        for f in (fc, fr):
-            assert_is_instance(f, FrameData)
-            assert_equal(f.data, data)
-            assert_equal(f.unit, 'adu')
-            assert_equal(f.uncertainty, np.ones((DEFAULT_DATA_SIZE,
-                                                 DEFAULT_DATA_SIZE)))
-            assert_equal(f.mask, mask)
-
-    def test_check_framedata_fits_unit(self):
-        data = _random_array.copy()
-        hdu = fits.PrimaryHDU(data)
-        fc = check_framedata(hdu, unit='adu')
-        fr = read_framedata(hdu, unit='adu')
-        for f in (fc, fr):
-            assert_is_instance(f, FrameData)
-            assert_equal(f.data, data)
-            assert_equal(f.unit, 'adu')
-
-    def test_check_framedata_fitsfile(self, tmp_path):
-        tmp = tmp_path / 'fest_check_framedata.fits'
-        tmpstr = str(tmp)
-
-        uncert_name = 'ASTROPOP_UNCERT'
-        mask_name = 'ASTROPOP_MASK'
-        data_name = 'ASTROPOP_DATA'
-        p_hdu = fits.PrimaryHDU()
-        data = _random_array.copy()
-        header = fits.Header({'astrunit': 'adu'})
-        data_hdu = fits.ImageHDU(data, header=header, name=data_name)
-        uncert_hdu = fits.ImageHDU(np.ones((DEFAULT_DATA_SIZE,
-                                            DEFAULT_DATA_SIZE)),
-                                   name=uncert_name)
-        mask = np.zeros((DEFAULT_DATA_SIZE,
-                         DEFAULT_DATA_SIZE)).astype('uint8')
-        mask[1:3, 1:3] = 1
-        mask_hdu = fits.ImageHDU(mask, name=mask_name)
-        hdul = fits.HDUList([p_hdu, data_hdu, uncert_hdu, mask_hdu])
-        hdul.writeto(tmpstr)
-
-        # FIXME: must work with both string and pathlike
-        # but astropy seems to not read the path lile
-        n = tmpstr
-        for mmap in [False, True]:
-            fc = check_framedata(n, hdu=data_name, unit=None,
-                                 hdu_uncertainty=uncert_name,
-                                 hdu_mask=mask_name,
-                                 unit_key='astrunit',
-                                 use_memmap_backend=mmap)
-            fr = read_framedata(n, hdu=data_name, unit=None,
-                                hdu_uncertainty=uncert_name,
-                                hdu_mask=mask_name,
-                                unit_key='astrunit',
-                                use_memmap_backend=mmap)
-            for f in (fc, fr):
-                assert_is_instance(f, FrameData)
-                assert_equal(f.data, data)
-                assert_equal(f.unit, 'adu')
-                assert_equal(f.uncertainty,
-                             np.ones((DEFAULT_DATA_SIZE,
-                                      DEFAULT_DATA_SIZE)))
-                assert_equal(f.mask, mask)
-                assert_equal(f._memmapping, mmap)
-
-    def test_check_framedata_ccddata(self):
-        data = _random_array.copy()
-        header = DEFAULT_HEADER.copy()
-        unit = 'adu'
-        uncert = 0.1*_random_array
-        mask = np.zeros((DEFAULT_DATA_SIZE,
-                         DEFAULT_DATA_SIZE)).astype('uint8')
-        mask[1:3, 1:3] = 1
-        ccd = CCDData(data, unit=unit,
-                      uncertainty=StdDevUncertainty(uncert, unit=unit),
-                      mask=mask, meta=header)
-
-        for mmap in [False, True]:
-            fc = check_framedata(ccd, use_memmap_backend=mmap)
-            fr = read_framedata(ccd, use_memmap_backend=mmap)
-            for f in (fc, fr):
-                assert_is_instance(f, FrameData)
-                assert_equal(f.data, data)
-                assert_equal(f.unit, unit)
-                assert_equal(f.uncertainty, uncert)
-                assert_equal(f.mask, mask)
-                assert_equal(f._memmapping, mmap)
-
-    def test_check_framedata_quantity(self):
-        data = _random_array.copy()*u.Unit('adu')
-        for mmap in [False, True]:
-            fc = check_framedata(data, use_memmap_backend=mmap)
-            fr = read_framedata(data, use_memmap_backend=mmap)
-            for f in (fc, fr):
-                assert_is_instance(f, FrameData)
-                assert_equal(f.data, _random_array)
-                assert_equal(f.unit, 'adu')
-                assert_true(f._unct.empty)
-                assert_false(np.any(f._mask))
-                assert_equal(f.meta, {})
-                assert_is_none(f.wcs)
-                assert_equal(f._memmapping, mmap)
-
-    def test_check_framedata_nparray(self):
-        data = _random_array.copy()
-
-        for mmap in [False, True]:
-            fc = check_framedata(data, use_memmap_backend=mmap)
-            fr = read_framedata(data, use_memmap_backend=mmap)
-            for f in (fc, fr):
-                assert_is_instance(f, FrameData)
-                assert_equal(f.data, _random_array)
-                assert_equal(f.unit, u.dimensionless_unscaled)
-                assert_true(f._unct.empty)
-                assert_false(np.any(f._mask))
-                assert_equal(f.meta, {})
-                assert_is_none(f.wcs)
-                assert_equal(f._memmapping, mmap)
-
-    def test_check_framedata_qfloat(self):
-        data = _random_array.copy()
-        unit = 'adu'
-        uncert = 0.1*np.ones_like(_random_array)
-        qf = QFloat(data, uncert, unit)
-
-        for mmap in [False, True]:
-            fc = check_framedata(qf, use_memmap_backend=mmap)
-            fr = read_framedata(qf, use_memmap_backend=mmap)
-            for f in (fc, fr):
-                assert_is_instance(f, FrameData)
-                assert_equal(f.data, data)
-                assert_equal(f.unit, unit)
-                assert_equal(f._unct, uncert)
-                assert_false(np.any(f._mask))
-                assert_equal(f.meta, {})
-                assert_is_none(f.wcs)
-                assert_equal(f._memmapping, mmap)
-
-    def test_check_framedata_invalid(self):
-        # None should fail
-        with pytest.raises(TypeError):
-            check_framedata(None)
-        with pytest.raises(TypeError):
-            read_framedata(None)
-
-
-class Test_FrameData_Copy:
-    def test_copy_simple(self):
-        frame = create_framedata()
-        ccd_copy = frame.copy()
-        assert_equal(ccd_copy.data, frame.data)
-        assert_equal(ccd_copy.unit, frame.unit)
-        assert_equal(ccd_copy.meta, frame.meta)
-        assert_true(ccd_copy._unct.empty)
-        assert_false(np.any(ccd_copy.mask))
-        # tmp filenames must be created
-        assert_is_not_none(ccd_copy.cache_filename)
-        assert_is_not_none(ccd_copy.cache_folder)
-        # origin must stay none
-        assert_is_none(ccd_copy.origin_filename)
-
-    def test_copy_with_incertainty(self):
-        frame = create_framedata()
-        frame.uncertainty = 1.0
-        ccd_copy = frame.copy()
-        assert_equal(ccd_copy.data, frame.data)
-        assert_equal(ccd_copy.unit, frame.unit)
-        assert_equal(ccd_copy.meta, frame.meta)
-        assert_equal(ccd_copy.uncertainty, np.ones(frame.shape))
-
-    def test_copy_history(self):
-        frame = create_framedata()
-        frame.history = 'frame copy tested by astropop'
-        ccd_copy = frame.copy()
-        assert_equal(ccd_copy.history, ['frame copy tested by astropop'])
-        assert_not_in('history', ccd_copy.meta)
-        assert_not_in('HISTORY', ccd_copy.meta)
-
-    def test_copy_fnames(self, tmpdir):
-        frame = create_framedata(cache_filename='testing',
-                                 cache_folder=tmpdir.strpath,
-                                 origin_filename='/dummy/dummy.dummy')
-        ccd_copy = frame.copy()
-        assert_equal(ccd_copy.cache_filename, 'testing_copy')
-        assert_equal(ccd_copy.cache_folder, tmpdir.strpath)
-        assert_equal(ccd_copy.origin_filename, '/dummy/dummy.dummy')
-
-    def test_copy_wcs(self):
+    def test_framedata_creation_array_meta_with_wcs(self):
+        a = _random_array.copy()
+        meta = DEFAULT_HEADER.copy()
         wcs = WCS(naxis=2)
-        frame = create_framedata(wcs=wcs)
-        ccd_copy = frame.copy()
-        assert_is_instance(ccd_copy.wcs, WCS)
+        wcs.wcs.ctype = ['RA---TAN', 'DEC--TAN']
+        wcs.wcs.crval = [10, 10]
+        wcs.wcs.crpix = [10, 10]
+        wcs.wcs.cdelt = [1, 1]
+        meta.update(wcs.to_header())
+        f = FrameData(a, meta=meta)
+        assert_equal(f.history, [])
+        assert_equal(f.comment, [])
+        assert_is_instance(f.wcs, WCS)
+        assert_equal(f.wcs.wcs.ctype, ['RA---TAN', 'DEC--TAN'])
+        assert_equal(f.wcs.wcs.crval, [10, 10])
+        assert_equal(f.wcs.wcs.crpix, [10, 10])
+        assert_equal(f.wcs.wcs.cdelt, [1, 1])
+        assert_equal(f.meta['observer'], meta['observer'])
+        assert_equal(f.meta['very long key'], meta['very long key'])
         for i in wcs.to_header().keys():
-            assert_not_in(i, ccd_copy.meta)
-            assert_equal(ccd_copy.wcs.to_header()[i], wcs.to_header()[i])
+            assert_not_in(i, f.meta)
 
-    def test_copy_with_dtype(self):
-        frame = create_framedata(uncertainty=0.5)  # default is float64
-        f = frame.copy(np.float32)
-        assert_is_not(f, frame)
-        assert_almost_equal(f.data, frame.data)
-        assert_equal(f.uncertainty, frame.uncertainty)
-        assert_equal(f.data.dtype, np.float32)
-        assert_equal(f.uncertainty.dtype, np.float32)
-
-    def test_copy_astype(self):
-        # copy using astype
-        frame = create_framedata(uncertainty=0.5)  # default is float64
-        f = frame.astype(np.float32)
-        assert_is_not(f, frame)
-        assert_almost_equal(f.data, frame.data)
-        assert_equal(f.uncertainty, frame.uncertainty)
-        assert_equal(f.data.dtype, np.float32)
-        assert_equal(f.uncertainty.dtype, np.float32)
-
-    def test_copy_filenames(self, tmpdir):
-        tmp = tmpdir.strpath
-        frame = create_framedata(cache_folder=tmp, cache_filename='testcopy')
-        frame.uncertainty = 1.0
-        f = frame.copy()
-        f.enable_memmap()
-        expect = os.path.join(tmp, 'testcopy'+'_copy')
-        assert_path_exists(expect+'.data')
-        assert_path_exists(expect+'.unct')
-        assert_path_exists(expect+'.mask')
-
-
-class Test_FrameData_History:
-    def test_framedata_set_history(self):
-        frame = create_framedata()
-        frame.history = 'once upon a time'
-        frame.history = 'a small fits file'
-        frame.history = ['got read', 'by astropop']
-        frame.history = ('and stay in', 'computer memory.')
-
-        assert_equal(len(frame.history), 6)
-        assert_equal(frame.history[0], 'once upon a time')
-        assert_equal(frame.history[1], 'a small fits file')
-        assert_equal(frame.history[2], 'got read')
-        assert_equal(frame.history[3], 'by astropop')
-        assert_equal(frame.history[4], 'and stay in')
-        assert_equal(frame.history[5],  'computer memory.')
-
-
-class Test_FrameData_Comment:
-    def test_framedata_set_comment(self):
-        frame = create_framedata()
-        frame.comment = 'this is a test'
-        frame.comment = 'to make commenst in astropop'
-        frame.comment = ['that can', 'be lists']
-        frame.comment = ('or also', 'tuples.')
-
-        assert_equal(len(frame.comment), 6)
-        assert_equal(frame.comment[0], 'this is a test')
-        assert_equal(frame.comment[1], 'to make commenst in astropop')
-        assert_equal(frame.comment[2], 'that can')
-        assert_equal(frame.comment[3], 'be lists')
-        assert_equal(frame.comment[4], 'or also')
-        assert_equal(frame.comment[5],  'tuples.')
-
-
-class Test_FrameData_Creation:
-    def test_framedata_cration_array(self):
+    def test_framedata_creation_array_with_wcs_and_meta(self):
         a = _random_array.copy()
         meta = DEFAULT_HEADER.copy()
-        unit = 'adu'
-        f = FrameData(a, unit=unit, meta=meta, dtype='float64')
-        assert_almost_equal(a, f.data)
-        assert_true(f.unit is u.adu)
-        assert_true(np.issubdtype(f.dtype, np.float64))
+        wcs = WCS(naxis=2)
+        wcs.wcs.ctype = ['RA---TAN', 'DEC--TAN']
+        wcs.wcs.crval = [10, 10]
+        wcs.wcs.crpix = [10, 10]
+        wcs.wcs.cdelt = [1, 1]
+        f = FrameData(a, meta=meta, wcs=wcs)
+        assert_equal(f.history, [])
+        assert_equal(f.comment, [])
+        assert_is_instance(f.wcs, WCS)
+        assert_equal(f.wcs.wcs.ctype, ['RA---TAN', 'DEC--TAN'])
+        assert_equal(f.wcs.wcs.crval, [10, 10])
+        assert_equal(f.wcs.wcs.crpix, [10, 10])
+        assert_equal(f.wcs.wcs.cdelt, [1, 1])
         assert_equal(f.meta['observer'], meta['observer'])
         assert_equal(f.meta['very long key'], meta['very long key'])
+        for i in wcs.to_header().keys():
+            assert_not_in(i, f.meta)
 
-    def test_framedata_cration_array_uncertainty(self):
+    def test_framedata_creation_with_meta_wcs_conflict(self):
         a = _random_array.copy()
-        b = _random_array.copy()
         meta = DEFAULT_HEADER.copy()
-        unit = 'adu'
-        f = FrameData(a, unit=unit, meta=meta, uncertainty=b,
-                      u_dtype='float32')
-        assert_almost_equal(a, f.data)
-        assert_almost_equal(b, f.uncertainty)
-        assert_equal(f.unit, u.adu)
-        assert_true(np.issubdtype(f.uncertainty.dtype, np.float32))
-        assert_equal(f.meta['observer'], meta['observer'])
-        assert_equal(f.meta['very long key'], meta['very long key'])
-
-    def test_framedata_cration_array_mask(self):
-        a = _random_array.copy()
-        b = np.zeros(_random_array.shape)
-        meta = DEFAULT_HEADER.copy()
-        unit = 'adu'
-        f = FrameData(a, unit=unit, meta=meta, mask=b, m_dtype='bool')
-        assert_almost_equal(a, f.data)
-        assert_almost_equal(b, f.mask)
-        assert_equal(f.unit, u.adu)
-        assert_true(np.issubdtype(f.mask.dtype, np.bool_))
-        assert_equal(f.meta['observer'], meta['observer'])
-        assert_equal(f.meta['very long key'], meta['very long key'])
-
-    def test_framedata_cration_array_mask_flags(self):
-        a = _random_array.copy()
-        b = np.zeros(_random_array.shape).astype('int16')
-        for i in range(8):
-            b[i, i] = 1 << i
-        meta = DEFAULT_HEADER.copy()
-        unit = 'adu'
-        f = FrameData(a, unit=unit, meta=meta, mask=b, m_dtype='uint8')
-        assert_almost_equal(a, f.data)
-        assert_almost_equal(b, f.mask)
-        assert_equal(f.unit, u.adu)
-        assert_true(np.issubdtype(f.mask.dtype, np.uint8))
-        assert_equal(f.meta['observer'], meta['observer'])
-        assert_equal(f.meta['very long key'], meta['very long key'])
-
-    def test_framedata_empty(self):
-        with pytest.raises(TypeError):
-            # empty initializer should fail
-            FrameData()
-
-    def test_frame_simple(self):
-        framedata = create_framedata()
-        assert_equal(framedata.shape, (DEFAULT_DATA_SIZE, DEFAULT_DATA_SIZE))
-        assert_equal(framedata.size, DEFAULT_DATA_SIZE * DEFAULT_DATA_SIZE)
-        assert_is(framedata.dtype, np.dtype(float))
-
-    def test_frame_init_with_string_electron_unit(self):
-        framedata = FrameData(np.zeros([2, 2]), unit="electron")
-        assert_is(framedata.unit, u.electron)
+        wcs = WCS(naxis=2)
+        wcs.wcs.ctype = ['RA---TAN', 'DEC--TAN']
+        wcs.wcs.crval = [10, 10]
+        wcs.wcs.crpix = [10, 10]
+        wcs.wcs.cdelt = [1, 1]
+        wcs2 = WCS(naxis=2)
+        wcs2.wcs.ctype = ['RA---TAN', 'DEC--TAN']
+        wcs2.wcs.crval = [20, 20]
+        wcs2.wcs.crpix = [20, 20]
+        wcs2.wcs.cdelt = [2, 2]
+        meta.update(wcs2.to_header())
+        with pytest.raises(ValueError, match='meta and wcs offer a WCS.'):
+            f = FrameData(a, meta=meta, wcs=wcs)
 
     def test_frame_init_with_wcs(self):
         a = _random_array.copy()
@@ -496,72 +135,13 @@ class Test_FrameData_Creation:
             assert_not_in(i, f.meta)
             assert_equal(f.wcs.to_header()[i], wcs.to_header()[i])
 
-    def test_frame_init_memmap(self):
-        a = _random_array.copy()
-        unit = 'adu'
-        wcs = WCS(naxis=2)
-
-        # default is not memmapped
-        f = FrameData(a, unit=unit, wcs=wcs)
-        assert_false(f._memmapping)
-        assert_false(f._data.memmap)
-        assert_false(f._unct.memmap)
-        assert_false(f._mask.memmap)
-
-        # with true, shuold be
-        f = FrameData(a, unit=unit, wcs=wcs, use_memmap_backend=True)
-        assert_true(f._memmapping)
-        assert_true(f._data.memmap)
-        assert_true(f._unct.memmap)
-        assert_true(f._mask.memmap)
-
-        # with explicit false, should not be
-        f = FrameData(a, unit=unit, wcs=wcs, use_memmap_backend=False)
-        assert_false(f._memmapping)
-        assert_false(f._data.memmap)
-        assert_false(f._unct.memmap)
-        assert_false(f._mask.memmap)
-
-    def test_init_with_masked_data(self):
-        a = _random_array.copy()
-        mask = np.zeros_like(a, dtype=bool)
-        mask[1:2, 3:4] = 1
-        a = np.ma.array(a, mask=mask)
-        unit = 'adu'
-        wcs = WCS(naxis=2)
-        f = FrameData(a, unit=unit, wcs=wcs)
-        assert_equal(f.mask, mask)
-
-        # setting mask too
-        mask2 = np.zeros_like(a, dtype=bool)
-        mask2[3:4, 3:4] = 1
-        expect = np.zeros_like(a, dtype=bool)
-        expect[1:2, 3:4] = 1
-        expect[3:4, 3:4] = 1
-        f = FrameData(a, unit=unit, wcs=wcs, mask=mask2)
-        assert_equal(f.mask, expect)
-
-
-class Test_FrameData_WCS:
-    def test_wcs_invalid(self):
-        frame = create_framedata()
-        with pytest.raises(TypeError):
-            frame.wcs = 5
-
-    def test_wcs_assign(self):
-        wcs = WCS(naxis=2)
-        frame = create_framedata()
-        frame.wcs = wcs
-        assert_equal(frame.wcs, wcs)
-
-
-class Test_FrameData_Meta:
     def test_framedata_meta_header(self):
         header = DEFAULT_HEADER.copy()
         meta = {'testing1': 'a', 'testing2': 'b'}
         header.update({'testing1': 'c'})
+        header = fits.Header(header)
 
-        a = FrameData([1, 2, 3], unit='', meta=meta, header=header)
+        a = FrameData([[1], [2], [3]], unit='', meta=meta, header=header)
         assert_is_instance(a.meta, fits.Header)
         assert_is_instance(a.header, fits.Header)
         assert_is(a.meta, a.header)
@@ -612,375 +192,80 @@ class Test_FrameData_Meta:
         with pytest.raises(TypeError):
             FrameData(np.ones((5, 5)), meta=hdr, unit=u.adu)
 
-    def test_framedata_meta_is_fits_header(self):
-        frame = create_framedata()
-        frame.meta = {'OBSERVER': 'Edwin Hubble'}
-        assert_is_instance(frame.meta, fits.Header)
-
     def test_framedata_meta_history(self):
         frame = create_framedata(meta={'history': 'testing history'})
         assert_not_in('history', frame.meta)
         assert_equal(frame.history, ['testing history'])
 
-    def test_framedata_wcs_not_in_meta(self):
-        wcs = dict(WCS(naxis=2).to_header())
-        frame = create_framedata(meta=wcs)
-        for i in wcs.keys():
-            assert_not_in(i, frame.meta)
 
-    def test_framedata_set_wcs_none(self):
-        frame = create_framedata()
-        frame.wcs = None
-        assert_equal(frame.wcs, None)
+class TestFrameDataCreationData:
+    def test_framedata_empty(self):
+        with pytest.raises(TypeError):
+            # empty initializer should fail
+            FrameData()
 
-    def test_framedata_set_wcs(self):
-        frame = create_framedata()
-        wcs = WCS(naxis=2)
-        frame.wcs = wcs
-        assert_equal(frame.wcs, wcs)
+    def test_frame_simple(self):
+        framedata = create_framedata()
+        assert_equal(framedata.shape, (DEFAULT_DATA_SIZE, DEFAULT_DATA_SIZE))
+        assert_equal(framedata.size, DEFAULT_DATA_SIZE * DEFAULT_DATA_SIZE)
+        assert_is(framedata.dtype, np.dtype(float))
 
-    def test_framedata_set_wcs_error(self):
-        frame = create_framedata()
-        with pytest.raises(TypeError,
-                           match='wcs setter value must be a WCS instance.'):
-            frame.wcs = 1
+    def test_framedata_cration_array(self):
+        a = _random_array.copy()
+        f = FrameData(a)
+        assert_almost_equal(a, f.data)
+        assert_equal(f.dtype, a.dtype)
+        assert_equal(f.unit, u.dimensionless_unscaled)
+        assert_equal(f.meta, {})
+        assert_equal(f.history, [])
+        assert_equal(f.comment, [])
+        assert_equal(f.flags, np.zeros_like(a, dtype=np.uint8))
+        assert_is_none(f.wcs)
+        assert_is_none(f.uncertainty)
 
+    def test_framedata_cration_array_with_unit(self):
+        a = _random_array.copy()
+        f = FrameData(a, unit=u.adu)
+        assert_equal(f.unit, u.adu)
+        assert_equal(f.meta, {})
+        assert_equal(f.history, [])
+        assert_equal(f.comment, [])
+        assert_is_none(f.wcs)
 
-class Test_FrameData_Uncertainty:
-    def test_setting_uncertainty_with_array(self):
-        frame = create_framedata()
-        frame.uncertainty = None
-        fake_uncertainty = np.sqrt(np.abs(frame.data))
-        frame.uncertainty = fake_uncertainty.copy()
-        assert_equal(frame.uncertainty, fake_uncertainty)
-        assert_equal(frame.unit, u.adu)
+    def test_framedata_cration_array_mask(self):
+        a = _random_array.copy()
+        b = np.zeros_like(_random_array, dtype=bool)
+        b[1, 1] = True
+        expected_flags = np.zeros_like(_random_array, dtype=np.uint8)
+        expected_flags[1, 1] = (PixelMaskFlags.MASKED |
+                                PixelMaskFlags.UNSPECIFIED).value
+        unit = 'adu'
+        f = FrameData(a, unit=unit, mask=b)
+        assert_almost_equal(a, f.data)
+        assert_equal(b, f.mask)
+        assert_equal(expected_flags, f.flags)
+        assert_equal(f.unit, u.adu)
 
-    def test_setting_uncertainty_with_scalar(self):
-        uncertainty = 10
-        frame = create_framedata()
-        frame.uncertainty = None
-        frame.uncertainty = uncertainty
-        fake_uncertainty = np.zeros_like(frame.data)
-        fake_uncertainty[:] = uncertainty
-        assert_equal(frame.uncertainty, fake_uncertainty)
-        assert_equal(frame.unit, u.adu)
+    def test_framedata_cration_array_mask_and_flags(self):
+        a = _random_array.copy()
+        msk = np.zeros_like(_random_array, dtype=bool)
+        msk[1, 1] = True
+        flags = np.zeros_like(_random_array, dtype=np.uint8)
+        flags[2, 2] = (PixelMaskFlags.SATURATED |
+                       PixelMaskFlags.INTERPOLATED).value
+        expected_flags = np.zeros_like(_random_array, dtype=np.uint8)
+        expected_flags[1, 1] = (PixelMaskFlags.MASKED |
+                                PixelMaskFlags.UNSPECIFIED).value
+        expected_flags[2, 2] = (PixelMaskFlags.SATURATED |
+                                PixelMaskFlags.INTERPOLATED).value
 
-    def test_setting_uncertainty_with_quantity(self):
-        uncertainty = 10*u.adu
-        frame = create_framedata()
-        frame.uncertainty = None
-        frame.uncertainty = uncertainty
-        fake_uncertainty = np.zeros_like(frame.data)
-        fake_uncertainty[:] = uncertainty.value
-        assert_equal(frame.uncertainty, fake_uncertainty)
-        assert_equal(frame.unit, u.adu)
+        unit = 'adu'
+        f = FrameData(a, unit=unit, mask=msk, flags=flags)
+        assert_almost_equal(a, f.data)
+        assert_equal(msk, f.mask)
+        assert_equal(expected_flags, f.flags)
+        assert_equal(f.unit, u.adu)
 
-    def test_setting_uncertainty_wrong_shape_raises_error(self):
-        frame = create_framedata()
-        with pytest.raises(ValueError):
-            frame.uncertainty = np.zeros([3, 4])
-
-    def test_setting_bad_uncertainty_raises_error(self):
-        frame = create_framedata()
-        with pytest.raises(ValueError, match='could not convert'):
-            # Uncertainty is supposed to be an instance of NDUncertainty
-            frame.uncertainty = 'not a uncertainty'
-
-    def test_none_uncertainty_returns_empty(self):
-        frame = create_framedata()
-        assert_equal(frame.uncertainty, np.array(None))
-        assert_true(frame.uncertainty.empty)
-
-    def test_get_uncertainty_empty_return_none(self):
-        # test the get_uncertainty method with return_none=True
-        frame = create_framedata()
-        assert_is_none(frame.get_uncertainty(True), None)
-
-    def test_get_uncertainty_empty_return_zero(self):
-        # test the get_uncertainty method with return_none=False
-        frame = create_framedata()
-        shp = (DEFAULT_DATA_SIZE, DEFAULT_DATA_SIZE)
-        assert_equal(frame.get_uncertainty(False), np.zeros(shp))
-
-    def test_get_uncertainty_non_empty_return_none(self):
-        # test the get_uncertainty method with return_none=True
-        shp = (DEFAULT_DATA_SIZE, DEFAULT_DATA_SIZE)
-        frame = create_framedata(uncertainty=np.ones(shp))
-        assert_equal(frame.get_uncertainty(True), np.ones(shp))
-
-    def test_get_uncertainty_non_empty_return_zero(self):
-        # test the get_uncertainty method with return_none=False
-        shp = (DEFAULT_DATA_SIZE, DEFAULT_DATA_SIZE)
-        frame = create_framedata(uncertainty=np.ones(shp))
-        assert_equal(frame.get_uncertainty(False), np.ones(shp))
-
-
-class Test_FrameData_FITS:
-    def test_to_hdu_defaults(self):
-        frame = create_framedata()
-        frame.meta = {'observer': 'Edwin Hubble'}
-        frame.uncertainty = np.random.rand(*frame.shape)
-        frame.mask = np.zeros(frame.shape)
-        fits_hdulist = frame.to_hdu()
-        assert_is_instance(fits_hdulist, fits.HDUList)
-        for k, v in frame.meta.items():
-            assert_equal(fits_hdulist[0].header[k], v)
-        assert_equal(fits_hdulist[0].data, frame.data)
-        assert_equal(fits_hdulist["UNCERT"].data,
-                     frame.uncertainty)
-        assert_equal(fits_hdulist["MASK"].data, frame.mask)
-        assert_equal(fits_hdulist[0].header['BUNIT'], 'adu')
-
-    def test_to_hdu_no_uncert_no_mask_names(self):
-        frame = create_framedata()
-        frame.meta = {'observer': 'Edwin Hubble'}
-        frame.uncertainty = np.random.rand(*frame.shape)
-        frame.mask = np.zeros(frame.shape)
-        fits_hdulist = frame.to_hdu(hdu_uncertainty=None, hdu_mask=None)
-        assert_is_instance(fits_hdulist, fits.HDUList)
-        for k, v in frame.meta.items():
-            assert_equal(fits_hdulist[0].header[k], v)
-        assert_equal(fits_hdulist[0].data, frame.data)
-        with pytest.raises(KeyError):
-            fits_hdulist['UNCERT']
-        with pytest.raises(KeyError):
-            fits_hdulist['MASK']
-        assert_equal(fits_hdulist[0].header['BUNIT'], 'adu')
-
-    def test_to_hdu_wcs(self):
-        frame = create_framedata()
-        wcs = WCS(naxis=2)
-        wcsh = wcs.to_header(relax=True)
-        frame.wcs = wcs
-        hdul = frame.to_hdu()
-        assert_is_instance(hdul, fits.HDUList)
-        for k in wcsh:
-            assert_equal(hdul[0].header[k], wcsh[k])
-
-    def test_to_hdu_history(self):
-        frame = create_framedata()
-        frame.history = 'test 1'
-        frame.history = ['test 2', 'test']
-
-        hdul = frame.to_hdu()
-        assert_is_instance(hdul, fits.HDUList)
-        assert_equal(hdul[0].header['history'], ['test 1', 'test 2', 'test'])
-
-    def test_to_hdu_comment(self):
-        frame = create_framedata()
-        frame.comment = 'test 1'
-        frame.comment = ['test 2', 'test']
-
-        hdul = frame.to_hdu()
-        assert_is_instance(hdul, fits.HDUList)
-        assert_equal(hdul[0].header['comment'], ['test 1', 'test 2', 'test'])
-
-    def test_write_unit_to_hdu(self):
-        frame = create_framedata()
-        ccd_unit = frame.unit
-        hdulist = frame.to_hdu()
-        assert_true('bunit' in hdulist[0].header)
-        assert_equal(hdulist[0].header['bunit'].strip(), ccd_unit.to_string())
-
-
-class Test_FrameData_CCDData:
-    shape = (10, 10)
-    meta = {'OBSERVER': 'testing', 'very long keyword': 1}
-    unit = 'adu'
-
-    @property
-    def mask(self):
-        mask = np.zeros(self.shape, dtype=bool)
-        mask[1:3, 1:3] = 1
-        return mask
-
-    @property
-    def frame(self):
-        data = 100*np.ones(self.shape)
-        return FrameData(data, unit=self.unit, meta=self.meta)
-
-    def test_simple_export(self):
-        frame = self.frame
-        ccd = frame.to_ccddata()
-
-        assert_equal(ccd.data, 100*np.ones(self.shape))
-        assert_equal(ccd.unit, self.unit)
-        for i in self.meta.keys():
-            assert_equal(ccd.meta[i], self.meta[i])
-        assert_equal(ccd.mask, np.zeros(self.shape, dtype=bool))
-        assert_is_none(ccd.uncertainty)
-
-    def test_export_with_mask(self):
-        frame = self.frame
-        frame.mask = self.mask
-
-        ccd = frame.to_ccddata()
-        assert_equal(ccd.data, 100*np.ones(self.shape))
-        assert_equal(ccd.unit, self.unit)
-        for i in self.meta.keys():
-            assert_equal(ccd.meta[i], self.meta[i])
-        assert_equal(ccd.mask, self.mask)
-        assert_is_none(ccd.uncertainty, str(ccd.uncertainty))
-
-    def test_export_with_uncertainty(self):
-        frame = self.frame
-        frame.uncertainty = 1
-
-        ccd = frame.to_ccddata()
-        assert_equal(ccd.data, 100*np.ones(self.shape))
-        assert_equal(ccd.unit, self.unit)
-        for i in self.meta.keys():
-            assert_equal(ccd.meta[i], self.meta[i])
-        assert_equal(ccd.mask, np.zeros(self.shape, dtype=bool))
-        assert_equal(ccd.uncertainty.array, np.ones(self.shape))
-        assert_equal(ccd.uncertainty.unit, self.unit)
-        assert_equal(ccd.uncertainty.uncertainty_type, 'std')
-
-    def test_export_full(self):
-        frame = self.frame
-        frame.uncertainty = 1
-        frame.mask = self.mask
-
-        ccd = frame.to_ccddata()
-        assert_equal(ccd.data, 100*np.ones(self.shape))
-        assert_equal(ccd.unit, self.unit)
-        for i in self.meta.keys():
-            assert_equal(ccd.meta[i], self.meta[i])
-        assert_equal(ccd.mask, self.mask)
-        assert_equal(ccd.uncertainty.array, np.ones(self.shape))
-        assert_equal(ccd.uncertainty.unit, self.unit)
-        assert_equal(ccd.uncertainty.uncertainty_type, 'std')
-
-
-class Test_FrameData_MemMap:
-    def test_framedata_memmap_default(self):
-        frame = create_framedata()
-        assert_false(frame._data.memmap)
-        assert_false(frame._unct.memmap)
-        assert_false(frame._flags.memmap)
-        assert_false(frame._memmapping)
-        frame.enable_memmap()
-        fname = os.path.join(frame.cache_folder, frame.cache_filename)
-        assert_true(frame._data.memmap)
-        assert_true(frame._unct.memmap)
-        assert_true(frame._flags.memmap)
-        assert_true(frame._memmapping)
-        assert_equal(frame._data.filename, fname+'.data')
-        assert_equal(frame._unct.filename, fname+'.unct')
-        assert_equal(frame._flags.filename, fname+'.flags')
-
-    def test_framedata_memmap_setname(self, tmpdir):
-        frame = create_framedata()
-        assert_false(frame._data.memmap)
-        assert_false(frame._unct.memmap)
-        assert_false(frame._flags.memmap)
-        assert_false(frame._memmapping)
-        c_folder = tmpdir.strpath
-        c_file = 'test'
-        frame.enable_memmap(filename=c_file, cache_folder=c_folder)
-        fname = os.path.join(c_folder, c_file)
-        assert_true(frame._data.memmap)
-        assert_true(frame._unct.memmap)
-        assert_true(frame._flags.memmap)
-        assert_true(frame._memmapping)
-        assert_equal(frame._data.filename, fname+'.data')
-        assert_equal(frame._unct.filename, fname+'.unct')
-        assert_equal(frame._flags.filename, fname+'.flags')
-
-    def test_framedata_disable_memmap(self):
-        frame = create_framedata()
-        assert_false(frame._data.memmap)
-        assert_false(frame._unct.memmap)
-        assert_false(frame._flags.memmap)
-        assert_false(frame._memmapping)
-        frame.enable_memmap()
-        assert_true(frame._data.memmap)
-        assert_true(frame._unct.memmap)
-        assert_true(frame._flags.memmap)
-        assert_true(frame._memmapping)
-        frame.disable_memmap()
-        assert_false(frame._data.memmap)
-        assert_false(frame._unct.memmap)
-        assert_false(frame._flags.memmap)
-        assert_false(frame._memmapping)
-
-
-class Test_FrameData_GetSet:
-    def test_set_data_no_unit(self):
-        frame = create_framedata()
-        frame.data = 1
-        assert_equal(frame.data, 1)
-        assert_equal(frame.unit, 'adu')
-
-    def test_set_data_with_unit(self):
-        frame = create_framedata()
-        frame.data = 1*u.Unit('s')
-        assert_equal(frame.data, 1)
-        assert_equal(frame.unit, 's')
-
-
-class Test_FrameData_MathProps:
-    def test_framedata_median_without_unit(self):
-        frame = FrameData([5, 1, 3, 4, 1])
-        assert_equal(frame.median(), 3)
-
-    def test_framedata_median_with_unit(self):
-        frame = FrameData([5, 1, 3, 4, 1], unit='adu')
-        assert_equal(frame.median(), 3*u.Unit('adu'))
-
-    def test_framedata_mean_without_unit(self):
-        frame = FrameData([2, 1, 3, 8, 6])
-        assert_equal(frame.mean(), 4)
-
-    def test_framedata_mean_with_unit(self):
-        frame = FrameData([2, 1, 3, 8, 6], unit='adu')
-        assert_equal(frame.mean(), 4*u.Unit('adu'))
-
-    def test_framedata_min_without_unit(self):
-        frame = FrameData([2, 1, 3, 8, 6])
-        assert_equal(frame.min(), 1)
-
-    def test_framedata_min_with_unit(self):
-        frame = FrameData([2, 1, 3, 8, 6], unit='adu')
-        assert_equal(frame.min(), 1*u.Unit('adu'))
-
-    def test_framedata_max_without_unit(self):
-        frame = FrameData([1, 2, 3, 8, 6])
-        assert_equal(frame.max(), 8)
-
-    def test_framedata_max_with_unit(self):
-        frame = FrameData([1, 2, 3, 8, 6], unit='adu')
-        assert_equal(frame.max(), 8*u.Unit('adu'))
-
-    def test_framedata_std_without_unit(self):
-        frame = FrameData(np.arange(10))
-        res = frame.std()
-        assert_almost_equal(res, 2.8722813232690143)
-
-    def test_framedata_std_with_unit(self):
-        frame = FrameData(np.arange(10), unit='adu')
-        res = frame.std()
-        assert_almost_equal(res.value, 2.8722813232690143)
-        assert_equal(res.unit, u.adu)
-
-    def test_framedata_statistics_without_unit(self):
-        frame = FrameData(np.arange(9))
-        res = frame.statistics()
-        assert_equal(res['mean'], 4)
-        assert_equal(res['median'], 4)
-        assert_equal(res['min'], 0)
-        assert_equal(res['max'], 8)
-        assert_almost_equal(res['std'], 2.581988897471611)
-
-    def test_framedata_statistics_with_unit(self):
-        frame = FrameData(np.arange(9), unit='adu')
-        res = frame.statistics()
-        assert_equal(res['mean'].value, 4)
-        assert_equal(res['median'].value, 4)
-        assert_equal(res['min'].value, 0)
-        assert_equal(res['max'].value, 8)
-        assert_almost_equal(res['std'].value, 2.581988897471611)
-        assert_equal(res['mean'].unit, u.adu)
-        assert_equal(res['median'].unit, u.adu)
-        assert_equal(res['min'].unit, u.adu)
-        assert_equal(res['max'].unit, u.adu)
+    def test_frame_init_with_string_electron_unit(self):
+        framedata = FrameData(np.zeros([2, 2]), unit="electron")
+        assert_is(framedata.unit, u.electron)
