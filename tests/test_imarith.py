@@ -526,7 +526,6 @@ def test_invalid_shapes():
         imarith(frame1, frame2, '+')
 
 
-
 pars = pytest.mark.parametrize('op,vs', [('+', {'f1': {'v': 30, 'u': 0},
                                                 'f2': {'v': 10, 'u': 0},
                                                 'r': {'v': 40, 'u': 0}}),
