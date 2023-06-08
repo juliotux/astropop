@@ -38,7 +38,8 @@ def gen_position_flux(size, number, low, high, rng_seed=123):
         with NumpyRNGContext(rng_seed+i):
             y = np.random.randint(0, size[1], number)
             flux = np.random.randint(low, high, number)
-    return x, y, flux
+    s = np.argsort(flux)[::-1]
+    return x[s], y[s], flux[s]
 
 
 def gen_stars_moffat(size, x, y, flux, fwhm):
@@ -518,7 +519,7 @@ class Test_DAOFind_Detection():
         posy = (45, 50, 90, 100)
         sky = 800
         rdnoise = 20
-        flux = (15000, 3000, 5000, 35000)
+        flux = (35000, 15000, 10000, 5000)
         fwhm = 3
         sigma = fwhm*gaussian_fwhm_to_sigma
         theta = 0

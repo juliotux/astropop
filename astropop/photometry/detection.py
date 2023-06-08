@@ -287,11 +287,11 @@ def daofind(data, threshold, background, noise, fwhm,
     """
     # Get the parameters for sharpness and roundness
     if sharp_limit is None:
-        sharplo, sharphi = None, None
+        sharplo, sharphi = (-np.inf, np.inf)
     else:
         sharplo, sharphi = sharp_limit
     if round_limit is None:
-        roundlo, roundhi = None, None
+        roundlo, roundhi = (-np.inf, np.inf)
     else:
         roundlo, roundhi = round_limit
 
