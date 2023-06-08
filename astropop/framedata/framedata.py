@@ -221,6 +221,10 @@ class FrameData:
         self.cache_filename = cache_filename
         self._origin = origin_filename
 
+        # Ensure data is not None
+        if data is None:
+            raise ValueError('Data cannot be None.')
+
         # Setup MemMapArray instances
         cache_file = setup_filename(self, self.cache_folder,
                                     self.cache_filename)
@@ -248,9 +252,9 @@ class FrameData:
         # raise errors if incompatible units
         unit = extract_units(data, unit)
         self.unit = unit
-        self._data = reset_memmap_array(data, dtype)
-        self._unct = reset_memmap_array(uncertainty, u_dtype)
-        self._flags = reset_memmap_array(flags, np.uint8)
+        self._data = reset_memmap_array(self._data, data, dtype)
+        self._unct = reset_memmap_array(self._unct, uncertainty, u_dtype)
+        self._flags = reset_memmap_array(self._flags, np.uint8)
 
         # create flag for masked pixels
         if mask is not None:
@@ -291,9 +295,12 @@ class FrameData:
         else:
             nf = None
 
-        self._data = create_array_memmap(nd, filename=cache_file + '.data')
-        self._unct = create_array_memmap(nu, filename=cache_file + '.unct')
-        self._flags = create_array_memmap(nf, filename=cache_file + '.flags')
+        self._data = create_array_memmap(filename=cache_file + '.data',
+                                         data=nd)
+        self._unct = create_array_memmap(filename=cache_file + '.unct',
+                                         data=nu)
+        self._flags = create_array_memmap(filename=cache_file + '.flags',
+                                          data=nf)
 
     @property
     def history(self):
@@ -456,7 +463,7 @@ class FrameData:
                                              dtype=np.uint8)
         else:
             _, _, _, flags = shape_consistency(self.data, flags=value)
-            self._flags = reset_memmap_array(self._flags, value,
+            self._flags = reset_memmap_array(self._flags, flags,
                                              dtype=np.uint8)
 
     def add_flags(self, flag, where):
@@ -487,9 +494,9 @@ class FrameData:
             be the same as the original Framedata.
             Default: `None`
         """
-        data = np.array(self._data) if self._data is not None else None
-        flags = np.array(self._flags) if self._flags is not None else None
-        unct = np.array(self._unct) if self._unct is not None else None
+        data = delete_array_memmap(self._data, read=True, remove=False)
+        flags = delete_array_memmap(self._flags, read=True, remove=False)
+        unct = delete_array_memmap(self._unct, read=True, remove=False)
         unit = self._unit
         wcs = cp.copy(self._wcs)
         meta = fits.Header(self._meta, copy=True)
@@ -500,7 +507,7 @@ class FrameData:
         cache_fname = self.cache_filename
 
         if dtype is not None:
-            data = data.astype(dtype) if data is not None else data
+            data = data.astype(dtype)
             unct = unct.astype(dtype) if unct is not None else unct
 
         if cache_fname is not None:

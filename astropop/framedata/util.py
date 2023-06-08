@@ -2,10 +2,8 @@
 """Utilities for loading data as FrameData."""
 
 import os
-import numpy as np
 from astropy.io import fits
 from astropy.nddata import CCDData
-from astropy import units as u
 
 from .framedata import FrameData
 from .compat import _extract_ccddata, _extract_fits, imhdus
