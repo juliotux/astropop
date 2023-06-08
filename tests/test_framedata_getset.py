@@ -210,3 +210,17 @@ class TestFrameDataGetSetUncertainty:
         shp = (DEFAULT_DATA_SIZE, DEFAULT_DATA_SIZE)
         frame = create_framedata(uncertainty=np.ones(shp))
         assert_equal(frame.get_uncertainty(False), np.ones(shp))
+
+
+class TestFrameDataMaskedData:
+    def test_masked_simple(self):
+        f = FrameData([[1, 2, 3, 4, 5]],
+                      mask=[[True, False, False, False, True]])
+        assert_equal(f.get_masked_data(),
+                     np.array([[np.nan, 2, 3, 4, np.nan]]))
+
+    def test_masked_fill_value(self):
+        f = FrameData([[1, 2, 3, 4, 5]],
+                      mask=[[True, False, False, False, True]])
+        assert_equal(f.get_masked_data(fill_value=0),
+                     np.array([[0, 2, 3, 4, 0]]))

@@ -270,6 +270,14 @@ class TestFrameDataCreationData:
         framedata = FrameData(np.zeros([2, 2]), unit="electron")
         assert_is(framedata.unit, u.electron)
 
+    def test_frame_init_invalid_dtype(self):
+        with pytest.raises(ValueError, match='float'):
+            FrameData(np.zeros([2, 2]), dtype='i4')
+
+    def test_frame_init_dtype_defaults_f8(self):
+        framedata = FrameData(np.zeros([2, 2]))
+        assert_is(framedata.dtype, np.dtype('f8'))
+
 
 class TestFrameDataMemMap:
     def test_framedata_memmap_default(self):

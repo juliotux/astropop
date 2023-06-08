@@ -220,16 +220,19 @@ class FrameData:
                  mask=None, flags=None, wcs=None, meta=None, header=None,
                  cache_folder=None, cache_filename=None, origin_filename=None,
                  use_memmap_backend=False):
-
         # setup names
         setup_filename(self, cache_folder, cache_filename)
         self._origin = origin_filename
 
         # Ensure data is not None
-        if data is None:
-            raise ValueError('Data cannot be None.')
         if len(np.shape(data)) != 2:
-            raise ValueError('Data must be 2D.')
+            raise ValueError('Data must be 2D array.')
+        if dtype is not None:
+            dtype = np.dtype(dtype)
+            if dtype.kind != 'f':
+                raise ValueError('Data dtype must be float.')
+        else:
+            dtype = np.dtype('f8')
 
         # raise errors if incompatible shapes
         data, uncertainty, mask, flags = shape_consistency(data, uncertainty,
@@ -360,6 +363,12 @@ class FrameData:
             dunit = extract_units(value, None)
             self.unit = dunit
         self._data = reset_memmap_array(self._data, value)
+
+    def get_masked_data(self, fill_value=np.nan):
+        """Return a copy of the data with masked pixels as `fill_value`."""
+        d = self.data.copy()
+        d[self.mask] = fill_value
+        return d
 
     @property
     def uncertainty(self):
