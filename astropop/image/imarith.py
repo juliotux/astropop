@@ -94,7 +94,6 @@ def imarith(operand1, operand2, operation, inplace=False,
         new `FrameData` instance if not ``inplace``, else the ``operand1``
         `~astropop.framedata.FrameData` instance.
     """
-    # TODO: handle WCS
     if operation not in _arith_funcs.keys():
         raise ValueError(f"Operation {operation} not supported.")
 
@@ -104,7 +103,7 @@ def imarith(operand1, operand2, operation, inplace=False,
     if isinstance(operand1, FrameData) and inplace:
         ccd = operand1
     else:
-        ccd = FrameData(None)
+        ccd = object.__new__(FrameData)
 
     # Add the operation entry to the ccd history.
     lh = log_to_list(logger, ccd.history)

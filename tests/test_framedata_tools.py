@@ -158,7 +158,7 @@ class Test_FrameData_Setup_Filename:
 
     def frame(self, path):
         temp = os.path.abspath(path)
-        return FrameData(np.zeros(2), unit='adu',
+        return FrameData(np.zeros((2, 2)), unit='adu',
                          cache_filename=self.fname,
                          cache_folder=temp)
 
