@@ -685,7 +685,7 @@ class Test_StarFind():
         sigma_x = np.array([1, 0.5, 1.1, 2.0, 0.1, 0.9])*sig_base
         sigma_y = np.array([1, 1.0, 1.1, 0.5, 0.1, 1])*sig_base
         threshold = 10
-        # stars 0, 2 -> passed
+        # stars 0, 2, 5 -> passed
         # star 4 -> rejected by sharpness
         # stars 1, 3 -> rejected by roundness
         order = [2, 0, 5]
