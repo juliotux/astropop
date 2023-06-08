@@ -11,8 +11,7 @@ from ..framedata import check_framedata, PixelMaskFlags
 
 
 __all__ = ['cosmics_lacosmic', 'gain_correct', 'subtract_bias',
-           'subtract_dark', 'flat_correct', 'process_image',
-           'trim_image']
+           'subtract_dark', 'flat_correct', 'trim_image']
 
 
 # TODO: replace ccdproc functions by built-in, skiping units
@@ -308,13 +307,3 @@ def trim_image(image, x_slice=None, y_slice=None, inplace=False):
     image.meta['HIERARCH astropop trimmed_section'] = str_slice
 
     return image
-
-
-def process_image(framedata, master_bias=None, master_dark=None,
-                  master_flat=None, gain=None, image_exposure=None,
-                  dark_exposure=None, trim=None,
-                  lacosmic=False, rebin_func=np.sum,
-                  rebin_size=None, readnoise=None, badpixmask=None,
-                  overscan=None):
-    """Process all the default steps of CCD calibration."""
-    raise NotImplementedError
