@@ -12,7 +12,7 @@ from astropop.image.processing import cosmics_lacosmic, \
                                       subtract_dark, \
                                       flat_correct, \
                                       trim_image
-from astropop.framedata import FrameData
+from astropop.framedata import FrameData, PixelMaskFlags
 from astropop.testing import *
 
 
@@ -25,19 +25,20 @@ class Test_Processing_Cosmics():
         image.data[10, 10] = 35000
         image.data[10, 11] = 35000
         image.data[11, 10] = 35000
-        image.mask[15, 18] = 1
+        image.flags[15, 18] = PixelMaskFlags.MASKED.value
 
-        expect_mask = np.zeros((20, 20))
-        # currently we are not updating the mask
-        # expect_mask[10, 10] = 1
-        # expect_mask[10, 11] = 1
-        # expect_mask[11, 10] = 1
-        expect_mask[15, 18] = 1
+        expect_flags = np.zeros((20, 20))
+        cosmic_val = (PixelMaskFlags.COSMIC_RAY |
+                      PixelMaskFlags.INTERPOLATED).value
+        expect_flags[10, 10] = cosmic_val
+        expect_flags[10, 11] = cosmic_val
+        expect_flags[11, 10] = cosmic_val
+        expect_flags[15, 18] = PixelMaskFlags.REMOVED.value
 
         # Run the cosmics removal
         res = cosmics_lacosmic(image, inplace=inplace)
         assert_equal(res.data, np.ones((20, 20))*3)
-        assert_equal(res.mask, expect_mask)
+        assert_equal(res.flags, expect_flags)
         assert_equal(res.meta['astropop lacosmic'], True)
 
         if inplace:
@@ -57,6 +58,7 @@ class Test_Processing_Gain():
         assert_equal(res.data, np.ones((20, 20))*3*1.5)
         assert_equal(res.uncertainty, np.ones((20, 20))*5*1.5)
         assert_equal(res.unit, u.Unit('electron'))
+        assert_equal(res.flags, np.zeros((20, 20)))
 
         assert_equal(res.meta['astropop gain_corrected'], True)
         assert_equal(res.meta['astropop gain_corrected_value'], 1.5)
@@ -86,6 +88,8 @@ class Test_Processing_Flat():
         assert_is_instance(res1, FrameData)
         assert_equal(res1.data, expect)
         assert_equal(res1.header['astropop flat_corrected'], True)
+        assert_equal(res1.flags, np.zeros((20, 20)))
+        assert_equal(res1.unit, u.adu)
 
         if inplace:
             assert_is(res1.data, frame1.data)
@@ -109,6 +113,8 @@ class Test_Processing_Bias():
         assert_is_instance(res4, FrameData)
         assert_equal(res4.data, expected)
         assert_equal(res4.header['astropop bias_corrected'], True)
+        assert_equal(res4.flags, np.zeros((20, 20)))
+        assert_equal(res4.unit, u.adu)
 
         if inplace:
             assert_is(res4.data, frame4bias.data)

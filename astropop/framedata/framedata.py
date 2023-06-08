@@ -144,7 +144,7 @@ class PixelMaskFlags(Flag):
     DEAD = 1 << 2  # dead pixel
     BAD = 1 << 3  # bad pixel
     SATURATED = 1 << 4  # saturated pixel, above a threshold level
-    COSMIC_RAY = 1 << 4  # cosmic ray
+    COSMIC_RAY = 1 << 5  # cosmic ray
     OUT_OF_BOUNDS = 1 << 6  # registered image. Pixel is out of the bounds
     UNSPECIFIED = 1 << 7  # not specified
 

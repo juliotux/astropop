@@ -7,7 +7,7 @@ import astroscrappy
 from ..logger import logger
 from .imarith import imarith
 from ..math.physical import convert_to_qfloat
-from ..framedata import check_framedata
+from ..framedata import check_framedata, PixelMaskFlags
 
 
 __all__ = ['cosmics_lacosmic', 'gain_correct', 'subtract_bias',
@@ -52,7 +52,7 @@ def cosmics_lacosmic(frame, inplace=False, **lacosmic_kwargs):
     """
     # As lacosmic removes and replace the cosmics pixels, no need to
     # update the mask
-    _, dat = astroscrappy.detect_cosmics(frame.data, **lacosmic_kwargs)
+    mask, dat = astroscrappy.detect_cosmics(frame.data, **lacosmic_kwargs)
 
     if inplace:
         ccd = frame
@@ -60,8 +60,8 @@ def cosmics_lacosmic(frame, inplace=False, **lacosmic_kwargs):
         ccd = frame.copy()
 
     ccd.data = dat
-    # Do not update mask, astroscrappy replace the pixels
-    # ccd.mask &= mask
+    ccd.add_flags(PixelMaskFlags.INTERPOLATED | PixelMaskFlags.COSMIC_RAY,
+                  where=mask)
     ccd.header['HIERARCH astropop lacosmic'] = True
     return ccd
 
@@ -95,7 +95,8 @@ def gain_correct(image, gain, inplace=False):
         ``image`` `~astropop.framedata.FrameData` instance.
     """
     gain = convert_to_qfloat(gain)
-    nim = imarith(image, gain, '*', inplace=inplace)
+    nim = imarith(image, gain, '*', inplace=inplace, merge_headers='first',
+                  merge_flags='no_merge')
     nim.header['HIERARCH astropop gain_corrected'] = True
     nim.header['HIERARCH astropop gain_corrected_value'] = gain.nominal
     nim.header['HIERARCH astropop gain_corrected_unit'] = str(gain.unit)
@@ -134,7 +135,8 @@ def subtract_bias(image, master_bias, inplace=False):
         ``image`` `~astropop.framedata.FrameData` instance.
     """
     master_bias = check_framedata(master_bias)
-    nim = imarith(image, master_bias, '-', inplace=inplace)
+    nim = imarith(image, master_bias, '-', inplace=inplace,
+                  merge_headers='first', merge_flags='no_merge')
 
     nim.header['HIERARCH astropop bias_corrected'] = True
     name = master_bias.origin_filename
@@ -190,7 +192,8 @@ def subtract_dark(image, master_dark, dark_exposure, image_exposure,
                      ' exposure.', scale)
         master_dark = imarith(master_dark, scale, "*", inplace=False)
 
-    nim = imarith(image, master_dark, '-', inplace=inplace)
+    nim = imarith(image, master_dark, '-', inplace=inplace,
+                  merge_headers='first', merge_flags='no_merge')
 
     nim.header['HIERARCH astropop dark_corrected'] = True
     nim.header['HIERARCH astropop dark_corrected_scale'] = scale
@@ -237,7 +240,8 @@ def flat_correct(image, master_flat, min_value=None, norm_value=None,
         logger.debug('Normalizing flat with %s value.', norm_value)
         master_flat = imarith(master_flat, norm_value, '/', inplace=False)
 
-    nim = imarith(image, master_flat, '/', inplace=inplace)
+    nim = imarith(image, master_flat, '/', inplace=inplace,
+                  merge_headers='first', merge_flags='no_merge')
 
     nim.header['HIERARCH astropop flat_corrected'] = True
 
@@ -278,12 +282,13 @@ def trim_image(image, x_slice=None, y_slice=None, inplace=False):
     section = (y_slice, x_slice)
 
     # trim the arrays
-    data, uncertainty, mask = (image.data, image.get_uncertainty(False),
-                               image.mask)
-    image.data = data[section]
-    image.uncertainty = uncertainty[section]
-    if not mask.empty:
-        image.mask = mask[section]
+    data = image.data[section]
+    uncertainty = image.get_uncertainty(False)[section]
+    flags = image.flags[section]
+
+    image.data = data
+    image.uncertainty = uncertainty
+    image.flags = flags
 
     # fix WCS if existing
     if image.wcs is not None:
