@@ -7,7 +7,7 @@ from astropop.image.register import AsterismRegister, \
                                     CrossCorrelationRegister, \
                                     register_framedata_list, \
                                     compute_shift_list
-from astropop.framedata import FrameData
+from astropop.framedata import FrameData, PixelMaskFlags
 from astropop.testing import *
 
 from .test_detection import gen_position_flux, gen_image
@@ -196,14 +196,23 @@ class Test_Registration:
         mask[0, :] = 1
         mask[:, -2:] = 1
 
+        flags = np.zeros_like(im2, dtype='u1')
+        flags[5, 5] = 5
+        exp_flags = np.zeros_like(im2, dtype='u1')
+        exp_flags[3, 6] = 5
+        exp_flags[0, :] = (PixelMaskFlags.REMOVED |
+                           PixelMaskFlags.OUT_OF_BOUNDS).value
+        exp_flags[:, -2:] = (PixelMaskFlags.REMOVED |
+                             PixelMaskFlags.OUT_OF_BOUNDS).value
+
         expect_unct = np.ones_like(im2, dtype='f8')
         expect_unct[0, :] = np.nan
         expect_unct[:, -2:] = np.nan
 
-        frame1 = FrameData(im1, dtype='f8')
+        frame1 = FrameData(im1, dtype='f8', flags=flags)
         frame1.meta['moving'] = False
         frame1.uncertainty = np.ones_like(im1)
-        frame2 = FrameData(im2, dtype='f8')
+        frame2 = FrameData(im2, dtype='f8', flags=flags)
         frame2.meta['moving'] = True
         frame2.uncertainty = np.ones_like(im2)
 
@@ -238,6 +247,9 @@ class Test_Registration:
     def test_register_frame_equal(self, inplace):
         im = gen_image((50, 50), [25], [25], [10000], 10, 0, sigma=3)
         im = FrameData(im)
+        flags = np.zeros((50, 50), dtype=np.uint8)
+        flags[25, 25] = 5
+        im.flags = flags
         ar = CrossCorrelationRegister()
         im_reg = ar.register_framedata(im, im, inplace=inplace)
         if inplace:
@@ -246,6 +258,7 @@ class Test_Registration:
             assert_is_not(im_reg, im)
         assert_equal(im_reg.data, im.data)
         assert_equal(im_reg.mask, np.zeros_like(im))
+        assert_equal(im_reg.flags, np.zeros_like(im))
         assert_equal(im_reg.meta['astropop registration_shift_x'], 0)
         assert_equal(im_reg.meta['astropop registration_shift_y'], 0)
 
