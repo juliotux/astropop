@@ -1,6 +1,7 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 # flake8: noqa: F403, F405
 
+import os
 import pytest
 import numpy as np
 from astropop.framedata import FrameData, PixelMaskFlags
@@ -29,7 +30,6 @@ def create_framedata(**kwargs):
 
 
 class TestFrameDataCreationMetas:
-
     def test_framedata_cration_array_with_meta(self):
         a = _random_array.copy()
         meta = DEFAULT_HEADER.copy()
@@ -269,3 +269,86 @@ class TestFrameDataCreationData:
     def test_frame_init_with_string_electron_unit(self):
         framedata = FrameData(np.zeros([2, 2]), unit="electron")
         assert_is(framedata.unit, u.electron)
+
+
+class TestFrameDataMemMap:
+    def test_framedata_memmap_default(self):
+        # default is created with None unct and flags
+        frame = create_framedata()
+        assert_is_not_instance(frame._data, np.memmap)
+        assert_is_none(frame._unct)
+        assert_is_not_instance(frame._flags, np.memmap)
+        assert_false(frame._memmapping)
+        frame.enable_memmap()
+        fname = os.path.join(frame.cache_folder, frame.cache_filename)
+        assert_is_instance(frame._data, np.memmap)
+        assert_is_none(frame._unct)
+        assert_is_instance(frame._flags, np.memmap)
+        assert_true(frame._memmapping)
+        assert_equal(frame._data.filename, fname+'.data')
+        assert_equal(frame._flags.filename, fname+'.flags')
+
+    def test_framedata_memmap_setname(self, tmpdir):
+        frame = create_framedata()
+        c_folder = tmpdir.strpath
+        c_file = 'test'
+        frame.enable_memmap(filename=c_file, cache_folder=c_folder)
+        fname = os.path.join(c_folder, c_file)
+        assert_is_instance(frame._data, np.memmap)
+        assert_is_none(frame._unct)
+        assert_is_instance(frame._flags, np.memmap)
+        assert_true(frame._memmapping)
+        assert_equal(frame._data.filename, fname+'.data')
+        assert_equal(frame._flags.filename, fname+'.flags')
+
+    def test_framedata_disable_memmap(self):
+        frame = create_framedata()
+        assert_is_not_instance(frame._data, np.memmap)
+        assert_is_none(frame._unct)
+        assert_is_not_instance(frame._flags, np.memmap)
+        assert_false(frame._memmapping)
+        frame.enable_memmap()
+        assert_is_instance(frame._data, np.memmap)
+        assert_is_none(frame._unct)
+        assert_is_instance(frame._flags, np.memmap)
+        assert_true(frame._memmapping)
+        frame.disable_memmap()
+        assert_is_not_instance(frame._data, np.memmap)
+        assert_is_none(frame._unct)
+        assert_is_not_instance(frame._flags, np.memmap)
+        assert_false(frame._memmapping)
+
+    def test_framedata_memmap_with_uncertainty(self):
+        frame = create_framedata()
+        frame.uncertainty = np.ones_like(frame.data)
+        assert_is_not_instance(frame._data, np.memmap)
+        assert_is_not_instance(frame._unct, np.memmap)
+        assert_is_not_instance(frame._flags, np.memmap)
+        assert_false(frame._memmapping)
+        frame.enable_memmap()
+        fname = os.path.join(frame.cache_folder, frame.cache_filename)
+        assert_is_instance(frame._data, np.memmap)
+        assert_is_instance(frame._unct, np.memmap)
+        assert_is_instance(frame._flags, np.memmap)
+        assert_true(frame._memmapping)
+        assert_equal(frame._data.filename, fname+'.data')
+        assert_equal(frame._unct.filename, fname+'.unct')
+        assert_equal(frame._flags.filename, fname+'.flags')
+
+    def test_framedata_disable_memmap_with_uncertainty(self):
+        frame = create_framedata()
+        frame.uncertainty = np.ones_like(frame.data)
+        assert_is_not_instance(frame._data, np.memmap)
+        assert_is_not_instance(frame._unct, np.memmap)
+        assert_is_not_instance(frame._flags, np.memmap)
+        assert_false(frame._memmapping)
+        frame.enable_memmap()
+        assert_is_instance(frame._data, np.memmap)
+        assert_is_instance(frame._unct, np.memmap)
+        assert_is_instance(frame._flags, np.memmap)
+        assert_true(frame._memmapping)
+        frame.disable_memmap()
+        assert_is_not_instance(frame._data, np.memmap)
+        assert_is_not_instance(frame._unct, np.memmap)
+        assert_is_not_instance(frame._flags, np.memmap)
+        assert_false(frame._memmapping)
