@@ -539,7 +539,7 @@ class ImCombiner:
         combined = FrameData(data, unit=self._unit, uncertainty=unct)
         combined.meta = merge_header(*[i.header for i in self._images],
                                      method=self._header_strategy,
-                                     selected_keys=self._header_keys)
+                                     selected_keys=self._header_merge_keys)
         combined.meta['HIERARCH astropop imcombine nimages'] = n
         combined.meta['HIERARCH astropop imcombine method'] = method
 

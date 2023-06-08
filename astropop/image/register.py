@@ -130,7 +130,8 @@ class _BaseRegister(abc.ABC):
         # equal images are just returned
         if np.all(image1 == image2):
             logger.info('Images are equal, skipping registering.')
-            return image1, np.zeros_like(image1), transform.AffineTransform()
+            return (image1, np.zeros_like(image1, dtype=bool),
+                    transform.AffineTransform(translation=(0, 0)))
 
         tform = self._compute_transform(image1, image2, mask1, mask2)
         if mask2 is None:
@@ -182,10 +183,11 @@ class _BaseRegister(abc.ABC):
 
         im1 = np.array(frame1.data)
         im2 = np.array(frame2.data)
-        msk1 = frame1.mask if frame1.mask is None else np.array(frame1.mask)
-        msk2 = frame2.mask if frame2.mask is None else np.array(frame2.mask)
+        msk1 = frame1.mask
+        msk2 = frame2.mask
 
-        data, _, tform = self.register_image(im1, im2, msk1, msk2, cval=cval)
+        data, mask, tform = self.register_image(im1, im2, msk1, msk2,
+                                                cval=cval)
 
         if inplace:
             reg_frame = frame2
@@ -194,16 +196,16 @@ class _BaseRegister(abc.ABC):
             reg_frame = frame2.copy()
 
         reg_frame.data = data
-        f_cval = (PixelMaskFlags.OUT_OF_BOUNDS | PixelMaskFlags.MASKED).value
-        # use order=0 and np.uint8 to avoid interpolation and keep the mask
-        reg_frame.flags = self._apply_transform_image(frame2.flags, tform,
-                                                      cval=f_cval,
-                                                      order=0).astype(np.uint8)
+        flags = frame2.flags
+        flags = self._apply_transform_image(flags, tform, cval=0, order=0)
+        reg_frame.add_flags(PixelMaskFlags.OUT_OF_BOUNDS |
+                            PixelMaskFlags.MASKED,
+                            mask)
 
         if not frame2.uncertainty.empty:
             unct = frame2.get_uncertainty(return_none=False)
-            unct = self._apply_transform_image(unct,
-                                               tform, cval=np.nan)
+            unct = self._apply_transform_image(unct, tform, cval=np.nan,
+                                               order=1)
             reg_frame.uncertainty = unct
 
         sx, sy = tform.translation
@@ -501,7 +503,9 @@ def register_framedata_list(frame_list, algorithm='cross-correlation',
             else:
                 icval = cval
             reg_list[i].data[:] = icval
-            reg_list[i].mask[:] = True
+            reg_list[i].add_flags(PixelMaskFlags.MASKED |
+                                  PixelMaskFlags.OUT_OF_BOUNDS,
+                                  np.ones_like(reg_list[i].data, dtype=bool))
             reg_list[i].meta[_keywords['method']] = 'failed'
             reg_list[i].meta[_keywords['shift_x']] = None
             reg_list[i].meta[_keywords['shift_y']] = None
