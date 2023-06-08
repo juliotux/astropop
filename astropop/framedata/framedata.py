@@ -7,6 +7,7 @@ an easier unit/uncertainty workflow
 # Important:
 
 import os
+import copy as cp
 import numpy as np
 import tempfile
 from enum import Flag
@@ -212,6 +213,8 @@ class FrameData:
     _origin = None
     _history = None
     _comments = None
+    cache_folder = None
+    cache_filename = None
 
     def __init__(self, data, unit=None, dtype=None, uncertainty=None,
                  mask=None, flags=None, wcs=None, meta=None, header=None,
@@ -219,8 +222,7 @@ class FrameData:
                  use_memmap_backend=False):
 
         # setup names
-        self.cache_folder = cache_folder
-        self.cache_filename = cache_filename
+        setup_filename(self, cache_folder, cache_filename)
         self._origin = origin_filename
 
         # Ensure data is not None
@@ -403,12 +405,10 @@ class FrameData:
           matrix filled with zeroes will be returned.
           Default: True
         """
-        if np.isscalar(self._unct):
-            if self._unct is None and return_none:
-                return None
-            elif self._unct is None:
-                return np.zeros_like(self.data)
-            return self._unct
+        if self._unct is None and return_none:
+            return None
+        elif self._unct is None:
+            return np.zeros_like(self.data)
         return np.array(self._unct, dtype=self.dtype)
 
     @property
@@ -522,12 +522,12 @@ class FrameData:
             be the same as the original Framedata.
             Default: `None`
         """
-        nf = FrameData.__new__()
+        nf = object.__new__(FrameData)
         # copy metadata
-        nf._history = self._history.__copy__()
-        nf._comments = self._comments.copy()
-        nf._meta = self._meta.copy()
-        nf._wcs = self._wcs.deepcopy()
+        nf._history = cp.deepcopy(self._history)
+        nf._comments = cp.deepcopy(self._comments)
+        nf._meta = cp.deepcopy(self._meta)
+        nf._wcs = cp.deepcopy(self._wcs)
         nf._unit = self._unit
 
         # file naming
@@ -540,9 +540,13 @@ class FrameData:
 
         # copy data
         nf._data = delete_array_memmap(self._data, read=True, remove=False)
+        if dtype is not None:
+            nf._data = nf._data.astype(dtype)
         nf._flags = delete_array_memmap(self._flags, read=True, remove=False)
         if self._unct is not None:
             nf._unct = delete_array_memmap(self._unct, read=True, remove=False)
+            if dtype is not None:
+                nf._unct = nf._unct.astype(dtype)
 
         # copy memmapping
         if self._memmapping:

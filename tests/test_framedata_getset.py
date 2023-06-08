@@ -8,7 +8,7 @@ from astropy.io import fits
 from astropy import units as u
 from astropop.testing import *
 from astropop.framedata import FrameData
-from .test_framedata import create_framedata, DEFAULT_HEADER
+from .test_framedata import create_framedata, DEFAULT_HEADER, DEFAULT_DATA_SIZE
 
 
 class TestFrameDataGetSetWCS:
@@ -142,3 +142,71 @@ class TestFrameDataGetSetMathProps:
         assert_equal(res['median'].unit, u.adu)
         assert_equal(res['min'].unit, u.adu)
         assert_equal(res['max'].unit, u.adu)
+
+
+class TestFrameDataGetSetUncertainty:
+    def test_setting_uncertainty_with_array(self):
+        frame = create_framedata()
+        frame.uncertainty = None
+        fake_uncertainty = np.sqrt(np.abs(frame.data))
+        frame.uncertainty = fake_uncertainty.copy()
+        assert_equal(frame.uncertainty, fake_uncertainty)
+        assert_equal(frame.unit, u.adu)
+
+    def test_setting_uncertainty_with_scalar(self):
+        uncertainty = 10
+        frame = create_framedata()
+        frame.uncertainty = None
+        frame.uncertainty = uncertainty
+        fake_uncertainty = np.zeros_like(frame.data)
+        fake_uncertainty[:] = uncertainty
+        assert_equal(frame.uncertainty, fake_uncertainty)
+        assert_equal(frame.unit, u.adu)
+
+    def test_setting_uncertainty_with_quantity(self):
+        uncertainty = 10*u.adu
+        frame = create_framedata()
+        frame.uncertainty = None
+        frame.uncertainty = uncertainty
+        fake_uncertainty = np.zeros_like(frame.data)
+        fake_uncertainty[:] = uncertainty.value
+        assert_equal(frame.uncertainty, fake_uncertainty)
+        assert_equal(frame.unit, u.adu)
+
+    def test_setting_uncertainty_wrong_shape_raises_error(self):
+        frame = create_framedata()
+        with pytest.raises(ValueError):
+            frame.uncertainty = np.zeros([3, 4])
+
+    def test_setting_bad_uncertainty_raises_error(self):
+        frame = create_framedata()
+        with pytest.raises(ValueError, match='could not convert'):
+            # Uncertainty is supposed to be an instance of NDUncertainty
+            frame.uncertainty = 'not a uncertainty'
+
+    def test_none_uncertainty_returns_empty(self):
+        frame = create_framedata()
+        assert_is_none(frame.uncertainty)
+
+    def test_get_uncertainty_empty_return_none(self):
+        # test the get_uncertainty method with return_none=True
+        frame = create_framedata()
+        assert_is_none(frame.get_uncertainty(True), None)
+
+    def test_get_uncertainty_empty_return_zero(self):
+        # test the get_uncertainty method with return_none=False
+        frame = create_framedata()
+        shp = (DEFAULT_DATA_SIZE, DEFAULT_DATA_SIZE)
+        assert_equal(frame.get_uncertainty(False), np.zeros(shp))
+
+    def test_get_uncertainty_non_empty_return_none(self):
+        # test the get_uncertainty method with return_none=True
+        shp = (DEFAULT_DATA_SIZE, DEFAULT_DATA_SIZE)
+        frame = create_framedata(uncertainty=np.ones(shp))
+        assert_equal(frame.get_uncertainty(True), np.ones(shp))
+
+    def test_get_uncertainty_non_empty_return_zero(self):
+        # test the get_uncertainty method with return_none=False
+        shp = (DEFAULT_DATA_SIZE, DEFAULT_DATA_SIZE)
+        frame = create_framedata(uncertainty=np.ones(shp))
+        assert_equal(frame.get_uncertainty(False), np.ones(shp))

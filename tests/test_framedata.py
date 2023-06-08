@@ -352,3 +352,84 @@ class TestFrameDataMemMap:
         assert_is_not_instance(frame._unct, np.memmap)
         assert_is_not_instance(frame._flags, np.memmap)
         assert_false(frame._memmapping)
+
+
+class TestFrameDataCopy:
+    def test_copy_simple(self):
+        frame = create_framedata()
+        ccd_copy = frame.copy()
+        assert_equal(ccd_copy.data, frame.data)
+        assert_equal(ccd_copy.unit, frame.unit)
+        assert_equal(ccd_copy.meta, frame.meta)
+        assert_is_none(ccd_copy._unct)
+        assert_equal(ccd_copy.flags, frame.flags)
+        # filenames are copied
+        assert_equal(ccd_copy.cache_filename, frame.cache_filename + '_copy')
+        assert_equal(ccd_copy.cache_folder, frame.cache_folder)
+        # origin stay None
+        assert_is_none(ccd_copy.origin_filename)
+
+    def test_copy_with_incertainty(self):
+        frame = create_framedata()
+        frame.uncertainty = 1.0
+        ccd_copy = frame.copy()
+        assert_equal(ccd_copy.data, frame.data)
+        assert_equal(ccd_copy.unit, frame.unit)
+        assert_equal(ccd_copy.meta, frame.meta)
+        assert_equal(ccd_copy.uncertainty, np.ones(frame.shape))
+
+    def test_copy_history(self):
+        frame = create_framedata()
+        frame.history = 'frame copy tested by astropop'
+        ccd_copy = frame.copy()
+        assert_equal(ccd_copy.history, ['frame copy tested by astropop'])
+        assert_not_in('history', ccd_copy.meta)
+        assert_not_in('HISTORY', ccd_copy.meta)
+
+    def test_copy_fnames(self, tmpdir):
+        frame = create_framedata(cache_filename='testing',
+                                 cache_folder=tmpdir.strpath,
+                                 origin_filename='/dummy/dummy.dummy')
+        ccd_copy = frame.copy()
+        assert_equal(ccd_copy.cache_filename, 'testing_copy')
+        assert_equal(ccd_copy.cache_folder, tmpdir.strpath)
+        assert_equal(ccd_copy.origin_filename, '/dummy/dummy.dummy')
+
+    def test_copy_wcs(self):
+        wcs = WCS(naxis=2)
+        frame = create_framedata(wcs=wcs)
+        ccd_copy = frame.copy()
+        assert_is_instance(ccd_copy.wcs, WCS)
+        for i in wcs.to_header().keys():
+            assert_not_in(i, ccd_copy.meta)
+            assert_equal(ccd_copy.wcs.to_header()[i], wcs.to_header()[i])
+
+    def test_copy_with_dtype(self):
+        frame = create_framedata(uncertainty=0.5)  # default is float64
+        f = frame.copy(np.float32)
+        assert_is_not(f, frame)
+        assert_almost_equal(f.data, frame.data)
+        assert_equal(f.uncertainty, frame.uncertainty)
+        assert_equal(f.data.dtype, np.float32)
+        assert_equal(f.uncertainty.dtype, np.float32)
+
+    def test_copy_astype(self):
+        # copy using astype
+        frame = create_framedata(uncertainty=0.5)  # default is float64
+        f = frame.astype(np.float32)
+        assert_is_not(f, frame)
+        assert_almost_equal(f.data, frame.data)
+        assert_equal(f.uncertainty, frame.uncertainty)
+        assert_equal(f.data.dtype, np.float32)
+        assert_equal(f.uncertainty.dtype, np.float32)
+
+    def test_copy_filenames(self, tmpdir):
+        tmp = tmpdir.strpath
+        frame = create_framedata(cache_folder=tmp, cache_filename='testcopy')
+        frame.uncertainty = 1.0
+        f = frame.copy()
+        f.enable_memmap()
+        expect = os.path.join(tmp, 'testcopy'+'_copy')
+        assert_path_exists(expect+'.data')
+        assert_path_exists(expect+'.unct')
+        assert_path_exists(expect+'.flags')
