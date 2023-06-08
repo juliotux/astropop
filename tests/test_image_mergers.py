@@ -117,7 +117,7 @@ class TestMergeFlags:
         # only 0,0 is equal in all
         expect[0, 0] = 1
         assert_equal(merged, expect)
-        assert_equal(merged.dtype.type, '')
+        assert_equal(merged.dtype.kind, 'u')
 
     def test_merge_flags_or(self):
         fs = self.get_flags_4x4()
@@ -129,6 +129,7 @@ class TestMergeFlags:
         expect[2, 2] = 1
         expect[3, 3] = 1
         assert_equal(merged, expect)
+        assert_equal(merged.dtype.kind, 'u')
 
     def test_merge_flags_and_2(self):
         fs = self.get_flags_4x4()
@@ -138,6 +139,7 @@ class TestMergeFlags:
         expect[0, 0] = 1
         expect[1, 1] = 1
         assert_equal(merged, expect)
+        assert_equal(merged.dtype.kind, 'u')
 
     def test_merge_flags_or_2(self):
         fs = self.get_flags_4x4()
@@ -148,12 +150,14 @@ class TestMergeFlags:
         expect[2, 2] = 1
         expect[3, 3] = 1
         assert_equal(merged, expect)
+        assert_equal(merged.dtype.kind, 'u')
 
     def test_merge_flags_no(self):
         fs = self.get_flags_4x4()
         merged = merge_flag(*fs, method='no_merge')
         expect = np.zeros((4, 4), dtype=np.uint8)
         assert_equal(merged, expect)
+        assert_equal(merged.dtype.kind, 'u')
 
     def test_merge_flags_invalid_method(self):
         fs = self.get_flags_4x4()
@@ -166,6 +170,7 @@ class TestMergeFlags:
         expect = np.zeros((4, 4), dtype=np.uint8)
         expect[1, 1] = 4
         assert_equal(merged, expect)
+        assert_equal(merged.dtype.kind, 'u')
 
     def test_merge_flags_or_multiple(self):
         fs = self.get_flags_4x4_multiple()
@@ -176,6 +181,7 @@ class TestMergeFlags:
         expect[2, 2] = 2
         expect[3, 3] = 2
         assert_equal(merged, expect)
+        assert_equal(merged.dtype.kind, 'u')
 
     def test_merge_flags_or_multiple_2(self):
         fs = self.get_flags_4x4_multiple()
@@ -186,6 +192,7 @@ class TestMergeFlags:
         expect[2, 2] = 2
         expect[3, 3] = 2
         assert_equal(merged, expect)
+        assert_equal(merged.dtype.kind, 'u')
 
     def test_merge_flags_and_multiple_2(self):
         fs = self.get_flags_4x4_multiple()
@@ -193,9 +200,11 @@ class TestMergeFlags:
         expect = np.zeros((4, 4), dtype=np.uint8)
         expect[1, 1] = 4
         assert_equal(merged, expect)
+        assert_equal(merged.dtype.kind, 'u')
 
     def test_merge_flags_no_multiple(self):
         fs = self.get_flags_4x4_multiple()
         merged = merge_flag(*fs, method='no_merge')
         expect = np.zeros((4, 4), dtype=np.uint8)
         assert_equal(merged, expect)
+        assert_equal(merged.dtype.kind, 'u')
