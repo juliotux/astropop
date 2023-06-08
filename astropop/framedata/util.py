@@ -9,7 +9,6 @@ from astropy import units as u
 
 from .framedata import FrameData
 from .compat import _extract_ccddata, _extract_fits, imhdus
-from .memmap import MemMapArray
 
 
 __all__ = ['check_framedata', 'read_framedata']
@@ -59,11 +58,6 @@ def read_framedata(obj, copy=False, **kwargs):
             if k in kwargs.keys():
                 fits_kwargs[k] = kwargs.pop(k)
         obj = FrameData(**_extract_fits(obj, **fits_kwargs), **kwargs)
-    elif isinstance(obj, (np.ndarray, MemMapArray)):
-        if isinstance(obj, u.Quantity):
-            obj = FrameData(obj.value, unit=obj.unit, **kwargs)
-        else:
-            obj = FrameData(obj, **kwargs)
     elif obj.__class__.__name__ == "QFloat":
         # if not do this, a cyclic dependency breaks the code.
         obj = FrameData(obj.nominal, unit=obj.unit,

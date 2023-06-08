@@ -15,7 +15,8 @@ from astropy.wcs import WCS
 
 from ..py_utils import check_iterable
 from ..flags import mask_from_flags
-from .memmap import MemMapArray
+from ._memmap import create_array_memmap, delete_array_memmap, \
+                     reset_memmap_array
 from .compat import _to_ccddata, _to_hdu, _merge_and_clean_header, _write_fits
 from .._unit_property import unit_property
 
@@ -247,9 +248,9 @@ class FrameData:
         # raise errors if incompatible units
         unit = extract_units(data, unit)
         self.unit = unit
-        self._data.reset_data(data, dtype)
-        self._unct.reset_data(uncertainty, u_dtype)
-        self._flags.reset_data(flags, np.uint8)
+        self._data = reset_memmap_array(data, dtype)
+        self._unct = reset_memmap_array(uncertainty, u_dtype)
+        self._flags = reset_memmap_array(flags, np.uint8)
 
         # create flag for masked pixels
         if mask is not None:
@@ -278,24 +279,21 @@ class FrameData:
     def _update_cache_files(self, cache_file):
         # TODO: if cache folder is changing, remove it
         if self._data is not None:
-            self._data.disable_memmap(remove=True)
-            nd = self._data._contained
+            nd = delete_array_memmap(self._data, read=True, remove=True)
         else:
             nd = None
         if self._unct is not None:
-            self._unct.disable_memmap(remove=True)
-            nu = self._unct._contained
+            nu = delete_array_memmap(self._unct, read=True, remove=True)
         else:
             nu = None
         if self._flags is not None:
-            self._flags.disable_memmap(remove=True)
-            nm = self._flags._contained
+            nf = delete_array_memmap(self._flags, read=True, remove=True)
         else:
-            nm = None
+            nf = None
 
-        self._data = MemMapArray(nd, filename=cache_file + '.data')
-        self._unct = MemMapArray(nu, filename=cache_file + '.unct')
-        self._flags = MemMapArray(nm, filename=cache_file + '.flags')
+        self._data = create_array_memmap(nd, filename=cache_file + '.data')
+        self._unct = create_array_memmap(nu, filename=cache_file + '.unct')
+        self._flags = create_array_memmap(nf, filename=cache_file + '.flags')
 
     @property
     def history(self):
@@ -377,7 +375,7 @@ class FrameData:
         if hasattr(value, 'unit'):
             dunit = extract_units(value, None)
             self.unit = dunit
-        self._data.reset_data(value)
+        self._data = reset_memmap_array(self._data, value)
 
     @property
     def uncertainty(self):
@@ -393,11 +391,11 @@ class FrameData:
             value = np.asarray(value, dtype=self.dtype)
 
         if value is None:
-            self._unct.reset_data(value)
+            self._unct = reset_memmap_array(self._unct, value, self.dtype)
         else:
             _, value, _, _ = shape_consistency(self.data, value, None)
             value = uncertainty_unit_consistency(self.unit, value)
-            self._unct.reset_data(value)
+            self._unct = reset_memmap_array(self._unct, value, self.dtype)
 
     def get_uncertainty(self, return_none=True):
         """Get the uncertainty frame in a safer way.
@@ -415,10 +413,12 @@ class FrameData:
           matrix filled with zeroes will be returned.
           Default: True
         """
-        if self._unct.empty and return_none:
-            return None
-        if self._unct.empty:
-            return np.zeros_like(self._data, dtype=self.dtype)
+        if np.isscalar(self._unct):
+            if self._unct is None and return_none:
+                return None
+            elif self._unct is None:
+                return np.zeros_like(self.data)
+            return self._unct
         return np.array(self._unct, dtype=self.dtype)
 
     @property
@@ -452,10 +452,12 @@ class FrameData:
             raise TypeError('Flags must be an unsigned integer, not '
                             f'{np.array(value).dtype}.')
         if value is None:
-            self._flags.reset_data(value, dtype=np.uint8)
+            self._flags = reset_memmap_array(self._flags, value,
+                                             dtype=np.uint8)
         else:
             _, _, _, flags = shape_consistency(self.data, flags=value)
-            self._flags.reset_data(value, dtype=np.uint8)
+            self._flags = reset_memmap_array(self._flags, value,
+                                             dtype=np.uint8)
 
     def add_flags(self, flag, where):
         """Add a given flag to the pixels in the given positions.
@@ -485,9 +487,9 @@ class FrameData:
             be the same as the original Framedata.
             Default: `None`
         """
-        data = np.array(self._data) if not self._data.empty else None
-        flags = np.array(self._flags) if not self._flags.empty else None
-        unct = np.array(self._unct) if not self._unct.empty else None
+        data = np.array(self._data) if self._data is not None else None
+        flags = np.array(self._flags) if self._flags is not None else None
+        unct = np.array(self._unct) if self._unct is not None else None
         unit = self._unit
         wcs = cp.copy(self._wcs)
         meta = fits.Header(self._meta, copy=True)
@@ -522,23 +524,37 @@ class FrameData:
         cache_folder : str, optional
             Custom folder to cache data.
         """
-        if filename is None and cache_folder is None:
-            self._data.enable_memmap()
-            self._unct.enable_memmap()
-            self._flags.enable_memmap()
-        else:
-            cache_file = setup_filename(self, cache_folder, filename)
-            self._update_cache_files(cache_file)
-            self._data.enable_memmap(cache_file + '.data')
-            self._flags.enable_memmap(cache_file + '.flags')
-            self._unct.enable_memmap(cache_file + '.unct')
+        # early return for already memmapped
+        if self._memmapping:
+            return
+
+        # get the default files if names are not provided
+        if filename is None:
+            filename = self.cache_filename
+        if cache_folder is None:
+            cache_folder = self.cache_folder
+
+        # delete the old memmap files if they are memmaps
+        self.disable_memmap()
+
+        # setup the new filenames
+        cache_file = setup_filename(self, cache_folder, filename)
+        self._update_cache_files(cache_file)
+
+        # create the memmap files
+        self._data = create_array_memmap(filename=cache_file + '.data',
+                                         data=self._data)
+        self._flags = create_array_memmap(filename=cache_file + '.flags',
+                                          data=self._flags)
+        self._unct = create_array_memmap(filename=cache_file + '.unct',
+                                         data=self._unct)
         self._memmapping = True
 
     def disable_memmap(self):
         """Disable frame file memmapping (load to memory)."""
-        self._data.disable_memmap(remove=True)
-        self._flags.disable_memmap(remove=True)
-        self._unct.disable_memmap(remove=True)
+        self._data = delete_array_memmap(self._data, read=True, remove=True)
+        self._flags = delete_array_memmap(self._flags, read=True, remove=True)
+        self._unct = delete_array_memmap(self._unct, read=True, remove=True)
         self._memmapping = False
 
     def to_hdu(self, wcs_relax=True, no_fits_standard_units=True, **kwargs):

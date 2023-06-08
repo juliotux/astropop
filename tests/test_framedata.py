@@ -8,7 +8,8 @@ import numpy as np
 from astropop.framedata.framedata import setup_filename, extract_units, \
                                          shape_consistency, \
                                          uncertainty_unit_consistency
-from astropop.framedata import FrameData, check_framedata, read_framedata
+from astropop.framedata import FrameData, check_framedata, read_framedata, \
+                               PixelMaskFlags
 from astropop.math import QFloat
 from astropy.io import fits
 from astropy.utils import NumpyRNGContext
@@ -280,7 +281,8 @@ class Test_CheckRead_FrameData:
             assert_equal(f.data, data)
             assert_equal(f.unit, u.dimensionless_unscaled)
             assert_true(f._unct.empty)
-            assert_false(np.any(f._mask))
+            assert_false(np.any(f.mask))
+            assert_equal(f.flags, np.zeros_like(data, dtype=np.uint8))
 
     def test_check_framedata_fits_hdul_simple(self):
         # meta is messed by fits
@@ -293,7 +295,8 @@ class Test_CheckRead_FrameData:
             assert_equal(f.data, data)
             assert_equal(f.unit, u.dimensionless_unscaled)
             assert_true(f._unct.empty)
-            assert_false(np.any(f._mask))
+            assert_false(np.any(f.mask))
+            assert_equal(f.flags, np.zeros_like(data, dtype=np.uint8))
 
     def test_check_framedata_fits_hdul_defaults(self):
         data = _random_array.copy()
@@ -306,6 +309,11 @@ class Test_CheckRead_FrameData:
         mask_hdu = fits.ImageHDU(mask, name='MASK')
         hdul = fits.HDUList([data_hdu, uncert_hdu, mask_hdu])
 
+        expect_flags = np.zeros((DEFAULT_DATA_SIZE,
+                                 DEFAULT_DATA_SIZE)).astype('uint8')
+        expect_flags[1:3, 1:3] = (PixelMaskFlags.MASKED |
+                                  PixelMaskFlags.UNSPECIFIED).value
+
         fc = check_framedata(hdul)
         fr = read_framedata(hdul)
         for f in (fc, fr):
@@ -315,6 +323,7 @@ class Test_CheckRead_FrameData:
             assert_equal(f.uncertainty, np.ones((DEFAULT_DATA_SIZE,
                                                  DEFAULT_DATA_SIZE)))
             assert_equal(f.mask, mask)
+            assert_equal(f.flags, expect_flags)
 
     def test_check_framedata_fits_hdul_keywords(self):
         uncert_name = 'ASTROPOP_UNCERT'

@@ -3,9 +3,8 @@
 
 from .framedata import FrameData, PixelMaskFlags
 from .util import read_framedata, check_framedata
-from .memmap import MemMapArray
 from .compat import imhdus, EmptyDataError
 
 
 __all__ = ['FrameData', 'read_framedata', 'check_framedata',
-           'MemMapArray', 'imhdus', 'EmptyDataError', 'PixelMaskFlags']
+           'imhdus', 'EmptyDataError', 'PixelMaskFlags']
