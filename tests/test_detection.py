@@ -38,7 +38,7 @@ def gen_position_flux(size, number, low, high, rng_seed=123):
         with NumpyRNGContext(rng_seed+i):
             y = np.random.randint(0, size[1], number)
             flux = np.random.randint(low, high, number)
-    return x, y, sorted(flux)[::-1]
+    return np.array(x), np.array(y), np.sort(flux)[::-1]
 
 
 def gen_stars_moffat(size, x, y, flux, fwhm):
