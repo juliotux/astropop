@@ -6,7 +6,6 @@ import numpy as np
 
 from astropop.photometry import (background, segfind, daofind, starfind,
                                  median_fwhm)
-from astropop.framedata import MemMapArray
 from astropop.math.moffat import moffat_2d
 from astropop.math.gaussian import gaussian_2d
 from astropop.math.array import trim_array
