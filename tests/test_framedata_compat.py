@@ -394,21 +394,21 @@ class Test_Fits_Extract():
 
     def create_hdu(self, uncert=False, mask=False,
                    unit='adu', unit_key='BUNIT'):
-        l = []
+        li = []
         data = 100*np.ones(self.shape)
         header = self.create_header(unit=unit, unit_key=unit_key)
         data_hdu = fits.PrimaryHDU(data, header=header)
-        l.append(data_hdu)
+        li.append(data_hdu)
 
         if uncert:
             uncert_hdu = fits.ImageHDU(np.ones(self.shape), name='UNCERT')
-            l.append(uncert_hdu)
+            li.append(uncert_hdu)
 
         if mask:
             mask_hdu = fits.ImageHDU(self.mask.astype('uint8'), name='MASK')
-            l.append(mask_hdu)
+            li.append(mask_hdu)
 
-        hdul = fits.HDUList(l)
+        hdul = fits.HDUList(li)
         return hdul
 
     def create_header(self, unit=None, unit_key=None):

@@ -154,5 +154,3 @@ class TestMemmapReset:
         assert_equal(b, self.b)
         assert_true(b.dtype.isnative)
         assert_true(os.path.exists(f))
-
-
