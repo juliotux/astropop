@@ -3,14 +3,16 @@
 
 import pytest
 import numpy as np
-from astropop.framedata import check_framedata, read_framedata
+from astropop.framedata import check_framedata, read_framedata, FrameData, \
+                               PixelMaskFlags
 from astropop.math import QFloat
 from astropy.io import fits
 from astropy import units as u
 from astropy.nddata import CCDData, StdDevUncertainty
 from astropop.testing import *
 
-from .test_framedata import create_framedata
+from .test_framedata import create_framedata, _random_array, \
+                            DEFAULT_DATA_SIZE, DEFAULT_HEADER
 
 
 class Test_CheckRead_FrameData:
@@ -69,7 +71,7 @@ class Test_CheckRead_FrameData:
             assert_is_instance(f, FrameData)
             assert_equal(f.data, data)
             assert_equal(f.unit, u.dimensionless_unscaled)
-            assert_true(f._unct.empty)
+            assert_is_none(f._unct)
             assert_false(np.any(f.mask))
             assert_equal(f.flags, np.zeros_like(data, dtype=np.uint8))
 
@@ -83,7 +85,7 @@ class Test_CheckRead_FrameData:
             assert_is_instance(f, FrameData)
             assert_equal(f.data, data)
             assert_equal(f.unit, u.dimensionless_unscaled)
-            assert_true(f._unct.empty)
+            assert_is_none(f._unct)
             assert_false(np.any(f.mask))
             assert_equal(f.flags, np.zeros_like(data, dtype=np.uint8))
 
@@ -232,8 +234,8 @@ class Test_CheckRead_FrameData:
                 assert_is_instance(f, FrameData)
                 assert_equal(f.data, _random_array)
                 assert_equal(f.unit, 'adu')
-                assert_true(f._unct.empty)
-                assert_false(np.any(f._mask))
+                assert_is_none(f._unct)
+                assert_false(np.any(f.mask))
                 assert_equal(f.meta, {})
                 assert_is_none(f.wcs)
                 assert_equal(f._memmapping, mmap)
@@ -248,8 +250,8 @@ class Test_CheckRead_FrameData:
                 assert_is_instance(f, FrameData)
                 assert_equal(f.data, _random_array)
                 assert_equal(f.unit, u.dimensionless_unscaled)
-                assert_true(f._unct.empty)
-                assert_false(np.any(f._mask))
+                assert_is_none(f._unct)
+                assert_false(np.any(f.mask))
                 assert_equal(f.meta, {})
                 assert_is_none(f.wcs)
                 assert_equal(f._memmapping, mmap)
@@ -268,7 +270,7 @@ class Test_CheckRead_FrameData:
                 assert_equal(f.data, data)
                 assert_equal(f.unit, unit)
                 assert_equal(f._unct, uncert)
-                assert_false(np.any(f._mask))
+                assert_false(np.any(f.mask))
                 assert_equal(f.meta, {})
                 assert_is_none(f.wcs)
                 assert_equal(f._memmapping, mmap)

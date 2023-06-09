@@ -2,7 +2,9 @@
 """Utilities for loading data as FrameData."""
 
 import os
+import numpy as np
 from astropy.io import fits
+from astropy.units import Quantity
 from astropy.nddata import CCDData
 
 from .framedata import FrameData
@@ -56,6 +58,10 @@ def read_framedata(obj, copy=False, **kwargs):
             if k in kwargs.keys():
                 fits_kwargs[k] = kwargs.pop(k)
         obj = FrameData(**_extract_fits(obj, **fits_kwargs), **kwargs)
+    elif isinstance(obj, Quantity):
+        obj = FrameData(obj.value, unit=obj.unit, **kwargs)
+    elif isinstance(obj, np.ndarray):
+        obj = FrameData(obj, **kwargs)
     elif obj.__class__.__name__ == "QFloat":
         # if not do this, a cyclic dependency breaks the code.
         obj = FrameData(obj.nominal, unit=obj.unit,
