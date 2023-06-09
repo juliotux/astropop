@@ -4,6 +4,7 @@
 import pytest
 import numpy as np
 from astropy.io import fits
+from astropy.wcs import WCS
 from astropop.framedata import FrameData
 from astropop.testing import *
 from .test_framedata import create_framedata
@@ -28,7 +29,7 @@ class TestFrameData2FITS:
         frame = create_framedata()
         frame.meta = {'observer': 'Edwin Hubble'}
         frame.uncertainty = np.random.rand(*frame.shape)
-        frame.mask = np.zeros(frame.shape)
+        frame.mask_pixels(np.zeros(frame.shape, dtype=bool))
         fits_hdulist = frame.to_hdu(hdu_uncertainty=None, hdu_mask=None)
         assert_is_instance(fits_hdulist, fits.HDUList)
         for k, v in frame.meta.items():
@@ -105,7 +106,7 @@ class TestFrameData2CCDData:
 
     def test_export_with_mask(self):
         frame = self.frame
-        frame.mask = self.mask
+        frame.mask_pixels(self.mask)
 
         ccd = frame.to_ccddata()
         assert_equal(ccd.data, 100*np.ones(self.shape))
@@ -132,7 +133,7 @@ class TestFrameData2CCDData:
     def test_export_full(self):
         frame = self.frame
         frame.uncertainty = 1
-        frame.mask = self.mask
+        frame.mask_pixels(self.mask)
 
         ccd = frame.to_ccddata()
         assert_equal(ccd.data, 100*np.ones(self.shape))

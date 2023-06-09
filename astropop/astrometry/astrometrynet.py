@@ -20,7 +20,7 @@ from astropy.wcs import WCS
 from astropy.coordinates import Angle, SkyCoord
 from astropy.units import UnitsError
 
-from ..framedata.compat import extract_header_wcs
+from ..framedata._compat import extract_header_wcs
 from ..logger import logger
 from ..py_utils import run_command, check_number
 

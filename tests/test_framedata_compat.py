@@ -3,7 +3,7 @@
 
 import pytest
 import numpy as np
-from astropop.framedata.compat import extract_header_wcs, _extract_ccddata, \
+from astropop.framedata._compat import extract_header_wcs, _extract_ccddata, \
                                       _extract_fits, _merge_and_clean_header
 from astropy.io import fits
 from astropy.wcs import WCS

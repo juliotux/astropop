@@ -18,7 +18,7 @@ from astropy.wcs import WCS
 from ..flags import mask_from_flags
 from ._memmap import create_array_memmap, delete_array_memmap, \
                      reset_memmap_array
-from .compat import _merge_and_clean_header
+from ._compat import _merge_and_clean_header, _to_hdu, _to_ccddata, _write_fits
 from .._unit_property import unit_property
 
 
@@ -628,3 +628,73 @@ class FrameData:
                 'mean': self.mean(),
                 'median': self.median(),
                 'std': self.std()}
+
+    def to_hdu(self, wcs_relax=True, no_fits_standard_units=True, **kwargs):
+        """Generate an HDUList from this FrameData.
+
+        Parameters
+        ----------
+        wcs_relax: `bool`, optional.
+            Allow non-standard WCS keys.
+            Default: `True`
+        no_fits_standard_units: `bool`, optional
+            Skip FITS units standard for units. If this options is choose,
+            the units will be printed in header as `~astropy.units.Unit`
+            compatible string.
+            Default: `True`
+        **kwargs:
+            hdu_uncertainty: string, optional
+                Extension name to store the uncertainty in 2D image format.
+            hdu_flags: string, optional
+                Extension name to store the pixel list flags in table format.
+            unit_key: string, optional
+                Header key for physical unit.
+
+
+        Returns
+        -------
+        `~astropy.fits.HDUList` :
+            HDU storing all FrameData informations.
+        """
+        return _to_hdu(self, wcs_relax=wcs_relax,
+                       no_fits_standard_units=no_fits_standard_units,
+                       **kwargs)
+
+    def to_ccddata(self):
+        """Convert actual FrameData to CCDData.
+
+        Returns
+        -------
+        `~astropy.nddata.CCDData` :
+            CCDData instance with actual FrameData informations.
+        """
+        return _to_ccddata(self)
+
+    def write(self, filename, overwrite=False, no_fits_standard_units=True,
+              **kwargs):
+        """Write frame to a fits file.
+
+        Parameters
+        ----------
+        filename: str
+            Name of the file to write.
+        overwrite: bool, optional
+            If True, overwrite the file if it exists.
+        wcs_relax: `bool`, optional.
+            Allow non-standard WCS keys.
+            Default: `True`
+        no_fits_standard_units: `bool`, optional
+            Skip FITS units standard for units. If this options is choose,
+            the units will be printed in header as `~astropy.units.Unit`
+            compatible string.
+            Default: `True`
+        **kwargs:
+            hdu_uncertainty: string, optional
+                Extension name to store the uncertainty in 2D image format.
+            hdu_flags: string, optional
+                Extension name to store the pixel list flags in table format.
+            unit_key: string, optional
+                Header key for physical unit.
+        """
+        _write_fits(self, filename, overwrite, no_fits_standard_units,
+                    **kwargs)

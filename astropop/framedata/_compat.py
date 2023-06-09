@@ -20,14 +20,12 @@ from ..fits_utils import imhdus
 from ..py_utils import broadcast
 
 
-__all__ = ['imhdus', 'EmptyDataError']
-
-
 _PCs = set(['PC1_1', 'PC1_2', 'PC2_1', 'PC2_2'])
 _CDs = set(['CD1_1', 'CD1_2', 'CD2_1', 'CD2_2'])
 _KEEP = set(['JD-OBS', 'MJD-OBS', 'DATE-OBS'])
 _HDU_UNCERT = 'UNCERT'
 _HDU_MASK = 'MASK'
+_HDU_FLAGS = 'PIXFLAGS'
 _UNIT_KEY = 'BUNIT'
 
 
@@ -161,12 +159,9 @@ def _merge_and_clean_header(meta, header, wcs):
     return meta, wcs, history, comment
 
 
-class EmptyDataError(ValueError):
-    """Operation not handled by empty MemMapArray containers."""
-
-
 def _extract_fits(obj, hdu=0, unit=None, hdu_uncertainty=_HDU_UNCERT,
-                  hdu_mask=_HDU_MASK, unit_key=_UNIT_KEY):
+                  hdu_flags=_HDU_FLAGS, hdu_mask=_HDU_MASK,
+                  unit_key=_UNIT_KEY):
     """Extract data and meta from FITS files and HDUs."""
     if isinstance(obj, (str, bytes, PathLike)):
         hdul = fits.open(obj)
@@ -226,6 +221,8 @@ def _extract_fits(obj, hdu=0, unit=None, hdu_uncertainty=_HDU_UNCERT,
     if isinstance(obj, (str, bytes, PathLike)):
         hdul.close()
 
+    # TODO: extract flags
+
     return res
 
 
@@ -266,9 +263,7 @@ def _to_ccddata(frame):
     meta = dict(frame.header)
     wcs = frame.wcs
     uncertainty = frame._unct
-    if uncertainty.empty:
-        uncertainty = None
-    else:
+    if uncertainty is not None:
         uncertainty = StdDevUncertainty(uncertainty, unit=unit)
     mask = np.array(frame.mask)
 
@@ -276,50 +271,52 @@ def _to_ccddata(frame):
                    uncertainty=uncertainty, mask=mask)
 
 
-def _to_hdu(frame, hdu_uncertainty=_HDU_UNCERT, hdu_mask=_HDU_MASK,
-            unit_key=_UNIT_KEY, wcs_relax=True, **kwargs):
+def _to_hdu(frame, hdu_uncertainty=_HDU_UNCERT, hdu_flags=_HDU_FLAGS,
+            hdu_mask=_HDU_MASK, unit_key=_UNIT_KEY, wcs_relax=True, **kwargs):
     """Translate a FrameData to an HDUList."""
     data = frame.data.copy()
 
     # Clean header
     header = fits.Header(frame.header)
-    no_fits_std = kwargs.pop('no_fits_standard_units', True)
 
     if frame.wcs is not None:
         header.extend(frame.wcs.to_header(relax=wcs_relax),
                       update=True)
 
+    # using bare string avoids astropy complaining about electrons
+    no_fits_std = kwargs.pop('no_fits_standard_units', True)
     if no_fits_std:
         unit_string = frame.unit.to_string()
     else:
         unit_string = u.format.Fits.to_string(frame.unit)
-
     header[unit_key] = unit_string
 
     for i in frame.history:
         header['history'] = i
+    for i in frame.comment:
+        header['comment'] = i
     hdul = fits.HDUList(fits.PrimaryHDU(data, header=header))
 
-    if hdu_uncertainty and not frame._unct.empty:
+    if hdu_uncertainty and frame._unct is not None:
         uncert = frame.uncertainty
         uncert_h = fits.Header()
         uncert_h[unit_key] = unit_string
         hdul.append(fits.ImageHDU(uncert, header=uncert_h,
                                   name=hdu_uncertainty))
 
-    if hdu_mask is not None and not frame._mask.empty:
-        mask = frame.mask
-        if np.issubdtype(mask.dtype, np.bool_):
-            # Fits do not support bool
-            mask = mask.astype('uint8')
-        hdul.append(fits.ImageHDU(mask, name=hdu_mask))
+    if hdu_mask:
+        mask = frame.mask.astype(np.uint8)
+        if mask is not None:
+            mask_h = fits.Header()
+            hdul.append(fits.ImageHDU(mask, header=mask_h, name=hdu_mask))
+
+    # TODO: add flags
 
     return hdul
 
 
 def _write_fits(frame, filename, overwrite=True, **kwargs):
     """Write a framedata to a fits file."""
-    # FIXME: electron unit is not compatible with fits standards
     with warnings.catch_warnings():
         # silent hierarch warnings
         warnings.filterwarnings("ignore", category=VerifyWarning)

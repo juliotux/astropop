@@ -3,8 +3,6 @@
 
 from .framedata import FrameData, PixelMaskFlags
 from .util import read_framedata, check_framedata
-from .compat import imhdus, EmptyDataError
 
 
-__all__ = ['FrameData', 'read_framedata', 'check_framedata',
-           'imhdus', 'EmptyDataError', 'PixelMaskFlags']
+__all__ = ['FrameData', 'read_framedata', 'check_framedata', 'PixelMaskFlags']

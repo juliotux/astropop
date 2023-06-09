@@ -8,7 +8,7 @@ from astropy.units import Quantity
 from astropy.nddata import CCDData
 
 from .framedata import FrameData
-from .compat import _extract_ccddata, _extract_fits, imhdus
+from ._compat import _extract_ccddata, _extract_fits, imhdus
 
 
 __all__ = ['check_framedata', 'read_framedata']
