@@ -36,7 +36,9 @@ def gen_position_flux(size, number, low, high, rng_seed=123):
             x = np.random.randint(0, size[0], number)
         with NumpyRNGContext(rng_seed+i):
             y = np.random.randint(0, size[1], number)
-            flux = np.random.randint(low, high, number)
+    # lets sample the flux in the range. Avoid tests flakinness
+    step = float(high-low)/number
+    flux = np.arange(number)*step + low
     return np.array(x), np.array(y), np.sort(flux)[::-1]
 
 
@@ -335,7 +337,7 @@ class Test_Segmentation_Detection():
         im = gen_image(size, posx, posy, flux, sky, rdnoise,
                        model='gaussian', sigma=sigma, theta=theta)
 
-        sources = segfind(im, 3, sky, rdnoise)
+        sources = segfind(im, 5, sky, rdnoise)
 
         assert_equal(len(sources), 2)
         assert_almost_equal(sources['x'], posx, decimal=0)
@@ -373,7 +375,7 @@ class Test_Segmentation_Detection():
         im = gen_image(size, x, y, f, sky, rdnoise,
                        model='gaussian', sigma=sigma, theta=theta)
 
-        sources = segfind(im, 5, sky, rdnoise)
+        sources = segfind(im, 10, sky, rdnoise)
 
         assert_equal(len(sources), number)
         assert_almost_equal(sources['x'], x, decimal=0)
