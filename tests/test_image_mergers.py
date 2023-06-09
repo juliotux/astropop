@@ -27,16 +27,16 @@ class TestMergeHeaders:
 
         return [h1, h2, h3, h4]
 
-    def test_merge_headers_same(self):
+    def test_merge_headers_only_equal(self):
         headers = self.create_headers()
 
         # For all headers, only A and E are the same
-        merged = merge_header(*headers, method='same')
+        merged = merge_header(*headers, method='only_equal')
         assert_is_instance(merged, dict)
         assert_equal(merged, {'A': 1, 'E': None})
 
         # for the first 2 headers, A, C, D and E are the same
-        merged = merge_header(*headers[:2], method='same')
+        merged = merge_header(*headers[:2], method='only_equal')
         assert_is_instance(merged, dict)
         assert_equal(merged, {'A': 1, 'C': 3.1415, 'D': True, 'E': None})
 

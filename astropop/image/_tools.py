@@ -15,8 +15,8 @@ def merge_header(*headers, method='same', selected_keys=None):
     ----------
     headers: list of `astropy.io.fits.Header`
         Headers to be merged.
-    method: {'same', 'first', 'selected_keys', 'no_merge'}
-        Method to merge the headers. 'same' will merge only the keywords
+    method: {'only_equal', 'first', 'selected_keys', 'no_merge'}
+        Method to merge the headers. 'only_equal' will merge only the keywords
         with the same value in all headers. 'first' will use the first
         header as the result. 'selected_keys' will merge only the keywords
         in the list `header_merge_keys`. 'no_merge' will return an empty
@@ -30,7 +30,7 @@ def merge_header(*headers, method='same', selected_keys=None):
     header: `dict`
         Merged header.
     """
-    if method not in ['same', 'first', 'selected_keys', 'no_merge']:
+    if method not in ['first', 'selected_keys', 'no_merge', 'only_equal']:
         raise ValueError(f'Unknown method {method}.')
     if method == 'selected_keys' and selected_keys is None:
         raise ValueError('selected_keys must be provided if method is '

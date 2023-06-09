@@ -479,6 +479,18 @@ class FrameData:
         return mask_from_flags(self._flags, flags,
                                allowed_flags_class=PixelMaskFlags)
 
+    def mask_pixels(self, pixels):
+        """Mask pixels.
+
+        Parameters
+        ----------
+        pixels: `~numpy.ndarray` or tuple
+            Pixels to be masked. Can be a tuple of (y, x) positions or a
+            boolean array where True means masked. Uses the same standard as
+            `~numpy.ndarray`[pixels] access.
+        """
+        self._flags[pixels] |= PixelMaskFlags.MASKED.value
+
     def enable_memmap(self, filename=None, cache_folder=None):
         """Enable array file memmapping.
 
@@ -575,7 +587,7 @@ class FrameData:
         try:
             if len(os.listdir(self.cache_folder)) == 0:
                 os.rmdir(self.cache_folder)
-        except FileNotFoundError:
+        except (FileNotFoundError, TypeError):
             pass
 
     def median(self, **kwargs):

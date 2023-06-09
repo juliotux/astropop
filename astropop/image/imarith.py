@@ -39,7 +39,7 @@ def _arith(operand1, operand2, operation):
 
 
 def imarith(operand1, operand2, operation, inplace=False,
-            merge_flags='or', merge_headers='same', **kwargs):
+            merge_flags='or', merge_headers='only_equal', **kwargs):
     """Perform arithmetic operations using `~astropop.framedata.FrameData`.
 
     Notes

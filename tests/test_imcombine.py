@@ -8,7 +8,7 @@ import pytest
 from astropy.io import fits
 
 from astropy.utils import NumpyRNGContext
-from astropop.framedata import FrameData
+from astropop.framedata import FrameData, PixelMaskFlags
 from astropop.logger import logger, log_to_list
 from astropop.image.imcombine import imcombine, _sigma_clip, \
                                      _minmax_clip, ImCombiner
@@ -841,25 +841,24 @@ class Test_ImCombiner_Combine():
         shape = (10, 10)
         images = [FrameData(np.ones(shape)*i, unit='adu') for i in values]
 
-        # this pixel is masked and must be ignored
-        images[0].mask[0, 0] = 1
-        images[0].data[0, 0] = 1000
+        images[0].mask_pixels((1, 0))
+        images[0].data[1, 0] = 100000
 
         if method == 'median':
             med = np.ones(shape)*np.median(values)
             std = np.ones(shape)*np.std(values)/np.sqrt(n)
-            med[0, 0] = np.median(values[1:])
-            std[0, 0] = np.std(values[1:])/np.sqrt(n-1)
+            med[1, 0] = np.median(values[1:])
+            std[1, 0] = np.std(values[1:])/np.sqrt(n-1)
         elif method == 'mean':
             med = np.ones(shape)*np.mean(values)
             std = np.ones(shape)*np.std(values)/np.sqrt(n)
-            med[0, 0] = np.mean(values[1:])
-            std[0, 0] = np.std(values[1:])/np.sqrt(n-1)
+            med[1, 0] = np.mean(values[1:])
+            std[1, 0] = np.std(values[1:])/np.sqrt(n-1)
         elif method == 'sum':
             med = np.ones(shape)*np.sum(values)
             std = np.ones(shape)*np.std(values)*np.sqrt(n)
-            med[0, 0] = np.sum(values[1:])*float(n)/(n-1)
-            std[0, 0] = np.std(values[1:])*np.sqrt(n-1)*float(n)/(n-1)
+            med[1, 0] = np.sum(values[1:])*float(n)/(n-1)
+            std[1, 0] = np.std(values[1:])*np.sqrt(n-1)*float(n)/(n-1)
 
         comb = ImCombiner()
         res1 = comb.combine(images, method=method)
