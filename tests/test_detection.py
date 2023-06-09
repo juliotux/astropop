@@ -551,8 +551,8 @@ class Test_DAOFind_Detection():
         flux = [30000]*5
         theta = 0
         fwhm = 3
-        sigma_x = np.array([1, 0.5, 1, 2.0, 0.1])*gaussian_fwhm_to_sigma*fwhm
-        sigma_y = np.array([1, 1.0, 1, 0.5, 0.1])*gaussian_fwhm_to_sigma*fwhm
+        sigma_x = np.array([1, 0.5, 0.9, 2.0, 0.1])*gaussian_fwhm_to_sigma*fwhm
+        sigma_y = np.array([1, 1.0, 0.9, 0.5, 0.1])*gaussian_fwhm_to_sigma*fwhm
         threshold = 10
         # stars 0, 2 -> passed
         # star 4 -> rejected by sharpness
