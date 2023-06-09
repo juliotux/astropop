@@ -406,8 +406,7 @@ class Test_ImCombiner_ChunkYielder():
         d = np.random.random((100, 100)).astype(np.float64)
         li = [FrameData(d, unit='adu') for i in range(n)]
         # data size = 8 000 000 = 8 bytes * 100 * 100 * 100
-        # mask size = 1 000 000 = 1 bytes * 100 * 100 * 100
-        # total size = 9 000 000
+        # total size = 8M
 
         comb = ImCombiner(max_memory=1e6, dtype=np.float64)
         comb._load_images(li)
@@ -418,15 +417,19 @@ class Test_ImCombiner_ChunkYielder():
         logger.setLevel('DEBUG')
 
         if method == 'median':
-            # for median, tot_size=9*4.5=41
-            # xstep = 2, so n_chuks=50
+            # for median, tot_size=8M*4.5=36M
+            # n_chunks=36M/1M=36
+            # xstep = 100/36 = 2.777 => 2
+            # so n_chunks=100/2 = 50
             nchunk = 50
             shape = [(n, 2, 100)]
         elif method in ['mean', 'sum']:
-            # for mean and sum, tot_size=9*3=27
-            # xstep = 3, so n_chunks=33+1
-            nchunk = 34
-            shape = [(n, 3, 100), (n, 1, 100)]
+            # for mean and sum, tot_size=8M*3=24M
+            # n_chunks=24M/1M=24
+            # xstep = 100/24 = 4.166 => 4
+            # so n_chunks=100/4 = 25
+            nchunk = 25
+            shape = [(n, 4, 100)]
 
         i = 0
         for chunk, unct, slc in comb._chunk_yielder(method=method):
@@ -459,8 +462,7 @@ class Test_ImCombiner_ChunkYielder():
         d = np.random.random((100, 100)).astype(np.float64)
         li = [FrameData(d, unit='adu') for i in range(n)]
         # data size = 4 000 000 = 4 bytes * 100 * 100 * 100
-        # mask size = 1 000 000 = 1 bytes * 100 * 100 * 100
-        # total size = 5 000 000
+        # total size = 4 000 000 = 4M
 
         comb = ImCombiner(max_memory=1e6, dtype=np.float32)
         comb._load_images(li)
@@ -471,21 +473,25 @@ class Test_ImCombiner_ChunkYielder():
         logger.setLevel('DEBUG')
 
         if method == 'median':
-            # for median, tot_size=5*4.5=22.5
-            # xstep = 4, so n_chuks=25
-            nchunk = 25
-            shape = [(n, 4, 100)]
+            # for median, tot_size=4M*4.5=18M
+            # n_chunks=18M/1M=18
+            # xstep = 100/18 = 5.55 => 5
+            # so n_chunks=100/5=20
+            nchunk = 20
+            shape = [(n, 5, 100)]
         elif method in ['mean', 'sum']:
-            # for mean and sum, tot_size=5*3=15
-            # xstep = 6, so n_chunks=16+1
-            nchunk = 17
-            shape = [(n, 6, 100), (n, 4, 100)]
+            # for mean and sum, tot_size=4*3=12M
+            # n_chunks=12M/1M=12
+            # xstep = 100/12 = 8.33 => 8
+            # so n_chunks=100/8 = 13
+            nchunk = 13
+            shape = [(n, 8, 100), (n, 4, 100)]
 
         i = 0
         for chunk, unct, slc in comb._chunk_yielder(method=method):
             i += 1
             assert_in(chunk.shape, shape)
-            assert_almost_equal(chunk[0], d[slc])
+            assert_almost_equal(chunk[0], d[slc], decimal=5)
             assert_is_none(unct)
             assert_is_instance(chunk, np.ndarray)
         assert_equal(i, nchunk)
@@ -500,7 +506,7 @@ class Test_ImCombiner_ChunkYielder():
         for chunk, unct, slc in comb._chunk_yielder(method=method):
             i += 1
             assert_equal(chunk.shape, (n, 100, 100))
-            assert_equal(chunk[0], d)
+            assert_almost_equal(chunk[0], d, decimal=5)
             assert_is_none(unct)
             assert_is_instance(chunk, np.ndarray)
         assert_equal(i, 1)
@@ -512,30 +518,30 @@ class Test_ImCombiner_ChunkYielder():
         d = np.random.random((100, 100)).astype(np.float64)
         li = [FrameData(d, unit='adu') for i in range(n)]
         # data size = 4 000 000 = 4 bytes * 100 * 100 * 100
-        # mask size = 1 000 000 = 1 bytes * 100 * 100 * 100
-        # total size = 5 000 000
+        # total size = 4 000 000 = 4M
 
         logs = []
         lh = log_to_list(logger, logs, False)
         level = logger.getEffectiveLevel()
         logger.setLevel('DEBUG')
 
-        # this should split in 300 chunks!
-        # total_size = 4.5*5e6=22.5e6 = 225 chunks
-        # x_step = 1
-        # y_step = 45
+        # this should split in 200 chunks!
+        # total_size = 4.5*4M = 18M
+        # num_chunks = 18M/0.1M = 180
+        # x_step = 100/180 = 0.55 => 1
+        # y_step = 50
         comb = ImCombiner(max_memory=1e5, dtype=np.float32)
         comb._load_images(li)
         i = 0
         for chunk, unct, slc in comb._chunk_yielder(method='median'):
             i += 1
             for k in chunk:
-                assert_in(k.shape, ((1, 45), (1, 10)))
+                assert_equal(k.shape, (1, 50))
                 assert_almost_equal(k, d[slc])
                 assert_is_none(unct)
                 assert_is_instance(k, np.ndarray)
-        assert_equal(i, 300)
-        assert_in('Splitting the images into 300 chunks.', logs)
+        assert_equal(i, 200)
+        assert_in('Splitting the images into 200 chunks.', logs)
         logs.clear()
 
         logger.setLevel(level)
@@ -554,11 +560,11 @@ class Test_ImCombiner_ChunkYielder():
         for chunk, unct, slc in comb._chunk_yielder(method='sum'):
             i += 1
             for k, un in zip(chunk, unct):
-                assert_in(k.shape, ((7, 100), (2, 100)))
+                assert_in(k.shape, ((8, 100), (4, 100)))
                 assert_almost_equal(k, d[slc])
                 assert_almost_equal(un, u[slc])
                 assert_is_instance(un, np.ndarray)
-        assert_equal(i, 15)
+        assert_equal(i, 13)
 
         # if a single uncertainty is empty, disable it
         logs = []
@@ -573,16 +579,35 @@ class Test_ImCombiner_ChunkYielder():
         for chunk, unct, slc in comb._chunk_yielder(method='sum'):
             i += 1
             for k in chunk:
-                assert_in(k.shape, ((7, 100), (2, 100)))
+                assert_in(k.shape, ((8, 100), (4, 100)))
                 assert_almost_equal(k, d[slc])
                 assert_equal(unct, None)
-        assert_equal(i, 15)
+        assert_equal(i, 13)
         assert_in('One or more frames have empty uncertainty. '
                   'Some features are disabled.',
                   logs)
         logs.clear()
         logger.setLevel(level)
         logger.removeHandler(lh)
+
+    def test_chunk_yielder_mask_nan(self):
+        n = 100
+        d = np.random.random((100, 100)).astype(np.float64)
+        m = np.zeros((100, 100), dtype=bool)
+        # all these pixels should be masked at the end
+        m[90:] = True
+        m[50:60, 50:60] = True
+        m[1, 1] = True
+        li = [FrameData(d, mask=m, unit='adu') for i in range(n)]
+
+        d_masked = d.copy()
+        d_masked[m] = np.nan
+
+        comb = ImCombiner(max_memory=2e6, dtype=np.float64)
+        comb._load_images(li)
+        for chunk, unct, slc in comb._chunk_yielder(method='sum'):
+            for k in chunk:
+                assert_equal(np.isnan(k), m[slc])
 
 
 class Test_ImCombiner_LoadImages():
@@ -773,7 +798,7 @@ class Test_ImCombiner_Combine():
         images[5].mask[7, 7] = 1
         images[2].mask[7, 7] = 1
         images[8].mask[8, 8] = 1
-        expect = np.zeros(shape)
+        expect = np.zeros(shape, dtype=bool)
         expect[2, 5] = 1
 
         # with ImCombiner
