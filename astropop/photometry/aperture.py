@@ -8,6 +8,7 @@ from astropy.table import Table
 from astropy.stats import SigmaClip
 from photutils import __version__ as photutils_version
 from photutils.aperture import CircularAperture, CircularAnnulus, ApertureStats
+from photutils.aperture import aperture_photometry as photu_ap_photometry
 from photutils.centroids import centroid_com, centroid_quadratic, \
                                 centroid_2dg, centroid_sources
 from photutils.utils import calc_total_error, circular_footprint
@@ -16,6 +17,7 @@ from astropop import __version__ as astropop_version
 from astropop.photometry.detection import median_fwhm
 from astropop.logger import logger
 from astropop.fits_utils import imhdus
+from astropop.framedata import PixelMaskFlags
 
 
 __all__ = ['aperture_photometry', 'PhotometryFlags']
@@ -23,6 +25,8 @@ __all__ = ['aperture_photometry', 'PhotometryFlags']
 
 class PhotometryFlags(Flag):
     """Flags for aperture photometry. Do not subclass it."""
+    # stores it in a 16 bit integer
+    dtype = np.int16
 
     # 1: At least one pixel in the aperture was removed or masked
     REMOVED_PIXEL_IN_APERTURE = 1 << 0
@@ -44,6 +48,34 @@ class PhotometryFlags(Flag):
     NEARBY_SOURCES_ANNULUS = 1 << 8
     # 512: Source recentering have failed and the original position was used
     RECENTERING_FAILED = 1 << 9
+
+
+def _err_out_of_bounds(shape, x, y, r, flag):
+    """Detect when the aperture goes out of the image bounds."""
+    # ensure r is positive
+    r = np.absolute(r)
+    flags = np.zeros(len(x), dtype=PhotometryFlags.dtype)
+    # if the minimum x and y values goes negative, flag OOB
+    flags[x-r < 0] |= flag.value
+    flags[y-r < 0] |= flag.value
+
+    # if y+r is greater than shape[0], flag OOB
+    flags[y+r > shape[0]] |= flag.value
+    # if x+r is grater than shape[1], flag OOB
+    flags[x+r > shape[1]] |= flag.value
+
+    return flags
+
+
+def _err_pixel_flags(pixel_flags, apertures, flag_pixel, flag_aperture):
+    """Detect when a pixel is flagged. Pixel flags is a 2D image flags."""
+    flags = np.zeros(len(apertures), dtype=PhotometryFlags.dtype)
+    if pixel_flags is None:
+        return flags
+    mask = np.bitwise_and(pixel_flags, flag_pixel.value) != 0
+    detect = photu_ap_photometry(mask, apertures) > 0
+    flags[detect] |= flag_aperture.value
+    return flags
 
 
 def _calc_local_bkg(data, positions, r_in, r_out, error, bkg_method,
@@ -70,11 +102,19 @@ def _calc_local_bkg(data, positions, r_in, r_out, error, bkg_method,
     bkg_std = ann_stats.std
     bkg_area = ann_ap.area
 
-    if pixel_flags is not None:
-        # TODO: compute flags
-        bkg_flags = [0]*len(positions)
-    else:
-        bkg_flags = [0]*len(positions)
+    bkg_flags = np.zeros(len(positions), dtype=PhotometryFlags.dtype)
+    # compute OOB
+    x, y = np.transpose(positions)
+    bkg_flags |= _err_out_of_bounds(data.shape, x, y, r_out,
+                                    PhotometryFlags.OUT_OF_BOUNDS_ANNULUS)
+    # compute flags that depends on pixel_flags
+    bkg_flags |= _err_pixel_flags(pixel_flags, ann_ap, PixelMaskFlags.MASKED,
+                                  PhotometryFlags.REMOVED_PIXEL_IN_ANNULUS)
+    bkg_flags |= _err_pixel_flags(
+        pixel_flags, ann_ap, PixelMaskFlags.INTERPOLATED,
+        PhotometryFlags.INTERPOLATED_PIXEL_IN_ANNULUS
+    )
+    # TODO: nearby sources contamination
 
     return bkg, bkg_std, bkg_area, bkg_flags
 
@@ -238,8 +278,20 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto',
     res_ap = Table()
 
     if isinstance(data, imhdus):
+        # TODO: include QFLOAT and FrameData
         data = data.data
 
+    # if mask is used, apply to pixel_flags
+    if pixel_flags is None:
+        pixel_flags = np.zeros_like(data, dtype=PixelMaskFlags.dtype)
+    else:
+        pixel_flags = np.array(pixel_flags)
+        if pixel_flags.shape != data.shape:
+            raise ValueError('pixel_flags must have the same shape as data.')
+    if mask is not None:
+        pixel_flags[mask] |= PixelMaskFlags.MASKED.value
+
+    # FIXME: check this
     # data must be divided by gain. Also force a new instance
     data = np.array(data)/gain
 
@@ -283,6 +335,7 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto',
         bkg_error = 0.0
 
     # Get the total error (bkg+poisson) from photutils
+    # FIXME: check the gain situation
     error = calc_total_error(data, bkg_error=bkg_error, effective_gain=gain)
 
     # Compute the local background of the sources
@@ -300,6 +353,18 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto',
     ap = CircularAperture(positions, r=r)
     ap_stats = ApertureStats(data, ap, error=error, mask=mask,
                              sum_method='exact', local_bkg=bkg)
+
+    # compute OOB flag
+    flags |= _err_out_of_bounds(data.shape, nx, ny, r,
+                                PhotometryFlags.OUT_OF_BOUNDS)
+    # pixel_flags
+    flags |= _err_pixel_flags(pixel_flags, ap, PixelMaskFlags.MASKED,
+                              PhotometryFlags.REMOVED_PIXEL_IN_APERTURE)
+    flags |= _err_pixel_flags(pixel_flags, ap, PixelMaskFlags.INTERPOLATED,
+                              PhotometryFlags.INTERPOLATED_PIXEL_IN_APERTURE)
+    flags |= _err_pixel_flags(pixel_flags, ap, PixelMaskFlags.SATURATED,
+                              PhotometryFlags.SATURATED_PIXEL_IN_APERTURE)
+    # TODO: nearby sources
 
     res_ap['x'] = x
     res_ap['y'] = y

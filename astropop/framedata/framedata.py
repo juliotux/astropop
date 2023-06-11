@@ -138,6 +138,7 @@ def setup_filename(frame, cache_folder=None, filename=None):
 
 class PixelMaskFlags(Flag):
     """Flags for pixel masking."""
+    dtype = np.uint8  # store as uint8 in arrays
     # Type of Masking
     INTERPOLATED = 1 << 0  # pixel interpolated from neighbors
     MASKED = 1 << 1  # pixel value removed
@@ -243,11 +244,11 @@ class FrameData:
 
         # setup flags and mask
         if flags is None:
-            flags = np.zeros_like(data, dtype=np.uint8)
+            flags = np.zeros_like(data, dtype=PixelMaskFlags.dtype)
 
         # set data to the variables
         self._data = np.asarray(data, dtype=dtype)
-        self.flags = flags
+        self.flags = np.asarray(flags, dtype=PixelMaskFlags.dtype)
         self.uncertainty = uncertainty
         # create flag for masked pixels
         if mask is not None:
@@ -435,7 +436,7 @@ class FrameData:
         if np.isscalar(value):
             value = int(value)
         else:
-            value = np.asarray(value, dtype=np.uint8)
+            value = np.asarray(value, dtype=PixelMaskFlags.dtype)
         _, _, _, flags = shape_consistency(self.data, flags=value)
 
         # ensure to memmap if already memmapping
