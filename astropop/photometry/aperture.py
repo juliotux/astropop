@@ -67,7 +67,7 @@ def _calc_local_bkg(data, positions, r_in, r_out, error, bkg_method,
     else:
         raise ValueError(f'Invalid bkg_method: {bkg_method}')
 
-    bkg_std = ann_stats.stddev
+    bkg_std = ann_stats.std
     bkg_area = ann_ap.area
 
     if pixel_flags is not None:
