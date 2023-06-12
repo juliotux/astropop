@@ -41,14 +41,17 @@ def get_image_index():
     os.makedirs(ast_data, exist_ok=True)
     index = 'index-4107.fits'  # index-4202-28.fits'
     d = 'http://broiler.astrometry.net/~dstn/4100/' + index
-    f = download_file(d, cache=True, show_progress=False, timeout=300)
-    shutil.copy(f, ast_data)
+    f = open(download_file(d, cache=True, show_progress=False, timeout=300),
+             'rb').read()
+    f2 = open(os.path.join(ast_data, index), 'wb')
+    f2.write(f)
+    f2.close()
     name = os.path.join(cache, 'm20_dss.fits')
     if not os.path.isfile(name):
         s = SkyView.get_images('M20', radius=Angle('60arcmin'),
                                pixels=2048, survey='DSS')
         s[0][0].writeto(name)
-    return name, f
+    return name, os.path.join(ast_data, index)
 
 
 def compare_wcs(wcs, nwcs):
