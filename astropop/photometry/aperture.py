@@ -75,7 +75,8 @@ def _err_pixel_flags(pixel_flags, apertures, flag_pixel, flag_aperture):
     if pixel_flags is None:
         return flags
     mask = np.bitwise_and(pixel_flags, flag_pixel.value) != 0
-    detect = photu_ap_photometry(mask, apertures) > 0
+    detect = np.array(photu_ap_photometry(mask, apertures)['aperture_sum'] > 0,
+                      dtype=bool)
     flags[detect] |= flag_aperture.value
     return flags
 

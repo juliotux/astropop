@@ -297,7 +297,8 @@ class Test_AstrometrySolver:
         hdu.header = header
         sources = starfind(hdu.data, 10, np.median(hdu.data),
                            np.std(hdu.data), 4)
-        phot = aperture_photometry(hdu.data, sources['x'], sources['y'])
+        phot = aperture_photometry(hdu.data, sources['x'], sources['y'],
+                                   pixel_flags=None)
         imw, imh = hdu.data.shape
         result = solve_astrometry_xy(phot['x'], phot['y'], phot['flux'],
                                      width=imw, height=imh)
