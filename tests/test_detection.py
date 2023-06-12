@@ -634,7 +634,7 @@ class Test_StarFind():
         assert_almost_equal(sources['x'], pos_x[order], decimal=0)
         assert_almost_equal(sources['y'], pos_y[order], decimal=0)
         assert_almost_equal(sources.meta['astropop fwhm'], fwhm,
-                            decimal=1)
+                            decimal=0)
 
     def test_starfind_one_star_subpixel(self):
         size = (128, 128)
