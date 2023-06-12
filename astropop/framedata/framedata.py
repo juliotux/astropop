@@ -469,7 +469,7 @@ class FrameData:
         return self.mask_flags(PixelMaskFlags.MASKED)
 
     def mask_flags(self, flags):
-        """Mask pixels with an specific flag.
+        """Get a mask pixels with an specific flag.
 
         Parameters
         ----------
