@@ -63,7 +63,7 @@ skip_astrometry = pytest.mark.skipif("_solve_field is None or "
                                      "False)")
 
 
-@pytest.mark.flaky(reruns=2, reruns_delay=1)
+# @pytest.mark.flaky(reruns=2, reruns_delay=1)
 class Test_AstrometrySolver:
     @pytest.mark.parametrize('angle,unit,fail', [(Angle(1.0, 'degree'), None, False),
                                                  (1.0, None, False),
