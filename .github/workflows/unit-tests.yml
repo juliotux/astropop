@@ -148,7 +148,7 @@ jobs:
     - name: Run Pytest and generate coverage
       shell: bash -l {0}
       run: |
-        pytest --pyargs ./tests ./docs --remote-data --reruns=1 --reruns-delay 10 --cov astropop --cov-config=./setup.cfg
+        pytest --pyargs ./tests ./docs --remote-data --cov astropop --cov-config=./setup.cfg
         coverage xml -o ./coverage.xml
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
