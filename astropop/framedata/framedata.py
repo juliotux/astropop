@@ -138,7 +138,6 @@ def setup_filename(frame, cache_folder=None, filename=None):
 
 class PixelMaskFlags(Flag):
     """Flags for pixel masking."""
-    dtype = np.uint8  # store as uint8 in arrays
     # Type of Masking
     INTERPOLATED = 1 << 0  # pixel interpolated from neighbors
     MASKED = 1 << 1  # pixel value removed
@@ -150,6 +149,10 @@ class PixelMaskFlags(Flag):
     COSMIC_RAY = 1 << 5  # cosmic ray
     OUT_OF_BOUNDS = 1 << 6  # registered image. Pixel is out of the bounds
     UNSPECIFIED = 1 << 7  # not specified
+
+
+# Store this flags as uint8
+PixelMaskFlags.dtype = np.uint8
 
 
 @unit_property

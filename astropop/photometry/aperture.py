@@ -25,8 +25,6 @@ __all__ = ['aperture_photometry', 'PhotometryFlags']
 
 class PhotometryFlags(Flag):
     """Flags for aperture photometry. Do not subclass it."""
-    # stores it in a 16 bit integer
-    dtype = np.int16
 
     # 1: At least one pixel in the aperture was removed or masked
     REMOVED_PIXEL_IN_APERTURE = 1 << 0
@@ -48,6 +46,10 @@ class PhotometryFlags(Flag):
     NEARBY_SOURCES_ANNULUS = 1 << 8
     # 512: Source recentering have failed and the original position was used
     RECENTERING_FAILED = 1 << 9
+
+
+# Store flags as uint16
+PhotometryFlags.dtype = np.uint16
 
 
 def _err_out_of_bounds(shape, x, y, r, flag):
