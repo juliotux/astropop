@@ -102,7 +102,7 @@ def gen_image(size, x, y, flux, sky, rdnoise, model='gaussian', **kwargs):
     return im
 
 
-@pytest.mark.flaky(reruns=5)
+@pytest.mark.flaky(reruns=5, reruns_delay=0.1)
 class Test_Background():
     def test_background_simple_nocosmic(self):
         size = (2048, 2048)
@@ -215,7 +215,7 @@ class Test_Background():
         assert_almost_equal(rms, np.ones(size)*rdnoise, decimal=-1)
 
 
-@pytest.mark.flaky(reruns=5)
+@pytest.mark.flaky(reruns=5, reruns_delay=0.1)
 class Test_Segmentation_Detection():
     # segmentation detection. Must detect all shapes of sources
 
@@ -326,7 +326,7 @@ class Test_Segmentation_Detection():
         assert_almost_equal(sources[0]['y'], pos[1], decimal=2)
 
 
-@pytest.mark.flaky(reruns=5)
+@pytest.mark.flaky(reruns=5, rerun_delay=0.1)
 class Test_DAOFind_Detection():
     # DAOFind detection. Only round unsturaded stars
 
@@ -515,7 +515,7 @@ class Test_DAOFind_Detection():
         assert_almost_equal(sources[0]['y'], pos[1], decimal=2)
 
 
-@pytest.mark.flaky(reruns=5)
+@pytest.mark.flaky(reruns=5, rerun_delay=0.1)
 class Test_StarFind():
     # Our combined iterative method
 
