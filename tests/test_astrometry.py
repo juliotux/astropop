@@ -4,7 +4,7 @@
 import numpy as np
 import os
 import pytest
-from urllib import request
+import shutil
 from astroquery.skyview import SkyView
 from astropy.coordinates import Angle, SkyCoord
 from astropy.config import get_cache_dir
@@ -13,6 +13,7 @@ from astropy.table import Table
 from astropy.nddata.ccddata import _generate_wcs_and_update_header
 from astropy.wcs import WCS
 from astropy import units
+from astropy.utils.data import download_file
 
 from astropop.astrometry.astrometrynet import _solve_field, \
                                               solve_astrometry_image, \
@@ -40,9 +41,8 @@ def get_image_index():
     os.makedirs(ast_data, exist_ok=True)
     index = 'index-4107.fits'  # index-4202-28.fits'
     d = 'http://broiler.astrometry.net/~dstn/4100/' + index
-    f = os.path.join(ast_data, index)
-    if not os.path.isfile(f):
-        request.urlretrieve(d, f)  # nosec
+    f = download_file(d, cache=True, show_progress=False, timeout=300)
+    shutil.copy(f, ast_data)
     name = os.path.join(cache, 'm20_dss.fits')
     if not os.path.isfile(name):
         s = SkyView.get_images('M20', radius=Angle('60arcmin'),
