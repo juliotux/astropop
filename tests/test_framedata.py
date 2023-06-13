@@ -455,3 +455,17 @@ class TestFrameDataCopy:
         assert_path_exists(expect+'.data')
         assert_path_exists(expect+'.unct')
         assert_path_exists(expect+'.flags')
+
+    def test_copy_memmap(self, tmpdir):
+        tmp = tmpdir.strpath
+        frame = create_framedata(cache_folder=tmp, cache_filename='testcopy')
+        frame.uncertainty = 1.0
+        frame.enable_memmap()
+        f = frame.copy()
+        assert_true(f._memmapping)
+        assert_is_instance(f._data, np.memmap)
+        assert_is_instance(f._unct, np.memmap)
+        assert_is_instance(f._flags, np.memmap)
+        assert_equal(f._data.filename, os.path.join(tmp, 'testcopy_copy.data'))
+        assert_equal(f._unct.filename, os.path.join(tmp, 'testcopy_copy.unct'))
+        assert_equal(f._flags.filename, os.path.join(tmp, 'testcopy_copy.flags'))
