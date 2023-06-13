@@ -43,11 +43,8 @@ def create_array_memmap(filename, data, dtype=None):
         dtype = dtype.newbyteorder('=')
 
     shape = data.shape
-    if data.ndim > 0:
-        memmap = np.memmap(filename, mode='w+', dtype=dtype, shape=shape)
-        memmap[:] = data[:]
-    else:
-        memmap = data
+    memmap = np.memmap(filename, mode='w+', dtype=dtype, shape=shape)
+    memmap[:] = data[:]
     return memmap
 
 

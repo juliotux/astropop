@@ -16,6 +16,10 @@ class TestMemmapCreation:
     b = np.ones((30, 30), dtype='f4')*2
     c = np.ones((30, 30), dtype='f8')*3.14
 
+    def test_create_memmap_none_filename(self):
+        with pytest.raises(ValueError, match='None filename'):
+            create_array_memmap(None, self.a)
+
     def test_create_memmap_simple(self, tmpdir):
         f = os.path.join(tmpdir, 'testarray.npy')
         b = create_array_memmap(f, self.a)
