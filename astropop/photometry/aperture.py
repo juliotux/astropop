@@ -351,6 +351,8 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto',
         flags |= bkg_flags
     else:
         bkg = None
+        bkg_std = None
+        bkg_area = None
 
     # Calculate the sources apertures
     ap = CircularAperture(positions, r=r)
@@ -375,9 +377,9 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto',
     res_ap['flux'] = ap_stats.sum
     res_ap['flux_error'] = ap_stats.sum_err
     res_ap['aperture_area'] = ap_stats.sum_aper_area
-    res_ap['bkg'] = bkg
-    res_ap['bkg_stddev'] = bkg_std
-    res_ap['bkg_area'] = bkg_area
+    res_ap['bkg'] = bkg or np.nan
+    res_ap['bkg_stddev'] = bkg_std or np.nan
+    res_ap['bkg_area'] = bkg_area or np.nan
     res_ap['flags'] = flags
     res_ap['original_x'] = x
     res_ap['original_y'] = y
