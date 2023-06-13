@@ -49,7 +49,8 @@ def merge_header(*headers, method='same', selected_keys=None):
     for hdr in headers:
         for key in hdr.keys():
             if key not in summary.keys():
-                summary[key] = []
+                # avoid only_equal problems
+                summary[key] = [None]
             if hdr[key] not in summary[key]:
                 summary[key].append(hdr[key])
 
@@ -59,7 +60,8 @@ def merge_header(*headers, method='same', selected_keys=None):
         keys = summary.keys()
 
     for k in keys:
-        uniq = np.unique(summary[k])
+        # do not use np.unique to avoid problems with None
+        uniq = list(set(summary[k]))
         if len(uniq) == 1:
             meta[k] = uniq[0]
         elif method == 'selected_keys':

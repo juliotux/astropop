@@ -1,6 +1,7 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 # flake8: noqa: F403, F405
 
+import pytest
 import numpy as np
 from astropop.image._tools import merge_header, merge_flag
 from astropop.testing import *
@@ -68,12 +69,18 @@ class TestMergeHeaders:
     def test_merge_headers_invalid_method(self):
         headers = self.create_headers()
 
-        with assert_raises(ValueError):
+        with pytest.raises(ValueError, match='Unknown method'):
             merge_header(*headers, method='invalid')
 
-            with assert_raises(ValueError):
-                merge_header(*headers, method='selected_keys')
+        with pytest.raises(ValueError,
+                           match='selected_keys must be provided if'):
+            merge_header(*headers, method='selected_keys')
 
+    def test_merge_headers_different_keys(self):
+        headers = self.create_headers()
+        headers[2]['F'] = 1
+        merged = merge_header(*headers, method='only_equal')
+        assert_not_in('F', merged)
 
 class TestMergeFlags:
     def get_flags_4x4(self):
