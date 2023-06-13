@@ -82,6 +82,7 @@ class TestMergeHeaders:
         merged = merge_header(*headers, method='only_equal')
         assert_not_in('F', merged)
 
+
 class TestMergeFlags:
     def get_flags_4x4(self):
         f1 = np.zeros((4, 4), dtype=np.uint8)
