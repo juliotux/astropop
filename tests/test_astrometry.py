@@ -1,10 +1,11 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 # flake8: noqa: F403, F405
-@pytest.mark.skip('Skip all astrometry for now')
+
+import pytest
+pytest.mark.skip('Skip all astrometry for now')
 
 import numpy as np
 import os
-import pytest
 from astroquery.skyview import SkyView
 from astropy.coordinates import Angle, SkyCoord
 from astropy.config import get_cache_dir
