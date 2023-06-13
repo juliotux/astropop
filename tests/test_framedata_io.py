@@ -10,9 +10,6 @@ from astropop.testing import *
 from .test_framedata import create_framedata
 
 
-# TODO: Test FrameData write
-
-
 class TestFrameData2FITS:
     def test_to_hdu_defaults(self):
         frame = create_framedata()
@@ -78,6 +75,62 @@ class TestFrameData2FITS:
         hdulist = frame.to_hdu()
         assert_true('bunit' in hdulist[0].header)
         assert_equal(hdulist[0].header['bunit'].strip(), ccd_unit.to_string())
+
+
+class TestFrameDataWriteFits:
+    def test_write_fits_defaults(self, tmpdir):
+        fn = tmpdir.join('test.fits')
+        frame = create_framedata()
+        frame.meta = {'observer': 'Edwin Hubble'}
+        frame.uncertainty = np.random.rand(*frame.shape)
+        frame.mask_pixels(np.zeros(frame.shape, dtype=bool))
+        frame.write(fn)
+        hdul = fits.open(fn)
+        assert_equal(hdul[0].data, frame.data)
+        assert_equal(hdul["UNCERT"].data, frame.uncertainty)
+        assert_equal(hdul["MASK"].data, frame.mask)
+        assert_equal(hdul[0].header['BUNIT'], 'adu')
+
+    def test_write_fits_no_uncert_no_mask_names(self, tmpdir):
+        fn = tmpdir.join('test.fits')
+        frame = create_framedata()
+        frame.meta = {'observer': 'Edwin Hubble'}
+        frame.uncertainty = np.random.rand(*frame.shape)
+        frame.mask_pixels(np.zeros(frame.shape, dtype=bool))
+        frame.write(fn, hdu_uncertainty=None, hdu_mask=None)
+        hdul = fits.open(fn)
+        assert_equal(hdul[0].data, frame.data)
+        with pytest.raises(KeyError):
+            hdul['UNCERT']
+        with pytest.raises(KeyError):
+            hdul['MASK']
+        assert_equal(hdul[0].header['BUNIT'], 'adu')
+
+    def test_write_fits_wcs(self, tmpdir):
+        fn = tmpdir.join('test.fits')
+        frame = create_framedata()
+        wcs = WCS(naxis=2)
+        wcsh = wcs.to_header(relax=True)
+        frame.wcs = wcs
+        frame.write(fn)
+        hdul = fits.open(fn)
+        for k in wcsh:
+            assert_equal(hdul[0].header[k], wcsh[k])
+
+    def test_write_no_std_units_default_true(self, tmpdir):
+        fn = tmpdir.join('test.fits')
+        frame = create_framedata()
+        frame.unit = 'electron'
+        frame.write(fn)
+        hdul = fits.open(fn)
+        assert_equal(hdul[0].header['BUNIT'], 'electron')
+
+    def test_write_no_std_units_false(self, tmpdir):
+        fn = tmpdir.join('test.fits')
+        frame = create_framedata()
+        frame.unit = 'electron'
+        with pytest.raises(ValueError):
+            frame.write(fn, no_fits_standard_units=False)
 
 
 class TestFrameData2CCDData:

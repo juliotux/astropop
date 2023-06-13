@@ -714,5 +714,6 @@ class FrameData:
             unit_key: string, optional
                 Header key for physical unit.
         """
-        _write_fits(self, filename, overwrite, no_fits_standard_units,
+        _write_fits(self, filename, overwrite,
+                    no_fits_standard_units=no_fits_standard_units,
                     **kwargs)
