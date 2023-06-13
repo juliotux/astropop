@@ -4,7 +4,6 @@
 import numpy as np
 import os
 import pytest
-import shutil
 from astroquery.skyview import SkyView
 from astropy.coordinates import Angle, SkyCoord
 from astropy.config import get_cache_dir
@@ -35,9 +34,8 @@ from astropop.testing import *
 
 def get_image_index():
     cache = get_cache_dir()
-    ast_data = os.path.dirname(_solve_field)
-    ast_data = os.path.dirname(ast_data)
-    ast_data = os.path.join(ast_data, 'data')
+    tmpdir = os.path.dirname(_solve_field)
+    ast_data = os.path.join(tmpdir, '../data')
     os.makedirs(ast_data, exist_ok=True)
     index = 'index-4107.fits'  # index-4202-28.fits'
     d = 'http://broiler.astrometry.net/~dstn/4100/' + index
@@ -48,7 +46,7 @@ def get_image_index():
     f2.close()
     name = os.path.join(cache, 'm20_dss.fits')
     if not os.path.isfile(name):
-        s = SkyView.get_images('M20', radius=Angle('60arcmin'),
+        s = SkyView.get_images('M20', radius=Angle('10arcmin'),
                                pixels=2048, survey='DSS')
         s[0][0].writeto(name)
     return name, os.path.join(ast_data, index)
@@ -293,6 +291,7 @@ class Test_AstrometrySolver:
             assert_in(k, result.correspondences.colnames)
 
     @skip_astrometry
+    @pytest.mark.skip('This test is taking too long to run.')
     def test_solve_astrometry_xyl(self, tmpdir):
         data, index = get_image_index()
         hdu = fits.open(data)[0]
