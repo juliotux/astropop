@@ -211,6 +211,55 @@ class TestFrameDataGetSetUncertainty:
         frame = create_framedata(uncertainty=np.ones(shp))
         assert_equal(frame.get_uncertainty(False), np.ones(shp))
 
+    def test_set_uncertainty_memmapped(self):
+        # test that setting uncertainty on a memmapped FrameData
+        # does not change the data
+        frame = create_framedata()
+        frame.enable_memmap()
+        frame.uncertainty = np.ones_like(frame.data)
+        assert_equal(frame.uncertainty, np.ones_like(frame.data))
+
+
+class TestFrameDataGetSetFlags:
+    def test_setting_flags_None(self):
+        frame = create_framedata()
+        frame.flags = None
+        assert_is_none(frame.flags)
+
+    def test_setting_flags_with_array(self):
+        frame = create_framedata()
+        fake_flags = np.ones_like(frame.data, dtype='uint8')
+        frame.flags = fake_flags.copy()
+        assert_equal(frame.flags, fake_flags)
+
+    def test_setting_flags_with_scalar_error(self):
+        frame = create_framedata()
+        with pytest.raises(ValueError, match='Flags cannot be scalar.'):
+            frame.flags = 1
+
+    def test_setting_flags_with_quantity_error(self):
+        frame = create_framedata()
+        with pytest.raises(ValueError, match='Flags cannot have units.'):
+            frame.flags = np.zeros_like(frame.data, dtype='uint8')*u.adu
+
+    def test_setting_flags_wrong_shape_raises_error(self):
+        frame = create_framedata()
+        with pytest.raises(ValueError):
+            frame.flags = np.zeros([3, 4])
+
+    def test_setting_bad_flags_raises_error(self):
+        frame = create_framedata()
+        with pytest.raises(ValueError):
+            frame.flags = 'not a flags'
+
+    def test_set_uncertainty_memmapped(self):
+        # test that setting uncertainty on a memmapped FrameData
+        # does not change the data
+        frame = create_framedata()
+        frame.enable_memmap()
+        frame.flags = np.ones_like(frame.data, dtype='uint8')
+        assert_equal(frame.flags, np.ones_like(frame.data))
+
 
 class TestFrameDataMaskedData:
     def test_masked_simple(self):

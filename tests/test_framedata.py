@@ -204,6 +204,14 @@ class TestFrameDataCreationData:
             # empty initializer should fail
             FrameData()
 
+    def test_framedata_scalar_error(self):
+        with pytest.raises(ValueError, match='Data must be 2D array.'):
+            FrameData(1)
+
+    def test_framedata_3d_error(self):
+        with pytest.raises(ValueError, match='Data must be 2D array.'):
+            FrameData(np.ones((3, 3, 3)))
+
     def test_frame_simple(self):
         framedata = create_framedata()
         assert_equal(framedata.shape, (DEFAULT_DATA_SIZE, DEFAULT_DATA_SIZE))
@@ -360,6 +368,12 @@ class TestFrameDataMemMap:
         assert_is_not_instance(frame._unct, np.memmap)
         assert_is_not_instance(frame._flags, np.memmap)
         assert_false(frame._memmapping)
+
+    def test_framedata_memmap_already_memmapped(self):
+        frame = create_framedata()
+        frame.enable_memmap()
+        # enable memmap again should not cause problems
+        frame.enable_memmap()
 
 
 class TestFrameDataCopy:

@@ -10,6 +10,9 @@ from astropop.testing import *
 from .test_framedata import create_framedata
 
 
+# TODO: Test FrameData write
+
+
 class TestFrameData2FITS:
     def test_to_hdu_defaults(self):
         frame = create_framedata()

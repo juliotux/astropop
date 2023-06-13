@@ -381,8 +381,11 @@ class FrameData:
 
     @uncertainty.setter
     def uncertainty(self, value):
-        self._unct = delete_array_memmap(self._unct, read=False, remove=True)
         if value is None:
+            self._unct = None
+            # do not delete earlier to avoid security issues if other parts of
+            # the code raises error
+            delete_array_memmap(self._unct, read=False, remove=True)
             return
 
         # Put is valid containers
@@ -395,12 +398,10 @@ class FrameData:
         value = uncertainty_unit_consistency(self.unit, value)
         _, value, _, _ = shape_consistency(self.data, uncertainty=value)
 
-        # ensure to memmap if already memmapping
-        if self._memmapping:
-            self._unct = create_array_memmap(value, self.cache_folder,
-                                             self.cache_filename)
-        else:
-            self._unct = value
+        # ensure that the memmap is removed
+        self._unct = delete_array_memmap(self._unct, read=False, remove=True)
+        self._unct = value
+        self._update_memmaps()
 
     def get_uncertainty(self, return_none=True):
         """Get the uncertainty frame in a safer way.
@@ -431,23 +432,24 @@ class FrameData:
 
     @flags.setter
     def flags(self, value):
-        self._flags = delete_array_memmap(self._flags, read=False, remove=True)
         if value is None:
+            self._flags = None
+            # do not delete earlier to avoid security issues if other parts of
+            # the code raises error
+            delete_array_memmap(self._flags, read=False, remove=True)
             return
 
         # Put is valid containers
         if np.isscalar(value):
-            value = int(value)
+            raise ValueError('Flags cannot be scalar.')
+        elif hasattr(value, 'unit'):
+            raise ValueError('Flags cannot have units.')
         else:
             value = np.asarray(value, dtype=PixelMaskFlags.dtype)
         _, _, _, flags = shape_consistency(self.data, flags=value)
 
-        # ensure to memmap if already memmapping
-        if self._memmapping:
-            self._flags = create_array_memmap(value, self.cache_folder,
-                                              self.cache_filename)
-        else:
-            self._flags = value
+        self._flags = value
+        self._update_memmaps()
 
     def add_flags(self, flag, where):
         """Add a given flag to the pixels in the given positions.
@@ -522,13 +524,8 @@ class FrameData:
         cache_file = setup_filename(self, cache_folder, filename)
 
         # create the memmap files
-        self._data = create_array_memmap(filename=cache_file + '.data',
-                                         data=self._data)
-        self._flags = create_array_memmap(filename=cache_file + '.flags',
-                                          data=self._flags)
-        self._unct = create_array_memmap(filename=cache_file + '.unct',
-                                         data=self._unct)
         self._memmapping = True
+        self._update_memmaps(cache_file)
 
     def disable_memmap(self):
         """Disable frame file memmapping (load to memory)."""
@@ -536,6 +533,23 @@ class FrameData:
         self._flags = delete_array_memmap(self._flags, read=True, remove=True)
         self._unct = delete_array_memmap(self._unct, read=True, remove=True)
         self._memmapping = False
+
+    def _update_memmaps(self, cache_file=None):
+        """Update the memmap files."""
+        if cache_file is None:
+            cache_file = setup_filename(self)
+        if self._memmapping:
+            if not isinstance(self._data, np.memmap):
+                self._data = create_array_memmap(cache_file + '.data',
+                                                 self._data)
+            if not isinstance(self._flags, np.memmap) and \
+               self._flags is not None:
+                self._flags = create_array_memmap(cache_file + '.flags',
+                                                  self._flags)
+            if not isinstance(self._unct, np.memmap) and \
+               self._unct is not None:
+                self._unct = create_array_memmap(cache_file + '.unct',
+                                                 self._unct)
 
     def copy(self, dtype=None):
         """Copy the current FrameData to a new instance.
