@@ -414,21 +414,21 @@ class Test_Register_FrameData_List:
         frame_list = self.gen_frame_list((512, 1024))
         frame_list[2].data = np.ones((1024, 512))
 
-        with pytest.raises(TypeError):
+        with pytest.raises(ValueError):
             register_framedata_list(frame_list, algorithm='asterism-matching')
 
-        with pytest.raises(TypeError):
+        with pytest.raises(ValueError):
             compute_shift_list(frame_list, algorithm='asterism-matching')
 
     def test_register_framedata_list_skip_failure_false(self):
         frame_list = self.gen_frame_list((512, 1024))
         frame_list[2].data = np.ones((1024, 512))
 
-        with pytest.raises(TypeError):
+        with pytest.raises(ValueError):
             register_framedata_list(frame_list, algorithm='asterism-matching',
                                     skip_failure=False)
 
-        with pytest.raises(TypeError):
+        with pytest.raises(ValueError):
             compute_shift_list(frame_list, algorithm='asterism-matching',
                                skip_failure=False)
 
