@@ -3,12 +3,17 @@
 
 import pytest
 import numpy as np
+from enum import Flag
 from astropy.wcs import WCS
 from astropy.io import fits
 from astropy import units as u
 from astropop.testing import *
-from astropop.framedata import FrameData
+from astropop.framedata import FrameData, PixelMaskFlags
 from .test_framedata import create_framedata, DEFAULT_HEADER, DEFAULT_DATA_SIZE
+
+
+class DummyFlag(Flag):
+    TEST = 1
 
 
 class TestFrameDataGetSetWCS:
@@ -259,6 +264,36 @@ class TestFrameDataGetSetFlags:
         frame.enable_memmap()
         frame.flags = np.ones_like(frame.data, dtype='uint8')
         assert_equal(frame.flags, np.ones_like(frame.data))
+
+    def test_add_flags_bool_array_where(self):
+        frame = create_framedata()
+        where = np.zeros_like(frame.data, dtype=bool)
+        where[0, 0] = True
+        frame.add_flags(PixelMaskFlags.MASKED, where)
+        expected = np.zeros_like(frame.data, dtype='uint8')
+        expected[0, 0] = PixelMaskFlags.MASKED.value
+        assert_equal(frame.flags, expected)
+
+    def test_add_flags_index_where(self):
+        frame = create_framedata()
+        frame.add_flags(PixelMaskFlags.MASKED, (0, 0))
+        expected = np.zeros_like(frame.data, dtype='uint8')
+        expected[0, 0] = PixelMaskFlags.MASKED.value
+        assert_equal(frame.flags, expected)
+
+    def test_add_flags_index_where_2d(self):
+        frame = create_framedata()
+        frame.add_flags(PixelMaskFlags.MASKED, ([0, 2], [0, 1]))
+        expected = np.zeros_like(frame.data, dtype='uint8')
+        expected[0, 0] = PixelMaskFlags.MASKED.value
+        expected[2, 1] = PixelMaskFlags.MASKED.value
+        assert_equal(frame.flags, expected)
+
+    @pytest.mark.parametrize('flag', [1, 'masked', DummyFlag.TEST])
+    def test_add_flags_error_type(self, flag):
+        frame = create_framedata()
+        with pytest.raises(TypeError, match='PixelMaskFlags'):
+            frame.add_flags(1, (0, 0))
 
 
 class TestFrameDataMaskedData:
