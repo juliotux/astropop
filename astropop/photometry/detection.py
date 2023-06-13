@@ -178,7 +178,10 @@ def segfind(data, threshold, background, noise, mask=None, fwhm=None, npix=5,
 
     # run the segmentation algorithm
     finder = SourceFinder(npixels=npix, deblend=deblend, progress_bar=False)
-    sources = SourceCatalog(data, finder(conv_data, threshold, mask=mask),
+    seg_img = finder(conv_data, threshold, mask=mask)
+    if seg_img is None:
+        raise ValueError('No sources found')
+    sources = SourceCatalog(data, seg_img,
                             convolved_data=conv_data, error=noise)
 
     # reorganize the table using the keywords of daofind
