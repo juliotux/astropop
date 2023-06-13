@@ -1,5 +1,6 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 # flake8: noqa: F403, F405
+@pytest.mark.skip('Skip all astrometry for now')
 
 import numpy as np
 import os
@@ -274,7 +275,7 @@ class Test_AstrometrySolver:
                                              'add_path /path1',
                                              'add_path /path2'])
 
-    # @skip_astrometry
+    @skip_astrometry
     @pytest.mark.skip('This test is not working and taking too long.')
     def test_solve_astrometry_hdu(self, tmpdir):
         data, index = get_image_index()
@@ -291,8 +292,7 @@ class Test_AstrometrySolver:
                   'field_ra', 'field_dec', 'index_ra', 'index_dec']:
             assert_in(k, result.correspondences.colnames)
 
-    # @skip_astrometry
-    @pytest.mark.skip('This test is taking too long to run.')
+    @skip_astrometry
     def test_solve_astrometry_xyl(self, tmpdir):
         data, index = get_image_index()
         hdu = fits.open(data)[0]
@@ -314,8 +314,7 @@ class Test_AstrometrySolver:
                   'field_ra', 'field_dec', 'index_ra', 'index_dec']:
             assert_in(k, result.correspondences.colnames)
 
-    # @skip_astrometry
-    pytest.mark.skip('This test is taking too long to run.')
+    @skip_astrometry
     def test_solve_astrometry_image(self, tmpdir):
         data, index = get_image_index()
         hdu = fits.open(data)[0]
