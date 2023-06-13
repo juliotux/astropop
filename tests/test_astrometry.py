@@ -290,7 +290,7 @@ class Test_AstrometrySolver:
                   'field_ra', 'field_dec', 'index_ra', 'index_dec']:
             assert_in(k, result.correspondences.colnames)
 
-    @skip_astrometry
+    # @skip_astrometry
     @pytest.mark.skip('This test is taking too long to run.')
     def test_solve_astrometry_xyl(self, tmpdir):
         data, index = get_image_index()
