@@ -4,6 +4,7 @@
 import os
 import pytest
 import numpy as np
+import copy
 from astropop.framedata import FrameData, PixelMaskFlags
 from astropy.io import fits
 from astropy.utils import NumpyRNGContext
@@ -469,3 +470,28 @@ class TestFrameDataCopy:
         assert_equal(f._data.filename, os.path.join(tmp, 'testcopy_copy.data'))
         assert_equal(f._unct.filename, os.path.join(tmp, 'testcopy_copy.unct'))
         assert_equal(f._flags.filename, os.path.join(tmp, 'testcopy_copy.flags'))
+        assert_path_exists(f._data.filename)
+        assert_path_exists(f._unct.filename)
+        assert_path_exists(f._flags.filename)
+
+    def test_copy_deepcopy(self, tmpdir):
+        tmp = tmpdir.strpath
+        frame = create_framedata(cache_folder=tmp, cache_filename='testcopy')
+        frame.uncertainty = 1.0
+        f = copy.copy(frame)
+        assert_is_not(f, frame)
+        assert_is_not(f._data, frame._data)
+        assert_is_not(f._unct, frame._unct)
+        assert_is_not(f._flags, frame._flags)
+        assert_equal(f._data, frame._data)
+        assert_equal(f._unct, frame._unct)
+        assert_equal(f._flags, frame._flags)
+
+        f = copy.deepcopy(frame)
+        assert_is_not(f, frame)
+        assert_is_not(f._data, frame._data)
+        assert_is_not(f._unct, frame._unct)
+        assert_is_not(f._flags, frame._flags)
+        assert_equal(f._data, frame._data)
+        assert_equal(f._unct, frame._unct)
+        assert_equal(f._flags, frame._flags)
