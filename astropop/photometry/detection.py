@@ -52,7 +52,6 @@ def sepfind(data, threshold, background, noise,
 
     sep_kwargs can be any kwargs to be passed to sep.extract function.
     """
-    from ._utils import _sep_fix_byte_order
     import sep
 
     def gen_filter_kernel(size):
@@ -76,7 +75,17 @@ def sepfind(data, threshold, background, noise,
                              [1, 2, 3, 4, 3, 2, 1]])
         return
 
-    d = _sep_fix_byte_order(data)
+    data = np.array(data)
+
+    if not data.flags['C_CONTIGUOUS']:
+        data = np.ascontiguousarray(data)
+    if not data.dtype.isnative:
+        data = data.byteswap().newbyteorder()
+    if data.dtype.type in [np.uint, np.uintc, np.uint8, np.uint16, np.uint32,
+                           np.int_, np.intc, np.int8, np.int16, np.int32]:
+        data = data.astype(np.float_)
+    d = data
+
     if mask is not None:
         mask = np.array(mask, dtype=bool)
 
