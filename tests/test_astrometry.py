@@ -19,15 +19,13 @@ from astropop.astrometry.astrometrynet import _solve_field, \
                                               solve_astrometry_image, \
                                               solve_astrometry_xy, \
                                               solve_astrometry_hdu, \
-                                              AstrometrySolver, \
-                                              AstrometricSolution
+                                              AstrometrySolver
 from astropop.astrometry.astrometrynet import _parse_angle, \
                                               _parse_coordinates, \
                                               _parse_crpix, \
                                               _parse_pltscl
 from astropop.astrometry.manual_wcs import wcs_from_coords
 from astropop.astrometry.coords_utils import guess_coordinates
-from astropop.photometry.aperture import aperture_photometry
 from astropop.photometry.detection import starfind
 
 from astropop.testing import *
