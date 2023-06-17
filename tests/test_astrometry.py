@@ -67,11 +67,11 @@ class Test_AstrometrySolver:
 
         # download the index file
         index = os.path.join(cache_dir, 'indexes',
-                             '5200', 'index-5202-04.fits')
+                             '5200', 'index-5203-04.fits')
         os.makedirs(os.path.dirname(index), exist_ok=True)
         if not os.path.isfile(index):
             astr_url = 'https://portal.nersc.gov/project/cosmo/temp/dstn/'
-            index_url = 'index-5200/LITE/index-5202-04.fits'
+            index_url = 'index-5200/LITE/index-5203-04.fits'
             f = download_file(astr_url + index_url, cache=True,
                               allow_insecure=True)
             os.rename(f, index)
