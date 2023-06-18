@@ -2,8 +2,10 @@
 """Tools for dealing with headers and flags."""
 
 import numpy as np
-from ..logger import logger
+from astropy.io.fits import Header
 
+from ..logger import logger
+from ..framedata._compat import _normalize_and_strip_dict
 
 __all__ = ['merge_header', 'merge_flag']
 
@@ -29,6 +31,10 @@ def merge_header(*headers, method='same', selected_keys=None):
     -------
     header: `dict`
         Merged header.
+
+    Notes
+    -----
+    - All headers must have normalized keywords.
     """
     if method not in ['first', 'selected_keys', 'no_merge', 'only_equal']:
         raise ValueError(f'Unknown method {method}.')
@@ -45,8 +51,12 @@ def merge_header(*headers, method='same', selected_keys=None):
     if method == 'first':
         return headers[0].copy()
 
-    summary = {h: [] for h in headers[0].keys()}
+    summary = None
     for hdr in headers:
+        hdr, _, _ = _normalize_and_strip_dict(hdr)
+        hdr = Header(hdr)
+        if summary is None:
+            summary = {k: [v] for k, v in hdr.items()}
         for key in hdr.keys():
             if key not in summary.keys():
                 # avoid only_equal problems
