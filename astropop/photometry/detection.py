@@ -522,7 +522,6 @@ def sources_morfology(data, x, y, r, background=None, mask=None, columns=None):
 
 
 def _fwhm_loop(model, data, x, y, xc, yc):
-    # FIXME: with curve fitting, gaussian model goes crazy
     """
     Parameters
     ----------
