@@ -5,7 +5,6 @@ import pytest
 from astropop.math.hasher import hasher
 from astropop.math.array import xy2r, iraf_indices, trim_array,  \
                                 all_equal
-from astropop.math import gaussian, moffat
 import numpy as np
 
 from astropop.testing import *
