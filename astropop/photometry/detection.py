@@ -563,8 +563,8 @@ def _fwhm_loop(model, data, x, y, xc, yc):
     try:
         m_fit = fitter(m, r[args], f[args])
         return m_fit.fwhm
-    except Exception as e:
-        raise e
+    except Exception:
+        return np.nan
 
 
 def median_fwhm(data, x, y, box_size=25, model='gaussian', min_fwhm=3.0):
