@@ -17,12 +17,15 @@ from astropy import units as u
 
 from ..logger import logger
 from ..fits_utils import imhdus
-from ..py_utils import broadcast
 
 
 _PCs = set(['PC1_1', 'PC1_2', 'PC2_1', 'PC2_2'])
 _CDs = set(['CD1_1', 'CD1_2', 'CD2_1', 'CD2_2'])
 _KEEP = set(['JD-OBS', 'MJD-OBS', 'DATE-OBS'])
+_PROCTECTED = ["SIMPLE", "XTENSION", "BITPIX", "NAXIS", "EXTEND", "PCOUNT",
+               "GCOUNT", "GROUPS", "BSCALE", "BZERO", "TFIELDS"]
+_PROTECTED_N = ["TFORM", "TSCAL", "TZERO", "TNULL", "TTYPE", "TUNIT", "TDISP",
+                "TDIM", "THEAP", "TBCOL"]
 _HDU_UNCERT = 'UNCERT'
 _HDU_MASK = 'MASK'
 _HDU_FLAGS = 'PIXFLAGS'
@@ -97,6 +100,53 @@ def extract_header_wcs(header):
     return (header, wcs)
 
 
+def _normalize_and_strip_dict(meta):
+    """Normalize meta keys and remove the protected ones."""
+    if meta is None:
+        return {}, [], []
+
+    nmeta = {}
+    history = []
+    comment = []
+
+    for k, v in meta.items():
+        k = fits.Card.normalize_keyword(k)
+        # pop history and comment
+        if k == 'HISTORY':
+            if np.isscalar(v):
+                history.append(v)
+            else:
+                history.extend(v)
+            continue
+        if k == 'COMMENT':
+            if np.isscalar(v):
+                comment.append(v)
+            else:
+                comment.extend(v)
+            continue
+
+        if k in nmeta:
+            # as dicts are case sensitive, this can happen. Raise error
+            raise KeyError(f'Duplicated key {k}. Only dictionaries with '
+                           'unique keys are allowed.')
+        if k not in _PROCTECTED and k != '':
+            # remove protected keys
+            nmeta[k] = v
+
+    # remove protected keys with number
+    naxis = nmeta.get('NAXIS', 0)
+    tfields = nmeta.get('TFIELDS', 0)
+    for i in range(1, naxis+1):
+        if f'NAXIS{i}' in meta:
+            meta.pop(f'NAXIS{i}')
+    for i in range(1, tfields+1):
+        for k in _PROTECTED_N:
+            if f'{k}{i}' in meta:
+                meta.pop(f'{k}{i}')
+
+    return nmeta, history, comment
+
+
 def _merge_and_clean_header(meta, header, wcs):
     """Merge meta and header and clean the WCS and spurious keys."""
     if not isinstance(meta, (dict, fits.Header)) and meta is not None:
@@ -109,51 +159,20 @@ def _merge_and_clean_header(meta, header, wcs):
         raise TypeError('wcs must be a astropy.wcs.WCS. '
                         f'Got {type(wcs)}')
 
-    if header is not None:
-        header = fits.Header(header)
-        header.strip()
-    else:
-        header = fits.Header()
+    history = []
+    comment = []
+    fmeta = fits.Header()
 
-    if meta is not None:
-        # strip history and comments from meta and add them after
-        # these keys are dicts and the creation of fits.Header dont handle it
-        meta = dict(meta)
-        history = list(broadcast(meta.pop('HISTORY', [])).iters[0])
-        history += list(broadcast(meta.pop('history', [])).iters[0])
-        comment = list(broadcast(meta.pop('COMMENT', [])).iters[0])
-        comment += list(broadcast(meta.pop('comment', [])).iters[0])
-        meta = fits.Header(meta)
-        for i in history:
-            meta.add_history(i)
-        for i in comment:
-            meta.add_comment(i)
-        meta.strip()
-    else:
-        meta = fits.Header()
-
-    meta.update(header)
-
-    # strip blank cards
-    meta.remove('', ignore_missing=True)
-
-    # extract history and comments from meta
-    if 'history' in meta:
-        history = meta['history']
-        history = list(broadcast(history).iters[0])
-        del meta['history']
-    else:
-        history = []
-
-    if 'comment' in meta:
-        comment = meta['comment']
-        comment = list(broadcast(comment).iters[0])
-        del meta['comment']
-    else:
-        comment = []
+    for m in [meta, header]:
+        m, h, c = _normalize_and_strip_dict(m)
+        # extract history and comments from meta
+        history.extend(h)
+        comment.extend(c)
+        # merge meta and header
+        fmeta.update(m)
 
     # extract wcs from header
-    meta, wcs_ = extract_header_wcs(meta)
+    meta, wcs_ = extract_header_wcs(fmeta)
     if wcs_ and wcs:
         raise ValueError('meta and wcs offer a WCS. Use only one.')
     wcs = wcs_ if wcs is None else wcs

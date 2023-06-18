@@ -19,7 +19,8 @@ from astropop.testing import *
 _comon_wcs_keys = ('CTYPE', 'CRVAL', 'CRPIX', 'CD1_', 'CD2_', 'PC1_', 'PC2_')
 
 
-_base_header = """SIMPLE  =                    T / Fits standard
+_base_header = """
+SIMPLE  =                    T / Fits standard
 BITPIX  =                  -32 / FOUR-BYTE SINGLE PRECISION FLOATING POINT
 NAXIS   =                    2 / STANDARD FITS FORMAT
 NAXIS1  =                  256 / STANDARD FITS FORMAT
@@ -241,7 +242,7 @@ class Test_MergeAndCleanHeader():
                                 'This is a third comment'])
 
     def test_extract_wcs_meta_conflict(self):
-        header = fits.Header.fromstring(_base_header+_wcs_no_sip)
+        header = fits.Header.fromstring(_base_header+_wcs_no_sip, sep='\n')
         wcs = WCS(header)
         with pytest.raises(ValueError, match='meta and wcs'):
             _merge_and_clean_header(header, None, wcs=wcs)
