@@ -53,18 +53,21 @@ class TestGaussianEquations:
 
     def test_gaussian_radial_integral(self):
         v = quad(GaussianEquations.model_radial, a=0, b=np.inf,
-                 args=(2, 1, 0))[0]
+                 # f, sx, sky
+                 args=(1, 2, 0))[0]
         assert_almost_equal(v, 0.5)
 
     def test_gaussian_1D_integral(self):
         v = quad(GaussianEquations.model_1d, a=-np.inf, b=np.inf,
-                 args=(0, 2, 1, 0))[0]
+                 # x0, f, sx, sky
+                 args=(0, 1, 2, 0))[0]
         assert_almost_equal(v, 1)
 
     def test_gaussian_2D_integral(self):
         v = dblquad(GaussianEquations.model_2d, -np.inf, np.inf,
                     lambda x: -np.inf, lambda x: np.inf,
-                    args=(0, 0, 2, 2, 0, 1, 0))[0]
+                    # x0, y0, f, sx, sy, theta, sky
+                    args=(0, 0, 1, 2, 2, 0, 0))[0]
         assert_almost_equal(v, 1)
 
 
