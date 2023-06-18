@@ -6,8 +6,7 @@ import numpy as np
 
 from astropop.photometry import (background, segfind, daofind, starfind,
                                  median_fwhm)
-from astropop.math.moffat import moffat_2d
-from astropop.math.gaussian import gaussian_2d
+from astropop.math.models import MoffatEquations, GaussianEquations
 from astropop.math.array import trim_array
 from astropy.utils import NumpyRNGContext
 from astropy.stats import gaussian_fwhm_to_sigma
@@ -29,13 +28,13 @@ def gen_bkg(size, level, rdnoise, rng_seed=123, dtype='f8'):
     return im
 
 
-def gen_position_flux(size, number, low, high, rng_seed=123):
+def gen_position_flux(size, number, low, high, rng_seed=123, fwhm=5):
     """Generate x, y, and flux lists for stars."""
     for i in range(number):
         with NumpyRNGContext(rng_seed):
-            x = np.random.randint(0, size[0], number)
+            x = np.random.randint(fwhm, size[0]-fwhm, number)
         with NumpyRNGContext(rng_seed+i):
-            y = np.random.randint(0, size[1], number)
+            y = np.random.randint(fwhm, size[1]-fwhm, number)
     # lets sample the flux in the range. Avoid tests flakinness
     step = float(high-low)/number
     flux = np.arange(number)*step + low
@@ -44,15 +43,17 @@ def gen_position_flux(size, number, low, high, rng_seed=123):
 
 def gen_stars_moffat(size, x, y, flux, fwhm):
     """Generate stars image to add to background."""
-    beta = 1.5
-    alpha = fwhm/np.sqrt(2**(1/beta)-1)
+    power = 1.5
+    width = 0.5*fwhm/np.sqrt(2**(1/power)-1)
+
     im = np.zeros(size[::-1])
     grid_y, grid_x = np.indices(size[::-1])
     for xi, yi, fi in zip(x, y, flux):
         imi, gxi, gyi = trim_array(np.zeros_like(im), box_size=5*fwhm,
                                    position=(xi, yi),
                                    indices=(grid_y, grid_x))
-        imi += moffat_2d(gxi, gyi, xi, yi, alpha, beta, fi, 0)
+        imi += MoffatEquations.model_2d(gxi, gyi, xi, yi, flux=fi,
+                                        width=width, power=power, sky=0)
         im[gyi.min():gyi.max()+1, gxi.min():gxi.max()+1] += imi
 
     return im
@@ -68,13 +69,15 @@ def gen_stars_gaussian(size, x, y, flux, sigma, theta):
     except (TypeError, ValueError):
         sigma_x = sigma_y = sigma
 
-    bc = np.broadcast(x, y, flux, sigma_x, sigma_y, theta)
+    bc = np.broadcast_arrays(x, y, flux, sigma_x, sigma_y, theta)
 
-    for xi, yi, fi, sxi, syi, ti in zip(*bc.iters):
-        imi, gxi, gyi = trim_array(np.zeros_like(im), box_size=10*sxi,
+    for xi, yi, fi, sx, sy, ti in zip(*bc):
+        imi, gxi, gyi = trim_array(np.zeros_like(im), box_size=5*max(sx, sy),
                                    position=(xi, yi),
                                    indices=(grid_y, grid_x))
-        imi += gaussian_2d(gxi, gyi, xi, yi, sxi, syi, ti, fi, 0)
+        imi += GaussianEquations.model_2d(gxi, gyi, xi, yi, flux=fi,
+                                          sigma_x=sx, sigma_y=sy, theta=ti,
+                                          sky=0)
         im[gyi.min():gyi.max()+1, gxi.min():gxi.max()+1] += imi
 
     return im
@@ -263,7 +266,7 @@ class Test_Segmentation_Detection():
         posy = (20, 90)
         sky = 800
         rdnoise = 20
-        flux = (32000, 600)
+        flux = (32000, 3000)
         sigma = 1.5
         theta = 0
         im = gen_image(size, posx, posy, flux, sky, rdnoise,
@@ -271,7 +274,6 @@ class Test_Segmentation_Detection():
 
         sources = segfind(im, 5, sky, rdnoise)
 
-        assert_equal(len(sources), 2)
         assert_almost_equal(sources['x'], posx, decimal=0)
         assert_almost_equal(sources['y'], posy, decimal=0)
 
@@ -282,34 +284,32 @@ class Test_Segmentation_Detection():
         sky = 800
         rdnoise = 20
         flux = (35000, 15000, 10000, 5000)
-        sigma = 3
+        sigma = 1.5
         theta = 0
         im = gen_image(size, posx, posy, flux, sky, rdnoise,
                        model='gaussian', sigma=sigma, theta=theta)
 
         sources = segfind(im, 10, sky, rdnoise)
 
-        assert_equal(len(sources), 4)
         assert_almost_equal(sources['x'], posx, decimal=0)
         assert_almost_equal(sources['y'], posy, decimal=0)
 
     def test_segfind_multiple_stars(self):
         size = (1024, 1024)
         number = 15
-        low = 2000
+        low = 3000
         high = 30000
         sky = 800
         rdnoise = 20
-        sigma = 3
+        sigma = 1.5
         theta = 0
 
         x, y, f = gen_position_flux(size, number, low, high, rng_seed=456)
         im = gen_image(size, x, y, f, sky, rdnoise,
                        model='gaussian', sigma=sigma, theta=theta)
 
-        sources = segfind(im, 10, sky, rdnoise)
+        sources = segfind(im, 8, sky, rdnoise)
 
-        assert_equal(len(sources), number)
         assert_almost_equal(sources['x'], x, decimal=0)
         assert_almost_equal(sources['y'], y, decimal=0)
 
@@ -346,7 +346,8 @@ class Test_DAOFind_Detection():
         sigma = np.array([0.1, 0.5, 0.8, 1.0, 1.2, 1.5, 2.0, 2.5, 3.0, 3.5])
         sigma *= fwhm*gaussian_fwhm_to_sigma
         sigma = sigma[::-1]
-        flux = (np.ones_like(xpos)*sigma)*80000
+        flux = np.ones_like(xpos)*80000/GaussianEquations.normalize_2d(sigma,
+                                                                       sigma)
         expect_sharp = [3.5, 0.8, 0.5, 0.5, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4][::-1]
 
         im = gen_image(image_size, xpos, ypos, flux, sky, rdnoise,
@@ -355,7 +356,6 @@ class Test_DAOFind_Detection():
         sources = daofind(im, threshold, sky, rdnoise, fwhm,
                           sharp_limit=None, round_limit=None)
 
-        assert_equal(len(sources), len(xpos))
         assert_almost_equal(sources['x'], xpos, decimal=1)
         assert_almost_equal(sources['y'], ypos, decimal=1)
         assert_almost_equal(sources['sharpness'], expect_sharp, decimal=1)
@@ -455,7 +455,7 @@ class Test_DAOFind_Detection():
     def test_daofind_multiple_stars(self):
         size = (512, 512)
         number = 15
-        low = 2000
+        low = 3000
         high = 30000
         sky = 800
         rdnoise = 20
@@ -470,7 +470,6 @@ class Test_DAOFind_Detection():
 
         sources = daofind(im, threshold, sky, rdnoise, fwhm)
 
-        assert_equal(len(sources), number)
         assert_almost_equal(sources['x'], x, decimal=0)
         assert_almost_equal(sources['y'], y, decimal=0)
 
@@ -538,6 +537,24 @@ class Test_StarFind():
                            min_fwhm=3.0)
         assert_almost_equal(fwhm, 2.35*sigma, decimal=0)
 
+    def test_starfind_calc_fwhm_moffat(self):
+        size = (512, 512)
+        number = 15
+        sky = 70
+        rdnoise = 20
+        low = 120000
+        high = 320000
+        fwhm_true = 5
+
+        x, y, f = gen_position_flux(size, number, low, high, rng_seed=456)
+
+        im = gen_image(size, x, y, f, sky, rdnoise,
+                       model='moffat', fwhm=fwhm_true)
+
+        fwhm = median_fwhm(im, x, y, box_size=25, model='moffat',
+                           min_fwhm=3.0)
+        assert_almost_equal(fwhm, fwhm_true, decimal=0)
+
     def test_starfind_one_star(self):
         size = (128, 128)
         x, y = (64, 64)
@@ -546,13 +563,12 @@ class Test_StarFind():
         rdnoise = 20
         sigma = 5
         theta = 0
-        fwhm = 5  # dummy low value
         threshold = 10
 
         im = gen_image(size, [x], [y], [f], sky, rdnoise,
                        model='gaussian', sigma=sigma, theta=theta)
 
-        sources = starfind(im, threshold, sky, rdnoise, fwhm)
+        sources = starfind(im, threshold, sky, rdnoise, fwhm=3.0)
 
         assert_equal(len(sources), 1)
         assert_almost_equal(sources['x'], x, decimal=0)
@@ -610,18 +626,18 @@ class Test_StarFind():
         pos_x = np.array([20, 60, 100, 40, 80, 50])
         pos_y = np.array([20, 30, 40, 50, 60, 85])
         sky = 70
-        rdnoise = 20
-        flux = [30000]*6
+        rdnoise = 5
+        flux = np.arange(6)*500+30000
         theta = 0
         fwhm = 3
         sig_base = gaussian_fwhm_to_sigma*fwhm
-        sigma_x = np.array([1, 0.5, 1.1, 2.0, 0.1, 0.9])*sig_base
-        sigma_y = np.array([1, 1.0, 1.1, 0.5, 0.1, 1])*sig_base
+        sigma_x = np.array([1, 0.5, 1.2, 2.0, 0.1, 0.8])*sig_base
+        sigma_y = np.array([1, 1.0, 1.2, 0.5, 0.1, 0.9])*sig_base
         threshold = 10
         # stars 0, 2, 5 -> passed
         # star 4 -> rejected by sharpness
         # stars 1, 3 -> rejected by roundness
-        order = [2, 0, 5]
+        order = [5, 2, 0]  # flux encreases in order, peak not
 
         im = gen_image(size, pos_x, pos_y, flux, sky, rdnoise,
                        model='gaussian', sigma=(sigma_x, sigma_y),

@@ -2,6 +2,7 @@
 
 import numpy as np
 from astropy.convolution import convolve
+from astropy.modeling.fitting import LevMarLSQFitter
 from astropy.nddata.utils import overlap_slices
 from astropy.table import Table
 from scipy.optimize import curve_fit
@@ -10,8 +11,7 @@ from photutils.morphology import data_properties
 from photutils.segmentation import SourceFinder, SourceCatalog, \
                                    make_2dgaussian_kernel
 
-from astropop.math.moffat import moffat_r, moffat_fwhm
-from astropop.math.gaussian import gaussian_r, gaussian_fwhm
+from astropop.math.models import PSFMoffatRadial, PSFGaussianRadial
 from astropop.math.array import trim_array, xy2r
 
 
@@ -350,8 +350,6 @@ def daofind(data, threshold, background, noise, fwhm,
 
     # reorder the sources by flux
     res.sort('flux', reverse=True)  # Sort the results by flux.
-
-    res.sort('flux', reverse=True)
     res['id'] = np.arange(len(res))+1
 
     return res
@@ -436,6 +434,10 @@ def starfind(data, threshold, background, noise, fwhm=None, mask=None,
     # First, we identify the sources with sepfind (fwhm independent)
     sources = segfind(data, threshold, background, noise, mask=mask)
     fwhm = np.median(sources['fwhm'])  # get the median fwhm from the sources
+    # we need to recompute, as the values getting returned seems to be
+    # underestimated
+    fwhm = median_fwhm(data, sources['x'], sources['y'], 5*fwhm,
+                       model='gaussian')
 
     # Perform daofind using the optimal median fwhm
     s = daofind(data, threshold, background, noise, 1.5*fwhm, mask=mask,
@@ -532,24 +534,37 @@ def _fwhm_loop(model, data, x, y, xc, yc):
         x and y indexes ofthe pixels in the image.
     xc, yc: array_like
         x and y initial guess positions of the source.
+
+    Returns
+    -------
+    fwhm: `float`
+        FWHM of the source.
+
+    Notes
+    -----
+    The sigma of the gaussian is capped to 100 pixels. The same as the Moffat
+    width.
     """
     if model == 'gaussian':
-        model = gaussian_r
-        mfwhm = gaussian_fwhm
-        p0 = (1.0, np.max(data), np.min(data))
+        m = PSFGaussianRadial(sigma=1, flux=np.max(data), sky=np.min(data),
+                              bounds={'sigma': (0.01, 100),
+                                      'sky': (np.min(data), np.max(data))})
     elif model == 'moffat':
-        model = moffat_r
-        mfwhm = moffat_fwhm
-        p0 = (1.0, 1.5, np.max(data), np.min(data))
+        m = PSFMoffatRadial(width=1, power=1.5, flux=np.max(data),
+                            sky=np.min(data),
+                            bounds={'width': (0.01, 100),
+                                    'power': (1.01, 10),
+                                    'sky': (np.min(data), np.max(data))})
     else:
         raise ValueError(f'Model {model} not available.')
+    fitter = LevMarLSQFitter()
     r, f = xy2r(x, y, data, xc, yc)
     args = np.argsort(r)
     try:
-        popt, _ = curve_fit(model, r[args], f[args], p0=p0)
-        return mfwhm(*popt[:-2])
-    except Exception:
-        return np.nan
+        m_fit = fitter(m, r[args], f[args])
+        return m_fit.fwhm
+    except Exception as e:
+        raise e
 
 
 def median_fwhm(data, x, y, box_size=25, model='gaussian', min_fwhm=3.0):
