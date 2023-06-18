@@ -30,6 +30,7 @@ def test_iraf_indices():
     assert_equal(x, [[0, 1], [0, 1]])
     assert_equal(y, [[0, 0], [1, 1]])
 
+
 class Test_AllEqual():
     def test_all_equal_1d_true(self):
         a = np.ones(10)
@@ -95,7 +96,6 @@ class Test_TrimArray():
         assert_equal(np.min(ta), 39*39)
         assert_equal(np.max(ta), 60*60)
 
-
     def test_trim_array_right(self):
         y, x = np.indices((100, 100))
         a = x*y
@@ -109,7 +109,6 @@ class Test_TrimArray():
         assert_equal(np.max(ty), 60)
         assert_equal(np.min(ta), 84*39)
         assert_equal(np.max(ta), 99*60)
-
 
     def test_trim_array_left(self):
         y, x = np.indices((100, 100))
@@ -125,7 +124,6 @@ class Test_TrimArray():
         assert_equal(np.min(ta), 0*39)
         assert_equal(np.max(ta), 15*60)
 
-
     def test_trim_array_bottom(self):
         y, x = np.indices((100, 100))
         a = x*y
@@ -139,7 +137,6 @@ class Test_TrimArray():
         assert_equal(np.max(tx), 60)
         assert_equal(np.min(ta), 0*39)
         assert_equal(np.max(ta), 15*60)
-
 
     def test_trim_array_top(self):
         y, x = np.indices((100, 100))
@@ -155,7 +152,6 @@ class Test_TrimArray():
         assert_equal(np.min(ta), 84*39)
         assert_equal(np.max(ta), 99*60)
 
-
     def test_trim_array_no_indices(self):
         y, x = np.indices((100, 100))
         a = x*y
@@ -164,7 +160,6 @@ class Test_TrimArray():
         assert_equal(tx, 11)
         assert_equal(ty, 11)
 
-
     def test_trim_array_one_origin(self):
         y, x = np.indices((100, 100))
         a = x*y
@@ -172,7 +167,6 @@ class Test_TrimArray():
         assert_equal(ta, a[85:, 40:62])
         assert_equal(tx, 11)
         assert_equal(ty, 11)
-
 
     def test_trim_array_even(self):
         y, x = np.indices((100, 100))
