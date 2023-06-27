@@ -85,7 +85,9 @@ def gen_stars_gaussian(size, x, y, flux, sigma, theta):
 
 def gen_image(size, x, y, flux, sky, rdnoise, model='gaussian', **kwargs):
     """Generate a full image of stars with noise."""
-    im = gen_bkg(size, sky, rdnoise)
+    im = np.ones(size)*sky
+    if rdnoise > 0:
+        im = gen_bkg(size, sky, rdnoise)
 
     if model == 'moffat':
         fwhm = kwargs.pop('fwhm')

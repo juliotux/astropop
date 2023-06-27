@@ -144,14 +144,15 @@ def _recenter_sources(data, x, y, r, limit, method, mask):
 
     # Recenter only the sources with a distance smaller than the limit
     idx = np.where(diff < limit)[0]
-    if len(idx) != 0:
-        logger.info(f'{len(idx)} have failed on recentering.')
+    idx_f = np.where(diff > limit)[0]
+    if len(idx_f) != 0:
+        logger.info(f'{len(idx_f)} have failed on recentering.')
     x[idx] = new_x[idx]
     y[idx] = new_y[idx]
 
     # associate the error flag
-    error = np.zeros(len(x))
-    error[idx] = PhotometryFlags.RECENTERING_FAILED
+    error = np.zeros(len(x), dtype=PhotometryFlags.dtype)
+    error[idx_f] = PhotometryFlags.RECENTERING_FAILED.value
 
     return x, y, error
 
@@ -299,8 +300,8 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto',
     data = np.array(data)/gain
 
     # copy x and y to avoid changing the original
-    nx = np.array(x)
-    ny = np.array(y)
+    nx = np.array(x, dtype='f8')
+    ny = np.array(y, dtype='f8')
 
     flags = np.zeros(len(x), dtype=np.int16)
 
@@ -371,15 +372,18 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto',
                               PhotometryFlags.SATURATED_PIXEL_IN_APERTURE)
     # TODO: nearby sources
 
-    res_ap['x'] = x
-    res_ap['y'] = y
+    res_ap['x'] = nx
+    res_ap['y'] = ny
     res_ap['aperture'] = [r]*len(x)
     res_ap['flux'] = ap_stats.sum
     res_ap['flux_error'] = ap_stats.sum_err
     res_ap['aperture_area'] = ap_stats.sum_aper_area
-    res_ap['bkg'] = bkg or np.nan
-    res_ap['bkg_stddev'] = bkg_std or np.nan
-    res_ap['bkg_area'] = bkg_area or np.nan
+    for k, v in [('bkg', bkg), ('bkg_stddev', bkg_std),
+                 ('bkg_area', bkg_area)]:
+        if v is not None:
+            res_ap[k] = v
+        else:
+            res_ap[k] = np.nan
     res_ap['flags'] = flags
     res_ap['original_x'] = x
     res_ap['original_y'] = y
