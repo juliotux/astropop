@@ -19,3 +19,21 @@ for k in _fits_compression:
 
 imhdus = (fits.ImageHDU, fits.PrimaryHDU, fits.CompImageHDU,
           fits.StreamingHDU)
+
+
+def string_to_header_key(string: str) -> str:
+    """Convert a string to a header key following FITS standard.
+
+    Parameters
+    ----------
+    string : str
+        String to convert to header key.
+    """
+    # for non hierarch keys, we will use casefold
+    if fits.Card._keywd_FSC_RE.match(string.upper()) and len(string) <= 8:
+        return string.casefold()
+
+    # these cases should go to hierarch
+    if string.casefold().startswith('hierarch '):
+        string = string[9:]
+    return string
