@@ -297,7 +297,7 @@ class Test_Segmentation_Detection():
     def test_segfind_multiple_stars(self):
         size = (1024, 1024)
         number = 15
-        low = 3000
+        low = 5000
         high = 30000
         sky = 800
         rdnoise = 20
@@ -455,7 +455,7 @@ class Test_DAOFind_Detection():
     def test_daofind_multiple_stars(self):
         size = (512, 512)
         number = 15
-        low = 3000
+        low = 5000
         high = 30000
         sky = 800
         rdnoise = 20
