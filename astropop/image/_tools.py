@@ -6,6 +6,7 @@ from astropy.io.fits import Header
 
 from ..logger import logger
 from ..framedata._compat import _normalize_and_strip_dict
+from ..fits_utils import string_to_header_key
 
 __all__ = ['merge_header', 'merge_flag']
 
@@ -71,6 +72,7 @@ def merge_header(*headers, method='same', selected_keys=None):
 
     for k in keys:
         # do not use np.unique to avoid problems with None
+        k = string_to_header_key(k)
         uniq = list(set(summary[k]))
         if len(uniq) == 1:
             meta[k] = uniq[0]

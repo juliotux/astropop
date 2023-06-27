@@ -16,7 +16,7 @@ from astropy import units as u
 
 
 from ..logger import logger
-from ..fits_utils import imhdus
+from ..fits_utils import imhdus, string_to_header_key
 
 
 _PCs = set(['PC1_1', 'PC1_2', 'PC2_1', 'PC2_2'])
@@ -110,7 +110,7 @@ def _normalize_and_strip_dict(meta):
     comment = []
 
     for k, v in meta.items():
-        k = fits.Card.normalize_keyword(k)
+        k = string_to_header_key(k)
         # pop history and comment
         if k == 'HISTORY':
             if np.isscalar(v):

@@ -156,8 +156,7 @@ class TestFrameData2CCDData:
         assert_equal(ccd.data, 100*np.ones(self.shape))
         assert_equal(ccd.unit, self.unit)
         for i in self.meta.keys():
-            ni = fits.Card.normalize_keyword(i)
-            assert_equal(ccd.meta[ni], self.meta[i])
+            assert_equal(ccd.meta[i], self.meta[i])
         assert_equal(ccd.mask, np.zeros(self.shape, dtype=bool))
         assert_is_none(ccd.uncertainty)
 
@@ -169,8 +168,7 @@ class TestFrameData2CCDData:
         assert_equal(ccd.data, 100*np.ones(self.shape))
         assert_equal(ccd.unit, self.unit)
         for i in self.meta.keys():
-            ni = fits.Card.normalize_keyword(i)
-            assert_equal(ccd.meta[ni], self.meta[i])
+            assert_equal(ccd.meta[i], self.meta[i])
         assert_equal(ccd.mask, self.mask)
         assert_is_none(ccd.uncertainty, str(ccd.uncertainty))
 
@@ -182,8 +180,7 @@ class TestFrameData2CCDData:
         assert_equal(ccd.data, 100*np.ones(self.shape))
         assert_equal(ccd.unit, self.unit)
         for i in self.meta.keys():
-            ni = fits.Card.normalize_keyword(i)
-            assert_equal(ccd.meta[ni], self.meta[i])
+            assert_equal(ccd.meta[i], self.meta[i])
         assert_equal(ccd.mask, np.zeros(self.shape, dtype=bool))
         assert_equal(ccd.uncertainty.array, np.ones(self.shape))
         assert_equal(ccd.uncertainty.unit, self.unit)
@@ -198,8 +195,7 @@ class TestFrameData2CCDData:
         assert_equal(ccd.data, 100*np.ones(self.shape))
         assert_equal(ccd.unit, self.unit)
         for i in self.meta.keys():
-            ni = fits.Card.normalize_keyword(i)
-            assert_equal(ccd.meta[ni], self.meta[i])
+            assert_equal(ccd.meta[i], self.meta[i])
         assert_equal(ccd.mask, self.mask)
         assert_equal(ccd.uncertainty.array, np.ones(self.shape))
         assert_equal(ccd.uncertainty.unit, self.unit)
