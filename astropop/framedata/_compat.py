@@ -16,18 +16,19 @@ from astropy import units as u
 
 
 from ..logger import logger
-from ..fits_utils import imhdus
-from ..py_utils import broadcast
-
-
-__all__ = ['imhdus', 'EmptyDataError']
+from ..fits_utils import imhdus, string_to_header_key
 
 
 _PCs = set(['PC1_1', 'PC1_2', 'PC2_1', 'PC2_2'])
 _CDs = set(['CD1_1', 'CD1_2', 'CD2_1', 'CD2_2'])
 _KEEP = set(['JD-OBS', 'MJD-OBS', 'DATE-OBS'])
+_PROCTECTED = ["SIMPLE", "XTENSION", "BITPIX", "NAXIS", "EXTEND", "PCOUNT",
+               "GCOUNT", "GROUPS", "BSCALE", "BZERO", "TFIELDS"]
+_PROTECTED_N = ["TFORM", "TSCAL", "TZERO", "TNULL", "TTYPE", "TUNIT", "TDISP",
+                "TDIM", "THEAP", "TBCOL"]
 _HDU_UNCERT = 'UNCERT'
 _HDU_MASK = 'MASK'
+_HDU_FLAGS = 'PIXFLAGS'
 _UNIT_KEY = 'BUNIT'
 
 
@@ -99,56 +100,88 @@ def extract_header_wcs(header):
     return (header, wcs)
 
 
+def _normalize_and_strip_dict(meta):
+    """Normalize meta keys and remove the protected ones."""
+    if meta is None:
+        return {}, [], []
+
+    nmeta = {}
+    history = []
+    comment = []
+
+    for k, v in meta.items():
+        k = string_to_header_key(k)
+        # pop history and comment
+        if k == 'HISTORY':
+            if np.isscalar(v):
+                history.append(v)
+            else:
+                history.extend(v)
+            continue
+        if k == 'COMMENT':
+            if np.isscalar(v):
+                comment.append(v)
+            else:
+                comment.extend(v)
+            continue
+
+        if k in nmeta:
+            # as dicts are case sensitive, this can happen. Raise error
+            raise KeyError(f'Duplicated key {k}. Only dictionaries with '
+                           'unique keys are allowed.')
+        if k not in _PROCTECTED and k != '':
+            # remove protected keys
+            nmeta[k] = v
+
+    # remove protected keys with number
+    naxis = nmeta.get('NAXIS', 0)
+    tfields = nmeta.get('TFIELDS', 0)
+    for i in range(1, naxis+1):
+        if f'NAXIS{i}' in meta:
+            meta.pop(f'NAXIS{i}')
+    for i in range(1, tfields+1):
+        for k in _PROTECTED_N:
+            if f'{k}{i}' in meta:
+                meta.pop(f'{k}{i}')
+
+    return nmeta, history, comment
+
+
 def _merge_and_clean_header(meta, header, wcs):
     """Merge meta and header and clean the WCS and spurious keys."""
-    for i in (meta, header, wcs):
-        if not isinstance(i, (dict, fits.Header, WCS)) and i is not None:
-            raise TypeError(f'{i} is not a compatible format.')
+    if not isinstance(meta, (dict, fits.Header)) and meta is not None:
+        raise TypeError('meta must be a dict or fits.Header. '
+                        f'Got {type(meta)}')
+    if not isinstance(header, fits.Header) and header is not None:
+        raise TypeError('header must be a fits.Header. '
+                        f'Got {type(header)}')
+    if not isinstance(wcs, WCS) and wcs is not None:
+        raise TypeError('wcs must be a astropy.wcs.WCS. '
+                        f'Got {type(wcs)}')
 
-    if header is not None:
-        header = fits.Header(header)
-        header.strip()
-    else:
-        header = fits.Header()
+    history = []
+    comment = []
+    fmeta = fits.Header()
 
-    if meta is not None:
-        meta = fits.Header(meta)
-        meta.strip()
-    else:
-        meta = fits.Header()
-
-    meta.update(header)
-
-    # strip blank cards
-    meta.remove('', ignore_missing=True)
-
-    # extract history and comments from meta
-    if 'history' in meta:
-        history = meta['history']
-        history = list(broadcast(history).iters[0])
-        del meta['history']
-    else:
-        history = []
-
-    if 'comment' in meta:
-        comment = meta['comment']
-        comment = list(broadcast(comment).iters[0])
-        del meta['comment']
-    else:
-        comment = []
+    for m in [meta, header]:
+        m, h, c = _normalize_and_strip_dict(m)
+        # extract history and comments from meta
+        history.extend(h)
+        comment.extend(c)
+        # merge meta and header
+        fmeta.update(m)
 
     # extract wcs from header
-    meta, wcs_ = extract_header_wcs(meta)
+    meta, wcs_ = extract_header_wcs(fmeta)
+    if wcs_ and wcs:
+        raise ValueError('meta and wcs offer a WCS. Use only one.')
     wcs = wcs_ if wcs is None else wcs
     return meta, wcs, history, comment
 
 
-class EmptyDataError(ValueError):
-    """Operation not handled by empty MemMapArray containers."""
-
-
 def _extract_fits(obj, hdu=0, unit=None, hdu_uncertainty=_HDU_UNCERT,
-                  hdu_mask=_HDU_MASK, unit_key=_UNIT_KEY):
+                  hdu_flags=_HDU_FLAGS, hdu_mask=_HDU_MASK,
+                  unit_key=_UNIT_KEY):
     """Extract data and meta from FITS files and HDUs."""
     if isinstance(obj, (str, bytes, PathLike)):
         hdul = fits.open(obj)
@@ -208,6 +241,8 @@ def _extract_fits(obj, hdu=0, unit=None, hdu_uncertainty=_HDU_UNCERT,
     if isinstance(obj, (str, bytes, PathLike)):
         hdul.close()
 
+    # TODO: extract flags
+
     return res
 
 
@@ -248,9 +283,7 @@ def _to_ccddata(frame):
     meta = dict(frame.header)
     wcs = frame.wcs
     uncertainty = frame._unct
-    if uncertainty.empty:
-        uncertainty = None
-    else:
+    if uncertainty is not None:
         uncertainty = StdDevUncertainty(uncertainty, unit=unit)
     mask = np.array(frame.mask)
 
@@ -258,50 +291,52 @@ def _to_ccddata(frame):
                    uncertainty=uncertainty, mask=mask)
 
 
-def _to_hdu(frame, hdu_uncertainty=_HDU_UNCERT, hdu_mask=_HDU_MASK,
-            unit_key=_UNIT_KEY, wcs_relax=True, **kwargs):
+def _to_hdu(frame, hdu_uncertainty=_HDU_UNCERT, hdu_flags=_HDU_FLAGS,
+            hdu_mask=_HDU_MASK, unit_key=_UNIT_KEY, wcs_relax=True, **kwargs):
     """Translate a FrameData to an HDUList."""
     data = frame.data.copy()
 
     # Clean header
     header = fits.Header(frame.header)
-    no_fits_std = kwargs.pop('no_fits_standard_units', True)
 
     if frame.wcs is not None:
         header.extend(frame.wcs.to_header(relax=wcs_relax),
                       update=True)
 
+    # using bare string avoids astropy complaining about electrons
+    no_fits_std = kwargs.pop('no_fits_standard_units', True)
     if no_fits_std:
         unit_string = frame.unit.to_string()
     else:
         unit_string = u.format.Fits.to_string(frame.unit)
-
     header[unit_key] = unit_string
 
     for i in frame.history:
         header['history'] = i
+    for i in frame.comment:
+        header['comment'] = i
     hdul = fits.HDUList(fits.PrimaryHDU(data, header=header))
 
-    if hdu_uncertainty and not frame._unct.empty:
+    if hdu_uncertainty and frame._unct is not None:
         uncert = frame.uncertainty
         uncert_h = fits.Header()
         uncert_h[unit_key] = unit_string
         hdul.append(fits.ImageHDU(uncert, header=uncert_h,
                                   name=hdu_uncertainty))
 
-    if hdu_mask is not None and not frame._mask.empty:
-        mask = frame.mask
-        if np.issubdtype(mask.dtype, np.bool_):
-            # Fits do not support bool
-            mask = mask.astype('uint8')
-        hdul.append(fits.ImageHDU(mask, name=hdu_mask))
+    if hdu_mask:
+        mask = frame.mask.astype(np.uint8)
+        if mask is not None:
+            mask_h = fits.Header()
+            hdul.append(fits.ImageHDU(mask, header=mask_h, name=hdu_mask))
+
+    # TODO: add flags
 
     return hdul
 
 
 def _write_fits(frame, filename, overwrite=True, **kwargs):
     """Write a framedata to a fits file."""
-    # FIXME: electron unit is not compatible with fits standards
     with warnings.catch_warnings():
         # silent hierarch warnings
         warnings.filterwarnings("ignore", category=VerifyWarning)

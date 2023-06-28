@@ -3,7 +3,7 @@
 
 import pytest
 import numpy as np
-from astropop.framedata.compat import extract_header_wcs, _extract_ccddata, \
+from astropop.framedata._compat import extract_header_wcs, _extract_ccddata, \
                                       _extract_fits, _merge_and_clean_header
 from astropy.io import fits
 from astropy.wcs import WCS
@@ -19,7 +19,8 @@ from astropop.testing import *
 _comon_wcs_keys = ('CTYPE', 'CRVAL', 'CRPIX', 'CD1_', 'CD2_', 'PC1_', 'PC2_')
 
 
-_base_header = """SIMPLE  =                    T / Fits standard
+_base_header = """
+SIMPLE  =                    T / Fits standard
 BITPIX  =                  -32 / FOUR-BYTE SINGLE PRECISION FLOATING POINT
 NAXIS   =                    2 / STANDARD FITS FORMAT
 NAXIS1  =                  256 / STANDARD FITS FORMAT
@@ -122,7 +123,92 @@ COMMENT This is a second comment
 COMMENT This is a third comment
 """
 
-class Test_ExtractHeader():
+
+class Test_MergeAndCleanHeader():
+    def test_types_meta_dict(self):
+        meta = {'META1': 1, 'META2': 2}
+        meta, wcs, history, comments = _merge_and_clean_header(meta, None,
+                                                               None)
+        assert_is_instance(meta, fits.Header)
+        assert_equal(meta['META1'], 1)
+        assert_equal(meta['META2'], 2)
+        assert_is_none(wcs)
+        assert_equal(history, [])
+        assert_equal(comments, [])
+
+    def test_types_meta_header(self):
+        meta = fits.Header()
+        meta['META1'] = 1
+        meta['META2'] = 2
+        meta, wcs, history, comments = _merge_and_clean_header(meta, None,
+                                                               None)
+        assert_is_instance(meta, fits.Header)
+        assert_equal(meta['META1'], 1)
+        assert_equal(meta['META2'], 2)
+        assert_is_none(wcs)
+        assert_equal(history, [])
+        assert_equal(comments, [])
+
+    def test_types_meta_invalid(self):
+        meta = 'invalid'
+        with pytest.raises(TypeError):
+            _merge_and_clean_header(meta, None, None)
+
+    def test_types_header(self):
+        header = fits.Header()
+        header['META1'] = 1
+        header['META2'] = 2
+        meta, wcs, history, comments = _merge_and_clean_header(None, header,
+                                                               None)
+        assert_is_instance(meta, fits.Header)
+        assert_equal(meta['META1'], 1)
+        assert_equal(meta['META2'], 2)
+        assert_is_none(wcs)
+        assert_equal(history, [])
+        assert_equal(comments, [])
+
+    def test_types_invalid(self):
+        header = 'invalid'
+        with pytest.raises(TypeError):
+            _merge_and_clean_header(None, header, None)
+
+    def test_types_wcs(self):
+        wcs = WCS(naxis=2)
+        wcs.wcs.ctype = ['RA---TAN', 'DEC--TAN']
+        meta, wcs, history, comments = _merge_and_clean_header(None, None,
+                                                               wcs)
+        assert_is_instance(meta, fits.Header)
+        assert_is_instance(wcs, WCS)
+        assert_equal(history, [])
+        assert_equal(comments, [])
+
+    def test_types_invalid_wcs(self):
+        wcs = 'invalid'
+        with pytest.raises(TypeError):
+            _merge_and_clean_header(None, None, wcs)
+
+    def test_dict_meta_history(self):
+        meta = {'META1': 1, 'META2': 2, 'history': ['test a', 'test b']}
+        meta, wcs, history, comments = _merge_and_clean_header(meta, None,
+                                                               None)
+        assert_is_instance(meta, fits.Header)
+        assert_equal(meta['META1'], 1)
+        assert_equal(meta['META2'], 2)
+        assert_is_none(wcs)
+        assert_equal(history, ['test a', 'test b'])
+        assert_equal(comments, [])
+
+    def test_dict_meta_comment(self):
+        meta = {'META1': 1, 'META2': 2, 'comment': ['test a', 'test b']}
+        meta, wcs, history, comments = _merge_and_clean_header(meta, None,
+                                                               None)
+        assert_is_instance(meta, fits.Header)
+        assert_equal(meta['META1'], 1)
+        assert_equal(meta['META2'], 2)
+        assert_is_none(wcs)
+        assert_equal(history, [])
+        assert_equal(comments, ['test a', 'test b'])
+
     def test_merge_and_clean_header(self):
         strhdr = _base_header+_wcs_no_sip+_hist_comm_blank
         header = fits.Header.fromstring(strhdr, sep='\n')
@@ -155,6 +241,14 @@ class Test_ExtractHeader():
                                 'This is a second comment',
                                 'This is a third comment'])
 
+    def test_extract_wcs_meta_conflict(self):
+        header = fits.Header.fromstring(_base_header+_wcs_no_sip, sep='\n')
+        wcs = WCS(header)
+        with pytest.raises(ValueError, match='meta and wcs'):
+            _merge_and_clean_header(header, None, wcs=wcs)
+
+
+class Test_ExtractHeader():
     def test_extract_header_nowcs(self):
         header = fits.Header.fromstring(_base_header, sep='\n')
         h, wcs = extract_header_wcs(header)
@@ -301,21 +395,21 @@ class Test_Fits_Extract():
 
     def create_hdu(self, uncert=False, mask=False,
                    unit='adu', unit_key='BUNIT'):
-        l = []
+        li = []
         data = 100*np.ones(self.shape)
         header = self.create_header(unit=unit, unit_key=unit_key)
         data_hdu = fits.PrimaryHDU(data, header=header)
-        l.append(data_hdu)
+        li.append(data_hdu)
 
         if uncert:
             uncert_hdu = fits.ImageHDU(np.ones(self.shape), name='UNCERT')
-            l.append(uncert_hdu)
+            li.append(uncert_hdu)
 
         if mask:
             mask_hdu = fits.ImageHDU(self.mask.astype('uint8'), name='MASK')
-            l.append(mask_hdu)
+            li.append(mask_hdu)
 
-        hdul = fits.HDUList(l)
+        hdul = fits.HDUList(li)
         return hdul
 
     def create_header(self, unit=None, unit_key=None):

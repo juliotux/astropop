@@ -29,9 +29,9 @@ jobs:
             python: '3.11'
             toxenv: py311-test-devdeps-online
 
-          - name: Python 3.7 with old deps
-            python: '3.7'
-            toxenv: py37-test-olddeps
+          - name: Python 3.8 with old deps (online)
+            python: '3.8'
+            toxenv: py38-test-olddeps-online
 
           - name: Python 3.8 with lts deps (online)
             python: '3.8'
@@ -148,7 +148,7 @@ jobs:
     - name: Run Pytest and generate coverage
       shell: bash -l {0}
       run: |
-        pytest --pyargs ./tests ./docs --remote-data --reruns=1 --reruns-delay 10 --cov astropop --cov-config=./setup.cfg
+        pytest --pyargs ./tests ./docs --remote-data --cov astropop --cov-config=./setup.cfg
         coverage xml -o ./coverage.xml
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3

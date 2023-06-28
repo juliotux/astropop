@@ -16,6 +16,7 @@ __all__ = ['string_fix', 'process_list', 'check_iterable',
            'broadcast', 'run_command']
 
 
+@np.deprecate(message="This function will be removed 1.0.")
 def process_list(func, iterator, *args, **kwargs):
     """Run a function func for all i in a iterator list.
 
@@ -68,6 +69,7 @@ def string_fix(string, encode='utf-8'):
     return string
 
 
+@np.deprecate(message="This function will be removed 1.0. Use np.isscalar.")
 def check_iterable(value):
     """Check if a value is iterable (list), but not a string.
 

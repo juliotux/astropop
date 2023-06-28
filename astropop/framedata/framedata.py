@@ -1,66 +1,56 @@
-# Licensed under a 3-clause BSD style license - see LICENSE.rst
-"""Custom frame class to support memmapping."""
+"""Custom frame class to support memmapping.
 
-# Important: We reimplemented and renamed astropy's frame to better
-# handle disk memmap and an easier unit/uncertainty workflow
+We reimplemented and renamed astropy's frame to better handle disk memmap and
+an easier unit/uncertainty workflow
+"""
+
+# Important:
 
 import os
-import numpy as np
 import copy as cp
+import numpy as np
 import tempfile
+from enum import Flag
 from astropy import units as u
 from astropy.io import fits
 from astropy.wcs import WCS
 
-from ..py_utils import check_iterable
-from .memmap import MemMapArray
-from .compat import _to_ccddata, _to_hdu, _merge_and_clean_header, _write_fits
+from ..flags import mask_from_flags
+from ._memmap import create_array_memmap, delete_array_memmap, \
+                     reset_memmap_array
+from ._compat import _merge_and_clean_header, _to_hdu, _to_ccddata, _write_fits
 from .._unit_property import unit_property
 
 
-__all__ = ['FrameData']
+__all__ = ['FrameData', 'PixelMaskFlags']
 
 
-def _get_shape(d):
-    if hasattr(d, 'shape'):
-        ds = d.shape
-    else:
-        ds = np.array(d).shape
-    return ds
-
-
-def shape_consistency(data=None, uncertainty=None, mask=None):
+def shape_consistency(data=None, uncertainty=None, mask=None, flags=None):
     """Check shape consistency across `data`, `uncertaitny` and `mask`."""
-    if data is None and uncertainty is not None:
-        raise ValueError('Uncertainty set for an empty data.')
-    if data is None and mask not in (None, False):
-        raise ValueError('Mask set for an empty data.')
+    dshape = np.shape(data)
 
-    dshape = _get_shape(data)
+    def _check(arr, name, replicate=False):
+        if arr is None:
+            return
+        if arr is not None and data is None:
+            raise ValueError(f'{name} set for an empty data.')
+        ashape = np.shape(arr)
 
-    if uncertainty is not None:
-        ushape = _get_shape(uncertainty)
+        # if replicate, create an array full of value
+        if ashape == () and replicate:
+            arr = np.full(dshape, fill_value=arr)
+            ashape = arr.shape
 
-        if ushape == ():
-            uncertainty = np.ones(dshape)*uncertainty
-            ushape = uncertainty.shape
-
-        if ushape != dshape:
-            raise ValueError(f'Uncertainty shape {ushape} don\'t match'
+        if ashape != dshape:
+            raise ValueError(f'{name} shape {ashape} don\'t match'
                              f' Data shape {dshape}.')
+        return arr
 
-    if mask is not None:
-        mshape = _get_shape(mask)
+    uncertainty = _check(uncertainty, 'Uncertainty', replicate=True)
+    mask = _check(mask, 'Mask', replicate=False)
+    flags = _check(flags, 'Flags', replicate=False)
 
-        if mshape == ():
-            mask = np.logical_or(np.zeros(dshape), mask)
-            mshape = mask.shape
-
-        if mask.shape != dshape:
-            raise ValueError(f'Mask shape {mshape} don\'t match'
-                             f' Data shape {dshape}.')
-
-    return data, uncertainty, mask
+    return data, uncertainty, mask, flags
 
 
 def extract_units(data, unit):
@@ -146,6 +136,25 @@ def setup_filename(frame, cache_folder=None, filename=None):
     return os.path.join(cache_folder, filename)
 
 
+class PixelMaskFlags(Flag):
+    """Flags for pixel masking."""
+    # Type of Masking
+    INTERPOLATED = 1 << 0  # pixel interpolated from neighbors
+    MASKED = 1 << 1  # pixel value removed
+    REMOVED = 1 << 1  # same of masked. Both are equal
+    # Cause of problem
+    DEAD = 1 << 2  # dead pixel
+    BAD = 1 << 3  # bad pixel
+    SATURATED = 1 << 4  # saturated pixel, above a threshold level
+    COSMIC_RAY = 1 << 5  # cosmic ray
+    OUT_OF_BOUNDS = 1 << 6  # registered image. Pixel is out of the bounds
+    UNSPECIFIED = 1 << 7  # not specified
+
+
+# Store this flags as uint8
+PixelMaskFlags.dtype = np.uint8
+
+
 @unit_property
 class FrameData:
     """Data container for image frame to handle memmapping data from disk.
@@ -158,7 +167,8 @@ class FrameData:
     ----------
     data : array_like or `~astropy.units.Quantity`
         The main data values. If `~astropy.units.Quantity`, unit will be set
-        automatically.
+        automatically. If using any quantity with masks, you must set the mask
+        in a separate parameter.
     unit : `~astropy.units.Unit` or string (optional)
         The data unit. Must be `~astropy.units.Unit` compliant.
     dtype : string or `~numpy.dtype` (optional)
@@ -166,12 +176,12 @@ class FrameData:
     uncertainty : array_like or `~astropy.nddata.Uncertanty` or `None` \
                     (optional)
         Uncertainty of the data.
-    u_dtype : string or `~numpy.dtype` (optional)
-        Mandatory dtype of uncertainty.
     mask : array_like or `None` (optional)
-        Frame mask.
-    m_dtype : string or `~numpy.dtype` (optional)
-        Mandatory dtype of mask. Default `bool`compilant
+        Frame mask. All the masked pixels will be flagged as
+        `PixelMaskFlags.MASKED` and `PixelMaskFlags.UNSPECIFIED`.
+    flags : array_like or `None` (optional)
+        Pixel flags for the frame. See `~astropop.FrameData.PixelMaskFlags`.
+        for values.
     wcs : `dict`, `~astropy.fits.Header` or `~astropy.wcs.WCS` (optional)
         World Coordinate System of the image.
     meta or header: `dict` or `astropy.fits.Header` (optional)
@@ -181,6 +191,9 @@ class FrameData:
         Place to store the cached `FrameData`
     cache_filename : string, `~pathlib.Path` or `None` (optional)
         Base file name to store the cached `FrameData`.
+    origin_filename : string, `~pathlib.Path` or `None` (optional)
+        Original file name of the data. If set, it will be stored in the
+        `FrameData` metadata.
     use_memmap_backend : `bool` (optional)
         True if enable memmap in constructor.
 
@@ -194,59 +207,62 @@ class FrameData:
       `~astropop.ccd_processing.imarith` module.
     """
 
-    # TODO: write_fits
-
     _memmapping = False
     _unit = None
     _data = None
-    _mask = None
+    _flags = None
     _unct = None
     _wcs = None
     _meta = None
     _origin = None
     _history = None
     _comments = None
+    cache_folder = None
+    cache_filename = None
 
-    def __init__(self, data, unit=None, dtype=None,
-                 uncertainty=None, u_dtype=None,
-                 mask=None, m_dtype=bool,
-                 wcs=None, meta=None, header=None,
-                 cache_folder=None, cache_filename=None,
-                 use_memmap_backend=False, origin_filename=None):
-
-        self.cache_folder = cache_folder
-        self.cache_filename = cache_filename
+    def __init__(self, data, unit=None, dtype=None, uncertainty=None,
+                 mask=None, flags=None, wcs=None, meta=None, header=None,
+                 cache_folder=None, cache_filename=None, origin_filename=None,
+                 use_memmap_backend=False):
+        # setup names
+        setup_filename(self, cache_folder, cache_filename)
         self._origin = origin_filename
 
-        # Setup MemMapArray instances
-        cache_file = setup_filename(self, self.cache_folder,
-                                    self.cache_filename)
-        self._update_cache_files(cache_file)
+        # Ensure data is not None
+        if len(np.shape(data)) != 2:
+            raise ValueError('Data must be 2D array.')
+        if dtype is not None:
+            dtype = np.dtype(dtype)
+            if dtype.kind != 'f':
+                raise ValueError('Data dtype must be float.')
+        else:
+            dtype = np.dtype('f8')
+
+        # raise errors if incompatible shapes
+        data, uncertainty, mask, flags = shape_consistency(data, uncertainty,
+                                                           mask, flags)
+        # raise errors if incompatible units
+        unit = extract_units(data, unit)
+        self.unit = unit
+
+        # setup flags and mask
+        if flags is None:
+            flags = np.zeros_like(data, dtype=PixelMaskFlags.dtype)
+
+        # set data to the variables
+        self._data = np.asarray(data, dtype=dtype)
+        self.flags = np.asarray(flags, dtype=PixelMaskFlags.dtype)
+        self.uncertainty = uncertainty
+        # create flag for masked pixels
+        if mask is not None:
+            mask = np.asarray(mask, dtype=bool)
+            self.add_flags(PixelMaskFlags.MASKED | PixelMaskFlags.UNSPECIFIED,
+                           mask)
 
         # Check for memmapping.
         self._memmapping = False
         if use_memmap_backend:
             self.enable_memmap()
-
-        # Masking handle
-        if hasattr(data, 'mask'):
-            dmask = data.mask
-            if mask is not None:
-                mask = np.logical_or(dmask, mask)
-            else:
-                mask = dmask
-        if mask is None:  # Default do not mask anything
-            mask = False
-
-        # raise errors if incompatible shapes
-        data, uncertainty, mask = shape_consistency(data, uncertainty, mask)
-        # raise errors if incompatible units
-        unit = extract_units(data, unit)
-        self.unit = unit
-        self._data.reset_data(data, dtype)
-        self._unct.reset_data(uncertainty, u_dtype)
-        # Masks can also be flags (uint8)
-        self._mask.reset_data(mask, m_dtype)
 
         # avoiding security problems
         self._history = []
@@ -261,56 +277,10 @@ class FrameData:
         if len(history) > 0:
             self.history = history
         if len(comment) > 0:
-            self.comments = comment
+            self.comment = comment
         if wcs is not None:
             self._wcs = wcs
         self._meta = meta
-
-    def _update_cache_files(self, cache_file):
-        # TODO: if cache folder is changing, remove it
-        if self._data is not None:
-            self._data.disable_memmap(remove=True)
-            nd = self._data._contained
-        else:
-            nd = None
-        if self._unct is not None:
-            self._unct.disable_memmap(remove=True)
-            nu = self._unct._contained
-        else:
-            nu = None
-        if self._mask is not None:
-            self._mask.disable_memmap(remove=True)
-            nm = self._mask._contained
-        else:
-            nm = None
-
-        self._data = MemMapArray(nd, filename=cache_file + '.data')
-        self._unct = MemMapArray(nu, filename=cache_file + '.unct')
-        self._mask = MemMapArray(nm, filename=cache_file + '.mask')
-
-    @property
-    def history(self):
-        """Get the FrameData stored history."""
-        return self._history
-
-    @history.setter
-    def history(self, value):
-        if check_iterable(value):
-            self._history = self._history + list(value)
-        else:
-            self._history.append(value)
-
-    @property
-    def comment(self):
-        """Get the FrameData stored comments."""
-        return self._comments
-
-    @comment.setter
-    def comment(self, value):
-        if check_iterable(value):
-            self._comments = self._comments + list(value)
-        else:
-            self._comments.append(value)
 
     @property
     def origin_filename(self):
@@ -326,6 +296,10 @@ class FrameData:
     def dtype(self):
         """Get the dta type of the data. `FrameData.data.dtype`."""
         return self._data.dtype
+
+    def astype(self, dtype):
+        """Return a copy of the current FrameData with new dtype in data."""
+        return self.copy(dtype)
 
     @property
     def size(self):
@@ -351,12 +325,36 @@ class FrameData:
 
     @meta.setter
     def meta(self, value):
-        self._header_update(value)
+        self._header_update(None, value)
 
     @property
     def header(self):
         """Get the header (metadata) of the frame."""
         return self._meta
+
+    @property
+    def history(self):
+        """Get the FrameData stored history."""
+        return self._history
+
+    @history.setter
+    def history(self, value):
+        if not np.isscalar(value):
+            self._history = self._history + list(value)
+        else:
+            self._history.append(value)
+
+    @property
+    def comment(self):
+        """Get the FrameData stored comments."""
+        return self._comments
+
+    @comment.setter
+    def comment(self, value):
+        if not np.isscalar(value):
+            self._comments = self._comments + list(value)
+        else:
+            self._comments.append(value)
 
     @property
     def data(self):
@@ -368,7 +366,13 @@ class FrameData:
         if hasattr(value, 'unit'):
             dunit = extract_units(value, None)
             self.unit = dunit
-        self._data.reset_data(value)
+        self._data = reset_memmap_array(self._data, value)
+
+    def get_masked_data(self, fill_value=np.nan):
+        """Return a copy of the data with masked pixels as `fill_value`."""
+        d = self.data.copy()
+        d[self.mask] = fill_value
+        return d
 
     @property
     def uncertainty(self):
@@ -378,11 +382,26 @@ class FrameData:
     @uncertainty.setter
     def uncertainty(self, value):
         if value is None:
-            self._unct.reset_data(value)
+            self._unct = None
+            # do not delete earlier to avoid security issues if other parts of
+            # the code raises error
+            delete_array_memmap(self._unct, read=False, remove=True)
+            return
+
+        # Put is valid containers
+        if np.isscalar(value):
+            value = float(value)
         else:
-            _, value, _ = shape_consistency(self.data, value, None)
-            value = uncertainty_unit_consistency(self.unit, value)
-            self._unct.reset_data(value)
+            value = np.asarray(value, dtype=self.dtype)
+
+        # units and shape must be consistent
+        value = uncertainty_unit_consistency(self.unit, value)
+        _, value, _, _ = shape_consistency(self.data, uncertainty=value)
+
+        # ensure that the memmap is removed
+        self._unct = delete_array_memmap(self._unct, read=False, remove=True)
+        self._unct = value
+        self._update_memmaps()
 
     def get_uncertainty(self, return_none=True):
         """Get the uncertainty frame in a safer way.
@@ -400,62 +419,83 @@ class FrameData:
           matrix filled with zeroes will be returned.
           Default: True
         """
-        if self._unct.empty and return_none:
+        if self._unct is None and return_none:
             return None
-        if self._unct.empty:
-            return np.zeros_like(self._data, dtype=self.dtype)
+        elif self._unct is None:
+            return np.zeros_like(self.data)
         return np.array(self._unct, dtype=self.dtype)
 
     @property
-    def mask(self):
-        """Access mask data."""
-        return self._mask
+    def flags(self):
+        """Get the flags frame container."""
+        return self._flags
 
-    @mask.setter
-    def mask(self, value):
-        _, _, value = shape_consistency(self.data, None, value)
-        self._mask.reset_data(value)
+    @flags.setter
+    def flags(self, value):
+        if value is None:
+            self._flags = None
+            # do not delete earlier to avoid security issues if other parts of
+            # the code raises error
+            delete_array_memmap(self._flags, read=False, remove=True)
+            return
 
-    def astype(self, dtype):
-        """Return a copy of the current FrameData with new dtype in data."""
-        return self.copy(dtype)
+        # Put is valid containers
+        if np.isscalar(value):
+            raise ValueError('Flags cannot be scalar.')
+        elif hasattr(value, 'unit'):
+            raise ValueError('Flags cannot have units.')
+        else:
+            value = np.asarray(value, dtype=PixelMaskFlags.dtype)
+        _, _, _, flags = shape_consistency(self.data, flags=value)
 
-    def copy(self, dtype=None):
-        """Copy the current FrameData to a new instance.
+        self._flags = value
+        self._update_memmaps()
+
+    def add_flags(self, flag, where):
+        """Add a given flag to the pixels in the given positions.
 
         Parameters
         ----------
-        - dtype: `~numpy.dtype` (optional)
-            Data type for the copied FrameData. If `None`, the data type will
-            be the same as the original Framedata.
-            Default: `None`
+        flag : `PixelMaskFlags`
+            Flag to be added.
+        where : `~numpy.ndarray`
+            Positions where the flag will be added.
         """
-        data = np.array(self._data) if not self._data.empty else None
-        mask = np.array(self._mask) if not self._mask.empty else None
-        unct = np.array(self._unct) if not self._unct.empty else None
-        unit = self._unit
-        wcs = cp.copy(self._wcs)
-        meta = fits.Header(self._meta, copy=True)
-        hist = cp.copy(self._history)
-        comm = cp.copy(self._comments)
-        fname = self._origin
-        cache_folder = self.cache_folder
-        cache_fname = self.cache_filename
+        if not isinstance(flag, PixelMaskFlags):
+            raise TypeError('Flag must be a PixelMaskFlags instance.')
+        self._flags[where] |= flag.value
 
-        if dtype is not None:
-            data = data.astype(dtype) if data is not None else data
-            unct = unct.astype(dtype) if unct is not None else unct
+    @property
+    def mask(self):
+        """Mask all flagged pixels. True for all masked/removed pixels."""
+        return self.mask_flags(PixelMaskFlags.MASKED)
 
-        if cache_fname is not None:
-            cache_fname = cache_fname + '_copy'
+    def mask_flags(self, flags):
+        """Get a mask pixels with an specific flag.
 
-        nframe = FrameData(data, unit=unit, mask=mask, uncertainty=unct,
-                           meta=meta, cache_folder=cache_folder,
-                           cache_filename=cache_fname, origin_filename=fname)
-        nframe.history = hist
-        nframe.comments = comm
-        nframe.wcs = wcs
-        return nframe
+        Parameters
+        ----------
+        flags: list of `PixelMaskFlags` or `PixelMaskFlags`
+
+        Returns
+        -------
+        mask: `~numpy.ndarray`
+            Masked pixels. True for masked pixels.
+        """
+        return mask_from_flags(self._flags, flags,
+                               allowed_flags_class=PixelMaskFlags)
+
+    def mask_pixels(self, pixels):
+        """Mask pixels.
+
+        Parameters
+        ----------
+        pixels: `~numpy.ndarray` or tuple
+            Pixels to be masked. Can be a tuple of (y, x) positions or a
+            boolean array where True means masked. Uses the same standard as
+            `~numpy.ndarray`[pixels] access.
+        """
+        self._flags[pixels] |= PixelMaskFlags.MASKED.value
 
     def enable_memmap(self, filename=None, cache_folder=None):
         """Enable array file memmapping.
@@ -467,55 +507,95 @@ class FrameData:
         cache_folder : str, optional
             Custom folder to cache data.
         """
-        if filename is None and cache_folder is None:
-            self._data.enable_memmap()
-            self._unct.enable_memmap()
-            self._mask.enable_memmap()
-        else:
-            cache_file = setup_filename(self, cache_folder, filename)
-            self._update_cache_files(cache_file)
-            self._data.enable_memmap(cache_file + '.data')
-            self._mask.enable_memmap(cache_file + '.mask')
-            self._unct.enable_memmap(cache_file + '.unct')
+        # early return for already memmapped
+        if self._memmapping:
+            return
+
+        # get the default files if names are not provided
+        if filename is None:
+            filename = self.cache_filename
+        if cache_folder is None:
+            cache_folder = self.cache_folder
+
+        # delete the old memmap files if they are memmaps
+        self.disable_memmap()
+
+        # setup the new filenames
+        cache_file = setup_filename(self, cache_folder, filename)
+
+        # create the memmap files
         self._memmapping = True
+        self._update_memmaps(cache_file)
 
     def disable_memmap(self):
         """Disable frame file memmapping (load to memory)."""
-        self._data.disable_memmap(remove=True)
-        self._mask.disable_memmap(remove=True)
-        self._unct.disable_memmap(remove=True)
+        self._data = delete_array_memmap(self._data, read=True, remove=True)
+        self._flags = delete_array_memmap(self._flags, read=True, remove=True)
+        self._unct = delete_array_memmap(self._unct, read=True, remove=True)
         self._memmapping = False
 
-    def to_hdu(self, wcs_relax=True, no_fits_standard_units=True, **kwargs):
-        """Generate an HDUList from this FrameData.
+    def _update_memmaps(self, cache_file=None):
+        """Update the memmap files."""
+        if cache_file is None:
+            cache_file = setup_filename(self)
+        if self._memmapping:
+            if not isinstance(self._data, np.memmap):
+                self._data = create_array_memmap(cache_file + '.data',
+                                                 self._data)
+            if not isinstance(self._flags, np.memmap) and \
+               self._flags is not None:
+                self._flags = create_array_memmap(cache_file + '.flags',
+                                                  self._flags)
+            if not isinstance(self._unct, np.memmap) and \
+               self._unct is not None:
+                self._unct = create_array_memmap(cache_file + '.unct',
+                                                 self._unct)
+
+    def copy(self, dtype=None):
+        """Copy the current FrameData to a new instance.
 
         Parameters
         ----------
-        wcs_relax: `bool`, optional.
-            Allow non-standard WCS keys.
-            Default: `True`
-        no_fits_standard_units: `bool`, optional
-            Skip FITS units standard for units. If this options is choose,
-            the units will be printed in header as `~astropy.units.Unit`
-            compatible string.
-            Default: `True`
-        **kwargs:
-            hdu_uncertainty: string, optional
-                Extension name to store the uncertainty.
-            hdu_mask: string, optional
-                Extension name to store the mask.
-            unit_key: string, optional
-                Header key for physical unit.
-
-
-        Returns
-        -------
-        `~astropy.fits.HDUList` :
-            HDU storing all FrameData informations.
+        - dtype: `~numpy.dtype` (optional)
+            Data type for the copied FrameData. If `None`, the data type will
+            be the same as the original Framedata.
+            Default: `None`
         """
-        return _to_hdu(self, wcs_relax=wcs_relax,
-                       no_fits_standard_units=no_fits_standard_units,
-                       **kwargs)
+        nf = object.__new__(FrameData)
+        # copy metadata
+        nf._history = cp.deepcopy(self._history)
+        nf._comments = cp.deepcopy(self._comments)
+        nf._meta = cp.deepcopy(self._meta)
+        nf._wcs = cp.deepcopy(self._wcs)
+        nf._unit = self._unit
+
+        # file naming
+        cache_fname = self.cache_filename
+        if cache_fname is not None:
+            cache_fname = cache_fname + '_copy'
+        nf._origin = self._origin
+        nf.cache_folder = self.cache_folder
+        nf.cache_filename = cache_fname
+
+        # copy data
+        nf._data = delete_array_memmap(self._data, read=True, remove=False)
+        if dtype is not None:
+            nf._data = nf._data.astype(dtype)
+        nf._flags = delete_array_memmap(self._flags, read=True, remove=False)
+        if self._unct is not None:
+            nf._unct = delete_array_memmap(self._unct, read=True, remove=False)
+            if dtype is not None:
+                nf._unct = nf._unct.astype(dtype)
+
+        # copy memmapping
+        if self._memmapping:
+            nf.enable_memmap()
+
+        return nf
+
+    def __copy__(self):
+        """Copy the current instance to a new one."""
+        return self.copy()
 
     def __del__(self):
         """Safe destruction of the container."""
@@ -525,49 +605,8 @@ class FrameData:
         try:
             if len(os.listdir(self.cache_folder)) == 0:
                 os.rmdir(self.cache_folder)
-        except FileNotFoundError:
+        except (FileNotFoundError, TypeError):
             pass
-
-    def to_ccddata(self):
-        """Convert actual FrameData to CCDData.
-
-        Returns
-        -------
-        `~astropy.nddata.CCDData` :
-            CCDData instance with actual FrameData informations.
-        """
-        return _to_ccddata(self)
-
-    def write(self, filename, overwrite=False, **kwargs):
-        """Write frame to a fits file.
-
-        Parameters
-        ----------
-        filename: str
-            Name of the file to write.
-        overwrite: bool, optional
-            If True, overwrite the file if it exists.
-        wcs_relax: `bool`, optional.
-            Allow non-standard WCS keys.
-            Default: `True`
-        no_fits_standard_units: `bool`, optional
-            Skip FITS units standard for units. If this options is choose,
-            the units will be printed in header as `~astropy.units.Unit`
-            compatible string.
-            Default: `True`
-        **kwargs:
-            hdu_uncertainty: string, optional
-                Extension name to store the uncertainty.
-            hdu_mask: string, optional
-                Extension name to store the mask.
-            unit_key: string, optional
-                Header key for physical unit.
-        """
-        _write_fits(self, filename, overwrite, **kwargs)
-
-    def __copy__(self):
-        """Copy the current instance to a new one."""
-        return self.copy()
 
     def median(self, **kwargs):
         """Compute and return the median of the data."""
@@ -607,3 +646,74 @@ class FrameData:
                 'mean': self.mean(),
                 'median': self.median(),
                 'std': self.std()}
+
+    def to_hdu(self, wcs_relax=True, no_fits_standard_units=True, **kwargs):
+        """Generate an HDUList from this FrameData.
+
+        Parameters
+        ----------
+        wcs_relax: `bool`, optional.
+            Allow non-standard WCS keys.
+            Default: `True`
+        no_fits_standard_units: `bool`, optional
+            Skip FITS units standard for units. If this options is choose,
+            the units will be printed in header as `~astropy.units.Unit`
+            compatible string.
+            Default: `True`
+        **kwargs:
+            hdu_uncertainty: string, optional
+                Extension name to store the uncertainty in 2D image format.
+            hdu_flags: string, optional
+                Extension name to store the pixel list flags in table format.
+            unit_key: string, optional
+                Header key for physical unit.
+
+
+        Returns
+        -------
+        `~astropy.fits.HDUList` :
+            HDU storing all FrameData informations.
+        """
+        return _to_hdu(self, wcs_relax=wcs_relax,
+                       no_fits_standard_units=no_fits_standard_units,
+                       **kwargs)
+
+    def to_ccddata(self):
+        """Convert actual FrameData to CCDData.
+
+        Returns
+        -------
+        `~astropy.nddata.CCDData` :
+            CCDData instance with actual FrameData informations.
+        """
+        return _to_ccddata(self)
+
+    def write(self, filename, overwrite=False, no_fits_standard_units=True,
+              **kwargs):
+        """Write frame to a fits file.
+
+        Parameters
+        ----------
+        filename: str
+            Name of the file to write.
+        overwrite: bool, optional
+            If True, overwrite the file if it exists.
+        wcs_relax: `bool`, optional.
+            Allow non-standard WCS keys.
+            Default: `True`
+        no_fits_standard_units: `bool`, optional
+            Skip FITS units standard for units. If this options is choose,
+            the units will be printed in header as `~astropy.units.Unit`
+            compatible string.
+            Default: `True`
+        **kwargs:
+            hdu_uncertainty: string, optional
+                Extension name to store the uncertainty in 2D image format.
+            hdu_flags: string, optional
+                Extension name to store the pixel list flags in table format.
+            unit_key: string, optional
+                Header key for physical unit.
+        """
+        _write_fits(self, filename, overwrite,
+                    no_fits_standard_units=no_fits_standard_units,
+                    **kwargs)

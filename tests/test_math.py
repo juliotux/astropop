@@ -5,7 +5,6 @@ import pytest
 from astropop.math.hasher import hasher
 from astropop.math.array import xy2r, iraf_indices, trim_array,  \
                                 all_equal
-from astropop.math import gaussian, moffat
 import numpy as np
 
 from astropop.testing import *
@@ -30,6 +29,7 @@ def test_iraf_indices():
     x, y = iraf_indices(f)
     assert_equal(x, [[0, 1], [0, 1]])
     assert_equal(y, [[0, 0], [1, 1]])
+
 
 class Test_AllEqual():
     def test_all_equal_1d_true(self):
@@ -96,7 +96,6 @@ class Test_TrimArray():
         assert_equal(np.min(ta), 39*39)
         assert_equal(np.max(ta), 60*60)
 
-
     def test_trim_array_right(self):
         y, x = np.indices((100, 100))
         a = x*y
@@ -110,7 +109,6 @@ class Test_TrimArray():
         assert_equal(np.max(ty), 60)
         assert_equal(np.min(ta), 84*39)
         assert_equal(np.max(ta), 99*60)
-
 
     def test_trim_array_left(self):
         y, x = np.indices((100, 100))
@@ -126,7 +124,6 @@ class Test_TrimArray():
         assert_equal(np.min(ta), 0*39)
         assert_equal(np.max(ta), 15*60)
 
-
     def test_trim_array_bottom(self):
         y, x = np.indices((100, 100))
         a = x*y
@@ -140,7 +137,6 @@ class Test_TrimArray():
         assert_equal(np.max(tx), 60)
         assert_equal(np.min(ta), 0*39)
         assert_equal(np.max(ta), 15*60)
-
 
     def test_trim_array_top(self):
         y, x = np.indices((100, 100))
@@ -156,7 +152,6 @@ class Test_TrimArray():
         assert_equal(np.min(ta), 84*39)
         assert_equal(np.max(ta), 99*60)
 
-
     def test_trim_array_no_indices(self):
         y, x = np.indices((100, 100))
         a = x*y
@@ -164,7 +159,6 @@ class Test_TrimArray():
         assert_equal(ta, a[84:, 39:61])
         assert_equal(tx, 11)
         assert_equal(ty, 11)
-
 
     def test_trim_array_one_origin(self):
         y, x = np.indices((100, 100))
@@ -174,7 +168,6 @@ class Test_TrimArray():
         assert_equal(tx, 11)
         assert_equal(ty, 11)
 
-
     def test_trim_array_even(self):
         y, x = np.indices((100, 100))
         a = x*y
@@ -182,57 +175,3 @@ class Test_TrimArray():
         assert_equal(ta, a[85:, 40:61])
         assert_equal(tx, 10)
         assert_equal(ty, 10)
-
-
-@pytest.mark.skip
-class Test_Gaussian:
-    def test_gaussian_normalize(self):
-        pass
-
-    def test_gaussian_fwhm(self):
-        pass
-
-    def test_gaussian_r(self):
-        pass
-
-    def test_gaussian_1d(self):
-        pass
-
-    def test_gaussian_2d(self):
-        pass
-
-    def test_gaussian_1d_model(self):
-        pass
-
-    def test_gaussian_2d_model(self):
-        pass
-
-    def test_gaussian_r_model(self):
-        pass
-
-
-@pytest.mark.skip
-class Test_Moffat:
-    def test_moffat_normalize(self):
-        pass
-
-    def test_moffat_fwhm(self):
-        pass
-
-    def test_moffat_r(self):
-        pass
-
-    def test_moffat_1d(self):
-        pass
-
-    def test_moffat_2d(self):
-        pass
-
-    def test_moffat_1d_model(self):
-        pass
-
-    def test_moffat_2d_model(self):
-        pass
-
-    def test_moffat_r_model(self):
-        pass

@@ -8,7 +8,7 @@ import numpy as np
 
 from .processing import trim_image
 from ..logger import logger
-from ..framedata import check_framedata, FrameData
+from ..framedata import check_framedata, FrameData, PixelMaskFlags
 
 
 __all__ = ['CrossCorrelationRegister', 'AsterismRegister',
@@ -66,10 +66,15 @@ class _BaseRegister(abc.ABC):
     _name = None
 
     @staticmethod
-    def _apply_transform_image(image, tform, cval=0):
+    def _apply_transform_image(image, tform, cval=0, order=3):
         """Apply the transform to an image."""
+        # ensure correct data types
+        image = np.array(image)
+        cval = float(cval)
+
+        # apply the transform
         return transform.warp(image, tform, mode='constant', cval=cval,
-                              preserve_range=True)
+                              preserve_range=True, order=order)
 
     @abc.abstractmethod
     def _compute_transform(self, image1, image2, mask1=None, mask2=None):
@@ -125,12 +130,14 @@ class _BaseRegister(abc.ABC):
         # equal images are just returned
         if np.all(image1 == image2):
             logger.info('Images are equal, skipping registering.')
-            return image1, np.zeros_like(image1), transform.AffineTransform()
+            return (image1, np.zeros_like(image1, dtype=bool),
+                    transform.AffineTransform(translation=(0, 0)))
 
         tform = self._compute_transform(image1, image2, mask1, mask2)
         if mask2 is None:
             mask2 = np.zeros_like(image2)
 
+        # TODO: consider the mask here
         if cval == 'median':
             cval = np.nanmedian(image2)
         if cval == 'mean':
@@ -141,7 +148,10 @@ class _BaseRegister(abc.ABC):
         logger.info('Registering image with: '
                     'translation=%s, rotation=%.2f°',
                     tform.translation, np.rad2deg(tform.rotation))
-        mask = self._apply_transform_image(mask2, tform, cval=1)
+
+        # use float to get partial covered pixels and mask them
+        mask = self._apply_transform_image(mask2.astype('f8'), tform, cval=1,
+                                           order=0)
         mask = mask > 0
         return reg_image, mask, tform
 
@@ -173,8 +183,8 @@ class _BaseRegister(abc.ABC):
 
         im1 = np.array(frame1.data)
         im2 = np.array(frame2.data)
-        msk1 = frame1.mask if frame1.mask is None else np.array(frame1.mask)
-        msk2 = frame2.mask if frame2.mask is None else np.array(frame2.mask)
+        msk1 = frame1.mask
+        msk2 = frame2.mask
 
         data, mask, tform = self.register_image(im1, im2, msk1, msk2,
                                                 cval=cval)
@@ -186,12 +196,16 @@ class _BaseRegister(abc.ABC):
             reg_frame = frame2.copy()
 
         reg_frame.data = data
-        reg_frame.mask = mask
+        flags = frame2.flags
+        flags = self._apply_transform_image(flags, tform, cval=0, order=0)
+        reg_frame.add_flags(PixelMaskFlags.OUT_OF_BOUNDS |
+                            PixelMaskFlags.MASKED,
+                            mask)
 
-        if not frame2.uncertainty.empty:
+        if frame2.uncertainty is not None:
             unct = frame2.get_uncertainty(return_none=False)
-            unct = self._apply_transform_image(unct,
-                                               tform, cval=np.nan)
+            unct = self._apply_transform_image(unct, tform, cval=np.nan,
+                                               order=1)
             reg_frame.uncertainty = unct
 
         sx, sy = tform.translation
@@ -321,15 +335,15 @@ class AsterismRegister(_BaseRegister):
     _name = 'asterism-matching'
 
     def __init__(self, max_control_points=50, detection_threshold=5,
-                 detection_function='sepfind', **detection_kwargs):
+                 detection_function='segfind', **detection_kwargs):
         try:
             import astroalign
         except ImportError:
             raise ImportError('AsterismRegister requires astroalign tools.')
 
-        from ..photometry import sepfind, starfind, daofind, background
+        from ..photometry import segfind, starfind, daofind, background
 
-        funcs = {'sepfind': sepfind, 'starfind': starfind, 'daofind': daofind}
+        funcs = {'segfind': segfind, 'starfind': starfind, 'daofind': daofind}
         self._aa = astroalign
         self._sf = partial(funcs[detection_function], **detection_kwargs)
         self._bkg = background
@@ -489,7 +503,9 @@ def register_framedata_list(frame_list, algorithm='cross-correlation',
             else:
                 icval = cval
             reg_list[i].data[:] = icval
-            reg_list[i].mask[:] = True
+            reg_list[i].add_flags(PixelMaskFlags.MASKED |
+                                  PixelMaskFlags.OUT_OF_BOUNDS,
+                                  np.ones_like(reg_list[i].data, dtype=bool))
             reg_list[i].meta[_keywords['method']] = 'failed'
             reg_list[i].meta[_keywords['shift_x']] = None
             reg_list[i].meta[_keywords['shift_y']] = None

@@ -451,7 +451,7 @@ class Test_QFloat_Operators:
                                               (None, 'raise'),
                                               (UnitsError, 'raise'),
                                               (1.0*units.m, QFloat(1.0, 0.0, 'm')),
-                                              (FrameData(1.0, 'm', 'f8', 0.1), QFloat(1.0, 0.1, 'm'))])
+                                              (FrameData([[1.0]], 'm', 'f8', 0.1), QFloat([[1.0]], [[0.1]], 'm'))])
     def test_qfloat_converttoqfloat(self, value, expect):
         if expect == 'raise':
             with pytest.raises(Exception):

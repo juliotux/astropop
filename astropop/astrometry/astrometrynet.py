@@ -11,6 +11,7 @@ import shutil
 from subprocess import CalledProcessError
 import copy
 from tempfile import NamedTemporaryFile, mkdtemp
+import warnings
 
 import numpy as np
 
@@ -20,7 +21,7 @@ from astropy.wcs import WCS
 from astropy.coordinates import Angle, SkyCoord
 from astropy.units import UnitsError
 
-from ..framedata.compat import extract_header_wcs
+from ..framedata._compat import extract_header_wcs
 from ..logger import logger
 from ..py_utils import run_command, check_number
 
@@ -384,10 +385,12 @@ class AstrometricSolution():
     _corr = None
 
     def __init__(self, header, correspondences=None):
-        self._wcs = WCS(header, relax=True)
-        self._header = fits.Header(header)
-        if correspondences is not None:
-            self._corr = Table(correspondences)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            self._wcs = WCS(header, relax=True)
+            self._header = fits.Header(header)
+            if correspondences is not None:
+                self._corr = Table(correspondences)
 
     @property
     def wcs(self):
@@ -677,8 +680,10 @@ class AstrometrySolver():
                     raise AstrometryNetUnsolvedField(filename)
             solved_wcs_file = os.path.join(output_dir, root + '.wcs')
             logger.debug('Loading solved header from %s', solved_wcs_file)
-            solved_header = fits.getheader(solved_wcs_file, 0)
-            corr = Table.read(correspond)
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore')
+                solved_header = fits.getheader(solved_wcs_file, 0)
+                corr = Table.read(correspond)
 
             # remove the tree if the file is temporary and not set to keep
             if not self._keep and tmp_dir:

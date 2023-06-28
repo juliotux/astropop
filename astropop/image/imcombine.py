@@ -9,10 +9,7 @@ from astropy.stats import mad_std
 from ..framedata import FrameData, check_framedata
 from ..py_utils import check_iterable, check_number
 from ..logger import logger
-from ..math.array import all_equal
-
-
-# TODO: verify why cache_folder is not being used
+from ._tools import merge_header
 
 
 # bottleneck has faster median
@@ -136,6 +133,28 @@ def _minmax_clip(data, min_clip=None, max_clip=None):
                  np.sum(mask))
 
     return mask
+
+
+def _yield_slices(shape, n_chunks):
+    """Yield slices for a given shape and number of chunks."""
+    if n_chunks == 1:
+        # values ust be specified for later in code
+        yield slice(0, shape[0]), slice(0, shape[1])
+    else:
+        y_shp, x_shp = shape
+        # split in y (rows) first
+        ystep = int(max(1, np.floor(y_shp/n_chunks)))
+        ychunks = int(np.ceil(y_shp/ystep))
+        if ychunks >= n_chunks:
+            xstep = x_shp
+        else:
+            # divide in x if needed
+            xchunks = int(n_chunks/ychunks) + 1
+            xstep = int(max(1, np.floor(x_shp/xchunks)))
+        for y in range(0, y_shp, ystep):
+            for x in range(0, x_shp, xstep):
+                yield (slice(y, min(y_shp, y+ystep)),
+                       slice(x, min(x_shp, x+xstep)))
 
 
 class ImCombiner:
@@ -365,18 +384,18 @@ class ImCombiner:
 
     def _chunk_yielder(self, method):
         """Split the data in chuncks according to the method."""
-        # sum needs uncertainties
-        unct = None
+        # sum needs uncertainties, others ignore it
+        unct = False
         if method == 'sum':
-            if not np.any([i.uncertainty.empty for i in self._images]):
+            if not np.any([i.uncertainty is None for i in self._images]):
                 unct = True
             else:
-                logger.info('One or more frames have empty uncertainty. '
-                            'Some features are disabled.')
+                logger.debug('One or more frames have empty uncertainty. '
+                             'Some features are disabled.')
 
+        # flags and uncertainty are ignored
         shape = self._images[0].shape
         tot_size = self._images[0].data.nbytes
-        tot_size += self._images[0].mask.nbytes
         tot_size *= len(self._images)
         # uncertainty is ignored
 
@@ -387,40 +406,29 @@ class ImCombiner:
             tot_size *= 3
 
         n_chunks = np.ceil(tot_size/self._max_memory)
-
-        # compute x and y steps
-        xstep = max(1, int(shape[0]/n_chunks))
-        if shape[0] >= n_chunks:
-            ystep = shape[1]
-        else:
-            ystep = max(1, int(np.ceil(shape[1]/(n_chunks/shape[0]))))
-
-        n_chunks = np.ceil(shape[0]/xstep)*np.ceil(shape[1]/ystep)
+        slices = list(_yield_slices(shape, n_chunks))
         if n_chunks > 1:
-            logger.debug('Splitting the images into %i chunks.', n_chunks)
+            logger.debug('Splitting the images into %i chunks.', len(slices))
 
-        for x in range(0, shape[0], xstep):
-            for y in range(0, shape[1], ystep):
-                slc_x = slice(x, min(x+xstep, shape[0]))
-                slc_y = slice(y, min(y+ystep, shape[1]))
-                shp = slc_x.stop-slc_x.start, slc_y.stop-slc_y.start
-                slc = (slc_x, slc_y)
-                buffer = np.full((len(self._images), shp[0], shp[1]),
-                                 fill_value=np.nan, dtype=self._dtype)
+        for slc_y, slc_x in slices:
+            buff_shp = (len(self._images),
+                        slc_y.stop-slc_y.start,
+                        slc_x.stop-slc_x.start)
+            buffer = np.full(buff_shp, fill_value=np.nan, dtype=self._dtype)
+            if unct:
+                unct_buffer = np.full(buff_shp, fill_value=np.nan,
+                                      dtype=self._dtype)
+            else:
+                unct_buffer = None
+
+            for i, frame in enumerate(self._images):
+                buffer[i] = frame.data[slc_y, slc_x]
+                buffer[i][frame.mask[slc_y, slc_x]] = np.nan
                 if unct:
-                    unct_buffer = np.full((len(self._images), shp[0], shp[1]),
-                                          fill_value=np.nan, dtype=self._dtype)
-                else:
-                    unct_buffer = None
+                    unct_buffer[i] = frame.uncertainty[slc_y, slc_x]
+                    unct_buffer[i][frame.mask[slc_y, slc_x]] = np.nan
 
-                for i in range(len(self._images)):
-                    buffer[i] = self._images[i].data[slc]
-                    buffer[i][self._images[i].mask[slc]] = np.nan
-                    if unct:
-                        unct_buffer[i] = self._images[i].uncertainty[slc]
-                        unct_buffer[i][self._images[i].mask[slc]] = np.nan
-
-                yield buffer, unct_buffer, (slc_x, slc_y)
+            yield buffer, unct_buffer, (slc_y, slc_x)
 
     def _apply_rejection(self):
         mask = np.zeros(self._buffer[0].shape)
@@ -442,7 +450,7 @@ class ImCombiner:
     def _combine(self, method, **kwargs):
         """Process the combine and compute the uncertainty."""
         # number of masked pixels for each position
-        n_masked = np.sum([np.isnan(i) for i in self._buffer], axis=0)
+        n_masked = np.sum(np.isnan(self._buffer), axis=0)
         # number of images
         n = float(len(self._buffer))
         # number of not masked pixels for each position
@@ -459,7 +467,7 @@ class ImCombiner:
                 unct = _funcs['std'](self._buffer, axis=0)*np.sqrt(n_no_mask)
             else:
                 # direct propagate the errors in the sum
-                # unct = sqrt(sigma1^2 + sigma2^2 + ...)
+                # unct = sqrt(sigma1^2 + ) for i in sigma2^2 + ...)
                 unct = _funcs['sum'](np.square(self._unct_bf), axis=0)
                 unct = np.sqrt(unct)
 
@@ -475,42 +483,6 @@ class ImCombiner:
             unct /= np.sqrt(n_no_mask)
 
         return data, unct
-
-    def _merge_header(self):
-        """Merge headers."""
-        meta = {}
-        if self._header_strategy == 'no_merge':
-            return meta
-
-        logger.debug('Merging headers with %s strategy.',
-                     self._header_strategy)
-
-        if self._header_strategy == 'first':
-            return self._images[0].header
-
-        summary = {h: [] for h in self._images[0].header.keys()}
-        for i in self._images:
-            hdr = i.header
-            for key in hdr.keys():
-                if key not in summary.keys():
-                    summary[key] = []
-                if hdr[key] not in summary[key]:
-                    summary[key].append(hdr[key])
-
-        if self._header_strategy == 'selected_keys':
-            keys = self._header_merge_keys
-        else:
-            keys = summary.keys()
-
-        for k in keys:
-            if all_equal(np.array(summary[k])):
-                meta[k] = summary[k][0]
-            elif self._header_strategy == 'selected_keys':
-                logger.debug('Keyword %s is different across headers. '
-                             'Unsing first one.', k)
-                meta[k] = summary[k][0]
-
-        return meta
 
     def combine(self, image_list, method, **kwargs):
         """Perform the image combining.
@@ -560,8 +532,8 @@ class ImCombiner:
         # temp combined data, mask and uncertainty
         data = np.zeros(self._shape, dtype=self._dtype)
         data.fill(np.nan)
-        mask = np.zeros(self._shape, dtype=bool)
         unct = np.zeros(self._shape, dtype=self._dtype)
+        mask = np.zeros(self._shape, dtype=bool)
 
         for self._buffer, self._unct_bf, slc in self._chunk_yielder(method):
             # perform the masking: first with minmax, after sigma_clip
@@ -570,15 +542,14 @@ class ImCombiner:
 
             # combine the images and compute the uncertainty
             data[slc], unct[slc] = self._combine(method, **kwargs)
-
-            # combine masks
-            mask[slc] = np.all([np.isnan(i) for i in self._buffer], axis=0)
-            # TODO: flag pixels with NaN as pixels with rejection
+            mask[slc] = np.isnan(data[slc])
 
         n = len(self._images)
-        combined = FrameData(data, unit=self._unit, mask=mask,
-                             uncertainty=unct)
-        combined.meta = self._merge_header()
+        combined = FrameData(data, unit=self._unit, uncertainty=unct,
+                             mask=mask)
+        combined.meta = merge_header(*[i.header for i in self._images],
+                                     method=self._header_strategy,
+                                     selected_keys=self._header_merge_keys)
         combined.meta['HIERARCH astropop imcombine nimages'] = n
         combined.meta['HIERARCH astropop imcombine method'] = method
 

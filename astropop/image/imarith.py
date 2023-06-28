@@ -4,6 +4,8 @@
 import numpy as np
 from astropy.units.core import UnitConversionError
 
+from ._tools import merge_header
+from ._tools import merge_flag
 from ..framedata import FrameData
 from ..math.physical import QFloat, convert_to_qfloat, UnitsError
 from ..logger import logger, log_to_list
@@ -28,24 +30,6 @@ def _qf_or_framedata(data, alternative=convert_to_qfloat):
     return alternative(data)
 
 
-def _arith_mask(operand1, operand2):
-    """Handle the arithmatics of the masks."""
-    def _extract(operand):
-        if hasattr(operand, 'mask'):
-            return operand.mask
-        return False
-
-    mask1 = _extract(operand1)
-    mask2 = _extract(operand2)
-
-    old_n = np.count_nonzero(mask1)
-    nmask = np.logical_or(mask1, mask2)
-    new_n = np.count_nonzero(nmask)
-    logger.debug('Updating mask in math operation. '
-                 'From %i to %i masked elements.', old_n, new_n)
-    return nmask
-
-
 def _arith(operand1, operand2, operation):
     """Perform the math operation itself using QFloats."""
     qf1 = convert_to_qfloat(operand1)
@@ -54,14 +38,8 @@ def _arith(operand1, operand2, operation):
     return _arith_funcs[operation](qf1, qf2)
 
 
-def _join_headers(operand1, operand2, operation):  # noqa
-    """Join the headers to result."""
-    # TODO: Think if this is the best behavior
-    return operand1.header.copy()
-
-
 def imarith(operand1, operand2, operation, inplace=False,
-            join_masks=False):
+            merge_flags='or', merge_headers='only_equal', **kwargs):
     """Perform arithmetic operations using `~astropop.framedata.FrameData`.
 
     Notes
@@ -91,8 +69,24 @@ def imarith(operand1, operand2, operation, inplace=False,
         Math operation.
     inplace: bool, optional
         If True, the operations will be performed inplace in the operand 1.
-    join_masks: bool, optional
-        Join masks in the end of the operation.
+    merge_flags: {'or', 'and', 'no_merge'}, optional
+        How to join the masks of the operands. If ``'or'``, the resulting mask
+        will be the union of the masks of the operands. If ``'and'``, the
+        resulting mask will be the intersection of the masks of the operands.
+        If ``'no_merge'``, the resulting mask will be only zeroes.
+    merge_headers: {'no_merge', 'first', 'only_equal', 'selected_keys'}
+        How to merge the headers of the operands. If ``'no_merge'``, the
+        resulting header will be ``None``. If ``'first'``, the resulting
+        header will be the header of the first operand. If ``'only_equal'``,
+        the resulting header will be the header of the first operand, but only
+        the keys that are equal in both operands. If ``'selected_keys'``, the
+        resulting header will be the header of the first operand, but only the
+        keys in ``selected_keys``.
+    **kwargs:
+        Additional arguments:
+            selected_keys: list, optional
+                List of keys to be merged in the header. Only used if
+                ``merge_headers='selected_keys'``.
 
     Returns
     -------
@@ -100,7 +94,6 @@ def imarith(operand1, operand2, operation, inplace=False,
         new `FrameData` instance if not ``inplace``, else the ``operand1``
         `~astropop.framedata.FrameData` instance.
     """
-    # TODO: handle WCS
     if operation not in _arith_funcs.keys():
         raise ValueError(f"Operation {operation} not supported.")
 
@@ -110,7 +103,7 @@ def imarith(operand1, operand2, operation, inplace=False,
     if isinstance(operand1, FrameData) and inplace:
         ccd = operand1
     else:
-        ccd = FrameData(None)
+        ccd = object.__new__(FrameData)
 
     # Add the operation entry to the ccd history.
     lh = log_to_list(logger, ccd.history)
@@ -128,13 +121,18 @@ def imarith(operand1, operand2, operation, inplace=False,
     ccd.unit = result.unit
     ccd.uncertainty = result.uncertainty
 
-    if join_masks:
-        ccd.mask = _arith_mask(operand1, operand2)
-    else:
-        ccd.mask = False
+    # Perform merging flags operation only if both operands have flags
+    f1 = getattr(operand1, 'flags',
+                 np.zeros_like(operand1.data, dtype=np.uint8))
+    f2 = getattr(operand2, 'flags',
+                 np.zeros_like(operand1.data, dtype=np.uint8))
+    ccd.flags = merge_flag(f1, f2, method=merge_flags)
 
-    ccd.meta = _join_headers(operand1, operand2, operation)
+    # Perform merging headers operation only if both operands have headers
+    h1 = getattr(operand1, 'header', {})
+    h2 = getattr(operand2, 'header', {})
+    keys = kwargs.get('selected_keys', None)
+    ccd.meta = merge_header(h1, h2, method=merge_headers, selected_keys=keys)
 
     logger.removeHandler(lh)
-
     return ccd
