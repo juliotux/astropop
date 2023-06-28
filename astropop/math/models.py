@@ -255,17 +255,19 @@ class GaussianEquations:
         float or array
             Values of the model at (x, y).
         """
-        # rotate the coordinates and generate a a gaussian model with these
-        # rotated coordinates
-        theta = -np.radians(theta)
-        c = np.cos(theta)
-        s = np.sin(theta)
-        x = x - x0
-        y = y - y0
-        x_rot = x*c - y*s
-        y_rot = x*s + y*c
+        theta = np.radians(theta)
+        xstd2 = sigma_x**2
+        ystd2 = sigma_y**2
+        cost2 = np.cos(theta)**2
+        sint2 = np.sin(theta)**2
+        sin2t = np.sin(2*theta)
+        a = (cost2/xstd2) + (sint2/ystd2)
+        b = (sin2t/xstd2) - (sin2t/ystd2)
+        c = (sint2/xstd2) + (cost2/ystd2)
+        xi = x - x0
+        yi = y - y0
         amp = flux/(TWO_PI*sigma_x*sigma_y)
-        return sky + amp*np.exp(-0.5*((x_rot/sigma_x)**2 + (y_rot/sigma_y)**2))
+        return amp*np.exp(-0.5*((a*xi**2) + (b*xi*yi) + (c*yi**2))) + sky
 
 
 class PSFGaussian2D(Fittable2DModel):
