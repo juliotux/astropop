@@ -5,7 +5,6 @@ from astropy.convolution import convolve
 from astropy.modeling.fitting import LevMarLSQFitter
 from astropy.nddata.utils import overlap_slices
 from astropy.table import Table
-from scipy.optimize import curve_fit
 from photutils.detection import DAOStarFinder
 from photutils.morphology import data_properties
 from photutils.segmentation import SourceFinder, SourceCatalog, \
@@ -101,7 +100,9 @@ def sepfind(data, threshold, background, noise,
     if sep_kwargs.get('segmentation_map', False):
         sources = sources[0]  # ignore smap
 
-    return Table(sources)
+    # order by flux
+    order = np.argsort(sources['flux'])[::-1]
+    return Table(sources[order])
 
 
 def segfind(data, threshold, background, noise, mask=None, fwhm=None, npix=5,
