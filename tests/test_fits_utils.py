@@ -17,9 +17,9 @@ class Test_Fits_Utils():
                                                 ('with spa', 'with spa'),
                                                 ('with space', 'with space'),
                                                 ('With Space', 'With Space'),
-                                                ('With-', 'WITH-'), # dash allowed
-                                                ('With_', 'WITH_'), # underscore allowed
-                                                ('With.', 'With.'), # dot not allowed
+                                                ('With-', 'WITH-'),  # dash allowed
+                                                ('With_', 'WITH_'),  # underscore allowed
+                                                ('With.', 'With.'),  # dot not allowed
                                                 ('HIERARCH Remove', 'Remove')])
     def test_string_to_header_key(self, string, expect):
         res = string_to_header_key(string)

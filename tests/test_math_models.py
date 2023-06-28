@@ -140,7 +140,7 @@ class TestGaussianModels:
 
     def test_model_radial_pnames(self):
         m = PSFGaussianRadial(flux=1, sigma=2, sky=0)
-        #ensure names order
+        # ensure names order
         assert_equal(m.param_names, ['flux', 'sigma', 'sky'])
 
     def test_model_1d_pnames(self):
