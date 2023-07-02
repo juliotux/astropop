@@ -127,9 +127,8 @@ def _normalize_and_strip_dict(meta):
 
         if k in nmeta:
             # as dicts are case sensitive, this can happen. Raise error
-            raise KeyError(f'Duplicated key {k}. Only dictionaries with '
-                           'unique keys are allowed.')
-        if k not in _PROCTECTED and k != '':
+            raise Warning(f'Duplicated key {k}. First value will be used.')
+        if k not in _PROCTECTED and k != '' and k not in nmeta:
             # remove protected keys
             nmeta[k] = v
 
