@@ -4,7 +4,8 @@
 import pytest
 import numpy as np
 from astropop.framedata._compat import extract_header_wcs, _extract_ccddata, \
-                                      _extract_fits, _merge_and_clean_header
+                                      _extract_fits, _merge_and_clean_header, \
+                                      _normalize_and_strip_dict
 from astropy.io import fits
 from astropy.wcs import WCS
 from astropy.table import Table
@@ -122,6 +123,16 @@ COMMENT This is a first comment
 COMMENT This is a second comment
 COMMENT This is a third comment
 """
+
+
+class Test_NormalizeAndStripHeader():
+    def test_double_keyword_warning(self):
+        header = _base_header
+        header += "TEST    =           0.10000000 / Test multiple keywords\n"
+        header += "Test    =           0.20000000 / Test multiple keywords\n"
+        h = fits.Header.fromstring(header, sep='\n')
+        with pytest.warns(UserWarning) as record:
+            h = _normalize_and_strip_dict(h)
 
 
 class Test_MergeAndCleanHeader():
