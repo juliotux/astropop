@@ -310,10 +310,12 @@ def _to_hdu(frame, hdu_uncertainty=_HDU_UNCERT, hdu_flags=_HDU_FLAGS,
         unit_string = u.format.Fits.to_string(frame.unit)
     header[unit_key] = unit_string
 
-    for i in frame.history:
-        header['history'] = i
-    for i in frame.comment:
-        header['comment'] = i
+    if frame.history is not None:
+        for i in frame.history:
+            header['history'] = i
+    if frame.comment is not None:
+        for i in frame.comment:
+            header['comment'] = i
     hdul = fits.HDUList(fits.PrimaryHDU(data, header=header))
 
     if hdu_uncertainty and frame._unct is not None:
