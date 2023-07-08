@@ -198,6 +198,26 @@ class TestFrameDataCreationMetas:
         assert_not_in('history', frame.meta)
         assert_equal(frame.history, ['testing history'])
 
+    def test_framedata_no_history(self):
+        frame = FrameData([[1]])
+        assert_is_instance(frame.history, list)
+        assert_equal(frame.history, [])
+
+    def test_framedata_no_history_meta(self):
+        frame = FrameData([[1]], meta={'test': 'testing no history'})
+        assert_is_instance(frame.history, list)
+        assert_equal(frame.history, [])
+
+    def test_framedata_no_comment(self):
+        frame = FrameData([[1]])
+        assert_is_instance(frame.comment, list)
+        assert_equal(frame.comment, [])
+
+    def test_framedata_no_comment_meta(self):
+        frame = FrameData([[1]], meta={'test': 'testing no comment'})
+        assert_is_instance(frame.comment, list)
+        assert_equal(frame.comment, [])
+
 
 class TestFrameDataCreationData:
     def test_framedata_empty(self):
