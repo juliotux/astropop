@@ -339,6 +339,8 @@ class FrameData:
 
     @history.setter
     def history(self, value):
+        if value is None:
+            return
         if not np.isscalar(value):
             self._history = self._history + list(value)
         else:
@@ -351,6 +353,8 @@ class FrameData:
 
     @comment.setter
     def comment(self, value):
+        if value is None:
+            return
         if not np.isscalar(value):
             self._comments = self._comments + list(value)
         else:

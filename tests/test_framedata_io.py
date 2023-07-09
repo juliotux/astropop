@@ -69,6 +69,22 @@ class TestFrameData2FITS:
         assert_is_instance(hdul, fits.HDUList)
         assert_equal(hdul[0].header['comment'], ['test 1', 'test 2', 'test'])
 
+    def test_to_hdu_none_history(self):
+        frame = create_framedata()
+        frame._history = None
+
+        hdul = frame.to_hdu()
+        assert_is_instance(hdul, fits.HDUList)
+        assert_not_in('HISTORY', hdul[0].header)
+
+    def test_to_hdu_none_comment(self):
+        frame = create_framedata()
+        frame._comment = None
+
+        hdul = frame.to_hdu()
+        assert_is_instance(hdul, fits.HDUList)
+        assert_not_in('COMMENT', hdul[0].header)
+
     def test_write_unit_to_hdu(self):
         frame = create_framedata()
         ccd_unit = frame.unit
