@@ -83,15 +83,15 @@ class GaiaDR3SourcesCatalog(_OnlineSourcesCatalog):
 
     def phot_variable_flag(self):
         """Return the photometric variable flag for the sources."""
-        return np.array(self._query['phot_variable_flag'], dtype=bool)
+        return np.array(self._query['phot_variable_flag'])
 
     def non_single_star(self):
         """Return if each source is the non single star table."""
-        return np.array(self._query['non_single_star'], dtype=bool)
+        return np.array(self._query['non_single_star'])
 
     def in_galaxy_candidates(self):
         """Return if the source is in galaxy candidates table."""
-        return np.array(self._query['in_galaxy_candidates'], dtype=bool)
+        return np.array(self._query['in_galaxy_candidates'])
 
     @staticmethod
     def _filter_magnitudes(query, band):
