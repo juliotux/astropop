@@ -50,8 +50,7 @@ def cosmics_lacosmic(frame, inplace=False, **lacosmic_kwargs):
         else the `image` `~astropop.framedata.FrameData` instance.
     """
     frame = check_framedata(frame)
-    # As lacosmic removes and replace the cosmics pixels, no need to
-    # update the mask
+
     mask, dat = astroscrappy.detect_cosmics(frame.data, **lacosmic_kwargs)
 
     if inplace:
