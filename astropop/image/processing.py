@@ -291,12 +291,7 @@ def trim_image(image, x_slice=None, y_slice=None, inplace=False):
 
     # fix WCS if existing
     if image.wcs is not None:
-        wcs = image.wcs.copy()
-        wcs.wcs.crpix[0] -= x_slice.start
-        wcs.wcs.crpix[1] -= y_slice.start
-        # FIXME: this should work but is getting wrong results
-        # image.wcs = wcs.slice(section[::-1])
-        image.wcs = wcs
+        image.wcs = image.wcs.slice(section)
 
     str_slice = ''
     for s in section[::-1]:

@@ -3,11 +3,16 @@
 
 import pytest
 from astropop.image.processing import cosmics_lacosmic, \
-                                      gain_correct
+                                      gain_correct, \
+                                      subtract_bias, \
+                                      subtract_dark, \
+                                      flat_correct, \
+                                      trim_image
 from astropop.framedata import FrameData, PixelMaskFlags
 from astropop.math import QFloat
 from astropop.testing import *
 from astropy import units as u
+from astropy.wcs import WCS
 import numpy as np
 
 
@@ -101,3 +106,78 @@ class TestProcessingGain:
                      u.Unit('electron/adu'))
         if inplace:
             assert_is(f, ccd)
+
+
+class TestProcessingTrimImage:
+    @pytest.mark.parametrize('inplace', [True, False])
+    def test_trim_x(self, inplace):
+        yi, xi = np.indices((100, 100))
+        xi = FrameData(xi)
+        trimmed = trim_image(xi, slice(20, 30, 1), None, inplace)
+        assert_is_instance(trimmed, FrameData)
+        assert_equal(trimmed.shape, (100, 10))
+        assert_equal(trimmed.data, [list(range(20, 30, 1))]*100)
+        assert_equal(trimmed.header['astropop trimmed_section'],
+                     '20:30,0:100')
+        if inplace:
+            assert_is(trimmed, xi)
+
+    @pytest.mark.parametrize('inplace', [True, False])
+    def test_trim_y(self, inplace):
+        yi, xi = np.indices((100, 100))
+        yi = FrameData(yi)
+        trimmed = trim_image(yi, None, slice(20, 30, 1), inplace)
+        assert_is_instance(trimmed, FrameData)
+        assert_equal(trimmed.shape, (10, 100))
+        assert_equal(trimmed.data, [[i]*100 for i in range(20, 30, 1)])
+        assert_equal(trimmed.header['astropop trimmed_section'],
+                     '0:100,20:30')
+        if inplace:
+            assert_is(trimmed, yi)
+
+    @pytest.mark.parametrize('inplace', [True, False])
+    def test_trim_xy(self, inplace):
+        arr = np.arange(100*100).reshape((100, 100))
+        frame = FrameData(arr)
+        trimmed = trim_image(frame, slice(40, 50, 1), slice(20, 30, 1), inplace)
+        assert_is_instance(trimmed, FrameData)
+        assert_equal(trimmed.shape, (10, 10))
+        assert_equal(trimmed.data, arr[20:30, 40:50])
+        assert_equal(trimmed.header['astropop trimmed_section'],
+                     '40:50,20:30')
+        if inplace:
+            assert_is(trimmed, frame)
+
+    @pytest.mark.parametrize('inplace', [True, False])
+    def test_trim_nparray(self, inplace):
+        arr = np.arange(100*100).reshape((100, 100))
+        trimmed = trim_image(arr, slice(40, 50, 1), slice(20, 30, 1), inplace)
+        assert_is_instance(trimmed, FrameData)
+        assert_equal(trimmed.shape, (10, 10))
+        assert_equal(trimmed.data, arr[20:30, 40:50])
+        assert_equal(trimmed.header['astropop trimmed_section'],
+                     '40:50,20:30')
+        assert_is_not(trimmed, arr)
+
+    @pytest.mark.parametrize('inplace', [True, False])
+    def test_trim_with_wcs(self, inplace):
+        arr = np.arange(100*100).reshape((100, 100))
+        wcs = WCS(naxis=2)
+        wcs.wcs.crpix = [50, 50]
+        wcs.wcs.cdelt = [0.5, 0.5]
+        wcs.wcs.crval = [15.5, 20.5]
+        wcs.wcs.ctype = ['RA---TAN', 'DEC--TAN']
+        frame = FrameData(arr, wcs=wcs)
+        trimmed = trim_image(frame, slice(40, 50, 1), slice(20, 30, 1),
+                             inplace)
+        assert_is_instance(trimmed, FrameData)
+        assert_equal(trimmed.shape, (10, 10))
+        assert_equal(trimmed.data, arr[20:30, 40:50])
+        assert_equal(trimmed.header['astropop trimmed_section'],
+                     '40:50,20:30')
+        assert_equal(trimmed.wcs.wcs.crpix, [10, 30])
+        assert_equal(trimmed.wcs.wcs.cdelt, [0.5, 0.5])
+        assert_equal(trimmed.wcs.wcs.crval, [15.5, 20.5])
+        assert_equal(trimmed.wcs.wcs.ctype, ['RA---TAN', 'DEC--TAN'])
+        if inplace:
+            assert_is(trimmed, frame)
