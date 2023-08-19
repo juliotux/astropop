@@ -46,6 +46,8 @@ class Test_Processing_Cosmics:
         assert_true(ccd.header['astropop lacosmic'])
         if inplace:
             assert_is(ccd, frame)
+        else:
+            assert_is_not(ccd, frame)
 
     @pytest.mark.parametrize('inplace', [True, False])
     def test_lacosmic_mask(self, inplace):
@@ -105,6 +107,8 @@ class Test_Processing_Gain:
         assert_equal(ccd.header['astropop gain_corrected_unit'], '')
         if inplace:
             assert_is(f, ccd)
+        else:
+            assert_is_not(f, ccd)
 
     @pytest.mark.parametrize('inplace', [True, False])
     def test_gain_qfloat(self, inplace):
@@ -120,6 +124,8 @@ class Test_Processing_Gain:
                      u.Unit('electron/adu'))
         if inplace:
             assert_is(f, ccd)
+        else:
+            assert_is_not(f, ccd)
 
     @pytest.mark.parametrize('inplace', [True, False])
     def test_gain_quantity(self, inplace):
@@ -135,6 +141,8 @@ class Test_Processing_Gain:
                      u.Unit('electron/adu'))
         if inplace:
             assert_is(f, ccd)
+        else:
+            assert_is_not(f, ccd)
 
     @pytest.mark.parametrize('inplace', [True, False])
     def test_simple_gain_correct(self, inplace):
@@ -172,6 +180,8 @@ class Test_Processing_TrimImage:
                      '20:30,0:100')
         if inplace:
             assert_is(trimmed, xi)
+        else:
+            assert_is_not(trimmed, xi)
 
     @pytest.mark.parametrize('inplace', [True, False])
     def test_trim_y(self, inplace):
@@ -185,6 +195,8 @@ class Test_Processing_TrimImage:
                      '0:100,20:30')
         if inplace:
             assert_is(trimmed, yi)
+        else:
+            assert_is_not(trimmed, yi)
 
     @pytest.mark.parametrize('inplace', [True, False])
     def test_trim_xy(self, inplace):
@@ -198,6 +210,8 @@ class Test_Processing_TrimImage:
                      '40:50,20:30')
         if inplace:
             assert_is(trimmed, frame)
+        else:
+            assert_is_not(trimmed, frame)
 
     @pytest.mark.parametrize('inplace', [True, False])
     def test_trim_nparray(self, inplace):
@@ -232,6 +246,8 @@ class Test_Processing_TrimImage:
         assert_equal(trimmed.wcs.wcs.ctype, ['RA---TAN', 'DEC--TAN'])
         if inplace:
             assert_is(trimmed, frame)
+        else:
+            assert_is_not(trimmed, frame)
 
     @pytest.mark.parametrize('inplace', [True, False])
     def test_simple_trim(self, inplace):
@@ -322,6 +338,29 @@ class Test_Processing_Flat():
             assert_is(res1.data, frame1.data)
         else:
             assert_is_not(res1.data, frame1.data)
+
+    @pytest.mark.parametrize('inplace', [True, False])
+    def test_flat_with_norm_value(self, inplace):
+        expect = np.ones((20, 20))*3
+        expect[0:5, 0:5] = 3/0.5
+        expect /= 2
+
+        frame = FrameData(np.ones((20, 20))*3, unit=u.adu)
+        master_flat = FrameData(np.ones((20, 20)))
+        master_flat.data[0:5, 0:5] = 0.5
+
+        res = flat_correct(frame, master_flat, norm_value=1/2, inplace=inplace)
+
+        assert_is_instance(res, FrameData)
+        assert_equal(res.data, expect)
+        assert_equal(res.header['astropop flat_corrected'], True)
+        assert_equal(res.flags, np.zeros((20, 20)))
+        assert_equal(res.unit, u.adu)
+
+        if inplace:
+            assert_is(res, frame)
+        else:
+            assert_is_not(res, frame)
 
 
 class Test_Processing_Bias():
