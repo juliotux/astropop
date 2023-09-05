@@ -590,7 +590,7 @@ class Test_DAOFind_Detection():
         pos_y = [20, 30, 40, 50, 60]
         sky = 70
         rdnoise = 20
-        flux = [30000]*5
+        flux = np.array([3e5, 3e5, 2e5, 3e5, 3e5]) # ensure order
         theta = 0
         fwhm = 3
         sigma_x = np.array([1, 0.5, 0.9, 2.0, 0.1])*gaussian_fwhm_to_sigma*fwhm
