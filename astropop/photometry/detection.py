@@ -311,12 +311,12 @@ def daofind(data, threshold, background, noise, fwhm,
     # DaoStarFinder uses absolute threshold value
     thresh = np.median(threshold * noise)
 
-    dao = DAOStarFinder(thresh, fwhm=fwhm, sky=background,
+    dao = DAOStarFinder(thresh, fwhm=fwhm, sky=0,
                         sharplo=sharplo, sharphi=sharphi,
                         roundlo=roundlo, roundhi=roundhi,
                         exclude_border=exclude_border,
                         xycoords=positions)
-    sources = dao(data, mask=mask)
+    sources = dao(data-background, mask=mask)
     # additional filtering steps?
 
     morfology = sources_morfology(data, sources['xcentroid'],
@@ -333,6 +333,7 @@ def daofind(data, threshold, background, noise, fwhm,
     res['xcentroid'] = sources['xcentroid']
     res['ycentroid'] = sources['ycentroid']
     res['peak'] = sources['peak']
+    res['flux'] = sources['peak']
     res['flux'] = morfology['segment_flux']
     res['fwhm'] = morfology['fwhm']
     res['sharpness'] = sources['sharpness']
@@ -342,12 +343,12 @@ def daofind(data, threshold, background, noise, fwhm,
     res['roundness'] = r_arr[np.arange(len(r_arg)), r_arg]
     res['s_roundness'] = sources['roundness1']
     res['g_roundness'] = sources['roundness2']
-    res['eccentricity'] = morfology['eccentricity']
-    res['elongation'] = morfology['elongation']
-    res['ellipticity'] = morfology['ellipticity']
-    res['cxx'] = morfology['cxx']
-    res['cyy'] = morfology['cyy']
-    res['cxy'] = morfology['cxy']
+    res['eccentricity'] = sources['eccentricity']
+    res['elongation'] = sources['elongation']
+    res['ellipticity'] = sources['ellipticity']
+    res['cxx'] = sources['cxx']
+    res['cyy'] = sources['cyy']
+    res['cxy'] = sources['cxy']
 
     # reorder the sources by flux
     res.sort('flux', reverse=True)  # Sort the results by flux.
