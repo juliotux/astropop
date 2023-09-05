@@ -5,8 +5,8 @@ from astropy.convolution import convolve
 from astropy.modeling.fitting import LevMarLSQFitter
 from astropy.nddata.utils import overlap_slices
 from astropy.table import Table
+from astropy.utils import lazyproperty
 from photutils.detection import DAOStarFinder
-from photutils.morphology import data_properties
 from photutils.segmentation import SourceFinder, SourceCatalog, \
                                    make_2dgaussian_kernel
 
@@ -221,6 +221,52 @@ def segfind(data, threshold, background, noise, mask=None, fwhm=None, npix=5,
     return res
 
 
+class _DAOSourcesMorfology(SourceCatalog):
+    """Class to handle sources morfology for DAOFind.
+
+    DAOFind do not provide sources morfology. So we need to compute it.
+    Photutils uses a segmentation image, not provided by DAOFind. So we need
+    to fake it using circular apertures.
+    """
+
+    def __init__(self, data, x, y, r, background=None, mask=None,
+                 localbkg_width=0, detection_cat=None, convolved_data=None):
+        shape = data.shape
+        box = (2*r+1, 2*r+1)
+        slices = [overlap_slices(shape, box, position=(yi, xi),
+                                 mode='partial')[0]
+                  for xi, yi in zip(x, y)]
+        self._r = r
+        self._indy, self._indx = np.indices(data.shape)
+        self._x = x
+        self._y = y
+
+        self._data_unit = None
+        self._data = self._validate_array(data, 'data', shape=False)
+        self._mask = self._validate_array(mask, 'mask')
+        self._background = self._validate_array(background, 'background')
+        self._convolved_data = self._validate_array(convolved_data,
+                                                    'convolved_data')
+        if self._convolved_data is None:
+            self._convolved_data = self._data
+
+        self.localbkg_width = self._validate_localbkg_width(localbkg_width)
+        self._detection_cat = self._validate_detection_cat(detection_cat)
+
+        self._slices = slices
+        self._labels = np.arange(len(slices))+1
+
+    @lazyproperty
+    def _cutout_segment_masks(self):
+        """Return the circular cotouts segment masks."""
+        cutouts = [None]*len(self._labels)
+        for i, s in enumerate(self._slices):
+            dist_sq = (self._indx[s]-self._x[i])**2
+            dist_sq += (self._indy[s]-self._y[i])**2
+            cutouts[i] = dist_sq >= self._r**2
+        return cutouts
+
+
 def daofind(data, threshold, background, noise, fwhm,
             mask=None, sharp_limit=(0.2, 1.0), round_limit=(-1.0, 1.0),
             exclude_border=True, positions=None):
@@ -308,6 +354,9 @@ def daofind(data, threshold, background, noise, fwhm,
     else:
         roundlo, roundhi = round_limit
 
+    # always use background subtracted data
+    d = data-background
+
     # DaoStarFinder uses absolute threshold value
     thresh = np.median(threshold * noise)
 
@@ -316,14 +365,14 @@ def daofind(data, threshold, background, noise, fwhm,
                         roundlo=roundlo, roundhi=roundhi,
                         exclude_border=exclude_border,
                         xycoords=positions)
-    sources = dao(data-background, mask=mask)
+    sources = dao(d, mask=mask)
     # additional filtering steps?
 
-    morfology = sources_morfology(data, sources['xcentroid'],
-                                  sources['ycentroid'],
-                                  r=fwhm,
-                                  background=background, mask=mask,
-                                  columns=_default_morfology_columns)
+    catalog = _DAOSourcesMorfology(d,
+                                   sources['xcentroid'],
+                                   sources['ycentroid'],
+                                   fwhm,
+                                   mask=mask)
 
     # reorganize the table using more standard keywords
     res = Table()
@@ -333,9 +382,8 @@ def daofind(data, threshold, background, noise, fwhm,
     res['xcentroid'] = sources['xcentroid']
     res['ycentroid'] = sources['ycentroid']
     res['peak'] = sources['peak']
-    res['flux'] = sources['peak']
-    res['flux'] = morfology['segment_flux']
-    res['fwhm'] = morfology['fwhm']
+    res['flux'] = catalog.segment_flux
+    res['fwhm'] = catalog.fwhm
     res['sharpness'] = sources['sharpness']
     r_arr = np.absolute([sources['roundness1'],
                          sources['roundness2']]).transpose()
@@ -343,12 +391,12 @@ def daofind(data, threshold, background, noise, fwhm,
     res['roundness'] = r_arr[np.arange(len(r_arg)), r_arg]
     res['s_roundness'] = sources['roundness1']
     res['g_roundness'] = sources['roundness2']
-    res['eccentricity'] = sources['eccentricity']
-    res['elongation'] = sources['elongation']
-    res['ellipticity'] = sources['ellipticity']
-    res['cxx'] = sources['cxx']
-    res['cyy'] = sources['cyy']
-    res['cxy'] = sources['cxy']
+    res['eccentricity'] = catalog.eccentricity
+    res['elongation'] = catalog.elongation
+    res['ellipticity'] = catalog.ellipticity
+    res['cxx'] = catalog.cxx
+    res['cyy'] = catalog.cyy
+    res['cxy'] = catalog.cxy
 
     # reorder the sources by flux
     res.sort('flux', reverse=True)  # Sort the results by flux.
@@ -447,80 +495,6 @@ def starfind(data, threshold, background, noise, fwhm=None, mask=None,
                 exclude_border=exclude_border)
     s.meta['astropop fwhm'] = fwhm
     return s
-
-
-def sources_morfology(data, x, y, r, background=None, mask=None, columns=None):
-    """Compute sources morfogoly.
-
-    This function creates a fake `~photutils.segmentation.SegmentationImage`
-    considering only circular sources centered on the (x,y) positions and
-    generates a `~photutils.segmentation.SourceCatalog` using it. This class is
-    useful to compute various parameters of the source morfology.
-
-    Parameters
-    ----------
-    data: array_like
-        2D array containing the image to extract the sources.
-    x, y: array_like
-        x and y coordinates of the source centroid
-    r: `int`
-        Aperture radius. The box size will be 2*r+1.
-    background: `float` or `~numpy.ndarray` (optional)
-        Background level estimation. Can be a single global value, or a 2D
-        array with by-pixel values.
-        Default: `None`
-    mask: array_like (optional)
-        Boolean mask where 1 pixels are masked out in the background
-        calculation.
-        Default: `None`
-    columns: list (optional)
-        List of columns to be returned. If `None`, only the default columns
-        will be returned. See `~photutils.segmentation.SourceCatalog` for
-        available columns.
-        Default: `None`
-
-    Returns
-    -------
-    properties: `~photutils.morfology.SourceCatalog`
-        Source morfology properties.
-    """
-    shape = data.shape
-    box = (2*r+1, 2*r+1)
-    slices = [overlap_slices(shape, box, position=(yi, xi), mode='partial')[0]
-              for xi, yi in zip(x, y)]
-
-    # background must be a 2D array
-    if np.isscalar(background) and background is not None:
-        background = np.ones_like(data) * background
-
-    for i in background, mask:
-        if i is not None:
-            if i.shape != shape:
-                raise ValueError('data, background and mask must have the '
-                                 'same shape.')
-
-    columns = columns or _default_morfology_columns
-
-    props = None
-    for sly, slx in slices:
-        d = data[sly, slx]
-        if background is not None:
-            bkg = background[sly, slx]
-            d -= bkg
-        else:
-            bkg = None
-        if mask is not None:
-            msk = mask[sly, slx]
-
-        else:
-            msk = None
-        t = data_properties(d, mask=msk, background=bkg)
-        if props is None:
-            props = t.to_table(columns)
-        else:
-            props.add_row(t.to_table(columns)[0])
-
-    return props
 
 
 def _fwhm_loop(model, data, x, y, xc, yc):
