@@ -1058,7 +1058,7 @@ class Test_GaiaDR3:
         # flags
         assert_is_instance(s.non_single_star(), np.ndarray)
         assert_equal(s.non_single_star().shape, (len(s),))
-        assert_equal(s.non_single_star().dtype, bool)
+        assert_equal(s.non_single_star().dtype, np.int16)
         assert_is_instance(s.phot_variable_flag(), np.ndarray)
         assert_equal(s.phot_variable_flag().shape, (len(s),))
         assert_equal(s.phot_variable_flag().dtype, bool)
