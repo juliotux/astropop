@@ -732,7 +732,7 @@ def create_xyls(fname, x, y, flux, imagew, imageh, header=None, dtype='f8'):
                       fits.BinTableHDU(xyls[sort[::-1]],
                                        header=fits.Header(head))])
     logger.debug('Saving .xyls to %s', fname)
-    f.writeto(fname)
+    f.writeto(fname, output_verify="ignore")
 
 
 def solve_astrometry_xy(x, y, flux, width, height,

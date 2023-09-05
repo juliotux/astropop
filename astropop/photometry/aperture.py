@@ -17,7 +17,8 @@ from astropop import __version__ as astropop_version
 from astropop.photometry.detection import median_fwhm
 from astropop.logger import logger
 from astropop.fits_utils import imhdus
-from astropop.framedata import PixelMaskFlags
+from astropop.framedata import PixelMaskFlags, FrameData
+from astropop.math import QFloat
 
 
 __all__ = ['aperture_photometry', 'PhotometryFlags']
@@ -281,9 +282,14 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto',
     """
     res_ap = Table()
 
-    if isinstance(data, imhdus):
-        # TODO: include QFLOAT and FrameData
+    if isinstance(data, imhdus) or isinstance(data, (QFloat, FrameData)):
         data = data.data
+    # force a new instance
+    data = np.array(data)
+    if data.ndim != 2:
+        raise ValueError('data must be a 2D array.')
+    # data must be divided by gain. #FIXME: check this
+    data /= gain
 
     # if mask is used, apply to pixel_flags
     if pixel_flags is None:
@@ -294,10 +300,6 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto',
             raise ValueError('pixel_flags must have the same shape as data.')
     if mask is not None:
         pixel_flags[mask] |= PixelMaskFlags.MASKED.value
-
-    # FIXME: check this
-    # data must be divided by gain. Also force a new instance
-    data = np.array(data)/gain
 
     # copy x and y to avoid changing the original
     nx = np.array(x, dtype='f8')
