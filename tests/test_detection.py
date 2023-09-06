@@ -220,6 +220,25 @@ class Test_Background():
         assert_almost_equal(bkg, np.ones(size)*level, decimal=-1)
         assert_almost_equal(rms, np.ones(size)*rdnoise, decimal=-1)
 
+    @pytest.mark.parametrize('global_bkg', [True, False])
+    @pytest.mark.parametrize('method', ['mean', 'median', 'mode'])
+    def test_background_no_changes_inplace(self, method, global_bkg):
+        # check if background changes the default image inplace.
+        size = (1024, 1024)
+        stars_n = 50
+        flux_low = 1500
+        flux_high = 25000
+        fwhm = 5
+        level = 800
+        rdnoise = 20
+        x, y, f = gen_position_flux(size, stars_n, flux_low, flux_high)
+        image_test = gen_bkg(size, level, rdnoise)
+        image_test += gen_stars_moffat(size, x, y, f, fwhm)
+
+        image_test_o = image_test.copy()
+        background(image_test, 64, 3, bkg_method=method, global_bkg=global_bkg)
+        assert_equal(image_test_o, image_test)
+
 
 @pytest.mark.flaky(reruns=5, reruns_delay=0.1)
 class Test_SEP_Detection():
