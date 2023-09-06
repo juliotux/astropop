@@ -655,6 +655,21 @@ class Test_SLSPolarimetry:
         assert_almost_equal(p.k, 1.0)
         assert_equal(p.zero, QFloat(zero, 0, 'degree'))
 
+    @pytest.mark.parametrize('k', [1.2, 1.05, 1.0, 0.95, 0.8])
+    @pytest.mark.parametrize('q', [0.05, 0.03, 0.0, -0.03, -0.05])
+    @pytest.mark.parametrize('u', [0.05, 0.03, 0.0, -0.03, -0.05])
+    def test_fit_half_missing_points(self, k, q, u):
+        psi = list(np.repeat(np.arange(0, 360, 22.5), 4))
+        for i in [17, 23, 42, 53][::-1]:
+            del psi[i]
+        flux_o, flux_e = get_flux_oe(1e5, psi, k=k, q=q, u=u)
+        pol = SLSDualBeamPolarimetry(retarder='halfwave', compute_k=True)
+        p = pol.compute(psi, flux_o, flux_e,
+                        f_ord_error=[50]*16, f_ext_error=[50]*16)
+        assert_almost_equal(p.q.nominal, q)
+        assert_almost_equal(p.u.nominal, u)
+        assert_almost_equal(p.k, k)
+
     @pytest.mark.parametrize('q', [0.05, 0.03, 0.0, -0.03, -0.05])
     @pytest.mark.parametrize('u', [0.05, 0.03, 0.0, -0.03, -0.05])
     @pytest.mark.parametrize('v', [0.05, 0.03, 0.0, -0.03, -0.05])
