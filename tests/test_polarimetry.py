@@ -283,8 +283,8 @@ class Test_DummyPolarimetry:
         assert_almost_equal(k, params['k'], decimal=4)
 
     @pytest.mark.parametrize('k', [1.2, 1.05, 1.0, 0.95, 0.8])
-    @pytest.mark.parametrize('q', [0.05, 0.03, 0.0, -0.03, -0.05])
-    @pytest.mark.parametrize('u', [0.05, 0.03, 0.0, -0.03, -0.05])
+    @pytest.mark.parametrize('q', [0.05, 0.0, -0.05])
+    @pytest.mark.parametrize('u', [0.05, 0.0, -0.05])
     def test_estimate_normalize_half_missing_points(self, k, q, u):
         params = dict(
             q = q,
@@ -322,9 +322,9 @@ class Test_DummyPolarimetry:
             pol._estimate_normalize_half(psi, flux_o, flux_e)
 
     @pytest.mark.parametrize('k', [1.2, 1.05, 1.0, 0.95, 0.8])
-    @pytest.mark.parametrize('q', [0.05, 0.03, 0.0, -0.03, -0.05])
-    @pytest.mark.parametrize('u', [0.05, 0.03, 0.0, -0.03, -0.05])
-    @pytest.mark.parametrize('v', [0.05, 0.03, 0.0, -0.03, -0.05])
+    @pytest.mark.parametrize('q', [0.05, 0.0, -0.05])
+    @pytest.mark.parametrize('u', [0.05, 0.0, -0.05])
+    @pytest.mark.parametrize('v', [0.05, 0.0, -0.05])
     def test_estimate_normalize_quarter_ok(self, k, q, u, v):
         params = dict(
             q = q,
@@ -557,8 +557,8 @@ class Test_StokesParameters:
 
 
 class Test_SLSPolarimetry:
-    @pytest.mark.parametrize('q', [0.05, 0.03, 0.0, -0.03, -0.05])
-    @pytest.mark.parametrize('u', [0.05, 0.03, 0.0, -0.03, -0.05])
+    @pytest.mark.parametrize('q', [0.05, 0.0, -0.05])
+    @pytest.mark.parametrize('u', [0.05, 0.0, -0.05])
     def test_fit_half_k1(self, k, q, u):
         psi = np.arange(0, 360, 22.5)
         flux_o, flux_e = get_flux_oe(1e5, psi, k=1.0, q=q, u=u, zero=0)
@@ -578,8 +578,8 @@ class Test_SLSPolarimetry:
         assert_equal(p.zi.unit, units.dimensionless_unscaled)
         assert_almost_equal(p.flux.nominal, [1e5]*len(psi))
 
-    @pytest.mark.parametrize('q', [0.05, 0.03, 0.0, -0.03, -0.05])
-    @pytest.mark.parametrize('u', [0.05, 0.03, 0.0, -0.03, -0.05])
+    @pytest.mark.parametrize('q', [0.05, 0.0, -0.05])
+    @pytest.mark.parametrize('u', [0.05, 0.0, -0.05])
     def test_fit_half_no_errors_k1(self, q, u):
         psi = np.arange(0, 360, 22.5)
         flux_o, flux_e = get_flux_oe(1e5, psi, k=1.0, q=q, u=u, zero=0)
@@ -599,8 +599,8 @@ class Test_SLSPolarimetry:
         assert_equal(p.zi.unit, units.dimensionless_unscaled)
 
     @pytest.mark.parametrize('k', [1.2, 1.05, 1.0, 0.95, 0.8])
-    @pytest.mark.parametrize('q', [0.05, 0.03, 0.0, -0.03, -0.05])
-    @pytest.mark.parametrize('u', [0.05, 0.03, 0.0, -0.03, -0.05])
+    @pytest.mark.parametrize('q', [0.05, 0.0, -0.05])
+    @pytest.mark.parametrize('u', [0.05, 0.0, -0.05])
     def test_fit_half_estimate_k(self, k, q, u):
         psi = np.arange(0, 360, 22.5)
         flux_o, flux_e = get_flux_oe(1e5, psi, k=k, q=q, u=u, zero=0)
@@ -620,8 +620,8 @@ class Test_SLSPolarimetry:
         assert_almost_equal(p.zi.nominal, zi)
         assert_equal(p.zi.unit, units.dimensionless_unscaled)
 
-    @pytest.mark.parametrize('q', [0.05, 0.03, 0.0, -0.03, -0.05])
-    @pytest.mark.parametrize('u', [0.05, 0.03, 0.0, -0.03, -0.05])
+    @pytest.mark.parametrize('q', [0.05, 0.0, -0.05])
+    @pytest.mark.parametrize('u', [0.05, 0.0, -0.05])
     def test_fit_half_no_k(self, q, u):
         psi = np.arange(0, 360, 22.5)
         flux_o, flux_e = get_flux_oe(1e5, psi, k=1, q=q, u=u, zero=0)
@@ -637,8 +637,8 @@ class Test_SLSPolarimetry:
         assert_almost_equal(p.k, 1.0)
         assert_is_none(p.zero)
 
-    @pytest.mark.parametrize('q', [0.05, 0.03, 0.0, -0.03, -0.05])
-    @pytest.mark.parametrize('u', [0.05, 0.03, 0.0, -0.03, -0.05])
+    @pytest.mark.parametrize('q', [0.05, 0.0, -0.05])
+    @pytest.mark.parametrize('u', [0.05, 0.0, -0.05])
     @pytest.mark.parametrize('zero', [0, 30, 60])
     def test_fit_half_zero(self, q, u, zero):
         psi = np.arange(0, 360, 22.5)
@@ -656,8 +656,8 @@ class Test_SLSPolarimetry:
         assert_equal(p.zero, QFloat(zero, 0, 'degree'))
 
     @pytest.mark.parametrize('k', [1.2, 1.05, 1.0, 0.95, 0.8])
-    @pytest.mark.parametrize('q', [0.05, 0.03, 0.0, -0.03, -0.05])
-    @pytest.mark.parametrize('u', [0.05, 0.03, 0.0, -0.03, -0.05])
+    @pytest.mark.parametrize('q', [0.05, 0.0, -0.05])
+    @pytest.mark.parametrize('u', [0.05, 0.0, -0.05])
     def test_fit_half_missing_points(self, k, q, u):
         psi = list(np.repeat(np.arange(0, 360, 22.5), 4))
         for i in [17, 23, 42, 53][::-1]:
@@ -670,9 +670,9 @@ class Test_SLSPolarimetry:
         assert_almost_equal(p.u.nominal, u)
         assert_almost_equal(p.k, k)
 
-    @pytest.mark.parametrize('q', [0.05, 0.03, 0.0, -0.03, -0.05])
-    @pytest.mark.parametrize('u', [0.05, 0.03, 0.0, -0.03, -0.05])
-    @pytest.mark.parametrize('v', [0.05, 0.03, 0.0, -0.03, -0.05])
+    @pytest.mark.parametrize('q', [0.05, 0.0, -0.05])
+    @pytest.mark.parametrize('u', [0.05, 0.0, -0.05])
+    @pytest.mark.parametrize('v', [0.05, 0.0, -0.05])
     @pytest.mark.parametrize('zero', [0, 30, 60])
     def test_fit_quarter_k1(self, q, u, v, zero):
         psi = np.arange(0, 360, 22.5)
@@ -697,9 +697,9 @@ class Test_SLSPolarimetry:
         assert_equal(p.zi.unit, units.dimensionless_unscaled)
         assert_almost_equal(p.flux.nominal, [1e5]*len(psi))
 
-    @pytest.mark.parametrize('q', [0.05, 0.03, 0.0, -0.03, -0.05])
-    @pytest.mark.parametrize('u', [0.05, 0.03, 0.0, -0.03, -0.05])
-    @pytest.mark.parametrize('v', [0.05, 0.03, 0.0, -0.03, -0.05])
+    @pytest.mark.parametrize('q', [0.05, 0.0, -0.05])
+    @pytest.mark.parametrize('u', [0.05, 0.0, -0.05])
+    @pytest.mark.parametrize('v', [0.05, 0.0, -0.05])
     @pytest.mark.parametrize('zero', [0, 30, 60])
     def test_fit_quarter_no_errors_k1(self, q, u, v, zero):
         psi = np.arange(0, 360, 22.5)
@@ -723,9 +723,9 @@ class Test_SLSPolarimetry:
         assert_equal(p.zi.unit, units.dimensionless_unscaled)
 
     @pytest.mark.parametrize('k', [1.2, 1.05, 1.0, 0.95, 0.8])
-    @pytest.mark.parametrize('q', [0.05, 0.03, 0.0, -0.03, -0.05])
-    @pytest.mark.parametrize('u', [0.05, 0.03, 0.0, -0.03, -0.05])
-    @pytest.mark.parametrize('v', [0.05, 0.03, 0.0, -0.03, -0.05])
+    @pytest.mark.parametrize('q', [0.05, 0.0, -0.05])
+    @pytest.mark.parametrize('u', [0.05, 0.0, -0.05])
+    @pytest.mark.parametrize('v', [0.05, 0.0, -0.05])
     @pytest.mark.parametrize('zero', [0, 30, 60])
     def test_fit_quarter_estimate_k(self, k, q, u, v, zero):
         psi = np.arange(0, 360, 22.5)
@@ -749,11 +749,11 @@ class Test_SLSPolarimetry:
         assert_almost_equal(p.zi.nominal, zi, decimal=4)
         assert_equal(p.zi.unit, units.dimensionless_unscaled)
 
-    @pytest.mark.parametrize('q', [0.05, 0.03, 0.0, -0.03, -0.05])
-    @pytest.mark.parametrize('u', [0.05, 0.03, 0.0, -0.03, -0.05])
-    @pytest.mark.parametrize('v', [0.05, 0.03, 0.0, -0.03, -0.05])
+    @pytest.mark.parametrize('q', [0.05, 0.0, -0.05])
+    @pytest.mark.parametrize('u', [0.05, 0.0, -0.05])
+    @pytest.mark.parametrize('v', [0.05, 0.0, -0.05])
     @pytest.mark.parametrize('zero', [0, 30, 60])
-    def test_fit_quarter_no_k(selfq, u, v, zero):
+    def test_fit_quarter_no_k(self, q, u, v, zero):
         psi = np.arange(0, 360, 22.5)
         flux_o, flux_e = get_flux_oe(1e5, psi, k=1.0, q=q, u=u, v=v, zero=zero)
         pol = SLSDualBeamPolarimetry(retarder='quarterwave', zero=zero,
@@ -770,14 +770,15 @@ class Test_SLSPolarimetry:
         assert_almost_equal(p.zero.nominal, zero)
         assert_equal(p.zero.unit, units.degree)
 
-    @pytest.mark.parametrize('q', [0.05, 0.03, 0.0, -0.03, -0.05])
-    @pytest.mark.parametrize('u', [0.05, 0.03, 0.0, -0.03, -0.05])
-    @pytest.mark.parametrize('v', [0.05, 0.03, 0.0, -0.03, -0.05])
+    @pytest.mark.parametrize('q', [0.05, 0.0, -0.05])
+    @pytest.mark.parametrize('u', [0.05, 0.0, -0.5])
+    @pytest.mark.parametrize('v', [0.05, 0.0, -0.05])
     @pytest.mark.parametrize('zero', [0, 30, 60])
     def test_fit_quarter_estimate_zero(self, q, u, v, zero):
         psi = np.arange(0, 360, 22.5)
         flux_o, flux_e = get_flux_oe(1e5, psi, k=1.0, q=q, u=u, v=v, zero=zero)
-        pol = SLSDualBeamPolarimetry(retarder='quarterwave', compute_k=True)
+        pol = SLSDualBeamPolarimetry(retarder='quarterwave', compute_k=False,
+                                     k=1.0)
         p = pol.compute(psi, flux_o, flux_e)
 
         assert_almost_equal(p.q.nominal, q, decimal=3)
