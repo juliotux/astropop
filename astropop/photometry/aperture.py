@@ -285,11 +285,11 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto',
     if isinstance(data, imhdus) or isinstance(data, (QFloat, FrameData)):
         data = data.data
     # force a new instance
-    data = np.array(data)
+    data = np.array(data, dtype='f8')
     if data.ndim != 2:
         raise ValueError('data must be a 2D array.')
     # data must be divided by gain. #FIXME: check this
-    data /= gain
+    data = data/float(gain)
 
     # if mask is used, apply to pixel_flags
     if pixel_flags is None:
