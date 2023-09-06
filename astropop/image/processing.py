@@ -36,8 +36,7 @@ def cosmics_lacosmic(frame, inplace=False, **lacosmic_kwargs):
     Parameters
     ----------
     frame: `~astropop.framedata.FrameData` compatible
-        Values to perform the operation. `~astropy.units.Quantity`, numerical
-        values and `~astropy.nddata.CCDData` are also suported.
+        2D image to clean with LACosmic.
     inplace: bool, optional
         If True, the operations will be performed inplace in the `frame`.
     logger: `~logging.Logger`
