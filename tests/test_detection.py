@@ -436,6 +436,18 @@ class Test_Segmentation_Detection():
         assert_almost_equal(sources[0]['x'], pos[0], decimal=2)
         assert_almost_equal(sources[0]['y'], pos[1], decimal=2)
 
+    def test_segfind_no_changes_inplace(self):
+        # check if segfind changes the default image inplace.
+        size = (128, 128)
+        pos = (54.32, 47.86)
+
+        im = gen_image(size, [pos[0]], [pos[1]], [45000], 800, 0,
+                       sigma=[5*gaussian_fwhm_to_sigma],
+                       skip_poisson=True)
+        im_o = im.copy()
+        sources = segfind(im, 5, 800, 10)
+        assert_equal(im_o, im)
+
 
 @pytest.mark.flaky(reruns=5, rerun_delay=0.1)
 class Test_DAOFind_Detection():
@@ -624,6 +636,18 @@ class Test_DAOFind_Detection():
         assert_almost_equal(sources[0]['x'], pos[0], decimal=2)
         assert_almost_equal(sources[0]['y'], pos[1], decimal=2)
 
+    def test_daofind_no_changes_inplace(self):
+        # check if daofind changes the default image inplace.
+        size = (128, 128)
+        pos = (54.32, 47.86)
+
+        im = gen_image(size, [pos[0]], [pos[1]], [45000], 800, 0,
+                       sigma=[5*gaussian_fwhm_to_sigma],
+                       skip_poisson=True)
+        im_o = im.copy()
+        sources = daofind(im, 5, 800, 10, 5)
+        assert_equal(im_o, im)
+
 
 @pytest.mark.flaky(reruns=5, rerun_delay=0.1)
 class Test_StarFind():
@@ -775,3 +799,15 @@ class Test_StarFind():
         # no error, 2 decimals ok!
         assert_almost_equal(sources[0]['x'], pos[0], decimal=2)
         assert_almost_equal(sources[0]['y'], pos[1], decimal=2)
+
+    def test_starfind_no_changes_inplace(self):
+        # check if daofind changes the default image inplace.
+        size = (128, 128)
+        pos = (54.32, 47.86)
+
+        im = gen_image(size, [pos[0]], [pos[1]], [45000], 800, 0,
+                       sigma=[5*gaussian_fwhm_to_sigma],
+                       skip_poisson=True)
+        im_o = im.copy()
+        sources = starfind(im, 5, 800, 10)
+        assert_equal(im_o, im)
