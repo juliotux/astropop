@@ -323,6 +323,20 @@ class TestQFloatNumpyArrayFuncs:
         assert_almost_equal(res.std_dev, np.std(a, axis=0)/np.sqrt(2))
         assert_equal(res.unit, qf.unit)
 
+    def test_qfloat_np_median(self):
+        a = np.arange(8).reshape((2, 4))
+        qf = QFloat(a, a * 0.1, "m")
+
+        res = np.median(qf)
+        assert_almost_equal(res.nominal, np.median(a))
+        assert_almost_equal(res.std_dev, np.std(a)/np.sqrt(a.size))
+        assert_equal(res.unit, qf.unit)
+
+        res = np.median(qf, axis=0)
+        assert_almost_equal(res.nominal, np.median(a, axis=0))
+        assert_almost_equal(res.std_dev, np.std(a, axis=0)/np.sqrt(2))
+        assert_equal(res.unit, qf.unit)
+
     def test_qfloat_np_moveaxis(self):
         arr = np.zeros((3, 4, 5))
         qf = QFloat(arr, unit='m')
@@ -351,13 +365,47 @@ class TestQFloatNumpyArrayFuncs:
     def test_qfloat_np_nancumsum(self):
         raise NotImplementedError
 
+    def test_qfloat_np_nanmean(self):
+        arr = np.array([1, 2, 1, np.nan, 1, 2, np.nan, 2])
+        qf = QFloat(arr, uncertainty=arr*0.1, unit="m")
+        res = np.nanmean(qf)
+        assert_almost_equal(res.nominal, 1.5)
+        assert_almost_equal(res.std_dev,
+                            np.nanstd(qf.nominal)/np.sqrt(qf.size-2))
+
+    def test_qfloat_np_nanmedian(self):
+        arr = np.array([1, 2, 1, np.nan, 1, 2, np.nan, 2])
+        qf = QFloat(arr, uncertainty=arr*0.1, unit="m")
+        res = np.nanmedian(qf)
+        assert_almost_equal(res.nominal, 1.5)
+        assert_almost_equal(res.std_dev,
+                            np.nanstd(qf.nominal)/np.sqrt(qf.size-2))
+
     @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_nanprod(self):
         raise NotImplementedError
 
+    def test_qfoat_np_nanstd(self):
+        arr = np.array([1, 2, 1, np.nan, 1, 2, np.nan, 2])
+        qf = QFloat(arr, uncertainty=arr*0.1, unit="m")
+        res = np.nanstd(qf)
+        assert_almost_equal(res, np.nanstd(arr))
+
+    def test_qfloat_np_nanstd(self):
+        arr = np.array([1, 2, 1, np.nan, 1, 2, np.nan, 2])
+        qf = QFloat(arr, uncertainty=arr*0.1, unit="m")
+        res = np.nanstd(qf)
+        assert_almost_equal(res, np.nanstd(arr))
+
     @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_nansum(self):
         raise NotImplementedError
+
+    def test_qfloat_np_nanvar(self):
+        arr = np.array([1, 2, 1, np.nan, 1, 2, np.nan, 2])
+        qf = QFloat(arr, uncertainty=arr*0.1, unit="m")
+        res = np.nanvar(qf)
+        assert_almost_equal(res, np.nanvar(arr))
 
     @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_prod(self):
@@ -681,6 +729,14 @@ class TestQFloatNumpyArrayFuncs:
     @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_trunc(self):
         raise NotImplementedError
+
+    def test_qfloat_np_var(self):
+        qf = QFloat(np.arange(10), uncertainty=np.arange(10)*0.1)
+        assert_almost_equal(np.var(qf), 8.25)
+
+        # errors do not enter in the account
+        qf = QFloat(np.arange(10), uncertainty=np.arange(10))
+        assert_almost_equal(np.var(qf), 8.25)
 
 
 class TestQFloatNumpyUfuncs:

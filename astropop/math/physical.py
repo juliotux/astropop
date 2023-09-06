@@ -832,10 +832,61 @@ def _qfloat_mean(qf, axis=None):
     return QFloat(nominal, std, qf.unit)
 
 
+@_implements_array_func(np.nanmean)
+def _qfloat_nanmean(qf, axis=None):
+    """Implement np.mean for qfloats."""
+    nominal = np.nanmean(qf.nominal, axis=axis)
+    # error of average = std_dev/sqrt(N)
+    std = np.nanstd(qf.nominal, axis=axis)
+    # N is determined by the number of elements in the axis
+    std /= np.sqrt(np.nansum(qf.nominal, axis=axis)/nominal)
+    return QFloat(nominal, std, qf.unit)
+
+
+@_implements_array_func(np.median)
+def _qfloat_median(qf, axis=None):
+    """Implement np.median for qfloats."""
+    nominal = np.median(qf.nominal, axis=axis)
+    # error of median = error of average = std_dev/sqrt(N)
+    std = np.nanstd(qf.nominal, axis=axis)
+    # N is determined by the number of elements in the axis
+    std /= np.sqrt(np.sum(np.ones_like(qf.nominal), axis=axis))
+    return QFloat(nominal, std, qf.unit)
+
+
+@_implements_array_func(np.nanmedian)
+def _qfloat_nanmedian(qf, axis=None):
+    """Implement np.median for qfloats."""
+    nominal = np.nanmedian(qf.nominal, axis=axis)
+    # error of average = std_dev/sqrt(N)
+    std = np.nanstd(qf.nominal, axis=axis)
+    # N is determined by the number of elements in the axis
+    std /= np.sqrt(np.nansum(qf.nominal, axis=axis)/nominal)
+    return QFloat(nominal, std, qf.unit)
+
+
 @_implements_array_func(np.std)
 def _qfloat_std(qf, axis=None):
     """Implement np.std for qfloats."""
     return np.std(qf.nominal, axis=axis)
+
+
+@_implements_array_func(np.nanstd)
+def _qfloat_nanstd(qf, axis=None):
+    """Implement np.std for qfloats."""
+    return np.nanstd(qf.nominal, axis=axis)
+
+
+@_implements_array_func(np.var)
+def _qfloat_var(qf, axis=None):
+    """Implement np.var for qfloats."""
+    return np.var(qf.nominal, axis=axis)
+
+
+@_implements_array_func(np.nanvar)
+def _qfloat_nanvar(qf, axis=None):
+    """Implement np.var for qfloats."""
+    return np.nanvar(qf.nominal, axis=axis)
 
 
 def _implements_ufunc_on_nominal(func):
