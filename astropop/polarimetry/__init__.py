@@ -376,9 +376,13 @@ class _DualBeamPolarimetry(abc.ABC):
     def _estimate_normalize_quarter(self, psi, f_ord, f_ext, q):
         """Estimate the normalization factor for quarterwave retarder."""
         ratio = self._estimate_normalize_half(psi, f_ord, f_ext)
-        q_norm = (1+0.5*q)/(1-0.5*q)
-        if (ratio < 1 and q < 0) or (ratio > 1 and q > 0):
-            q_norm = 1/q_norm
+        # PCCDPACK uses the following if to calculate the normalization. But
+        # it seems that the models are not fitting correctly for combinations
+        # outside this case. So, bypass it
+        # q_norm = (1+0.5*q)/(1-0.5*q)
+        # if (ratio < 1 and q < 0) or (ratio > 1 and q > 0):
+        #     q_norm = 1/q_norm
+        q_norm = (1-0.5*q)/(1+0.5*q)
         return ratio*q_norm
 
     def _half_compute(self, psi, f_ord, f_ext):
