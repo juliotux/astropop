@@ -5,7 +5,7 @@ import pytest
 import shlex
 from astropop.py_utils import string_fix, process_list, \
                               check_iterable, batch_key_replace, \
-                              run_command, IndexedDict, check_number, \
+                              run_command, check_number, \
                               broadcast
 import numpy as np
 
@@ -259,91 +259,3 @@ class Test_Broadcast():
         bc = broadcast(np.arange(10), 3, 2)
 
         assert_equal(bc.iters, [np.arange(10), [3]*10, [2]*10])
-
-
-class Test_IndexedDict():
-    def test_indexeddict_create(self):
-        d = dict(a=1, b=2, c=3)
-        i = IndexedDict(a=1, b=2, c=3)
-        assert_is_instance(i, dict)
-        assert_equal(len(d), len(i))
-        # Python 3.6 and above ensure items order
-        assert_equal(list(d.keys()), list(i.keys()))
-        assert_equal(list(d.values()), list(i.values()))
-        assert_equal(i, d)
-
-    def test_indexeddict_insert_at(self):
-        a = IndexedDict(a=1, b=2, c=3, d=4)
-        a.insert_at(2, 'e', 5)
-        assert_equal(a, {'a': 1, 'b': 2, 'e': 5, 'c': 3, 'd': 4})
-
-    def test_indexeddict_insert_at_first(self):
-        a = IndexedDict(a=1, b=2, c=3, d=4)
-        a.insert_at(0, 'e', 5)
-        assert_equal(a, {'e': 5, 'a': 1, 'b': 2, 'c': 3, 'd': 4})
-
-    def test_indexeddict_insert_at_last(self):
-        a = IndexedDict(a=1, b=2, c=3, d=4)
-        a.insert_at(4, 'e', 5)
-        assert_equal(a, {'a': 1, 'b': 2, 'c': 3, 'd': 4, 'e': 5})
-
-    def test_indexeddict_insert_at_away(self):
-        a = IndexedDict(a=1, b=2, c=3, d=4)
-        a.insert_at(42, 'e', 5)
-        assert_equal(a, {'a': 1, 'b': 2, 'c': 3, 'd': 4, 'e': 5})
-
-    def test_indexeddict_insert_at_negative(self):
-        a = IndexedDict(a=1, b=2, c=3, d=4)
-        a.insert_at(-2, 'e', 5)
-        assert_equal(a, {'a': 1, 'b': 2, 'c': 3, 'e': 5, 'd': 4})
-
-    def test_indexeddict_after(self):
-        a = IndexedDict(a=1, b=2, c=3, d=4)
-        a.insert_after('b', 'e', 5)
-        assert_equal(a, {'a': 1, 'b': 2, 'e': 5, 'c': 3, 'd': 4})
-
-    def test_indexeddict_before(self):
-        a = IndexedDict(a=1, b=2, c=3, d=4)
-        a.insert_before('b', 'e', 5)
-        assert_equal(a, {'a': 1, 'e': 5, 'b': 2, 'c': 3, 'd': 4})
-
-    def test_indexeddict_existing_before_before(self):
-        a = IndexedDict(a=1, b=2, c=3, d=4)
-        a.insert_before('b', 'c', 3)
-        assert_equal(a, {'a': 1, 'c': 3, 'b': 2, 'd': 4})
-
-    def test_indexeddict_existing_after_before(self):
-        a = IndexedDict(a=1, b=2, c=3, d=4, e=5)
-        a.insert_before('e', 'c', 4)
-        assert_equal(a, {'a': 1, 'b': 2, 'd': 4, 'c': 4, 'e': 5})
-
-    def test_indexeddict_existing_before_after(self):
-        a = IndexedDict(a=1, b=2, c=3, d=4)
-        a.insert_after('b', 'c', 3)
-        assert_equal(a, {'a': 1, 'c': 3, 'b': 2, 'd': 4})
-
-    def test_indexeddict_existing_after_after(self):
-        a = IndexedDict(a=1, b=2, c=3, d=4, e=5)
-        a.insert_after('e', 'c', 4)
-        assert_equal(a, {'a': 1, 'b': 2, 'd': 4, 'c': 4, 'e': 5})
-
-    def test_indexeddict_first(self):
-        a = IndexedDict(a=1, b=2, c=3, d=4)
-        a.insert_before('a', 'e', 5)
-        assert_equal(a, {'e': 5, 'a': 1, 'b': 2, 'c': 3, 'd': 4})
-
-    def test_indexeddict_last(self):
-        a = IndexedDict(a=1, b=2, c=3, d=4)
-        a.insert_after('d', 'e', 5)
-        assert_equal(a, {'a': 1, 'b': 2, 'c': 3, 'd': 4, 'e': 5})
-
-    @pytest.mark.parametrize('val, res', [('a', 0), ('b', 1),
-                                          ('c', 2), ('d', 3)])
-    def test_indexeddict_index(self, val, res):
-        a = IndexedDict(a=1, b=2, c=3, d=4)
-        assert_equal(a.index(val), res)
-
-    def test_indexeddict_invalid_key(self):
-        a = IndexedDict(a=1, b=2, c=3, d=4)
-        with pytest.raises(KeyError):
-            a.index('e')
