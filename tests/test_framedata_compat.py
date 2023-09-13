@@ -4,8 +4,7 @@
 import pytest
 import numpy as np
 from astropop.framedata._compat import extract_header_wcs, _extract_ccddata, \
-                                      _extract_fits, _merge_and_clean_header, \
-                                      _normalize_and_strip_dict
+                                      _extract_fits, _normalize_and_strip_dict
 from astropy.io import fits
 from astropy.wcs import WCS
 from astropy.table import Table
@@ -134,129 +133,60 @@ class Test_NormalizeAndStripHeader():
         with pytest.warns(UserWarning) as record:
             h = _normalize_and_strip_dict(h)
 
+    def test_enforce_fits(self):
+        with pytest.raises(TypeError,
+                           match='meta must be a fits.Header instance.'):
+            _normalize_and_strip_dict({'test': 1})
 
-class Test_MergeAndCleanHeader():
-    def test_types_meta_dict(self):
-        meta = {'META1': 1, 'META2': 2}
-        meta, wcs, history, comments = _merge_and_clean_header(meta, None,
-                                                               None)
-        assert_is_instance(meta, fits.Header)
-        assert_equal(meta['META1'], 1)
-        assert_equal(meta['META2'], 2)
-        assert_is_none(wcs)
-        assert_equal(history, [])
-        assert_equal(comments, [])
+    def test_strip_hist_comm_keys(self):
+        h = fits.Header.fromstring(_base_header, sep='\n')
+        h['COMMENT'] = 'This is a comment'
+        h['HISTORY'] = 'This is a history'
 
-    def test_types_meta_header(self):
-        meta = fits.Header()
-        meta['META1'] = 1
-        meta['META2'] = 2
-        meta, wcs, history, comments = _merge_and_clean_header(meta, None,
-                                                               None)
-        assert_is_instance(meta, fits.Header)
-        assert_equal(meta['META1'], 1)
-        assert_equal(meta['META2'], 2)
-        assert_is_none(wcs)
-        assert_equal(history, [])
-        assert_equal(comments, [])
+        hdr, hist, comm = _normalize_and_strip_dict(h)
+        assert_not_in('COMMENT', hdr.keys())
+        assert_not_in('HISTORY', hdr.keys())
+        assert_equal(hist, ['This is a history'])
+        assert_equal(comm, ['This is a comment'])
 
-    def test_types_meta_invalid(self):
-        meta = 'invalid'
-        with pytest.raises(TypeError):
-            _merge_and_clean_header(meta, None, None)
+    def test_strip_proctected_keys(self):
+        h = fits.Header.fromstring(_base_header, sep='\n')
 
-    def test_types_header(self):
-        header = fits.Header()
-        header['META1'] = 1
-        header['META2'] = 2
-        meta, wcs, history, comments = _merge_and_clean_header(None, header,
-                                                               None)
-        assert_is_instance(meta, fits.Header)
-        assert_equal(meta['META1'], 1)
-        assert_equal(meta['META2'], 2)
-        assert_is_none(wcs)
-        assert_equal(history, [])
-        assert_equal(comments, [])
+        hdr, hist, comm = _normalize_and_strip_dict(h)
+        assert_not_in('SIMPLE', hdr.keys())
+        assert_not_in('BITPIX', hdr.keys())
+        assert_equal(hist, [])
+        assert_equal(comm, [])
 
-    def test_types_invalid(self):
-        header = 'invalid'
-        with pytest.raises(TypeError):
-            _merge_and_clean_header(None, header, None)
+        assert_in('DATE-OBS', hdr.keys())
+        assert_equal(hdr['DATE-OBS'], '1996-10-14T10:14:36.123')
+        assert_equal(hdr.comments['DATE-OBS'],
+                     'Date and time of start of obs. in UTC.')
 
-    def test_types_wcs(self):
-        wcs = WCS(naxis=2)
-        wcs.wcs.ctype = ['RA---TAN', 'DEC--TAN']
-        meta, wcs, history, comments = _merge_and_clean_header(None, None,
-                                                               wcs)
-        assert_is_instance(meta, fits.Header)
-        assert_is_instance(wcs, WCS)
-        assert_equal(history, [])
-        assert_equal(comments, [])
+    def test_strip_blank_keys(self):
+        h = fits.Header.fromstring(_base_header, sep='\n')
+        h[''] = 'This is a blank key'
 
-    def test_types_invalid_wcs(self):
-        wcs = 'invalid'
-        with pytest.raises(TypeError):
-            _merge_and_clean_header(None, None, wcs)
+        hdr, hist, comm = _normalize_and_strip_dict(h)
+        assert_not_in('', hdr.keys())
+        assert_equal(hist, [])
+        assert_equal(comm, [])
 
-    def test_dict_meta_history(self):
-        meta = {'META1': 1, 'META2': 2, 'history': ['test a', 'test b']}
-        meta, wcs, history, comments = _merge_and_clean_header(meta, None,
-                                                               None)
-        assert_is_instance(meta, fits.Header)
-        assert_equal(meta['META1'], 1)
-        assert_equal(meta['META2'], 2)
-        assert_is_none(wcs)
-        assert_equal(history, ['test a', 'test b'])
-        assert_equal(comments, [])
+    def test_key_without_key_comments(self):
+        h = fits.Header.fromstring(_base_header, sep='\n')
+        h['TEST'] = 'This is a test key'
 
-    def test_dict_meta_comment(self):
-        meta = {'META1': 1, 'META2': 2, 'comment': ['test a', 'test b']}
-        meta, wcs, history, comments = _merge_and_clean_header(meta, None,
-                                                               None)
-        assert_is_instance(meta, fits.Header)
-        assert_equal(meta['META1'], 1)
-        assert_equal(meta['META2'], 2)
-        assert_is_none(wcs)
-        assert_equal(history, [])
-        assert_equal(comments, ['test a', 'test b'])
+        hdr, hist, comm = _normalize_and_strip_dict(h)
+        assert_equal(hdr['TEST'], 'This is a test key')
+        assert_equal(hdr.comments['TEST'], '')
 
-    def test_merge_and_clean_header(self):
-        strhdr = _base_header+_wcs_no_sip+_hist_comm_blank
-        header = fits.Header.fromstring(strhdr, sep='\n')
-        header['TEST'] = ('value', 'comment')
+    def test_keep_key_comments(self):
+        h = fits.Header.fromstring(_base_header, sep='\n')
+        h['TEST'] = ('This is a test key', 'This is a comment')
 
-        meta = {'META1': 1, 'META2': 2}
-        meta, wcs, history, comments = _merge_and_clean_header(meta, header,
-                                                               None)
-        assert_is_instance(meta, fits.Header)
-        assert_equal(meta['META1'], 1)
-        assert_equal(meta['META2'], 2)
-        assert_equal(meta['TEST'], 'value')
-        for i in ['history', 'comment', '']:
-            assert_not_in(i, meta)
-
-        assert_is_instance(wcs, WCS)
-        assert_equal(wcs.wcs.ctype, ['RA---TAN', 'DEC--TAN'])
-        assert_equal(wcs.wcs.cunit, ['degree', 'degree'])
-        assert_equal(wcs.wcs.crval, (202.482322805429, 47.1751189300101))
-        assert_equal(wcs.wcs.crpix, (128, 128))
-        assert_equal(wcs.wcs.cdelt, (1, 1))
-        assert_equal(wcs.wcs.dateobs, '1996-10-14T10:14:36.123')
-
-        assert_is_instance(history, list)
-        assert_is_instance(comments, list)
-        assert_equal(history, ['First line of history',
-                               'Second line of history',
-                               'Third line of history'])
-        assert_equal(comments, ['This is a first comment',
-                                'This is a second comment',
-                                'This is a third comment'])
-
-    def test_extract_wcs_meta_conflict(self):
-        header = fits.Header.fromstring(_base_header+_wcs_no_sip, sep='\n')
-        wcs = WCS(header)
-        with pytest.raises(ValueError, match='meta and wcs'):
-            _merge_and_clean_header(header, None, wcs=wcs)
+        hdr, hist, comm = _normalize_and_strip_dict(h)
+        assert_equal(hdr['TEST'], 'This is a test key')
+        assert_equal(hdr.comments['TEST'], 'This is a comment')
 
 
 class Test_ExtractHeader():

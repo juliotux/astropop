@@ -1,6 +1,7 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 """Background and noise estimation algorithms."""
 
+import numpy as np
 from photutils.background import Background2D, SExtractorBackground, \
                                  MeanBackground, MedianBackground, \
                                  StdBackgroundRMS, MADStdBackgroundRMS
@@ -69,6 +70,7 @@ def background(data, box_size=64, filter_size=3, mask=None,
     rms: `float` or `~numpy.ndarray`
         RMS value or image.
     """
+    data = np.array(data)
     # check valid methods
     if bkg_method not in _bkg_methods:
         raise ValueError(f"Unknown background method: {bkg_method}")
@@ -91,4 +93,4 @@ def background(data, box_size=64, filter_size=3, mask=None,
     if global_bkg:
         return float(bkg.background_median), float(bkg.background_rms_median)
     else:
-        return bkg.background, bkg.background_rms
+        return np.array(bkg.background), np.array(bkg.background_rms)

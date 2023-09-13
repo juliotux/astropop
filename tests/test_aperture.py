@@ -4,6 +4,7 @@
 import pytest
 import numpy as np
 from photutils import CircularAperture
+from astropop.photometry.background import background
 from astropop.photometry.aperture import aperture_photometry, PhotometryFlags
 from astropop.framedata import PixelMaskFlags
 from astropop.photometry.aperture import _err_out_of_bounds, _err_pixel_flags
@@ -134,6 +135,17 @@ class TestAperturePhotometry:
         assert_almost_equal(phot['original_x'], [22, 62], decimal=1)
         assert_almost_equal(phot['original_y'], [22, 62], decimal=1)
         assert_almost_equal(phot['flux'], [100, 100], decimal=0)
+
+    def test_no_changes_inplace(self):
+        # ensure aperture photometry is not changing the input image
+        im = gen_image((1024, 1024), [50.], [50.], flux=1000, sigma=2,
+                       model='gaussian', rdnoise=10, sky=1000,
+                       skip_poisson=False)
+        im2 = im.copy()
+        bkg, rms = background(im, 64, 3)
+        phot = aperture_photometry(im, [52], [52], r=20, r_ann=(20, 30),
+                                   gain=1.5, bkg_error=rms)
+        assert_almost_equal(im, im2, decimal=5)
 
 
 class TestApertureFlags:

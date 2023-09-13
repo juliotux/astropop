@@ -36,8 +36,7 @@ def cosmics_lacosmic(frame, inplace=False, **lacosmic_kwargs):
     Parameters
     ----------
     frame: `~astropop.framedata.FrameData` compatible
-        Values to perform the operation. `~astropy.units.Quantity`, numerical
-        values and `~astropy.nddata.CCDData` are also suported.
+        2D image to clean with LACosmic.
     inplace: bool, optional
         If True, the operations will be performed inplace in the `frame`.
     logger: `~logging.Logger`
@@ -49,8 +48,8 @@ def cosmics_lacosmic(frame, inplace=False, **lacosmic_kwargs):
         New cosmic-rays corrected `FrameData` instance if not `inplace`,
         else the `image` `~astropop.framedata.FrameData` instance.
     """
-    # As lacosmic removes and replace the cosmics pixels, no need to
-    # update the mask
+    frame = check_framedata(frame)
+
     mask, dat = astroscrappy.detect_cosmics(frame.data, **lacosmic_kwargs)
 
     if inplace:
@@ -291,12 +290,7 @@ def trim_image(image, x_slice=None, y_slice=None, inplace=False):
 
     # fix WCS if existing
     if image.wcs is not None:
-        wcs = image.wcs.copy()
-        wcs.wcs.crpix[0] -= x_slice.start
-        wcs.wcs.crpix[1] -= y_slice.start
-        # FIXME: this should work but is getting wrong results
-        # image.wcs = wcs.slice(section[::-1])
-        image.wcs = wcs
+        image.wcs = image.wcs.slice(section)
 
     str_slice = ''
     for s in section[::-1]:

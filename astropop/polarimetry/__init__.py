@@ -362,20 +362,27 @@ class _DualBeamPolarimetry(abc.ABC):
         fext_mean = np.full(self._n_pos, np.nan)
 
         for i in range(self._n_pos):
-            ford_mean[i] = np.mean(f_ord[pos_in_cycle == i])
-            fext_mean[i] = np.mean(f_ext[pos_in_cycle == i])
+            if np.all(np.isnan(f_ord[pos_in_cycle == i])) or \
+               np.all(np.isnan(f_ext[pos_in_cycle == i])):
+                raise ValueError('Could not estimate the normalization '
+                                 'factor.')
+            ford_mean[i] = np.nanmedian(f_ord[pos_in_cycle == i])
+            fext_mean[i] = np.nanmedian(f_ext[pos_in_cycle == i])
 
-        if np.any(np.isnan(ford_mean)) or np.any(np.isnan(fext_mean)):
-            raise ValueError('Could not estimate the normalization factor.')
-
-        return np.sum(f_ord)/np.sum(f_ext)
+        # use the means for each position. This fixes problems with missing
+        # points
+        return np.sum(ford_mean)/np.sum(fext_mean)
 
     def _estimate_normalize_quarter(self, psi, f_ord, f_ext, q):
         """Estimate the normalization factor for quarterwave retarder."""
         ratio = self._estimate_normalize_half(psi, f_ord, f_ext)
-        q_norm = (1+0.5*q)/(1-0.5*q)
-        if (ratio < 1 and q < 0) or (ratio > 1 and q > 0):
-            q_norm = 1/q_norm
+        # PCCDPACK uses the following if to calculate the normalization. But
+        # it seems that the models are not fitting correctly for combinations
+        # outside this case. So, bypass it
+        # q_norm = (1+0.5*q)/(1-0.5*q)
+        # if (ratio < 1 and q < 0) or (ratio > 1 and q > 0):
+        #     q_norm = 1/q_norm
+        q_norm = (1-0.5*q)/(1+0.5*q)
         return ratio*q_norm
 
     def _half_compute(self, psi, f_ord, f_ext):
