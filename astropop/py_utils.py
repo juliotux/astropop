@@ -12,7 +12,7 @@ import numpy as np
 from .logger import logger, resolve_level_string
 
 __all__ = ['string_fix', 'process_list', 'check_iterable',
-           'batch_key_replace', 'IndexedDict', 'check_number',
+           'batch_key_replace', 'check_number',
            'broadcast', 'run_command']
 
 
