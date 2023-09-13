@@ -44,10 +44,10 @@ class TestFrameDataCreationMetas:
     def test_framedata_creation_array_meta_with_history(self):
         a = _random_array.copy()
         meta = DEFAULT_HEADER.copy()
-        hist = ['test1', 'test2']
+        hist = 'test1'
         meta['history'] = hist
         f = FrameData(a, meta=meta)
-        assert_equal(f.history, hist)
+        assert_equal(f.history, [hist])
         assert_equal(f.comment, [])
         assert_is_none(f.wcs)
         assert_equal(f.meta['observer'], meta['observer'])
@@ -56,14 +56,32 @@ class TestFrameDataCreationMetas:
     def test_framedata_creation_array_meta_with_comment(self):
         a = _random_array.copy()
         meta = DEFAULT_HEADER.copy()
-        comment = ['test1', 'test2']
+        comment = 'test1'
         meta['comment'] = comment
         f = FrameData(a, meta=meta)
         assert_equal(f.history, [])
-        assert_equal(f.comment, comment)
+        assert_equal(f.comment, [comment])
         assert_is_none(f.wcs)
         assert_equal(f.meta['observer'], meta['observer'])
         assert_equal(f.meta['very long key'], meta['very long key'])
+
+    def test_framedata_creation_dict_meta_no_compilant_history(self):
+        a = _random_array.copy()
+        meta = DEFAULT_HEADER.copy()
+        hist = ['test1', 'test2']
+        meta['history'] = hist
+        with pytest.raises(ValueError,
+                           match='meta or header must be compilant with FITS'):
+            f = FrameData(a, meta=meta)
+
+    def test_framedata_creation_dict_meta_no_compilant_comment(self):
+        a = _random_array.copy()
+        meta = DEFAULT_HEADER.copy()
+        comment = ['test1', 'test2']
+        meta['comment'] = comment
+        with pytest.raises(ValueError,
+                           match='meta or header must be compilant with FITS'):
+            f = FrameData(a, meta=meta)
 
     def test_framedata_creation_array_meta_with_wcs(self):
         a = _random_array.copy()
@@ -122,7 +140,8 @@ class TestFrameDataCreationMetas:
         wcs2.wcs.crpix = [20, 20]
         wcs2.wcs.cdelt = [2, 2]
         meta.update(wcs2.to_header())
-        with pytest.raises(ValueError, match='meta and wcs offer a WCS.'):
+        with pytest.raises(ValueError,
+                           match='wcs and meta/wcs cannot be set'):
             f = FrameData(a, meta=meta, wcs=wcs)
 
     def test_frame_init_with_wcs(self):
@@ -142,17 +161,9 @@ class TestFrameDataCreationMetas:
         header.update({'testing1': 'c'})
         header = fits.Header(header)
 
-        a = FrameData([[1], [2], [3]], unit='', meta=meta, header=header)
-        assert_is_instance(a.meta, fits.Header)
-        assert_is_instance(a.header, fits.Header)
-        assert_is(a.meta, a.header)
-        assert_equal(a.meta['testing1'], 'c')  # Header priority
-        assert_equal(a.meta['testing2'], 'b')
-        assert_equal(a.header['testing1'], 'c')  # Header priority
-        assert_equal(a.header['testing2'], 'b')
-        for k in DEFAULT_HEADER:
-            assert_equal(a.header[k], DEFAULT_HEADER[k])
-            assert_equal(a.meta[k], DEFAULT_HEADER[k])
+        with pytest.raises(ValueError,
+                           match='Only one of meta or header can be set.'):
+            a = FrameData([[1], [2], [3]], unit='', meta=meta, header=header)
 
     def test_framedata_meta_is_not_case_sensitive(self):
         frame = create_framedata()
@@ -190,7 +201,8 @@ class TestFrameDataCreationMetas:
 
     def test_metafromstring_fail(self):
         hdr = 'this is not a valid header'
-        with pytest.raises(TypeError):
+        with pytest.raises(TypeError,
+                           match='meta must be a dict, Header or None.'):
             FrameData(np.ones((5, 5)), meta=hdr, unit=u.adu)
 
     def test_framedata_meta_history(self):

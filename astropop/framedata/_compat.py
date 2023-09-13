@@ -1,14 +1,14 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 """Handle compatibility between FrameData and other data formats."""
 
-import warnings
 import itertools
+import warnings
 from os import PathLike
 import copy as cp
 import numpy as np
 from astropy.io import fits
-from astropy.io.fits.verify import VerifyWarning
 from astropy.wcs import WCS, FITSFixedWarning
+from astropy.io.fits.verify import VerifyWarning
 from astropy.nddata.ccddata import CCDData
 from astropy.nddata import StdDevUncertainty, VarianceUncertainty, \
                            InverseVariance
@@ -19,6 +19,10 @@ from ..logger import logger
 from ..fits_utils import imhdus, string_to_header_key
 
 
+_HDU_UNCERT = 'UNCERT'
+_HDU_MASK = 'MASK'
+_HDU_FLAGS = 'PIXFLAGS'
+_UNIT_KEY = 'BUNIT'
 _PCs = set(['PC1_1', 'PC1_2', 'PC2_1', 'PC2_2'])
 _CDs = set(['CD1_1', 'CD1_2', 'CD2_1', 'CD2_2'])
 _KEEP = set(['JD-OBS', 'MJD-OBS', 'DATE-OBS'])
@@ -26,10 +30,6 @@ _PROCTECTED = ["SIMPLE", "XTENSION", "BITPIX", "NAXIS", "EXTEND", "PCOUNT",
                "GCOUNT", "GROUPS", "BSCALE", "BZERO", "TFIELDS"]
 _PROTECTED_N = ["TFORM", "TSCAL", "TZERO", "TNULL", "TTYPE", "TUNIT", "TDISP",
                 "TDIM", "THEAP", "TBCOL"]
-_HDU_UNCERT = 'UNCERT'
-_HDU_MASK = 'MASK'
-_HDU_FLAGS = 'PIXFLAGS'
-_UNIT_KEY = 'BUNIT'
 
 
 def _remove_sip_keys(header, wcs):
@@ -103,9 +103,12 @@ def extract_header_wcs(header):
 def _normalize_and_strip_dict(meta):
     """Normalize meta keys and remove the protected ones."""
     if meta is None:
-        return {}, [], []
+        return fits.Header(), [], []
 
-    nmeta = {}
+    if not isinstance(meta, fits.Header):
+        raise TypeError('meta must be a fits.Header instance.')
+
+    nmeta = fits.Header()
     history = []
     comment = []
 
@@ -129,8 +132,8 @@ def _normalize_and_strip_dict(meta):
             # as dicts are case sensitive, this can happen. Raise error
             warnings.warn(f'Duplicated key {k}. First value will be used.')
         if k not in _PROCTECTED and k != '' and k not in nmeta:
-            # remove protected keys
-            nmeta[k] = v
+            # keep commentaries. Do not keep protected keys
+            nmeta.append((k, meta[k], meta.comments[k]))
 
     # remove protected keys with number
     naxis = nmeta.get('NAXIS', 0)
@@ -144,38 +147,6 @@ def _normalize_and_strip_dict(meta):
                 meta.pop(f'{k}{i}')
 
     return nmeta, history, comment
-
-
-def _merge_and_clean_header(meta, header, wcs):
-    """Merge meta and header and clean the WCS and spurious keys."""
-    if not isinstance(meta, (dict, fits.Header)) and meta is not None:
-        raise TypeError('meta must be a dict or fits.Header. '
-                        f'Got {type(meta)}')
-    if not isinstance(header, fits.Header) and header is not None:
-        raise TypeError('header must be a fits.Header. '
-                        f'Got {type(header)}')
-    if not isinstance(wcs, WCS) and wcs is not None:
-        raise TypeError('wcs must be a astropy.wcs.WCS. '
-                        f'Got {type(wcs)}')
-
-    history = []
-    comment = []
-    fmeta = fits.Header()
-
-    for m in [meta, header]:
-        m, h, c = _normalize_and_strip_dict(m)
-        # extract history and comments from meta
-        history.extend(h)
-        comment.extend(c)
-        # merge meta and header
-        fmeta.update(m)
-
-    # extract wcs from header
-    meta, wcs_ = extract_header_wcs(fmeta)
-    if wcs_ and wcs:
-        raise ValueError('meta and wcs offer a WCS. Use only one.')
-    wcs = wcs_ if wcs is None else wcs
-    return meta, wcs, history, comment
 
 
 def _extract_fits(obj, hdu=0, unit=None, hdu_uncertainty=_HDU_UNCERT,

@@ -18,7 +18,8 @@ from astropy.wcs import WCS
 from ..flags import mask_from_flags
 from ._memmap import create_array_memmap, delete_array_memmap, \
                      reset_memmap_array
-from ._compat import _merge_and_clean_header, _to_hdu, _to_ccddata, _write_fits
+from ._compat import _to_hdu, _to_ccddata, _write_fits, \
+                     _normalize_and_strip_dict, extract_header_wcs
 from .._unit_property import unit_property
 
 
@@ -183,10 +184,11 @@ class FrameData:
         Pixel flags for the frame. See `~astropop.FrameData.PixelMaskFlags`.
         for values.
     wcs : `dict`, `~astropy.fits.Header` or `~astropy.wcs.WCS` (optional)
-        World Coordinate System of the image.
+        World Coordinate System of the image. If meta or header keys already
+        contain WCS informations, an error will be raised.
     meta or header: `dict` or `astropy.fits.Header` (optional)
-        Metadata (header) of the frame. If both set, they will be merged.
-        `header` priority.
+        Metadata (header) of the frame. Only one accepted. If both are passed,
+        error will be raised.
     cache_folder : string, `~pathlib.Path` or `None` (optional)
         Place to store the cached `FrameData`
     cache_filename : string, `~pathlib.Path` or `None` (optional)
@@ -221,9 +223,9 @@ class FrameData:
     cache_filename = None
 
     def __init__(self, data, unit=None, dtype=None, uncertainty=None,
-                 mask=None, flags=None, wcs=None, meta=None, header=None,
+                 mask=None, flags=None, use_memmap_backend=False,
                  cache_folder=None, cache_filename=None, origin_filename=None,
-                 use_memmap_backend=False):
+                 **kwargs):
         # setup names
         setup_filename(self, cache_folder, cache_filename)
         self._origin = origin_filename
@@ -268,19 +270,41 @@ class FrameData:
         self._history = []
         self._comments = []
         self._meta = fits.Header()
-        self._header_update(header, meta, wcs)
+        if 'meta' in kwargs and 'header' in kwargs:
+            raise ValueError('Only one of meta or header can be set.')
+        if 'meta' not in kwargs:
+            kwargs['meta'] = kwargs.pop('header', None)
+        self._meta_update(kwargs.pop('meta', None),
+                          kwargs.pop('wcs', None))
 
-    def _header_update(self, header, meta=None, wcs=None):
-        # merge header and meta. meta with higher priority
-        meta, wcs, history, comment = _merge_and_clean_header(meta, header,
-                                                              wcs)
+    def _meta_update(self, meta, wcs=None):
+        #simplify things by enforcing meta type
+        if not isinstance(meta, (dict, fits.Header, type(None))):
+            raise TypeError('meta must be a dict, Header or None.')
+
+        # force fits compliant header
+        try:
+            if meta is not None:
+                hdr = fits.Header(meta)
+            else:
+                hdr = fits.Header()
+        except Exception as e:
+            raise ValueError('meta or header must be compilant with FITS '
+                             'standard. Got error when tried to convert to '
+                             f'fits.Header: {e}')
+
+        header, history, comment = _normalize_and_strip_dict(hdr)
         if len(history) > 0:
             self.history = history
         if len(comment) > 0:
             self.comment = comment
-        if wcs is not None:
-            self._wcs = wcs
-        self._meta = meta
+
+        header, _wcs = extract_header_wcs(header)
+        if _wcs is not None and wcs is not None:
+            raise ValueError('wcs and meta/wcs cannot be set at the same '
+                             'time.')
+        self._wcs = _wcs or wcs
+        self._meta = header
 
     @property
     def origin_filename(self):
@@ -325,7 +349,7 @@ class FrameData:
 
     @meta.setter
     def meta(self, value):
-        self._header_update(None, value)
+        self._meta_update(value)
 
     @property
     def header(self):
