@@ -268,17 +268,10 @@ class Test_DummyPolarimetry:
 
     @pytest.mark.parametrize('k', [1.2, 1.05, 1.0, 0.95, 0.8])
     def test_estimate_normalize_half_ok(self, k):
-        params = dict(
-            q = 0.05,
-            u = 0.03,
-            k = k,
-            zero = 60)
-
+        params = dict(q=0.05, u=0.03, k=k, zero=60)
         pol = DummyPolarimeter('halfwave')
-
         psi = np.arange(0, 360, 22.5)
         flux_o, flux_e = get_flux_oe(1e7, psi, **params)
-
         k = pol._estimate_normalize_half(psi, flux_o, flux_e)
         assert_almost_equal(k, params['k'], decimal=4)
 
@@ -286,11 +279,7 @@ class Test_DummyPolarimetry:
     @pytest.mark.parametrize('q', [0.05, 0.0, -0.05])
     @pytest.mark.parametrize('u', [0.05, 0.0, -0.05])
     def test_estimate_normalize_half_missing_points(self, k, q, u):
-        params = dict(
-            q = q,
-            u = u,
-            k = k,
-            zero = 60)
+        params = dict(q=q, u=u, k=k, zero=60)
         pol = SLSDualBeamPolarimetry('halfwave', compute_k=True)
         psi = list(np.repeat(np.arange(0, 360, 22.5), 4))
 
@@ -324,11 +313,11 @@ class Test_DummyPolarimetry:
     @pytest.mark.parametrize('k', [1.2, 1.05, 1.0, 0.95, 0.8])
     def test_estimate_normalize_quarter_ok_no_q(self, k):
         params = dict(
-            q = 0.0,  # to avoid problems in simple computations, use q=0
-            u = -0.03,
-            v = 0.02,
-            k = k,
-            zero = 60)
+            q=0.0,  # to avoid problems in simple computations, use q=0
+            u=-0.03,
+            v=0.02,
+            k=k,
+            zero=60)
 
         pol = DummyPolarimeter('halfwave')
         psi = np.arange(0, 360, 22.5)

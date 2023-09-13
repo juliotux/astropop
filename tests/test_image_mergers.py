@@ -114,6 +114,7 @@ class TestMergeHeaders:
                               selected_keys=['B'])
         assert_equal(merged.comments['B'], 'this card has comments')
 
+
 class TestMergeFlags:
     def get_flags_4x4(self):
         f1 = np.zeros((4, 4), dtype=np.uint8)
