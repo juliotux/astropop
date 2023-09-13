@@ -129,8 +129,8 @@ def imarith(operand1, operand2, operation, inplace=False,
     ccd.flags = merge_flag(f1, f2, method=merge_flags)
 
     # Perform merging headers operation only if both operands have headers
-    h1 = getattr(operand1, 'header', {})
-    h2 = getattr(operand2, 'header', {})
+    h1 = getattr(operand1, 'header', None)
+    h2 = getattr(operand2, 'header', None)
     keys = kwargs.get('selected_keys', None)
     ccd.meta = merge_header(h1, h2, method=merge_headers, selected_keys=keys)
 
