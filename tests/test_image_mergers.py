@@ -5,6 +5,7 @@ import pytest
 import numpy as np
 from astropop.image._tools import merge_header, merge_flag
 from astropop.testing import *
+from astropy.io import fits
 
 
 class TestMergeHeaders:
@@ -26,26 +27,28 @@ class TestMergeHeaders:
         h4 = h1.copy()
         h4['D'] = False
 
-        return [h1, h2, h3, h4]
+        return [fits.Header(i) for i in [h1, h2, h3, h4]]
 
     def test_merge_headers_only_equal(self):
         headers = self.create_headers()
 
         # For all headers, only A and E are the same
         merged = merge_header(*headers, method='only_equal')
-        assert_is_instance(merged, dict)
-        assert_equal(merged, {'A': 1, 'E': None})
+        assert_is_instance(merged, fits.Header)
+        for k, v in {'A': 1, 'E': None}.items():
+            assert_equal(merged[k], v)
 
         # for the first 2 headers, A, C, D and E are the same
         merged = merge_header(*headers[:2], method='only_equal')
-        assert_is_instance(merged, dict)
-        assert_equal(merged, {'A': 1, 'C': 3.1415, 'D': True, 'E': None})
+        assert_is_instance(merged, fits.Header)
+        for k, v in {'A': 1, 'C': 3.1415, 'D': True, 'E': None}.items():
+            assert_equal(merged[k], v)
 
     def test_merge_headers_first(self):
         headers = self.create_headers()
 
         merged = merge_header(*headers, method='first')
-        assert_is_instance(merged, dict)
+        assert_is_instance(merged, fits.Header)
         assert_equal(merged, headers[0])
         # ensure copy
         assert_is_not(merged, headers[0])
@@ -55,16 +58,17 @@ class TestMergeHeaders:
 
         merged = merge_header(*headers, method='selected_keys',
                               selected_keys=['A', 'C'])
-        assert_is_instance(merged, dict)
+        assert_is_instance(merged, fits.Header)
         # Default is to use the first
-        assert_equal(merged, {'A': 1, 'C': 3.1415})
+        for k, v in {'A': 1, 'C': 3.1415}.items():
+            assert_equal(merged[k], v)
 
     def test_merge_headers_no_merge(self):
         headers = self.create_headers()
 
         merged = merge_header(*headers, method='no_merge')
-        assert_is_instance(merged, dict)
-        assert_equal(merged, {})
+        assert_is_instance(merged, fits.Header)
+        assert_equal(merged, fits.Header())
 
     def test_merge_headers_invalid_method(self):
         headers = self.create_headers()

@@ -22,8 +22,8 @@ def merge_header(*headers, method='same', selected_keys=None):
         Method to merge the headers. 'only_equal' will merge only the keywords
         with the same value in all headers. 'first' will use the first
         header as the result. 'selected_keys' will merge only the keywords
-        in the list `header_merge_keys`. 'no_merge' will return an empty
-        header.
+        in the list `header_merge_keys`, prioritizing the first appearence.
+        'no_merge' will return an empty header.
     selected_keys: list of str
         List of keywords to be merged. Used only if method is
         'selected_keys'.
@@ -43,7 +43,7 @@ def merge_header(*headers, method='same', selected_keys=None):
         raise ValueError('selected_keys must be provided if method is '
                          'selected_keys.')
 
-    meta = {}
+    meta = Header()
     if method == 'no_merge':
         return meta
 
@@ -52,39 +52,36 @@ def merge_header(*headers, method='same', selected_keys=None):
     if method == 'first':
         return headers[0].copy()
 
-    summary = None
+    first_hdr = headers[0]
+    if method == 'first':
+        return first_hdr.copy()
+
     for hdr in headers:
         hdr, _, _ = _normalize_and_strip_dict(hdr)
-        hdr = Header(hdr)
-        if summary is None:
-            summary = {k: [v] for k, v in hdr.items()}
-        for key in hdr.keys():
-            if key not in summary.keys():
-                # avoid only_equal problems
-                summary[key] = [None]
-            if hdr[key] not in summary[key]:
-                summary[key].append(hdr[key])
-
-    if method == 'selected_keys':
-        keys = selected_keys
-    else:
-        keys = summary.keys()
-
-    for k in keys:
-        # do not use np.unique to avoid problems with None
-        k = string_to_header_key(k)
-        uniq = list(set(summary[k]))
-        if len(uniq) == 1:
-            meta[k] = uniq[0]
+        if method == 'only_equal':
+            # only keeps equal keys. If is the first header, add it
+            # to the meta. If the key is different, remove it from
+            # the meta.
+            for key in hdr:
+                if key not in meta and hdr == first_hdr:
+                    meta.append((key, hdr[key], hdr.comments[key]))
+                    continue
+                if key not in meta:
+                    continue
+                if meta[key] != hdr[key]:
+                    del meta[key]
+            # remove all keys that are not in this header, since it will be not
+            # equal
+            for key in meta:
+                if key not in hdr:
+                    del meta[key]
         elif method == 'selected_keys':
-            logger.debug('Keyword %s is different across headers. '
-                         'Unsing first one.', k)
-            meta[k] = summary[k][0]
-        else:
-            logger.debug('Keyword %s is different across headers. '
-                         'Skipping.', k)
+            # only keeps the keys in the selected_keys list
+            for key in hdr:
+                if key in selected_keys and key not in meta:
+                    meta.append((key, hdr[key], hdr.comments[key]))
 
-    return dict(meta)
+    return meta
 
 
 def merge_flag(*flags, method='or'):
