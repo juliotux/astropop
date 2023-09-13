@@ -86,6 +86,33 @@ class TestMergeHeaders:
         merged = merge_header(*headers, method='only_equal')
         assert_not_in('F', merged)
 
+    @pytest.mark.parametrize('method', ['only_equal', 'first'])
+    def test_merge_header_keep_commentaries(self, method):
+        # ensure all the commentaries are kept
+        h1 = fits.Header()
+        h1['A'] = 1
+        h1['B'] = (2, 'this card has comments')
+
+        h2 = fits.Header()
+        h2['A'] = 1
+        h2['B'] = (2)
+
+        merged = merge_header(h1, h2, method=method)
+        assert_equal(merged.comments['B'], 'this card has comments')
+
+    def test_merge_header_keep_commentaries_selected_keys(self):
+        # ensure all the commentaries are kept
+        h1 = fits.Header()
+        h1['A'] = 1
+        h1['B'] = (2, 'this card has comments')
+
+        h2 = fits.Header()
+        h2['A'] = 1
+        h2['B'] = (2)
+
+        merged = merge_header(h1, h2, method='selected_keys',
+                              selected_keys=['B'])
+        assert_equal(merged.comments['B'], 'this card has comments')
 
 class TestMergeFlags:
     def get_flags_4x4(self):
