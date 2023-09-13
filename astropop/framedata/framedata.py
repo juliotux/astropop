@@ -278,7 +278,7 @@ class FrameData:
                           kwargs.pop('wcs', None))
 
     def _meta_update(self, meta, wcs=None):
-        #simplify things by enforcing meta type
+        # simplify things by enforcing meta type
         if not isinstance(meta, (dict, fits.Header, type(None))):
             raise TypeError('meta must be a dict, Header or None.')
 

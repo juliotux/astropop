@@ -6,7 +6,6 @@ from astropy.io.fits import Header
 
 from ..logger import logger
 from ..framedata._compat import _normalize_and_strip_dict
-from ..fits_utils import string_to_header_key
 
 __all__ = ['merge_header', 'merge_flag']
 
