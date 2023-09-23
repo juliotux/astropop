@@ -3,8 +3,7 @@
 
 import pytest
 import shlex
-from astropop.py_utils import string_fix, process_list, \
-                              check_iterable, batch_key_replace, \
+from astropop.py_utils import string_fix, batch_key_replace, \
                               run_command, check_number, \
                               broadcast
 import numpy as np
@@ -140,56 +139,6 @@ class Test_RunCommand():
         assert_equal(stderr, ['this is an error'])
         assert_equal(logl, expect_log)
         logger.removeHandler(lh)
-
-
-class Test_ProcessList():
-    def test_process_list(self):
-        def dummy_func(i):
-            i = 1
-            return i
-        a = np.zeros(20)
-        b = np.ones(20)
-        c = process_list(dummy_func, a)
-        assert_equal(b, c)
-        assert_false(np.array_equal(a, c))
-
-    def test_process_list_with_args(self):
-        def dummy_func(i, a, b):
-            return (i+a)*b
-        i_array = np.arange(20)
-        a_val = 2
-        b_val = 3
-        res = process_list(dummy_func, i_array, a_val, b=b_val)
-        assert_equal((i_array+a_val)*b_val, res)
-
-
-class Test_CheckIterable():
-    def test_check_iterabel_array(self):
-        a = [1, 2, 3, 4, 5]
-        assert_true(check_iterable(a))
-
-    def test_check_iterabel_string(self):
-        a = '12345'
-        assert_false(check_iterable(a))
-
-    def test_check_iterabel_nparray(self):
-        a = np.zeros(20)
-        assert_true(check_iterable(a))
-
-    def test_check_iterabel_number(self):
-        a = 10
-        assert_false(check_iterable(a))
-
-    def test_check_iterabel_range(self):
-        a = range(10)
-        assert_true(check_iterable(a))
-
-    def test_check_iterabel_dict(self):
-        a = dict(a=1, b=2, c=3, d=4)
-        assert_true(check_iterable(a))
-        assert_true(check_iterable(a.items()))
-        assert_true(check_iterable(a.keys()))
-        assert_true(check_iterable(a.values()))
 
 
 class Test_BatchKeyReplace():

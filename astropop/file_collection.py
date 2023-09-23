@@ -13,7 +13,6 @@ from ._db import SQLDatabase, _ID_KEY, sql, SQLTable, SQLColumnMap
 from .fits_utils import _fits_extensions, \
                         _fits_extensions_with_compress
 from .framedata import check_framedata
-from .py_utils import check_iterable
 from .logger import logger
 
 __all__ = ['FitsFileGroup']
@@ -25,7 +24,7 @@ def list_fits_files(location, fits_extensions=None,
     if fits_extensions is None:
         fits_extensions = _fits_extensions
 
-    if not check_iterable(fits_extensions):
+    if np.isscalar(fits_extensions):
         fits_extensions = [fits_extensions]
 
     f = []
@@ -33,7 +32,7 @@ def list_fits_files(location, fits_extensions=None,
         files = glob.glob(os.path.join(location, '**/*'+i), recursive=True)
         # filter only glob include
         if glob_include is not None:
-            if not check_iterable(glob_include):
+            if np.isscalar(glob_include):
                 glob_include = [glob_include]
             for inc in glob_include:
                 files = [i for i in files if fnmatch.fnmatch(i, inc)]
@@ -41,7 +40,7 @@ def list_fits_files(location, fits_extensions=None,
 
     # Filter excluded files
     if glob_exclude is not None:
-        if not check_iterable(glob_exclude):
+        if np.isscalar(glob_exclude):
             glob_exclude = [glob_exclude]
         for exc in glob_exclude:
             f = [i for i in f if not fnmatch.fnmatch(i, exc)]

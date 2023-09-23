@@ -11,33 +11,8 @@ import numpy as np
 
 from .logger import logger, resolve_level_string
 
-__all__ = ['string_fix', 'process_list', 'check_iterable',
-           'batch_key_replace', 'check_number',
+__all__ = ['string_fix', 'batch_key_replace', 'check_number',
            'broadcast', 'run_command']
-
-
-@np.deprecate(message="This function will be removed 1.0.")
-def process_list(func, iterator, *args, **kwargs):
-    """Run a function func for all i in a iterator list.
-
-    The processing will occurr in serial form. The function will be
-    processed multiple times using the values iterated from the `iterator`.
-
-    Parameters
-    ----------
-    func: callable
-        Function to be executed with the iterator argument.
-    iterator: list
-        Values to be passed to the func.
-    *args, **kwargs:
-        Other, non-varying, arguments to be passed to the function.
-
-    Returns
-    -------
-    list:
-        A list with the results.
-    """
-    return [func(i, *args, **kwargs) for i in iterator]
 
 
 def string_fix(string, encode='utf-8'):
@@ -67,38 +42,6 @@ def string_fix(string, encode='utf-8'):
         string = str(string)
 
     return string
-
-
-@np.deprecate(message="This function will be removed 1.0. Use np.isscalar.")
-def check_iterable(value):
-    """Check if a value is iterable (list), but not a string.
-
-    The checking process is done by trying the `iter` method of Python and
-    matching if the value is a string or not.
-
-    Parameters
-    ----------
-    value: any
-        Value to be checked if it is iterable.
-
-    Returns
-    -------
-    bool:
-        `True` if the value is iterable and not a string. `False` otherwise.
-    """
-    try:
-        iter(value)
-        if isinstance(value, (str, bytes)):
-            return False
-        return True
-    except NotImplementedError:
-        # multi-dimensional sub-views are not implemented
-        if isinstance(value, np.memmap):
-            return True
-    except TypeError:
-        pass
-
-    return False
 
 
 def check_number(value):
