@@ -19,6 +19,7 @@ from astropop.astrometry.astrometrynet import _solve_field, \
                                               solve_astrometry_image, \
                                               solve_astrometry_xy, \
                                               solve_astrometry_hdu, \
+                                              solve_astrometry_framedata, \
                                               AstrometrySolver
 from astropop.astrometry.astrometrynet import _parse_angle, \
                                               _parse_coordinates, \
@@ -26,6 +27,7 @@ from astropop.astrometry.astrometrynet import _parse_angle, \
                                               _parse_pltscl
 from astropop.astrometry.manual_wcs import wcs_from_coords
 from astropop.astrometry.coords_utils import guess_coordinates
+from astropop.framedata import FrameData
 from astropop.photometry.detection import starfind
 
 from astropop.testing import *
@@ -346,6 +348,18 @@ class Test_AstrometrySolver:
         for k in ['field_x', 'field_y', 'index_x', 'index_y',
                   'field_ra', 'field_dec', 'index_ra', 'index_dec']:
             assert_in(k, result.correspondences.colnames)
+
+    @skip_astrometry
+    def test_solve_astrometry_framedata(self, tmpdir):
+        data, index, options = self.get_image()
+        index_dir = os.path.dirname(index)
+        hdu = fits.open(data)[0]
+        header, wcs = _generate_wcs_and_update_header(hdu.header)
+        hdu.header = header
+        f = FrameData(hdu.data, header=hdu.header)
+        result = solve_astrometry_framedata(f, options=options)
+        compare_wcs(wcs, result.wcs)
+        assert_is_instance(result.header, fits.Header)
 
 
 class Test_ManualWCS:
