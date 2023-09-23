@@ -309,7 +309,6 @@ class Test_AstrometrySolver:
             assert_in(k, result.correspondences.colnames)
 
     @skip_astrometry
-    @pytest.mark.skip('This test is always failing.')
     def test_solve_astrometry_xyl(self, tmpdir):
         data, index, options = self.get_image()
         index_dir = os.path.dirname(index)
