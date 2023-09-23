@@ -111,7 +111,7 @@ class broadcast:
     @staticmethod
     def _get_length(value):
         """Get the length of iterable only values."""
-        if not check_iterable(value):
+        if np.isscalar(value):
             return -1
         return len(value)
 
@@ -150,7 +150,7 @@ def batch_key_replace(dictionary, key=None):
                 logger.debug("replacing key %s in key %s", i, key)
                 batch_key_replace(dictionary, i)
                 dictionary[key] = dictionary[key].format(**{i: dictionary[i]})
-    elif check_iterable(dictionary[key]):
+    elif not np.isscalar(dictionary[key]):
         for j in range(len(dictionary[key])):
             for i in dictionary.keys():
                 v = dictionary[key][j]
