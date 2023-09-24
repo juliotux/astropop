@@ -47,6 +47,9 @@ def background(data, box_size=64, filter_size=3, mask=None,
         Boolean mask where 1 pixels are masked out in the background
         calculation.
         Default: `None`
+    sigma_clip: `float` or `tuple` (optional)
+        Sigma clipping value. If a tuple is given, the first value is the
+        lower sigma and the second is the upper sigma.
     bkg_method: ``'mode'``, ``'mean'``, ``'median'`` (optional)
         Method to calculate the background. By ``'mode'`` it uses the
         `~photutils.background.SExtractorBackground` algorithm. ``'mean'`` and
