@@ -25,9 +25,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: Python 3.11 with devdeps and online catalogs
-            python: '3.11'
-            toxenv: py311-test-devdeps-online
+          - name: Python 3.12 with devdeps and online catalogs
+            python: '3.12-dev'
+            toxenv: py312-test-devdeps-online
 
           - name: Python 3.8 with old deps (online)
             python: '3.8'
