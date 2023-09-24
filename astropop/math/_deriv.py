@@ -38,20 +38,6 @@ def _deriv_mod_1(x, y):
         return numerical_derivative(np.mod, 1)(x, y)
 
 
-@np.vectorize
-def _deriv_fabs(x):
-    if x >= 0:
-        return 1
-    return -1
-
-
-@np.vectorize
-def _deriv_copysign(x, y):
-    if x >= 0:
-        return np.copysign(1, y)
-    return -np.copysign(1, y)
-
-
 erf_coef = 2/np.sqrt(np.pi)
 
 
@@ -81,14 +67,11 @@ derivatives = {
     'arctan2': (lambda y, x: x/(x**2+y**2),  # Correct for x == 0
                 lambda y, x: -y/(x**2+y**2)),  # Correct for x == 0
     'arctanh': (lambda x: 1/(1-x**2)),
-    'copysign': (_deriv_copysign,
-                 lambda x, y: 0),
     'cos': (lambda x: -np.sin(x)),
     'cosh': (np.sinh),
     'exp': (np.exp),
     'expm1': (np.exp),
     'exp2': (lambda x: np.exp2(x)*np.log(2)),
-    'fabs': (_deriv_fabs),
     'hypot': [lambda x, y: x/np.hypot(x, y),
               lambda x, y: y/np.hypot(x, y)],
     'log': (lambda x: 1/x),  # for np, log=ln
@@ -125,7 +108,7 @@ def propagate_1(func, fx, x, sx):
     if func not in derivatives.keys():
         raise ValueError(f'func {func} not in derivatives.')
 
-    if hasattr(derivatives[func], '__len__'):
+    if np.size(derivatives[func]) != 1:
         raise ValueError(f'func {func} is not a 1 variable function.')
 
     try:
@@ -137,7 +120,7 @@ def propagate_1(func, fx, x, sx):
         if len(shape) == 0:
             return np.nan
         else:
-            return np.empty(shape).fill(np.nan)
+            return np.full(shape, fill_value=np.nan)
 
 
 def propagate_2(func, fxy, x, y, sx, sy):
@@ -163,7 +146,7 @@ def propagate_2(func, fxy, x, y, sx, sy):
     if func not in derivatives.keys():
         raise ValueError(f'func {func} not in derivatives.')
 
-    if len(derivatives[func]) != 2:
+    if np.size(derivatives[func]) != 2:
         raise ValueError(f'func {func} is not a 2 variable function.')
 
     deriv_x, deriv_y = derivatives[func]
@@ -206,7 +189,7 @@ def numerical_derivative(func, arg_ref, step=STEP_SIZE):
     - Implementation based on `uncertainties` package.
     """
     if not callable(func):
-        raise ValueError(f'function {func} not callable.')
+        raise TypeError(f'function {func} not callable.')
 
     # If reference variable is in kwargs (str) instead of args (int).
     change_kwargs = isinstance(arg_ref, str)
