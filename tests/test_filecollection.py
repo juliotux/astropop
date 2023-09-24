@@ -4,6 +4,7 @@
 import os
 import pytest
 import numpy as np
+import warnings
 
 from astropy.io import fits
 from astropop.file_collection import FitsFileGroup, list_fits_files
@@ -63,15 +64,18 @@ def create_test_files(tmpdir, extension='fits'):
         fname = tmpdir / iname
         if fname.is_file():
             continue
-        hdr = fits.Header({'obstype': 'bias',
-                           'exptime': 0.0001,
-                           'observer': 'Galileo Galileo',
-                           'object': 'bias',
-                           'filter': '',
-                           'space key': 1,
-                           'image': iname})
-        hdu = fits.PrimaryHDU(np.ones((8, 8), dtype=np.int16), hdr)
-        hdu.writeto(fname)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore',
+                                  category=fits.verify.VerifyWarning)
+            hdr = fits.Header({'obstype': 'bias',
+                            'exptime': 0.0001,
+                            'observer': 'Galileo Galileo',
+                            'object': 'bias',
+                            'filter': '',
+                            'space key': 1,
+                            'image': iname})
+            hdu = fits.PrimaryHDU(np.ones((8, 8), dtype=np.int16), hdr)
+            hdu.writeto(fname)
         files_list.append(str(fname))
 
     # create 10 flat V files

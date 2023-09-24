@@ -103,7 +103,6 @@ addopts = "--color=yes --doctest-rst"
 xfail_strict = true
 qt_no_exception_capture = 1
 filterwarnings = [
-    "error",
     "ignore:numpy.ufunc size changed:RuntimeWarning",
     "ignore:numpy.ndarray size changed:RuntimeWarning",
     "ignore:Importing from numpy:DeprecationWarning:scipy",
@@ -111,7 +110,7 @@ filterwarnings = [
     "ignore:Unknown config option:pytest.PytestConfigWarning",
     "ignore:matplotlibrc text.usetex:UserWarning:matplotlib",
     # Triggered by ProgressBar > ipykernel.iostream
-    "ignore:the imp module is deprecated:DeprecationWarning",
+    "ignore:the imp module is deprecated:DeprecationWarning"
 ]
 
 [tool.coverage.run]

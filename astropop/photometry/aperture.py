@@ -2,10 +2,12 @@
 """Aperture photometry module."""
 
 import numpy as np
+import warnings
 from enum import Flag
 from astropy import __version__ as astropy_version
 from astropy.table import Table
 from astropy.stats import SigmaClip
+from astropy.utils.exceptions import AstropyUserWarning
 from photutils import __version__ as photutils_version
 from photutils.aperture import CircularAperture, CircularAnnulus, ApertureStats
 from photutils.aperture import aperture_photometry as photu_ap_photometry
@@ -132,9 +134,11 @@ def _recenter_sources(data, x, y, r, limit, method, mask):
     else:
         raise ValueError(f'Invalid recenter_method: {method}')
 
-    new_x, new_y = centroid_sources(data, x, y, box_size=r*2+1, mask=mask,
-                                    centroid_func=func,
-                                    footprint=circular_footprint(r))
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', category=AstropyUserWarning)
+        new_x, new_y = centroid_sources(data, x, y, box_size=r*2+1, mask=mask,
+                                        centroid_func=func,
+                                        footprint=circular_footprint(r))
 
     # Compute the distance between the old and new positions
     diff_x = np.abs(new_x - x)
