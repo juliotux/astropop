@@ -282,8 +282,6 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto',
     """
     res_ap = Table()
 
-    if isinstance(data, imhdus) or isinstance(data, (QFloat, FrameData)):
-        data = data.data
     # force a new instance
     data = np.array(data, dtype='f8')
     if data.ndim != 2:
