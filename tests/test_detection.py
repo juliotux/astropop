@@ -377,6 +377,26 @@ class Test_Segmentation_Detection():
         assert_almost_equal(sources['x'], x, decimal=0)
         assert_almost_equal(sources['y'], y, decimal=0)
 
+    def test_segfind_multiple_stars_with_kernel_convolution(self):
+        size = (1024, 1024)
+        number = 15
+        low = 5000
+        high = 30000
+        sky = 800
+        rdnoise = 20
+        sigma = 1.5
+        theta = 0
+        fwhm = 2
+
+        x, y, f = gen_position_flux(size, number, low, high, rng_seed=456)
+        im = gen_image(size, x, y, f, sky, rdnoise,
+                       model='gaussian', sigma=sigma, theta=theta)
+
+        sources = segfind(im, 8, sky, rdnoise, fwhm=fwhm)
+
+        assert_almost_equal(sources['x'], x, decimal=0)
+        assert_almost_equal(sources['y'], y, decimal=0)
+
     def test_segfind_one_star_subpixel(self):
         size = (128, 128)
         pos = (54.32, 47.86)
