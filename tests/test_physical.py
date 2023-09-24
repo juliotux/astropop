@@ -2011,6 +2011,18 @@ class Test_QFloat_Pow:
         assert_almost_equal(qf4.uncertainty, 0.15)
         assert_equal(qf4.unit, 'm(3/2)')
 
+        qf5 = QFloat(1.0, 0.1, 'm')
+        qf6 = qf5**0
+        assert_almost_equal(qf6.nominal, 1)
+        assert_almost_equal(qf6.uncertainty, 0)
+        assert_equal(qf6.unit, '')
+
+        qf7 = QFloat(2.0, 0.1, 'm')
+        qf8 = qf7**2.5
+        assert_almost_equal(qf8.nominal, 2**2.5)
+        assert_almost_equal(qf8.uncertainty, 0.1*2.5*2**1.5)
+        assert_equal(qf8.unit, 'm(5/2)')
+
 
 class Test_QFloat_PosNeg:
     def test_qfloat_math_neg(self):
