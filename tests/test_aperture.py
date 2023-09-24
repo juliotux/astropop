@@ -3,7 +3,7 @@
 
 import pytest
 import numpy as np
-from photutils import CircularAperture
+from photutils.aperture import CircularAperture
 from astropop.photometry.background import background
 from astropop.photometry.aperture import aperture_photometry, PhotometryFlags
 from astropop.framedata import PixelMaskFlags
