@@ -362,6 +362,38 @@ class Test_Processing_Flat():
         else:
             assert_is_not(res, frame)
 
+    @pytest.mark.parametrize('inplace', [True, False])
+    def test_flat_with_min_value(self, inplace):
+        expect = np.ones((20, 20))*3
+
+        frame = FrameData(np.ones((20, 20))*3, unit=u.adu)
+        master_flat = FrameData(np.ones((20, 20)))
+        master_flat.data[0:5, 0:5] = 0.5
+        # everything in flat will be 1, the minimum value.
+
+        res = flat_correct(frame, master_flat, min_value=1, inplace=inplace)
+
+        assert_is_instance(res, FrameData)
+        assert_equal(res.data, expect)
+        assert_equal(res.header['astropop flat_corrected'], True)
+        assert_equal(res.flags, np.zeros((20, 20)))
+        assert_equal(res.unit, u.adu)
+
+        if inplace:
+            assert_is(res, frame)
+        else:
+            assert_is_not(res, frame)
+
+    @pytest.mark.parametrize('inplace', [True, False])
+    def test_flat_named(self, inplace):
+        frame = FrameData(np.ones((20, 20))*3, unit=u.adu)
+        master_flat = FrameData(np.ones((20, 20)),
+                                origin_filename='test_master_flat.fits')
+        res = flat_correct(frame, master_flat, inplace=inplace)
+        assert_equal(res.header['astropop flat_corrected'], True)
+        assert_equal(res.header['astropop flat_corrected_file'],
+                     'test_master_flat.fits')
+
 
 class Test_Processing_Bias():
     @pytest.mark.parametrize('inplace', [True, False])
@@ -381,6 +413,23 @@ class Test_Processing_Bias():
         assert_equal(res4.header['astropop bias_corrected'], True)
         assert_equal(res4.flags, np.zeros((20, 20)))
         assert_equal(res4.unit, u.adu)
+
+        if inplace:
+            assert_is(res4.data, frame4bias.data)
+        else:
+            assert_is_not(res4.data, frame4bias.data)
+
+    @pytest.mark.parametrize('inplace', [True, False])
+    def test_simple_bias_named(self, inplace):
+        frame4bias = FrameData(np.ones((20, 20))*3, unit='adu')
+        master_bias = FrameData(np.ones((20, 20)), unit='adu',
+                                origin_filename='test_master_bias.fits')
+        res4 = subtract_bias(frame4bias, master_bias, inplace=inplace)
+
+        assert_is_instance(res4, FrameData)
+        assert_equal(res4.header['astropop bias_corrected'], True)
+        assert_equal(res4.header['astropop bias_corrected_file'],
+                     'test_master_bias.fits')
 
         if inplace:
             assert_is(res4.data, frame4bias.data)
