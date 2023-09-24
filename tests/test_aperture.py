@@ -117,6 +117,19 @@ class TestAperturePhotometry:
         phot = aperture_photometry(im, [20, 60], [20, 60])
         assert_almost_equal(phot['flux'], [82, 82], decimal=0)
 
+    def test_no_changes_inplace(self):
+        # ensure aperture photometry is not changing the input image
+        im = gen_image((1024, 1024), [50.], [50.], flux=1000, sigma=2,
+                       model='gaussian', rdnoise=10, sky=1000,
+                       skip_poisson=False)
+        im2 = im.copy()
+        bkg, rms = background(im, 64, 3)
+        phot = aperture_photometry(im, [52], [52], r=20, r_ann=(20, 30),
+                                   gain=1.5, bkg_error=rms)
+        assert_almost_equal(im, im2, decimal=5)
+
+
+class TestApertureRecentering:
     def test_recentering_single(self):
         im = gen_image((100, 100), [50.], [50.], flux=1000, sigma=2,
                        model='gaussian', rdnoise=0, sky=10, skip_poisson=True)
@@ -142,16 +155,29 @@ class TestAperturePhotometry:
         assert_almost_equal(phot['original_y'], [22, 62], decimal=1)
         assert_almost_equal(phot['flux'], [100, 100], decimal=0)
 
-    def test_no_changes_inplace(self):
-        # ensure aperture photometry is not changing the input image
-        im = gen_image((1024, 1024), [50.], [50.], flux=1000, sigma=2,
-                       model='gaussian', rdnoise=10, sky=1000,
-                       skip_poisson=False)
-        im2 = im.copy()
-        bkg, rms = background(im, 64, 3)
-        phot = aperture_photometry(im, [52], [52], r=20, r_ann=(20, 30),
-                                   gain=1.5, bkg_error=rms)
-        assert_almost_equal(im, im2, decimal=5)
+    @pytest.mark.parametrize('method', ['quadratic', 'gaussian', 'com'])
+    def test_recentering_methods(self, method):
+        im = gen_image((100, 100), [30, 70], [30, 70], flux=[1000, 1000],
+                       sigma=1, model='gaussian', rdnoise=0, sky=10,
+                       skip_poisson=True)
+        phot = aperture_photometry(im, [31, 71], [31, 71], r=5,
+                                   r_ann=(40, 50),
+                                   recenter_limit=5,
+                                   recenter_method=method)
+        assert_almost_equal(phot['x'], [30, 70], decimal=1)
+        assert_almost_equal(phot['y'], [30, 70], decimal=1)
+        assert_almost_equal(phot['original_x'], [31, 71], decimal=1)
+        assert_almost_equal(phot['original_y'], [31, 71], decimal=1)
+
+    def test_recentering_method_unkown(self):
+        im = gen_image((100, 100), [30, 70], [30, 70], flux=[1000, 1000],
+                       sigma=1, model='gaussian', rdnoise=0, sky=10,
+                       skip_poisson=True)
+        with pytest.raises(ValueError, match='Invalid recenter_method:'):
+            aperture_photometry(im, [31, 71], [31, 71], r=5,
+                                r_ann=(40, 50),
+                                recenter_limit=5,
+                                recenter_method='unknown')
 
 
 class TestApertureFlags:
@@ -216,3 +242,15 @@ class TestApertureFlags:
                                    mask=mask)
         assert_true(phot['flags'][0] &
                     PhotometryFlags.REMOVED_PIXEL_IN_APERTURE.value)
+
+    def test_framedata_mismatching_flags(self):
+        im = gen_image((100, 100), [50.], [50.], flux=1000, sigma=2,
+                       model='gaussian', rdnoise=0, sky=10, skip_poisson=True)
+        mask = np.zeros((90, 90), dtype=np.uint8)
+        mask[50, 50] = PixelMaskFlags.MASKED.value
+        mask[45, 45] = PixelMaskFlags.INTERPOLATED.value
+
+        with pytest.raises(ValueError, match='pixel_flags must have the same '
+                           'shape as data.'):
+            aperture_photometry(im, [50], [50], r=10, r_ann=None,
+                                pixel_flags=mask, mask=mask)
