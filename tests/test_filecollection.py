@@ -7,6 +7,7 @@ import numpy as np
 
 from astropy.io import fits
 from astropop.file_collection import FitsFileGroup, list_fits_files
+from astropop.framedata import FrameData
 from astropop.testing import *
 
 
@@ -142,6 +143,13 @@ class Test_FitsFileGroup():
         assert_is_instance(fg, FitsFileGroup)
         assert_equal(len(fg), 30)
         assert_equal(sorted(fg.files), sorted(flist['fits']))
+
+    def test_fg_creation_files_and_location_error(self, tmpdir):
+        tmpdir, flist = tmpdir
+        with pytest.raises(ValueError,
+                           match='You can only specify either files or '
+                           'location.'):
+            fg = FitsFileGroup(location=tmpdir/'fits', files=flist['fits'])
 
     def test_fg_creation_no_std_extension(self, tmpdir):
         tmpdir, flist = tmpdir
@@ -287,6 +295,12 @@ class Test_FitsFileGroup():
         with pytest.raises(KeyError):
             fg['NonExistingKey']
 
+    def test_fg_getitem_keyerror_type(self, tmpdir):
+        tmpdir, flist = tmpdir
+        fg = FitsFileGroup(location=tmpdir/'fits', compression=False)
+        with pytest.raises(KeyError):
+            fg[1.0]
+
     def test_fg_setitem_str(self, tmpdir):
         tmpdir, flist = tmpdir
         fg = FitsFileGroup(location=tmpdir/'fits', compression=False)
@@ -428,3 +442,38 @@ class Test_FitsFileGroup_Paths():
         for f in fg.files:
             assert_equal(fg.relative_path(f),
                          os.path.relpath(f, tmpdir/'fits'))
+
+
+class Test_FitsFileGroup_Yielders:
+    def test_fg_yield_files(self, tmpdir):
+        tmpdir, flist = tmpdir
+        fg = FitsFileGroup(location=tmpdir/'fits', compression=False)
+        for i, f in enumerate(fg.hdus()):
+            h = fits.open(flist['fits'][i])[0]
+            assert_is_instance(f, fits.PrimaryHDU)
+            assert_equal(f.data, h.data)
+            assert_equal(f.header, h.header)
+
+    def test_fg_yield_headers(self, tmpdir):
+        tmpdir, flist = tmpdir
+        fg = FitsFileGroup(location=tmpdir/'fits', compression=False)
+        for i, h in enumerate(fg.headers()):
+            assert_is_instance(h, fits.Header)
+            assert_equal(h, fits.getheader(flist['fits'][i]))
+
+    def test_fg_yield_data(self, tmpdir):
+        tmpdir, flist = tmpdir
+        fg = FitsFileGroup(location=tmpdir/'fits', compression=False)
+        for i, d in enumerate(fg.data()):
+            assert_is_instance(d, np.ndarray)
+            assert_equal(d, fits.getdata(flist['fits'][i]))
+
+    def test_fg_yield_framedata(self, tmpdir):
+        tmpdir, flist = tmpdir
+        fg = FitsFileGroup(location=tmpdir/'fits', compression=False)
+        for i, d in enumerate(fg.framedata()):
+            assert_is_instance(d, FrameData)
+            frame = FrameData(fits.getdata(flist['fits'][i]),
+                              header=fits.getheader(flist['fits'][i]))
+            assert_equal(d.data, frame.data)
+            assert_equal(d.header, frame.header)
