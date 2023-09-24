@@ -216,4 +216,3 @@ class TestApertureFlags:
                                    mask=mask)
         assert_true(phot['flags'][0] &
                     PhotometryFlags.REMOVED_PIXEL_IN_APERTURE.value)
-
