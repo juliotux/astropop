@@ -158,7 +158,7 @@ class TestApertureRecentering:
     @pytest.mark.parametrize('method', ['quadratic', 'gaussian', 'com'])
     def test_recentering_methods(self, method):
         im = gen_image((100, 100), [30, 70], [30, 70], flux=[1000, 1000],
-                       sigma=1, model='gaussian', rdnoise=0, sky=10,
+                       sigma=1, model='gaussian', rdnoise=0, sky=0,
                        skip_poisson=True)
         phot = aperture_photometry(im, [31, 71], [31, 71], r=5,
                                    r_ann=(40, 50),
