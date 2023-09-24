@@ -53,6 +53,12 @@ class TestApertureFlagsFunctions:
 
 
 class TestAperturePhotometry:
+    def test_enforce_2d(self):
+        for i in [[1], np.ones(10), np.ones((10, 10, 10))]:
+            with pytest.raises(ValueError,
+                               match='data must be a 2D array'):
+                aperture_photometry(i, [5], [5], r=1)
+
     def test_single_star_manual(self):
         im = np.zeros((7, 7))
         im[3, 3] = 4
@@ -184,3 +190,30 @@ class TestApertureFlags:
                                    recenter_method='gaussian')
         assert_false(phot['flags'][0] & PhotometryFlags.RECENTERING_FAILED.value)
         assert_true(phot['flags'][1] & PhotometryFlags.RECENTERING_FAILED.value)
+
+    def test_framedata_flags(self):
+        im = gen_image((100, 100), [50.], [50.], flux=1000, sigma=2,
+                       model='gaussian', rdnoise=0, sky=10, skip_poisson=True)
+        mask = np.zeros((100, 100), dtype=np.uint8)
+        mask[50, 50] = PixelMaskFlags.MASKED.value
+        mask[45, 45] = PixelMaskFlags.INTERPOLATED.value
+
+        phot = aperture_photometry(im, [50], [50], r=10, r_ann=None,
+                                   pixel_flags=mask)
+        assert_true(phot['flags'][0] &
+                    PhotometryFlags.REMOVED_PIXEL_IN_APERTURE.value)
+        assert_true(phot['flags'][0] &
+                    PhotometryFlags.INTERPOLATED_PIXEL_IN_APERTURE.value)
+
+    def test_framedata_mask(self):
+        im = gen_image((100, 100), [50.], [50.], flux=1000, sigma=2,
+                       model='gaussian', rdnoise=0, sky=10, skip_poisson=True)
+        mask = np.zeros((100, 100), dtype=bool)
+        mask[50, 50] = 1
+        mask[45, 45] = 1
+
+        phot = aperture_photometry(im, [50], [50], r=10, r_ann=None,
+                                   mask=mask)
+        assert_true(phot['flags'][0] &
+                    PhotometryFlags.REMOVED_PIXEL_IN_APERTURE.value)
+
