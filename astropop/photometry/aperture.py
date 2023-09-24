@@ -16,9 +16,6 @@ from photutils.utils import calc_total_error, circular_footprint
 from astropop import __version__ as astropop_version
 from astropop.photometry.detection import median_fwhm
 from astropop.logger import logger
-from astropop.fits_utils import imhdus
-from astropop.framedata import PixelMaskFlags, FrameData
-from astropop.math import QFloat
 
 
 __all__ = ['aperture_photometry', 'PhotometryFlags']
