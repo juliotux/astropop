@@ -129,6 +129,26 @@ class TestAperturePhotometry:
         assert_almost_equal(im, im2, decimal=5)
 
 
+class TestAperturePhotometryBackground:
+    @pytest.mark.parametrize('method', ['mmm', 'mode', 'mean', 'median'])
+    def test_background_methods(self, method):
+        im = gen_image((100, 100), [50.], [50.], flux=10000, sigma=2,
+                       model='gaussian', rdnoise=0, sky=100,
+                       skip_poisson=False)
+        phot = aperture_photometry(im, [52], [52], r=20, r_ann=(30, 50),
+                                   bkg_method=method)
+        assert_almost_equal(phot['flux'][0]/10000, 1, decimal=1)
+        assert_almost_equal(phot['bkg'][0]/100, 1, decimal=1)
+
+    def test_background_method_unkown(self):
+        im = gen_image((100, 100), [50.], [50.], flux=10000, sigma=2,
+                       model='gaussian', rdnoise=0, sky=100,
+                       skip_poisson=False)
+        with pytest.raises(ValueError, match='Invalid bkg_method:'):
+            aperture_photometry(im, [52], [52], r=20, r_ann=(20, 30),
+                                bkg_method='unknown')
+
+
 class TestApertureRecentering:
     def test_recentering_single(self):
         im = gen_image((100, 100), [50.], [50.], flux=1000, sigma=2,

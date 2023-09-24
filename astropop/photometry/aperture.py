@@ -93,7 +93,7 @@ def _calc_local_bkg(data, positions, r_in, r_out, error, bkg_method,
         sclip = SigmaClip(sigma=sigma_clip)
 
     ann_stats = ApertureStats(data, ann_ap, error=error, mask=mask,
-                              sum_method='exact', sigma_clip=sclip)
+                              sum_method='center', sigma_clip=sclip)
     if bkg_method == 'mmm' or bkg_method == 'mode':
         bkg = ann_stats.mode
     elif bkg_method == 'median':
