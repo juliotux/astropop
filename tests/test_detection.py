@@ -109,6 +109,25 @@ def gen_image(size, x, y, flux, sky, rdnoise, model='gaussian', **kwargs):
 
 @pytest.mark.flaky(reruns=5, reruns_delay=0.1)
 class Test_Background():
+    def test_background_unkown_methods(self):
+        # unkown methods should fail
+        size = (2048, 2048)
+        level = 800
+        rdnoise = 20
+        image_test = gen_bkg(size, level, rdnoise)
+
+        box_size = 64
+        filter_size = 3
+        for i in ['unkown', None, 1, 'average']:
+            with pytest.raises(ValueError,
+                               match='Unknown background method'):
+                background(image_test, box_size, filter_size,
+                           bkg_method='unkown')
+            with pytest.raises(ValueError,
+                               match='Unknown rms method'):
+                background(image_test, box_size, filter_size,
+                           rms_method=i)
+
     def test_background_simple_nocosmic(self):
         size = (2048, 2048)
         level = 800
@@ -237,6 +256,30 @@ class Test_Background():
         image_test_o = image_test.copy()
         background(image_test, 64, 3, bkg_method=method, global_bkg=global_bkg)
         assert_equal(image_test_o, image_test)
+
+    def test_background_touple_sclip(self):
+        size = (1024, 1024)
+        level = 800
+        rdnoise = 20
+        image_test = gen_bkg(size, level, rdnoise)
+
+        box_size = 64
+        filter_size = 3
+        global_bkg, global_rms = background(image_test, box_size, filter_size,
+                                            mask=None, global_bkg=True)
+        bkg, rms = background(image_test, box_size, filter_size,
+                              mask=None, global_bkg=False,
+                              sigma_clip=(3, 3))
+
+        assert_equal(type(global_bkg), float)
+        assert_equal(type(global_rms), float)
+        assert_almost_equal(global_bkg, level, decimal=0)
+        assert_almost_equal(global_rms, rdnoise, decimal=0)
+
+        assert_equal(bkg.shape, size)
+        assert_equal(rms.shape, size)
+        assert_almost_equal(bkg, np.ones(size)*level, decimal=0)
+        assert_almost_equal(rms, np.ones(size)*rdnoise, decimal=0)
 
 
 @pytest.mark.flaky(reruns=5, reruns_delay=0.1)
