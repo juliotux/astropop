@@ -38,6 +38,13 @@ def _deriv_mod_1(x, y):
         return numerical_derivative(np.mod, 1)(x, y)
 
 
+@np.vectorize
+def _deriv_copysign(x, y):
+    if x >= 0:
+        return np.copysign(1, y)
+    return -np.copysign(1, y)
+
+
 erf_coef = 2/np.sqrt(np.pi)
 
 
@@ -69,6 +76,7 @@ derivatives = {
     'arctanh': (lambda x: 1/(1-x**2)),
     'cos': (lambda x: -np.sin(x)),
     'cosh': (np.sinh),
+    'copysign': (_deriv_copysign, lambda x, y: 0),
     'exp': (np.exp),
     'expm1': (np.exp),
     'exp2': (lambda x: np.exp2(x)*np.log(2)),

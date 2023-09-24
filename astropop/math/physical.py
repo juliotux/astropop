@@ -1068,6 +1068,15 @@ _general_ufunc_wrapper(np.subtract)
 _general_ufunc_wrapper(np.true_divide)
 
 
+@_implements_ufunc(np.copysign)
+def _qfloat_copysign(qf1, qf2):
+    """Return the first argument with the sign of the second argument."""
+    nominal = np.copysign(qf1.nominal, qf2.nominal)
+    std = propagate_2('copysign', nominal, qf1.nominal, qf2.nominal,
+                      qf1.std_dev, qf2.std_dev)
+    return QFloat(nominal, std, qf1.unit)
+
+
 @_implements_ufunc(np.square)
 def _qfloat_square(qf):
     return qf * qf
