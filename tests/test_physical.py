@@ -4,6 +4,8 @@
 import pytest
 import numpy as np
 from astropop.framedata import FrameData
+from astropop.math._deriv import propagate_1, propagate_2, \
+                                 numerical_derivative
 from astropop.math.physical import QFloat, qfloat, units, \
                                    same_unit, UnitsError, \
                                    equal_within_errors, \
@@ -12,6 +14,63 @@ from astropop.math.physical import QFloat, qfloat, units, \
 from astropop.testing import *
 
 # pylint: disable=no-member, pointless-statement
+
+
+class Test_Derivatives:
+    def test_propagate_1_error_unkown(self):
+        with pytest.raises(ValueError,
+                           match='func test not in derivatives.'):
+            propagate_1('test', 1, 1, 1)
+
+    def test_propagate_1_error_not1var(self):
+        with pytest.raises(ValueError,
+                           match='func div is not a 1 variable function.'):
+            propagate_1('div', 1, 1, 1)
+
+    def test_propagate_1_zerodivision(self):
+        assert_true(np.isnan(propagate_1('arccos', 0, 2, 0.1)))
+        assert_true(np.isnan(propagate_1('arccos',
+                                         np.array([0, 0]),
+                                         np.array([2, 3]),
+                                         np.array([0.1, 0.1]))).all())
+
+    def test_propagate_2_error_unkown(self):
+        with pytest.raises(ValueError,
+                           match='func test not in derivatives.'):
+            propagate_2('test', 1, 1, 1, 1, 1)
+
+    def test_propagate_2_error_not2var(self):
+        with pytest.raises(ValueError,
+                           match='func cos is not a 2 variable function.'):
+            propagate_2('cos', 1, 1, 1, 1, 1)
+
+    def test_propagate_2_zerodivision(self):
+        r = propagate_2('div', 1000, 1, 0, 0.1, 0.1)
+        assert_true(np.isnan(r))
+
+    def test_propagate_2_zerodivision_array(self):
+        r = propagate_2('div',
+                        np.array([1000, 1000]),
+                        np.ones(2), np.zeros(2),
+                        np.array([0.1, 0.1]),
+                        np.array([0.1, 0.1]))
+        # numpy do not raise zerodivision. instead, set to inf
+        # assert_true(np.isnan(r).all())
+        assert_true(np.isinf(r).all())
+
+    def test_numerical_derivatives_not_callable_error(self):
+        # test raise error for non-callabel functions
+        with pytest.raises(TypeError,
+                           match='function test not callable.'):
+            numerical_derivative('test', 1)
+
+    def test_numerical_derivatives_change_kwargs(self):
+        # change kwargs if arg_ref is string
+        def test_func(a):
+            return a
+
+        deriv = numerical_derivative(test_func, arg_ref='a')
+        assert_equal(deriv(a=1), 1)
 
 
 class Test_QFloat_UnitsHandling:
@@ -1938,6 +1997,31 @@ class Test_QFloat_Pow:
                                               1966.960874942068])
         assert_equal(qf5.unit, units.m**6)
         assert_equal(i, id(qf5))
+
+    def test_qfloat_pow_special_cases(self):
+        qf1 = QFloat(0.0, 0.1, 'm')
+        qf2 = qf1**2
+        assert_almost_equal(qf2.nominal, 0)
+        assert_almost_equal(qf2.uncertainty, 0)
+        assert_equal(qf2.unit, 'm^2')
+
+        qf3 = QFloat(1.0, 0.1, 'm')
+        qf4 = qf3**1.5
+        assert_almost_equal(qf4.nominal, 1)
+        assert_almost_equal(qf4.uncertainty, 0.15)
+        assert_equal(qf4.unit, 'm(3/2)')
+
+        qf5 = QFloat(1.0, 0.1, 'm')
+        qf6 = qf5**0
+        assert_almost_equal(qf6.nominal, 1)
+        assert_almost_equal(qf6.uncertainty, 0)
+        assert_equal(qf6.unit, '')
+
+        qf7 = QFloat(2.0, 0.1, 'm')
+        qf8 = qf7**2.5
+        assert_almost_equal(qf8.nominal, 2**2.5)
+        assert_almost_equal(qf8.uncertainty, 0.1*2.5*2**1.5)
+        assert_equal(qf8.unit, 'm(5/2)')
 
 
 class Test_QFloat_PosNeg:

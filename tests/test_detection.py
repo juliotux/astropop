@@ -6,7 +6,6 @@ import numpy as np
 
 from astropop.photometry import (background, segfind, daofind, starfind,
                                  median_fwhm)
-from astropop.photometry.detection import sepfind  # sepfind is deprecated, but keep tests
 from astropop.math.models import MoffatEquations, GaussianEquations
 from astropop.math.array import trim_array
 from astropy.utils import NumpyRNGContext
@@ -110,6 +109,25 @@ def gen_image(size, x, y, flux, sky, rdnoise, model='gaussian', **kwargs):
 
 @pytest.mark.flaky(reruns=5, reruns_delay=0.1)
 class Test_Background():
+    def test_background_unkown_methods(self):
+        # unkown methods should fail
+        size = (2048, 2048)
+        level = 800
+        rdnoise = 20
+        image_test = gen_bkg(size, level, rdnoise)
+
+        box_size = 64
+        filter_size = 3
+        for i in ['unkown', None, 1, 'average']:
+            with pytest.raises(ValueError,
+                               match='Unknown background method'):
+                background(image_test, box_size, filter_size,
+                           bkg_method='unkown')
+            with pytest.raises(ValueError,
+                               match='Unknown rms method'):
+                background(image_test, box_size, filter_size,
+                           rms_method=i)
+
     def test_background_simple_nocosmic(self):
         size = (2048, 2048)
         level = 800
@@ -239,113 +257,29 @@ class Test_Background():
         background(image_test, 64, 3, bkg_method=method, global_bkg=global_bkg)
         assert_equal(image_test_o, image_test)
 
-
-@pytest.mark.flaky(reruns=5, reruns_delay=0.1)
-class Test_SEP_Detection():
-    # sepfind is deprecated, but lets keep the tests until it is removed
-
-    def test_sepfind_one_star(self):
-        size = (128, 128)
-        pos = (64, 64)
-        sky = 20
-        sky = 800
-        rdnoise = 20
-        flux = 32000
-        sigma = 3
-        theta = 0
-        threshold = 10
-        im = gen_image(size, [pos[0]], [pos[1]], [flux], sky, rdnoise,
-                       model='gaussian', sigma=sigma, theta=theta)
-
-        sources = sepfind(im, threshold, sky, rdnoise)
-
-        assert_equal(len(sources), 1)
-        assert_almost_equal(sources['x'][0], 64, decimal=0)
-        assert_almost_equal(sources['y'][0], 64, decimal=0)
-
-    def test_sepfind_negative_sky(self):
-        size = (128, 128)
-        pos = (64, 64)
-        sky = 0
-        rdnoise = 20
-        flux = 32000
-        sigma = 3
-        theta = 0
-        threshold = 10
-
-        im = gen_image(size, [pos[0]], [pos[1]], [flux], sky, rdnoise,
-                       model='gaussian', sigma=sigma, theta=theta)
-
-        sources = sepfind(im, threshold, sky, rdnoise)
-
-        assert_equal(len(sources), 1)
-        assert_almost_equal(sources['x'][0], 64, decimal=0)
-        assert_almost_equal(sources['y'][0], 64, decimal=0)
-
-    def test_sepfind_strong_and_weak(self):
-        size = (128, 128)
-        posx = (60, 90)
-        posy = (20, 90)
-        sky = 800
-        rdnoise = 20
-        flux = (32000, 3000)
-        sigma = 1.5
-        theta = 0
-        im = gen_image(size, posx, posy, flux, sky, rdnoise,
-                       model='gaussian', sigma=sigma, theta=theta)
-
-        sources = sepfind(im, 5, sky, rdnoise)
-
-        assert_almost_equal(sources['x'], posx, decimal=0)
-        assert_almost_equal(sources['y'], posy, decimal=0)
-
-    def test_sepfind_four_stars_fixed_position(self):
+    def test_background_touple_sclip(self):
         size = (1024, 1024)
-        posx = (10, 120, 500, 1000)
-        posy = (20, 200, 600, 800)
-        sky = 800
+        level = 800
         rdnoise = 20
-        flux = (35000, 15000, 10000, 5000)
-        sigma = 1.5
-        theta = 0
-        im = gen_image(size, posx, posy, flux, sky, rdnoise,
-                       model='gaussian', sigma=sigma, theta=theta)
+        image_test = gen_bkg(size, level, rdnoise)
 
-        sources = sepfind(im, 10, sky, rdnoise)
+        box_size = 64
+        filter_size = 3
+        global_bkg, global_rms = background(image_test, box_size, filter_size,
+                                            mask=None, global_bkg=True)
+        bkg, rms = background(image_test, box_size, filter_size,
+                              mask=None, global_bkg=False,
+                              sigma_clip=(3, 3))
 
-        assert_almost_equal(sources['x'], posx, decimal=0)
-        assert_almost_equal(sources['y'], posy, decimal=0)
+        assert_equal(type(global_bkg), float)
+        assert_equal(type(global_rms), float)
+        assert_almost_equal(global_bkg, level, decimal=0)
+        assert_almost_equal(global_rms, rdnoise, decimal=0)
 
-    def test_sepfind_multiple_stars(self):
-        size = (1024, 1024)
-        number = 15
-        low = 5000
-        high = 30000
-        sky = 800
-        rdnoise = 20
-        sigma = 1.5
-        theta = 0
-
-        x, y, f = gen_position_flux(size, number, low, high, rng_seed=456)
-        im = gen_image(size, x, y, f, sky, rdnoise,
-                       model='gaussian', sigma=sigma, theta=theta)
-
-        sources = sepfind(im, 8, sky, rdnoise)
-
-        assert_almost_equal(sources['x'], x, decimal=0)
-        assert_almost_equal(sources['y'], y, decimal=0)
-
-    def test_sepfind_one_star_subpixel(self):
-        size = (128, 128)
-        pos = (54.32, 47.86)
-
-        im = gen_image(size, [pos[0]], [pos[1]], [45000], 800, 0,
-                       sigma=[3], skip_poisson=True)
-        sources = sepfind(im, 5, 800, 10)
-        assert_equal(len(sources), 1)
-        # no error, 2 decimals ok!
-        assert_almost_equal(sources[0]['x'], pos[0], decimal=2)
-        assert_almost_equal(sources[0]['y'], pos[1], decimal=2)
+        assert_equal(bkg.shape, size)
+        assert_equal(rms.shape, size)
+        assert_almost_equal(bkg, np.ones(size)*level, decimal=0)
+        assert_almost_equal(rms, np.ones(size)*rdnoise, decimal=0)
 
 
 @pytest.mark.flaky(reruns=5, reruns_delay=0.1)
@@ -439,6 +373,26 @@ class Test_Segmentation_Detection():
                        model='gaussian', sigma=sigma, theta=theta)
 
         sources = segfind(im, 8, sky, rdnoise)
+
+        assert_almost_equal(sources['x'], x, decimal=0)
+        assert_almost_equal(sources['y'], y, decimal=0)
+
+    def test_segfind_multiple_stars_with_kernel_convolution(self):
+        size = (1024, 1024)
+        number = 15
+        low = 5000
+        high = 30000
+        sky = 800
+        rdnoise = 20
+        sigma = 1.5
+        theta = 0
+        fwhm = 2
+
+        x, y, f = gen_position_flux(size, number, low, high, rng_seed=456)
+        im = gen_image(size, x, y, f, sky, rdnoise,
+                       model='gaussian', sigma=sigma, theta=theta)
+
+        sources = segfind(im, 8, sky, rdnoise, fwhm=fwhm)
 
         assert_almost_equal(sources['x'], x, decimal=0)
         assert_almost_equal(sources['y'], y, decimal=0)

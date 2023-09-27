@@ -6,7 +6,7 @@ import numpy as np
 from astropy.table import Table
 
 from .logger import logger
-from .py_utils import check_iterable, broadcast
+from .py_utils import broadcast
 
 
 __all__ = ['SQLDatabase', 'SQLTable', 'SQLRow', 'SQLColumn', 'SQLColumnMap']
@@ -75,7 +75,7 @@ class SQLColumnMap():
 
     def get_column_name(self, item, add_columns=False):
         """Get the column name for a given keyword."""
-        if check_iterable(item):
+        if not np.isscalar(item):
             return [self.get_column_name(i) for i in item]
 
         item = item.lower()
@@ -88,7 +88,7 @@ class SQLColumnMap():
 
     def get_keyword(self, item):
         """Get the keyword for a given column."""
-        if check_iterable(item):
+        if not np.isscalar(item):
             return [self.get_keyword(i) for i in item]
 
         item = item.lower()

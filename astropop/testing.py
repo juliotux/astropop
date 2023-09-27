@@ -9,8 +9,8 @@ Notes
 """
 
 from os.path import exists
+import numpy as np
 from numpy import testing as npt
-from .py_utils import check_iterable
 
 
 __all__ = ['assert_equal', 'assert_not_equal', 'assert_almost_equal',
@@ -62,7 +62,7 @@ def assert_false(a, msg=None):
 @func_wrapper
 def assert_equal(a, b, msg=None):
     """Check if two objects are equal. Arrays supported."""
-    if check_iterable(a) or check_iterable(b):
+    if not np.isscalar(a) or not np.isscalar(b):
         if msg is None:
             msg = ''
         npt.assert_array_equal(a, b, err_msg=msg, verbose=True)
@@ -75,7 +75,7 @@ def assert_equal(a, b, msg=None):
 @func_wrapper
 def assert_almost_equal(a, b, decimal=6, msg=None):
     """Check if two objects are almost equal. Arrays supported."""
-    if check_iterable(a) or check_iterable(b):
+    if not np.isscalar(a) or not np.isscalar(b):
         if msg is None:
             msg = ''
         npt.assert_array_almost_equal(a, b, decimal=decimal,

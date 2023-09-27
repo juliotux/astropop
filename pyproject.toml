@@ -1,10 +1,145 @@
-[build-system]
+[project]
+name = "astropop"
+dynamic = ["version"]
+authors = [
+    {name="Julio Campagnolo", email="julio.campagnolo@cefet-rj.br"},
+]
+license = {text = "BSD-3-Clause"}
+description = "Astronomical Polarimetry and Photometry Pipeline"
+readme = "README.rst"
+requires-python = ">=3.8"
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+    "Programming Language :: C",
+    "Programming Language :: Cython",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Topic :: Scientific/Engineering :: Astronomy",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+keywords = [
+    "astronomy",
+    "astrophysics",
+    "science",
+    "units",
+    "data-reduction",
+    "photometry",
+    "polarimetry",
+    "astrometry"
+]
+dependencies = [
+    "astropy>=4.3",
+    "numpy>=1.17",
+    "scipy>=1.6",
+    "astroquery",
+    "scikit-image",
+    "scikit-learn",
+    "photutils>=1.7",
+    "pytz",
+    "pyyaml",
+    "astroscrappy",
+    "astroalign",
+    "tqdm",
+    "nest-asyncio",
+]
 
+[project.optional-dependencies]
+all = [
+    "matplotlib",
+]
+test = [
+    "pytest-astropy",
+    "pytest-remotedata",
+    "testfixtures",
+    "pytest-rerunfailures"
+]
+docs = [
+    "ipython",
+    "ipykernel",
+    "sphinx",
+    "sphinx-astropy",
+    "sphinx-book-theme",
+    "numpydoc",
+    "nbsphinx",
+    "pandoc"
+]
+
+[project.urls]
+homepage = "https://github.com/sparc4-dev/astropop"
+documentation = "https://astropop.readthedocs.io/en/latest/"
+repository = "https://github.com/sparc4-dev/astropop"
+
+[tool.setuptools]
+include-package-data = true
+license-files = ["LICENSE.rst"]
+
+[tool.setuptools.packages.find]
+include = ["astropop*"]
+exclude = ["astropop._dev*", "tests*"]
+namespaces = false
+
+[tool.setuptools.package-data]
+"astropop" = ["data/*", "data/*/*", "data/*/*/*", "data/*/*/*/*"]
+"astropop.catalogs" = ["vizier_catalogs/*.yml"]
+
+[build-system]
 requires = ["setuptools",
             "setuptools_scm",
             "wheel"]
-
 build-backend = 'setuptools.build_meta'
 
+[tool.setuptools_scm]
+write_to = "astropop/version.py"
+
 [tool.pytest.ini_options]
-filterwarnings = ["error", "ignore"]
+minversion = 7.0
+testpaths = ["tests", "docs"]
+astropy_header = false
+doctest_plus = "enabled"
+text_file_format = "rst"
+addopts = "--color=yes --doctest-rst"
+xfail_strict = true
+qt_no_exception_capture = 1
+filterwarnings = [
+    "ignore:numpy.ufunc size changed:RuntimeWarning",
+    "ignore:numpy.ndarray size changed:RuntimeWarning",
+    "ignore:Importing from numpy:DeprecationWarning:scipy",
+    "ignore:Using a non-tuple sequence:FutureWarning:scipy",
+    "ignore:Unknown config option:pytest.PytestConfigWarning",
+    "ignore:matplotlibrc text.usetex:UserWarning:matplotlib",
+    # Triggered by ProgressBar > ipykernel.iostream
+    "ignore:the imp module is deprecated:DeprecationWarning"
+]
+
+[tool.coverage.run]
+omit = [
+    "astropop/_astropy_init*",
+    "astropop/conftest.py",
+    "astropop/*setup_package*",
+    "astropop/extern/*",
+    "astropop/version*",
+    "*/astropop/_astropy_init*",
+    "*/astropop/conftest.py",
+    "*/astropop/*setup_package*",
+    "*/astropop/extern/*",
+    "*/astropop/version*",
+    "tests",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "except ImportError",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    # only used when running inside a notebook
+    "if loop and loop.is_running():"
+]
+
+[tool.pycodestyle]
+max-line-length = 120
+
+[tool.pydocstyle]
+convention = "numpy"

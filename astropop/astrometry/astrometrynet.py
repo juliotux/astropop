@@ -5,7 +5,6 @@ This module wraps the astrometry.net solve-field routine, with automatic
 improvements.
 """
 
-
 import os
 import shutil
 from subprocess import CalledProcessError
@@ -249,6 +248,9 @@ solve_field_params = {
         'To astrometry.cfg file. If no depths are given, use these.'
     )
 }
+# These are the parameters that can be set in the astrometry.cfg file
+_conf_file = ['inparallel', 'minwidth', 'maxwidth', 'depths',
+              'add_path', 'autoindex', 'index']
 
 
 def get_options_help():
@@ -621,6 +623,7 @@ class AstrometrySolver():
 
     def _write_config(self, fname, config=None):
         """Create the astrometry.cfg file for the run."""
+        # write the new cfg
         f = open(fname, 'w')
         config = config or self.config
         for k, v in config.items():
@@ -643,11 +646,26 @@ class AstrometrySolver():
         """Pop the config from options."""
         options = options.copy()
         cfg = {}
-        for i in ['minwidth', 'maxwidth', 'inparallel', 'autoindex', 'index',
-                  'add_path', 'depths']:
+        for i in _conf_file:
             if i in options:
                 cfg[i] = options.pop(i)
         return options, cfg
+
+    def _get_args(self, root, fname, options, output_dir,
+                  correspond):
+        args = [self._command, fname, '--dir', output_dir]
+        # if any of the options is from config file, rewrite it.
+        if any([i in _conf_file for i in options.keys()]):
+            # pop some options and put them in config
+            options, cfg = self._pop_config(options)
+            cfg = self._updated_config(cfg)
+            config_file = os.path.join(output_dir, root + '.cfg')
+            self._write_config(config_file, cfg)
+            args += ['--config', config_file]
+
+        args += self._parse_options(options)
+        args += ['--corr', correspond]
+        return args
 
     def _run_solver(self, filename, options, output_dir=None, **kwargs):
         """Run the astrometry.net localy using the given params.
@@ -658,19 +676,12 @@ class AstrometrySolver():
         basename = os.path.basename(filename)
         root, _ = os.path.splitext(basename)
         output_dir, tmp_dir = self._get_output_dir(root, output_dir)
-        solved_file = os.path.join(output_dir, root + '.solved')
+        # Ensure the output directory exist
+        os.makedirs(output_dir, exist_ok=True)
         correspond = os.path.join(output_dir, root + '.corr')
-
-        # pop some options and put them in config
-        options, cfg = self._pop_config(options)
-        cfg = self._updated_config(cfg)
-        config_file = os.path.join(output_dir, root + '.cfg')
-        self._write_config(config_file, cfg)
-
-        args = [self._command, filename, '--dir', output_dir]
-        args += ['--config', config_file]
-        args += self._parse_options(options)
-        args += ['--corr', correspond]
+        solved_file = os.path.join(output_dir, root + '.solved')
+        args = self._get_args(root, filename, options, output_dir=output_dir,
+                              correspond=correspond)
 
         try:
             process, _, _ = run_command(args, **kwargs)

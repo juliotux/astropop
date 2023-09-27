@@ -7,7 +7,7 @@ from astroquery.exceptions import TableParseError
 from astropy.coordinates import SkyCoord, Angle
 from astropy.units import UnitTypeError
 from ..astrometry.coords_utils import guess_coordinates
-from ..py_utils import string_fix, process_list
+from ..py_utils import string_fix
 
 
 MAX_PARALLEL_QUERY = 30
@@ -32,7 +32,7 @@ def _fix_query_table(table):
     for i in table.columns:
         tdtype = table[i].dtype.char
         if tdtype in ('b', 'B', 'S', 'a', 'O'):
-            row = process_list(string_fix, table[i])
+            row = [string_fix(r) for r in table[i]]
             table[i] = np.array(row, dtype=str)
     return table
 

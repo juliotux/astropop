@@ -7,7 +7,7 @@ import numpy as np
 from astropy.stats import mad_std
 
 from ..framedata import FrameData, check_framedata
-from ..py_utils import check_iterable, check_number
+from ..py_utils import check_number
 from ..logger import logger
 from ._tools import merge_header
 
@@ -71,7 +71,7 @@ def _sigma_clip(data, threshold=3, cen_func='median', dev_func='mad_std',
     if check_number(threshold):
         slow = threshold
         shigh = threshold
-    elif check_iterable(threshold):
+    elif not np.isscalar(threshold):
         slow, shigh = threshold
     else:
         raise TypeError(f'Sigma clipping threshold {threshold} not'
@@ -250,7 +250,7 @@ class ImCombiner:
             self._sigma_dev_func = None
             return
 
-        if check_iterable(sigma_limits):
+        if not np.isscalar(sigma_limits):
             if len(sigma_limits) not in (1, 2):
                 raise ValueError('Invalid sigma clipping thresholds'
                                  r' {sigma_limits}')

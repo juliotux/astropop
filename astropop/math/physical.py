@@ -13,7 +13,6 @@ from astropy.units.quantity_helper.helpers import get_converters_and_unit
 from astropy.units import UnitsError, Quantity
 import numpy as np
 
-from ..py_utils import check_iterable
 from .._unit_property import unit_property
 from ._deriv import propagate_2, propagate_1
 
@@ -276,7 +275,7 @@ class QFloat():
             if not np.any(np.isreal(i)):
                 raise TypeError('value and uncertainty must be real numbers, '
                                 'or arrays of real numbers.')
-        if check_iterable(value):
+        if not np.isscalar(value):
             value = np.array(value, dtype=float)
         else:
             value = float(value)
@@ -284,7 +283,7 @@ class QFloat():
 
     def _set_uncert(self, value):
         if value is None:
-            if check_iterable(self._nominal):
+            if not np.isscalar(self._nominal):
                 self._uncert = np.zeros_like(self._nominal)
             else:
                 self._uncert = 0.0
@@ -296,7 +295,7 @@ class QFloat():
                                  'nominal value: '
                                  f'{np.shape(value)} '
                                  f'{np.shape(self._nominal)}')
-            if check_iterable(self._nominal):
+            if not np.isscalar(self._nominal):
                 # Errors must be always positive
                 value = np.array(value)
                 value[value == None] = 0.0  # noqa: E711
@@ -1067,6 +1066,15 @@ _general_ufunc_wrapper(np.power)
 _general_ufunc_wrapper(np.remainder)
 _general_ufunc_wrapper(np.subtract)
 _general_ufunc_wrapper(np.true_divide)
+
+
+@_implements_ufunc(np.copysign)
+def _qfloat_copysign(qf1, qf2):
+    """Return the first argument with the sign of the second argument."""
+    nominal = np.copysign(qf1.nominal, qf2.nominal)
+    std = propagate_2('copysign', nominal, qf1.nominal, qf2.nominal,
+                      qf1.std_dev, qf2.std_dev)
+    return QFloat(nominal, std, qf1.unit)
 
 
 @_implements_ufunc(np.square)

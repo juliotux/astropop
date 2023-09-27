@@ -214,7 +214,8 @@ def __getattr__(name):
             def __init__(self, *args, **kwargs):
                 super(NewViz, self).__init__(filename, *args, **kwargs)
 
-        conf = yaml.safe_load(open(filename, 'r'))
+        with open(filename, 'r') as f:
+            conf = yaml.safe_load(f)
         available_filters = conf.get('available_filters', None)
         if available_filters:
             available_filters = list(available_filters.keys())

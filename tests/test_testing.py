@@ -153,7 +153,13 @@ class TestTestingHelpers():
     def test_assert_path_exists(self):
         f = tempfile.mkstemp()[1]
         assert_path_exists(f)
+        with pytest.raises(AssertionError):
+            assert_path_exists('this_path_do_not_exists_c1234123@'
+                               '3412341233456efsccdwwefxsd')
 
     def test_assert_path_not_exists(self):
         f = 'this_path_do_not_exists_c1234123@3412341233456efsccdwwefxsd'
         assert_path_not_exists(f)
+        with pytest.raises(AssertionError):
+            f = tempfile.mkstemp()[1]
+            assert_path_not_exists(f)

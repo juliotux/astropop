@@ -25,9 +25,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: Python 3.11 with devdeps and online catalogs
-            python: '3.11'
-            toxenv: py311-test-devdeps-online
+          - name: Python 3.12 with devdeps and online catalogs
+            python: '3.12-dev'
+            toxenv: py312-test-devdeps-online
 
           - name: Python 3.8 with old deps (online)
             python: '3.8'
@@ -58,13 +58,10 @@ jobs:
       with:
         python-version: ${{ matrix.python }}
         cache: pip
-        cache-dependency-path: '**/setup.cfg'
+        cache-dependency-path: '**/pyproject.toml'
     - name: Install base dependencies
       run: |
-        python -m pip install --upgrade pip
-        python -m pip install tox
-    - name: Print Python, pip, setuptools, and tox versions
-      run: |
+        python -m pip install --upgrade --quiet pip setuptools tox
         python -c "import sys; print(f'Python {sys.version}')"
         python -c "import pip; print(f'pip {pip.__version__}')"
         python -c "import setuptools; print(f'setuptools {setuptools.__version__}')"
@@ -78,7 +75,7 @@ jobs:
         path: .tox
         # setup.cfg and pyproject.toml have versioning info that would
         # impact the tox environment.
-        key: ${{ github.ref }}-${{ matrix.toxenv }}-tox-${{ hashFiles('setup.cfg') }}
+        key: ${{ github.ref }}-${{ matrix.toxenv }}-tox-${{ hashFiles('pyproject.toml') }}
     - name: Cache astropy cache
       uses: actions/cache@v3
       with:
@@ -106,13 +103,13 @@ jobs:
       with:
         path: ~/conda_pkgs_dir
         key:
-          ${{ runner.os }}-${{ runner.arch }}-conda-${{ hashFiles('pyproject.toml', 'setup.cfg') }}
+          ${{ runner.os }}-${{ runner.arch }}-conda-${{ hashFiles('pyproject.toml') }}
     - name: Cache env
       uses: actions/cache@v3
       with:
         path: ${{ env.CONDA }}/envs
         key:
-          ${{ github.ref }}-${{ runner.os }}-${{ runner.arch }}-${{ steps.get-date.outputs.today }}-conda-envs-${{ hashFiles('pyproject.toml', 'setup.cfg') }}
+          ${{ github.ref }}-${{ runner.os }}-${{ runner.arch }}-${{ steps.get-date.outputs.today }}-conda-envs-${{ hashFiles('pyproject.toml') }}
     - uses: conda-incubator/setup-miniconda@v2
       with:
         miniforge-variant: Mambaforge
@@ -148,7 +145,7 @@ jobs:
     - name: Run Pytest and generate coverage
       shell: bash -l {0}
       run: |
-        pytest --pyargs ./tests ./docs --remote-data --cov astropop --cov-config=./setup.cfg
+        pytest --pyargs ./tests ./docs --remote-data --cov astropop --cov-config=./pyproject.toml
         coverage xml -o ./coverage.xml
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3

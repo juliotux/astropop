@@ -136,6 +136,15 @@ class TestQFloatNumpyArrayFuncs:
     def test_qfloat_np_copyto(self):
         raise NotImplementedError
 
+    def test_qfloat_np_copysign(self):
+        arr = np.arange(10)
+        qf = QFloat(arr, arr * 0.1, "m")
+
+        res = np.copysign(qf, -1)
+        assert_almost_equal(res.nominal, -arr)
+        assert_almost_equal(res.std_dev, arr * 0.1)
+        assert_equal(qf.unit, res.unit)
+
     @pytest.mark.skip(reason="Not Implemented Yet")
     def test_qfloat_np_cross(self):
         raise NotImplementedError

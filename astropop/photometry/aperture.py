@@ -2,10 +2,12 @@
 """Aperture photometry module."""
 
 import numpy as np
+import warnings
 from enum import Flag
 from astropy import __version__ as astropy_version
 from astropy.table import Table
 from astropy.stats import SigmaClip
+from astropy.utils.exceptions import AstropyUserWarning
 from photutils import __version__ as photutils_version
 from photutils.aperture import CircularAperture, CircularAnnulus, ApertureStats
 from photutils.aperture import aperture_photometry as photu_ap_photometry
@@ -16,9 +18,7 @@ from photutils.utils import calc_total_error, circular_footprint
 from astropop import __version__ as astropop_version
 from astropop.photometry.detection import median_fwhm
 from astropop.logger import logger
-from astropop.fits_utils import imhdus
-from astropop.framedata import PixelMaskFlags, FrameData
-from astropop.math import QFloat
+from astropop.framedata import PixelMaskFlags
 
 
 __all__ = ['aperture_photometry', 'PhotometryFlags']
@@ -93,7 +93,7 @@ def _calc_local_bkg(data, positions, r_in, r_out, error, bkg_method,
         sclip = SigmaClip(sigma=sigma_clip)
 
     ann_stats = ApertureStats(data, ann_ap, error=error, mask=mask,
-                              sum_method='exact', sigma_clip=sclip)
+                              sum_method='center', sigma_clip=sclip)
     if bkg_method == 'mmm' or bkg_method == 'mode':
         bkg = ann_stats.mode
     elif bkg_method == 'median':
@@ -134,9 +134,11 @@ def _recenter_sources(data, x, y, r, limit, method, mask):
     else:
         raise ValueError(f'Invalid recenter_method: {method}')
 
-    new_x, new_y = centroid_sources(data, x, y, box_size=r*2+1, mask=mask,
-                                    centroid_func=func,
-                                    footprint=circular_footprint(r))
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', category=AstropyUserWarning)
+        new_x, new_y = centroid_sources(data, x, y, box_size=r*2+1, mask=mask,
+                                        centroid_func=func,
+                                        footprint=circular_footprint(r))
 
     # Compute the distance between the old and new positions
     diff_x = np.abs(new_x - x)
@@ -282,8 +284,6 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto',
     """
     res_ap = Table()
 
-    if isinstance(data, imhdus) or isinstance(data, (QFloat, FrameData)):
-        data = data.data
     # force a new instance
     data = np.array(data, dtype='f8')
     if data.ndim != 2:

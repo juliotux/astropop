@@ -19,6 +19,7 @@ from astropop.astrometry.astrometrynet import _solve_field, \
                                               solve_astrometry_image, \
                                               solve_astrometry_xy, \
                                               solve_astrometry_hdu, \
+                                              solve_astrometry_framedata, \
                                               AstrometrySolver
 from astropop.astrometry.astrometrynet import _parse_angle, \
                                               _parse_coordinates, \
@@ -26,6 +27,7 @@ from astropop.astrometry.astrometrynet import _parse_angle, \
                                               _parse_pltscl
 from astropop.astrometry.manual_wcs import wcs_from_coords
 from astropop.astrometry.coords_utils import guess_coordinates
+from astropop.framedata import FrameData
 from astropop.photometry.detection import starfind
 
 from astropop.testing import *
@@ -290,6 +292,46 @@ class Test_AstrometrySolver:
                                              'add_path /path2'])
 
     @skip_astrometry
+    def test_pop_config(self):
+        a = AstrometrySolver()
+        options1 = {'inparallel': False,
+                    'autoindex': True,
+                    'cpulimit': 300,
+                    'minwidth': 0.1,
+                    'maxwidth': 180,
+                    'depths': [20, 40, 60],
+                    'index': ['011', '012'],
+                    'add_path': ['/path1', '/path2'],
+                    'ra': 0.0, 'dec': 0.0, 'radius': 1.0}
+        options, cfg = a._pop_config(options1)
+        assert_is_not(options1, options)
+        assert_equal(options['ra'], 0.0)
+        assert_equal(options['dec'], 0.0)
+        assert_equal(options['radius'], 1.0)
+        assert_equal(options['cpulimit'], 300)
+        assert_equal(cfg['inparallel'], False)
+        assert_equal(cfg['autoindex'], True)
+        assert_equal(cfg['minwidth'], 0.1)
+        assert_equal(cfg['maxwidth'], 180)
+        assert_equal(cfg['depths'], [20, 40, 60])
+        assert_equal(cfg['index'], ['011', '012'])
+        assert_equal(cfg['add_path'], ['/path1', '/path2'])
+
+    @skip_astrometry
+    def test_only_write_config_when_needed(self, tmpdir):
+        a = AstrometrySolver()
+        args = a._get_args(tmpdir/'1/', tmpdir/'1/fitsfile.fits',
+                           {'ra': 0.0, 'dec': 0.0, 'radius': 1.0},
+                           output_dir=tmpdir, correspond='test.correspond')
+        assert_not_in('--config', args)
+
+        args = a._get_args(tmpdir/'2/', tmpdir/'2/fitsfile.fits',
+                           {'ra': 0.0, 'dec': 0.0, 'radius': 1.0,
+                            'inparallel': False},
+                           output_dir=tmpdir, correspond='test.correspond')
+        assert_in('--config', args)
+
+    @skip_astrometry
     def test_solve_astrometry_hdu(self, tmpdir):
         data, index, options = self.get_image()
         index_dir = os.path.dirname(index)
@@ -307,7 +349,6 @@ class Test_AstrometrySolver:
             assert_in(k, result.correspondences.colnames)
 
     @skip_astrometry
-    @pytest.mark.skip('This test is always failing.')
     def test_solve_astrometry_xyl(self, tmpdir):
         data, index, options = self.get_image()
         index_dir = os.path.dirname(index)
@@ -346,6 +387,18 @@ class Test_AstrometrySolver:
         for k in ['field_x', 'field_y', 'index_x', 'index_y',
                   'field_ra', 'field_dec', 'index_ra', 'index_dec']:
             assert_in(k, result.correspondences.colnames)
+
+    @skip_astrometry
+    def test_solve_astrometry_framedata(self, tmpdir):
+        data, index, options = self.get_image()
+        index_dir = os.path.dirname(index)
+        hdu = fits.open(data)[0]
+        header, wcs = _generate_wcs_and_update_header(hdu.header)
+        hdu.header = header
+        f = FrameData(hdu.data, header=hdu.header)
+        result = solve_astrometry_framedata(f, options=options)
+        compare_wcs(wcs, result.wcs)
+        assert_is_instance(result.header, fits.Header)
 
 
 class Test_ManualWCS:
