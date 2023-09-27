@@ -291,6 +291,7 @@ class Test_AstrometrySolver:
                                              'add_path /path1',
                                              'add_path /path2'])
 
+    @skip_astrometry
     def test_pop_config(self):
         a = AstrometrySolver()
         options1 = {'inparallel': False,
@@ -316,6 +317,7 @@ class Test_AstrometrySolver:
         assert_equal(cfg['index'], ['011', '012'])
         assert_equal(cfg['add_path'], ['/path1', '/path2'])
 
+    @skip_astrometry
     def test_only_write_config_when_needed(self, tmpdir):
         a = AstrometrySolver()
         args = a._get_args(tmpdir/'1/', tmpdir/'1/fitsfile.fits',
