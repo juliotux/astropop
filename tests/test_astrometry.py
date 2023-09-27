@@ -291,6 +291,44 @@ class Test_AstrometrySolver:
                                              'add_path /path1',
                                              'add_path /path2'])
 
+    def test_pop_config(self):
+        a = AstrometrySolver()
+        options1 = {'inparallel': False,
+                   'autoindex': True,
+                   'cpulimit': 300,
+                   'minwidth': 0.1,
+                   'maxwidth': 180,
+                   'depths': [20, 40, 60],
+                   'index': ['011', '012'],
+                   'add_path': ['/path1', '/path2'],
+                   'ra': 0.0, 'dec': 0.0, 'radius': 1.0}
+        options, cfg = a._pop_config(options1)
+        assert_is_not(options1, options)
+        assert_equal(options['ra'], 0.0)
+        assert_equal(options['dec'], 0.0)
+        assert_equal(options['radius'], 1.0)
+        assert_equal(options['cpulimit'], 300)
+        assert_equal(cfg['inparallel'], False)
+        assert_equal(cfg['autoindex'], True)
+        assert_equal(cfg['minwidth'], 0.1)
+        assert_equal(cfg['maxwidth'], 180)
+        assert_equal(cfg['depths'], [20, 40, 60])
+        assert_equal(cfg['index'], ['011', '012'])
+        assert_equal(cfg['add_path'], ['/path1', '/path2'])
+
+    def test_only_write_config_when_needed(self, tmpdir):
+        a = AstrometrySolver()
+        args = a._get_args(tmpdir/'1/', tmpdir/'1/fitsfile.fits',
+                           {'ra': 0.0, 'dec': 0.0, 'radius': 1.0},
+                           output_dir=tmpdir, correspond='test.correspond')
+        assert_not_in('--config', args)
+
+        args = a._get_args(tmpdir/'2/', tmpdir/'2/fitsfile.fits',
+                           {'ra': 0.0, 'dec': 0.0, 'radius': 1.0,
+                           'inparallel': False},
+                           output_dir=tmpdir, correspond='test.correspond')
+        assert_in('--config', args)
+
     @skip_astrometry
     def test_solve_astrometry_hdu(self, tmpdir):
         data, index, options = self.get_image()
