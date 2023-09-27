@@ -294,14 +294,14 @@ class Test_AstrometrySolver:
     def test_pop_config(self):
         a = AstrometrySolver()
         options1 = {'inparallel': False,
-                   'autoindex': True,
-                   'cpulimit': 300,
-                   'minwidth': 0.1,
-                   'maxwidth': 180,
-                   'depths': [20, 40, 60],
-                   'index': ['011', '012'],
-                   'add_path': ['/path1', '/path2'],
-                   'ra': 0.0, 'dec': 0.0, 'radius': 1.0}
+                    'autoindex': True,
+                    'cpulimit': 300,
+                    'minwidth': 0.1,
+                    'maxwidth': 180,
+                    'depths': [20, 40, 60],
+                    'index': ['011', '012'],
+                    'add_path': ['/path1', '/path2'],
+                    'ra': 0.0, 'dec': 0.0, 'radius': 1.0}
         options, cfg = a._pop_config(options1)
         assert_is_not(options1, options)
         assert_equal(options['ra'], 0.0)
@@ -325,7 +325,7 @@ class Test_AstrometrySolver:
 
         args = a._get_args(tmpdir/'2/', tmpdir/'2/fitsfile.fits',
                            {'ra': 0.0, 'dec': 0.0, 'radius': 1.0,
-                           'inparallel': False},
+                            'inparallel': False},
                            output_dir=tmpdir, correspond='test.correspond')
         assert_in('--config', args)
 
