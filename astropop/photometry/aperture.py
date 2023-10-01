@@ -257,7 +257,6 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto',
           clipping)
         - ``flags``: flag for the sources
         - ``original_x``, ``original_y``: original input positions
-        - ``fwhm``: circularized FWHM computed for each source
         The metadata of the table will contain the following information:
         - ``photutils``: photutils version used
         - ``astropy``: astropy version used
@@ -389,8 +388,10 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto',
     res_ap['flags'] = flags
     res_ap['original_x'] = x
     res_ap['original_y'] = y
-    res_ap['fwhm'] = ap_stats.fwhm
-    res_ap['eccentricity'] = ap_stats.eccentricity
+    # # These two properties take a lot of time to compute for large apertures.
+    # # So, we are disabling them for now.
+    # res_ap['fwhm'] = ap_stats.fwhm
+    # res_ap['eccentricity'] = ap_stats.eccentricity
 
     res_ap.meta['photutils'] = photutils_version
     res_ap.meta['astropy'] = astropy_version
