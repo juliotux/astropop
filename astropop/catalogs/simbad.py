@@ -2,6 +2,7 @@
 """Query and match objects in Simbad database."""
 
 import numpy as np
+import warnings
 from astropy.coordinates import SkyCoord
 from astropy.table import Table
 from astroquery.simbad import Simbad
@@ -16,7 +17,28 @@ __all__ = ['simbad_query_id', 'SimbadSourcesCatalog', 'simbad']
 
 
 def _simbad_query_id(ra, dec, limit_angle, name_order=None):
-    """Query name ids for a star in Simbad. See simbad_query_id."""
+    """Query name ids for a star in Simbad. See simbad_query_id.
+
+    Parameters
+    ----------
+    ra, dec : `float`
+        RA and DEC decimal degrees coordinates to query.
+    limit_angle : string, float, `~astropy.coordinates.Angle`
+        Maximum radius for search. If a string value is passed, it must be
+        readable by astropy.coordinates.Angle. If a float value is passed,
+        it will be interpreted as a decimal degree radius.
+    name_order : `list`, optional
+        Order of priority of name prefixes to query. None will use the default
+        order of ['MAIN_ID', 'NAME', 'HD', 'HR', 'HYP', 'TYC', 'AAVSO'].
+        Default: None
+
+    Returns
+    -------
+    `str` or list(`str`)
+        The ID of each object queried. If a single object is queried,
+        a string is returned. If a list of objects is queried, a list
+        of strings is returned.
+    """
     if name_order is None:
         name_order = ['MAIN_ID', 'NAME', 'HD', 'HR', 'HYP', 'TYC', 'AAVSO']
 
@@ -32,9 +54,11 @@ def _simbad_query_id(ra, dec, limit_angle, name_order=None):
             name = name.replace('  ', ' ')
         return name.strip(' ')
 
-    q = _timeout_retry(s.query_region, SkyCoord(ra, dec,
-                                                unit=(u.degree, u.degree)),
-                       radius=limit_angle)
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', UserWarning)
+        q = _timeout_retry(s.query_region, SkyCoord(ra, dec,
+                                                    unit=(u.degree, u.degree)),
+                           radius=limit_angle)
 
     if q is not None:
         name = string_fix(q['MAIN_ID'][0])
@@ -45,6 +69,8 @@ def _simbad_query_id(ra, dec, limit_angle, name_order=None):
             for k in ids:
                 if i+' ' in k:
                     return _strip_spaces(k)
+    # If nothing is found, return empty string
+    return ''
 
 
 def simbad_query_id(ra, dec, limit_angle, name_order=None):

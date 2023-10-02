@@ -660,6 +660,7 @@ class AstrometrySolver():
             options, cfg = self._pop_config(options)
             cfg = self._updated_config(cfg)
             config_file = os.path.join(output_dir, root + '.cfg')
+            logger.debug('Creating new configuration file.')
             self._write_config(config_file, cfg)
             args += ['--config', config_file]
 
