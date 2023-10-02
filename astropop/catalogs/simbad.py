@@ -69,6 +69,8 @@ def _simbad_query_id(ra, dec, limit_angle, name_order=None):
             for k in ids:
                 if i+' ' in k:
                     return _strip_spaces(k)
+    # If nothing is found, return empty string
+    return ''
 
 
 def simbad_query_id(ra, dec, limit_angle, name_order=None):
