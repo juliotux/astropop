@@ -208,3 +208,9 @@ class Test_Broadcast():
         bc = broadcast(np.arange(10), 3, 2)
 
         assert_equal(bc.iters, [np.arange(10), [3]*10, [2]*10])
+
+    def test_broadcast_with_None(self):
+        bc = broadcast(np.arange(10), None, 2)
+
+        assert_equal(bc.iters, [np.arange(10), [None]*10, [2]*10])
+

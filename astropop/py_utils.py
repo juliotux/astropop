@@ -111,6 +111,8 @@ class broadcast:
     @staticmethod
     def _get_length(value):
         """Get the length of iterable only values."""
+        if value is None:
+            return -1
         if np.isscalar(value):
             return -1
         return len(value)
