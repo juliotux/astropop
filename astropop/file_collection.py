@@ -5,11 +5,12 @@ import fnmatch
 import glob
 from pathlib import Path
 import numpy as np
+import sqlite3 as sql
 
 from astropy.io import fits
 from astropy.table import Column
+from dbastable import SQLDatabase, _ID_KEY, SQLTable
 
-from ._db import SQLDatabase, _ID_KEY, sql, SQLTable, SQLColumnMap
 from .fits_utils import _fits_extensions, \
                         _fits_extensions_with_compress
 from .framedata import check_framedata
@@ -100,7 +101,9 @@ class FitsFileGroup():
         for i in kwargs.keys():
             raise ValueError('Unknown parameter: {}'.format(i))
 
-        self._db = SQLDatabase(database)
+        # As the headers may contain not allowed keywords, let's enable Base32
+        # column names
+        self._db = SQLDatabase(database, allow_b32_colnames=True)
         if database == ':memory:':
             self._db_dir = None
         else:
@@ -152,10 +155,7 @@ class FitsFileGroup():
         self._ext = self._db[_metadata, 'ext'][0]
         self._location = self._db[_metadata, 'location'][0]
         self._compression = self._db[_metadata, 'compression'][0]
-
-        cmap = SQLColumnMap(self._db, _keycolstable,
-                            _keywords_col, _columns_col)
-        self._table = SQLTable(self._db, _headers, colmap=cmap)
+        self._table = SQLTable(self._db, _headers)
 
         if update or not initialized:
             self.update(files, location, compression)
