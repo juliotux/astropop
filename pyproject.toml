@@ -42,7 +42,8 @@ dependencies = [
     "astroscrappy",
     "astroalign",
     "tqdm",
-    "nest-asyncio"
+    "nest-asyncio",
+    "dbastable"
 ]
 
 [project.optional-dependencies]
