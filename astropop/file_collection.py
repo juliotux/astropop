@@ -16,12 +16,30 @@ from .fits_utils import _fits_extensions, \
 from .framedata import check_framedata
 from .logger import logger
 
-__all__ = ['FitsFileGroup']
+__all__ = ['FitsFileGroup', 'list_fits_files']
 
 
 def list_fits_files(location, fits_extensions=None,
                     glob_include=None, glob_exclude=None):
-    """List all fist files in a directory, if compressed or not."""
+    """List all fist files in a directory, if compressed or not.
+
+    Parameters
+    ----------
+    location : str
+        Main directory to look for the files. Files will be listed recursively.
+    fits_extensions : str or list, optional
+        FITS file name extension to be used. Default is None, wich means
+        that the default extensions will be used, like '.fits' and '.fit'.
+    glob_include : str, optional
+        Glob pattern to include files. Default is None.
+    glob_exclude : str, optional
+        Glob pattern to exclude files. Default is None.
+
+    Returns
+    -------
+    list
+        List of files found.
+    """
     if fits_extensions is None:
         fits_extensions = _fits_extensions
 
