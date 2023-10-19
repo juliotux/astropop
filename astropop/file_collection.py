@@ -5,22 +5,41 @@ import fnmatch
 import glob
 from pathlib import Path
 import numpy as np
+import sqlite3 as sql
 
 from astropy.io import fits
 from astropy.table import Column
+from dbastable import SQLDatabase, _ID_KEY, SQLTable
 
-from ._db import SQLDatabase, _ID_KEY, sql, SQLTable, SQLColumnMap
 from .fits_utils import _fits_extensions, \
                         _fits_extensions_with_compress
 from .framedata import check_framedata
 from .logger import logger
 
-__all__ = ['FitsFileGroup']
+__all__ = ['FitsFileGroup', 'list_fits_files']
 
 
 def list_fits_files(location, fits_extensions=None,
                     glob_include=None, glob_exclude=None):
-    """List all fist files in a directory, if compressed or not."""
+    """List all fist files in a directory, if compressed or not.
+
+    Parameters
+    ----------
+    location : str
+        Main directory to look for the files. Files will be listed recursively.
+    fits_extensions : str or list, optional
+        FITS file name extension to be used. Default is None, wich means
+        that the default extensions will be used, like '.fits' and '.fit'.
+    glob_include : str, optional
+        Glob pattern to include files. Default is None.
+    glob_exclude : str, optional
+        Glob pattern to exclude files. Default is None.
+
+    Returns
+    -------
+    list
+        List of files found.
+    """
     if fits_extensions is None:
         fits_extensions = _fits_extensions
 
@@ -53,9 +72,6 @@ def list_fits_files(location, fits_extensions=None,
 _headers = 'headers'
 _metadata = 'astropop_metadata'
 _files_col = '__file'
-_keycolstable = 'astropop_keyword2column'
-_keywords_col = 'keyword'
-_columns_col = 'column'
 
 
 class FitsFileGroup():
@@ -100,7 +116,9 @@ class FitsFileGroup():
         for i in kwargs.keys():
             raise ValueError('Unknown parameter: {}'.format(i))
 
-        self._db = SQLDatabase(database)
+        # As the headers may contain not allowed keywords, let's enable Base32
+        # column names
+        self._db = SQLDatabase(database, allow_b32_colnames=True)
         if database == ':memory:':
             self._db_dir = None
         else:
@@ -140,9 +158,6 @@ class FitsFileGroup():
                                           'EXT': self._ext},
                               add_columns=True)
             self._db.add_column(_metadata, 'FITS_EXT', self._extensions)
-            self._db.add_table(_keycolstable)
-            self._db.add_column(_keycolstable, _keywords_col)
-            self._db.add_column(_keycolstable, _columns_col)
 
         self._include = self._db[_metadata, 'glob_include'][0]
         self._exclude = self._db[_metadata, 'glob_exclude'][0]
@@ -152,10 +167,7 @@ class FitsFileGroup():
         self._ext = self._db[_metadata, 'ext'][0]
         self._location = self._db[_metadata, 'location'][0]
         self._compression = self._db[_metadata, 'compression'][0]
-
-        cmap = SQLColumnMap(self._db, _keycolstable,
-                            _keywords_col, _columns_col)
-        self._table = SQLTable(self._db, _headers, colmap=cmap)
+        self._table = SQLTable(self._db, _headers)
 
         if update or not initialized:
             self.update(files, location, compression)
@@ -169,6 +181,11 @@ class FitsFileGroup():
     def summary(self):
         """Get a readonly table with summary of the fits files."""
         return self._table.as_table()
+
+    @property
+    def keys(self):
+        """List the keywords of the headers table."""
+        return self._table.column_names
 
     def __copy__(self, indexes=None):
         """Copy the current instance to a new object."""

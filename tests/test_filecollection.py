@@ -68,12 +68,12 @@ def create_test_files(tmpdir, extension='fits'):
             warnings.simplefilter('ignore',
                                   category=fits.verify.VerifyWarning)
             hdr = fits.Header({'obstype': 'bias',
-                            'exptime': 0.0001,
-                            'observer': 'Galileo Galileo',
-                            'object': 'bias',
-                            'filter': '',
-                            'space key': 1,
-                            'image': iname})
+                               'exptime': 0.0001,
+                               'observer': 'Galileo Galileo',
+                               'object': 'bias',
+                               'filter': '',
+                               'space key': 1,
+                               'image': iname})
             hdu = fits.PrimaryHDU(np.ones((8, 8), dtype=np.int16), hdr)
             hdu.writeto(fname)
         files_list.append(str(fname))
@@ -370,6 +370,16 @@ class Test_FitsFileGroup():
             fg.remove_file('NonExistingFile')
 
 
+class Test_FitsFileGroup_Properties():
+    def test_fg_keys(self, tmpdir):
+        tmpdir, flist = tmpdir
+        fg = FitsFileGroup(location=tmpdir/'fits', compression=False)
+        assert_equal(fg.keys,
+                     ['__file', 'simple', 'bitpix', 'naxis', 'naxis1',
+                      'naxis2', 'obstype', 'exptime', 'observer', 'object',
+                      'filter', 'space key', 'image'])
+
+
 class Test_ListFitsFiles():
     def test_list_custom_extension(self, tmpdir):
         tmpdir, flist = tmpdir
@@ -378,7 +388,8 @@ class Test_ListFitsFiles():
         assert_equal(sorted(found_files), sorted(flist['myfits']))
 
         found_files = list_fits_files(tmpdir/'custom',
-                                      fits_extensions=['.myfits', '.otherfits'])
+                                      fits_extensions=['.myfits',
+                                                       '.otherfits'])
         assert_equal(sorted(found_files), sorted(flist['custom']))
 
     @pytest.mark.parametrize('ext', ['fits', 'fz', 'fit', 'fts'])
