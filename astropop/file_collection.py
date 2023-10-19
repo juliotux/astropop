@@ -164,6 +164,11 @@ class FitsFileGroup():
         """Get a readonly table with summary of the fits files."""
         return self._table.as_table()
 
+    @property
+    def keys(self):
+        """List the keywords of the headers table."""
+        return self._table.column_names
+
     def __copy__(self, indexes=None):
         """Copy the current instance to a new object."""
         if indexes is None:

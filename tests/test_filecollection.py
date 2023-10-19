@@ -370,6 +370,16 @@ class Test_FitsFileGroup():
             fg.remove_file('NonExistingFile')
 
 
+class Test_FitsFileGroup_Properties():
+    def test_fg_keys(self, tmpdir):
+        tmpdir, flist = tmpdir
+        fg = FitsFileGroup(location=tmpdir/'fits', compression=False)
+        assert_equal(fg.keys,
+                     ['__file', 'simple', 'bitpix', 'naxis', 'naxis1',
+                      'naxis2', 'obstype', 'exptime', 'observer', 'object',
+                      'filter', 'space key', 'image'])
+
+
 class Test_ListFitsFiles():
     def test_list_custom_extension(self, tmpdir):
         tmpdir, flist = tmpdir
