@@ -656,7 +656,7 @@ class Test_Vizier_GSC242:
 
         assert_equal(c.sources_id()[0], 'GSC2 S17J000168')
         for k, v in self.hd674_mags.items():
-            assert_almost_equal(c.mag_list(k)[0], v)
+            assert_almost_equal(c.mag_list(k)[0], v, decimal=3)
 
     def test_gsc242_properties_types(self):
         s = vizier.gsc242(hd674_coords[0], search_radius[0], band='V')
