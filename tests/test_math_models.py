@@ -1,7 +1,6 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 # flake8: noqa: F403, F405
 
-import pytest
 import numpy as np
 from scipy.integrate import dblquad, quad
 from astropop.math.models import MoffatEquations, PSFMoffat1D, PSFMoffat2D, \
@@ -157,14 +156,14 @@ class TestGaussianModels:
 
     def test_model_radial_fwhm(self):
         m = PSFGaussianRadial(flux=1, sigma=2, sky=0)
-        assert_almost_equal(m.fwhm, 2*2*np.sqrt(2*np.log(2)))
+        assert_almost_equal(m.fwhm, 2*(2*np.sqrt(2*np.log(2))))
 
     def test_model_1d_fwhm(self):
         m = PSFGaussian1D(x_0=0, flux=1, sigma=2, sky=0)
-        assert_almost_equal(m.fwhm, 2*2*np.sqrt(2*np.log(2)))
+        assert_almost_equal(m.fwhm, 2*(2*np.sqrt(2*np.log(2))))
 
     def test_model_2d_fwhm(self):
         m = PSFGaussian2D(x_0=0, y_0=0, flux=1, sigma_x=2, sigma_y=2, sky=0)
-        assert_almost_equal(m.fwhm, 2*2*np.sqrt(2*np.log(2)))
+        assert_almost_equal(m.fwhm, 2*(2*np.sqrt(2*np.log(2))))
         m = PSFGaussian2D(x_0=0, y_0=0, flux=1, sigma_x=2, sigma_y=1, sky=0)
-        assert_almost_equal(m.fwhm, 1.5*2*np.sqrt(2*np.log(2)))
+        assert_almost_equal(m.fwhm, 1.5*(2*np.sqrt(2*np.log(2))))
