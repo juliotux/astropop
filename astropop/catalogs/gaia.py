@@ -145,7 +145,9 @@ class GaiaDR3SourcesCatalog(_OnlineSourcesCatalog):
                                        radius=self._radius.to(u.deg).value,
                                        columns=self._columns)
         sk = SkyCoord(self._query['ra'], self._query['dec'],
-                      obstime=Time(self._query['ref_epoch'], format='jyear'))
+                      obstime=Time(self._query['ref_epoch'], format='jyear'),
+                      pm_ra_cosdec=self._query['pmra'],
+                      pm_dec=self._query['pmdec'])
         ids = np.array([string_fix(i) for i in self._query['DESIGNATION']])
 
         # perform magnitude filtering only if available
