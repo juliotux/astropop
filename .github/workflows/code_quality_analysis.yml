@@ -10,8 +10,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  codestyle:
-    name: codestyle
+  ruff:
+    name: ruff
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request'
 
@@ -37,8 +37,8 @@ jobs:
         ruff check --statistics astropop
         ruff check --statistics tests
 
-  codestyle_pull_request:
-    name: codestyle-pull-request
+  ruff_pull_request:
+    name: ruff-pull-request
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
 
