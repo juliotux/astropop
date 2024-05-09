@@ -63,8 +63,8 @@ jobs:
         python -m pip install ruff
     - name: Run pycodestyle
       run: |
-        ruff check {{ env.GIT_DIFF_FILTERED}}
-        ruff check --statistics {{ env.GIT_DIFF_FILTERED}}
+        ruff check {{ env.GIT_DIFF_FILTERED }}
+        ruff check --statistics {{ env.GIT_DIFF_FILTERED }}
       if: env.GIT_DIFF_FILTERED
 
   prospector_pull_request:
