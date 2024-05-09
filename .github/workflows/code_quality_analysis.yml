@@ -19,69 +19,21 @@ jobs:
     - uses: actions/checkout@v3
       with:
         fetch-depth: 0
-    - name: Set up Python 3.10
+    - name: Set up Python 3.12
       uses: actions/setup-python@v4
       with:
-        python-version: '3.10'
+        python-version: '3.12'
         cache: 'pip'
-        cache-dependency-path: '**/setup.cfg'
+        cache-dependency-path: '**/pyproject.toml'
     - name: Install base dependencies
       run: |
         python -m pip install --upgrade pip
         python -m pip install tox
+        python -m pip install ruff
     - name: Code Analyse
-      run: tox -e codestyle
-
-  docstyle:
-    name: pydocstyle
-    runs-on: ubuntu-latest
-    if: github.event_name != 'pull_request'
-
-    steps:
-    - uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
-    - name: Set up Python 3.10
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
-        cache: 'pip'
-        cache-dependency-path: '**/setup.cfg'
-    - name: Install base dependencies
       run: |
-        python -m pip install --upgrade pip
-        python -m pip install pydocstyle
-    - name: Code Analyse
-      continue-on-error: true
-      run: pydocstyle astropop
-
-  # prospector:
-  #   name: prospector
-  #   runs-on: ubuntu-latest
-  #   if: github.event_name != 'pull_request'
-
-  #   steps:
-  #   - uses: actions/checkout@v3
-  #     with:
-  #       fetch-depth: 0
-  #   - name: Set up Python 3.10
-  #     uses: actions/setup-python@v4
-  #     with:
-  #       python-version: '3.10'
-  #       cache: 'pip'
-  #       cache-dependency-path: '**/setup.cfg'
-  #   - name: Install base dependencies
-  #     run: |
-  #       python -m pip install --upgrade pip
-  #       python -m pip install prospector pylint pyflakes bandit
-  #       python -m pip install .[all]
-  #       python -m pip install pydocstyle pycodestyle prospector pylint pyflakes bandit
-  #   - name: Run pycodestyle
-  #     run: pycodestyle --statistics astropop
-  #   # - name: Run pydocstyle
-  #   #   run: pydocstyle astropop
-  #   - name: Run prospector
-  #     run: prospector -w pyflakes -w bandit --doc-warnings -F astropop
+        ruff astropop
+        ruff tests
 
   codestyle_pull_request:
     name: codestyle-pull-request
@@ -92,12 +44,12 @@ jobs:
     - uses: actions/checkout@v3
       with:
         fetch-depth: 0
-    - name: Set up Python 3.10
+    - name: Set up Python 3.12
       uses: actions/setup-python@v4
       with:
-        python-version: '3.10'
+        python-version: '3.12'
         cache: pip
-        cache-dependency-path: '**/setup.cfg'
+        cache-dependency-path: '**/pyproject.toml'
     - uses: technote-space/get-diff-action@v6
       with:
         PATTERNS: |
@@ -106,43 +58,9 @@ jobs:
     - name: Install base dependencies
       run: |
         python -m pip install --upgrade pip
-        python -m pip install pycodestyle pydocstyle prospector pylint pyflakes bandit
-        python -m pip install .[all]
+        python -m pip install ruff
     - name: Run pycodestyle
-      run: pycodestyle --statistics ${{ env.GIT_DIFF_FILTERED}}
-      if: env.GIT_DIFF_FILTERED
-
-  docstyle_pull_request:
-    name: pydocstyle-pull-request
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-
-    steps:
-    - uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
-    - name: Set up Python 3.10
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
-        cache: 'pip'
-        cache-dependency-path: '**/setup.cfg'
-    - uses: technote-space/get-diff-action@v6
-      with:
-        PATTERNS: |
-          astropop/**/*.py
-          !tests/*.py
-    - name: Print DIFF
-      run: |
-        echo "GIT_DIFF: ${{ env.GIT_DIFF }}"
-        echo "GIT_DIFF_FILTERED: ${{ env.GIT_DIFF_FILTERED }}"
-    - name: Install base dependencies
-      run: |
-        python -m pip install --upgrade pip
-        python -m pip install pydocstyle
-    - name: Code Analyse
-      continue-on-error: true
-      run: pydocstyle ${{ env.GIT_DIFF_FILTERED}}
+      run: ruff --statistics ${{ env.GIT_DIFF_FILTERED}}
       if: env.GIT_DIFF_FILTERED
 
   prospector_pull_request:
@@ -154,12 +72,12 @@ jobs:
     - uses: actions/checkout@v3
       with:
         fetch-depth: 0
-    - name: Set up Python 3.10
+    - name: Set up Python 3.12
       uses: actions/setup-python@v4
       with:
-        python-version: '3.10'
+        python-version: '3.12'
         cache: 'pip'
-        cache-dependency-path: '**/setup.cfg'
+        cache-dependency-path: '**/pyproject.toml'
     - uses: technote-space/get-diff-action@v6
       with:
         PATTERNS: |
