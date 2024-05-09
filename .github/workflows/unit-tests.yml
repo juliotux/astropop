@@ -136,7 +136,8 @@ jobs:
         mamba install -y -q pytest astrometry \
                             astropy scipy numpy matplotlib \
                             scikit-image scikit-learn \
-                            sep astroquery astroscrappy
+                            sep astroquery
+        pip install astroscrappy
         pip install coveralls .[test]
     - name: Install astropop
       shell: bash -l {0}
