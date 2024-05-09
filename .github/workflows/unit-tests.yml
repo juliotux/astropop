@@ -25,9 +25,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: Python 3.12 with devdeps and online catalogs
-            python: '3.12-dev'
-            toxenv: py312-test-devdeps-online
+          - name: Python 3.13 with devdeps and online catalogs
+            python: '3.13'
+            toxenv: py313-test-devdeps-online
 
           - name: Python 3.8 with old deps (online)
             python: '3.8'
@@ -48,6 +48,10 @@ jobs:
           - name: Python 3.11 with stable deps (online)
             python: '3.11'
             toxenv: py311-test-stabledeps-online
+
+          - name: Python 3.12 with stable deps (online)
+            python: '3.12'
+            toxenv: py312-test-stabledeps-online
 
     steps:
     - uses: actions/checkout@v3
@@ -118,7 +122,7 @@ jobs:
         use-mamba: true
         mamba-version: "*"
         channels: conda-forge,defaults
-        python-version: "3.11"
+        python-version: "3.12"
     - name: Cache astropy cache
       uses: actions/cache@v3
       with:
