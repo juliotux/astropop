@@ -32,8 +32,10 @@ jobs:
         python -m pip install ruff
     - name: Code Analyse
       run: |
-        ruff astropop
-        ruff tests
+        ruff check astropop
+        ruff check tests
+        ruff check --statistics astropop
+        ruff check --statistics tests
 
   codestyle_pull_request:
     name: codestyle-pull-request
@@ -60,7 +62,9 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install ruff
     - name: Run pycodestyle
-      run: ruff --statistics ${{ env.GIT_DIFF_FILTERED}}
+      run: |
+        ruff check {{ env.GIT_DIFF_FILTERED}}
+        ruff check --statistics {{ env.GIT_DIFF_FILTERED}}
       if: env.GIT_DIFF_FILTERED
 
   prospector_pull_request:
