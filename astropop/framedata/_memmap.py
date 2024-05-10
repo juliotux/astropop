@@ -4,6 +4,8 @@
 import os
 import numpy as np
 
+from .cache_manager import TempFile
+
 
 __all__ = ['create_array_memmap', 'delete_array_memmap', 'reset_memmap_array']
 
@@ -31,7 +33,7 @@ def create_array_memmap(filename, data, dtype=None):
         return data
 
     if filename is None:
-        raise ValueError('Could not create a memmap file with None filename.')
+        filename = TempFile(None)
 
     data = np.array(data)
     if dtype is not None:
@@ -43,7 +45,7 @@ def create_array_memmap(filename, data, dtype=None):
         dtype = dtype.newbyteorder('=')
 
     shape = data.shape
-    memmap = np.memmap(filename, mode='w+', dtype=dtype, shape=shape)
+    memmap = np.memmap(str(filename), mode='w+', dtype=dtype, shape=shape)
     memmap[:] = data[:]
     return memmap
 

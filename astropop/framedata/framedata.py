@@ -9,13 +9,13 @@ an easier unit/uncertainty workflow
 import os
 import copy as cp
 import numpy as np
-import tempfile
 from enum import Flag
 from astropy import units as u
 from astropy.io import fits
 from astropy.wcs import WCS
 
 from ..flags import mask_from_flags
+from .cache_manager import TempDir
 from ._memmap import create_array_memmap, delete_array_memmap, \
                      reset_memmap_array
 from ._compat import _to_hdu, _to_ccddata, _write_fits, \
@@ -109,32 +109,35 @@ def setup_filename(frame, cache_folder=None, filename=None):
     if not isinstance(frame, FrameData):
         raise ValueError('Only FrameData accepted.')
 
-    cache_folder_ccd = frame.cache_folder
+    cache_folder_ccd = frame.cache
     filename_ccd = frame.cache_filename
 
     # explicit set must be over defult
     filename = filename or filename_ccd
     if filename is None:
-        filename = tempfile.NamedTemporaryFile(suffix='.npy').name
-
-    if cache_folder is None and \
-       os.path.dirname(filename) not in ('', tempfile.gettempdir()):
-        # we need filename dir for cache_folder
-        cache_folder = os.path.dirname(filename)
-
+        # generate a random name
+        filename = os.urandom(8).hex()
+    # use only basename
     filename = os.path.basename(filename)
 
     # explicit set must be over defult
+    # folders are automatically created
     cache_folder = cache_folder or cache_folder_ccd
     if cache_folder is None:
-        cache_folder = tempfile.TemporaryDirectory(prefix='astropop_').name
+        cache_folder = TempDir('framedata_'+filename)
+    elif isinstance(cache_folder, str):
+        cache_folder = TempDir(cache_folder)
+    elif isinstance(cache_folder, TempDir):
+        pass
+    else:
+        raise ValueError('cache_folder must be a string'
+                         ' or a TempDir instance.')
 
-    os.makedirs(cache_folder, exist_ok=True)
-
-    frame.cache_folder = cache_folder
+    # Setup the FrameData values.
+    frame.cache = cache_folder
     frame.cache_filename = filename
 
-    return os.path.join(cache_folder, filename)
+    return os.path.join(str(cache_folder), filename)
 
 
 class PixelMaskFlags(Flag):
@@ -219,8 +222,9 @@ class FrameData:
     _origin = None
     _history = None
     _comments = None
-    cache_folder = None
+    cache = None
     cache_filename = None
+    memmap_objects = None
 
     def __init__(self, data, unit=None, dtype=None, uncertainty=None,
                  mask=None, flags=None, use_memmap_backend=False,
@@ -525,7 +529,7 @@ class FrameData:
         """
         self._flags[pixels] |= PixelMaskFlags.MASKED.value
 
-    def enable_memmap(self, filename=None, cache_folder=None):
+    def enable_memmap(self, cache_folder=None, filename=None):
         """Enable array file memmapping.
 
         Parameters
@@ -539,21 +543,15 @@ class FrameData:
         if self._memmapping:
             return
 
-        # get the default files if names are not provided
-        if filename is None:
-            filename = self.cache_filename
-        if cache_folder is None:
-            cache_folder = self.cache_folder
+        # re-setup the filenames
+        setup_filename(self, cache_folder, filename)
 
         # delete the old memmap files if they are memmaps
         self.disable_memmap()
 
-        # setup the new filenames
-        cache_file = setup_filename(self, cache_folder, filename)
-
         # create the memmap files
         self._memmapping = True
-        self._update_memmaps(cache_file)
+        self._update_memmaps()
 
     def disable_memmap(self):
         """Disable frame file memmapping (load to memory)."""
@@ -562,22 +560,22 @@ class FrameData:
         self._unct = delete_array_memmap(self._unct, read=True, remove=True)
         self._memmapping = False
 
-    def _update_memmaps(self, cache_file=None):
+    def _update_memmaps(self):
         """Update the memmap files."""
-        if cache_file is None:
-            cache_file = setup_filename(self)
+        # get the default files if names are not provided
+        data_tmp = self.cache.create_file(self.cache_filename + '.data.npy')
+        flags_tmp = self.cache.create_file(self.cache_filename + '.flags.npy')
+        unct_tmp = self.cache.create_file(self.cache_filename + '.unct.npy')
+
         if self._memmapping:
             if not isinstance(self._data, np.memmap):
-                self._data = create_array_memmap(cache_file + '.data',
-                                                 self._data)
+                self._data = create_array_memmap(str(data_tmp), self._data)
             if not isinstance(self._flags, np.memmap) and \
                self._flags is not None:
-                self._flags = create_array_memmap(cache_file + '.flags',
-                                                  self._flags)
+                self._flags = create_array_memmap(str(flags_tmp), self._flags)
             if not isinstance(self._unct, np.memmap) and \
                self._unct is not None:
-                self._unct = create_array_memmap(cache_file + '.unct',
-                                                 self._unct)
+                self._unct = create_array_memmap(str(unct_tmp), self._unct)
 
     def copy(self, dtype=None):
         """Copy the current FrameData to a new instance.
@@ -602,7 +600,7 @@ class FrameData:
         if cache_fname is not None:
             cache_fname = cache_fname + '_copy'
         nf._origin = self._origin
-        nf.cache_folder = self.cache_folder
+        nf.cache = self.cache
         nf.cache_filename = cache_fname
 
         # copy data
@@ -626,15 +624,7 @@ class FrameData:
         return self.copy()
 
     def __del__(self):
-        """Safe destruction of the container."""
-        # ensure all files are removed when exit
-        self.disable_memmap()
-        # remove tmp folder if empty
-        try:
-            if len(os.listdir(self.cache_folder)) == 0:
-                os.rmdir(self.cache_folder)
-        except (FileNotFoundError, TypeError):
-            pass
+        self.cache.delete()
 
     def median(self, **kwargs):
         """Compute and return the median of the data."""
