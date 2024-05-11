@@ -42,10 +42,10 @@ jobs:
         - name: Python 3.10 with LTS dependencies
           linux: py310-test-ltsdeps-online
 
-        -name: Python 3.11 with stable deps
+        - name: Python 3.11 with stable deps
           linux: py311-test-stabledeps-online
 
-        -name: Python 3.12 with stable deps
+        - name: Python 3.12 with stable deps
           linux py312-test-stabledeps-online
 
   allowed_failures:
