@@ -4,8 +4,6 @@
 import os
 import numpy as np
 
-from .cache_manager import TempFile
-
 
 __all__ = ['create_array_memmap', 'delete_array_memmap', 'reset_memmap_array']
 
