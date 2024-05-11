@@ -33,13 +33,13 @@ jobs:
             python: '3.8'
             toxenv: py38-test-olddeps-online
 
-          - name: Python 3.8 with lts deps (online)
-            python: '3.8'
-            toxenv: py38-test-ltsdeps-online
+          - name: Python 3.10 with lts deps (online)
+            python: '3.10'
+            toxenv: py310-test-ltsdeps-online
 
-          - name: Python 3.9 with stable deps
+          - name: Python 3.9 with stable deps (online)
             python: '3.9'
-            toxenv: py39-test-stabledeps
+            toxenv: py39-test-stabledeps-online
 
           - name: Python 3.10 with stable deps (online)
             python: '3.10'
