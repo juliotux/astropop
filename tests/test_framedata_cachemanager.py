@@ -34,6 +34,19 @@ class Test_TempDir_Init:
         tmp.delete()
         assert_path_not_exists(path)
 
+    def test_init_error_parent_and_absolute(self, tmpdir):
+        with pytest.raises(ValueError, match='Parent cannot be set for an '
+                           'absolute dirname.'):
+            TempDir(str(tmpdir), parent=BaseTempDir, delete_on_remove=False)
+
+    def test_init_error_not_basename(self):
+        with pytest.raises(ValueError, match='dirname must be a base name'):
+            TempDir('testing/test', parent=BaseTempDir,
+                    delete_on_remove=False)
+
+    def test_init_error_invalid_parent(self):
+        with pytest.raises(ValueError, match='a TempDir instance'):
+            TempDir('testing', parent='testing', delete_on_remove=False)
 
 class Test_TempDir_Methods:
     def test_create_folder(self):
@@ -93,6 +106,14 @@ class Test_TempFile_Init:
         f.close()
         tmp.delete()
         assert_path_not_exists(path)
+
+    def test_init_error_not_basename(self):
+        with pytest.raises(ValueError, match='filename must be a base name'):
+            TempFile('testing/test', delete_on_remove=False)
+
+    def test_init_error_invalid_parent(self):
+        with pytest.raises(ValueError, match='a TempDir instance'):
+            TempFile('testing', parent='testing', delete_on_remove=False)
 
 
 class Test_TempFile_Methods:
