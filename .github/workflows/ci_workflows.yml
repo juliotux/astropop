@@ -133,9 +133,10 @@ jobs:
         pytest --pyargs ./tests ./docs --remote-data --cov astropop --cov-config=./pyproject.toml
         coverage xml -o ./coverage.xml
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
         file: ./coverage.xml
+        token: ${{ secrets.CODECOV_TOKEN }}
     - name: Upload coverage to Coveralls
       shell: bash -l {0}
       if: github.event_name != 'pull_request'
