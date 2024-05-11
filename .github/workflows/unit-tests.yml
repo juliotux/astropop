@@ -73,6 +73,10 @@ jobs:
     - name: Install graphviz dependency
       if: "endsWith(matrix.toxenv, 'build_docs')"
       run: sudo apt-get -y install graphviz
+    - name: Install build dependencies
+      if: "contains(matrix.toxenv, 'devdeps')"
+      run: |
+        sudo apt-get -y install libopenblas-base libopenblas-dev
     - name: Cache tox environments
       uses: actions/cache@v3
       with:
