@@ -19,15 +19,21 @@ jobs:
     if: "!(contains(github.event.head_commit.message, '[skip ci]') || contains(github.event.head_commit.message, '[ci skip]'))"
     with:
       cache-path: ~/.astropy
-      cache-key: ${{ github.ref }}-${{ matrix.toxenv }}-astropycache
       envs: |
         - linux: py38-test-olddeps-online
+          cache-key: ${{ github.ref }}-py38lin-astropycache
         - linux: py39-test-online
+          cache-key: ${{ github.ref }}-py39lin-astropycache
         - linux: py310-test-online
+          cache-key: ${{ github.ref }}-py310lin-astropycache
         - linux: py311-test-online
+          cache-key: ${{ github.ref }}-py311lin-astropycache
         - linux: py312-test-online
+          cache-key: ${{ github.ref }}-py312lin-astropycache
         - macos: py312-test-online
+          cache-key: ${{ github.ref }}-py312mac-astropycache
         - windows: py312-test-online
+          cache-key: ${{ github.ref }}-py312win-astropycache
 
   build_docs:
     uses: OpenAstronomy/github-actions-workflows/.github/workflows/tox.yml@v1
