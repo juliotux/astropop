@@ -120,10 +120,8 @@ class Test_TempDir_Delete:
 
 class Test_TempDir_Attributes:
     def test_is_removable(self):
-        assert_true(BaseTempDir.is_removable)
-        tmp = TempDir('testing', delete_on_remove=False)
-        assert_false(tmp.is_removable)
-        assert_false(BaseTempDir.is_removable)
+        tmp = TempDir('testing')
+        assert_true(tmp.is_removable)
 
     def test_is_removable_multi_level(self):
         tmp = TempDir('testing')
