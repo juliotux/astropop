@@ -329,13 +329,13 @@ class TestFrameDataMemMap:
         assert_is_not_instance(frame._flags, np.memmap)
         assert_false(frame._memmapping)
         frame.enable_memmap()
-        fname = os.path.join(frame.cache_folder, frame.cache_filename)
+        fname = os.path.join(frame.cache.full_path, frame.cache_filename)
         assert_is_instance(frame._data, np.memmap)
         assert_is_none(frame._unct)
         assert_is_instance(frame._flags, np.memmap)
         assert_true(frame._memmapping)
-        assert_equal(frame._data.filename, fname+'.data')
-        assert_equal(frame._flags.filename, fname+'.flags')
+        assert_equal(frame._data.filename, fname+'.data.npy')
+        assert_equal(frame._flags.filename, fname+'.flags.npy')
 
     def test_framedata_memmap_setname(self, tmpdir):
         frame = create_framedata()
@@ -347,8 +347,8 @@ class TestFrameDataMemMap:
         assert_is_none(frame._unct)
         assert_is_instance(frame._flags, np.memmap)
         assert_true(frame._memmapping)
-        assert_equal(frame._data.filename, fname+'.data')
-        assert_equal(frame._flags.filename, fname+'.flags')
+        assert_equal(frame._data.filename, fname+'.data.npy')
+        assert_equal(frame._flags.filename, fname+'.flags.npy')
 
     def test_framedata_disable_memmap(self):
         frame = create_framedata()
@@ -375,14 +375,14 @@ class TestFrameDataMemMap:
         assert_is_not_instance(frame._flags, np.memmap)
         assert_false(frame._memmapping)
         frame.enable_memmap()
-        fname = os.path.join(frame.cache_folder, frame.cache_filename)
+        fname = os.path.join(frame.cache.full_path, frame.cache_filename)
         assert_is_instance(frame._data, np.memmap)
         assert_is_instance(frame._unct, np.memmap)
         assert_is_instance(frame._flags, np.memmap)
         assert_true(frame._memmapping)
-        assert_equal(frame._data.filename, fname+'.data')
-        assert_equal(frame._unct.filename, fname+'.unct')
-        assert_equal(frame._flags.filename, fname+'.flags')
+        assert_equal(frame._data.filename, fname+'.data.npy')
+        assert_equal(frame._unct.filename, fname+'.unct.npy')
+        assert_equal(frame._flags.filename, fname+'.flags.npy')
 
     def test_framedata_disable_memmap_with_uncertainty(self):
         frame = create_framedata()
@@ -420,7 +420,7 @@ class TestFrameDataCopy:
         assert_equal(ccd_copy.flags, frame.flags)
         # filenames are copied
         assert_equal(ccd_copy.cache_filename, frame.cache_filename + '_copy')
-        assert_equal(ccd_copy.cache_folder, frame.cache_folder)
+        assert_equal(ccd_copy.cache.full_path, frame.cache.full_path + '_copy')
         # origin stay None
         assert_is_none(ccd_copy.origin_filename)
 
@@ -447,7 +447,7 @@ class TestFrameDataCopy:
                                  origin_filename='/dummy/dummy.dummy')
         ccd_copy = frame.copy()
         assert_equal(ccd_copy.cache_filename, 'testing_copy')
-        assert_equal(ccd_copy.cache_folder, tmpdir.strpath)
+        assert_equal(ccd_copy.cache.full_path, tmpdir.strpath + '_copy')
         assert_equal(ccd_copy.origin_filename, '/dummy/dummy.dummy')
 
     def test_copy_wcs(self):
@@ -484,10 +484,10 @@ class TestFrameDataCopy:
         frame.uncertainty = 1.0
         f = frame.copy()
         f.enable_memmap()
-        expect = os.path.join(tmp, 'testcopy'+'_copy')
-        assert_path_exists(expect+'.data')
-        assert_path_exists(expect+'.unct')
-        assert_path_exists(expect+'.flags')
+        expect = os.path.join(tmp+'_copy', 'testcopy'+'_copy')
+        assert_path_exists(expect+'.data.npy')
+        assert_path_exists(expect+'.unct.npy')
+        assert_path_exists(expect+'.flags.npy')
 
     def test_copy_memmap(self, tmpdir):
         tmp = tmpdir.strpath
@@ -499,9 +499,12 @@ class TestFrameDataCopy:
         assert_is_instance(f._data, np.memmap)
         assert_is_instance(f._unct, np.memmap)
         assert_is_instance(f._flags, np.memmap)
-        assert_equal(f._data.filename, os.path.join(tmp, 'testcopy_copy.data'))
-        assert_equal(f._unct.filename, os.path.join(tmp, 'testcopy_copy.unct'))
-        assert_equal(f._flags.filename, os.path.join(tmp, 'testcopy_copy.flags'))
+        assert_equal(f._data.filename,
+                     os.path.join(tmp+'_copy', 'testcopy_copy.data.npy'))
+        assert_equal(f._unct.filename,
+                     os.path.join(tmp+'_copy', 'testcopy_copy.unct.npy'))
+        assert_equal(f._flags.filename,
+                     os.path.join(tmp+'_copy', 'testcopy_copy.flags.npy'))
         assert_path_exists(f._data.filename)
         assert_path_exists(f._unct.filename)
         assert_path_exists(f._flags.filename)
