@@ -4,9 +4,7 @@
 import os
 import pytest
 from astropop.framedata import cache_manager
-from astropop.framedata.cache_manager import TempDir, BaseTempDir, TempFile, \
-                                             managed_folders
-from astropop.logger import logger
+from astropop.framedata.cache_manager import TempDir, BaseTempDir, TempFile
 
 from astropop.testing import *
 
@@ -16,7 +14,7 @@ class Test_AtExit:
         import atexit
         t = TempDir('testing')
         assert_in(t, BaseTempDir.managed.values())
-        assert_in(BaseTempDir, managed_folders)
+        assert_in(BaseTempDir, cache_manager.managed_folders)
         assert_path_exists(t.full_path)
         assert_path_exists(BaseTempDir.full_path)
 
@@ -29,13 +27,14 @@ class Test_AtExit:
         cache_manager.DELETE_ON_EXIT = False
         t = TempDir('testing', delete_on_remove=False)
         assert_in(t, BaseTempDir.managed.values())
-        assert_in(BaseTempDir, managed_folders)
         assert_path_exists(t.full_path)
         assert_path_exists(BaseTempDir.full_path)
 
         atexit._run_exitfuncs()
         assert_path_exists(t.full_path)
         assert_path_exists(BaseTempDir.full_path)
+        # restore the behavior
+        cache_manager.DELETE_ON_EXIT = True
 
 
 class Test_TempDir_Init:
