@@ -144,8 +144,10 @@ class TempDir:
                     del self.parent.managed[self.dirname]
                 except KeyError:
                     pass
-
-            shutil.rmtree(self.full_path)
+            try:
+                shutil.rmtree(self.full_path)
+            except FileNotFoundError:
+                pass
 
     @property
     def is_removable(self):
