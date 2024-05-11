@@ -30,10 +30,6 @@ jobs:
           cache-key: ${{ github.ref }}-py311lin-astropycache
         - linux: py312-test-online
           cache-key: ${{ github.ref }}-py312lin-astropycache
-        - macos: py312-test-online
-          cache-key: ${{ github.ref }}-py312mac-astropycache
-        - windows: py312-test-online
-          cache-key: ${{ github.ref }}-py312win-astropycache
 
   build_docs:
     uses: OpenAstronomy/github-actions-workflows/.github/workflows/tox.yml@v1
@@ -67,6 +63,12 @@ jobs:
         - name: (Allowed Failure) Python 3.13 with dev version of deps
           linux: py313-test-devdeps-online
           python-version: 3.12
+
+        - macos: py312-test-online
+          cache-key: ${{ github.ref }}-py312mac-astropycache
+
+        - windows: py312-test-online
+          cache-key: ${{ github.ref }}-py312win-astropycache
 
   coverage:
     name: "Conda/Coverage/Astrometry.net"
