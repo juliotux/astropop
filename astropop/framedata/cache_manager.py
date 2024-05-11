@@ -76,6 +76,8 @@ class TempDir:
             managed_folders.append(self)
         elif isinstance(parent, TempDir):
             self.parent = parent
+            if self not in self.parent.managed.values():
+                self.parent.managed[self.dirname] = self
         else:
             raise ValueError('parent must be None or a TempDir instance.')
 
@@ -159,7 +161,7 @@ class TempDir:
         return not keep
 
     def __enter__(self):
-        return self.create()
+        return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.delete()
@@ -205,9 +207,11 @@ class TempFile:
         # Initialize slots
         self.filename = filename
         if parent is None:
-            self.parent = BaseTempDir
-        elif isinstance(parent, TempDir):
+            parent = BaseTempDir
+        if isinstance(parent, TempDir):
             self.parent = parent
+            if self not in self.parent.managed.values():
+                self.parent.managed[self.filename] = self
         else:
             raise ValueError('parent must be None or a TempDir instance.')
 
@@ -238,10 +242,12 @@ class TempFile:
         return self.file
 
     def close(self):
-        self.file.close()
+        if self.file is not None:
+            self.file.close()
+        self.file = None
 
     def __enter__(self):
-        return self.open()
+        return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.close()
