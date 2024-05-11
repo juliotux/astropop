@@ -3,9 +3,39 @@
 
 import os
 import pytest
-from astropop.framedata.cache_manager import TempDir, BaseTempDir, TempFile
+from astropop.framedata import cache_manager
+from astropop.framedata.cache_manager import TempDir, BaseTempDir, TempFile, \
+                                             managed_folders
+from astropop.logger import logger
 
 from astropop.testing import *
+
+
+class Test_AtExit:
+    def test_ensure_delete_on_exit(self):
+        import atexit
+        t = TempDir('testing')
+        assert_in(t, BaseTempDir.managed.values())
+        assert_in(BaseTempDir, managed_folders)
+        assert_path_exists(t.full_path)
+        assert_path_exists(BaseTempDir.full_path)
+
+        atexit._run_exitfuncs()
+        assert_path_not_exists(t.full_path)
+        assert_path_not_exists(BaseTempDir.full_path)
+
+    def test_keep_on_exit(self):
+        import atexit
+        cache_manager.DELETE_ON_EXIT = False
+        t = TempDir('testing', delete_on_remove=False)
+        assert_in(t, BaseTempDir.managed.values())
+        assert_in(BaseTempDir, managed_folders)
+        assert_path_exists(t.full_path)
+        assert_path_exists(BaseTempDir.full_path)
+
+        atexit._run_exitfuncs()
+        assert_path_exists(t.full_path)
+        assert_path_exists(BaseTempDir.full_path)
 
 
 class Test_TempDir_Init:
@@ -26,13 +56,6 @@ class Test_TempDir_Init:
     def test_init_creation_absolute(self, tmpdir):
         tmp = TempDir(str(tmpdir))
         assert_path_exists(tmp.full_path)
-
-    def test_delete(self):
-        tmp = TempDir('testing')
-        path = tmp.full_path
-        assert_path_exists(path)
-        tmp.delete()
-        assert_path_not_exists(path)
 
     def test_init_error_parent_and_absolute(self, tmpdir):
         with pytest.raises(ValueError, match='Parent cannot be set for an '
@@ -65,12 +88,50 @@ class Test_TempDir_Methods:
         assert_is(f.parent, tmp)
 
 
+class Test_TempDir_Delete:
+    def test_delete(self):
+        tmp = TempDir('testing')
+        path = tmp.full_path
+        assert_path_exists(path)
+        tmp.delete()
+        assert_path_not_exists(path)
+
+    def test_keep_if_children_file(self):
+        tmp = TempDir('testing')
+        f = tmp.create_file('file.txt', delete_on_remove=False)
+        path = tmp.full_path
+        assert_path_exists(path)
+        tmp.delete()
+        assert_path_exists(path)
+
+    def test_keep_if_children_folder(self):
+        tmp = TempDir('testing')
+        sub = tmp.create_folder('subfolder', delete_on_remove=False)
+        path = tmp.full_path
+        assert_path_exists(path)
+        tmp.delete()
+        assert_path_exists(path)
+
+    def test_delete_children_multi_level(self):
+        tmp = TempDir('testing')
+        sub = tmp.create_folder('subfolder')
+        f = sub.create_file('file.txt', delete_on_remove=False)
+        tmp.delete()
+        assert_path_exists(tmp.full_path)
+
 class Test_TempDir_Attributes:
     def test_is_removable(self):
         assert_true(BaseTempDir.is_removable)
         tmp = TempDir('testing', delete_on_remove=False)
         assert_false(tmp.is_removable)
         assert_false(BaseTempDir.is_removable)
+
+    def test_is_removable_multi_level(self):
+        tmp = TempDir('testing')
+        sub = tmp.create_folder('subfolder', delete_on_remove=True)
+        f = sub.create_file('file.txt', delete_on_remove=False)
+        assert_false(tmp.is_removable)
+        assert_false(sub.is_removable)
 
     def test_str(self):
         assert_equal(str(BaseTempDir), BaseTempDir.full_path)
