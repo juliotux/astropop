@@ -124,17 +124,17 @@ def setup_filename(frame, cache_folder=None, filename=None):
     # folders are automatically created
     cache_folder = cache_folder or cache_folder_ccd
     if cache_folder is None:
-        cache_folder = TempDir('framedata_'+filename)
+        cache = TempDir('framedata_'+filename)
     elif isinstance(cache_folder, str):
-        cache_folder = TempDir(cache_folder)
+        cache = TempDir(cache_folder)
     elif isinstance(cache_folder, TempDir):
-        pass
+        cache = cache_folder
     else:
         raise ValueError('cache_folder must be a string'
                          ' or a TempDir instance.')
 
     # Setup the FrameData values.
-    frame.cache = cache_folder
+    frame.cache = cache
     frame.cache_filename = filename
 
     return os.path.join(str(cache_folder), filename)
@@ -562,20 +562,20 @@ class FrameData:
 
     def _update_memmaps(self):
         """Update the memmap files."""
-        # get the default files if names are not provided
-        data_tmp = self.cache.create_file(self.cache_filename + '.data.npy')
-        flags_tmp = self.cache.create_file(self.cache_filename + '.flags.npy')
-        unct_tmp = self.cache.create_file(self.cache_filename + '.unct.npy')
 
         if self._memmapping:
+            # get the default files if names are not provided
+            dataf = self.cache.create_file(self.cache_filename + '.data.npy')
+            flagf = self.cache.create_file(self.cache_filename + '.flags.npy')
+            unctf = self.cache.create_file(self.cache_filename + '.unct.npy')
             if not isinstance(self._data, np.memmap):
-                self._data = create_array_memmap(str(data_tmp), self._data)
+                self._data = create_array_memmap(str(dataf), self._data)
             if not isinstance(self._flags, np.memmap) and \
                self._flags is not None:
-                self._flags = create_array_memmap(str(flags_tmp), self._flags)
+                self._flags = create_array_memmap(str(flagf), self._flags)
             if not isinstance(self._unct, np.memmap) and \
                self._unct is not None:
-                self._unct = create_array_memmap(str(unct_tmp), self._unct)
+                self._unct = create_array_memmap(str(unctf), self._unct)
 
     def copy(self, dtype=None):
         """Copy the current FrameData to a new instance.
@@ -624,7 +624,8 @@ class FrameData:
         return self.copy()
 
     def __del__(self):
-        self.cache.delete()
+        if self.cache is not None:
+            self.cache.delete()
 
     def median(self, **kwargs):
         """Compute and return the median of the data."""
