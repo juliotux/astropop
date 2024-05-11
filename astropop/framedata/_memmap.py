@@ -33,7 +33,7 @@ def create_array_memmap(filename, data, dtype=None):
         return data
 
     if filename is None:
-        filename = TempFile(None)
+        raise ValueError('None filename')
 
     data = np.array(data)
     if dtype is not None:
