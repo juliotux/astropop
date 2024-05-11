@@ -46,7 +46,7 @@ jobs:
           linux: py311-test-stabledeps-online
 
         - name: Python 3.12 with stable deps
-          linux py312-test-stabledeps-online
+          linux: py312-test-stabledeps-online
 
   allowed_failures:
     uses: OpenAstronomy/github-actions-workflows/.github/workflows/tox.yml@v1
