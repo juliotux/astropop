@@ -13,10 +13,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  ARCH_ON_CI: "normal"
-  IS_CRON: "false"
-
 jobs:
   tests:
     uses: OpenAstronomy/github-actions-workflows/.github/workflows/tox.yml@v1
@@ -38,7 +34,7 @@ jobs:
     if: "!(contains(github.event.head_commit.message, '[skip ci]') || contains(github.event.head_commit.message, '[ci skip]'))"
     with:
       cache-path: .tox
-      cache-key: build_docs-astropy-${{ hashFiles('pyproject.toml', 'setup.cfg') }}
+      cache-key: build_docs-astropy
       libraries: |
         apt:
           - pandoc
