@@ -600,7 +600,8 @@ class FrameData:
         if cache_fname is not None:
             cache_fname = cache_fname + '_copy'
         nf._origin = self._origin
-        nf.cache = self.cache
+        nf.cache = TempDir(self.cache.dirname + '_copy',
+                           parent=self.cache.parent)
         nf.cache_filename = cache_fname
 
         # copy data
