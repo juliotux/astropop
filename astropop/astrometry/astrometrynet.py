@@ -5,10 +5,12 @@ This module wraps the astrometry.net solve-field routine, with automatic
 improvements.
 """
 
+from multiprocessing import Value
 import os
 import shutil
 from subprocess import CalledProcessError
 import copy
+from packaging import version
 from tempfile import NamedTemporaryFile, mkdtemp
 import warnings
 
@@ -27,10 +29,36 @@ from ..py_utils import run_command, check_number
 
 __all__ = ['AstrometrySolver', 'solve_astrometry_xy', 'solve_astrometry_image',
            'solve_astrometry_framedata', 'create_xyls',
-           'AstrometryNetUnsolvedField']
+           'AstrometryNetUnsolvedField', 'SolveFieldCommand']
 
 
 _solve_field = shutil.which('solve-field')
+
+
+class SolveFieldCommand:
+    """Astrometry.net solve field check and run command."""
+    _version = None
+
+    def __init__(self, command=_solve_field):
+        if isinstance(command, SolveFieldCommand):
+            self._version = command._version
+            command = command._command
+        elif command is None or not os.path.exists(command):
+            raise FileNotFoundError('solve-field command not found.')
+        self._command = command
+
+    @property
+    def version(self):
+        """Return the version of the solve-field command."""
+        if self._version is None:
+            _, sout, _ = run_command([self._command, '--version'])
+            self._version = version.parse(sout[0])
+        return self._version
+
+    def run(self, *args, **kwargs):
+        """Run the solve-field command."""
+        return run_command([self._command, *args], **kwargs)
+
 
 _center_help = 'only search in indexes within `radius` of the field center ' \
                'given by `ra` and `dec`'
@@ -222,35 +250,13 @@ solve_field_params = {
         'To astrometry.cfg file. If no scale estimate is given, use these '
         'limits on field width in deg.'
     ),
-    'inparallel': (
-        '<bool>',
-        'To astrometry.cfg file. Check indexes in parallel. Only enable it if '
-        'you have memory to store all indexes.'
-    ),
-    'index': (
+    'index-dir': (
         '<string or list(string)>',
-        'To astrometry.cfg file. Explicitly list the indices to load.'
-        ' Disables ``autoindex``'
-    ),
-    'autoindex': (
-        '<bool>',
-        'To astrometry.cfg file. Load any indices found in the directories '
-        'listed.'
-    ),
-    'add_path': (
-        '<string or list(string)>',
-        'To astrometry.cfg file. Add a location of astrometry.net index files.'
+        'Add a location of astrometry.net index files.'
         ' ``astrometry-engine`` will search index files in all listed folders.'
         ' Additive, do not override defaults.'
-    ),
-    'depths': (
-        '<list(int)>',
-        'To astrometry.cfg file. If no depths are given, use these.'
     )
 }
-# These are the parameters that can be set in the astrometry.cfg file
-_conf_file = ['inparallel', 'minwidth', 'maxwidth', 'depths',
-              'add_path', 'autoindex', 'index']
 
 
 def get_options_help():
@@ -473,17 +479,17 @@ class AstrometrySolver():
             Explicitly list the indices to load.
     """
 
-    def __init__(self, solve_field=None, config=None, config_file=None,
-                 defaults=None, keep_files=False):
+    def __init__(self, solve_field=_solve_field, defaults=None,
+                 keep_files=False):
         # declare the defaults here to be safer
         self._defaults = {'no-plots': None, 'overwrite': None}
         if defaults is None:
             defaults = {}
         self._defaults.update(defaults)
 
-        self.config = self._read_config(config_file, config)
-
-        self._command = solve_field or _solve_field
+        self._command = SolveFieldCommand(solve_field)
+        if self._command.version < version.parse('0.95'):
+            raise ValueError('Astrometry.net version must be at least 0.95.')
         self._keep = keep_files
 
     def solve_field(self, filename, options=None, output_dir=None, **kwargs):

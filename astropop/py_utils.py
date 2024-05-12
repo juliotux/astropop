@@ -184,9 +184,8 @@ async def _subprocess(args, stdout, stderr, stdout_loglevel, stderr_loglevel,
         std_l.append(line)
         logger.log(loglevel, line)
 
-    # TODO: when deprecate py37, use shlex.join(args)
     proc = await asyncio.create_subprocess_shell(
-        ' '.join(shlex.quote(arg) for arg in args),
+        shlex.join(args),
         limit=2**23,  # 8 MB
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,

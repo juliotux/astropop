@@ -5,6 +5,7 @@ import pytest
 
 import numpy as np
 import os
+from packaging.version import Version
 from astroquery.skyview import SkyView
 from astropy.coordinates import Angle, SkyCoord
 from astropy.config import get_cache_dir
@@ -15,12 +16,13 @@ from astropy.wcs import WCS
 from astropy import units
 from astropy.utils.data import download_file
 
-from astropop.astrometry.astrometrynet import _solve_field, \
-                                              solve_astrometry_image, \
+from astropop.astrometry.astrometrynet import solve_astrometry_image, \
                                               solve_astrometry_xy, \
                                               solve_astrometry_hdu, \
                                               solve_astrometry_framedata, \
-                                              AstrometrySolver
+                                              AstrometrySolver, \
+                                              SolveFieldCommand, \
+                                              _solve_field
 from astropop.astrometry.astrometrynet import _parse_angle, \
                                               _parse_coordinates, \
                                               _parse_crpix, \
@@ -45,7 +47,24 @@ skip_astrometry = pytest.mark.skipif("_solve_field is None or "
                                      "False)")
 
 
-@pytest.mark.remote_data
+class Test_SolveFieldCommand:
+    def test_empty_error(self):
+        with pytest.raises(FileNotFoundError,
+                           match='solve-field command not found.'):
+            SolveFieldCommand(command=None)
+
+    def test_not_exists_error(self):
+        with pytest.raises(FileNotFoundError,
+                           match='solve-field command not found.'):
+            SolveFieldCommand(command='not_exists')
+
+    def test_version(self):
+        s = SolveFieldCommand()
+        v = s.version
+        assert_is_instance(v, Version)
+
+
+#@pytest.mark.remote_data
 class Test_AstrometrySolver:
     def get_image(self):
         # return image name and index name
@@ -186,150 +205,16 @@ class Test_AstrometrySolver:
         assert_equal(_parse_crpix({}), [])
 
     @skip_astrometry
-    def test_read_cfg(self):
-        a = AstrometrySolver()  # read the default configuration
-        cfg = a._read_config()
-        assert_not_in('index', cfg)
-        assert_false(cfg['inparallel'])
-        assert_not_in('', cfg)
-        assert_not_in('minwidth', cfg)
-        assert_not_in('maxwidth', cfg)
-        assert_equal(cfg['cpulimit'], '300')
-        assert_true(cfg['autoindex'])
-        assert_equal(len(cfg['add_path']), 1)
-
-    @skip_astrometry
-    def test_read_cfg_fname(self, tmpdir):
-        fname = tmpdir / 'test.cfg'
-        f = open(fname, 'w')
-        f.write("inparallel\n")
-        f.write(" minwidth 0.1 \n")
-        f.write(" maxwidth 180\n")
-        f.write("depths 10 20 30 40   50 60\n")
-        f.write("cpulimit   300\n")
-        f.write("\n\n")
-        f.write("# comment\n")
-        f.write("add_path /data  # commented path\n")
-        f.write("add_path /data1\n")
-        f.write("#add_path /data2\n")  # data2 will not be present
-        f.write("autoindex\n")
-        f.write("index index-219\n")
-        f.write("index index-220\n")
-        f.write("index index-221\n")
-        f.write("# index index-222\n")  # 222 will not be present
-        f.close()
-
-        a = AstrometrySolver()
-        cfg = a._read_config(fname)
-        assert_not_equal("", cfg)
-        assert_true(cfg['inparallel'])
-        assert_equal(cfg['minwidth'], '0.1')
-        assert_equal(cfg['maxwidth'], '180')
-        assert_equal(cfg['depths'], [10, 20, 30, 40, 50, 60])
-        assert_equal(cfg['cpulimit'], '300')
-        assert_equal(cfg['add_path'], ['/data', '/data1'])
-        assert_equal(cfg['index'], ['index-219', 'index-220', 'index-221'])
-        assert_true(cfg['autoindex'])
-
-    @skip_astrometry
-    def test_read_cfg_with_options(self, tmpdir):
-        fname = tmpdir / 'test.cfg'
-        f = open(fname, 'w')
-        f.write("inparallel\n")
-        f.write(" minwidth 0.1 \n")
-        f.write(" maxwidth 180\n")
-        f.write("depths 10 20 30 40   50 60\n")
-        f.write("cpulimit   300\n")
-        f.write("\n\n")
-        f.write("# comment\n")
-        f.write("add_path /data  # commented path\n")
-        f.write("add_path /data1\n")
-        f.write("#add_path /data2\n")  # data2 will not be present
-        f.write("autoindex\n")
-        f.write("index index-219\n")
-        f.write("index index-220\n")
-        f.write("index index-221\n")
-        f.write("# index index-222\n")  # 222 will not be present
-        f.close()
-
-        a = AstrometrySolver()
-        cfg = a._read_config(fname, {'depths': [10, 30, 50],
-                                     'add_path': '/data3',
-                                     'index': ['indx4', 'indx5']})
-        assert_not_equal("", cfg)
-        assert_true(cfg['inparallel'])
-        assert_equal(cfg['minwidth'], '0.1')
-        assert_equal(cfg['maxwidth'], '180')
-        assert_equal(cfg['depths'], [10, 30, 50])
-        assert_equal(cfg['cpulimit'], '300')
-        assert_equal(cfg['add_path'], ['/data', '/data1', '/data3'])
-        assert_equal(cfg['index'], ['index-219', 'index-220', 'index-221',
-                                    'indx4', 'indx5'])
-        assert_true(cfg['autoindex'])
-
-    @skip_astrometry
-    def test_write_config(self, tmpdir):
-        fname = tmpdir / 'test.cfg'
-
-        a = AstrometrySolver()
-        a.config = {'inparallel': False,
-                    'autoindex': True,
-                    'cpulimit': 300,
-                    'minwidth': 0.1,
-                    'maxwidth': 180,
-                    'depths': [20, 40, 60],
-                    'index': ['011', '012'],
-                    'add_path': ['/path1', '/path2']}
-        a._write_config(fname)
-
-        with open(fname, 'r') as f:
-            for line in f.readlines():
-                assert_in(line.strip('\n'), ['autoindex', 'inparallel',
-                                             'cpulimit 300', 'minwidth 0.1',
-                                             'maxwidth 180', 'depths 20 40 60',
-                                             'index 011', 'index 012',
-                                             'add_path /path1',
-                                             'add_path /path2'])
-
-    @skip_astrometry
-    def test_pop_config(self):
-        a = AstrometrySolver()
-        options1 = {'inparallel': False,
-                    'autoindex': True,
-                    'cpulimit': 300,
-                    'minwidth': 0.1,
-                    'maxwidth': 180,
-                    'depths': [20, 40, 60],
-                    'index': ['011', '012'],
-                    'add_path': ['/path1', '/path2'],
-                    'ra': 0.0, 'dec': 0.0, 'radius': 1.0}
-        options, cfg = a._pop_config(options1)
-        assert_is_not(options1, options)
-        assert_equal(options['ra'], 0.0)
-        assert_equal(options['dec'], 0.0)
-        assert_equal(options['radius'], 1.0)
-        assert_equal(options['cpulimit'], 300)
-        assert_equal(cfg['inparallel'], False)
-        assert_equal(cfg['autoindex'], True)
-        assert_equal(cfg['minwidth'], 0.1)
-        assert_equal(cfg['maxwidth'], 180)
-        assert_equal(cfg['depths'], [20, 40, 60])
-        assert_equal(cfg['index'], ['011', '012'])
-        assert_equal(cfg['add_path'], ['/path1', '/path2'])
-
-    @skip_astrometry
-    def test_only_write_config_when_needed(self, tmpdir):
-        a = AstrometrySolver()
-        args = a._get_args(tmpdir/'1/', tmpdir/'1/fitsfile.fits',
-                           {'ra': 0.0, 'dec': 0.0, 'radius': 1.0},
-                           output_dir=tmpdir, correspond='test.correspond')
-        assert_not_in('--config', args)
-
-        args = a._get_args(tmpdir/'2/', tmpdir/'2/fitsfile.fits',
-                           {'ra': 0.0, 'dec': 0.0, 'radius': 1.0,
-                            'inparallel': False},
-                           output_dir=tmpdir, correspond='test.correspond')
-        assert_in('--config', args)
+    def test_solve_field_version(self):
+        com = SolveFieldCommand()
+        com._version = Version('0.95')
+        # 0.95, no error
+        AstrometrySolver(solve_field=com)
+        com._version = Version('0.70')
+        # 0.70, error
+        with pytest.raises(ValueError,
+                           match='Astrometry.net version must be at least 0.95.'):
+            AstrometrySolver(solve_field=com)
 
     @skip_astrometry
     def test_solve_astrometry_hdu(self, tmpdir):
