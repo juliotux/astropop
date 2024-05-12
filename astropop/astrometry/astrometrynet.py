@@ -5,7 +5,6 @@ This module wraps the astrometry.net solve-field routine, with automatic
 improvements.
 """
 
-from multiprocessing import Value
 import os
 import shutil
 from subprocess import CalledProcessError
