@@ -573,103 +573,9 @@ class AstrometrySolver():
 
         return args
 
-    def _read_config(self, fname=None, config=None):
-        """Read the default configuration file and return the config."""
-
-        if fname is None:
-            prefix = os.path.dirname(os.path.dirname(_solve_field))
-            fname = os.path.join(prefix, 'etc', 'astrometry.cfg')
-        default = open(fname, 'r')
-
-        cfg = {'inparallel': False, 'autoindex': True}
-        for line in default.readlines():
-            # just use line before "#"
-            line = line.split("#")[0].strip()
-            if line == "":
-                continue
-            param = line.split(" ")[0]
-            argument = line[len(param)+1:].strip()
-            if argument == "":
-                argument = True
-            if param == 'depths':
-                argument = [int(i) for i in argument.split(" ") if i.strip()]
-            if param == 'add_path' or param == 'index':
-                if param not in cfg:
-                    cfg[param] = []
-                cfg[param].append(argument)
-            else:
-                cfg[param] = argument
-
-        if config is not None:
-            for k, v in config.items():
-                if k == 'add_path' or k == 'index':
-                    if np.isscalar(v):
-                        v = [v]
-                    cfg[k].extend(v)
-                else:
-                    cfg[k] = v
-
-        return cfg
-
-    def _updated_config(self, config=None):
-        """Return a copy of the self.config updated by another config dict.
-
-        Config is updated using config parameter. All present parameters are
-        overwritten.
-        """
-        cfg = self.config.copy()
-        if config is not None:
-            # # indexes deactivate 'autoindex'
-            # if 'index' in config:
-            #     cfg['autoindex'] = False
-            if 'add_path' in config:
-                cfg['add_path'].extend(np.atleast_1d(config.pop('add_path')))
-            cfg.update(config)
-        return config
-
-    def _write_config(self, fname, config=None):
-        """Create the astrometry.cfg file for the run."""
-        # write the new cfg
-        f = open(fname, 'w')
-        config = config or self.config
-        for k, v in config.items():
-            if k in ['inparallel', 'autoindex']:
-                # These keys are bool. Only write if True
-                if v:
-                    f.write(f'{k}\n')
-            elif k in ['index', 'add_path']:
-                # multiple entries in the file
-                for i in v:
-                    f.write(f'{k} {i}\n')
-            elif k == 'depths':
-                # detphs requires a list of strings
-                f.write(f'{k} {" ".join([str(i) for i in v])}\n')
-            else:
-                f.write(f'{k} {v}\n')
-        f.close()
-
-    def _pop_config(self, options):
-        """Pop the config from options."""
-        options = options.copy()
-        cfg = {}
-        for i in _conf_file:
-            if i in options:
-                cfg[i] = options.pop(i)
-        return options, cfg
-
     def _get_args(self, root, fname, options, output_dir,
                   correspond):
         args = [self._command, fname, '--dir', output_dir]
-        # if any of the options is from config file, rewrite it.
-        if any([i in _conf_file for i in options.keys()]):
-            # pop some options and put them in config
-            options, cfg = self._pop_config(options)
-            cfg = self._updated_config(cfg)
-            config_file = os.path.join(output_dir, root + '.cfg')
-            logger.debug('Creating new configuration file.')
-            self._write_config(config_file, cfg)
-            args += ['--config', config_file]
-
         args += self._parse_options(options)
         args += ['--corr', correspond]
         return args
@@ -782,7 +688,7 @@ def solve_astrometry_xy(x, y, flux, width, height,
         - radius: maximum search radius
         - scale: pixel scale in arcsec/pixel
         - tweak-order: SIP order to fit
-        - index-path: path to index files
+        - index-dir: path to index files
     command: str
         Full path of astrometry.net ``solve-field`` command.
 
@@ -821,6 +727,7 @@ def solve_astrometry_framedata(frame, options=None, command=None,
         - radius: maximum search radius
         - scale: pixel scale in arcsec/pixel
         - tweak-order: SIP order to fit
+        - index-dir: path to index files
     command: str
         Full path of astrometry.net ``solve-field`` command.
 
@@ -852,6 +759,7 @@ def solve_astrometry_image(filename, options=None, command=_solve_field,
         - radius: maximum search radius
         - scale: pixel scale in arcsec/pixel
         - tweak-order: SIP order to fit
+        - index-dir: path to index files
     command: str
         Full path of astrometry.net ``solve-field`` command.
 
@@ -880,6 +788,7 @@ def solve_astrometry_hdu(hdu, options=None, command=None, **kwargs):
         - radius: maximum search radius
         - scale: pixel scale in arcsec/pixel
         - tweak-order: SIP order to fit
+        - index-dir: path to index files
     command: str
         Full path of astrometry.net ``solve-field`` command.
 

@@ -217,9 +217,8 @@ class Test_AstrometrySolver:
             AstrometrySolver(solve_field=com)
 
     @skip_astrometry
-    def test_solve_astrometry_hdu(self, tmpdir):
+    def test_solve_astrometry_hdu(self):
         data, index, options = self.get_image()
-        index_dir = os.path.dirname(index)
         hdu = fits.open(data)[0]
         header, wcs = _generate_wcs_and_update_header(hdu.header)
         hdu.header = header
@@ -234,9 +233,8 @@ class Test_AstrometrySolver:
             assert_in(k, result.correspondences.colnames)
 
     @skip_astrometry
-    def test_solve_astrometry_xyl(self, tmpdir):
+    def test_solve_astrometry_xyl(self):
         data, index, options = self.get_image()
-        index_dir = os.path.dirname(index)
         hdu = fits.open(data)[0]
         header, wcs = _generate_wcs_and_update_header(hdu.header)
         hdu.header = header
@@ -259,7 +257,6 @@ class Test_AstrometrySolver:
     @skip_astrometry
     def test_solve_astrometry_image(self, tmpdir):
         data, index, options = self.get_image()
-        index_dir = os.path.dirname(index)
         hdu = fits.open(data)[0]
         header, wcs = _generate_wcs_and_update_header(hdu.header)
         hdu.header = header
@@ -274,9 +271,8 @@ class Test_AstrometrySolver:
             assert_in(k, result.correspondences.colnames)
 
     @skip_astrometry
-    def test_solve_astrometry_framedata(self, tmpdir):
+    def test_solve_astrometry_framedata(self):
         data, index, options = self.get_image()
-        index_dir = os.path.dirname(index)
         hdu = fits.open(data)[0]
         header, wcs = _generate_wcs_and_update_header(hdu.header)
         hdu.header = header
