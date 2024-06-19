@@ -64,7 +64,7 @@ class Test_SolveFieldCommand:
         assert_is_instance(v, Version)
 
 
-#@pytest.mark.remote_data
+@pytest.mark.remote_data
 class Test_AstrometrySolver:
     def get_image(self):
         # return image name and index name
