@@ -54,7 +54,7 @@ class SolveFieldCommand:
             self._version = version.parse(sout[0])
         return self._version
 
-    def run(self, *args, **kwargs):
+    def run(self, args, **kwargs):
         """Run the solve-field command."""
         return run_command([self._command, *args], **kwargs)
 
