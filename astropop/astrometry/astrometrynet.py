@@ -574,7 +574,7 @@ class AstrometrySolver():
 
     def _get_args(self, root, fname, options, output_dir,
                   correspond):
-        args = [self._command, fname, '--dir', output_dir]
+        args = [fname, '--dir', output_dir]
         args += self._parse_options(options)
         args += ['--corr', correspond]
         return args
@@ -596,7 +596,7 @@ class AstrometrySolver():
                               correspond=correspond)
 
         try:
-            process, _, _ = run_command(args, **kwargs)
+            process, _, _ = self._command.run(args, **kwargs)
             # .solved file must exist and contain a binary one
             with open(solved_file, 'rb') as fd:
                 if ord(fd.read()) != 1:
