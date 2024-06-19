@@ -99,7 +99,7 @@ class Test_AstrometrySolver:
             os.rename(f, index)
 
         options = {'ra': '08:51:18.0', 'dec': '11:48:00.0',
-                   'radius': '1.0 deg', 'add_path': os.path.dirname(index)}
+                   'radius': '1.0 deg', 'index-dir': os.path.dirname(index)}
 
         return image, index, options
 
