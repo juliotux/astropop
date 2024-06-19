@@ -491,7 +491,6 @@ def median_fwhm(data, x, y, box_size=25, model='gaussian', min_fwhm=3.0):
     return fwhm
 
 
-@np.deprecate(message='This function will be removed. Use median_fwhm.')
 def calc_fwhm(*args, **kwargs):
     """Calculate the median FWHM of the image with Gaussian or Moffat fit.
 
@@ -511,4 +510,7 @@ def calc_fwhm(*args, **kwargs):
         Minimum value for FWHM.
         Default: 3.0
     """
+    import warnings
+    warnings.warn('This function will be removed. Use median_fwhm.',
+                  DeprecationWarning)
     return median_fwhm(*args, **kwargs)
