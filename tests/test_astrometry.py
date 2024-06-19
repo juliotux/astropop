@@ -47,6 +47,7 @@ skip_astrometry = pytest.mark.skipif("_solve_field is None or "
                                      "False)")
 
 
+@skip_astrometry
 class Test_SolveFieldCommand:
     def test_empty_error(self):
         with pytest.raises(FileNotFoundError,
