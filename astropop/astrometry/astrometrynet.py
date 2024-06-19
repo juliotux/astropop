@@ -660,7 +660,7 @@ def create_xyls(fname, x, y, flux, imagew, imageh, header=None, dtype='f8'):
 
 def solve_astrometry_xy(x, y, flux, width, height,
                         image_header=None, options=None,
-                        command=None,
+                        command=_solve_field,
                         **kwargs):
     """Solve astrometry from a (x,y) sources list using astrometry.net.
 
@@ -710,7 +710,7 @@ def solve_astrometry_xy(x, y, flux, width, height,
     return solver.solve_field(f.name, options=options, **kwargs)
 
 
-def solve_astrometry_framedata(frame, options=None, command=None,
+def solve_astrometry_framedata(frame, options=None, command=_solve_field,
                                **kwargs):
     """Solve astrometry from a `~astropop.framedata.FrameData`.
 
@@ -772,7 +772,7 @@ def solve_astrometry_image(filename, options=None, command=_solve_field,
     return solver.solve_field(filename, options=options, **kwargs)
 
 
-def solve_astrometry_hdu(hdu, options=None, command=None, **kwargs):
+def solve_astrometry_hdu(hdu, options=None, command=_solve_field, **kwargs):
     """Solve astrometry from a `~astropy.fits.ImageHDU` using astrometry.net.
 
     Parameters
