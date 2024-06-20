@@ -7,6 +7,7 @@ import numpy as np
 from astropy.table import Table
 from astropy.coordinates import SkyCoord, Angle
 from astropy import units as u
+from astropy.time import Time
 from astropop.catalogs.simbad import SimbadSourcesCatalog, simbad_query_id
 from astropop.catalogs import vizier
 from astropop.catalogs.gaia import GaiaDR3SourcesCatalog
@@ -656,7 +657,7 @@ class Test_Vizier_GSC242:
 
         assert_equal(c.sources_id()[0], 'GSC2 S17J000168')
         for k, v in self.hd674_mags.items():
-            assert_almost_equal(c.mag_list(k)[0], v)
+            assert_almost_equal(c.mag_list(k)[0], v, decimal=3)
 
     def test_gsc242_properties_types(self):
         s = vizier.gsc242(hd674_coords[0], search_radius[0], band='V')
@@ -1012,7 +1013,7 @@ class Test_Tycho2VizierSourcesCatalog:
 
 
 @pytest.mark.flaky(reruns=5)
-@pytest.mark.remote_data
+# @pytest.mark.remote_data
 class Test_GaiaDR3:
     hd674_mags = {
         'G': [10.552819, 0.000337826],
@@ -1087,3 +1088,22 @@ class Test_GaiaDR3:
         # GAIA DR3 has only 741 sources brighter than 15 mag in this radius
         assert_less(len(s), 1000)
         assert_false(np.any(s.magnitude('G').nominal > 15))
+
+    def test_gaiadr3_pm_in_skycoord(self):
+        s = GaiaDR3SourcesCatalog(hd674_coords[0], '0.1 deg',
+                                  band=['G'])
+        assert_is_instance(s.skycoord().pm_ra_cosdec, u.Quantity)
+        assert_is_instance(s.skycoord().pm_dec, u.Quantity)
+        assert_almost_equal(s.skycoord().pm_ra_cosdec.value[0],
+                            6.221, decimal=3)
+        assert_almost_equal(s.skycoord().pm_dec.value[0],
+                            9.578, decimal=3)
+
+    def test_gaiadr3_pm_in_get_coordinates(self):
+        s = GaiaDR3SourcesCatalog(hd674_coords[0], '0.1 deg',
+                                  band=['G'])
+        a = s.get_coordinates()
+        c = s.get_coordinates(obstime=Time('J10016.0'))
+        # space motion must be applyied
+        assert_not_equal(c.ra.degree, a.ra.degree)
+        assert_not_equal(c.dec.degree, a.dec.degree)

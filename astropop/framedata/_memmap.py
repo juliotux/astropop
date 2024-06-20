@@ -31,7 +31,7 @@ def create_array_memmap(filename, data, dtype=None):
         return data
 
     if filename is None:
-        raise ValueError('Could not create a memmap file with None filename.')
+        raise ValueError('None filename')
 
     data = np.array(data)
     if dtype is not None:
@@ -43,7 +43,7 @@ def create_array_memmap(filename, data, dtype=None):
         dtype = dtype.newbyteorder('=')
 
     shape = data.shape
-    memmap = np.memmap(filename, mode='w+', dtype=dtype, shape=shape)
+    memmap = np.memmap(str(filename), mode='w+', dtype=dtype, shape=shape)
     memmap[:] = data[:]
     return memmap
 
