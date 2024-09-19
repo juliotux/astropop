@@ -4,7 +4,8 @@
 import os
 import atexit
 import shutil
-from platformdirs import user_cache_dir
+
+from astropy.config import get_cache_dir
 
 
 from ..logger import logger
@@ -18,7 +19,7 @@ __all__ = ['TempFile', 'TempDir', 'BaseTempDir', 'cleanup',
 # elements are TempDir instances
 managed_folders = []
 DELETE_ON_EXIT = True
-CACHE_DIR = os.path.join(user_cache_dir('astropop'))
+CACHE_DIR = os.path.join(get_cache_dir(), 'astropop')
 
 
 def cleanup():

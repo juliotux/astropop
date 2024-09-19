@@ -43,8 +43,7 @@ dependencies = [
     "astroalign",
     "tqdm",
     "nest-asyncio",
-    "dbastable",
-    "platformdirs"
+    "dbastable"
 ]
 
 [project.optional-dependencies]
