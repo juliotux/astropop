@@ -44,7 +44,8 @@ dependencies = [
     "tqdm",
     "nest-asyncio",
     "dbastable",
-    "sep_pjw"
+    "sep_pjw; python_version>='3.9'",
+    "sep; python_version<'3.9'",
 ]
 
 [project.optional-dependencies]
