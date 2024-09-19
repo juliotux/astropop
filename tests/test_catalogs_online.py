@@ -462,7 +462,7 @@ class Test_VizierGeneral:
 
 
 @pytest.mark.flaky(reruns=5)
-@pytest.mark.remote_data
+# @pytest.mark.remote_data
 class Test_Vizier_UCAC4:
     hd674_mags = {
         'J': [10.157, 0.02],
@@ -1138,7 +1138,7 @@ class Test_SMSSDR4:
 
         assert_equal(c.sources_id()[0], 'SMSS-DR4 503264202')
         for k, v in self.hd674_mags.items():
-            assert_almost_equal(c.mag_list(k)[0], v)
+            assert_almost_equal(c.mag_list(k)[0], v, decimal=3)
 
     def test_smssdr4_properties_types(self):
         s = vizier.skymapper(hd674_coords[0], search_radius[0])

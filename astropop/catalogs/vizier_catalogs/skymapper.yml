@@ -20,7 +20,7 @@ coordinates:
   dec_column: 'DEICRS'
 magnitudes:
   mag_column: '{band}PSF'
-  err_mag_column: 'e_{band}psf'
+  err_mag_column: 'e_{band}PSF'
 epoch:
   column: 'EpMean'
   format: 'mjd'
