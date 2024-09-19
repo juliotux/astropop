@@ -43,7 +43,8 @@ dependencies = [
     "astroalign",
     "tqdm",
     "nest-asyncio",
-    "dbastable"
+    "dbastable",
+    "sep_pjw"
 ]
 
 [project.optional-dependencies]
