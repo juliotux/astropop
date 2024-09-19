@@ -25,5 +25,5 @@ epoch:
   column: 'EpMean'
   format: 'mjd'
 ids:
-  prepend: 'SMSSDR4'
-  column: 'ObjetId'
+  prepend: 'SMSS-DR4'
+  column: 'ObjectId'

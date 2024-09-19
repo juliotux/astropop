@@ -1107,3 +1107,64 @@ class Test_GaiaDR3:
         # space motion must be applyied
         assert_not_equal(c.ra.degree, a.ra.degree)
         assert_not_equal(c.dec.degree, a.dec.degree)
+
+
+@pytest.mark.flaky(reruns=5)
+# @pytest.mark.remote_data
+class Test_SMSSDR4:
+    hd674_mags = {
+        'u': [11.9227, 0.0135],
+        'v': [11.1721, 0.0140],
+        'g': [10.5768, 0.0110],
+        'r': [10.6059, 0.0117],
+        'i': [10.7294, 0.0104],
+        'z': [10.8096, 0.0119]
+    }
+
+    def test_smssdr4_creation_errors(self):
+        # Need arguments
+        with pytest.raises(TypeError):
+            vizier.skymapper()
+        with pytest.raises(TypeError):
+            vizier.skymapper('test')
+
+        with pytest.raises(ValueError, match='Filter None not available.'):
+            vizier.skymapper('Sirius', '0.05d', band='None')
+        # Filter None should pass, no mag data
+        vizier.skymapper('HD 674', '0.05d', None)
+
+    def test_smssdr4_creation_filters(self):
+        c = vizier.skymapper(hd674_coords[0], '0.01d')
+
+        assert_equal(c.sources_id()[0], 'SMSS-DR4 503264202')
+        for k, v in self.hd674_mags.items():
+            assert_almost_equal(c.mag_list(k)[0], v)
+
+    def test_smssdr4_properties_types(self):
+        s = vizier.skymapper(hd674_coords[0], search_radius[0])
+
+        assert_is_instance(s.sources_id(), np.ndarray)
+        assert_equal(s.sources_id().shape, (len(s)))
+        assert_is_instance(s.skycoord(), SkyCoord)
+        for i in ['u', 'v', 'g', 'z', 'r', 'i']:
+            assert_is_instance(s.magnitude(i), QFloat)
+            assert_is_instance(s.mag_list(i), np.ndarray)
+            assert_equal(s.mag_list(i).shape, (len(s), 2))
+        assert_is_instance(s.ra_dec_list(), np.ndarray)
+        assert_equal(s.ra_dec_list().shape, (len(s), 2))
+
+    def test_skymapper_help(self):
+        help = vizier.skymapper('hd 674', '10 arcsec').help()
+        assert_equal(help[:9], 'skymapper')
+        assert_in('Available filters are:', help)
+        for i in self.hd674_mags.keys():
+            assert_in(f'  - {i}:', help)
+
+    def test_skymapper_properties(self):
+        s = vizier.skymapper('hd 674', '10 arcsec',
+                             band=['u', 'v', 'g', 'r', 'i', 'z'])
+        assert_equal(s.available_filters, ['u', 'v', 'g', 'r', 'i', 'z'])
+        assert_equal(s.name, 'skymapper')
+        assert_is_instance(s.center, SkyCoord)
+        assert_is_instance(s.radius, Angle)
+        assert_equal(s.filters, ['u', 'v', 'g', 'r', 'i', 'z'])
