@@ -1,0 +1,29 @@
+---
+table: 'II/379/smssdr4'
+bibcode: '2024yCat.2379....0O'
+description: 'SkyMapper Southern Survey (SMSS) DR4 (Onken+, 2024)'
+columns: ['+_r', 'SMSS', 'RAICRS', 'DEICRS', 'EpMean',
+          'ObjectId', 'flags', 'ClassStar',
+          'uPSF', 'e_uPSF', 'vPSF', 'e_vPSF',
+          'gPSF', 'e_gPSF', 'rPSf', 'e_rPSF',
+          'iPSF', 'e_iPSF', 'zPSF', 'e_zPSF']  # not so many columns
+available_filters: {
+  'u': 'Sloan u-band PSF magnitude',
+  'v': 'Sloan v-band PSF magnitude',
+  'g': 'Sloan g-band PSF magniture',
+  'r': 'Sloan r-band PSF magnitude',
+  'i': 'Sloan i-band PSF magnitude',
+  'z': 'Sloan z-band PSF magnitude'
+}
+coordinates:
+  ra_column: 'RAICRS'
+  dec_column: 'DEICRS'
+magnitudes:
+  mag_column: '{band}PSF'
+  err_mag_column: 'e_{band}PSF'
+epoch:
+  column: 'EpMean'
+  format: 'mjd'
+ids:
+  prepend: 'SMSS-DR4'
+  column: 'ObjectId'
