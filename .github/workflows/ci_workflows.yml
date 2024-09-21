@@ -20,7 +20,7 @@ jobs:
     with:
       cache-path: ~/.astropy
       envs: |
-        - linux: py38-test-olddeps-online
+        - linux: py38-test-online
           cache-key: ${{ github.ref }}-py38lin-astropycache
         - linux: py39-test-online
           cache-key: ${{ github.ref }}-py39lin-astropycache
@@ -30,6 +30,8 @@ jobs:
           cache-key: ${{ github.ref }}-py311lin-astropycache
         - linux: py312-test-online
           cache-key: ${{ github.ref }}-py312lin-astropycache
+        - linux: py311-test-np1
+          cache-key: ${{ github.ref }}-py311np1-astropycache
 
   build_docs:
     uses: OpenAstronomy/github-actions-workflows/.github/workflows/tox.yml@v1
