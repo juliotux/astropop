@@ -278,7 +278,7 @@ def daofind(data, threshold, background, noise, fwhm,
     # DaoStarFinder uses absolute threshold value
     thresh = np.median(threshold * noise)
 
-    dao = DAOStarFinder(thresh, fwhm=fwhm, sky=0,
+    dao = DAOStarFinder(thresh, fwhm=fwhm,
                         sharplo=sharplo, sharphi=sharphi,
                         roundlo=roundlo, roundhi=roundhi,
                         exclude_border=exclude_border,
