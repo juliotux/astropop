@@ -1181,3 +1181,25 @@ def test_vizier_missing_module_attribute():
     assert not hasattr(vizier, '__mro__')
     with pytest.raises(AttributeError, match='no attribute'):
         getattr(vizier, 'not_a_catalog')
+
+
+@pytest.mark.parametrize('modern', [False, True])
+def test_simbad_name_resolution_column_formats(modern):
+    class Resolver:
+        def query_object(self, name):
+            if modern:
+                return Table({'ra': [101.25], 'dec': [-16.5]})
+            return Table({'RA': ['06 45 00'], 'DEC': ['-16 30 00']})
+
+    result = astroquery_skycoord('Sirius', simbad=Resolver())
+    assert_almost_equal(result.ra.degree, 101.25)
+    assert_almost_equal(result.dec.degree, -16.5)
+
+
+def test_simbad_empty_name_resolution():
+    class Resolver:
+        def query_object(self, name):
+            return Table({'ra': [], 'dec': []})
+
+    with pytest.raises(ValueError, match='could not be resolved'):
+        astroquery_skycoord('missing object', simbad=Resolver())
