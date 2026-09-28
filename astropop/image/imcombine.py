@@ -8,6 +8,7 @@ from astropy.stats import mad_std
 
 from ..framedata import FrameData, check_framedata
 from ..py_utils import check_number
+from ..config import AstropopConfig as conf
 from ..logger import logger
 from ._tools import merge_header
 
@@ -334,10 +335,13 @@ class ImCombiner:
     def _clear(self):
         """Clear buffer and images."""
         self._buffer = None
+        self._unct_bf = None
         # ensure cleaning of tmp files and free memory
         for i in self._images:
-            i.disable_memmap()
+            # Release arrays without loading memory maps back into RAM.
             i.data = None
+            i.flags = None
+            i.uncertainty = None
         self._images = []
         self._shape = None
         self._unit = None
@@ -350,17 +354,25 @@ class ImCombiner:
         if len(image_list) == 0:
             raise ValueError('Image list is empty.')
 
-        for indx, i in enumerate(image_list):
-            # before combine, copy everything to FrameData
-            ic = check_framedata(i, copy=True)
-            ic = ic.astype(self._dtype)
+        try:
+            for indx, i in enumerate(image_list):
+                # before combine, copy everything to FrameData
+                source = check_framedata(i)
+                ic = FrameData(np.array(source.data, dtype=self._dtype, copy=True),
+                               unit=source.unit, dtype=self._dtype, flags=source.flags,
+                               uncertainty=(source.uncertainty
+                                            if self._propagate_uncertainty else None),
+                               meta=source.header)
 
-            # for optimization, only enable memmap when needed.
-            if self._disk_cache:
-                ic.enable_memmap(filename=f'image_{indx}',
-                                 cache_folder=self._tmpdir)
+                # for optimization, only enable memmap when needed.
+                if self._disk_cache:
+                    ic.enable_memmap(filename=f'image_{indx}',
+                                     cache_folder=self._tmpdir)
 
-            self._images.append(ic)
+                self._images.append(ic)
+        except Exception:
+            self._clear()
+            raise
 
     def _check_consistency(self):
         """Check the consistency between loaded images."""
@@ -382,11 +394,16 @@ class ImCombiner:
         self._shape = base_shape
         self._unit = base_unit
 
+    @property
+    def _propagate_uncertainty(self):
+        return not (conf.IMARITH_SKIP_UNCERTAINTY or
+                    conf.FRAMEDATA_DISABLE_UNCERTAINTY)
+
     def _chunk_yielder(self, method):
         """Split the data in chuncks according to the method."""
         # sum needs uncertainties, others ignore it
         unct = False
-        if method == 'sum':
+        if method == 'sum' and self._propagate_uncertainty:
             if not np.any([i.uncertainty is None for i in self._images]):
                 unct = True
             else:
@@ -423,10 +440,13 @@ class ImCombiner:
 
             for i, frame in enumerate(self._images):
                 buffer[i] = frame.data[slc_y, slc_x]
-                buffer[i][frame.mask[slc_y, slc_x]] = np.nan
+                mask = frame.mask
+                if mask is not None:
+                    buffer[i][mask[slc_y, slc_x]] = np.nan
                 if unct:
                     unct_buffer[i] = frame.uncertainty[slc_y, slc_x]
-                    unct_buffer[i][frame.mask[slc_y, slc_x]] = np.nan
+                    if mask is not None:
+                        unct_buffer[i][mask[slc_y, slc_x]] = np.nan
 
             yield buffer, unct_buffer, (slc_y, slc_x)
 
@@ -455,6 +475,12 @@ class ImCombiner:
         n = float(len(self._buffer))
         # number of not masked pixels for each position
         n_no_mask = n - n_masked
+
+        if not self._propagate_uncertainty:
+            data = _funcs[method](self._buffer, axis=0)
+            if method == 'sum' and kwargs.get('sum_normalize', True):
+                data *= n/n_no_mask
+            return data, None
 
         if method == 'sum':
             data = _funcs['sum'](self._buffer, axis=0)
@@ -522,40 +548,46 @@ class ImCombiner:
         if method not in self._methods:
             raise ValueError(f'{method} is not a valid combining method.')
 
-        # first of all, load the images to FrameData and check the consistency
-        self._load_images(image_list)
-        self._check_consistency()
+        try:
+            # first of all, load the images to FrameData and check the consistency
+            self._load_images(image_list)
+            self._check_consistency()
 
-        logger.info('Combining %i images with %s method.',
-                    len(self._images), method)
+            logger.info('Combining %i images with %s method.',
+                        len(self._images), method)
 
-        # temp combined data, mask and uncertainty
-        data = np.zeros(self._shape, dtype=self._dtype)
-        data.fill(np.nan)
-        unct = np.zeros(self._shape, dtype=self._dtype)
-        mask = np.zeros(self._shape, dtype=bool)
+            # temp combined data, mask and uncertainty
+            data = np.zeros(self._shape, dtype=self._dtype)
+            data.fill(np.nan)
+            unct = (np.zeros(self._shape, dtype=self._dtype)
+                    if self._propagate_uncertainty else None)
+            mask = (None if conf.FRAMEDATA_DISABLE_FLAGS
+                    else np.zeros(self._shape, dtype=bool))
 
-        for self._buffer, self._unct_bf, slc in self._chunk_yielder(method):
-            # perform the masking: first with minmax, after sigma_clip
-            # the clippings interfere in each other.
-            self._apply_rejection()
+            for self._buffer, self._unct_bf, slc in self._chunk_yielder(method):
+                # perform the masking: first with minmax, after sigma_clip
+                # the clippings interfere in each other.
+                self._apply_rejection()
 
-            # combine the images and compute the uncertainty
-            data[slc], unct[slc] = self._combine(method, **kwargs)
-            mask[slc] = np.isnan(data[slc])
+                # combine the images and compute the uncertainty
+                data[slc], chunk_uncertainty = self._combine(method, **kwargs)
+                if unct is not None:
+                    unct[slc] = chunk_uncertainty
+                if mask is not None:
+                    mask[slc] = np.isnan(data[slc])
 
-        n = len(self._images)
-        combined = FrameData(data, unit=self._unit, uncertainty=unct,
-                             mask=mask)
-        combined.meta = merge_header(*[i.header for i in self._images],
-                                     method=self._header_strategy,
-                                     selected_keys=self._header_merge_keys)
-        combined.meta['HIERARCH astropop imcombine nimages'] = n
-        combined.meta['HIERARCH astropop imcombine method'] = method
+            n = len(self._images)
+            combined = FrameData(data, unit=self._unit, uncertainty=unct,
+                                 mask=mask)
+            combined.meta = merge_header(*[i.header for i in self._images],
+                                         method=self._header_strategy,
+                                         selected_keys=self._header_merge_keys)
+            combined.meta['HIERARCH astropop imcombine nimages'] = n
+            combined.meta['HIERARCH astropop imcombine method'] = method
 
-        # after, clear all buffers
-        self._clear()
-        return combined
+            return combined
+        finally:
+            self._clear()
 
 
 def imcombine(frames, method='median', memory_limit=1e9, **kwargs):
