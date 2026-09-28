@@ -216,21 +216,27 @@ class Test_Broadcast():
 
 
 
-@pytest.mark.parametrize('closed_loop', [False, True])
-def test_run_command_without_usable_event_loop(monkeypatch, closed_loop):
+@pytest.mark.parametrize('loop_state', ['absent', 'idle', 'closed'])
+def test_run_command_without_running_event_loop(loop_state):
     import asyncio
     import sys
 
-    loop = asyncio.new_event_loop()
-    loop.close()
-
-    def get_event_loop():
-        if closed_loop:
-            return loop
-        raise RuntimeError('There is no current event loop')
-
-    monkeypatch.setattr(asyncio, 'get_event_loop', get_event_loop)
-    result, stdout, stderr = run_command([sys.executable, '-c', 'print(42)'])
-    assert_equal(result.returncode, 0)
-    assert_equal(stdout, ['42'])
-    assert_equal(stderr, [])
+    try:
+        previous = asyncio.get_event_loop()
+    except RuntimeError:
+        previous = None
+    loop = None if loop_state == 'absent' else asyncio.new_event_loop()
+    if loop_state == 'closed':
+        loop.close()
+    asyncio.set_event_loop(loop)
+    try:
+        result, stdout, stderr = run_command([sys.executable, '-c', 'print(42)'])
+        assert_equal(result.returncode, 0)
+        assert_equal(stdout, ['42'])
+        assert_equal(stderr, [])
+        if loop_state == 'idle':
+            assert not loop.is_closed()
+    finally:
+        if loop is not None:
+            loop.close()
+        asyncio.set_event_loop(previous)
