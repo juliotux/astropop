@@ -197,7 +197,9 @@ class _BaseRegister(abc.ABC):
 
         reg_frame.data = data
         flags = frame2.flags
-        flags = self._apply_transform_image(flags, tform, cval=0, order=0)
+        if flags is not None:
+            flags = self._apply_transform_image(flags, tform, cval=0, order=0)
+            reg_frame.flags = flags
         reg_frame.add_flags(PixelMaskFlags.OUT_OF_BOUNDS |
                             PixelMaskFlags.MASKED,
                             mask)

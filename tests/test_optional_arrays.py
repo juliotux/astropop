@@ -132,6 +132,17 @@ def test_combine_without_uncertainty(monkeypatch, tmp_path, method, option,
     assert all(f.uncertainty is not None for f in frames)
 
 
+def test_disabled_flags_arithmetic_and_registration(monkeypatch):
+    monkeypatch.setattr(conf, 'FRAMEDATA_DISABLE_FLAGS', True)
+    first = FrameData(np.arange(100).reshape(10, 10), uncertainty=1)
+    first.mask_pixels((1, 1))
+    second = imarith(first, 2, '*')
+    assert second.flags is second.mask is None
+    registered = CrossCorrelationRegister().register_framedata(first, second)
+    assert registered.flags is registered.mask is None
+    trimmed = trim_image(registered, slice(2, 8), slice(3, 9))
+    assert trimmed.flags is trimmed.mask is None
+    assert trimmed.shape == (6, 6)
 
 
 @pytest.mark.parametrize('kind', ['fits', 'ccd'])

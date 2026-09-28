@@ -282,7 +282,7 @@ def trim_image(image, x_slice=None, y_slice=None, inplace=False):
     # trim the arrays
     data = image.data[section]
     uncertainty = image.get_uncertainty(False)[section]
-    flags = image.flags[section]
+    flags = None if image.flags is None else image.flags[section]
 
     image.data = data
     image.uncertainty = uncertainty
