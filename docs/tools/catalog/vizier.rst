@@ -12,7 +12,7 @@ Several VizieR catalogs are useful for astrometric and photometric calibration. 
 
 To access an specific pre-defined catalog, just use ``vizier.<<catalog_name>>`` with the query parameters. Like, if you want to query the UCAC4 catalog for the sources in a 2 arcmin radius around the coordinates of the Crab Nebula, you can do:
 
-.. ipython:: python
+.. code-block:: python
     :okwarning:
 
     from astropop.catalogs import vizier
@@ -28,67 +28,67 @@ Currently available catalogs are:
 
 - ``vizier.allwise``
 
-  .. ipython:: python
+  .. code-block:: python
 
       print(vizier.allwise.help())
 
 - ``vizier.apass9``
 
-  .. ipython:: python
+  .. code-block:: python
 
       print(vizier.apass9.help())
 
 - ``vizier.denis``
 
-  .. ipython:: python
+  .. code-block:: python
 
       print(vizier.denis.help())
 
 - ``vizier.gsc242``
 
-  .. ipython:: python
+  .. code-block:: python
 
       print(vizier.gsc242.help())
 
 - ``vizier.hip``
 
-  .. ipython:: python
+  .. code-block:: python
 
       print(vizier.hip.help())
 
 - ``vizier.twomass``
 
-  .. ipython:: python
+  .. code-block:: python
 
       print(vizier.twomass.help())
 
 - ``vizier.tycho2``
 
-  .. ipython:: python
+  .. code-block:: python
 
       print(vizier.tycho2.help())
 
 - ``vizier.ucac4``
 
-  .. ipython:: python
+  .. code-block:: python
 
       print(vizier.ucac4.help())
 
 - ``vizier.ucac5``
 
-  .. ipython:: python
+  .. code-block:: python
 
       print(vizier.ucac5.help())
 
 - ``vizier.vsx``
 
-  .. ipython:: python
+  .. code-block:: python
 
       print(vizier.vsx.help())
 
 - ``vizier.wise``
 
-  .. ipython:: python
+  .. code-block:: python
 
       print(vizier.wise.help())
 

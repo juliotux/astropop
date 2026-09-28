@@ -172,9 +172,9 @@ class Test_OnlineTools:
 class Test_DummySourcesCatalog:
     # Test things handled by the base catalog
     def test_catalog_creation(self):
-        c = DummySourcesCatalog(sirius_coords[0], search_radius[0])
+        c = DummySourcesCatalog(sirius_coords[-1], search_radius[0])
         assert_is_instance(c, SourcesCatalog)
-        c = DummySourcesCatalog(sirius_coords[0], search_radius[0],
+        c = DummySourcesCatalog(sirius_coords[-1], search_radius[0],
                                 band='A')
         assert_is_instance(c, SourcesCatalog)
 
@@ -182,7 +182,10 @@ class Test_DummySourcesCatalog:
             DummySourcesCatalog()
 
     @pytest.mark.parametrize('radius', search_radius)
-    @pytest.mark.parametrize('center', sirius_coords)
+    @pytest.mark.parametrize('center', [
+        pytest.param(sirius_coords[0], marks=pytest.mark.remote_data),
+        *sirius_coords[1:],
+    ])
     def test_catalog_center_radius(self, center, radius):
         c = DummySourcesCatalog(center, radius)
 
@@ -194,7 +197,7 @@ class Test_DummySourcesCatalog:
         assert_almost_equal(c.radius.degree, 0.1)
 
     def test_catalog_properties(self):
-        c = DummySourcesCatalog(sirius_coords[0], search_radius[0])
+        c = DummySourcesCatalog(sirius_coords[-1], search_radius[0])
         assert_is_instance(c.sources_id(), np.ndarray)
         assert_equal(c.sources_id().shape, (4))
         assert_is_instance(c.skycoord(), SkyCoord)
@@ -210,7 +213,7 @@ class Test_DummySourcesCatalog:
         assert_almost_equal(c.mag_list('A')[:, 1], sources['mag_error'])
 
     def test_catalog_table(self):
-        c = DummySourcesCatalog(sirius_coords[0], search_radius[0])
+        c = DummySourcesCatalog(sirius_coords[-1], search_radius[0])
         t = c.table()
         assert_is_instance(t, Table)
         assert_equal(t.colnames, ['id', 'ra', 'dec', 'pm_ra_cosdec',
@@ -225,7 +228,7 @@ class Test_DummySourcesCatalog:
         assert_almost_equal(t['B_error'], sources['mag_error'])
 
     def test_catalog_getitem_number(self):
-        c = DummySourcesCatalog(sirius_coords[0], search_radius[0])
+        c = DummySourcesCatalog(sirius_coords[-1], search_radius[0])
         nc = c[0]
         assert_equal(nc.sources_id(), sources['id'][0])
         assert_almost_equal(nc.ra_dec_list(),
@@ -234,7 +237,7 @@ class Test_DummySourcesCatalog:
                             [[sources['mag'][0], sources['mag_error'][0]]])
 
     def test_catalog_getitem_array(self):
-        c = DummySourcesCatalog(sirius_coords[0], search_radius[0])
+        c = DummySourcesCatalog(sirius_coords[-1], search_radius[0])
         for items in [[2, 3], slice(2, None), np.array([2, 3])]:
             nc = c[items]
             assert_equal(len(nc), 2)
@@ -254,7 +257,7 @@ class Test_DummySourcesCatalog:
             c[(2, 3)]
 
     def test_catalog_getitem_columns(self):
-        c = DummySourcesCatalog(sirius_coords[0], search_radius[0])
+        c = DummySourcesCatalog(sirius_coords[-1], search_radius[0])
         for i in sources.colnames:
             assert_equal(c[i], sources[i])
 
@@ -262,12 +265,12 @@ class Test_DummySourcesCatalog:
             c['no column']
 
     def test_catalog_len(self):
-        c = DummySourcesCatalog(sirius_coords[0], search_radius[0])
+        c = DummySourcesCatalog(sirius_coords[-1], search_radius[0])
         assert_equal(len(c), 4)
         assert_equal(len(c[0]), 1)
 
     def test_catalog_match_objects(self):
-        c = DummySourcesCatalog(sirius_coords[0], search_radius[0])
+        c = DummySourcesCatalog(sirius_coords[-1], search_radius[0])
         m = c.match_objects([0.52525258, 0.87265989, 4.16526547],
                             [3.65404807, 5.50588171, 3.80703142],
                             limit_angle='1 arcsec')
@@ -281,19 +284,19 @@ class Test_DummySourcesCatalog:
         assert_almost_equal(m.mag_list('B')[:, 1], [0.02, np.nan, 0.03], decimal=2)
 
     def test_catalog_band(self):
-        c = DummySourcesCatalog(sirius_coords[0], search_radius[0],
+        c = DummySourcesCatalog(sirius_coords[-1], search_radius[0],
                                 band='A')
         assert_equal(c.filters, ['A'])
 
         # default behavior is all
-        c = DummySourcesCatalog(sirius_coords[0], search_radius[0])
+        c = DummySourcesCatalog(sirius_coords[-1], search_radius[0])
         assert_equal(c.filters, ['A', 'B'])
-        c = DummySourcesCatalog(sirius_coords[0], search_radius[0],
+        c = DummySourcesCatalog(sirius_coords[-1], search_radius[0],
                                 band='all')
         assert_equal(c.filters, ['A', 'B'])
 
         # None should have no filters
-        c = DummySourcesCatalog(sirius_coords[0], search_radius[0],
+        c = DummySourcesCatalog(sirius_coords[-1], search_radius[0],
                                 band=None)
         assert_equal(c.filters, [])
 
@@ -301,16 +304,16 @@ class Test_DummySourcesCatalog:
         for i in ['C', ('A', 'C'), ['A', 'C']]:
             with pytest.raises(ValueError,
                                match='not available for this catalog'):
-                c = DummySourcesCatalog(sirius_coords[0], search_radius[0],
+                c = DummySourcesCatalog(sirius_coords[-1], search_radius[0],
                                         band=i)
-        c = DummySourcesCatalog(sirius_coords[0], search_radius[0])
+        c = DummySourcesCatalog(sirius_coords[-1], search_radius[0])
         with pytest.raises(ValueError, match='not available'):
             c.mag_list('C')
 
         D = DummySourcesCatalog
         D._available_filters = None
         with pytest.raises(ValueError, match='No filters'):
-            c = D(sirius_coords[0], search_radius[0], band='A')
+            c = D(sirius_coords[-1], search_radius[0], band='A')
 
 
 @pytest.mark.flaky(reruns=5)
@@ -446,11 +449,13 @@ class Test_VizierGeneral:
                      "List available vizier catalogs\n\n"
                      'Notes\n-----\n'+vizier.list_vizier_catalogs())
 
+    @pytest.mark.remote_data
     def test_query_fail(self):
         with pytest.raises(RuntimeError,
                            match='An error occured during online query.'):
             vizier.vsx('HD 674', '0.5 arcsec')
 
+    @pytest.mark.remote_data
     def test_create_with_file(self):
         file = os.path.join(os.path.dirname(os.path.dirname(__file__)),
                             'astropop', 'catalogs', 'vizier_catalogs', 'ucac4.yml')
@@ -462,7 +467,7 @@ class Test_VizierGeneral:
 
 
 @pytest.mark.flaky(reruns=5)
-# @pytest.mark.remote_data
+@pytest.mark.remote_data
 class Test_Vizier_UCAC4:
     hd674_mags = {
         'J': [10.157, 0.02],
@@ -747,6 +752,7 @@ class Test_VSXVizierCatalog:
 
 
 @pytest.mark.flaky(reruns=5)
+@pytest.mark.remote_data
 class Test_2MASSVizierSourcesCatalog:
     hd674_mags = {
         'J': [10.157, 0.021],
@@ -811,6 +817,7 @@ class Test_2MASSVizierSourcesCatalog:
 
 
 @pytest.mark.flaky(reruns=5)
+@pytest.mark.remote_data
 class Test_WISEVizierSourcesCatalog:
     hd674_mags = {
         'W1': [10.013, 0.024],
@@ -879,6 +886,7 @@ class Test_WISEVizierSourcesCatalog:
 
 
 @pytest.mark.flaky(reruns=5)
+@pytest.mark.remote_data
 class Test_AllWISEVizierSourcesCatalog:
     hd674_mags = {
         'W1': [10.026, 0.023],
@@ -947,6 +955,7 @@ class Test_AllWISEVizierSourcesCatalog:
 
 
 @pytest.mark.flaky(reruns=5)
+@pytest.mark.remote_data
 class Test_Tycho2VizierSourcesCatalog:
     hd674_mags = {
         'BT': [10.809, 0.034],
@@ -1011,7 +1020,7 @@ class Test_Tycho2VizierSourcesCatalog:
 
 
 @pytest.mark.flaky(reruns=5)
-# @pytest.mark.remote_data
+@pytest.mark.remote_data
 class Test_GaiaDR3:
     hd674_mags = {
         'G': [10.552819, 0.000337826],
@@ -1108,7 +1117,7 @@ class Test_GaiaDR3:
 
 
 @pytest.mark.flaky(reruns=5)
-# @pytest.mark.remote_data
+@pytest.mark.remote_data
 class Test_SMSSDR4:
     hd674_mags = {
         'u': [11.9227, 0.0135],
@@ -1166,3 +1175,9 @@ class Test_SMSSDR4:
         assert_is_instance(s.center, SkyCoord)
         assert_is_instance(s.radius, Angle)
         assert_equal(s.filters, ['u', 'v', 'g', 'r', 'i', 'z'])
+
+
+def test_vizier_missing_module_attribute():
+    assert not hasattr(vizier, '__mro__')
+    with pytest.raises(AttributeError, match='no attribute'):
+        getattr(vizier, 'not_a_catalog')

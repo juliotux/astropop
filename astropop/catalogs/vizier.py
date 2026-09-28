@@ -228,3 +228,4 @@ def __getattr__(name):
         NewViz.help = staticmethod(help)
         NewViz.__doc__ += VizierSourcesCatalog.__doc__
         return NewViz
+    raise AttributeError(f'module {__name__!r} has no attribute {name!r}')
