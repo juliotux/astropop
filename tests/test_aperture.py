@@ -124,7 +124,7 @@ class TestAperturePhotometry:
                        skip_poisson=False)
         im2 = im.copy()
         bkg, rms = background(im, 64, 3)
-        phot = aperture_photometry(im, [52], [52], r=20, r_ann=(20, 30),
+        _phot = aperture_photometry(im, [52], [52], r=20, r_ann=(20, 30),
                                    gain=1.5, bkg_error=rms)
         assert_almost_equal(im, im2, decimal=5)
 
@@ -274,3 +274,14 @@ class TestApertureFlags:
                            'shape as data.'):
             aperture_photometry(im, [50], [50], r=10, r_ann=None,
                                 pixel_flags=mask, mask=mask)
+
+
+@pytest.mark.parametrize('background_error', [0.0, 2.5])
+def test_scalar_background_error_matches_array(background_error):
+    data = np.full((15, 15), 100.0)
+    scalar = aperture_photometry(data, [7], [7], r=3, r_ann=None,
+                                bkg_error=background_error)
+    array = aperture_photometry(data, [7], [7], r=3, r_ann=None,
+                               bkg_error=np.full(data.shape, background_error))
+    assert_almost_equal(scalar['flux'], array['flux'])
+    assert_almost_equal(scalar['flux_error'], array['flux_error'])

@@ -220,6 +220,9 @@ def _run_async_task(task):
     except RuntimeError:
         loop = None
 
+    if loop is None or loop.is_closed():
+        return asyncio.run(task)
+
     # patch asyncio when running inside Jupyter or other running loop
     if loop and loop.is_running():
         try:

@@ -338,6 +338,8 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto',
 
     if bkg_error is None:
         bkg_error = 0.0
+    if np.ndim(bkg_error) == 0:
+        bkg_error = np.full_like(data, bkg_error, dtype=float)
 
     # Get the total error (bkg+poisson) from photutils
     # FIXME: check the gain situation

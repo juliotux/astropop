@@ -214,3 +214,23 @@ class Test_Broadcast():
 
         assert_equal(bc.iters, [np.arange(10), [None]*10, [2]*10])
 
+
+
+@pytest.mark.parametrize('closed_loop', [False, True])
+def test_run_command_without_usable_event_loop(monkeypatch, closed_loop):
+    import asyncio
+    import sys
+
+    loop = asyncio.new_event_loop()
+    loop.close()
+
+    def get_event_loop():
+        if closed_loop:
+            return loop
+        raise RuntimeError('There is no current event loop')
+
+    monkeypatch.setattr(asyncio, 'get_event_loop', get_event_loop)
+    result, stdout, stderr = run_command([sys.executable, '-c', 'print(42)'])
+    assert_equal(result.returncode, 0)
+    assert_equal(stdout, ['42'])
+    assert_equal(stderr, [])
