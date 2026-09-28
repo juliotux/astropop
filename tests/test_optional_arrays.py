@@ -188,3 +188,32 @@ def test_skip_uncertainty_keeps_rejection(monkeypatch):
     result = combiner.combine(frames, method='mean')
     np.testing.assert_array_equal(result.data, 1)
     assert result.uncertainty is None
+
+
+@pytest.mark.parametrize('inplace', [False, True])
+@pytest.mark.parametrize('disabled', [False, True])
+def test_trim_preserves_absent_uncertainty(monkeypatch, inplace, disabled):
+    frame = FrameData(np.arange(30).reshape(5, 6))
+    monkeypatch.setattr(conf, 'FRAMEDATA_DISABLE_UNCERTAINTY', disabled)
+    monkeypatch.setattr(FrameData, 'get_uncertainty',
+                        lambda *a, **k: pytest.fail('Allocated missing uncertainty'))
+    result = trim_image(frame, slice(1, 4), slice(2, 5), inplace=inplace)
+    assert result.uncertainty is None
+    np.testing.assert_array_equal(result.data, np.arange(30).reshape(5, 6)[2:5, 1:4])
+
+
+@pytest.mark.parametrize('inplace', [False, True])
+@pytest.mark.parametrize('operation', ['trim', 'register'])
+def test_processing_does_not_read_disabled_uncertainty(monkeypatch, inplace, operation):
+    frame = FrameData(np.arange(100).reshape(10, 10), uncertainty=2)
+    monkeypatch.setattr(conf, 'FRAMEDATA_DISABLE_UNCERTAINTY', True)
+    monkeypatch.setattr(FrameData, 'get_uncertainty',
+                        lambda *a, **k: pytest.fail('Read disabled uncertainty'))
+    if operation == 'trim':
+        result = trim_image(frame, slice(2, 8), slice(1, 7), inplace=inplace)
+    else:
+        register = CrossCorrelationRegister()
+        result = register.register_framedata(frame, frame, inplace=inplace)
+    assert result.uncertainty is None
+    if not inplace:
+        np.testing.assert_array_equal(frame.uncertainty, 2)

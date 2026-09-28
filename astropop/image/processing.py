@@ -5,6 +5,7 @@ import numpy as np
 import astroscrappy
 
 from ..logger import logger
+from ..config import AstropopConfig as conf
 from .imarith import imarith
 from ..math.physical import convert_to_qfloat
 from ..framedata import check_framedata, PixelMaskFlags
@@ -281,7 +282,9 @@ def trim_image(image, x_slice=None, y_slice=None, inplace=False):
 
     # trim the arrays
     data = image.data[section]
-    uncertainty = image.get_uncertainty(False)[section]
+    uncertainty = None
+    if not conf.FRAMEDATA_DISABLE_UNCERTAINTY and image.uncertainty is not None:
+        uncertainty = image.uncertainty[section]
     flags = None if image.flags is None else image.flags[section]
 
     image.data = data
