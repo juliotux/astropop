@@ -153,7 +153,7 @@ class Test_FitsFileGroup():
         with pytest.raises(ValueError,
                            match='You can only specify either files or '
                            'location.'):
-            fg = FitsFileGroup(location=tmpdir/'fits', files=flist['fits'])
+            _fg = FitsFileGroup(location=tmpdir/'fits', files=flist['fits'])
 
     def test_fg_creation_no_std_extension(self, tmpdir):
         tmpdir, flist = tmpdir

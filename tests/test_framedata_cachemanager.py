@@ -184,7 +184,10 @@ def test_cleanup_does_not_run_other_exit_handlers(tmp_path):
     import atexit
 
     calls = []
-    callback = lambda: calls.append('unrelated handler')
+
+    def callback():
+        calls.append('unrelated handler')
+
     atexit.register(callback)
     try:
         manager = CacheManager(tmp_path)

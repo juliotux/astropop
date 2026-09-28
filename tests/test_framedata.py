@@ -72,7 +72,7 @@ class TestFrameDataCreationMetas:
         meta['history'] = hist
         with pytest.raises(ValueError,
                            match='meta or header must be compilant with FITS'):
-            f = FrameData(a, meta=meta)
+            _f = FrameData(a, meta=meta)
 
     def test_framedata_creation_dict_meta_no_compilant_comment(self):
         a = _random_array.copy()
@@ -81,7 +81,7 @@ class TestFrameDataCreationMetas:
         meta['comment'] = comment
         with pytest.raises(ValueError,
                            match='meta or header must be compilant with FITS'):
-            f = FrameData(a, meta=meta)
+            _f = FrameData(a, meta=meta)
 
     def test_framedata_creation_array_meta_with_wcs(self):
         a = _random_array.copy()
@@ -142,7 +142,7 @@ class TestFrameDataCreationMetas:
         meta.update(wcs2.to_header())
         with pytest.raises(ValueError,
                            match='wcs and meta/wcs cannot be set'):
-            f = FrameData(a, meta=meta, wcs=wcs)
+            _f = FrameData(a, meta=meta, wcs=wcs)
 
     def test_frame_init_with_wcs(self):
         a = _random_array.copy()
@@ -163,7 +163,7 @@ class TestFrameDataCreationMetas:
 
         with pytest.raises(ValueError,
                            match='Only one of meta or header can be set.'):
-            a = FrameData([[1], [2], [3]], unit='', meta=meta, header=header)
+            _a = FrameData([[1], [2], [3]], unit='', meta=meta, header=header)
 
     def test_framedata_meta_is_not_case_sensitive(self):
         frame = create_framedata()

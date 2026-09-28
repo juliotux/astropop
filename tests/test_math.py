@@ -1,7 +1,6 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 # flake8: noqa: F403, F405
 
-import pytest
 from astropop.math.hasher import hasher
 from astropop.math.array import xy2r, iraf_indices, trim_array,  \
                                 all_equal

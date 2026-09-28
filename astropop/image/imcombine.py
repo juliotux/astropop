@@ -280,21 +280,21 @@ class ImCombiner:
           Maximum threshold of the clipping. `None` disables maximum masking.
           Default: `None`
         """
-        l, h = min_value, max_value
+        low, high = min_value, max_value
         # disable
-        if l is None and h is None:
+        if low is None and high is None:
             self._minmax = None
 
-        for i in (l, h):
+        for i in (low, high):
             if not check_number(i) and i is not None:
                 raise ValueError(f"{i} is not compatible with min_max "
                                  "clipping")
 
         # check if minimum is lower then maximum
-        if l is not None and h is not None:
-            l, h = sorted([l, h])
+        if low is not None and high is not None:
+            low, high = sorted([low, high])
 
-        self._minmax = (l, h)
+        self._minmax = (low, high)
 
     def set_merge_header(self, strategy, keys=None):
         """Set the strategy to merge headers during combination.

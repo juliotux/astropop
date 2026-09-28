@@ -17,7 +17,7 @@ class TestQFloatNumpyArrayFuncs:
     def test_error_not_handled(self):
         # handled QFloat must be ok
         qf = QFloat([1.0, 2.0, 3.0], [0.1, 0.2, 0.3], "m")
-        res = np.sqrt(qf)
+        _res = np.sqrt(qf)
 
         # not handled QFloat must raise
         with pytest.raises(TypeError):

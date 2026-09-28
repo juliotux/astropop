@@ -503,13 +503,13 @@ class Test_StokesParameters:
         zi = quarterwave_model(psi, 0, 0.1, 0.05)
         flux = [1e5]*len(psi)
 
-        p = StokesParameters('quarterwave', 0, 0.1, flux=flux, psi=psi, zi=zi)
-        p = StokesParameters('quarterwave', 0, 0.1, flux=flux, psi=psi)
-        p = StokesParameters('quarterwave', 0, 0.1, psi=psi, zi=zi)
-        p = StokesParameters('quarterwave', 0, 0.1, flux=flux, zi=zi)
-        p = StokesParameters('quarterwave', 0, 0.1, flux=flux)
-        p = StokesParameters('quarterwave', 0, 0.1, psi=psi)
-        p = StokesParameters('quarterwave', 0, 0.1, zi=zi)
+        _p = StokesParameters('quarterwave', 0, 0.1, flux=flux, psi=psi, zi=zi)
+        _p = StokesParameters('quarterwave', 0, 0.1, flux=flux, psi=psi)
+        _p = StokesParameters('quarterwave', 0, 0.1, psi=psi, zi=zi)
+        _p = StokesParameters('quarterwave', 0, 0.1, flux=flux, zi=zi)
+        _p = StokesParameters('quarterwave', 0, 0.1, flux=flux)
+        _p = StokesParameters('quarterwave', 0, 0.1, psi=psi)
+        _p = StokesParameters('quarterwave', 0, 0.1, zi=zi)
 
         with pytest.raises(ValueError, match='same dimensions'):
             StokesParameters('quarterwave', 0, 0.1, flux=flux, psi=psi,
@@ -569,7 +569,7 @@ class Test_SLSPolarimetry:
     def test_fit_half_no_errors_k1(self, q, u):
         psi = np.arange(0, 360, 22.5)
         flux_o, flux_e = get_flux_oe(1e5, psi, k=1.0, q=q, u=u, zero=0)
-        zi = (flux_o-flux_e)/(flux_o+flux_e)
+        _zi = (flux_o-flux_e)/(flux_o+flux_e)
         pol = SLSDualBeamPolarimetry(retarder='halfwave', k=1.0)
         p = pol.compute(psi, flux_o, flux_e)
         assert_almost_equal(p.q.nominal, q)
@@ -611,7 +611,7 @@ class Test_SLSPolarimetry:
     def test_fit_half_no_k(self, q, u):
         psi = np.arange(0, 360, 22.5)
         flux_o, flux_e = get_flux_oe(1e5, psi, k=1, q=q, u=u, zero=0)
-        zi = (flux_o-flux_e)/(flux_o+flux_e)
+        _zi = (flux_o-flux_e)/(flux_o+flux_e)
         pol = SLSDualBeamPolarimetry(retarder='halfwave', compute_k=False)
         p = pol.compute(psi, flux_o, flux_e,
                         f_ord_error=[50]*16, f_ext_error=[50]*16)
@@ -797,4 +797,4 @@ class Test_SLSPolarimetry:
         pol = SLSDualBeamPolarimetry(retarder='quarterwave', compute_k=True,
                                      zero=None, max_iters=1)
         with pytest.raises(RuntimeError, match='Could not converge after'):
-            p = pol.compute(psi, flux_o, flux_e)
+            _p = pol.compute(psi, flux_o, flux_e)

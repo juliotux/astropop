@@ -6,7 +6,6 @@ import importlib
 import numpy as np
 import pytest
 from astropy import units as u
-from astropy.io import fits
 from astropy.nddata import CCDData, StdDevUncertainty
 
 from astropop.config import AstropopConfig as conf
