@@ -134,7 +134,8 @@ class TestAperturePhotometryBackground:
     def test_background_methods(self, method):
         im = gen_image((100, 100), [50.], [50.], flux=10000, sigma=2,
                        model='gaussian', rdnoise=0, sky=100,
-                       skip_poisson=False)
+                       skip_poisson=True)
+        im = np.random.default_rng(42).poisson(im)
         phot = aperture_photometry(im, [52], [52], r=20, r_ann=(30, 50),
                                    bkg_method=method)
         assert_almost_equal(phot['flux'][0]/10000, 1, decimal=1)
