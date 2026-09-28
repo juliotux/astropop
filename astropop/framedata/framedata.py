@@ -147,11 +147,10 @@ PixelMaskFlags.dtype = np.uint8
 
 @unit_property
 class FrameData:
-    """Data container for image frame to handle memmapping data from disk.
+    """Two-dimensional image with units, optional arrays, and disk caching.
 
-    The main difference from Astropy's `~astropy.nddata.CCDData` is the
-    memmapping itself. However it handles uncertainties in a totally different
-    way. It stores only StdDev uncertainty arrays. It also stores the unit.
+    Uncertainties are stored as standard-deviation arrays. Pixel flags encode
+    both masking and pixel status. Metadata and WCS accompany the image.
 
     Parameters
     ----------
@@ -162,20 +161,20 @@ class FrameData:
     unit : `~astropy.units.Unit` or string (optional)
         The data unit. Must be `~astropy.units.Unit` compliant.
     dtype : string or `~numpy.dtype` (optional)
-        Mandatory dtype of the data.
-    uncertainty : array_like or `~astropy.nddata.Uncertanty` or `None` \
-                    (optional)
-        Uncertainty of the data.
+        Floating-point dtype of the data. Default: float64.
+    uncertainty : float, array_like or `None` (optional)
+        Standard deviation in the data unit. Scalars are expanded to the
+        image shape; arrays must match it. Default: None.
     mask : array_like or `None` (optional)
         Frame mask. All the masked pixels will be flagged as
         `PixelMaskFlags.MASKED` and `PixelMaskFlags.UNSPECIFIED`.
     flags : array_like or `None` (optional)
-        Pixel flags for the frame. See `~astropop.FrameData.PixelMaskFlags`.
-        for values.
-    wcs : `dict`, `~astropy.fits.Header` or `~astropy.wcs.WCS` (optional)
+        Pixel flags matching the image shape. See `PixelMaskFlags` for values.
+        Stored as uint8; defaults to zeros unless flag storage is disabled.
+    wcs : `~astropy.wcs.WCS` or `None` (optional)
         World Coordinate System of the image. If meta or header keys already
-        contain WCS informations, an error will be raised.
-    meta or header: `dict` or `astropy.fits.Header` (optional)
+        contain WCS information, an error will be raised.
+    meta or header: `dict` or `~astropy.io.fits.Header` (optional)
         Metadata (header) of the frame. Only one accepted. If both are passed,
         error will be raised.
     cache_folder : string, `~pathlib.Path` or `None` (optional)
@@ -184,19 +183,17 @@ class FrameData:
     cache_filename : string, `~pathlib.Path` or `None` (optional)
         Base file name to store the cached `FrameData`.
     origin_filename : string, `~pathlib.Path` or `None` (optional)
-        Original file name of the data. If set, it will be stored in the
-        `FrameData` metadata.
+        Original file name of the data, available as ``origin_filename``.
     use_memmap_backend : `bool` (optional)
         Enable memmapping in the constructor; requires ``cache_folder``.
 
     Notes
     -----
-    - The physical unit is assumed to be the same for data and uncertainty.
-      So, we droped the support for data with data with different uncertainty
-      unit, like `~astropy.nddata.ccddata.CCDData` does.
-    - As this is intended to be a safe container for data, it do not handle
-      builtin math operations. For math operations using FrameData, check
-      `~astropop.ccd_processing.imarith` module.
+    - Data and uncertainty share the same physical unit.
+    - Built-in arithmetic operators are not supported. Use
+      `~astropop.image.imarith.imarith` for arithmetic and propagation.
+    - Optional uncertainty and flag storage follow the process-wide
+      `~astropop.config.AstropopConfig` settings.
     """
 
     _memmapping = False
@@ -659,13 +656,13 @@ class FrameData:
         return self._data.min() * self.unit
 
     def max(self):
-        """Compute minimum value of the data."""
+        """Compute maximum value of the data."""
         if self._unit is None:
             return self._data.max()
         return self._data.max() * self.unit
 
     def statistics(self):
-        """Compute general statistics ofthe image."""
+        """Compute general statistics of the image."""
         return {'min': self.min(),
                 'max': self.max(),
                 'mean': self.mean(),
@@ -681,35 +678,40 @@ class FrameData:
             Allow non-standard WCS keys.
             Default: `True`
         no_fits_standard_units: `bool`, optional
-            Skip FITS units standard for units. If this options is choose,
-            the units will be printed in header as `~astropy.units.Unit`
-            compatible string.
+            Allow Astropy-compatible unit strings instead of requiring
+            FITS-standard unit formatting.
             Default: `True`
         **kwargs:
             hdu_uncertainty: string, optional
-                Extension name to store the uncertainty in 2D image format.
-            hdu_flags: string, optional
-                Extension name to store the pixel list flags in table format.
+                Standard-deviation extension name (default: ``UNCERT``).
+                Set to None to omit this extension.
+            hdu_mask: string, optional
+                Boolean mask extension name (default: ``MASK``).
+                Set to None to omit this extension. Individual pixel flag
+                bits are not serialized.
             unit_key: string, optional
                 Header key for physical unit.
 
 
         Returns
         -------
-        `~astropy.fits.HDUList` :
-            HDU storing all FrameData informations.
+        `~astropy.io.fits.HDUList` :
+            HDU list containing data, metadata, WCS, and present optional arrays.
         """
         return _to_hdu(self, wcs_relax=wcs_relax,
                        no_fits_standard_units=no_fits_standard_units,
                        **kwargs)
 
     def to_ccddata(self):
-        """Convert actual FrameData to CCDData.
+        """Convert this FrameData to CCDData.
 
         Returns
         -------
         `~astropy.nddata.CCDData` :
-            CCDData instance with actual FrameData informations.
+            CCDData with data, unit, metadata, WCS, standard-deviation
+            uncertainty, and Boolean mask. Missing optional arrays remain
+            None. Individual flag bits and the separate history and comment
+            lists are not transferred.
         """
         return _to_ccddata(self)
 
@@ -727,15 +729,17 @@ class FrameData:
             Allow non-standard WCS keys.
             Default: `True`
         no_fits_standard_units: `bool`, optional
-            Skip FITS units standard for units. If this options is choose,
-            the units will be printed in header as `~astropy.units.Unit`
-            compatible string.
+            Allow Astropy-compatible unit strings instead of requiring
+            FITS-standard unit formatting.
             Default: `True`
         **kwargs:
             hdu_uncertainty: string, optional
-                Extension name to store the uncertainty in 2D image format.
-            hdu_flags: string, optional
-                Extension name to store the pixel list flags in table format.
+                Standard-deviation extension name (default: ``UNCERT``).
+                Set to None to omit this extension.
+            hdu_mask: string, optional
+                Boolean mask extension name (default: ``MASK``).
+                Set to None to omit this extension. Individual pixel flag
+                bits are not serialized.
             unit_key: string, optional
                 Header key for physical unit.
         """

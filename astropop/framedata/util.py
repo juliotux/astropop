@@ -20,32 +20,35 @@ _fits_kwargs = ['hdu', 'unit', 'hdu_uncertainty',
 
 
 def read_framedata(obj, copy=False, **kwargs):
-    """Read an object to a FrameData container.
+    """Read an image into a FrameData container.
 
     Parameters
     ----------
-    obj: any compatible, see notes
-      Object that will be readed to the FrameData.
-    copy: bool (optional)
-      If the object is already a FrameData, return a copy instead of the
-      original one.
-      Default: False
+    obj : compatible image object
+        FrameData, FITS filename or path, image HDU, HDUList, CCDData,
+        NumPy array, Quantity, or QFloat. Image data must be two-dimensional.
+    copy : bool, optional
+        If obj is already a FrameData, return a copy instead of the original.
+        Default: False.
+    **kwargs
+        Constructor options for newly loaded frames. FITS input also accepts
+        ``hdu``, ``unit``, ``hdu_uncertainty`` (default: ``UNCERT``),
+        ``hdu_mask`` (default: ``MASK``), and ``unit_key`` (default: ``BUNIT``).
+        For an existing FrameData with copy=True, options are passed to
+        FrameData.copy; with copy=False, they are ignored.
 
     Returns
     -------
-    frame: `FrameData`
-      The readed FrameData object.
+    frame : `FrameData`
+        Loaded image. Optional uncertainty and flag storage follows the
+        current configuration when constructing or copying a frame.
 
     Notes
     -----
-    - If obj is a string or `~pathlib.Path`, it will be interpreted as a file.
-      File types will be checked. Just FITS format supported now.
-    - If obj is `~astropy.io.fits.HDUList`, `~astropy.io.fits.HDUList` or
-      `~astropy.nddata.CCDData`, they will be properly translated to
-      `FrameData`.
-    - If numbers or `~astropop.math.physical.QFloat`,
-      `~astropy.units.Quantity`, they will be translated to a `FrameData`
-      without metadata.
+    Only FITS files are supported. The FITS reader currently selects the first
+    HDU containing image data; pass an image HDU directly to select a specific
+    image. Uncertainty extensions are interpreted as standard deviations.
+    FITS and CCDData masks are imported as Boolean masks, not full pixel flags.
     """
     if isinstance(obj, FrameData):
         if copy:
