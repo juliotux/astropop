@@ -411,7 +411,7 @@ class Test_Simbad():
 @pytest.mark.remote_data
 class Test_SimbadQueryID:
     @pytest.mark.parametrize('order, expect', [(None, 'alf CMa'),
-                                               (['NAME'], 'Dog Star'),
+                                               (['NAME'], 'Sirius'),
                                                (['*'], 'alf CMa'),
                                                (['HIP'], 'HIP 32349'),
                                                (['HIC', 'HD'], 'HIC 32349'),

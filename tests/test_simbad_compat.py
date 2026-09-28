@@ -67,3 +67,19 @@ def test_tap_catalog_sorts_sources_and_preserves_photometry(monkeypatch):
     np.testing.assert_allclose(catalog.mag_list('V'), [[4., 0.1], [8., 0.2]])
     assert list(catalog.magnitudes_bibcode('V')) == ['near-flux', 'far-flux']
     assert list(catalog.coordinates_bibcode()) == ['near-coords', 'far-coords']
+
+
+def test_identifier_prefix_does_not_match_double_star(monkeypatch):
+    import importlib
+    module = importlib.import_module('astropop.catalogs.simbad')
+
+    class Simbad:
+        def query_region(self, center, radius):
+            return Table({'main_id': ['* target'], 'ra': [20.], 'dec': [-2.]})
+
+        def query_objectids(self, name):
+            return Table({'id': ['** unrelated', '* target', 'NAME Target']})
+
+    monkeypatch.setattr(module, 'Simbad', Simbad)
+    assert module.simbad_query_id(20., -2., '1s', name_order=['*']) == 'target'
+    assert module.simbad_query_id(20., -2., '1s', name_order=['NAME']) == 'Target'

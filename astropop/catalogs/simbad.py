@@ -95,6 +95,10 @@ def _simbad_query_id(ra, dec, limit_angle, name_order=None):
                            radius=limit_angle)
 
     if q is not None and len(q):
+        if 'ra' in q.colnames:
+            coords = SkyCoord(q['ra'], q['dec'], unit='deg')
+            center = SkyCoord(ra, dec, unit='deg')
+            q = q[np.argsort(coords.separation(center))]
         key = 'main_id' if 'main_id' in q.colnames else 'MAIN_ID'
         name = string_fix(q[key][0])
         identifiers = _timeout_retry(s.query_objectids, name)
@@ -103,8 +107,10 @@ def _simbad_query_id(ra, dec, limit_angle, name_order=None):
         for i in name_order:
             if i == 'MAIN_ID':
                 return _strip_spaces(name)
+            if name.startswith(i+' '):
+                return _strip_spaces(name)
             for k in ids:
-                if i+' ' in k:
+                if k.startswith(i+' '):
                     return _strip_spaces(k)
     # If nothing is found, return empty string
     return ''
