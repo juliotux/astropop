@@ -3,6 +3,9 @@
 
 import numpy as np
 from astropy.units.core import UnitConversionError
+from astropy import units as u
+
+from ..config import AstropopConfig as conf
 
 from ._tools import merge_header
 from ._tools import merge_flag
@@ -28,6 +31,21 @@ def _qf_or_framedata(data, alternative=convert_to_qfloat):
     if isinstance(data, (QFloat, FrameData)):
         return data
     return alternative(data)
+
+
+def _as_quantity(value):
+    """Extract values and units without allocating or propagating errors."""
+    if isinstance(value, QFloat):
+        return u.Quantity(np.asarray(value.nominal), value.unit,
+                          copy=False, dtype=None)
+    if isinstance(value, FrameData) or hasattr(value, 'uncertainty'):
+        return u.Quantity(np.asarray(value.data), value.unit,
+                          copy=False, dtype=None)
+    if isinstance(value, (u.UnitBase, str)):
+        return u.Quantity(1.0, u.Unit(value))
+    if isinstance(value, u.Quantity):
+        return value
+    return u.Quantity(np.asarray(value), copy=False, dtype=None)
 
 
 def _arith(operand1, operand2, operation):
@@ -97,8 +115,11 @@ def imarith(operand1, operand2, operation, inplace=False,
     if operation not in _arith_funcs.keys():
         raise ValueError(f"Operation {operation} not supported.")
 
-    operand1 = _qf_or_framedata(operand1)
-    operand2 = _qf_or_framedata(operand2)
+    skip_uncertainty = (conf.IMARITH_SKIP_UNCERTAINTY or
+                        conf.FRAMEDATA_DISABLE_UNCERTAINTY)
+    converter = _as_quantity if skip_uncertainty else convert_to_qfloat
+    operand1 = _qf_or_framedata(operand1, alternative=converter)
+    operand2 = _qf_or_framedata(operand2, alternative=converter)
 
     if isinstance(operand1, FrameData) and inplace:
         ccd = operand1
@@ -110,29 +131,39 @@ def imarith(operand1, operand2, operation, inplace=False,
     logger.debug('Operation %s between %s and %s',
                  operation, operand1, operand2)
 
-    # Perform data, mask and uncertainty operations
     try:
-        result = _arith(operand1, operand2, operation)
-    except UnitConversionError:
-        raise UnitsError(f'Units {operand1.unit} and {operand2.unit} are'
-                         f' incompatible for {operation} operation.')
+        # Perform data, mask and uncertainty operations
+        try:
+            if skip_uncertainty:
+                result = _arith_funcs[operation](_as_quantity(operand1),
+                                                 _as_quantity(operand2))
+            else:
+                result = _arith(operand1, operand2, operation)
+        except UnitConversionError:
+            raise UnitsError(f'Units {operand1.unit} and {operand2.unit} are'
+                             f' incompatible for {operation} operation.')
 
-    ccd.data = result.nominal
-    ccd.unit = result.unit
-    ccd.uncertainty = result.uncertainty
+        ccd.data = result.value if skip_uncertainty else result.nominal
+        ccd.unit = result.unit
+        ccd.uncertainty = None if skip_uncertainty else result.uncertainty
 
-    # Perform merging flags operation only if both operands have flags
-    f1 = getattr(operand1, 'flags',
-                 np.zeros_like(operand1.data, dtype=np.uint8))
-    f2 = getattr(operand2, 'flags',
-                 np.zeros_like(operand1.data, dtype=np.uint8))
-    ccd.flags = merge_flag(f1, f2, method=merge_flags)
+        if not conf.FRAMEDATA_DISABLE_FLAGS:
+            f1 = operand1.flags if isinstance(operand1, FrameData) else None
+            f2 = operand2.flags if isinstance(operand2, FrameData) else None
+            if f1 is None:
+                f1 = np.zeros(ccd.shape, dtype=np.uint8)
+            if f2 is None:
+                f2 = np.zeros(ccd.shape, dtype=np.uint8)
+            ccd.flags = merge_flag(f1, f2, method=merge_flags)
+        else:
+            ccd.flags = None
 
-    # Perform merging headers operation only if both operands have headers
-    h1 = getattr(operand1, 'header', None)
-    h2 = getattr(operand2, 'header', None)
-    keys = kwargs.get('selected_keys', None)
-    ccd.meta = merge_header(h1, h2, method=merge_headers, selected_keys=keys)
+        # Perform merging headers operation only if both operands have headers
+        h1 = getattr(operand1, 'header', None)
+        h2 = getattr(operand2, 'header', None)
+        keys = kwargs.get('selected_keys', None)
+        ccd.meta = merge_header(h1, h2, method=merge_headers, selected_keys=keys)
 
-    logger.removeHandler(lh)
-    return ccd
+        return ccd
+    finally:
+        logger.removeHandler(lh)

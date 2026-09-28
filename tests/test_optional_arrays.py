@@ -68,8 +68,40 @@ def test_options_are_not_retroactive(monkeypatch):
     assert frame.uncertainty is frame.flags is None
 
 
+@pytest.mark.parametrize('option', ['IMARITH_SKIP_UNCERTAINTY', 'FRAMEDATA_DISABLE_UNCERTAINTY'])
+@pytest.mark.parametrize('operation', ['+', '-', '*', '/', '//', '%', '**'])
+@pytest.mark.parametrize('inplace', [False, True])
+def test_arithmetic_without_error_calculations(monkeypatch, option, operation, inplace):
+    first = FrameData(np.full((3, 4), 4.0), uncertainty=0.3)
+    second = QFloat(2, 0.1)
+    expected = imarith(first, second, operation)
+    module = importlib.import_module('astropop.image.imarith')
+    monkeypatch.setattr(conf, option, True)
+    monkeypatch.setattr(module, '_arith', lambda *args: pytest.fail('QFloat propagation called'))
+    actual = imarith(first, second, operation, inplace=inplace)
+    assert (actual is first) == inplace
+    assert actual.uncertainty is None
+    np.testing.assert_allclose(actual.data, expected.data)
+    assert actual.unit == expected.unit
+    if not inplace:
+        assert first.uncertainty is not None
 
 
+@pytest.mark.parametrize('kind', ['quantity', 'frame', 'ccd', 'qfloat'])
+def test_skip_arithmetic_units(monkeypatch, kind):
+    monkeypatch.setattr(conf, 'IMARITH_SKIP_UNCERTAINTY', True)
+    first = FrameData(np.full((2, 3), 2), unit='m', uncertainty=0.2)
+    values = np.full((2, 3), 100)
+    second = {'quantity': values*u.cm,
+              'frame': FrameData(values, unit='cm', uncertainty=1),
+              'ccd': CCDData(values, unit='cm', uncertainty=StdDevUncertainty(values)),
+              'qfloat': QFloat(values, np.ones(values.shape), 'cm')}[kind]
+    result = imarith(first, second, '+')
+    np.testing.assert_allclose(result.data, 3)
+    assert result.unit == u.m
+    assert result.uncertainty is None
+    with pytest.raises(u.UnitsError):
+        imarith(first, np.ones((2, 3))*u.s, '+')
 
 
 
