@@ -16,6 +16,40 @@ from ..py_utils import string_fix
 __all__ = ['simbad_query_id', 'SimbadSourcesCatalog', 'simbad']
 
 
+def _normalize_tap_result(query, filters):
+    """Pivot TAP flux rows into one legacy-shaped row per source.
+
+    Keep filter names case-sensitive and preserve masked photometry as NaN.
+    Coordinates from TAP remain in degrees.
+    """
+    _, indices = np.unique(query['main_id'], return_index=True)
+    indices.sort()
+    result = query[indices].copy()
+    for key in ('main_id', 'ra', 'dec', 'pmra', 'pmdec', 'coo_bibcode'):
+        result.rename_column(key, key.upper())
+    for band in filters:
+        values = np.full(len(result), np.nan)
+        errors = np.full(len(result), np.nan)
+        bibcodes = []
+        for i, source in enumerate(result['MAIN_ID']):
+            selected = query[(query['main_id'] == source)
+                             & (query['flux.filter'] == band)]
+            bibcode = ''
+            if len(selected):
+                row = selected[0]
+                if not np.ma.is_masked(row['flux']):
+                    values[i] = row['flux']
+                if not np.ma.is_masked(row['flux_err']):
+                    errors[i] = row['flux_err']
+                if not np.ma.is_masked(row['flux.bibcode']):
+                    bibcode = string_fix(row['flux.bibcode'])
+            bibcodes.append(bibcode)
+        result[f'FLUX_{band}'] = values
+        result[f'FLUX_ERROR_{band}'] = errors
+        result[f'FLUX_BIBCODE_{band}'] = bibcodes
+    return result
+
+
 def _simbad_query_id(ra, dec, limit_angle, name_order=None):
     """Query name ids for a star in Simbad. See simbad_query_id.
 
@@ -60,9 +94,12 @@ def _simbad_query_id(ra, dec, limit_angle, name_order=None):
                                                     unit=(u.degree, u.degree)),
                            radius=limit_angle)
 
-    if q is not None:
-        name = string_fix(q['MAIN_ID'][0])
-        ids = _timeout_retry(s.query_objectids, name)['ID']
+    if q is not None and len(q):
+        key = 'main_id' if 'main_id' in q.colnames else 'MAIN_ID'
+        name = string_fix(q[key][0])
+        identifiers = _timeout_retry(s.query_objectids, name)
+        key = 'id' if 'id' in identifiers.colnames else 'ID'
+        ids = identifiers[key]
         for i in name_order:
             if i == 'MAIN_ID':
                 return _strip_spaces(name)
@@ -146,17 +183,29 @@ class SimbadSourcesCatalog(_OnlineSourcesCatalog):
 
     def _setup_catalog(self):
         self._s = Simbad()
-        self._s.add_votable_fields('pm')
-        self._s.ROW_LIMIT = 0
-        for filt in self.filters:
-            self._s.add_votable_fields(f'fluxdata({filt})')
+        self._tap = hasattr(type(self._s), 'tap')
+        if self._tap:
+            self._s.ROW_LIMIT = -1
+            self._s.add_votable_fields('pmra', 'pmdec', 'coo_bibcode')
+            if self.filters:
+                self._s.add_votable_fields('flux')
+        else:
+            self._s.add_votable_fields('pm')
+            self._s.ROW_LIMIT = 0
+            for filt in self.filters:
+                self._s.add_votable_fields(f'fluxdata({filt})')
 
     def _do_query(self):
         # We query everything in J2000 and query propermotion too
+        kwargs = {} if self._tap else {'epoch': 'J2000'}
         self._query = astroquery_query(self._s.query_region,
                                        self._center,
-                                       radius=self._radius,
-                                       epoch='J2000')
+                                       radius=self._radius, **kwargs)
+        if self._tap:
+            self._query = _normalize_tap_result(self._query, self.filters)
+            coords = SkyCoord(self._query['RA'], self._query['DEC'], unit='deg')
+            order = np.argsort(coords.separation(self._center))
+            self._query = self._query[order]
         ids = np.array([string_fix(i) for i in self._query['MAIN_ID']])
         for band in self.filters:
             if self._mags_table is None:
@@ -168,7 +217,7 @@ class SimbadSourcesCatalog(_OnlineSourcesCatalog):
             self._mags_table[f'{band}_error'] = mags_error
 
         sk = SkyCoord(self._query['RA'], self._query['DEC'],
-                      unit=('hourangle', 'degree'),
+                      unit=('degree' if self._tap else 'hourangle', 'degree'),
                       pm_ra_cosdec=self._query['PMRA'],
                       pm_dec=self._query['PMDEC'],
                       obstime='J2000.0', frame='icrs')
