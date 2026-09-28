@@ -244,8 +244,9 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto',
     -------
     res_ap : `~astropy.table.Table`
         Table containing all aperture photometry informations.
+
         - ``x``, ``y``: centroids of the sources. If recentering is performed,
-            these values will be different from input.
+          these values will be different from input.
         - ``aperture``: aperture radius. Same for all sources.
         - ``flux``: flux of the sources with bkg subtracted
         - ``flux_error``: flux error of the sources with bkg subtracted
@@ -257,7 +258,9 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto',
           clipping)
         - ``flags``: flag for the sources
         - ``original_x``, ``original_y``: original input positions
+
         The metadata of the table will contain the following information:
+
         - ``photutils``: photutils version used
         - ``astropy``: astropy version used
         - ``astropop``: astropop version used

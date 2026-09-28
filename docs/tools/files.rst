@@ -181,7 +181,7 @@ Filtering and Grouping Files
 The main usage of |FitsFileGroup| is to filter, sort and organize FITS files. There are two ways to organize this files: filtering by certaing keyword values or grouping the files by certain keywords. Both return a new |FitsFileGroup| object.
 
 Filtering by Keyword Values
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The method `~astropop.file_colletcion.FitsFileGroup.filtered` receives a dictionary with the keywords and values to filter the files. So, a new |FitsFileGroup| will be created with only the matched files for all the keywords.
 
@@ -210,7 +210,7 @@ The method `~astropop.file_colletcion.FitsFileGroup.filtered` receives a diction
     Out[27]: <Table length=0>
 
 Grouping Files
-~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^
 
 If you want to not only generate a group of files from a single set of keyword valeus, but instead generate multiple groups of files that have the same values in a set of keywords, you can use the `~astropop.file_colletcion.FitsFileGroup.grouped_by` method. This method `yeilds <https://docs.python.org/3/reference/expressions.html#yield-expressions>`_ a new |FitsFileGroup| object for each group of files.
 

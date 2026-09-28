@@ -21,7 +21,7 @@ This code can be very fast if enough information about the field is needed. But,
 An online service is also available at `nova.astrometry.net <https://nova.astrometry.net>`_ and can be accessed by python using `astroquery.astrometry_net <https://astroquery.readthedocs.io/en/latest/astrometry_net/astrometry_net.html>`_ interface. This is recomended for who don't want to download the index files.
 
 Installing astrometry.net
-~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 `astrometry.net`_ is a C written language that runs in command line. Currently, it only is supported on Linux and Mac. Windows is not supported by the developers. Due to this, its install is a bit tricky and, for most users, it may envolve building from the code. Detailed instructions about building and installing from the code or Linux distribution-specific installs can be found in `astrometry.net installing read-me <http://astrometry.net/doc/build.html#build>`_.
 
@@ -38,7 +38,7 @@ or, withing a specific separated environment, use:
     conda install -n <environment_name> -c conda-forge astrometry
 
 Index files
-~~~~~~~~~~~
+^^^^^^^^^^^
 
 There are several sets of pre-built index files that can be used to run `astrometry.net`_. They are listed in `<http://data.astrometry.net/>`_. For more informations about how to download it, see `astrometry.net indexes read-me <http://astrometry.net/doc/readme.html#getting-index-files>`_.
 
@@ -56,7 +56,7 @@ There is two ways to run the `astrometry.net`_ code inside |astropop|. Using a c
 All of them run the code in a similar way, giving the result in the same format.
 
 Solution Format
-~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^
 
 The `astrometry.net`_ outputs several files, including plots, but, considering the astrometric solution itself, just a few of them are really useful. So, we decided to store this solution in a |AstrometricSolution| container. It contains:
 
@@ -78,7 +78,7 @@ To manually build an |AstrometricSolution| container, you just need to pass the 
     print(solution.wcs)
 
 Class-like interface
-~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^
 
 .. |solve_field| replace:: `~astropop.astrometry.AstrometrySolver.solve_field`
 
@@ -198,7 +198,7 @@ Also, you can pass any parameter of ``astrometry.cfg`` file to the options. Thes
 Additional Python inputs, like |ImageHDU|, |FrameData|, and ``(x, y, flux)`` arrays are supported trough hepler functions, described in the section bellow.
 
 Type-specific helper functions
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Helper functions to handle some common Python formats are provided to make easy solving the fields directly from these objects, without manual save of files.
 
@@ -216,7 +216,7 @@ Each function has its own specific arguments, but all of them have the same opti
 - Any ``**kwargs`` keyword argument: passed to |run_command| function, like ``stdout``, ``stderr`` and log levels.
 
 Supported ``solve-field`` options
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The |astropop| `astrometry.net`_ wrapper don't support all `solve-field` command-line interface options.
 

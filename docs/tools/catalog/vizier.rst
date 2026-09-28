@@ -13,7 +13,6 @@ Several VizieR catalogs are useful for astrometric and photometric calibration. 
 To access an specific pre-defined catalog, just use ``vizier.<<catalog_name>>`` with the query parameters. Like, if you want to query the UCAC4 catalog for the sources in a 2 arcmin radius around the coordinates of the Crab Nebula, you can do:
 
 .. code-block:: python
-    :okwarning:
 
     from astropop.catalogs import vizier
     catalog = vizier.ucac4('M1', radius='2 arcmin', band=['B', 'V'])

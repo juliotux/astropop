@@ -60,6 +60,7 @@ def segfind(data, threshold, background, noise, mask=None, fwhm=None, npix=5,
     sources: `astropy.table.Table`
         Table with the sources found. The table will contain the following
         columns:
+
         - ``id``: source ID
         - ``x``, ``y``: x and y coordinates of the source centroid
         - ``xcentroid``, ``ycentroid``: same as ``x`` and ``y``
@@ -234,6 +235,7 @@ def daofind(data, threshold, background, noise, fwhm,
     sources: `astropy.table.Table`
         Table with the sources found. The table will contain the following
         columns:
+
         - ``id``: source ID
         - ``x``, ``y``: x and y coordinates of the source centroid
         - ``xcentroid``, ``ycentroid``: same as ``x`` and ``y``
@@ -369,6 +371,7 @@ def starfind(data, threshold, background, noise, fwhm=None, mask=None,
     sources: `astropy.table.Table`
         Table with the sources found. The table will contain the following
         columns:
+
         - ``id``: source ID
         - ``x``, ``y``: x and y coordinates of the source centroid
         - ``xcentroid``, ``ycentroid``: same as ``x`` and ``y``
