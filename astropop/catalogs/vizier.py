@@ -68,6 +68,10 @@ class VizierSourcesCatalog(_OnlineSourcesCatalog):
         self._table = self._conf['table']
         self._available_filters = self._get_available_filters()
         self._columns = self._conf['columns'] + self._get_mag_columns()
+        original_names = {alias: original for original, alias in
+                          self._conf.get('column_aliases', {}).items()}
+        self._columns = [original_names.get(column, column)
+                         for column in self._columns]
 
         self._setup_catalog()
         super().__init__(*args, **kwargs)
@@ -173,6 +177,11 @@ class VizierSourcesCatalog(_OnlineSourcesCatalog):
         if len(q) == 0:
             raise RuntimeError('An error occured during online query.')
         self._query = q[0]
+        # Recent Astroquery keeps the original VizieR column names instead
+        # of converting punctuation and leading digits to underscores.
+        for original, alias in self._conf.get('column_aliases', {}).items():
+            if original in self._query.colnames and alias not in self._query.colnames:
+                self._query.rename_column(original, alias)
         ids = self._filter_ids(self._query)
 
         # perform magnitude filtering only if available

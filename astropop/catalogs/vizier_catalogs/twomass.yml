@@ -3,6 +3,8 @@ table: 'II/246/out'
 bibcode: '2003yCat.2246....0C'
 description: '2MASS All-Sky Catalog of Point Sources (Cutri+ 2003)'
 columns: ['+_r', '**']
+column_aliases:
+  2MASS: _2MASS
 available_filters: {
   'J': '2MASS J magnitude (1.2um)',
   'H': '2MASS H magnitude (1.6um)',
