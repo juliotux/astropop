@@ -20,11 +20,7 @@ jobs:
     with:
       cache-path: ~/.astropy
       envs: |
-        - linux: py38-test-olddeps-online
-          cache-key: ${{ github.ref }}-py38lin-astropycache
-        - linux: py39-test-online
-          cache-key: ${{ github.ref }}-py39lin-astropycache
-        - linux: py310-test-online
+        - linux: py310-test-olddeps-online
           cache-key: ${{ github.ref }}-py310lin-astropycache
         - linux: py311-test-online
           cache-key: ${{ github.ref }}-py311lin-astropycache
@@ -32,6 +28,8 @@ jobs:
           cache-key: ${{ github.ref }}-py312lin-astropycache
         - linux: py313-test-online
           cache-key: ${{ github.ref }}-py313lin-astropycache
+        - linux: py314-test-online
+          cache-key: ${{ github.ref }}-py314lin-astropycache
 
   build_docs:
     uses: OpenAstronomy/github-actions-workflows/.github/workflows/tox.yml@v1
@@ -70,14 +68,12 @@ jobs:
         path: ${{ env.CONDA }}/envs
         key:
           ${{ github.ref }}-${{ runner.os }}-${{ runner.arch }}-${{ steps.get-date.outputs.today }}-conda-envs-${{ hashFiles('pyproject.toml') }}
-    - uses: conda-incubator/setup-miniconda@v2
+    - uses: conda-incubator/setup-miniconda@v4
       with:
-        miniforge-variant: Mambaforge
         miniforge-version: latest
         activate-environment: astropop
-        use-mamba: true
-        mamba-version: "*"
-        channels: conda-forge,defaults
+        channels: conda-forge
+        conda-remove-defaults: true
         python-version: "3.12"
     - name: Cache astropy cache
       uses: actions/cache@v3
@@ -89,7 +85,7 @@ jobs:
     - name: Install dependencies
       shell: bash -l {0}
       run: |
-        mamba install -y -q pytest astrometry \
+        conda install -y -q pytest astrometry \
                             astropy scipy numpy matplotlib \
                             scikit-image scikit-learn \
                             sep astroquery

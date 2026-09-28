@@ -12,13 +12,13 @@ jobs:
     name: Build and publish to PyPi
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@v6
       with:
         fetch-depth: 0
-    - name: Set up Python 3.9
-      uses: actions/setup-python@v1
+    - name: Set up Python 3.13
+      uses: actions/setup-python@v6
       with:
-        python-version: 3.9
+        python-version: '3.13'
     - name: Install pypa/build
       run: >-
         python -m

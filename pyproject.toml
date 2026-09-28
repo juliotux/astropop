@@ -7,7 +7,7 @@ authors = [
 license = {text = "BSD-3-Clause"}
 description = "Astronomical Polarimetry and Photometry Pipeline"
 readme = "README.rst"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 classifiers = [
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: BSD License",
@@ -30,13 +30,14 @@ keywords = [
     "astrometry"
 ]
 dependencies = [
-    "astropy>=4.3",
-    "numpy>=1.17",
-    "scipy>=1.6",
+    "astropy>=5.0",
+    "numpy>=1.21.6",
+    "scipy>=1.7.3",
     "astroquery",
     "scikit-image",
     "scikit-learn",
-    "photutils>=1.7",
+    # Source morphology subclasses the pre-3.0 SourceCatalog implementation.
+    "photutils>=1.7,<3",
     "pytz",
     "pyyaml",
     "astroscrappy",
@@ -57,6 +58,7 @@ test = [
     "pytest-rerunfailures"
 ]
 docs = [
+    "matplotlib",
     "ipython",
     "ipykernel",
     "sphinx",
@@ -143,6 +145,10 @@ exclude_lines = [
 
 [tool.pycodestyle]
 max-line-length = 120
+
+[tool.ruff.lint]
+# Keep the original Ruff checks stable when its default selection changes.
+select = ["E4", "E7", "E9", "F"]
 
 [tool.pydocstyle]
 convention = "numpy"

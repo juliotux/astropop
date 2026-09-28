@@ -23,19 +23,18 @@ jobs:
       libraries: |
         apt:
           - tzdata
-          - libopenblas-base
           - libopenblas-dev
       envs: |
-        - name: (Allowed Failure) Python 3.12 with dev version of deps
-          linux: py313-test-devdeps-online
-          python-version: 3.13-dev
-
         - name: (Allowed Failure) Python 3.13 with dev version of deps
           linux: py313-test-devdeps-online
-          python-version: 3.12
+          python-version: '3.13'
 
-        - macos: py312-test-online
-          cache-key: ${{ github.ref }}-py312mac-astropycache
+        - name: (Allowed Failure) Python 3.14 with dev version of deps
+          linux: py314-test-devdeps-online
+          python-version: '3.14'
 
-        - windows: py312-test-online
-          cache-key: ${{ github.ref }}-py312win-astropycache
+        - macos: py313-test-online
+          cache-key: ${{ github.ref }}-py313mac-astropycache
+
+        - windows: py313-test-online
+          cache-key: ${{ github.ref }}-py313win-astropycache
