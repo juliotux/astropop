@@ -186,12 +186,12 @@ class Test_CheckRead_FrameData:
                                  hdu_uncertainty=uncert_name,
                                  hdu_mask=mask_name,
                                  unit_key='astrunit',
-                                 use_memmap_backend=mmap)
+                                 use_memmap_backend=mmap, cache_folder=tmp_path)
             fr = read_framedata(n, hdu=data_name, unit=None,
                                 hdu_uncertainty=uncert_name,
                                 hdu_mask=mask_name,
                                 unit_key='astrunit',
-                                use_memmap_backend=mmap)
+                                use_memmap_backend=mmap, cache_folder=tmp_path)
             for f in (fc, fr):
                 assert_is_instance(f, FrameData)
                 assert_equal(f.data, data)
@@ -202,7 +202,7 @@ class Test_CheckRead_FrameData:
                 assert_equal(f.mask, mask)
                 assert_equal(f._memmapping, mmap)
 
-    def test_check_framedata_ccddata(self):
+    def test_check_framedata_ccddata(self, tmp_path):
         data = _random_array.copy()
         header = DEFAULT_HEADER.copy()
         unit = 'adu'
@@ -215,8 +215,8 @@ class Test_CheckRead_FrameData:
                       mask=mask, meta=header)
 
         for mmap in [False, True]:
-            fc = check_framedata(ccd, use_memmap_backend=mmap)
-            fr = read_framedata(ccd, use_memmap_backend=mmap)
+            fc = check_framedata(ccd, use_memmap_backend=mmap, cache_folder=tmp_path)
+            fr = read_framedata(ccd, use_memmap_backend=mmap, cache_folder=tmp_path)
             for f in (fc, fr):
                 assert_is_instance(f, FrameData)
                 assert_equal(f.data, data)
@@ -225,11 +225,11 @@ class Test_CheckRead_FrameData:
                 assert_equal(f.mask, mask)
                 assert_equal(f._memmapping, mmap)
 
-    def test_check_framedata_quantity(self):
+    def test_check_framedata_quantity(self, tmp_path):
         data = _random_array.copy()*u.Unit('adu')
         for mmap in [False, True]:
-            fc = check_framedata(data, use_memmap_backend=mmap)
-            fr = read_framedata(data, use_memmap_backend=mmap)
+            fc = check_framedata(data, use_memmap_backend=mmap, cache_folder=tmp_path)
+            fr = read_framedata(data, use_memmap_backend=mmap, cache_folder=tmp_path)
             for f in (fc, fr):
                 assert_is_instance(f, FrameData)
                 assert_equal(f.data, _random_array)
@@ -240,12 +240,12 @@ class Test_CheckRead_FrameData:
                 assert_is_none(f.wcs)
                 assert_equal(f._memmapping, mmap)
 
-    def test_check_framedata_nparray(self):
+    def test_check_framedata_nparray(self, tmp_path):
         data = _random_array.copy()
 
         for mmap in [False, True]:
-            fc = check_framedata(data, use_memmap_backend=mmap)
-            fr = read_framedata(data, use_memmap_backend=mmap)
+            fc = check_framedata(data, use_memmap_backend=mmap, cache_folder=tmp_path)
+            fr = read_framedata(data, use_memmap_backend=mmap, cache_folder=tmp_path)
             for f in (fc, fr):
                 assert_is_instance(f, FrameData)
                 assert_equal(f.data, _random_array)
@@ -256,15 +256,15 @@ class Test_CheckRead_FrameData:
                 assert_is_none(f.wcs)
                 assert_equal(f._memmapping, mmap)
 
-    def test_check_framedata_qfloat(self):
+    def test_check_framedata_qfloat(self, tmp_path):
         data = _random_array.copy()
         unit = 'adu'
         uncert = 0.1*np.ones_like(_random_array)
         qf = QFloat(data, uncert, unit)
 
         for mmap in [False, True]:
-            fc = check_framedata(qf, use_memmap_backend=mmap)
-            fr = read_framedata(qf, use_memmap_backend=mmap)
+            fc = check_framedata(qf, use_memmap_backend=mmap, cache_folder=tmp_path)
+            fr = read_framedata(qf, use_memmap_backend=mmap, cache_folder=tmp_path)
             for f in (fc, fr):
                 assert_is_instance(f, FrameData)
                 assert_equal(f.data, data)

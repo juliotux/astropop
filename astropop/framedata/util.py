@@ -8,6 +8,7 @@ from astropy.units import Quantity
 from astropy.nddata import CCDData
 
 from .framedata import FrameData
+from ..config import AstropopConfig as conf
 from ._compat import _extract_ccddata, _extract_fits, imhdus
 
 
@@ -65,7 +66,8 @@ def read_framedata(obj, copy=False, **kwargs):
     elif obj.__class__.__name__ == "QFloat":
         # if not do this, a cyclic dependency breaks the code.
         obj = FrameData(obj.nominal, unit=obj.unit,
-                        uncertainty=obj.uncertainty, **kwargs)
+                        uncertainty=(None if conf.FRAMEDATA_DISABLE_UNCERTAINTY
+                                     else obj.uncertainty), **kwargs)
     else:
         raise TypeError(f'Object {obj} is not compatible with FrameData.')
 

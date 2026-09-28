@@ -1,113 +1,105 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
-"""Managing the cache folder for FrameData memmaping."""
+"""Manage owned temporary files without removing unrelated user files."""
 
 import os
-import atexit
-import shutil
-
-from astropy.config import get_cache_dir
-
-from ..logger import logger
+import tempfile
+import weakref
 
 
 __all__ = ['CacheManager']
 
 
-class CacheManager:
-    """Manage the cache folder for FrameData memmaping.
+def _cleanup(path, files, remove_directory):
+    """Clean up only files reserved by this manager; safe to call repeatedly."""
+    for basename in list(files):
+        filename = os.path.join(path, basename)
+        try:
+            stat = os.stat(filename, follow_symlinks=False)
+            if (stat.st_dev, stat.st_ino) == files[basename]:
+                os.remove(filename)
+        except FileNotFoundError:
+            pass
+        del files[basename]
+    if remove_directory:
+        try:
+            os.rmdir(path)
+        except (FileNotFoundError, OSError):
+            # Never recursively delete a folder: it may contain unrelated files.
+            pass
 
-    Parameters
-    ----------
-    cache_folder : str, optional
-        The cache folder to use. If None, use the default astropop cache folder.
-    delete_on_exit : bool, optional
-        If True, delete the cache folder on exit. Default is True.
+
+class CacheManager:
+    """Own temporary files in a cache directory.
+
+    Existing directories are preserved. Only files created by ``add_file``
+    are removed, at cleanup or garbage collection (and at process exit).
+    ``delete_on_exit=False`` retains both the directory and its files.
     """
 
     def __init__(self, cache_folder=None, delete_on_exit=True):
         if cache_folder is None:
-            cache_folder = os.path.join(get_cache_dir(),
-                                        'astropop_cache',
-                                        os.urandom(8).hex())
-
+            cache_folder = tempfile.mkdtemp(prefix='astropop-cache-')
+            owns_directory = True
+        else:
+            cache_folder = os.path.abspath(os.fspath(cache_folder))
+            try:
+                os.makedirs(cache_folder)
+                owns_directory = True
+            except FileExistsError:
+                if not os.path.isdir(cache_folder):
+                    raise
+                owns_directory = False
         self._cache_folder = os.path.abspath(cache_folder)
-        self._files = []
+        self._files = {}
         self._delete_on_exit = delete_on_exit
-
-        # ensure cache folder is created
-        os.makedirs(self.path, exist_ok=True)
-        logger.debug('Cache folder created: %s', self.path)
-
-        # ensure delete on exit if necessary
-        atexit.register(self._cleanup)
+        self._finalizer = weakref.finalize(
+            self, _cleanup, self.path, self._files, owns_directory)
+        if not delete_on_exit:
+            self._finalizer.detach()
 
     @property
     def path(self):
-        """The cache folder path."""
-        return str(self._cache_folder)
+        """Absolute cache directory path."""
+        return self._cache_folder
 
     @property
     def managed_files(self):
-        """List of files in the cache folder."""
+        """Basenames of files reserved by this manager."""
         return list(self._files)
 
     @property
     def listdir(self):
-        """List of files in the cache folder."""
-        return os.listdir(self.cache_folder)
+        """All entries in the cache directory."""
+        return os.listdir(self.path)
 
     def add_file(self, basename):
-        """Add a file to this cache folder.
-
-        Parameters
-        ----------
-        basename : str
-            The basename of the file to add to the cache folder.
-
-        Returns
-        -------
-        str
-            The full path to the file in the cache folder.
-        """
-        if os.path.basename(basename) != basename:
+        """Reserve a file, refusing to overwrite an existing unowned file."""
+        basename = os.fspath(basename)
+        if basename in ('', '.', '..') or os.path.basename(basename) != basename:
             raise ValueError('basename must be a file name, not a path')
-
-        logger.debug('Adding file to cache: %s', basename)
-        self._files.append(basename)
-        return os.path.join(self.cache_folder, basename)
+        path = os.path.join(self.path, basename)
+        if basename in self._files and os.path.lexists(path):
+            stat = os.stat(path, follow_symlinks=False)
+            if (stat.st_dev, stat.st_ino) != self._files[basename]:
+                raise FileExistsError(f'Cache file was replaced: {path}')
+            return path
+        with open(path, 'xb') as stream:
+            stat = os.fstat(stream.fileno())
+            self._files[basename] = (stat.st_dev, stat.st_ino)
+        return path
 
     def remove_file(self, basename):
-        """Remove a file from this cache folder.
-
-        Parameters
-        ----------
-        basename : str
-            The basename of the file to remove from the cache folder.
-        """
-        basename = os.path.basename(basename)
+        """Remove a managed file, including its ownership record."""
         if basename not in self._files:
-            raise ValueError('File not in cache folder: %s' % basename)
-
-        logger.debug('Removing file from cache: %s', basename)
-        self._files.remove(basename)
-        os.remove(os.path.join(self.path, basename))
+            raise ValueError(f'File not in cache folder: {basename}')
+        _cleanup(self.path, {basename: self._files.pop(basename)}, False)
 
     def _cleanup(self):
-        if self._delete_on_exit:
-            for f in self._files:
-                self.remove_file(f)
-            if len(self.listdir) == 0:
-                logger.info('Removing cache folder: %s', self.path)
-                shutil.rmtree(self.path)
-                return
-            logger.warning('Cache folder not empty: %s', self.path)
-        logger.info('Cache folder not removed: %s', self.path)
-
-    def __del__(self):
-        self._cleanup()
+        """Release owned files once, unless retention was requested."""
+        self._finalizer()
 
     def __str__(self):
-        return str(self.path)
+        return self.path
 
     def __repr__(self):
         return f'<CacheManager: {self.path}>'

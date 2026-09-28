@@ -15,6 +15,7 @@ from astropy.nddata import StdDevUncertainty, VarianceUncertainty, \
 from astropy import units as u
 
 
+from ..config import AstropopConfig as conf
 from ..logger import logger
 from ..fits_utils import imhdus, string_to_header_key
 
@@ -199,12 +200,12 @@ def _extract_fits(obj, hdu=0, unit=None, hdu_uncertainty=_HDU_UNCERT,
             raise ValueError('unit and unit_key got incompatible results.')
         res['unit'] = unit_h
 
-    if hdu_uncertainty in hdul:
+    if not conf.FRAMEDATA_DISABLE_UNCERTAINTY and hdu_uncertainty in hdul:
         hdu_unct = hdul[hdu_uncertainty]
         logger.debug('Uncertainty hdu found. Assuming standard uncertainty.')
         res['uncertainty'] = hdu_unct.data
 
-    if hdu_mask in hdul:
+    if not conf.FRAMEDATA_DISABLE_FLAGS and hdu_mask in hdul:
         hdu_mask = hdul[hdu_mask]
         res['mask'] = hdu_mask.data
 
@@ -219,9 +220,13 @@ def _extract_fits(obj, hdu=0, unit=None, hdu_uncertainty=_HDU_UNCERT,
 def _extract_ccddata(ccd):
     """Extract data and meta from CCDData objects."""
     res = {}
-    for i in ('data', 'unit', 'meta', 'mask'):
+    for i in ('data', 'unit', 'meta'):
         res[i] = cp.copy(getattr(ccd, i))
 
+    res['mask'] = None if conf.FRAMEDATA_DISABLE_FLAGS else cp.copy(ccd.mask)
+    if conf.FRAMEDATA_DISABLE_UNCERTAINTY:
+        res['uncertainty'] = None
+        return res
     uunit = None
     uncert = ccd.uncertainty
     if uncert is None:
@@ -255,7 +260,9 @@ def _to_ccddata(frame):
     uncertainty = frame._unct
     if uncertainty is not None:
         uncertainty = StdDevUncertainty(uncertainty, unit=unit)
-    mask = np.array(frame.mask)
+    mask = frame.mask
+    if mask is not None:
+        mask = np.array(mask)
 
     return CCDData(data, unit=unit, meta=meta, wcs=wcs,
                    uncertainty=uncertainty, mask=mask)
@@ -297,8 +304,9 @@ def _to_hdu(frame, hdu_uncertainty=_HDU_UNCERT, hdu_flags=_HDU_FLAGS,
                                   name=hdu_uncertainty))
 
     if hdu_mask:
-        mask = frame.mask.astype(np.uint8)
+        mask = frame.mask
         if mask is not None:
+            mask = mask.astype(np.uint8)
             mask_h = fits.Header()
             hdul.append(fits.ImageHDU(mask, header=mask_h, name=hdu_mask))
 

@@ -216,11 +216,11 @@ class TestFrameDataGetSetUncertainty:
         frame = create_framedata(uncertainty=np.ones(shp))
         assert_equal(frame.get_uncertainty(False), np.ones(shp))
 
-    def test_set_uncertainty_memmapped(self):
+    def test_set_uncertainty_memmapped(self, tmp_path):
         # test that setting uncertainty on a memmapped FrameData
         # does not change the data
         frame = create_framedata()
-        frame.enable_memmap()
+        frame.enable_memmap(cache_folder=tmp_path)
         frame.uncertainty = np.ones_like(frame.data)
         assert_equal(frame.uncertainty, np.ones_like(frame.data))
 
@@ -257,11 +257,11 @@ class TestFrameDataGetSetFlags:
         with pytest.raises(ValueError):
             frame.flags = 'not a flags'
 
-    def test_set_uncertainty_memmapped(self):
+    def test_set_uncertainty_memmapped(self, tmp_path):
         # test that setting uncertainty on a memmapped FrameData
         # does not change the data
         frame = create_framedata()
-        frame.enable_memmap()
+        frame.enable_memmap(cache_folder=tmp_path)
         frame.flags = np.ones_like(frame.data, dtype='uint8')
         assert_equal(frame.flags, np.ones_like(frame.data))
 

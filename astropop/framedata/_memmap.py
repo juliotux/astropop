@@ -118,6 +118,7 @@ def reset_memmap_array(array, data, dtype=None):
     # return according memmap
     if isinstance(array, np.memmap):
         name = array.filename
-        array = delete_array_memmap(array, read=False, remove=True)
+        # Keep the reserved file (and its inode) owned by the cache manager.
+        # create_array_memmap copies the values before rewriting the file.
         return create_array_memmap(name, data, dtype)
     return np.array(data, dtype=dtype)
