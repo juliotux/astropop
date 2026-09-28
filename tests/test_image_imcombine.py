@@ -996,3 +996,23 @@ class Test_ImCombiner_HeaderMerging():
                         merge_header_keys=keys)
         for k, v in expect.items():
             assert_equal(res.meta[k], v)
+
+
+@pytest.mark.parametrize('skip', [False, True])
+@pytest.mark.parametrize('normalize', [False, True])
+def test_rejected_samples_do_not_contribute_uncertainty(monkeypatch, skip, normalize):
+    from astropop.config import AstropopConfig
+
+    frames = [FrameData(np.full((3, 4), value), uncertainty=error)
+              for value, error in [(1, 3), (2, 4), (100, 1000)]]
+    monkeypatch.setattr(AstropopConfig, 'IMARITH_SKIP_UNCERTAINTY', skip)
+    combiner = ImCombiner()
+    combiner.set_minmax_clip(0, 10)
+    result = combiner.combine(frames, 'sum', sum_normalize=normalize)
+    factor = 1.5 if normalize else 1
+    np.testing.assert_allclose(result.data, 3*factor)
+    if skip:
+        assert result.uncertainty is None
+    else:
+        np.testing.assert_allclose(result.uncertainty, 5*factor)
+    np.testing.assert_array_equal(frames[-1].uncertainty, 1000)

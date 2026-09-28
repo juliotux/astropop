@@ -466,6 +466,8 @@ class ImCombiner:
 
         mask = np.logical_or(np.isnan(self._buffer), mask)
         self._buffer[mask] = np.nan
+        if self._unct_bf is not None:
+            self._unct_bf[mask] = np.nan
 
     def _combine(self, method, **kwargs):
         """Process the combine and compute the uncertainty."""
