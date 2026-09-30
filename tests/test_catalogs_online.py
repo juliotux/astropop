@@ -2,15 +2,22 @@
 # flake8: noqa: F403, F405
 
 import os
+import copy
+import socket
+from types import SimpleNamespace
+from unittest.mock import Mock
 import pytest
+import yaml
 import numpy as np
-from astropy.table import Table
+from astropy.table import Table, MaskedColumn
 from astropy.coordinates import SkyCoord, Angle
 from astropy import units as u
 from astropy.time import Time
-from astropop.catalogs.simbad import SimbadSourcesCatalog, simbad_query_id
+from astropop.catalogs.simbad import SimbadSourcesCatalog, simbad_query_id, \
+                                      _normalize_tap_result
 from astropop.catalogs import vizier
-from astropop.catalogs.gaia import GaiaDR3SourcesCatalog
+from astropop.catalogs.gaia import Gaia, GaiaDR3SourcesCatalog, \
+                                    _gaia_query_timeout
 from astropop.catalogs._online_tools import _timeout_retry, \
                                             _fix_query_table, \
                                             get_center_radius, \
@@ -316,6 +323,82 @@ class Test_DummySourcesCatalog:
             c = D(sirius_coords[-1], search_radius[0], band='A')
 
 
+class Test_SimbadTAP:
+    def test_tap_flux_rows_preserve_source_order_filters_and_missing_values(self):
+        query = Table({'main_id': ['z', 'z', 'a'],
+                       'ra': [20., 20., 10.], 'dec': [-2., -2., -1.],
+                       'pmra': [1., 1., 2.], 'pmdec': [3., 3., 4.],
+                       'coo_bibcode': ['coords-z', 'coords-z', 'coords-a'],
+                       'flux.filter': ['R', 'r', 'R'],
+                       'flux': [4., 5., 6.],
+                       'flux.bibcode': ['upper', 'lower', 'other']})
+        query['flux_err'] = MaskedColumn([0.1, 0.2, 999.], mask=[False, False, True])
+        original = query.copy()
+        result = _normalize_tap_result(query, ['R', 'r', 'V'])
+        assert list(result['MAIN_ID']) == ['z', 'a']
+        np.testing.assert_allclose(result['RA'], [20., 10.])
+        np.testing.assert_allclose(result['FLUX_R'], [4., 6.])
+        np.testing.assert_allclose(result['FLUX_r'], [5., np.nan])
+        np.testing.assert_allclose(result['FLUX_ERROR_R'], [0.1, np.nan])
+        assert list(result['FLUX_BIBCODE_R']) == ['upper', 'other']
+        assert list(result['FLUX_BIBCODE_r']) == ['lower', '']
+        assert np.all(np.isnan(result['FLUX_V']))
+        assert query.colnames == original.colnames
+        assert len(query) == 3
+
+    def test_tap_without_photometry(self):
+        query = Table({'main_id': ['star'], 'ra': [20.], 'dec': [-2.],
+                       'pmra': [1.], 'pmdec': [3.], 'coo_bibcode': ['reference']})
+        result = _normalize_tap_result(query, [])
+        assert list(result['MAIN_ID']) == ['star']
+        assert 'FLUX_V' not in result.colnames
+
+    def test_tap_catalog_sorts_sources_and_preserves_photometry(self, monkeypatch):
+        import importlib
+        from astropy import units as u
+        module = importlib.import_module('astropop.catalogs.simbad')
+
+        class Simbad:
+            tap = None
+
+            def add_votable_fields(self, *fields):
+                assert 'pm' not in fields
+
+            def query_region(self, center, radius):
+                assert self.ROW_LIMIT == -1
+                table = Table({'main_id': ['far', 'near'],
+                               'ra': [21., 20.], 'dec': [-2., -2.],
+                               'coo_bibcode': ['far-coords', 'near-coords'],
+                               'flux.filter': ['V', 'V'], 'flux': [8., 4.],
+                               'flux_err': [0.2, 0.1],
+                               'flux.bibcode': ['far-flux', 'near-flux']})
+                table['pmra'] = [1., 2.] * u.mas / u.yr
+                table['pmdec'] = [3., 4.] * u.mas / u.yr
+                return table
+
+        monkeypatch.setattr(module, 'Simbad', Simbad)
+        catalog = module.SimbadSourcesCatalog((20., -2.), '2 deg', band='V')
+        assert list(catalog.sources_id()) == ['near', 'far']
+        np.testing.assert_allclose(catalog.mag_list('V'), [[4., 0.1], [8., 0.2]])
+        assert list(catalog.magnitudes_bibcode('V')) == ['near-flux', 'far-flux']
+        assert list(catalog.coordinates_bibcode()) == ['near-coords', 'far-coords']
+
+    def test_identifier_prefix_does_not_match_double_star(self, monkeypatch):
+        import importlib
+        module = importlib.import_module('astropop.catalogs.simbad')
+
+        class Simbad:
+            def query_region(self, center, radius):
+                return Table({'main_id': ['* target'], 'ra': [20.], 'dec': [-2.]})
+
+            def query_objectids(self, name):
+                return Table({'id': ['** unrelated', '* target', 'NAME Target']})
+
+        monkeypatch.setattr(module, 'Simbad', Simbad)
+        assert module.simbad_query_id(20., -2., '1s', name_order=['*']) == 'target'
+        assert module.simbad_query_id(20., -2., '1s', name_order=['NAME']) == 'Target'
+
+
 @pytest.mark.flaky(reruns=5)
 @pytest.mark.remote_data
 class Test_Simbad():
@@ -437,6 +520,44 @@ class Test_SimbadQueryID:
         name = ['alf CMa', 'alf Ori', 'bet Cru']
         res = simbad_query_id(ra, dec, '2s')
         assert_equal(res, name)
+
+
+class Test_VizierAliases:
+    @pytest.mark.parametrize('legacy_names', [False, True])
+    def test_column_aliases_preserve_filter_api(
+            self, tmp_path, monkeypatch, legacy_names):
+        config = {'table': 'example', 'columns': ['+_r', '**'],
+                  'available_filters': {'g_': 'Sloan g'},
+                  'column_aliases': {"g'mag": 'g_mag', "e_g'mag": 'e_g_mag',
+                                     '2MASS': '_2MASS'},
+                  'coordinates': {'ra_column': 'RAJ2000', 'dec_column': 'DEJ2000'},
+                  'magnitudes': {'mag_column': '{band}mag',
+                                 'err_mag_column': 'e_{band}mag'},
+                  'ids': {'column': '_2MASS'}}
+        path = tmp_path / 'catalog.yml'
+        path.write_text(yaml.safe_dump(config))
+
+        class Vizier:
+            def __init__(self, catalog, columns):
+                assert "g'mag" in columns
+                assert 'g_mag' not in columns
+
+            def query_region(self, center, radius):
+                table = Table({'2MASS': ['source']})
+                table['RAJ2000'] = [20.] * u.deg
+                table['DEJ2000'] = [-2.] * u.deg
+                table["g'mag"] = [12.] * u.mag
+                table["e_g'mag"] = [0.1] * u.mag
+                if legacy_names:
+                    for raw, alias in config['column_aliases'].items():
+                        table.rename_column(raw, alias)
+                return [table]
+
+        monkeypatch.setattr(vizier, 'Vizier', Vizier)
+        result = vizier.VizierSourcesCatalog(path, (20., -2.), '1s')
+        assert result.filters == ['g_']
+        assert list(result.sources_id()) == ['source']
+        np.testing.assert_allclose(result.mag_list('g_'), [[12., 0.1]])
 
 
 @pytest.mark.flaky(reruns=5)
@@ -1017,6 +1138,164 @@ class Test_Tycho2VizierSourcesCatalog:
         assert_is_instance(s.center, SkyCoord)
         assert_is_instance(s.radius, Angle)
         assert_equal(s.filters, ['BT', 'VT'])
+
+
+class Test_GaiaDR3Sync:
+    """Check the async alternative offline, including the sync row-limit trap.
+
+    Mock the server so completeness and failure behavior remain testable when
+    Gaia itself is slow. These tests intentionally have no remote_data marker.
+    """
+
+    @staticmethod
+    def _catalog(mode='sync'):
+        # Bypass construction, which would resolve coordinates and query Gaia.
+        result = object.__new__(GaiaDR3SourcesCatalog)
+        result._query_mode = mode
+        result._max_g_mag = 12
+        result._g = Mock(MAIN_GAIA_TABLE='gaiadr3.gaia_source',
+                         MAIN_GAIA_TABLE_RA='ra', MAIN_GAIA_TABLE_DEC='dec')
+        return result
+
+    @staticmethod
+    def _page(start, count):
+        # Use integer IDs above 2**53 to catch rounding of the page cursor.
+        # Reverse the synthetic distances so ID order cannot pass as the final
+        # distance order. Units must survive stacking the pages too.
+        ids = np.arange(start, start + count, dtype=np.int64)
+        table = Table({'source_id': ids, 'ra': np.arange(count, dtype=float),
+                       'dist': np.arange(start + count, start, -1, dtype=np.int64)})
+        table['ra'].unit = 'deg'
+        return table
+
+    @staticmethod
+    def _query(cat, columns=('ra',)):
+        return cat._query_object(SkyCoord(10, -20, unit='deg'), .1, columns)
+
+    # Cover both sides of the 2000-row cap and exact multiples, which require
+    # a final empty page to establish completeness.
+    @pytest.mark.parametrize('count', [0, 1, 1999, 2000, 2001, 4000])
+    def test_sync_returns_every_page_and_sorts_by_distance(self, count):
+        cat = self._catalog()
+        start = 4923784391133336960
+        pages = [self._page(start + offset, min(2000, count - offset))
+                 for offset in range(0, count + 1, 2000)]
+        cat._g.launch_job.side_effect = [Mock(get_results=Mock(return_value=p))
+                                        for p in pages]
+        result = self._query(cat)
+        assert len(result) == count
+        assert result.colnames == ['ra', 'dist']
+        assert str(result['ra'].unit) == 'deg'
+        assert list(result['dist']) == sorted(result['dist'])
+        cat._g.launch_job_async.assert_not_called()
+        assert cat._g.launch_job.call_count == len(pages)
+        for i, call in enumerate(cat._g.launch_job.call_args_list):
+            sql = call.args[0]
+            assert 'SELECT TOP 2000' in sql
+            assert 'source_id ASC' in sql
+            assert 'phot_g_mean_mag < 12' in sql
+            assert '10.0, -20.0, 0.1' in sql
+            if i:
+                assert f'AND source_id > {start + i * 2000 - 1}' in sql
+            else:
+                assert 'source_id >' not in sql
+
+    def test_sync_retains_explicitly_requested_id(self):
+        cat = self._catalog()
+        cat._g.launch_job.return_value.get_results.return_value = self._page(123, 2)
+        result = self._query(cat, columns=('ra', 'source_id'))
+        assert 'source_id' in result.colnames
+
+    def test_sync_does_not_return_partial_data_on_failure(self):
+        # Page one succeeding must not hide a failure on page two. Falling
+        # back to async here would reintroduce the service path being avoided.
+        cat = self._catalog()
+        cat._g.launch_job.side_effect = [
+            Mock(get_results=Mock(return_value=self._page(123, 2000))),
+            TimeoutError('sync unavailable')]
+        with pytest.raises(TimeoutError, match='sync unavailable'):
+            self._query(cat)
+        cat._g.launch_job_async.assert_not_called()
+
+    def test_repeated_page_fails_instead_of_looping(self):
+        # A server returning the same full page must not grow the catalog with
+        # duplicates or keep requesting it until the network budget expires.
+        cat = self._catalog()
+        cat._g.launch_job.return_value.get_results.return_value = self._page(123, 2000)
+        with pytest.raises(RuntimeError, match='pagination stalled'):
+            self._query(cat)
+        assert cat._g.launch_job.call_count == 2
+
+    def test_async_path_keeps_original_launcher(self):
+        cat = self._catalog('async')
+        expected = object()
+        cat._g.launch_job_async.return_value.get_results.return_value = expected
+        assert self._query(cat) is expected
+        cat._g.launch_job.assert_not_called()
+        sql = cat._g.launch_job_async.call_args.args[0]
+        assert 'dist ASC' in sql
+        assert 'TOP 2000' not in sql
+        assert 'source_id' not in sql
+
+    def test_invalid_mode_rejected_before_query(self):
+        with pytest.raises(ValueError, match='query_mode'):
+            GaiaDR3SourcesCatalog((10, -20), .1, query_mode='invalid')
+
+
+class Test_GaiaDR3Timeout:
+    """Check deadline enforcement without waiting for a real Gaia outage."""
+
+    def test_timeout_is_local_to_copied_gaia_client(self, monkeypatch):
+        client = copy.deepcopy(Gaia)
+        handler = client._TapPlus__getconnhandler()._TapConn__connectionHandler
+        original = handler.get_connection
+        global_timeout = socket.getdefaulttimeout()
+        global_handler = Gaia._TapPlus__getconnhandler()._TapConn__connectionHandler
+        global_connection = global_handler.get_connection(ishttps=True)
+        original_connection_timeout = global_connection.timeout
+        global_connection.close()
+        # Advance a fake clock between connections: polling consumes one
+        # shared budget, while other Gaia users retain their original settings.
+        now = [10.]
+        monkeypatch.setattr('astropop.catalogs.gaia.time.monotonic', lambda: now[0])
+        with _gaia_query_timeout(client, timeout=5):
+            connection = handler.get_connection(ishttps=True)
+            assert connection.timeout == 5
+            now[0] = 14.
+            assert handler.get_connection(ishttps=True).timeout == 1
+            assert socket.getdefaulttimeout() == global_timeout
+            global_connection = global_handler.get_connection(ishttps=True)
+            assert global_connection.timeout is original_connection_timeout
+            global_connection.close()
+            now[0] = 15.
+            with pytest.raises(TimeoutError, match='Gaia query'):
+                handler.get_connection(ishttps=True)
+        assert handler.get_connection == original
+
+    def test_expired_retry_cannot_create_another_connection(self, monkeypatch):
+        now = [0.]
+        monkeypatch.setattr('astropop.catalogs.gaia.time.monotonic', lambda: now[0])
+        connection = Mock()
+        factory = Mock(return_value=connection)
+        handler = SimpleNamespace(get_connection=factory)
+        client = Mock()
+        client._TapPlus__getconnhandler.return_value = SimpleNamespace(
+            _TapConn__connectionHandler=handler)
+
+        def stalled_query():
+            # Model a socket wait consuming the entire remaining budget. The
+            # existing retry helper may call again, but must not open another
+            # connection after expiry (and therefore cannot resubmit a job).
+            handler.get_connection(ishttps=True)
+            now[0] = 5.
+            raise TimeoutError('stalled socket')
+
+        with pytest.raises(TimeoutError):
+            with _gaia_query_timeout(client, timeout=5):
+                astroquery_query(stalled_query)
+        factory.assert_called_once_with(ishttps=True)
+        connection.close.assert_called_once()
+        assert handler.get_connection is factory
 
 
 @pytest.mark.flaky(reruns=5)

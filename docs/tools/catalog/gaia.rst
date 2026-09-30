@@ -40,6 +40,27 @@ Gaia catalogs can be huge. So, additionally, the initialization of the |GaiaDR3S
     gaia_sources = gaia.gaiadr3('HD 5020', radius='60 arcsec', max_g_mag=10)
     gaia_sources.table()
 
+Synchronous queries
+-------------------
+
+To avoid waiting for asynchronous Gaia jobs, select ``query_mode='sync'``:
+
+.. code-block:: python
+
+    gaia_sources = GaiaDR3SourcesCatalog(
+        (101.28715, -16.71612), radius='20 arcsec', query_mode='sync')
+
+This uses Astroquery's ``Gaia.launch_job``. Results are fetched in pages of at
+most 2000 sources, using source IDs to continue each page, then sorted by angular
+distance as usual. Searches larger than one page are not silently truncated.
+The magnitude filter applies to every page.
+
+The default remains ``query_mode='async'``. Synchronous mode does not submit
+asynchronous jobs or fall back to them. It still depends on the Gaia service:
+network errors and slow synchronous requests can time out. All pages share the
+existing Gaia query timeout; a failed search raises an exception rather than
+returning partial results.
+
 Additional Catalog Properties
 -----------------------------
 
