@@ -2,6 +2,8 @@
 """Query and match objects in catalogs using TAP services."""
 
 import copy
+import time
+from contextlib import contextmanager
 import numpy as np
 from astropy.coordinates import SkyCoord
 from astropy import units as u
@@ -14,6 +16,34 @@ from ..math import QFloat
 
 
 __all__ = ['GaiaDR3SourcesCatalog', 'gaiadr3']
+
+
+@contextmanager
+def _gaia_query_timeout(client, timeout=300):
+    """Bound Gaia's TAP connections without changing global socket defaults."""
+    # Astroquery's TAP client has no public request-timeout setting. Limit the
+    # connection factory on our private copy of Gaia, keeping its configuration.
+    handler = client._TapPlus__getconnhandler()._TapConn__connectionHandler
+    original = handler.get_connection
+    deadline = time.monotonic() + timeout
+    connections = []
+
+    def get_connection(*args, **kwargs):
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise TimeoutError('Gaia query timed out.')
+        connection = original(*args, **kwargs)
+        connection.timeout = remaining
+        connections.append(connection)
+        return connection
+
+    handler.get_connection = get_connection
+    try:
+        yield
+    finally:
+        handler.get_connection = original
+        for connection in connections:
+            connection.close()
 
 
 class GaiaDR3SourcesCatalog(_OnlineSourcesCatalog):
@@ -140,10 +170,13 @@ class GaiaDR3SourcesCatalog(_OnlineSourcesCatalog):
                                         dump_to_file=False).get_results()
 
     def _do_query(self):
-        self._query = astroquery_query(self._query_object_async,
-                                       self._center,
-                                       radius=self._radius.to(u.deg).value,
-                                       columns=self._columns)
+        # Share one deadline across polling and retries, including retries
+        # performed by astroquery_query after a socket timeout.
+        with _gaia_query_timeout(self._g):
+            self._query = astroquery_query(self._query_object_async,
+                                           self._center,
+                                           radius=self._radius.to(u.deg).value,
+                                           columns=self._columns)
         sk = SkyCoord(self._query['ra'], self._query['dec'],
                       obstime=Time(self._query['ref_epoch'], format='jyear'),
                       pm_ra_cosdec=self._query['pmra'],
