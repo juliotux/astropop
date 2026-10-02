@@ -1,0 +1,1376 @@
+version: 1
+interactions:
+- request:
+    method: POST
+    uri: https://vizier.cds.unistra.fr/viz-bin/votable
+    body: '-source=ucac4
+
+      -out.max=unlimited
+
+      -out=UCAC4,RAJ2000,DEJ2000,pmRA,pmDE,EpRA,Jmag,Hmag,Kmag,Bmag,Vmag,gmag,rmag,imag,e_Jmag,e_Hmag,e_Kmag,e_Bmag,e_Vmag,e_gmag,e_rmag,e_imag
+
+      -out.add=_r
+
+      -sort=_r
+
+      -c=2.71676018-54.29064769
+
+      -c.rs=0.5
+
+      -out.meta=huUD
+
+      -out.form=mini
+
+      -oc.form=d'
+    headers:
+      User-Agent:
+      - astroquery/0.4.11 Python/3.14.7 (Linux) python-requests/2.34.2
+      Accept-Encoding:
+      - gzip, deflate, zstd
+      Accept:
+      - '*/*'
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '268'
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Connection:
+      - Keep-Alive
+      DocumentRef:
+      - VOTx3699798
+      Server:
+      - Apache/2.4.52 (Ubuntu)
+      Keep-Alive:
+      - timeout=5, max=100
+      Content-Type:
+      - application/x-votable+xml
+      Vary:
+      - Accept-Encoding
+      Access-Control-Allow-Headers:
+      - Origin, X-Requested-With, Content-Type, Accept
+      Content-Disposition:
+      - attachment; filename=vizier_votable.vot
+      Access-Control-Allow-Origin:
+      - '*'
+      Date:
+      - Thu, 01 Oct 2026 09:25:12 GMT
+      Transfer-Encoding:
+      - chunked
+    body:
+      string: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<VOTABLE version=\"1.4\"\
+        \ xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n  xmlns=\"http://www.ivoa.net/xml/VOTable/v1.3\"\
+        \n  xsi:schemaLocation=\"http://www.ivoa.net/xml/VOTable/v1.3 http://www.ivoa.net/xml/VOTable/v1.3\"\
+        >\n <DESCRIPTION>\n   VizieR Astronomical Server vizier.cds.unistra.fr\n \
+        \   Date: 2026-10-01T09:25:12 [V7.6]\n   Explanations and Statistics of UCDs:\t\
+        \t\tSee LINK below\n   In case of problem, please report to:\tcds-question@unistra.fr\n\
+        \ </DESCRIPTION>\n<!-- VOTable description at http://www.ivoa.net/Documents/latest/VOT.html\
+        \ -->\n<INFO name=\"service_protocol\" value=\"ASU\">  IVOID of the protocol\
+        \ through which the data was retrieved</INFO>\n<INFO name=\"request_date\"\
+        \ value=\"2026-10-01T09:25:12\">  Query execution date</INFO>\n<INFO name=\"\
+        request\" value=\"https://vizier.cds.unistra.fr/viz-bin/votable?-oc.form=d&amp;-source=ucac4&amp;-out.max=unlimited&amp;-out=UCAC4,RAJ2000,DEJ2000,pmRA,pmDE,EpRA,Jmag,Hmag,Kmag,Bmag,Vmag,gmag,rmag,imag,e_Jmag,e_Hmag,e_Kmag,e_Bmag,e_Vmag,e_gmag,e_rmag,e_imag&amp;-out.add=_r&amp;-sort=_r&amp;-c=2.71676018-54.29064769&amp;-c.rs=0.5&amp;\"\
+        >  Full request URL (POST)</INFO>\n<INFO name=\"contact\" value=\"cds-question@unistra.fr\"\
+        >  Email or URL to contact publisher</INFO>\n<INFO name=\"server_software\"\
+        \ value=\"VizieR/7.6\">  Software version</INFO>\n<INFO name=\"publisher\"\
+        \ value=\"CDS\">  Data centre that produced the VOTable</INFO>\n<INFO name=\"\
+        header_format\" value=\"mini\"/>\n<INFO name=\"header_format\" value=\"mini\"\
+        />\n\n<RESOURCE ID=\"yCat_1322\" name=\"I/322A\" type=\"results\">\n  <DESCRIPTION>UCAC4\
+        \ Catalogue (Zacharias+, 2012)</DESCRIPTION>  <INFO name=\"ivoid\" value=\"\
+        ivo://cds.vizier/i/322a\">    IVOID of underlying data collection  </INFO>\n\
+        \  <INFO name=\"data_ivoid\" value=\"ivo://cds.vizier/i/322a\">    IVOID of\
+        \ underlying data collection  </INFO>\n  <INFO name=\"creator\" value=\"Zacharias\
+        \ N.\">    First author or institution  </INFO>\n  <INFO name=\"cites\" value=\"\
+        bibcode:2013AJ....145...44Z\">    Article or Data origin sources  </INFO>\n\
+        \  <INFO name=\"journal\" value=\"AJ\">    Journal name  </INFO>\n  <INFO\
+        \ name=\"original_date\" value=\"2013\">    Year of the article publication\
+        \  </INFO>\n  <INFO name=\"reference_url\" value=\"https://cdsarc.cds.unistra.fr/viz-bin/cat/I/322A\"\
+        >    Dataset landing page  </INFO>\n  <INFO name=\"publication_date\" value=\"\
+        2025-08-18\">    Date of first publication in the data centre  </INFO>\n \
+        \ <INFO name=\"rights_uri\" value=\"https://cds.unistra.fr/vizier-org/licences_vizier.html\"\
+        >    Licence URI  </INFO>\n\n  <COOSYS ID=\"J2000_2000.000\" system=\"eq_FK5\"\
+        \ equinox=\"J2000\" epoch=\"2000.000\"/>\n  <TABLE ID=\"I_322A_out\" name=\"\
+        I/322A/out\">\n    <DESCRIPTION>UCAC4 output (out of 113780093 stars)</DESCRIPTION>\n\
+        <!-- Fourth U.S. Naval Observatory CCD Astrograph Catalog -->\n\n    <!--\
+        \ RowName: ${UCAC4}&-c=${$poseq}&-c.rs=0.004 -->\n    <!-- Definitions of\
+        \ GROUPs and FIELDs -->\n    <FIELD name=\"_r\" ucd=\"POS_ANG_DIST_GENERAL\"\
+        \ datatype=\"double\" width=\"5\" precision=\"3\">\n      <DESCRIPTION>Distance\
+        \ from center (002.7167602-54.2906477)[FK5/J2000], at Epoch=J2000.0</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"UCAC4\" ucd=\"ID_MAIN\" datatype=\"char\"\
+        \ arraysize=\"10*\">\n      <DESCRIPTION>UCAC4 recommended identifier (ZZZ-NNNNNN)\
+        \ (1)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"RAJ2000\" ucd=\"POS_EQ_RA_MAIN\"\
+        \ ref=\"J2000_2000.000\" datatype=\"double\" width=\"11\" precision=\"7\"\
+        \ unit=\"deg\">\n      <DESCRIPTION>Mean right ascension , Ep=J2000 (2)</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"DEJ2000\" ucd=\"POS_EQ_DEC_MAIN\" ref=\"\
+        J2000_2000.000\" datatype=\"double\" width=\"11\" precision=\"7\" unit=\"\
+        deg\">\n      <DESCRIPTION>Mean declination , Ep=J2000 (2)</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"pmRA\" ucd=\"POS_EQ_PMRA\" ref=\"J2000_2000.000\"\
+        \ datatype=\"double\" width=\"7\" precision=\"1\" unit=\"mas/yr\">\n     \
+        \ <DESCRIPTION>? Proper motion in RA(*cos(Dec)) (9)</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"pmDE\" ucd=\"POS_EQ_PMDEC\"\
+        \ ref=\"J2000_2000.000\" datatype=\"double\" width=\"7\" precision=\"1\" unit=\"\
+        mas/yr\">\n      <DESCRIPTION>? Proper motion in Dec (9)</DESCRIPTION>\n \
+        \     <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"EpRA\" ucd=\"\
+        TIME_EPOCH\" datatype=\"double\" width=\"7\" precision=\"2\" unit=\"yr\">\n\
+        \      <DESCRIPTION>Central epoch for mean RA</DESCRIPTION>\n    </FIELD>\n\
+        \    <FIELD name=\"Jmag\" ucd=\"PHOT_JHN_J\" datatype=\"float\" width=\"6\"\
+        \ precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>? 2MASS J magnitude (1.2um)</DESCRIPTION>\n\
+        <!-- ? 2MASS J magnitude (1.2um) \\ifnum\\Vphase&gt;3{\\fg{gray40}(in gray\
+        \ if upper limit)}\\fi -->\n\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"Hmag\" ucd=\"PHOT_JHN_H\" datatype=\"float\" width=\"6\"\
+        \ precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>? 2MASS H magnitude (1.6um)</DESCRIPTION>\n\
+        <!-- ? 2MASS H magnitude (1.6um) \\ifnum\\Vphase&gt;3{\\fg{gray40}(in gray\
+        \ if upper limit)}\\fi -->\n\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"Kmag\" ucd=\"PHOT_JHN_K\" datatype=\"float\" width=\"6\"\
+        \ precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>? 2MASS Ks magnitude (2.2um)</DESCRIPTION>\n\
+        <!-- ? 2MASS Ks magnitude (2.2um) \\ifnum\\Vphase&gt;3{\\fg{gray40}(in gray\
+        \ if upper limit)}\\fi -->\n\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"Bmag\" ucd=\"PHOT_MAG_B\" datatype=\"float\" width=\"6\"\
+        \ precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>? B magnitude from APASS\
+        \ (12)</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD\
+        \ name=\"Vmag\" ucd=\"PHOT_MAG_V\" datatype=\"float\" width=\"6\" precision=\"\
+        3\" unit=\"mag\">\n      <DESCRIPTION>? V magnitude from APASS (12)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"gmag\" ucd=\"\
+        PHOT_GUNN_G\" datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\"\
+        >\n      <DESCRIPTION>? g magnitude from APASS (12)</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"rmag\" ucd=\"PHOT_MAG_R\"\
+        \ datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>?\
+        \ r magnitude from APASS (12)</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n\
+        \    </FIELD>\n    <FIELD name=\"imag\" ucd=\"PHOT_MAG_I\" datatype=\"float\"\
+        \ width=\"6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>? i magnitude\
+        \ from APASS (12)</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"e_Jmag\" ucd=\"ERROR\" datatype=\"float\" width=\"5\" precision=\"\
+        2\" unit=\"mag\">\n      <DESCRIPTION>? Mean error (rounded to 0.01mag)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_Hmag\" ucd=\"\
+        ERROR\" datatype=\"float\" width=\"5\" precision=\"2\" unit=\"mag\">\n   \
+        \   <DESCRIPTION>? Mean error (rounded to 0.01mag)</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_Kmag\" ucd=\"ERROR\"\
+        \ datatype=\"float\" width=\"5\" precision=\"2\" unit=\"mag\">\n      <DESCRIPTION>?\
+        \ Mean error (rounded to 0.01mag)</DESCRIPTION>\n      <VALUES null=\"NaN\"\
+        \ />\n    </FIELD>\n    <FIELD name=\"e_Bmag\" ucd=\"ERROR\" datatype=\"short\"\
+        \ width=\"2\" unit=\"cmag\">\n      <DESCRIPTION>? Estimated error on Bmag\
+        \ (12)</DESCRIPTION>\n      <VALUES null=\"-32768\" />\n    </FIELD>\n   \
+        \ <FIELD name=\"e_Vmag\" ucd=\"ERROR\" datatype=\"short\" width=\"2\" unit=\"\
+        cmag\">\n      <DESCRIPTION>? Estimated error on Vmag (12)</DESCRIPTION>\n\
+        \      <VALUES null=\"-32768\" />\n    </FIELD>\n    <FIELD name=\"e_gmag\"\
+        \ ucd=\"ERROR\" datatype=\"short\" width=\"2\" unit=\"cmag\">\n      <DESCRIPTION>?\
+        \ Estimated error on gmag (12)</DESCRIPTION>\n      <VALUES null=\"-32768\"\
+        \ />\n    </FIELD>\n    <FIELD name=\"e_rmag\" ucd=\"ERROR\" datatype=\"short\"\
+        \ width=\"2\" unit=\"cmag\">\n      <DESCRIPTION>? Estimated error on rmag\
+        \ (12)</DESCRIPTION>\n      <VALUES null=\"-32768\" />\n    </FIELD>\n   \
+        \ <FIELD name=\"e_imag\" ucd=\"ERROR\" datatype=\"short\" width=\"2\" unit=\"\
+        cmag\">\n      <DESCRIPTION>? Estimated error on imag (12)</DESCRIPTION>\n\
+        \      <VALUES null=\"-32768\" />\n    </FIELD>\n<DATA><TABLEDATA>\n<TR><TD>0.046</TD><TD>179-000175</TD><TD>002.7167509</TD><TD>-54.2906592</TD><TD>2.1</TD><TD>7.0</TD><TD>1991.64</TD><TD>10.157</TD><TD>10.083</TD><TD>10.029</TD><TD>10.752</TD><TD>10.597</TD><TD></TD><TD></TD><TD>10.688</TD><TD>0.02</TD><TD>0.02</TD><TD>0.02</TD><TD>1</TD><TD>7</TD><TD></TD><TD></TD><TD>1</TD></TR>\n\
+        </TABLEDATA></DATA>\n<INFO name=\"matches\" value=\"1\">matching records</INFO>\n\
+        \    <INFO name=\"meta\" value=\"message\">      memory restriction caused\
+        \ by sort option (partial sort in bunches of 672882)    </INFO>\n\n<INFO name=\"\
+        Warning\" value=\"+++memory restriction caused by {\\bf sort} option (partial\
+        \ sort in bunches of 672882)\"/>\n  </TABLE>\n</RESOURCE>\n</VOTABLE>\n"
+- request:
+    method: POST
+    uri: https://vizier.cds.unistra.fr/viz-bin/votable
+    body: '-source=ucac4
+
+      -out.max=unlimited
+
+      -out=UCAC4,RAJ2000,DEJ2000,pmRA,pmDE,EpRA,Jmag,Hmag,Kmag,Bmag,Vmag,gmag,rmag,imag,e_Jmag,e_Hmag,e_Kmag,e_Bmag,e_Vmag,e_gmag,e_rmag,e_imag
+
+      -out.add=_r
+
+      -sort=_r
+
+      -c=101.28716127-16.71612178
+
+      -c.rd=0.05
+
+      -out.meta=huUD
+
+      -out.form=mini
+
+      -oc.form=d'
+    headers:
+      User-Agent:
+      - astroquery/0.4.11 Python/3.14.7 (Linux) python-requests/2.34.2
+      Accept-Encoding:
+      - gzip, deflate, zstd
+      Accept:
+      - '*/*'
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '271'
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Connection:
+      - Keep-Alive
+      DocumentRef:
+      - VOTx3702126
+      Server:
+      - Apache/2.4.52 (Ubuntu)
+      Keep-Alive:
+      - timeout=5, max=100
+      Content-Type:
+      - application/x-votable+xml
+      Vary:
+      - Accept-Encoding
+      Access-Control-Allow-Headers:
+      - Origin, X-Requested-With, Content-Type, Accept
+      Content-Disposition:
+      - attachment; filename=vizier_votable.vot
+      Access-Control-Allow-Origin:
+      - '*'
+      Date:
+      - Thu, 01 Oct 2026 09:25:17 GMT
+      Transfer-Encoding:
+      - chunked
+    body:
+      string: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<VOTABLE version=\"1.4\"\
+        \ xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n  xmlns=\"http://www.ivoa.net/xml/VOTable/v1.3\"\
+        \n  xsi:schemaLocation=\"http://www.ivoa.net/xml/VOTable/v1.3 http://www.ivoa.net/xml/VOTable/v1.3\"\
+        >\n <DESCRIPTION>\n   VizieR Astronomical Server vizier.cds.unistra.fr\n \
+        \   Date: 2026-10-01T09:25:17 [V7.6]\n   Explanations and Statistics of UCDs:\t\
+        \t\tSee LINK below\n   In case of problem, please report to:\tcds-question@unistra.fr\n\
+        \ </DESCRIPTION>\n<!-- VOTable description at http://www.ivoa.net/Documents/latest/VOT.html\
+        \ -->\n<INFO name=\"service_protocol\" value=\"ASU\">  IVOID of the protocol\
+        \ through which the data was retrieved</INFO>\n<INFO name=\"request_date\"\
+        \ value=\"2026-10-01T09:25:17\">  Query execution date</INFO>\n<INFO name=\"\
+        request\" value=\"https://vizier.cds.unistra.fr/viz-bin/votable?-oc.form=d&amp;-source=ucac4&amp;-out.max=unlimited&amp;-out=UCAC4,RAJ2000,DEJ2000,pmRA,pmDE,EpRA,Jmag,Hmag,Kmag,Bmag,Vmag,gmag,rmag,imag,e_Jmag,e_Hmag,e_Kmag,e_Bmag,e_Vmag,e_gmag,e_rmag,e_imag&amp;-out.add=_r&amp;-sort=_r&amp;-c=101.28716127-16.71612178&amp;-c.rd=0.05&amp;\"\
+        >  Full request URL (POST)</INFO>\n<INFO name=\"contact\" value=\"cds-question@unistra.fr\"\
+        >  Email or URL to contact publisher</INFO>\n<INFO name=\"server_software\"\
+        \ value=\"VizieR/7.6\">  Software version</INFO>\n<INFO name=\"publisher\"\
+        \ value=\"CDS\">  Data centre that produced the VOTable</INFO>\n<INFO name=\"\
+        header_format\" value=\"mini\"/>\n<INFO name=\"header_format\" value=\"mini\"\
+        />\n\n<RESOURCE ID=\"yCat_1322\" name=\"I/322A\" type=\"results\">\n  <DESCRIPTION>UCAC4\
+        \ Catalogue (Zacharias+, 2012)</DESCRIPTION>  <INFO name=\"ivoid\" value=\"\
+        ivo://cds.vizier/i/322a\">    IVOID of underlying data collection  </INFO>\n\
+        \  <INFO name=\"data_ivoid\" value=\"ivo://cds.vizier/i/322a\">    IVOID of\
+        \ underlying data collection  </INFO>\n  <INFO name=\"creator\" value=\"Zacharias\
+        \ N.\">    First author or institution  </INFO>\n  <INFO name=\"cites\" value=\"\
+        bibcode:2013AJ....145...44Z\">    Article or Data origin sources  </INFO>\n\
+        \  <INFO name=\"journal\" value=\"AJ\">    Journal name  </INFO>\n  <INFO\
+        \ name=\"original_date\" value=\"2013\">    Year of the article publication\
+        \  </INFO>\n  <INFO name=\"reference_url\" value=\"https://cdsarc.cds.unistra.fr/viz-bin/cat/I/322A\"\
+        >    Dataset landing page  </INFO>\n  <INFO name=\"publication_date\" value=\"\
+        2025-08-18\">    Date of first publication in the data centre  </INFO>\n \
+        \ <INFO name=\"rights_uri\" value=\"https://cds.unistra.fr/vizier-org/licences_vizier.html\"\
+        >    Licence URI  </INFO>\n\n  <COOSYS ID=\"J2000_2000.000\" system=\"eq_FK5\"\
+        \ equinox=\"J2000\" epoch=\"2000.000\"/>\n  <TABLE ID=\"I_322A_out\" name=\"\
+        I/322A/out\">\n    <DESCRIPTION>UCAC4 output (out of 113780093 stars)</DESCRIPTION>\n\
+        <!-- Fourth U.S. Naval Observatory CCD Astrograph Catalog -->\n\n    <!--\
+        \ RowName: ${UCAC4}&-c=${$poseq}&-c.rs=0.004 -->\n    <!-- Definitions of\
+        \ GROUPs and FIELDs -->\n    <FIELD name=\"_r\" ucd=\"POS_ANG_DIST_GENERAL\"\
+        \ datatype=\"double\" width=\"8\" precision=\"6\">\n      <DESCRIPTION>Distance\
+        \ from center (101.2871613-16.7161218)[FK5/J2000], at Epoch=J2000.0</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"UCAC4\" ucd=\"ID_MAIN\" datatype=\"char\"\
+        \ arraysize=\"10*\">\n      <DESCRIPTION>UCAC4 recommended identifier (ZZZ-NNNNNN)\
+        \ (1)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"RAJ2000\" ucd=\"POS_EQ_RA_MAIN\"\
+        \ ref=\"J2000_2000.000\" datatype=\"double\" width=\"11\" precision=\"7\"\
+        \ unit=\"deg\">\n      <DESCRIPTION>Mean right ascension , Ep=J2000 (2)</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"DEJ2000\" ucd=\"POS_EQ_DEC_MAIN\" ref=\"\
+        J2000_2000.000\" datatype=\"double\" width=\"11\" precision=\"7\" unit=\"\
+        deg\">\n      <DESCRIPTION>Mean declination , Ep=J2000 (2)</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"pmRA\" ucd=\"POS_EQ_PMRA\" ref=\"J2000_2000.000\"\
+        \ datatype=\"double\" width=\"7\" precision=\"1\" unit=\"mas/yr\">\n     \
+        \ <DESCRIPTION>? Proper motion in RA(*cos(Dec)) (9)</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"pmDE\" ucd=\"POS_EQ_PMDEC\"\
+        \ ref=\"J2000_2000.000\" datatype=\"double\" width=\"7\" precision=\"1\" unit=\"\
+        mas/yr\">\n      <DESCRIPTION>? Proper motion in Dec (9)</DESCRIPTION>\n \
+        \     <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"EpRA\" ucd=\"\
+        TIME_EPOCH\" datatype=\"double\" width=\"7\" precision=\"2\" unit=\"yr\">\n\
+        \      <DESCRIPTION>Central epoch for mean RA</DESCRIPTION>\n    </FIELD>\n\
+        \    <FIELD name=\"Jmag\" ucd=\"PHOT_JHN_J\" datatype=\"float\" width=\"6\"\
+        \ precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>? 2MASS J magnitude (1.2um)</DESCRIPTION>\n\
+        <!-- ? 2MASS J magnitude (1.2um) \\ifnum\\Vphase&gt;3{\\fg{gray40}(in gray\
+        \ if upper limit)}\\fi -->\n\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"Hmag\" ucd=\"PHOT_JHN_H\" datatype=\"float\" width=\"6\"\
+        \ precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>? 2MASS H magnitude (1.6um)</DESCRIPTION>\n\
+        <!-- ? 2MASS H magnitude (1.6um) \\ifnum\\Vphase&gt;3{\\fg{gray40}(in gray\
+        \ if upper limit)}\\fi -->\n\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"Kmag\" ucd=\"PHOT_JHN_K\" datatype=\"float\" width=\"6\"\
+        \ precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>? 2MASS Ks magnitude (2.2um)</DESCRIPTION>\n\
+        <!-- ? 2MASS Ks magnitude (2.2um) \\ifnum\\Vphase&gt;3{\\fg{gray40}(in gray\
+        \ if upper limit)}\\fi -->\n\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"Bmag\" ucd=\"PHOT_MAG_B\" datatype=\"float\" width=\"6\"\
+        \ precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>? B magnitude from APASS\
+        \ (12)</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD\
+        \ name=\"Vmag\" ucd=\"PHOT_MAG_V\" datatype=\"float\" width=\"6\" precision=\"\
+        3\" unit=\"mag\">\n      <DESCRIPTION>? V magnitude from APASS (12)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"gmag\" ucd=\"\
+        PHOT_GUNN_G\" datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\"\
+        >\n      <DESCRIPTION>? g magnitude from APASS (12)</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"rmag\" ucd=\"PHOT_MAG_R\"\
+        \ datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>?\
+        \ r magnitude from APASS (12)</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n\
+        \    </FIELD>\n    <FIELD name=\"imag\" ucd=\"PHOT_MAG_I\" datatype=\"float\"\
+        \ width=\"6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>? i magnitude\
+        \ from APASS (12)</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"e_Jmag\" ucd=\"ERROR\" datatype=\"float\" width=\"5\" precision=\"\
+        2\" unit=\"mag\">\n      <DESCRIPTION>? Mean error (rounded to 0.01mag)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_Hmag\" ucd=\"\
+        ERROR\" datatype=\"float\" width=\"5\" precision=\"2\" unit=\"mag\">\n   \
+        \   <DESCRIPTION>? Mean error (rounded to 0.01mag)</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_Kmag\" ucd=\"ERROR\"\
+        \ datatype=\"float\" width=\"5\" precision=\"2\" unit=\"mag\">\n      <DESCRIPTION>?\
+        \ Mean error (rounded to 0.01mag)</DESCRIPTION>\n      <VALUES null=\"NaN\"\
+        \ />\n    </FIELD>\n    <FIELD name=\"e_Bmag\" ucd=\"ERROR\" datatype=\"short\"\
+        \ width=\"2\" unit=\"cmag\">\n      <DESCRIPTION>? Estimated error on Bmag\
+        \ (12)</DESCRIPTION>\n      <VALUES null=\"-32768\" />\n    </FIELD>\n   \
+        \ <FIELD name=\"e_Vmag\" ucd=\"ERROR\" datatype=\"short\" width=\"2\" unit=\"\
+        cmag\">\n      <DESCRIPTION>? Estimated error on Vmag (12)</DESCRIPTION>\n\
+        \      <VALUES null=\"-32768\" />\n    </FIELD>\n    <FIELD name=\"e_gmag\"\
+        \ ucd=\"ERROR\" datatype=\"short\" width=\"2\" unit=\"cmag\">\n      <DESCRIPTION>?\
+        \ Estimated error on gmag (12)</DESCRIPTION>\n      <VALUES null=\"-32768\"\
+        \ />\n    </FIELD>\n    <FIELD name=\"e_rmag\" ucd=\"ERROR\" datatype=\"short\"\
+        \ width=\"2\" unit=\"cmag\">\n      <DESCRIPTION>? Estimated error on rmag\
+        \ (12)</DESCRIPTION>\n      <VALUES null=\"-32768\" />\n    </FIELD>\n   \
+        \ <FIELD name=\"e_imag\" ucd=\"ERROR\" datatype=\"short\" width=\"2\" unit=\"\
+        cmag\">\n      <DESCRIPTION>? Estimated error on imag (12)</DESCRIPTION>\n\
+        \      <VALUES null=\"-32768\" />\n    </FIELD>\n<DATA><TABLEDATA>\n<TR><TD>0.000008</TD><TD>367-016700</TD><TD>101.2871553</TD><TD>-16.7161156</TD><TD>-546.0</TD><TD>-1223.1</TD><TD>1991.25</TD><TD>-1.391</TD><TD>-1.391</TD><TD>-1.390</TD><TD>-1.087</TD><TD>-1.440</TD><TD></TD><TD></TD><TD></TD><TD>0.11</TD><TD>0.18</TD><TD>0.21</TD><TD>0</TD><TD>0</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.016475</TD><TD>367-016701</TD><TD>101.2924292</TD><TD>-16.7004387</TD><TD>0.0</TD><TD>0.0</TD><TD>1999.90</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.020234</TD><TD>367-016704</TD><TD>101.2927503</TD><TD>-16.6966084</TD><TD>0.0</TD><TD>0.0</TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.043465</TD><TD>367-016721</TD><TD>101.3325386</TD><TD>-16.7154539</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>13.693</TD><TD>13.279</TD><TD>11.542</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.21</TD><TD>0.99</TD><TD>0.99</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.048004</TD><TD>367-016716</TD><TD>101.3244830</TD><TD>-16.6840834</TD><TD>-3.5</TD><TD>-1.7</TD><TD>1998.33</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        </TABLEDATA></DATA>\n<INFO name=\"matches\" value=\"5\">matching records</INFO>\n\
+        \    <INFO name=\"meta\" value=\"message\">      memory restriction caused\
+        \ by sort option (partial sort in bunches of 672882)    </INFO>\n\n<INFO name=\"\
+        Warning\" value=\"+++memory restriction caused by {\\bf sort} option (partial\
+        \ sort in bunches of 672882)\"/>\n  </TABLE>\n</RESOURCE>\n</VOTABLE>\n"
+- request:
+    method: POST
+    uri: https://vizier.cds.unistra.fr/viz-bin/votable
+    body: '-source=ucac4
+
+      -out.max=unlimited
+
+      -out=UCAC4,RAJ2000,DEJ2000,pmRA,pmDE,EpRA,Jmag,Hmag,Kmag,Bmag,Vmag,gmag,rmag,imag,e_Jmag,e_Hmag,e_Kmag,e_Bmag,e_Vmag,e_gmag,e_rmag,e_imag
+
+      -out.add=_r
+
+      -sort=_r
+
+      -c=2.71676018-54.29064769
+
+      -c.rd=0.05
+
+      -out.meta=huUD
+
+      -out.form=mini
+
+      -oc.form=d'
+    headers:
+      User-Agent:
+      - astroquery/0.4.11 Python/3.14.7 (Linux) python-requests/2.34.2
+      Accept-Encoding:
+      - gzip, deflate, zstd
+      Accept:
+      - '*/*'
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '269'
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Connection:
+      - Keep-Alive
+      DocumentRef:
+      - VOTx3703668
+      Server:
+      - Apache/2.4.52 (Ubuntu)
+      Keep-Alive:
+      - timeout=5, max=100
+      Content-Type:
+      - application/x-votable+xml
+      Vary:
+      - Accept-Encoding
+      Access-Control-Allow-Headers:
+      - Origin, X-Requested-With, Content-Type, Accept
+      Content-Disposition:
+      - attachment; filename=vizier_votable.vot
+      Access-Control-Allow-Origin:
+      - '*'
+      Date:
+      - Thu, 01 Oct 2026 09:25:20 GMT
+      Transfer-Encoding:
+      - chunked
+    body:
+      string: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<VOTABLE version=\"1.4\"\
+        \ xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n  xmlns=\"http://www.ivoa.net/xml/VOTable/v1.3\"\
+        \n  xsi:schemaLocation=\"http://www.ivoa.net/xml/VOTable/v1.3 http://www.ivoa.net/xml/VOTable/v1.3\"\
+        >\n <DESCRIPTION>\n   VizieR Astronomical Server vizier.cds.unistra.fr\n \
+        \   Date: 2026-10-01T09:25:20 [V7.6]\n   Explanations and Statistics of UCDs:\t\
+        \t\tSee LINK below\n   In case of problem, please report to:\tcds-question@unistra.fr\n\
+        \ </DESCRIPTION>\n<!-- VOTable description at http://www.ivoa.net/Documents/latest/VOT.html\
+        \ -->\n<INFO name=\"service_protocol\" value=\"ASU\">  IVOID of the protocol\
+        \ through which the data was retrieved</INFO>\n<INFO name=\"request_date\"\
+        \ value=\"2026-10-01T09:25:20\">  Query execution date</INFO>\n<INFO name=\"\
+        request\" value=\"https://vizier.cds.unistra.fr/viz-bin/votable?-oc.form=d&amp;-source=ucac4&amp;-out.max=unlimited&amp;-out=UCAC4,RAJ2000,DEJ2000,pmRA,pmDE,EpRA,Jmag,Hmag,Kmag,Bmag,Vmag,gmag,rmag,imag,e_Jmag,e_Hmag,e_Kmag,e_Bmag,e_Vmag,e_gmag,e_rmag,e_imag&amp;-out.add=_r&amp;-sort=_r&amp;-c=2.71676018-54.29064769&amp;-c.rd=0.05&amp;\"\
+        >  Full request URL (POST)</INFO>\n<INFO name=\"contact\" value=\"cds-question@unistra.fr\"\
+        >  Email or URL to contact publisher</INFO>\n<INFO name=\"server_software\"\
+        \ value=\"VizieR/7.6\">  Software version</INFO>\n<INFO name=\"publisher\"\
+        \ value=\"CDS\">  Data centre that produced the VOTable</INFO>\n<INFO name=\"\
+        header_format\" value=\"mini\"/>\n<INFO name=\"header_format\" value=\"mini\"\
+        />\n\n<RESOURCE ID=\"yCat_1322\" name=\"I/322A\" type=\"results\">\n  <DESCRIPTION>UCAC4\
+        \ Catalogue (Zacharias+, 2012)</DESCRIPTION>  <INFO name=\"ivoid\" value=\"\
+        ivo://cds.vizier/i/322a\">    IVOID of underlying data collection  </INFO>\n\
+        \  <INFO name=\"data_ivoid\" value=\"ivo://cds.vizier/i/322a\">    IVOID of\
+        \ underlying data collection  </INFO>\n  <INFO name=\"creator\" value=\"Zacharias\
+        \ N.\">    First author or institution  </INFO>\n  <INFO name=\"cites\" value=\"\
+        bibcode:2013AJ....145...44Z\">    Article or Data origin sources  </INFO>\n\
+        \  <INFO name=\"journal\" value=\"AJ\">    Journal name  </INFO>\n  <INFO\
+        \ name=\"original_date\" value=\"2013\">    Year of the article publication\
+        \  </INFO>\n  <INFO name=\"reference_url\" value=\"https://cdsarc.cds.unistra.fr/viz-bin/cat/I/322A\"\
+        >    Dataset landing page  </INFO>\n  <INFO name=\"publication_date\" value=\"\
+        2025-08-18\">    Date of first publication in the data centre  </INFO>\n \
+        \ <INFO name=\"rights_uri\" value=\"https://cds.unistra.fr/vizier-org/licences_vizier.html\"\
+        >    Licence URI  </INFO>\n\n  <COOSYS ID=\"J2000_2000.000\" system=\"eq_FK5\"\
+        \ equinox=\"J2000\" epoch=\"2000.000\"/>\n  <TABLE ID=\"I_322A_out\" name=\"\
+        I/322A/out\">\n    <DESCRIPTION>UCAC4 output (out of 113780093 stars)</DESCRIPTION>\n\
+        <!-- Fourth U.S. Naval Observatory CCD Astrograph Catalog -->\n\n    <!--\
+        \ RowName: ${UCAC4}&-c=${$poseq}&-c.rs=0.004 -->\n    <!-- Definitions of\
+        \ GROUPs and FIELDs -->\n    <FIELD name=\"_r\" ucd=\"POS_ANG_DIST_GENERAL\"\
+        \ datatype=\"double\" width=\"8\" precision=\"6\">\n      <DESCRIPTION>Distance\
+        \ from center (002.7167602-54.2906477)[FK5/J2000], at Epoch=J2000.0</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"UCAC4\" ucd=\"ID_MAIN\" datatype=\"char\"\
+        \ arraysize=\"10*\">\n      <DESCRIPTION>UCAC4 recommended identifier (ZZZ-NNNNNN)\
+        \ (1)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"RAJ2000\" ucd=\"POS_EQ_RA_MAIN\"\
+        \ ref=\"J2000_2000.000\" datatype=\"double\" width=\"11\" precision=\"7\"\
+        \ unit=\"deg\">\n      <DESCRIPTION>Mean right ascension , Ep=J2000 (2)</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"DEJ2000\" ucd=\"POS_EQ_DEC_MAIN\" ref=\"\
+        J2000_2000.000\" datatype=\"double\" width=\"11\" precision=\"7\" unit=\"\
+        deg\">\n      <DESCRIPTION>Mean declination , Ep=J2000 (2)</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"pmRA\" ucd=\"POS_EQ_PMRA\" ref=\"J2000_2000.000\"\
+        \ datatype=\"double\" width=\"7\" precision=\"1\" unit=\"mas/yr\">\n     \
+        \ <DESCRIPTION>? Proper motion in RA(*cos(Dec)) (9)</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"pmDE\" ucd=\"POS_EQ_PMDEC\"\
+        \ ref=\"J2000_2000.000\" datatype=\"double\" width=\"7\" precision=\"1\" unit=\"\
+        mas/yr\">\n      <DESCRIPTION>? Proper motion in Dec (9)</DESCRIPTION>\n \
+        \     <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"EpRA\" ucd=\"\
+        TIME_EPOCH\" datatype=\"double\" width=\"7\" precision=\"2\" unit=\"yr\">\n\
+        \      <DESCRIPTION>Central epoch for mean RA</DESCRIPTION>\n    </FIELD>\n\
+        \    <FIELD name=\"Jmag\" ucd=\"PHOT_JHN_J\" datatype=\"float\" width=\"6\"\
+        \ precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>? 2MASS J magnitude (1.2um)</DESCRIPTION>\n\
+        <!-- ? 2MASS J magnitude (1.2um) \\ifnum\\Vphase&gt;3{\\fg{gray40}(in gray\
+        \ if upper limit)}\\fi -->\n\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"Hmag\" ucd=\"PHOT_JHN_H\" datatype=\"float\" width=\"6\"\
+        \ precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>? 2MASS H magnitude (1.6um)</DESCRIPTION>\n\
+        <!-- ? 2MASS H magnitude (1.6um) \\ifnum\\Vphase&gt;3{\\fg{gray40}(in gray\
+        \ if upper limit)}\\fi -->\n\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"Kmag\" ucd=\"PHOT_JHN_K\" datatype=\"float\" width=\"6\"\
+        \ precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>? 2MASS Ks magnitude (2.2um)</DESCRIPTION>\n\
+        <!-- ? 2MASS Ks magnitude (2.2um) \\ifnum\\Vphase&gt;3{\\fg{gray40}(in gray\
+        \ if upper limit)}\\fi -->\n\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"Bmag\" ucd=\"PHOT_MAG_B\" datatype=\"float\" width=\"6\"\
+        \ precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>? B magnitude from APASS\
+        \ (12)</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD\
+        \ name=\"Vmag\" ucd=\"PHOT_MAG_V\" datatype=\"float\" width=\"6\" precision=\"\
+        3\" unit=\"mag\">\n      <DESCRIPTION>? V magnitude from APASS (12)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"gmag\" ucd=\"\
+        PHOT_GUNN_G\" datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\"\
+        >\n      <DESCRIPTION>? g magnitude from APASS (12)</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"rmag\" ucd=\"PHOT_MAG_R\"\
+        \ datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>?\
+        \ r magnitude from APASS (12)</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n\
+        \    </FIELD>\n    <FIELD name=\"imag\" ucd=\"PHOT_MAG_I\" datatype=\"float\"\
+        \ width=\"6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>? i magnitude\
+        \ from APASS (12)</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"e_Jmag\" ucd=\"ERROR\" datatype=\"float\" width=\"5\" precision=\"\
+        2\" unit=\"mag\">\n      <DESCRIPTION>? Mean error (rounded to 0.01mag)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_Hmag\" ucd=\"\
+        ERROR\" datatype=\"float\" width=\"5\" precision=\"2\" unit=\"mag\">\n   \
+        \   <DESCRIPTION>? Mean error (rounded to 0.01mag)</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_Kmag\" ucd=\"ERROR\"\
+        \ datatype=\"float\" width=\"5\" precision=\"2\" unit=\"mag\">\n      <DESCRIPTION>?\
+        \ Mean error (rounded to 0.01mag)</DESCRIPTION>\n      <VALUES null=\"NaN\"\
+        \ />\n    </FIELD>\n    <FIELD name=\"e_Bmag\" ucd=\"ERROR\" datatype=\"short\"\
+        \ width=\"2\" unit=\"cmag\">\n      <DESCRIPTION>? Estimated error on Bmag\
+        \ (12)</DESCRIPTION>\n      <VALUES null=\"-32768\" />\n    </FIELD>\n   \
+        \ <FIELD name=\"e_Vmag\" ucd=\"ERROR\" datatype=\"short\" width=\"2\" unit=\"\
+        cmag\">\n      <DESCRIPTION>? Estimated error on Vmag (12)</DESCRIPTION>\n\
+        \      <VALUES null=\"-32768\" />\n    </FIELD>\n    <FIELD name=\"e_gmag\"\
+        \ ucd=\"ERROR\" datatype=\"short\" width=\"2\" unit=\"cmag\">\n      <DESCRIPTION>?\
+        \ Estimated error on gmag (12)</DESCRIPTION>\n      <VALUES null=\"-32768\"\
+        \ />\n    </FIELD>\n    <FIELD name=\"e_rmag\" ucd=\"ERROR\" datatype=\"short\"\
+        \ width=\"2\" unit=\"cmag\">\n      <DESCRIPTION>? Estimated error on rmag\
+        \ (12)</DESCRIPTION>\n      <VALUES null=\"-32768\" />\n    </FIELD>\n   \
+        \ <FIELD name=\"e_imag\" ucd=\"ERROR\" datatype=\"short\" width=\"2\" unit=\"\
+        cmag\">\n      <DESCRIPTION>? Estimated error on imag (12)</DESCRIPTION>\n\
+        \      <VALUES null=\"-32768\" />\n    </FIELD>\n<DATA><TABLEDATA>\n<TR><TD>0.000013</TD><TD>179-000175</TD><TD>002.7167509</TD><TD>-54.2906592</TD><TD>2.1</TD><TD>7.0</TD><TD>1991.64</TD><TD>10.157</TD><TD>10.083</TD><TD>10.029</TD><TD>10.752</TD><TD>10.597</TD><TD></TD><TD></TD><TD>10.688</TD><TD>0.02</TD><TD>0.02</TD><TD>0.02</TD><TD>1</TD><TD>7</TD><TD></TD><TD></TD><TD>1</TD></TR>\n\
+        <TR><TD>0.017555</TD><TD>179-000177</TD><TD>002.7463127</TD><TD>-54.2873887</TD><TD>-8.2</TD><TD>0.3</TD><TD>1987.24</TD><TD>13.797</TD><TD>13.238</TD><TD>13.103</TD><TD>16.655</TD><TD>15.658</TD><TD>16.134</TD><TD>15.329</TD><TD>14.923</TD><TD>0.03</TD><TD>0.03</TD><TD>0.03</TD><TD>4</TD><TD>4</TD><TD>1</TD><TD>1</TD><TD>1</TD></TR>\n\
+        <TR><TD>0.025544</TD><TD>179-000176</TD><TD>002.7220680</TD><TD>-54.2652920</TD><TD>15.3</TD><TD>-57.9</TD><TD>1974.84</TD><TD>15.307</TD><TD>14.690</TD><TD>14.566</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.06</TD><TD>0.07</TD><TD>0.10</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.042442</TD><TD>179-000174</TD><TD>002.7028924</TD><TD>-54.3323114</TD><TD>14.5</TD><TD>10.7</TD><TD>1969.96</TD><TD>14.776</TD><TD>14.368</TD><TD>14.426</TD><TD>16.798</TD><TD>16.321</TD><TD>16.527</TD><TD>15.980</TD><TD></TD><TD>0.04</TD><TD>0.06</TD><TD>0.08</TD><TD>6</TD><TD>14</TD><TD>1</TD><TD>1</TD><TD></TD></TR>\n\
+        <TR><TD>0.047775</TD><TD>179-000178</TD><TD>002.7819674</TD><TD>-54.2617884</TD><TD>4.3</TD><TD>-17.4</TD><TD>1977.47</TD><TD>15.564</TD><TD>15.414</TD><TD>15.255</TD><TD>16.708</TD><TD>16.367</TD><TD>16.500</TD><TD>16.388</TD><TD></TD><TD>0.06</TD><TD>0.09</TD><TD>0.16</TD><TD>7</TD><TD>12</TD><TD>1</TD><TD>1</TD><TD></TD></TR>\n\
+        <TR><TD>0.049550</TD><TD>179-000172</TD><TD>002.6335674</TD><TD>-54.2808098</TD><TD>7.3</TD><TD>2.7</TD><TD>1992.18</TD><TD>12.887</TD><TD>12.560</TD><TD>12.473</TD><TD>14.847</TD><TD>14.145</TD><TD>14.444</TD><TD>13.964</TD><TD>13.788</TD><TD>0.02</TD><TD>0.03</TD><TD>0.02</TD><TD>1</TD><TD>4</TD><TD>1</TD><TD>0</TD><TD>2</TD></TR>\n\
+        </TABLEDATA></DATA>\n<INFO name=\"matches\" value=\"6\">matching records</INFO>\n\
+        \    <INFO name=\"meta\" value=\"message\">      memory restriction caused\
+        \ by sort option (partial sort in bunches of 672882)    </INFO>\n\n<INFO name=\"\
+        Warning\" value=\"+++memory restriction caused by {\\bf sort} option (partial\
+        \ sort in bunches of 672882)\"/>\n  </TABLE>\n</RESOURCE>\n</VOTABLE>\n"
+- request:
+    method: POST
+    uri: https://vizier.cds.unistra.fr/viz-bin/votable
+    body: '-source=ucac4
+
+      -out.max=unlimited
+
+      -out=UCAC4,RAJ2000,DEJ2000,pmRA,pmDE,EpRA,Jmag,Hmag,Kmag,Bmag,Vmag,gmag,rmag,imag,e_Jmag,e_Hmag,e_Kmag,e_Bmag,e_Vmag,e_gmag,e_rmag,e_imag
+
+      -out.add=_r
+
+      -sort=_r
+
+      -c=101.28716127-16.71612178
+
+      -c.rd=0.1
+
+      -out.meta=huUD
+
+      -out.form=mini
+
+      -oc.form=d'
+    headers:
+      User-Agent:
+      - astroquery/0.4.11 Python/3.14.7 (Linux) python-requests/2.34.2
+      Accept-Encoding:
+      - gzip, deflate, zstd
+      Accept:
+      - '*/*'
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '270'
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Connection:
+      - Keep-Alive
+      DocumentRef:
+      - VOTx3704675
+      Server:
+      - Apache/2.4.52 (Ubuntu)
+      Keep-Alive:
+      - timeout=5, max=100
+      Content-Type:
+      - application/x-votable+xml
+      Vary:
+      - Accept-Encoding
+      Access-Control-Allow-Headers:
+      - Origin, X-Requested-With, Content-Type, Accept
+      Content-Disposition:
+      - attachment; filename=vizier_votable.vot
+      Access-Control-Allow-Origin:
+      - '*'
+      Date:
+      - Thu, 01 Oct 2026 09:25:24 GMT
+      Transfer-Encoding:
+      - chunked
+    body:
+      string: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<VOTABLE version=\"1.4\"\
+        \ xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n  xmlns=\"http://www.ivoa.net/xml/VOTable/v1.3\"\
+        \n  xsi:schemaLocation=\"http://www.ivoa.net/xml/VOTable/v1.3 http://www.ivoa.net/xml/VOTable/v1.3\"\
+        >\n <DESCRIPTION>\n   VizieR Astronomical Server vizier.cds.unistra.fr\n \
+        \   Date: 2026-10-01T09:25:24 [V7.6]\n   Explanations and Statistics of UCDs:\t\
+        \t\tSee LINK below\n   In case of problem, please report to:\tcds-question@unistra.fr\n\
+        \ </DESCRIPTION>\n<!-- VOTable description at http://www.ivoa.net/Documents/latest/VOT.html\
+        \ -->\n<INFO name=\"service_protocol\" value=\"ASU\">  IVOID of the protocol\
+        \ through which the data was retrieved</INFO>\n<INFO name=\"request_date\"\
+        \ value=\"2026-10-01T09:25:24\">  Query execution date</INFO>\n<INFO name=\"\
+        request\" value=\"https://vizier.cds.unistra.fr/viz-bin/votable?-oc.form=d&amp;-source=ucac4&amp;-out.max=unlimited&amp;-out=UCAC4,RAJ2000,DEJ2000,pmRA,pmDE,EpRA,Jmag,Hmag,Kmag,Bmag,Vmag,gmag,rmag,imag,e_Jmag,e_Hmag,e_Kmag,e_Bmag,e_Vmag,e_gmag,e_rmag,e_imag&amp;-out.add=_r&amp;-sort=_r&amp;-c=101.28716127-16.71612178&amp;-c.rd=0.1&amp;\"\
+        >  Full request URL (POST)</INFO>\n<INFO name=\"contact\" value=\"cds-question@unistra.fr\"\
+        >  Email or URL to contact publisher</INFO>\n<INFO name=\"server_software\"\
+        \ value=\"VizieR/7.6\">  Software version</INFO>\n<INFO name=\"publisher\"\
+        \ value=\"CDS\">  Data centre that produced the VOTable</INFO>\n<INFO name=\"\
+        header_format\" value=\"mini\"/>\n<INFO name=\"header_format\" value=\"mini\"\
+        />\n\n<RESOURCE ID=\"yCat_1322\" name=\"I/322A\" type=\"results\">\n  <DESCRIPTION>UCAC4\
+        \ Catalogue (Zacharias+, 2012)</DESCRIPTION>  <INFO name=\"ivoid\" value=\"\
+        ivo://cds.vizier/i/322a\">    IVOID of underlying data collection  </INFO>\n\
+        \  <INFO name=\"data_ivoid\" value=\"ivo://cds.vizier/i/322a\">    IVOID of\
+        \ underlying data collection  </INFO>\n  <INFO name=\"creator\" value=\"Zacharias\
+        \ N.\">    First author or institution  </INFO>\n  <INFO name=\"cites\" value=\"\
+        bibcode:2013AJ....145...44Z\">    Article or Data origin sources  </INFO>\n\
+        \  <INFO name=\"journal\" value=\"AJ\">    Journal name  </INFO>\n  <INFO\
+        \ name=\"original_date\" value=\"2013\">    Year of the article publication\
+        \  </INFO>\n  <INFO name=\"reference_url\" value=\"https://cdsarc.cds.unistra.fr/viz-bin/cat/I/322A\"\
+        >    Dataset landing page  </INFO>\n  <INFO name=\"publication_date\" value=\"\
+        2025-08-18\">    Date of first publication in the data centre  </INFO>\n \
+        \ <INFO name=\"rights_uri\" value=\"https://cds.unistra.fr/vizier-org/licences_vizier.html\"\
+        >    Licence URI  </INFO>\n\n  <COOSYS ID=\"J2000_2000.000\" system=\"eq_FK5\"\
+        \ equinox=\"J2000\" epoch=\"2000.000\"/>\n  <TABLE ID=\"I_322A_out\" name=\"\
+        I/322A/out\">\n    <DESCRIPTION>UCAC4 output (out of 113780093 stars)</DESCRIPTION>\n\
+        <!-- Fourth U.S. Naval Observatory CCD Astrograph Catalog -->\n\n    <!--\
+        \ RowName: ${UCAC4}&-c=${$poseq}&-c.rs=0.004 -->\n    <!-- Definitions of\
+        \ GROUPs and FIELDs -->\n    <FIELD name=\"_r\" ucd=\"POS_ANG_DIST_GENERAL\"\
+        \ datatype=\"double\" width=\"8\" precision=\"6\">\n      <DESCRIPTION>Distance\
+        \ from center (101.2871613-16.7161218)[FK5/J2000], at Epoch=J2000.0</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"UCAC4\" ucd=\"ID_MAIN\" datatype=\"char\"\
+        \ arraysize=\"10*\">\n      <DESCRIPTION>UCAC4 recommended identifier (ZZZ-NNNNNN)\
+        \ (1)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"RAJ2000\" ucd=\"POS_EQ_RA_MAIN\"\
+        \ ref=\"J2000_2000.000\" datatype=\"double\" width=\"11\" precision=\"7\"\
+        \ unit=\"deg\">\n      <DESCRIPTION>Mean right ascension , Ep=J2000 (2)</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"DEJ2000\" ucd=\"POS_EQ_DEC_MAIN\" ref=\"\
+        J2000_2000.000\" datatype=\"double\" width=\"11\" precision=\"7\" unit=\"\
+        deg\">\n      <DESCRIPTION>Mean declination , Ep=J2000 (2)</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"pmRA\" ucd=\"POS_EQ_PMRA\" ref=\"J2000_2000.000\"\
+        \ datatype=\"double\" width=\"7\" precision=\"1\" unit=\"mas/yr\">\n     \
+        \ <DESCRIPTION>? Proper motion in RA(*cos(Dec)) (9)</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"pmDE\" ucd=\"POS_EQ_PMDEC\"\
+        \ ref=\"J2000_2000.000\" datatype=\"double\" width=\"7\" precision=\"1\" unit=\"\
+        mas/yr\">\n      <DESCRIPTION>? Proper motion in Dec (9)</DESCRIPTION>\n \
+        \     <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"EpRA\" ucd=\"\
+        TIME_EPOCH\" datatype=\"double\" width=\"7\" precision=\"2\" unit=\"yr\">\n\
+        \      <DESCRIPTION>Central epoch for mean RA</DESCRIPTION>\n    </FIELD>\n\
+        \    <FIELD name=\"Jmag\" ucd=\"PHOT_JHN_J\" datatype=\"float\" width=\"6\"\
+        \ precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>? 2MASS J magnitude (1.2um)</DESCRIPTION>\n\
+        <!-- ? 2MASS J magnitude (1.2um) \\ifnum\\Vphase&gt;3{\\fg{gray40}(in gray\
+        \ if upper limit)}\\fi -->\n\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"Hmag\" ucd=\"PHOT_JHN_H\" datatype=\"float\" width=\"6\"\
+        \ precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>? 2MASS H magnitude (1.6um)</DESCRIPTION>\n\
+        <!-- ? 2MASS H magnitude (1.6um) \\ifnum\\Vphase&gt;3{\\fg{gray40}(in gray\
+        \ if upper limit)}\\fi -->\n\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"Kmag\" ucd=\"PHOT_JHN_K\" datatype=\"float\" width=\"6\"\
+        \ precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>? 2MASS Ks magnitude (2.2um)</DESCRIPTION>\n\
+        <!-- ? 2MASS Ks magnitude (2.2um) \\ifnum\\Vphase&gt;3{\\fg{gray40}(in gray\
+        \ if upper limit)}\\fi -->\n\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"Bmag\" ucd=\"PHOT_MAG_B\" datatype=\"float\" width=\"6\"\
+        \ precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>? B magnitude from APASS\
+        \ (12)</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD\
+        \ name=\"Vmag\" ucd=\"PHOT_MAG_V\" datatype=\"float\" width=\"6\" precision=\"\
+        3\" unit=\"mag\">\n      <DESCRIPTION>? V magnitude from APASS (12)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"gmag\" ucd=\"\
+        PHOT_GUNN_G\" datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\"\
+        >\n      <DESCRIPTION>? g magnitude from APASS (12)</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"rmag\" ucd=\"PHOT_MAG_R\"\
+        \ datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>?\
+        \ r magnitude from APASS (12)</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n\
+        \    </FIELD>\n    <FIELD name=\"imag\" ucd=\"PHOT_MAG_I\" datatype=\"float\"\
+        \ width=\"6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>? i magnitude\
+        \ from APASS (12)</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"e_Jmag\" ucd=\"ERROR\" datatype=\"float\" width=\"5\" precision=\"\
+        2\" unit=\"mag\">\n      <DESCRIPTION>? Mean error (rounded to 0.01mag)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_Hmag\" ucd=\"\
+        ERROR\" datatype=\"float\" width=\"5\" precision=\"2\" unit=\"mag\">\n   \
+        \   <DESCRIPTION>? Mean error (rounded to 0.01mag)</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_Kmag\" ucd=\"ERROR\"\
+        \ datatype=\"float\" width=\"5\" precision=\"2\" unit=\"mag\">\n      <DESCRIPTION>?\
+        \ Mean error (rounded to 0.01mag)</DESCRIPTION>\n      <VALUES null=\"NaN\"\
+        \ />\n    </FIELD>\n    <FIELD name=\"e_Bmag\" ucd=\"ERROR\" datatype=\"short\"\
+        \ width=\"2\" unit=\"cmag\">\n      <DESCRIPTION>? Estimated error on Bmag\
+        \ (12)</DESCRIPTION>\n      <VALUES null=\"-32768\" />\n    </FIELD>\n   \
+        \ <FIELD name=\"e_Vmag\" ucd=\"ERROR\" datatype=\"short\" width=\"2\" unit=\"\
+        cmag\">\n      <DESCRIPTION>? Estimated error on Vmag (12)</DESCRIPTION>\n\
+        \      <VALUES null=\"-32768\" />\n    </FIELD>\n    <FIELD name=\"e_gmag\"\
+        \ ucd=\"ERROR\" datatype=\"short\" width=\"2\" unit=\"cmag\">\n      <DESCRIPTION>?\
+        \ Estimated error on gmag (12)</DESCRIPTION>\n      <VALUES null=\"-32768\"\
+        \ />\n    </FIELD>\n    <FIELD name=\"e_rmag\" ucd=\"ERROR\" datatype=\"short\"\
+        \ width=\"2\" unit=\"cmag\">\n      <DESCRIPTION>? Estimated error on rmag\
+        \ (12)</DESCRIPTION>\n      <VALUES null=\"-32768\" />\n    </FIELD>\n   \
+        \ <FIELD name=\"e_imag\" ucd=\"ERROR\" datatype=\"short\" width=\"2\" unit=\"\
+        cmag\">\n      <DESCRIPTION>? Estimated error on imag (12)</DESCRIPTION>\n\
+        \      <VALUES null=\"-32768\" />\n    </FIELD>\n<DATA><TABLEDATA>\n<TR><TD>0.000008</TD><TD>367-016700</TD><TD>101.2871553</TD><TD>-16.7161156</TD><TD>-546.0</TD><TD>-1223.1</TD><TD>1991.25</TD><TD>-1.391</TD><TD>-1.391</TD><TD>-1.390</TD><TD>-1.087</TD><TD>-1.440</TD><TD></TD><TD></TD><TD></TD><TD>0.11</TD><TD>0.18</TD><TD>0.21</TD><TD>0</TD><TD>0</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.016475</TD><TD>367-016701</TD><TD>101.2924292</TD><TD>-16.7004387</TD><TD>0.0</TD><TD>0.0</TD><TD>1999.90</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.020234</TD><TD>367-016704</TD><TD>101.2927503</TD><TD>-16.6966084</TD><TD>0.0</TD><TD>0.0</TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.043465</TD><TD>367-016721</TD><TD>101.3325386</TD><TD>-16.7154539</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>13.693</TD><TD>13.279</TD><TD>11.542</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.21</TD><TD>0.99</TD><TD>0.99</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.048004</TD><TD>367-016716</TD><TD>101.3244830</TD><TD>-16.6840834</TD><TD>-3.5</TD><TD>-1.7</TD><TD>1998.33</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.051195</TD><TD>367-016705</TD><TD>101.3042000</TD><TD>-16.6675984</TD><TD>122.3</TD><TD>107.6</TD><TD>1993.74</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.053353</TD><TD>367-016709</TD><TD>101.3138283</TD><TD>-16.7629667</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.060107</TD><TD>367-016699</TD><TD>101.2612068</TD><TD>-16.7708492</TD><TD>0.0</TD><TD>0.0</TD><TD>1999.90</TD><TD>9.756</TD><TD>9.486</TD><TD>9.465</TD><TD>11.351</TD><TD>10.839</TD><TD>11.014</TD><TD>10.688</TD><TD>10.467</TD><TD>0.02</TD><TD>0.05</TD><TD>0.02</TD><TD>3</TD><TD>1</TD><TD>10</TD><TD>1</TD><TD>6</TD></TR>\n\
+        <TR><TD>0.060631</TD><TD>367-016720</TD><TD>101.3286374</TD><TD>-16.6703206</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.061272</TD><TD>367-016706</TD><TD>101.3067180</TD><TD>-16.6577839</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>13.079</TD><TD>12.492</TD><TD>12.007</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.09</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.064604</TD><TD>367-016726</TD><TD>101.3453400</TD><TD>-16.6834362</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.065963</TD><TD>367-016723</TD><TD>101.3350562</TD><TD>-16.6687245</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.067327</TD><TD>367-016698</TD><TD>101.2563245</TD><TD>-16.7766273</TD><TD></TD><TD></TD><TD>1999.90</TD><TD>11.882</TD><TD>11.287</TD><TD>11.013</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.02</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.070375</TD><TD>367-016691</TD><TD>101.2312471</TD><TD>-16.6704687</TD><TD></TD><TD></TD><TD>1999.90</TD><TD>13.941</TD><TD>13.999</TD><TD>13.799</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.05</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.070594</TD><TD>367-016685</TD><TD>101.2219756</TD><TD>-16.6831795</TD><TD></TD><TD></TD><TD>1999.90</TD><TD>14.530</TD><TD>14.179</TD><TD>14.972</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.13</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.070916</TD><TD>367-016682</TD><TD>101.2138039</TD><TD>-16.7064906</TD><TD></TD><TD></TD><TD>1999.90</TD><TD>15.065</TD><TD>14.929</TD><TD>14.507</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.10</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.071966</TD><TD>367-016687</TD><TD>101.2242998</TD><TD>-16.7555575</TD><TD></TD><TD></TD><TD>1999.90</TD><TD>14.851</TD><TD>14.778</TD><TD>14.583</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.08</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.072729</TD><TD>367-016688</TD><TD>101.2251412</TD><TD>-16.6741642</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>13.772</TD><TD>13.405</TD><TD>13.451</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.05</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.073950</TD><TD>367-016680</TD><TD>101.2115256</TD><TD>-16.7310042</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.074396</TD><TD>367-016713</TD><TD>101.3213974</TD><TD>-16.7829050</TD><TD></TD><TD></TD><TD>1999.90</TD><TD>14.471</TD><TD>14.230</TD><TD>14.143</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.06</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.074471</TD><TD>367-016727</TD><TD>101.3490112</TD><TD>-16.7612642</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.075969</TD><TD>367-016693</TD><TD>101.2356324</TD><TD>-16.7738842</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>14.135</TD><TD>13.615</TD><TD>13.573</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.05</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.078085</TD><TD>367-016707</TD><TD>101.3118356</TD><TD>-16.6416998</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>13.011</TD><TD>12.817</TD><TD>12.747</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.03</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.078138</TD><TD>367-016731</TD><TD>101.3674474</TD><TD>-16.7022439</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.078622</TD><TD>367-016696</TD><TD>101.2436962</TD><TD>-16.6494287</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>14.046</TD><TD>14.358</TD><TD>14.643</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.11</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.078631</TD><TD>367-016694</TD><TD>101.2364992</TD><TD>-16.6542523</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>12.799</TD><TD>12.565</TD><TD>12.395</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.03</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.079662</TD><TD>367-016695</TD><TD>101.2369606</TD><TD>-16.7796448</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>13.036</TD><TD>12.749</TD><TD>12.559</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.03</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.079955</TD><TD>367-016703</TD><TD>101.2926950</TD><TD>-16.6363423</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>13.239</TD><TD>13.039</TD><TD>12.988</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.03</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.081041</TD><TD>367-016722</TD><TD>101.3332398</TD><TD>-16.6481556</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.081125</TD><TD>367-016677</TD><TD>101.2101865</TD><TD>-16.6822781</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>13.632</TD><TD>12.835</TD><TD>12.638</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.03</TD><TD>0.04</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.081312</TD><TD>367-016684</TD><TD>101.2211189</TD><TD>-16.6650356</TD><TD></TD><TD></TD><TD>1999.90</TD><TD>14.531</TD><TD>14.387</TD><TD>14.323</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.04</TD><TD>0.08</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.081843</TD><TD>367-016708</TD><TD>101.3128883</TD><TD>-16.6380770</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>15.139</TD><TD>15.489</TD><TD>15.261</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.10</TD><TD>0.17</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.083407</TD><TD>367-016675</TD><TD>101.2081739</TD><TD>-16.7512625</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>14.112</TD><TD>13.770</TD><TD>13.716</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.02</TD><TD>0.05</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.083733</TD><TD>367-016714</TD><TD>101.3231553</TD><TD>-16.6398178</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>15.484</TD><TD>14.399</TD><TD>14.381</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.05</TD><TD>0.08</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.084115</TD><TD>367-016729</TD><TD>101.3588848</TD><TD>-16.6675889</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.084383</TD><TD>367-016673</TD><TD>101.2032559</TD><TD>-16.6903934</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>12.736</TD><TD>12.299</TD><TD>12.136</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.03</TD><TD>0.03</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.084482</TD><TD>367-016676</TD><TD>101.2085103</TD><TD>-16.7543859</TD><TD></TD><TD></TD><TD>1999.90</TD><TD>15.157</TD><TD>15.363</TD><TD>15.126</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.09</TD><TD>0.14</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.086466</TD><TD>367-016715</TD><TD>101.3235765</TD><TD>-16.6370045</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>13.903</TD><TD>13.548</TD><TD>13.460</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.03</TD><TD>0.03</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.086746</TD><TD>367-016738</TD><TD>101.3744842</TD><TD>-16.7391700</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.087116</TD><TD>367-016717</TD><TD>101.3246424</TD><TD>-16.7955012</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>12.653</TD><TD>12.497</TD><TD>12.316</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.02</TD><TD>0.02</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.087561</TD><TD>367-016718</TD><TD>101.3257742</TD><TD>-16.7954934</TD><TD>31.3</TD><TD>-3.9</TD><TD>1968.63</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.089508</TD><TD>367-016737</TD><TD>101.3738012</TD><TD>-16.7496995</TD><TD>-1.5</TD><TD>-1.5</TD><TD>1999.27</TD><TD></TD><TD></TD><TD></TD><TD>13.767</TD><TD>13.277</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>18</TD><TD>1</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.089744</TD><TD>367-016674</TD><TD>101.2065406</TD><TD>-16.6703992</TD><TD>-0.5</TD><TD>1.4</TD><TD>1999.56</TD><TD>8.981</TD><TD>8.173</TD><TD>7.879</TD><TD>14.438</TD><TD>12.305</TD><TD>13.522</TD><TD>11.570</TD><TD>10.839</TD><TD>0.02</TD><TD>0.03</TD><TD>0.02</TD><TD>1</TD><TD>1</TD><TD>1</TD><TD>6</TD><TD>8</TD></TR>\n\
+        <TR><TD>0.089840</TD><TD>367-016710</TD><TD>101.3155262</TD><TD>-16.6304898</TD><TD>-0.9</TD><TD>1.5</TD><TD>1999.09</TD><TD>12.059</TD><TD>11.820</TD><TD>11.726</TD><TD>13.822</TD><TD>13.159</TD><TD>13.624</TD><TD>13.039</TD><TD>12.897</TD><TD>0.99</TD><TD>0.03</TD><TD>0.02</TD><TD>1</TD><TD>1</TD><TD>20</TD><TD>10</TD><TD>1</TD></TR>\n\
+        <TR><TD>0.090948</TD><TD>367-016683</TD><TD>101.2197095</TD><TD>-16.7801503</TD><TD>-12.0</TD><TD>8.0</TD><TD>1999.03</TD><TD>12.396</TD><TD>12.154</TD><TD>12.027</TD><TD>11.676</TD><TD>11.302</TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.03</TD><TD>0.03</TD><TD>2</TD><TD>1</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.090951</TD><TD>367-016697</TD><TD>101.2445148</TD><TD>-16.7973898</TD><TD>13.2</TD><TD>-23.4</TD><TD>1991.12</TD><TD>6.504</TD><TD>5.953</TD><TD>5.802</TD><TD>9.988</TD><TD>8.579</TD><TD></TD><TD></TD><TD></TD><TD>0.02</TD><TD>0.03</TD><TD>0.02</TD><TD>99</TD><TD>99</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.092337</TD><TD>367-016728</TD><TD>101.3504471</TD><TD>-16.6464725</TD><TD>5.7</TD><TD>-12.6</TD><TD>1999.15</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.092463</TD><TD>366-017168</TD><TD>101.3229230</TD><TD>-16.8020098</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>14.252</TD><TD>13.841</TD><TD>13.632</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.02</TD><TD>0.03</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.092632</TD><TD>367-016692</TD><TD>101.2348483</TD><TD>-16.6382150</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>12.897</TD><TD>12.479</TD><TD>12.236</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.03</TD><TD>0.04</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.093005</TD><TD>367-016669</TD><TD>101.1924109</TD><TD>-16.6957689</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.093073</TD><TD>367-016665</TD><TD>101.1899939</TD><TD>-16.7146598</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.093152</TD><TD>367-016735</TD><TD>101.3725259</TD><TD>-16.6714950</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.094531</TD><TD>367-016739</TD><TD>101.3766445</TD><TD>-16.6762487</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.094980</TD><TD>367-016681</TD><TD>101.2137568</TD><TD>-16.7800006</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>15.676</TD><TD>15.697</TD><TD>15.423</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.11</TD><TD>0.17</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.095322</TD><TD>366-017172</TD><TD>101.3290183</TD><TD>-16.8026081</TD><TD>-5.9</TD><TD>9.5</TD><TD>1999.62</TD><TD>9.292</TD><TD>8.675</TD><TD>8.567</TD><TD>12.834</TD><TD>11.589</TD><TD>12.282</TD><TD>11.244</TD><TD>10.633</TD><TD>0.02</TD><TD>0.03</TD><TD>0.02</TD><TD>6</TD><TD>1</TD><TD>0</TD><TD>0</TD><TD>0</TD></TR>\n\
+        <TR><TD>0.095443</TD><TD>366-017120</TD><TD>101.2436033</TD><TD>-16.8019689</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>13.583</TD><TD>13.129</TD><TD>13.815</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.09</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.095622</TD><TD>367-016736</TD><TD>101.3731859</TD><TD>-16.6676045</TD><TD></TD><TD></TD><TD>1999.90</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.095968</TD><TD>367-016668</TD><TD>101.1917215</TD><TD>-16.6869092</TD><TD>6.3</TD><TD>-4.1</TD><TD>1998.06</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.097093</TD><TD>367-016670</TD><TD>101.1942400</TD><TD>-16.6773214</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.097222</TD><TD>367-016678</TD><TD>101.2106386</TD><TD>-16.7800173</TD><TD></TD><TD></TD><TD>1999.90</TD><TD>12.653</TD><TD>12.266</TD><TD>12.168</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.03</TD><TD>0.02</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.097683</TD><TD>367-016741</TD><TD>101.3790003</TD><TD>-16.7586306</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.098595</TD><TD>367-016679</TD><TD>101.2107315</TD><TD>-16.6500845</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>12.975</TD><TD>12.675</TD><TD>12.693</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.03</TD><TD>0.03</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.098602</TD><TD>367-016733</TD><TD>101.3701712</TD><TD>-16.6578137</TD><TD>0.5</TD><TD>0.7</TD><TD>1999.42</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.099512</TD><TD>366-017114</TD><TD>101.2407039</TD><TD>-16.8051375</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>13.312</TD><TD>12.924</TD><TD>12.760</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.02</TD><TD>0.04</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        </TABLEDATA></DATA>\n<INFO name=\"matches\" value=\"64\">matching records</INFO>\n\
+        \    <INFO name=\"meta\" value=\"message\">      memory restriction caused\
+        \ by sort option (partial sort in bunches of 672882)    </INFO>\n\n<INFO name=\"\
+        Warning\" value=\"+++memory restriction caused by {\\bf sort} option (partial\
+        \ sort in bunches of 672882)\"/>\n  </TABLE>\n</RESOURCE>\n</VOTABLE>\n"
+- request:
+    method: POST
+    uri: https://vizier.cds.unistra.fr/viz-bin/votable
+    body: '-source=ucac4
+
+      -out.max=unlimited
+
+      -out=UCAC4,RAJ2000,DEJ2000,pmRA,pmDE,EpRA,Jmag,Hmag,Kmag,Bmag,Vmag,gmag,rmag,imag,e_Jmag,e_Hmag,e_Kmag,e_Bmag,e_Vmag,e_gmag,e_rmag,e_imag
+
+      -out.add=_r
+
+      -sort=_r
+
+      -c=101.28750594-16.71611703
+
+      -c.rd=0.1
+
+      -out.meta=huUD
+
+      -out.form=mini
+
+      -oc.form=d'
+    headers:
+      User-Agent:
+      - astroquery/0.4.11 Python/3.14.7 (Linux) python-requests/2.34.2
+      Accept-Encoding:
+      - gzip, deflate, zstd
+      Accept:
+      - '*/*'
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '270'
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Connection:
+      - Keep-Alive
+      DocumentRef:
+      - VOTx3707354
+      Server:
+      - Apache/2.4.52 (Ubuntu)
+      Keep-Alive:
+      - timeout=5, max=100
+      Content-Type:
+      - application/x-votable+xml
+      Vary:
+      - Accept-Encoding
+      Access-Control-Allow-Headers:
+      - Origin, X-Requested-With, Content-Type, Accept
+      Content-Disposition:
+      - attachment; filename=vizier_votable.vot
+      Access-Control-Allow-Origin:
+      - '*'
+      Date:
+      - Thu, 01 Oct 2026 09:25:29 GMT
+      Transfer-Encoding:
+      - chunked
+    body:
+      string: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<VOTABLE version=\"1.4\"\
+        \ xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n  xmlns=\"http://www.ivoa.net/xml/VOTable/v1.3\"\
+        \n  xsi:schemaLocation=\"http://www.ivoa.net/xml/VOTable/v1.3 http://www.ivoa.net/xml/VOTable/v1.3\"\
+        >\n <DESCRIPTION>\n   VizieR Astronomical Server vizier.cds.unistra.fr\n \
+        \   Date: 2026-10-01T09:25:29 [V7.6]\n   Explanations and Statistics of UCDs:\t\
+        \t\tSee LINK below\n   In case of problem, please report to:\tcds-question@unistra.fr\n\
+        \ </DESCRIPTION>\n<!-- VOTable description at http://www.ivoa.net/Documents/latest/VOT.html\
+        \ -->\n<INFO name=\"service_protocol\" value=\"ASU\">  IVOID of the protocol\
+        \ through which the data was retrieved</INFO>\n<INFO name=\"request_date\"\
+        \ value=\"2026-10-01T09:25:29\">  Query execution date</INFO>\n<INFO name=\"\
+        request\" value=\"https://vizier.cds.unistra.fr/viz-bin/votable?-oc.form=d&amp;-source=ucac4&amp;-out.max=unlimited&amp;-out=UCAC4,RAJ2000,DEJ2000,pmRA,pmDE,EpRA,Jmag,Hmag,Kmag,Bmag,Vmag,gmag,rmag,imag,e_Jmag,e_Hmag,e_Kmag,e_Bmag,e_Vmag,e_gmag,e_rmag,e_imag&amp;-out.add=_r&amp;-sort=_r&amp;-c=101.28750594-16.71611703&amp;-c.rd=0.1&amp;\"\
+        >  Full request URL (POST)</INFO>\n<INFO name=\"contact\" value=\"cds-question@unistra.fr\"\
+        >  Email or URL to contact publisher</INFO>\n<INFO name=\"server_software\"\
+        \ value=\"VizieR/7.6\">  Software version</INFO>\n<INFO name=\"publisher\"\
+        \ value=\"CDS\">  Data centre that produced the VOTable</INFO>\n<INFO name=\"\
+        header_format\" value=\"mini\"/>\n<INFO name=\"header_format\" value=\"mini\"\
+        />\n\n<RESOURCE ID=\"yCat_1322\" name=\"I/322A\" type=\"results\">\n  <DESCRIPTION>UCAC4\
+        \ Catalogue (Zacharias+, 2012)</DESCRIPTION>  <INFO name=\"ivoid\" value=\"\
+        ivo://cds.vizier/i/322a\">    IVOID of underlying data collection  </INFO>\n\
+        \  <INFO name=\"data_ivoid\" value=\"ivo://cds.vizier/i/322a\">    IVOID of\
+        \ underlying data collection  </INFO>\n  <INFO name=\"creator\" value=\"Zacharias\
+        \ N.\">    First author or institution  </INFO>\n  <INFO name=\"cites\" value=\"\
+        bibcode:2013AJ....145...44Z\">    Article or Data origin sources  </INFO>\n\
+        \  <INFO name=\"journal\" value=\"AJ\">    Journal name  </INFO>\n  <INFO\
+        \ name=\"original_date\" value=\"2013\">    Year of the article publication\
+        \  </INFO>\n  <INFO name=\"reference_url\" value=\"https://cdsarc.cds.unistra.fr/viz-bin/cat/I/322A\"\
+        >    Dataset landing page  </INFO>\n  <INFO name=\"publication_date\" value=\"\
+        2025-08-18\">    Date of first publication in the data centre  </INFO>\n \
+        \ <INFO name=\"rights_uri\" value=\"https://cds.unistra.fr/vizier-org/licences_vizier.html\"\
+        >    Licence URI  </INFO>\n\n  <COOSYS ID=\"J2000_2000.000\" system=\"eq_FK5\"\
+        \ equinox=\"J2000\" epoch=\"2000.000\"/>\n  <TABLE ID=\"I_322A_out\" name=\"\
+        I/322A/out\">\n    <DESCRIPTION>UCAC4 output (out of 113780093 stars)</DESCRIPTION>\n\
+        <!-- Fourth U.S. Naval Observatory CCD Astrograph Catalog -->\n\n    <!--\
+        \ RowName: ${UCAC4}&-c=${$poseq}&-c.rs=0.004 -->\n    <!-- Definitions of\
+        \ GROUPs and FIELDs -->\n    <FIELD name=\"_r\" ucd=\"POS_ANG_DIST_GENERAL\"\
+        \ datatype=\"double\" width=\"8\" precision=\"6\">\n      <DESCRIPTION>Distance\
+        \ from center (101.2875059-16.7161170)[FK5/J2000], at Epoch=J2000.0</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"UCAC4\" ucd=\"ID_MAIN\" datatype=\"char\"\
+        \ arraysize=\"10*\">\n      <DESCRIPTION>UCAC4 recommended identifier (ZZZ-NNNNNN)\
+        \ (1)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"RAJ2000\" ucd=\"POS_EQ_RA_MAIN\"\
+        \ ref=\"J2000_2000.000\" datatype=\"double\" width=\"11\" precision=\"7\"\
+        \ unit=\"deg\">\n      <DESCRIPTION>Mean right ascension , Ep=J2000 (2)</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"DEJ2000\" ucd=\"POS_EQ_DEC_MAIN\" ref=\"\
+        J2000_2000.000\" datatype=\"double\" width=\"11\" precision=\"7\" unit=\"\
+        deg\">\n      <DESCRIPTION>Mean declination , Ep=J2000 (2)</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"pmRA\" ucd=\"POS_EQ_PMRA\" ref=\"J2000_2000.000\"\
+        \ datatype=\"double\" width=\"7\" precision=\"1\" unit=\"mas/yr\">\n     \
+        \ <DESCRIPTION>? Proper motion in RA(*cos(Dec)) (9)</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"pmDE\" ucd=\"POS_EQ_PMDEC\"\
+        \ ref=\"J2000_2000.000\" datatype=\"double\" width=\"7\" precision=\"1\" unit=\"\
+        mas/yr\">\n      <DESCRIPTION>? Proper motion in Dec (9)</DESCRIPTION>\n \
+        \     <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"EpRA\" ucd=\"\
+        TIME_EPOCH\" datatype=\"double\" width=\"7\" precision=\"2\" unit=\"yr\">\n\
+        \      <DESCRIPTION>Central epoch for mean RA</DESCRIPTION>\n    </FIELD>\n\
+        \    <FIELD name=\"Jmag\" ucd=\"PHOT_JHN_J\" datatype=\"float\" width=\"6\"\
+        \ precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>? 2MASS J magnitude (1.2um)</DESCRIPTION>\n\
+        <!-- ? 2MASS J magnitude (1.2um) \\ifnum\\Vphase&gt;3{\\fg{gray40}(in gray\
+        \ if upper limit)}\\fi -->\n\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"Hmag\" ucd=\"PHOT_JHN_H\" datatype=\"float\" width=\"6\"\
+        \ precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>? 2MASS H magnitude (1.6um)</DESCRIPTION>\n\
+        <!-- ? 2MASS H magnitude (1.6um) \\ifnum\\Vphase&gt;3{\\fg{gray40}(in gray\
+        \ if upper limit)}\\fi -->\n\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"Kmag\" ucd=\"PHOT_JHN_K\" datatype=\"float\" width=\"6\"\
+        \ precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>? 2MASS Ks magnitude (2.2um)</DESCRIPTION>\n\
+        <!-- ? 2MASS Ks magnitude (2.2um) \\ifnum\\Vphase&gt;3{\\fg{gray40}(in gray\
+        \ if upper limit)}\\fi -->\n\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"Bmag\" ucd=\"PHOT_MAG_B\" datatype=\"float\" width=\"6\"\
+        \ precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>? B magnitude from APASS\
+        \ (12)</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD\
+        \ name=\"Vmag\" ucd=\"PHOT_MAG_V\" datatype=\"float\" width=\"6\" precision=\"\
+        3\" unit=\"mag\">\n      <DESCRIPTION>? V magnitude from APASS (12)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"gmag\" ucd=\"\
+        PHOT_GUNN_G\" datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\"\
+        >\n      <DESCRIPTION>? g magnitude from APASS (12)</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"rmag\" ucd=\"PHOT_MAG_R\"\
+        \ datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>?\
+        \ r magnitude from APASS (12)</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n\
+        \    </FIELD>\n    <FIELD name=\"imag\" ucd=\"PHOT_MAG_I\" datatype=\"float\"\
+        \ width=\"6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>? i magnitude\
+        \ from APASS (12)</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"e_Jmag\" ucd=\"ERROR\" datatype=\"float\" width=\"5\" precision=\"\
+        2\" unit=\"mag\">\n      <DESCRIPTION>? Mean error (rounded to 0.01mag)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_Hmag\" ucd=\"\
+        ERROR\" datatype=\"float\" width=\"5\" precision=\"2\" unit=\"mag\">\n   \
+        \   <DESCRIPTION>? Mean error (rounded to 0.01mag)</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_Kmag\" ucd=\"ERROR\"\
+        \ datatype=\"float\" width=\"5\" precision=\"2\" unit=\"mag\">\n      <DESCRIPTION>?\
+        \ Mean error (rounded to 0.01mag)</DESCRIPTION>\n      <VALUES null=\"NaN\"\
+        \ />\n    </FIELD>\n    <FIELD name=\"e_Bmag\" ucd=\"ERROR\" datatype=\"short\"\
+        \ width=\"2\" unit=\"cmag\">\n      <DESCRIPTION>? Estimated error on Bmag\
+        \ (12)</DESCRIPTION>\n      <VALUES null=\"-32768\" />\n    </FIELD>\n   \
+        \ <FIELD name=\"e_Vmag\" ucd=\"ERROR\" datatype=\"short\" width=\"2\" unit=\"\
+        cmag\">\n      <DESCRIPTION>? Estimated error on Vmag (12)</DESCRIPTION>\n\
+        \      <VALUES null=\"-32768\" />\n    </FIELD>\n    <FIELD name=\"e_gmag\"\
+        \ ucd=\"ERROR\" datatype=\"short\" width=\"2\" unit=\"cmag\">\n      <DESCRIPTION>?\
+        \ Estimated error on gmag (12)</DESCRIPTION>\n      <VALUES null=\"-32768\"\
+        \ />\n    </FIELD>\n    <FIELD name=\"e_rmag\" ucd=\"ERROR\" datatype=\"short\"\
+        \ width=\"2\" unit=\"cmag\">\n      <DESCRIPTION>? Estimated error on rmag\
+        \ (12)</DESCRIPTION>\n      <VALUES null=\"-32768\" />\n    </FIELD>\n   \
+        \ <FIELD name=\"e_imag\" ucd=\"ERROR\" datatype=\"short\" width=\"2\" unit=\"\
+        cmag\">\n      <DESCRIPTION>? Estimated error on imag (12)</DESCRIPTION>\n\
+        \      <VALUES null=\"-32768\" />\n    </FIELD>\n<DATA><TABLEDATA>\n<TR><TD>0.000336</TD><TD>367-016700</TD><TD>101.2871553</TD><TD>-16.7161156</TD><TD>-546.0</TD><TD>-1223.1</TD><TD>1991.25</TD><TD>-1.391</TD><TD>-1.391</TD><TD>-1.390</TD><TD>-1.087</TD><TD>-1.440</TD><TD></TD><TD></TD><TD></TD><TD>0.11</TD><TD>0.18</TD><TD>0.21</TD><TD>0</TD><TD>0</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.016372</TD><TD>367-016701</TD><TD>101.2924292</TD><TD>-16.7004387</TD><TD>0.0</TD><TD>0.0</TD><TD>1999.90</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.020145</TD><TD>367-016704</TD><TD>101.2927503</TD><TD>-16.6966084</TD><TD>0.0</TD><TD>0.0</TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.043135</TD><TD>367-016721</TD><TD>101.3325386</TD><TD>-16.7154539</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>13.693</TD><TD>13.279</TD><TD>11.542</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.21</TD><TD>0.99</TD><TD>0.99</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.047755</TD><TD>367-016716</TD><TD>101.3244830</TD><TD>-16.6840834</TD><TD>-3.5</TD><TD>-1.7</TD><TD>1998.33</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.051086</TD><TD>367-016705</TD><TD>101.3042000</TD><TD>-16.6675984</TD><TD>122.3</TD><TD>107.6</TD><TD>1993.74</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.053200</TD><TD>367-016709</TD><TD>101.3138283</TD><TD>-16.7629667</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.060248</TD><TD>367-016699</TD><TD>101.2612068</TD><TD>-16.7708492</TD><TD>0.0</TD><TD>0.0</TD><TD>1999.90</TD><TD>9.756</TD><TD>9.486</TD><TD>9.465</TD><TD>11.351</TD><TD>10.839</TD><TD>11.014</TD><TD>10.688</TD><TD>10.467</TD><TD>0.02</TD><TD>0.05</TD><TD>0.02</TD><TD>3</TD><TD>1</TD><TD>10</TD><TD>1</TD><TD>6</TD></TR>\n\
+        <TR><TD>0.060411</TD><TD>367-016720</TD><TD>101.3286374</TD><TD>-16.6703206</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.061167</TD><TD>367-016706</TD><TD>101.3067180</TD><TD>-16.6577839</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>13.079</TD><TD>12.492</TD><TD>12.007</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.09</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.064317</TD><TD>367-016726</TD><TD>101.3453400</TD><TD>-16.6834362</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.065731</TD><TD>367-016723</TD><TD>101.3350562</TD><TD>-16.6687245</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.067476</TD><TD>367-016698</TD><TD>101.2563245</TD><TD>-16.7766273</TD><TD></TD><TD></TD><TD>1999.90</TD><TD>11.882</TD><TD>11.287</TD><TD>11.013</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.02</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.070623</TD><TD>367-016691</TD><TD>101.2312471</TD><TD>-16.6704687</TD><TD></TD><TD></TD><TD>1999.90</TD><TD>13.941</TD><TD>13.999</TD><TD>13.799</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.05</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.070884</TD><TD>367-016685</TD><TD>101.2219756</TD><TD>-16.6831795</TD><TD></TD><TD></TD><TD>1999.90</TD><TD>14.530</TD><TD>14.179</TD><TD>14.972</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.13</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.071243</TD><TD>367-016682</TD><TD>101.2138039</TD><TD>-16.7064906</TD><TD></TD><TD></TD><TD>1999.90</TD><TD>15.065</TD><TD>14.929</TD><TD>14.507</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.10</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.072245</TD><TD>367-016687</TD><TD>101.2242998</TD><TD>-16.7555575</TD><TD></TD><TD></TD><TD>1999.90</TD><TD>14.851</TD><TD>14.778</TD><TD>14.583</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.08</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.072996</TD><TD>367-016688</TD><TD>101.2251412</TD><TD>-16.6741642</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>13.772</TD><TD>13.405</TD><TD>13.451</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.05</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.074212</TD><TD>367-016727</TD><TD>101.3490112</TD><TD>-16.7612642</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.074255</TD><TD>367-016713</TD><TD>101.3213974</TD><TD>-16.7829050</TD><TD></TD><TD></TD><TD>1999.90</TD><TD>14.471</TD><TD>14.230</TD><TD>14.143</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.06</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.074274</TD><TD>367-016680</TD><TD>101.2115256</TD><TD>-16.7310042</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.076188</TD><TD>367-016693</TD><TD>101.2356324</TD><TD>-16.7738842</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>14.135</TD><TD>13.615</TD><TD>13.573</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.05</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.077813</TD><TD>367-016731</TD><TD>101.3674474</TD><TD>-16.7022439</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.077981</TD><TD>367-016707</TD><TD>101.3118356</TD><TD>-16.6416998</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>13.011</TD><TD>12.817</TD><TD>12.747</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.03</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.078794</TD><TD>367-016696</TD><TD>101.2436962</TD><TD>-16.6494287</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>14.046</TD><TD>14.358</TD><TD>14.643</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.11</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.078832</TD><TD>367-016694</TD><TD>101.2364992</TD><TD>-16.6542523</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>12.799</TD><TD>12.565</TD><TD>12.395</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.03</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.079865</TD><TD>367-016695</TD><TD>101.2369606</TD><TD>-16.7796448</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>13.036</TD><TD>12.749</TD><TD>12.559</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.03</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.079929</TD><TD>367-016703</TD><TD>101.2926950</TD><TD>-16.6363423</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>13.239</TD><TD>13.039</TD><TD>12.988</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.03</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.080858</TD><TD>367-016722</TD><TD>101.3332398</TD><TD>-16.6481556</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.081423</TD><TD>367-016677</TD><TD>101.2101865</TD><TD>-16.6822781</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>13.632</TD><TD>12.835</TD><TD>12.638</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.03</TD><TD>0.04</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.081566</TD><TD>367-016684</TD><TD>101.2211189</TD><TD>-16.6650356</TD><TD></TD><TD></TD><TD>1999.90</TD><TD>14.531</TD><TD>14.387</TD><TD>14.323</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.04</TD><TD>0.08</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.081740</TD><TD>367-016708</TD><TD>101.3128883</TD><TD>-16.6380770</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>15.139</TD><TD>15.489</TD><TD>15.261</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.10</TD><TD>0.17</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.083593</TD><TD>367-016714</TD><TD>101.3231553</TD><TD>-16.6398178</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>15.484</TD><TD>14.399</TD><TD>14.381</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.05</TD><TD>0.08</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.083708</TD><TD>367-016675</TD><TD>101.2081739</TD><TD>-16.7512625</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>14.112</TD><TD>13.770</TD><TD>13.716</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.02</TD><TD>0.05</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.083843</TD><TD>367-016729</TD><TD>101.3588848</TD><TD>-16.6675889</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.084696</TD><TD>367-016673</TD><TD>101.2032559</TD><TD>-16.6903934</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>12.736</TD><TD>12.299</TD><TD>12.136</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.03</TD><TD>0.03</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.084779</TD><TD>367-016676</TD><TD>101.2085103</TD><TD>-16.7543859</TD><TD></TD><TD></TD><TD>1999.90</TD><TD>15.157</TD><TD>15.363</TD><TD>15.126</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.09</TD><TD>0.14</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.086329</TD><TD>367-016715</TD><TD>101.3235765</TD><TD>-16.6370045</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>13.903</TD><TD>13.548</TD><TD>13.460</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.03</TD><TD>0.03</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.086429</TD><TD>367-016738</TD><TD>101.3744842</TD><TD>-16.7391700</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.086985</TD><TD>367-016717</TD><TD>101.3246424</TD><TD>-16.7955012</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>12.653</TD><TD>12.497</TD><TD>12.316</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.02</TD><TD>0.02</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.087426</TD><TD>367-016718</TD><TD>101.3257742</TD><TD>-16.7954934</TD><TD>31.3</TD><TD>-3.9</TD><TD>1968.63</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.089204</TD><TD>367-016737</TD><TD>101.3738012</TD><TD>-16.7496995</TD><TD>-1.5</TD><TD>-1.5</TD><TD>1999.27</TD><TD></TD><TD></TD><TD></TD><TD>13.767</TD><TD>13.277</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>18</TD><TD>1</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.089736</TD><TD>367-016710</TD><TD>101.3155262</TD><TD>-16.6304898</TD><TD>-0.9</TD><TD>1.5</TD><TD>1999.09</TD><TD>12.059</TD><TD>11.820</TD><TD>11.726</TD><TD>13.822</TD><TD>13.159</TD><TD>13.624</TD><TD>13.039</TD><TD>12.897</TD><TD>0.99</TD><TD>0.03</TD><TD>0.02</TD><TD>1</TD><TD>1</TD><TD>20</TD><TD>10</TD><TD>1</TD></TR>\n\
+        <TR><TD>0.090026</TD><TD>367-016674</TD><TD>101.2065406</TD><TD>-16.6703992</TD><TD>-0.5</TD><TD>1.4</TD><TD>1999.56</TD><TD>8.981</TD><TD>8.173</TD><TD>7.879</TD><TD>14.438</TD><TD>12.305</TD><TD>13.522</TD><TD>11.570</TD><TD>10.839</TD><TD>0.02</TD><TD>0.03</TD><TD>0.02</TD><TD>1</TD><TD>1</TD><TD>1</TD><TD>6</TD><TD>8</TD></TR>\n\
+        <TR><TD>0.091104</TD><TD>367-016697</TD><TD>101.2445148</TD><TD>-16.7973898</TD><TD>13.2</TD><TD>-23.4</TD><TD>1991.12</TD><TD>6.504</TD><TD>5.953</TD><TD>5.802</TD><TD>9.988</TD><TD>8.579</TD><TD></TD><TD></TD><TD></TD><TD>0.02</TD><TD>0.03</TD><TD>0.02</TD><TD>99</TD><TD>99</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.091186</TD><TD>367-016683</TD><TD>101.2197095</TD><TD>-16.7801503</TD><TD>-12.0</TD><TD>8.0</TD><TD>1999.03</TD><TD>12.396</TD><TD>12.154</TD><TD>12.027</TD><TD>11.676</TD><TD>11.302</TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.03</TD><TD>0.03</TD><TD>2</TD><TD>1</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.092117</TD><TD>367-016728</TD><TD>101.3504471</TD><TD>-16.6464725</TD><TD>5.7</TD><TD>-12.6</TD><TD>1999.15</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.092345</TD><TD>366-017168</TD><TD>101.3229230</TD><TD>-16.8020098</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>14.252</TD><TD>13.841</TD><TD>13.632</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.02</TD><TD>0.03</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.092807</TD><TD>367-016692</TD><TD>101.2348483</TD><TD>-16.6382150</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>12.897</TD><TD>12.479</TD><TD>12.236</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.03</TD><TD>0.04</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.092860</TD><TD>367-016735</TD><TD>101.3725259</TD><TD>-16.6714950</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.093327</TD><TD>367-016669</TD><TD>101.1924109</TD><TD>-16.6957689</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.093403</TD><TD>367-016665</TD><TD>101.1899939</TD><TD>-16.7146598</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.094230</TD><TD>367-016739</TD><TD>101.3766445</TD><TD>-16.6762487</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.095188</TD><TD>366-017172</TD><TD>101.3290183</TD><TD>-16.8026081</TD><TD>-5.9</TD><TD>9.5</TD><TD>1999.62</TD><TD>9.292</TD><TD>8.675</TD><TD>8.567</TD><TD>12.834</TD><TD>11.589</TD><TD>12.282</TD><TD>11.244</TD><TD>10.633</TD><TD>0.02</TD><TD>0.03</TD><TD>0.02</TD><TD>6</TD><TD>1</TD><TD>0</TD><TD>0</TD><TD>0</TD></TR>\n\
+        <TR><TD>0.095228</TD><TD>367-016681</TD><TD>101.2137568</TD><TD>-16.7800006</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>15.676</TD><TD>15.697</TD><TD>15.423</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.11</TD><TD>0.17</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.095336</TD><TD>367-016736</TD><TD>101.3731859</TD><TD>-16.6676045</TD><TD></TD><TD></TD><TD>1999.90</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.095591</TD><TD>366-017120</TD><TD>101.2436033</TD><TD>-16.8019689</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>13.583</TD><TD>13.129</TD><TD>13.815</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.09</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.096281</TD><TD>367-016668</TD><TD>101.1917215</TD><TD>-16.6869092</TD><TD>6.3</TD><TD>-4.1</TD><TD>1998.06</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.097388</TD><TD>367-016741</TD><TD>101.3790003</TD><TD>-16.7586306</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.097394</TD><TD>367-016670</TD><TD>101.1942400</TD><TD>-16.6773214</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.097474</TD><TD>367-016678</TD><TD>101.2106386</TD><TD>-16.7800173</TD><TD></TD><TD></TD><TD>1999.90</TD><TD>12.653</TD><TD>12.266</TD><TD>12.168</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.03</TD><TD>0.02</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.098333</TD><TD>367-016733</TD><TD>101.3701712</TD><TD>-16.6578137</TD><TD>0.5</TD><TD>0.7</TD><TD>1999.42</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.098837</TD><TD>367-016679</TD><TD>101.2107315</TD><TD>-16.6500845</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>12.975</TD><TD>12.675</TD><TD>12.693</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.03</TD><TD>0.03</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.099664</TD><TD>366-017114</TD><TD>101.2407039</TD><TD>-16.8051375</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>13.312</TD><TD>12.924</TD><TD>12.760</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.02</TD><TD>0.04</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        </TABLEDATA></DATA>\n<INFO name=\"matches\" value=\"64\">matching records</INFO>\n\
+        \    <INFO name=\"meta\" value=\"message\">      memory restriction caused\
+        \ by sort option (partial sort in bunches of 672882)    </INFO>\n\n<INFO name=\"\
+        Warning\" value=\"+++memory restriction caused by {\\bf sort} option (partial\
+        \ sort in bunches of 672882)\"/>\n  </TABLE>\n</RESOURCE>\n</VOTABLE>\n"
+- request:
+    method: POST
+    uri: https://vizier.cds.unistra.fr/viz-bin/votable
+    body: '-source=ucac4
+
+      -out.max=unlimited
+
+      -out=UCAC4,RAJ2000,DEJ2000,pmRA,pmDE,EpRA,Jmag,Hmag,Kmag,Bmag,Vmag,gmag,rmag,imag,e_Jmag,e_Hmag,e_Kmag,e_Bmag,e_Vmag,e_gmag,e_rmag,e_imag
+
+      -out.add=_r
+
+      -sort=_r
+
+      -c=101.28715594-16.71612172
+
+      -c.rd=0.1
+
+      -out.meta=huUD
+
+      -out.form=mini
+
+      -oc.form=d'
+    headers:
+      User-Agent:
+      - astroquery/0.4.11 Python/3.14.7 (Linux) python-requests/2.34.2
+      Accept-Encoding:
+      - gzip, deflate, zstd
+      Accept:
+      - '*/*'
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '270'
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Connection:
+      - Keep-Alive
+      DocumentRef:
+      - VOTx3708344
+      Server:
+      - Apache/2.4.52 (Ubuntu)
+      Keep-Alive:
+      - timeout=5, max=100
+      Content-Type:
+      - application/x-votable+xml
+      Vary:
+      - Accept-Encoding
+      Access-Control-Allow-Headers:
+      - Origin, X-Requested-With, Content-Type, Accept
+      Content-Disposition:
+      - attachment; filename=vizier_votable.vot
+      Access-Control-Allow-Origin:
+      - '*'
+      Date:
+      - Thu, 01 Oct 2026 09:25:30 GMT
+      Transfer-Encoding:
+      - chunked
+    body:
+      string: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<VOTABLE version=\"1.4\"\
+        \ xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n  xmlns=\"http://www.ivoa.net/xml/VOTable/v1.3\"\
+        \n  xsi:schemaLocation=\"http://www.ivoa.net/xml/VOTable/v1.3 http://www.ivoa.net/xml/VOTable/v1.3\"\
+        >\n <DESCRIPTION>\n   VizieR Astronomical Server vizier.cds.unistra.fr\n \
+        \   Date: 2026-10-01T09:25:30 [V7.6]\n   Explanations and Statistics of UCDs:\t\
+        \t\tSee LINK below\n   In case of problem, please report to:\tcds-question@unistra.fr\n\
+        \ </DESCRIPTION>\n<!-- VOTable description at http://www.ivoa.net/Documents/latest/VOT.html\
+        \ -->\n<INFO name=\"service_protocol\" value=\"ASU\">  IVOID of the protocol\
+        \ through which the data was retrieved</INFO>\n<INFO name=\"request_date\"\
+        \ value=\"2026-10-01T09:25:30\">  Query execution date</INFO>\n<INFO name=\"\
+        request\" value=\"https://vizier.cds.unistra.fr/viz-bin/votable?-oc.form=d&amp;-source=ucac4&amp;-out.max=unlimited&amp;-out=UCAC4,RAJ2000,DEJ2000,pmRA,pmDE,EpRA,Jmag,Hmag,Kmag,Bmag,Vmag,gmag,rmag,imag,e_Jmag,e_Hmag,e_Kmag,e_Bmag,e_Vmag,e_gmag,e_rmag,e_imag&amp;-out.add=_r&amp;-sort=_r&amp;-c=101.28715594-16.71612172&amp;-c.rd=0.1&amp;\"\
+        >  Full request URL (POST)</INFO>\n<INFO name=\"contact\" value=\"cds-question@unistra.fr\"\
+        >  Email or URL to contact publisher</INFO>\n<INFO name=\"server_software\"\
+        \ value=\"VizieR/7.6\">  Software version</INFO>\n<INFO name=\"publisher\"\
+        \ value=\"CDS\">  Data centre that produced the VOTable</INFO>\n<INFO name=\"\
+        header_format\" value=\"mini\"/>\n<INFO name=\"header_format\" value=\"mini\"\
+        />\n\n<RESOURCE ID=\"yCat_1322\" name=\"I/322A\" type=\"results\">\n  <DESCRIPTION>UCAC4\
+        \ Catalogue (Zacharias+, 2012)</DESCRIPTION>  <INFO name=\"ivoid\" value=\"\
+        ivo://cds.vizier/i/322a\">    IVOID of underlying data collection  </INFO>\n\
+        \  <INFO name=\"data_ivoid\" value=\"ivo://cds.vizier/i/322a\">    IVOID of\
+        \ underlying data collection  </INFO>\n  <INFO name=\"creator\" value=\"Zacharias\
+        \ N.\">    First author or institution  </INFO>\n  <INFO name=\"cites\" value=\"\
+        bibcode:2013AJ....145...44Z\">    Article or Data origin sources  </INFO>\n\
+        \  <INFO name=\"journal\" value=\"AJ\">    Journal name  </INFO>\n  <INFO\
+        \ name=\"original_date\" value=\"2013\">    Year of the article publication\
+        \  </INFO>\n  <INFO name=\"reference_url\" value=\"https://cdsarc.cds.unistra.fr/viz-bin/cat/I/322A\"\
+        >    Dataset landing page  </INFO>\n  <INFO name=\"publication_date\" value=\"\
+        2025-08-18\">    Date of first publication in the data centre  </INFO>\n \
+        \ <INFO name=\"rights_uri\" value=\"https://cds.unistra.fr/vizier-org/licences_vizier.html\"\
+        >    Licence URI  </INFO>\n\n  <COOSYS ID=\"J2000_2000.000\" system=\"eq_FK5\"\
+        \ equinox=\"J2000\" epoch=\"2000.000\"/>\n  <TABLE ID=\"I_322A_out\" name=\"\
+        I/322A/out\">\n    <DESCRIPTION>UCAC4 output (out of 113780093 stars)</DESCRIPTION>\n\
+        <!-- Fourth U.S. Naval Observatory CCD Astrograph Catalog -->\n\n    <!--\
+        \ RowName: ${UCAC4}&-c=${$poseq}&-c.rs=0.004 -->\n    <!-- Definitions of\
+        \ GROUPs and FIELDs -->\n    <FIELD name=\"_r\" ucd=\"POS_ANG_DIST_GENERAL\"\
+        \ datatype=\"double\" width=\"8\" precision=\"6\">\n      <DESCRIPTION>Distance\
+        \ from center (101.2871559-16.7161217)[FK5/J2000], at Epoch=J2000.0</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"UCAC4\" ucd=\"ID_MAIN\" datatype=\"char\"\
+        \ arraysize=\"10*\">\n      <DESCRIPTION>UCAC4 recommended identifier (ZZZ-NNNNNN)\
+        \ (1)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"RAJ2000\" ucd=\"POS_EQ_RA_MAIN\"\
+        \ ref=\"J2000_2000.000\" datatype=\"double\" width=\"11\" precision=\"7\"\
+        \ unit=\"deg\">\n      <DESCRIPTION>Mean right ascension , Ep=J2000 (2)</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"DEJ2000\" ucd=\"POS_EQ_DEC_MAIN\" ref=\"\
+        J2000_2000.000\" datatype=\"double\" width=\"11\" precision=\"7\" unit=\"\
+        deg\">\n      <DESCRIPTION>Mean declination , Ep=J2000 (2)</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"pmRA\" ucd=\"POS_EQ_PMRA\" ref=\"J2000_2000.000\"\
+        \ datatype=\"double\" width=\"7\" precision=\"1\" unit=\"mas/yr\">\n     \
+        \ <DESCRIPTION>? Proper motion in RA(*cos(Dec)) (9)</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"pmDE\" ucd=\"POS_EQ_PMDEC\"\
+        \ ref=\"J2000_2000.000\" datatype=\"double\" width=\"7\" precision=\"1\" unit=\"\
+        mas/yr\">\n      <DESCRIPTION>? Proper motion in Dec (9)</DESCRIPTION>\n \
+        \     <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"EpRA\" ucd=\"\
+        TIME_EPOCH\" datatype=\"double\" width=\"7\" precision=\"2\" unit=\"yr\">\n\
+        \      <DESCRIPTION>Central epoch for mean RA</DESCRIPTION>\n    </FIELD>\n\
+        \    <FIELD name=\"Jmag\" ucd=\"PHOT_JHN_J\" datatype=\"float\" width=\"6\"\
+        \ precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>? 2MASS J magnitude (1.2um)</DESCRIPTION>\n\
+        <!-- ? 2MASS J magnitude (1.2um) \\ifnum\\Vphase&gt;3{\\fg{gray40}(in gray\
+        \ if upper limit)}\\fi -->\n\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"Hmag\" ucd=\"PHOT_JHN_H\" datatype=\"float\" width=\"6\"\
+        \ precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>? 2MASS H magnitude (1.6um)</DESCRIPTION>\n\
+        <!-- ? 2MASS H magnitude (1.6um) \\ifnum\\Vphase&gt;3{\\fg{gray40}(in gray\
+        \ if upper limit)}\\fi -->\n\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"Kmag\" ucd=\"PHOT_JHN_K\" datatype=\"float\" width=\"6\"\
+        \ precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>? 2MASS Ks magnitude (2.2um)</DESCRIPTION>\n\
+        <!-- ? 2MASS Ks magnitude (2.2um) \\ifnum\\Vphase&gt;3{\\fg{gray40}(in gray\
+        \ if upper limit)}\\fi -->\n\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"Bmag\" ucd=\"PHOT_MAG_B\" datatype=\"float\" width=\"6\"\
+        \ precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>? B magnitude from APASS\
+        \ (12)</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD\
+        \ name=\"Vmag\" ucd=\"PHOT_MAG_V\" datatype=\"float\" width=\"6\" precision=\"\
+        3\" unit=\"mag\">\n      <DESCRIPTION>? V magnitude from APASS (12)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"gmag\" ucd=\"\
+        PHOT_GUNN_G\" datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\"\
+        >\n      <DESCRIPTION>? g magnitude from APASS (12)</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"rmag\" ucd=\"PHOT_MAG_R\"\
+        \ datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>?\
+        \ r magnitude from APASS (12)</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n\
+        \    </FIELD>\n    <FIELD name=\"imag\" ucd=\"PHOT_MAG_I\" datatype=\"float\"\
+        \ width=\"6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>? i magnitude\
+        \ from APASS (12)</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"e_Jmag\" ucd=\"ERROR\" datatype=\"float\" width=\"5\" precision=\"\
+        2\" unit=\"mag\">\n      <DESCRIPTION>? Mean error (rounded to 0.01mag)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_Hmag\" ucd=\"\
+        ERROR\" datatype=\"float\" width=\"5\" precision=\"2\" unit=\"mag\">\n   \
+        \   <DESCRIPTION>? Mean error (rounded to 0.01mag)</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_Kmag\" ucd=\"ERROR\"\
+        \ datatype=\"float\" width=\"5\" precision=\"2\" unit=\"mag\">\n      <DESCRIPTION>?\
+        \ Mean error (rounded to 0.01mag)</DESCRIPTION>\n      <VALUES null=\"NaN\"\
+        \ />\n    </FIELD>\n    <FIELD name=\"e_Bmag\" ucd=\"ERROR\" datatype=\"short\"\
+        \ width=\"2\" unit=\"cmag\">\n      <DESCRIPTION>? Estimated error on Bmag\
+        \ (12)</DESCRIPTION>\n      <VALUES null=\"-32768\" />\n    </FIELD>\n   \
+        \ <FIELD name=\"e_Vmag\" ucd=\"ERROR\" datatype=\"short\" width=\"2\" unit=\"\
+        cmag\">\n      <DESCRIPTION>? Estimated error on Vmag (12)</DESCRIPTION>\n\
+        \      <VALUES null=\"-32768\" />\n    </FIELD>\n    <FIELD name=\"e_gmag\"\
+        \ ucd=\"ERROR\" datatype=\"short\" width=\"2\" unit=\"cmag\">\n      <DESCRIPTION>?\
+        \ Estimated error on gmag (12)</DESCRIPTION>\n      <VALUES null=\"-32768\"\
+        \ />\n    </FIELD>\n    <FIELD name=\"e_rmag\" ucd=\"ERROR\" datatype=\"short\"\
+        \ width=\"2\" unit=\"cmag\">\n      <DESCRIPTION>? Estimated error on rmag\
+        \ (12)</DESCRIPTION>\n      <VALUES null=\"-32768\" />\n    </FIELD>\n   \
+        \ <FIELD name=\"e_imag\" ucd=\"ERROR\" datatype=\"short\" width=\"2\" unit=\"\
+        cmag\">\n      <DESCRIPTION>? Estimated error on imag (12)</DESCRIPTION>\n\
+        \      <VALUES null=\"-32768\" />\n    </FIELD>\n<DATA><TABLEDATA>\n<TR><TD>0.000006</TD><TD>367-016700</TD><TD>101.2871553</TD><TD>-16.7161156</TD><TD>-546.0</TD><TD>-1223.1</TD><TD>1991.25</TD><TD>-1.391</TD><TD>-1.391</TD><TD>-1.390</TD><TD>-1.087</TD><TD>-1.440</TD><TD></TD><TD></TD><TD></TD><TD>0.11</TD><TD>0.18</TD><TD>0.21</TD><TD>0</TD><TD>0</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.016476</TD><TD>367-016701</TD><TD>101.2924292</TD><TD>-16.7004387</TD><TD>0.0</TD><TD>0.0</TD><TD>1999.90</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.020236</TD><TD>367-016704</TD><TD>101.2927503</TD><TD>-16.6966084</TD><TD>0.0</TD><TD>0.0</TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.043470</TD><TD>367-016721</TD><TD>101.3325386</TD><TD>-16.7154539</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>13.693</TD><TD>13.279</TD><TD>11.542</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.21</TD><TD>0.99</TD><TD>0.99</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.048007</TD><TD>367-016716</TD><TD>101.3244830</TD><TD>-16.6840834</TD><TD>-3.5</TD><TD>-1.7</TD><TD>1998.33</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.051196</TD><TD>367-016705</TD><TD>101.3042000</TD><TD>-16.6675984</TD><TD>122.3</TD><TD>107.6</TD><TD>1993.74</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.053356</TD><TD>367-016709</TD><TD>101.3138283</TD><TD>-16.7629667</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.060105</TD><TD>367-016699</TD><TD>101.2612068</TD><TD>-16.7708492</TD><TD>0.0</TD><TD>0.0</TD><TD>1999.90</TD><TD>9.756</TD><TD>9.486</TD><TD>9.465</TD><TD>11.351</TD><TD>10.839</TD><TD>11.014</TD><TD>10.688</TD><TD>10.467</TD><TD>0.02</TD><TD>0.05</TD><TD>0.02</TD><TD>3</TD><TD>1</TD><TD>10</TD><TD>1</TD><TD>6</TD></TR>\n\
+        <TR><TD>0.060634</TD><TD>367-016720</TD><TD>101.3286374</TD><TD>-16.6703206</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.061273</TD><TD>367-016706</TD><TD>101.3067180</TD><TD>-16.6577839</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>13.079</TD><TD>12.492</TD><TD>12.007</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.09</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.064608</TD><TD>367-016726</TD><TD>101.3453400</TD><TD>-16.6834362</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.065967</TD><TD>367-016723</TD><TD>101.3350562</TD><TD>-16.6687245</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.067324</TD><TD>367-016698</TD><TD>101.2563245</TD><TD>-16.7766273</TD><TD></TD><TD></TD><TD>1999.90</TD><TD>11.882</TD><TD>11.287</TD><TD>11.013</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.02</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.070371</TD><TD>367-016691</TD><TD>101.2312471</TD><TD>-16.6704687</TD><TD></TD><TD></TD><TD>1999.90</TD><TD>13.941</TD><TD>13.999</TD><TD>13.799</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.05</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.070589</TD><TD>367-016685</TD><TD>101.2219756</TD><TD>-16.6831795</TD><TD></TD><TD></TD><TD>1999.90</TD><TD>14.530</TD><TD>14.179</TD><TD>14.972</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.13</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.070911</TD><TD>367-016682</TD><TD>101.2138039</TD><TD>-16.7064906</TD><TD></TD><TD></TD><TD>1999.90</TD><TD>15.065</TD><TD>14.929</TD><TD>14.507</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.10</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.071962</TD><TD>367-016687</TD><TD>101.2242998</TD><TD>-16.7555575</TD><TD></TD><TD></TD><TD>1999.90</TD><TD>14.851</TD><TD>14.778</TD><TD>14.583</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.08</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.072725</TD><TD>367-016688</TD><TD>101.2251412</TD><TD>-16.6741642</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>13.772</TD><TD>13.405</TD><TD>13.451</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.05</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.073945</TD><TD>367-016680</TD><TD>101.2115256</TD><TD>-16.7310042</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.074398</TD><TD>367-016713</TD><TD>101.3213974</TD><TD>-16.7829050</TD><TD></TD><TD></TD><TD>1999.90</TD><TD>14.471</TD><TD>14.230</TD><TD>14.143</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.06</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.074475</TD><TD>367-016727</TD><TD>101.3490112</TD><TD>-16.7612642</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.075966</TD><TD>367-016693</TD><TD>101.2356324</TD><TD>-16.7738842</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>14.135</TD><TD>13.615</TD><TD>13.573</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.05</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.078087</TD><TD>367-016707</TD><TD>101.3118356</TD><TD>-16.6416998</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>13.011</TD><TD>12.817</TD><TD>12.747</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.03</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.078143</TD><TD>367-016731</TD><TD>101.3674474</TD><TD>-16.7022439</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.078620</TD><TD>367-016696</TD><TD>101.2436962</TD><TD>-16.6494287</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>14.046</TD><TD>14.358</TD><TD>14.643</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.11</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.078628</TD><TD>367-016694</TD><TD>101.2364992</TD><TD>-16.6542523</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>12.799</TD><TD>12.565</TD><TD>12.395</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.03</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.079659</TD><TD>367-016695</TD><TD>101.2369606</TD><TD>-16.7796448</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>13.036</TD><TD>12.749</TD><TD>12.559</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.03</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.079956</TD><TD>367-016703</TD><TD>101.2926950</TD><TD>-16.6363423</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>13.239</TD><TD>13.039</TD><TD>12.988</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.03</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.081044</TD><TD>367-016722</TD><TD>101.3332398</TD><TD>-16.6481556</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.081120</TD><TD>367-016677</TD><TD>101.2101865</TD><TD>-16.6822781</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>13.632</TD><TD>12.835</TD><TD>12.638</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.03</TD><TD>0.04</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.081308</TD><TD>367-016684</TD><TD>101.2211189</TD><TD>-16.6650356</TD><TD></TD><TD></TD><TD>1999.90</TD><TD>14.531</TD><TD>14.387</TD><TD>14.323</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.04</TD><TD>0.08</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.081845</TD><TD>367-016708</TD><TD>101.3128883</TD><TD>-16.6380770</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>15.139</TD><TD>15.489</TD><TD>15.261</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.10</TD><TD>0.17</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.083402</TD><TD>367-016675</TD><TD>101.2081739</TD><TD>-16.7512625</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>14.112</TD><TD>13.770</TD><TD>13.716</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.02</TD><TD>0.05</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.083735</TD><TD>367-016714</TD><TD>101.3231553</TD><TD>-16.6398178</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>15.484</TD><TD>14.399</TD><TD>14.381</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.05</TD><TD>0.08</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.084119</TD><TD>367-016729</TD><TD>101.3588848</TD><TD>-16.6675889</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.084378</TD><TD>367-016673</TD><TD>101.2032559</TD><TD>-16.6903934</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>12.736</TD><TD>12.299</TD><TD>12.136</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.03</TD><TD>0.03</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.084477</TD><TD>367-016676</TD><TD>101.2085103</TD><TD>-16.7543859</TD><TD></TD><TD></TD><TD>1999.90</TD><TD>15.157</TD><TD>15.363</TD><TD>15.126</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.09</TD><TD>0.14</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.086468</TD><TD>367-016715</TD><TD>101.3235765</TD><TD>-16.6370045</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>13.903</TD><TD>13.548</TD><TD>13.460</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.03</TD><TD>0.03</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.086751</TD><TD>367-016738</TD><TD>101.3744842</TD><TD>-16.7391700</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.087118</TD><TD>367-016717</TD><TD>101.3246424</TD><TD>-16.7955012</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>12.653</TD><TD>12.497</TD><TD>12.316</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.02</TD><TD>0.02</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.087563</TD><TD>367-016718</TD><TD>101.3257742</TD><TD>-16.7954934</TD><TD>31.3</TD><TD>-3.9</TD><TD>1968.63</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.089513</TD><TD>367-016737</TD><TD>101.3738012</TD><TD>-16.7496995</TD><TD>-1.5</TD><TD>-1.5</TD><TD>1999.27</TD><TD></TD><TD></TD><TD></TD><TD>13.767</TD><TD>13.277</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>18</TD><TD>1</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.089739</TD><TD>367-016674</TD><TD>101.2065406</TD><TD>-16.6703992</TD><TD>-0.5</TD><TD>1.4</TD><TD>1999.56</TD><TD>8.981</TD><TD>8.173</TD><TD>7.879</TD><TD>14.438</TD><TD>12.305</TD><TD>13.522</TD><TD>11.570</TD><TD>10.839</TD><TD>0.02</TD><TD>0.03</TD><TD>0.02</TD><TD>1</TD><TD>1</TD><TD>1</TD><TD>6</TD><TD>8</TD></TR>\n\
+        <TR><TD>0.089841</TD><TD>367-016710</TD><TD>101.3155262</TD><TD>-16.6304898</TD><TD>-0.9</TD><TD>1.5</TD><TD>1999.09</TD><TD>12.059</TD><TD>11.820</TD><TD>11.726</TD><TD>13.822</TD><TD>13.159</TD><TD>13.624</TD><TD>13.039</TD><TD>12.897</TD><TD>0.99</TD><TD>0.03</TD><TD>0.02</TD><TD>1</TD><TD>1</TD><TD>20</TD><TD>10</TD><TD>1</TD></TR>\n\
+        <TR><TD>0.090945</TD><TD>367-016683</TD><TD>101.2197095</TD><TD>-16.7801503</TD><TD>-12.0</TD><TD>8.0</TD><TD>1999.03</TD><TD>12.396</TD><TD>12.154</TD><TD>12.027</TD><TD>11.676</TD><TD>11.302</TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.03</TD><TD>0.03</TD><TD>2</TD><TD>1</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.090948</TD><TD>367-016697</TD><TD>101.2445148</TD><TD>-16.7973898</TD><TD>13.2</TD><TD>-23.4</TD><TD>1991.12</TD><TD>6.504</TD><TD>5.953</TD><TD>5.802</TD><TD>9.988</TD><TD>8.579</TD><TD></TD><TD></TD><TD></TD><TD>0.02</TD><TD>0.03</TD><TD>0.02</TD><TD>99</TD><TD>99</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.092340</TD><TD>367-016728</TD><TD>101.3504471</TD><TD>-16.6464725</TD><TD>5.7</TD><TD>-12.6</TD><TD>1999.15</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.092464</TD><TD>366-017168</TD><TD>101.3229230</TD><TD>-16.8020098</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>14.252</TD><TD>13.841</TD><TD>13.632</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.02</TD><TD>0.03</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.092629</TD><TD>367-016692</TD><TD>101.2348483</TD><TD>-16.6382150</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>12.897</TD><TD>12.479</TD><TD>12.236</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.03</TD><TD>0.04</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.093000</TD><TD>367-016669</TD><TD>101.1924109</TD><TD>-16.6957689</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.093068</TD><TD>367-016665</TD><TD>101.1899939</TD><TD>-16.7146598</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.093157</TD><TD>367-016735</TD><TD>101.3725259</TD><TD>-16.6714950</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.094536</TD><TD>367-016739</TD><TD>101.3766445</TD><TD>-16.6762487</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.094977</TD><TD>367-016681</TD><TD>101.2137568</TD><TD>-16.7800006</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>15.676</TD><TD>15.697</TD><TD>15.423</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.11</TD><TD>0.17</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.095324</TD><TD>366-017172</TD><TD>101.3290183</TD><TD>-16.8026081</TD><TD>-5.9</TD><TD>9.5</TD><TD>1999.62</TD><TD>9.292</TD><TD>8.675</TD><TD>8.567</TD><TD>12.834</TD><TD>11.589</TD><TD>12.282</TD><TD>11.244</TD><TD>10.633</TD><TD>0.02</TD><TD>0.03</TD><TD>0.02</TD><TD>6</TD><TD>1</TD><TD>0</TD><TD>0</TD><TD>0</TD></TR>\n\
+        <TR><TD>0.095440</TD><TD>366-017120</TD><TD>101.2436033</TD><TD>-16.8019689</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>13.583</TD><TD>13.129</TD><TD>13.815</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.99</TD><TD>0.09</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.095627</TD><TD>367-016736</TD><TD>101.3731859</TD><TD>-16.6676045</TD><TD></TD><TD></TD><TD>1999.90</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.095963</TD><TD>367-016668</TD><TD>101.1917215</TD><TD>-16.6869092</TD><TD>6.3</TD><TD>-4.1</TD><TD>1998.06</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.097089</TD><TD>367-016670</TD><TD>101.1942400</TD><TD>-16.6773214</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.097218</TD><TD>367-016678</TD><TD>101.2106386</TD><TD>-16.7800173</TD><TD></TD><TD></TD><TD>1999.90</TD><TD>12.653</TD><TD>12.266</TD><TD>12.168</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.03</TD><TD>0.02</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.097687</TD><TD>367-016741</TD><TD>101.3790003</TD><TD>-16.7586306</TD><TD></TD><TD></TD><TD>1999.89</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.098591</TD><TD>367-016679</TD><TD>101.2107315</TD><TD>-16.6500845</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>12.975</TD><TD>12.675</TD><TD>12.693</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.03</TD><TD>0.03</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.098606</TD><TD>367-016733</TD><TD>101.3701712</TD><TD>-16.6578137</TD><TD>0.5</TD><TD>0.7</TD><TD>1999.42</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.099510</TD><TD>366-017114</TD><TD>101.2407039</TD><TD>-16.8051375</TD><TD></TD><TD></TD><TD>1999.89</TD><TD>13.312</TD><TD>12.924</TD><TD>12.760</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.99</TD><TD>0.02</TD><TD>0.04</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        </TABLEDATA></DATA>\n<INFO name=\"matches\" value=\"64\">matching records</INFO>\n\
+        \    <INFO name=\"meta\" value=\"message\">      memory restriction caused\
+        \ by sort option (partial sort in bunches of 672882)    </INFO>\n\n<INFO name=\"\
+        Warning\" value=\"+++memory restriction caused by {\\bf sort} option (partial\
+        \ sort in bunches of 672882)\"/>\n  </TABLE>\n</RESOURCE>\n</VOTABLE>\n"
+- request:
+    method: POST
+    uri: https://vizier.cds.unistra.fr/viz-bin/votable
+    body: '-source=ucac4
+
+      -out.max=unlimited
+
+      -out=UCAC4,RAJ2000,DEJ2000,pmRA,pmDE,EpRA,Jmag,Hmag,Kmag,Bmag,Vmag,gmag,rmag,imag,e_Jmag,e_Hmag,e_Kmag,e_Bmag,e_Vmag,e_gmag,e_rmag,e_imag
+
+      -out.add=_r
+
+      -sort=_r
+
+      -c=2.71676018-54.29064769
+
+      -c.rs=10.0
+
+      -out.meta=huUD
+
+      -out.form=mini
+
+      -oc.form=d'
+    headers:
+      User-Agent:
+      - astroquery/0.4.11 Python/3.14.7 (Linux) python-requests/2.34.2
+      Accept-Encoding:
+      - gzip, deflate, zstd
+      Accept:
+      - '*/*'
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '269'
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Connection:
+      - Keep-Alive
+      DocumentRef:
+      - VOTx3710582
+      Server:
+      - Apache/2.4.52 (Ubuntu)
+      Keep-Alive:
+      - timeout=5, max=100
+      Content-Type:
+      - application/x-votable+xml
+      Vary:
+      - Accept-Encoding
+      Access-Control-Allow-Headers:
+      - Origin, X-Requested-With, Content-Type, Accept
+      Content-Disposition:
+      - attachment; filename=vizier_votable.vot
+      Access-Control-Allow-Origin:
+      - '*'
+      Date:
+      - Thu, 01 Oct 2026 09:25:36 GMT
+      Transfer-Encoding:
+      - chunked
+    body:
+      string: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<VOTABLE version=\"1.4\"\
+        \ xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n  xmlns=\"http://www.ivoa.net/xml/VOTable/v1.3\"\
+        \n  xsi:schemaLocation=\"http://www.ivoa.net/xml/VOTable/v1.3 http://www.ivoa.net/xml/VOTable/v1.3\"\
+        >\n <DESCRIPTION>\n   VizieR Astronomical Server vizier.cds.unistra.fr\n \
+        \   Date: 2026-10-01T09:25:36 [V7.6]\n   Explanations and Statistics of UCDs:\t\
+        \t\tSee LINK below\n   In case of problem, please report to:\tcds-question@unistra.fr\n\
+        \ </DESCRIPTION>\n<!-- VOTable description at http://www.ivoa.net/Documents/latest/VOT.html\
+        \ -->\n<INFO name=\"service_protocol\" value=\"ASU\">  IVOID of the protocol\
+        \ through which the data was retrieved</INFO>\n<INFO name=\"request_date\"\
+        \ value=\"2026-10-01T09:25:36\">  Query execution date</INFO>\n<INFO name=\"\
+        request\" value=\"https://vizier.cds.unistra.fr/viz-bin/votable?-oc.form=d&amp;-source=ucac4&amp;-out.max=unlimited&amp;-out=UCAC4,RAJ2000,DEJ2000,pmRA,pmDE,EpRA,Jmag,Hmag,Kmag,Bmag,Vmag,gmag,rmag,imag,e_Jmag,e_Hmag,e_Kmag,e_Bmag,e_Vmag,e_gmag,e_rmag,e_imag&amp;-out.add=_r&amp;-sort=_r&amp;-c=2.71676018-54.29064769&amp;-c.rs=10.0&amp;\"\
+        >  Full request URL (POST)</INFO>\n<INFO name=\"contact\" value=\"cds-question@unistra.fr\"\
+        >  Email or URL to contact publisher</INFO>\n<INFO name=\"server_software\"\
+        \ value=\"VizieR/7.6\">  Software version</INFO>\n<INFO name=\"publisher\"\
+        \ value=\"CDS\">  Data centre that produced the VOTable</INFO>\n<INFO name=\"\
+        header_format\" value=\"mini\"/>\n<INFO name=\"header_format\" value=\"mini\"\
+        />\n\n<RESOURCE ID=\"yCat_1322\" name=\"I/322A\" type=\"results\">\n  <DESCRIPTION>UCAC4\
+        \ Catalogue (Zacharias+, 2012)</DESCRIPTION>  <INFO name=\"ivoid\" value=\"\
+        ivo://cds.vizier/i/322a\">    IVOID of underlying data collection  </INFO>\n\
+        \  <INFO name=\"data_ivoid\" value=\"ivo://cds.vizier/i/322a\">    IVOID of\
+        \ underlying data collection  </INFO>\n  <INFO name=\"creator\" value=\"Zacharias\
+        \ N.\">    First author or institution  </INFO>\n  <INFO name=\"cites\" value=\"\
+        bibcode:2013AJ....145...44Z\">    Article or Data origin sources  </INFO>\n\
+        \  <INFO name=\"journal\" value=\"AJ\">    Journal name  </INFO>\n  <INFO\
+        \ name=\"original_date\" value=\"2013\">    Year of the article publication\
+        \  </INFO>\n  <INFO name=\"reference_url\" value=\"https://cdsarc.cds.unistra.fr/viz-bin/cat/I/322A\"\
+        >    Dataset landing page  </INFO>\n  <INFO name=\"publication_date\" value=\"\
+        2025-08-18\">    Date of first publication in the data centre  </INFO>\n \
+        \ <INFO name=\"rights_uri\" value=\"https://cds.unistra.fr/vizier-org/licences_vizier.html\"\
+        >    Licence URI  </INFO>\n\n  <COOSYS ID=\"J2000_2000.000\" system=\"eq_FK5\"\
+        \ equinox=\"J2000\" epoch=\"2000.000\"/>\n  <TABLE ID=\"I_322A_out\" name=\"\
+        I/322A/out\">\n    <DESCRIPTION>UCAC4 output (out of 113780093 stars)</DESCRIPTION>\n\
+        <!-- Fourth U.S. Naval Observatory CCD Astrograph Catalog -->\n\n    <!--\
+        \ RowName: ${UCAC4}&-c=${$poseq}&-c.rs=0.004 -->\n    <!-- Definitions of\
+        \ GROUPs and FIELDs -->\n    <FIELD name=\"_r\" ucd=\"POS_ANG_DIST_GENERAL\"\
+        \ datatype=\"double\" width=\"6\" precision=\"3\">\n      <DESCRIPTION>Distance\
+        \ from center (002.7167602-54.2906477)[FK5/J2000], at Epoch=J2000.0</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"UCAC4\" ucd=\"ID_MAIN\" datatype=\"char\"\
+        \ arraysize=\"10*\">\n      <DESCRIPTION>UCAC4 recommended identifier (ZZZ-NNNNNN)\
+        \ (1)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"RAJ2000\" ucd=\"POS_EQ_RA_MAIN\"\
+        \ ref=\"J2000_2000.000\" datatype=\"double\" width=\"11\" precision=\"7\"\
+        \ unit=\"deg\">\n      <DESCRIPTION>Mean right ascension , Ep=J2000 (2)</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"DEJ2000\" ucd=\"POS_EQ_DEC_MAIN\" ref=\"\
+        J2000_2000.000\" datatype=\"double\" width=\"11\" precision=\"7\" unit=\"\
+        deg\">\n      <DESCRIPTION>Mean declination , Ep=J2000 (2)</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"pmRA\" ucd=\"POS_EQ_PMRA\" ref=\"J2000_2000.000\"\
+        \ datatype=\"double\" width=\"7\" precision=\"1\" unit=\"mas/yr\">\n     \
+        \ <DESCRIPTION>? Proper motion in RA(*cos(Dec)) (9)</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"pmDE\" ucd=\"POS_EQ_PMDEC\"\
+        \ ref=\"J2000_2000.000\" datatype=\"double\" width=\"7\" precision=\"1\" unit=\"\
+        mas/yr\">\n      <DESCRIPTION>? Proper motion in Dec (9)</DESCRIPTION>\n \
+        \     <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"EpRA\" ucd=\"\
+        TIME_EPOCH\" datatype=\"double\" width=\"7\" precision=\"2\" unit=\"yr\">\n\
+        \      <DESCRIPTION>Central epoch for mean RA</DESCRIPTION>\n    </FIELD>\n\
+        \    <FIELD name=\"Jmag\" ucd=\"PHOT_JHN_J\" datatype=\"float\" width=\"6\"\
+        \ precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>? 2MASS J magnitude (1.2um)</DESCRIPTION>\n\
+        <!-- ? 2MASS J magnitude (1.2um) \\ifnum\\Vphase&gt;3{\\fg{gray40}(in gray\
+        \ if upper limit)}\\fi -->\n\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"Hmag\" ucd=\"PHOT_JHN_H\" datatype=\"float\" width=\"6\"\
+        \ precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>? 2MASS H magnitude (1.6um)</DESCRIPTION>\n\
+        <!-- ? 2MASS H magnitude (1.6um) \\ifnum\\Vphase&gt;3{\\fg{gray40}(in gray\
+        \ if upper limit)}\\fi -->\n\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"Kmag\" ucd=\"PHOT_JHN_K\" datatype=\"float\" width=\"6\"\
+        \ precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>? 2MASS Ks magnitude (2.2um)</DESCRIPTION>\n\
+        <!-- ? 2MASS Ks magnitude (2.2um) \\ifnum\\Vphase&gt;3{\\fg{gray40}(in gray\
+        \ if upper limit)}\\fi -->\n\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"Bmag\" ucd=\"PHOT_MAG_B\" datatype=\"float\" width=\"6\"\
+        \ precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>? B magnitude from APASS\
+        \ (12)</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD\
+        \ name=\"Vmag\" ucd=\"PHOT_MAG_V\" datatype=\"float\" width=\"6\" precision=\"\
+        3\" unit=\"mag\">\n      <DESCRIPTION>? V magnitude from APASS (12)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"gmag\" ucd=\"\
+        PHOT_GUNN_G\" datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\"\
+        >\n      <DESCRIPTION>? g magnitude from APASS (12)</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"rmag\" ucd=\"PHOT_MAG_R\"\
+        \ datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>?\
+        \ r magnitude from APASS (12)</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n\
+        \    </FIELD>\n    <FIELD name=\"imag\" ucd=\"PHOT_MAG_I\" datatype=\"float\"\
+        \ width=\"6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>? i magnitude\
+        \ from APASS (12)</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"e_Jmag\" ucd=\"ERROR\" datatype=\"float\" width=\"5\" precision=\"\
+        2\" unit=\"mag\">\n      <DESCRIPTION>? Mean error (rounded to 0.01mag)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_Hmag\" ucd=\"\
+        ERROR\" datatype=\"float\" width=\"5\" precision=\"2\" unit=\"mag\">\n   \
+        \   <DESCRIPTION>? Mean error (rounded to 0.01mag)</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_Kmag\" ucd=\"ERROR\"\
+        \ datatype=\"float\" width=\"5\" precision=\"2\" unit=\"mag\">\n      <DESCRIPTION>?\
+        \ Mean error (rounded to 0.01mag)</DESCRIPTION>\n      <VALUES null=\"NaN\"\
+        \ />\n    </FIELD>\n    <FIELD name=\"e_Bmag\" ucd=\"ERROR\" datatype=\"short\"\
+        \ width=\"2\" unit=\"cmag\">\n      <DESCRIPTION>? Estimated error on Bmag\
+        \ (12)</DESCRIPTION>\n      <VALUES null=\"-32768\" />\n    </FIELD>\n   \
+        \ <FIELD name=\"e_Vmag\" ucd=\"ERROR\" datatype=\"short\" width=\"2\" unit=\"\
+        cmag\">\n      <DESCRIPTION>? Estimated error on Vmag (12)</DESCRIPTION>\n\
+        \      <VALUES null=\"-32768\" />\n    </FIELD>\n    <FIELD name=\"e_gmag\"\
+        \ ucd=\"ERROR\" datatype=\"short\" width=\"2\" unit=\"cmag\">\n      <DESCRIPTION>?\
+        \ Estimated error on gmag (12)</DESCRIPTION>\n      <VALUES null=\"-32768\"\
+        \ />\n    </FIELD>\n    <FIELD name=\"e_rmag\" ucd=\"ERROR\" datatype=\"short\"\
+        \ width=\"2\" unit=\"cmag\">\n      <DESCRIPTION>? Estimated error on rmag\
+        \ (12)</DESCRIPTION>\n      <VALUES null=\"-32768\" />\n    </FIELD>\n   \
+        \ <FIELD name=\"e_imag\" ucd=\"ERROR\" datatype=\"short\" width=\"2\" unit=\"\
+        cmag\">\n      <DESCRIPTION>? Estimated error on imag (12)</DESCRIPTION>\n\
+        \      <VALUES null=\"-32768\" />\n    </FIELD>\n<DATA><TABLEDATA>\n<TR><TD>0.046</TD><TD>179-000175</TD><TD>002.7167509</TD><TD>-54.2906592</TD><TD>2.1</TD><TD>7.0</TD><TD>1991.64</TD><TD>10.157</TD><TD>10.083</TD><TD>10.029</TD><TD>10.752</TD><TD>10.597</TD><TD></TD><TD></TD><TD>10.688</TD><TD>0.02</TD><TD>0.02</TD><TD>0.02</TD><TD>1</TD><TD>7</TD><TD></TD><TD></TD><TD>1</TD></TR>\n\
+        </TABLEDATA></DATA>\n<INFO name=\"matches\" value=\"1\">matching records</INFO>\n\
+        \    <INFO name=\"meta\" value=\"message\">      memory restriction caused\
+        \ by sort option (partial sort in bunches of 672882)    </INFO>\n\n<INFO name=\"\
+        Warning\" value=\"+++memory restriction caused by {\\bf sort} option (partial\
+        \ sort in bunches of 672882)\"/>\n  </TABLE>\n</RESOURCE>\n</VOTABLE>\n"

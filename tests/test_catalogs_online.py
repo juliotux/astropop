@@ -75,7 +75,6 @@ search_radius = ['0.1d', 0.1, Angle('0.1d')]
 
 
 @pytest.mark.flaky(reruns=5)
-@pytest.mark.remote_data
 class Test_OnlineTools:
     def test_timeout_retry_error(self):
         def _only_fail(*args, **kwargs):
@@ -190,7 +189,7 @@ class Test_DummySourcesCatalog:
 
     @pytest.mark.parametrize('radius', search_radius)
     @pytest.mark.parametrize('center', [
-        pytest.param(sirius_coords[0], marks=pytest.mark.remote_data),
+        sirius_coords[0],
         *sirius_coords[1:],
     ])
     def test_catalog_center_radius(self, center, radius):
@@ -400,7 +399,6 @@ class Test_SimbadTAP:
 
 
 @pytest.mark.flaky(reruns=5)
-@pytest.mark.remote_data
 class Test_Simbad():
     def test_simbad_creation_errors(self):
         # Need arguments
@@ -491,7 +489,6 @@ class Test_Simbad():
 
 
 @pytest.mark.flaky(reruns=5)
-@pytest.mark.remote_data
 class Test_SimbadQueryID:
     @pytest.mark.parametrize('order, expect', [(None, 'alf CMa'),
                                                (['NAME'], 'Sirius'),
@@ -570,13 +567,11 @@ class Test_VizierGeneral:
                      "List available vizier catalogs\n\n"
                      'Notes\n-----\n'+vizier.list_vizier_catalogs())
 
-    @pytest.mark.remote_data
     def test_query_fail(self):
         with pytest.raises(RuntimeError,
                            match='An error occured during online query.'):
             vizier.vsx('HD 674', '0.5 arcsec')
 
-    @pytest.mark.remote_data
     def test_create_with_file(self):
         file = os.path.join(os.path.dirname(os.path.dirname(__file__)),
                             'astropop', 'catalogs', 'vizier_catalogs', 'ucac4.yml')
@@ -586,9 +581,16 @@ class Test_VizierGeneral:
         assert_equal(cat._conf['description'], "UCAC4 Catalogue (Zacharias+, 2012)")
         assert_in('ucac4', cat.help())
 
+    def test_ucac5_coordinates_and_photometry(self):
+        cat = vizier.ucac5(hd674_coords[-1], '5 arcsec', band='J')
+        assert_greater(len(cat), 0)
+        assert_less(cat.skycoord().separation(hd674_coords[-1]).min().arcsec, 5)
+        assert_true(np.any(np.isfinite(cat.magnitude('J').nominal)))
+        assert_true(all(identifier.startswith('Gaia ')
+                        for identifier in cat.sources_id()))
+
 
 @pytest.mark.flaky(reruns=5)
-@pytest.mark.remote_data
 class Test_Vizier_UCAC4:
     hd674_mags = {
         'J': [10.157, 0.02],
@@ -657,7 +659,6 @@ class Test_Vizier_UCAC4:
 
 
 @pytest.mark.flaky(reruns=5)
-@pytest.mark.remote_data
 class Test_Vizier_APASS9:
     hd674_mags = {
         'B': [10.775, 0.031],
@@ -725,7 +726,6 @@ class Test_Vizier_APASS9:
 
 
 @pytest.mark.flaky(reruns=5)
-@pytest.mark.remote_data
 class Test_Vizier_GSC242:
     hd674_mags = {
         'G': [10.551350, 0.000404],
@@ -815,7 +815,6 @@ class Test_Vizier_GSC242:
 
 
 @pytest.mark.flaky(reruns=5)
-@pytest.mark.remote_data
 class Test_VSXVizierCatalog:
     def test_vsx_creation_errors(self):
         # Need arguments
@@ -873,7 +872,6 @@ class Test_VSXVizierCatalog:
 
 
 @pytest.mark.flaky(reruns=5)
-@pytest.mark.remote_data
 class Test_2MASSVizierSourcesCatalog:
     hd674_mags = {
         'J': [10.157, 0.021],
@@ -938,7 +936,6 @@ class Test_2MASSVizierSourcesCatalog:
 
 
 @pytest.mark.flaky(reruns=5)
-@pytest.mark.remote_data
 class Test_WISEVizierSourcesCatalog:
     hd674_mags = {
         'W1': [10.013, 0.024],
@@ -1007,7 +1004,6 @@ class Test_WISEVizierSourcesCatalog:
 
 
 @pytest.mark.flaky(reruns=5)
-@pytest.mark.remote_data
 class Test_AllWISEVizierSourcesCatalog:
     hd674_mags = {
         'W1': [10.026, 0.023],
@@ -1076,7 +1072,6 @@ class Test_AllWISEVizierSourcesCatalog:
 
 
 @pytest.mark.flaky(reruns=5)
-@pytest.mark.remote_data
 class Test_Tycho2VizierSourcesCatalog:
     hd674_mags = {
         'BT': [10.809, 0.034],
@@ -1299,8 +1294,14 @@ class Test_GaiaDR3Timeout:
 
 
 @pytest.mark.flaky(reruns=5)
-@pytest.mark.remote_data
+@pytest.mark.gaia_query
 class Test_GaiaDR3:
+    def _catalog(self, *args, **kwargs):
+        # Use the same synchronous query path for live and replayed tests.
+        # ESA's async queue can stall even for tiny fields; launcher selection
+        # and timeout behavior are covered separately by the focused tests.
+        return GaiaDR3SourcesCatalog(*args, query_mode='sync', **kwargs)
+
     hd674_mags = {
         'G': [10.552819, 0.000337826],
         'BP': [10.649535, 0.00091911],
@@ -1310,26 +1311,24 @@ class Test_GaiaDR3:
     def test_gaiadr3_creation_errors(self):
         # Need arguments
         with pytest.raises(TypeError):
-            GaiaDR3SourcesCatalog()
+            self._catalog()
         with pytest.raises(TypeError):
-            GaiaDR3SourcesCatalog('test')
+            self._catalog('test')
 
         with pytest.raises(ValueError, match='Filter None not available.'):
-            GaiaDR3SourcesCatalog('Sirius', '0.05d', band='None')
+            self._catalog('Sirius', '0.05d', band='None')
         # Filter None should pass, no mag data
-        GaiaDR3SourcesCatalog('Sirius', '0.05d', None)
+        self._catalog('Sirius', '0.05d', None)
 
     def test_gaiadr3_creation_filters(self):
-        c = GaiaDR3SourcesCatalog(hd674_coords[0], '0.01d')
+        c = self._catalog(hd674_coords[0], '0.01d')
 
         assert_equal(c.sources_id()[0], 'Gaia DR3 4923784391133336960')
         for k, v in self.hd674_mags.items():
             assert_almost_equal(c.mag_list(k)[0], v)
 
     def test_gaiadr3_properties_types(self):
-        s = GaiaDR3SourcesCatalog(hd674_coords[0],
-                                  search_radius[0],
-                                  band='G')
+        s = self._catalog(hd674_coords[0], search_radius[0], band='G')
 
         assert_is_instance(s.sources_id(), np.ndarray)
         assert_equal(s.sources_id().shape, (len(s)))
@@ -1354,8 +1353,7 @@ class Test_GaiaDR3:
         assert_equal(s.in_galaxy_candidates().dtype, bool)
 
     def test_gaiadr3_properties(self):
-        s = GaiaDR3SourcesCatalog(hd674_coords[0], search_radius[0],
-                                  band=['G'])
+        s = self._catalog(hd674_coords[0], search_radius[0], band=['G'])
         assert_equal(s.available_filters,
                      ['G', 'BP', 'RP'])
         assert_is_instance(s.center, SkyCoord)
@@ -1363,21 +1361,21 @@ class Test_GaiaDR3:
         assert_equal(s.filters, ['G'])
 
     def test_gaiadr3_sources_limit(self):
-        # test for bug #94
-        # when using non-async functions, the output is limited to 2000 sources
-        g = GaiaDR3SourcesCatalog('RMC 40', radius='15 arcmin')
+        # Regression for #94: synchronous TAP caps each page at 2000 rows.
+        # This modest M31 field exceeds that cap without recording the much
+        # larger RMC 40 field. Both live and replay modes must retrieve all pages.
+        g = self._catalog((10.684, 41.269), radius='0.1 deg')
         assert_greater(len(g), 2001)
 
     def test_gaiadr3_max_mag(self):
-        s = GaiaDR3SourcesCatalog(hd674_coords[0], '1.0 deg',
-                                  band=['G'], max_g_mag=15)
+        s = self._catalog(hd674_coords[0], '1.0 deg',
+                          band=['G'], max_g_mag=15)
         # GAIA DR3 has only 741 sources brighter than 15 mag in this radius
         assert_less(len(s), 1000)
         assert_false(np.any(s.magnitude('G').nominal > 15))
 
     def test_gaiadr3_pm_in_skycoord(self):
-        s = GaiaDR3SourcesCatalog(hd674_coords[0], '0.1 deg',
-                                  band=['G'])
+        s = self._catalog(hd674_coords[0], '0.1 deg', band=['G'])
         assert_is_instance(s.skycoord().pm_ra_cosdec, u.Quantity)
         assert_is_instance(s.skycoord().pm_dec, u.Quantity)
         assert_almost_equal(s.skycoord().pm_ra_cosdec.value[0],
@@ -1386,8 +1384,7 @@ class Test_GaiaDR3:
                             9.578, decimal=3)
 
     def test_gaiadr3_pm_in_get_coordinates(self):
-        s = GaiaDR3SourcesCatalog(hd674_coords[0], '0.1 deg',
-                                  band=['G'])
+        s = self._catalog(hd674_coords[0], '0.1 deg', band=['G'])
         a = s.get_coordinates()
         c = s.get_coordinates(obstime=Time('J10016.0'))
         # space motion must be applyied
@@ -1396,7 +1393,6 @@ class Test_GaiaDR3:
 
 
 @pytest.mark.flaky(reruns=5)
-@pytest.mark.remote_data
 class Test_SMSSDR4:
     hd674_mags = {
         'u': [11.9227, 0.0135],

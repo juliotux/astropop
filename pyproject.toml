@@ -55,7 +55,8 @@ test = [
     "pytest-astropy",
     "pytest-remotedata",
     "testfixtures",
-    "pytest-rerunfailures"
+    "pytest-rerunfailures",
+    "vcrpy>=7"
 ]
 docs = [
     "matplotlib",

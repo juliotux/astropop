@@ -1,0 +1,835 @@
+version: 1
+interactions:
+- request:
+    method: POST
+    uri: https://vizier.cds.unistra.fr/viz-bin/votable
+    body: '-source=II/379/smssdr4
+
+      -out.max=unlimited
+
+      -out=SMSS,RAICRS,DEICRS,EpMean,ObjectId,flags,ClassStar,uPSF,e_uPSF,vPSF,e_vPSF,gPSF,e_gPSF,rPSf,e_rPSF,iPSF,e_iPSF,zPSF,e_zPSF,rPSF
+
+      -out.add=_r
+
+      -sort=_r
+
+      -c=2.71676018-54.29064769
+
+      -c.rd=0.05
+
+      -out.meta=huUD
+
+      -out.form=mini
+
+      -oc.form=d'
+    headers:
+      User-Agent:
+      - astroquery/0.4.11 Python/3.14.7 (Linux) python-requests/2.34.2
+      Accept-Encoding:
+      - gzip, deflate, zstd
+      Accept:
+      - '*/*'
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '273'
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Connection:
+      - Keep-Alive
+      DocumentRef:
+      - VOTx3771734
+      Server:
+      - Apache/2.4.52 (Ubuntu)
+      Keep-Alive:
+      - timeout=5, max=100
+      Content-Type:
+      - application/x-votable+xml
+      Vary:
+      - Accept-Encoding
+      Access-Control-Allow-Headers:
+      - Origin, X-Requested-With, Content-Type, Accept
+      Content-Disposition:
+      - attachment; filename=vizier_votable.vot
+      Access-Control-Allow-Origin:
+      - '*'
+      Date:
+      - Thu, 01 Oct 2026 09:29:16 GMT
+      Transfer-Encoding:
+      - chunked
+    body:
+      string: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<VOTABLE version=\"1.4\"\
+        \ xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n  xmlns=\"http://www.ivoa.net/xml/VOTable/v1.3\"\
+        \n  xsi:schemaLocation=\"http://www.ivoa.net/xml/VOTable/v1.3 http://www.ivoa.net/xml/VOTable/v1.3\"\
+        >\n <DESCRIPTION>\n   VizieR Astronomical Server vizier.cds.unistra.fr\n \
+        \   Date: 2026-10-01T09:29:16 [V7.6]\n   Explanations and Statistics of UCDs:\t\
+        \t\tSee LINK below\n   In case of problem, please report to:\tcds-question@unistra.fr\n\
+        \ </DESCRIPTION>\n<!-- VOTable description at http://www.ivoa.net/Documents/latest/VOT.html\
+        \ -->\n<INFO name=\"service_protocol\" value=\"ASU\">  IVOID of the protocol\
+        \ through which the data was retrieved</INFO>\n<INFO name=\"request_date\"\
+        \ value=\"2026-10-01T09:29:16\">  Query execution date</INFO>\n<INFO name=\"\
+        request\" value=\"https://vizier.cds.unistra.fr/viz-bin/votable?-oc.form=d&amp;-source=II/379/smssdr4&amp;-out.max=unlimited&amp;-out=SMSS,RAICRS,DEICRS,EpMean,ObjectId,flags,ClassStar,uPSF,e_uPSF,vPSF,e_vPSF,gPSF,e_gPSF,rPSf,e_rPSF,iPSF,e_iPSF,zPSF,e_zPSF,rPSF&amp;-out.add=_r&amp;-sort=_r&amp;-c=2.71676018-54.29064769&amp;-c.rd=0.05&amp;\"\
+        >  Full request URL (POST)</INFO>\n<INFO name=\"contact\" value=\"cds-question@unistra.fr\"\
+        >  Email or URL to contact publisher</INFO>\n<INFO name=\"server_software\"\
+        \ value=\"VizieR/7.6\">  Software version</INFO>\n<INFO name=\"publisher\"\
+        \ value=\"CDS\">  Data centre that produced the VOTable</INFO>\n<INFO name=\"\
+        header_format\" value=\"mini\"/>\n<INFO name=\"header_format\" value=\"mini\"\
+        />\n\n<RESOURCE ID=\"yCat_2379\" name=\"II/379\" type=\"results\">\n  <DESCRIPTION>SkyMapper\
+        \ Southern Sky Survey. DR4 (Onken+, 2024)</DESCRIPTION>  <INFO name=\"ivoid\"\
+        \ value=\"ivo://cds.vizier/ii/379\">    IVOID of underlying data collection\
+        \  </INFO>\n  <INFO name=\"data_ivoid\" value=\"ivo://cds.vizier/ii/379\"\
+        >    IVOID of underlying data collection  </INFO>\n  <INFO name=\"creator\"\
+        \ value=\"Onken C.A.\">    First author or institution  </INFO>\n  <INFO name=\"\
+        cites\" value=\"bibcode:2024arXiv240202015O\">    Article or Data origin sources\
+        \  </INFO>\n  <INFO name=\"journal\" value=\"arXi\">    Journal name  </INFO>\n\
+        \  <INFO name=\"original_date\" value=\"2024\">    Year of the article publication\
+        \  </INFO>\n  <INFO name=\"reference_url\" value=\"https://cdsarc.cds.unistra.fr/viz-bin/cat/II/379\"\
+        >    Dataset landing page  </INFO>\n  <INFO name=\"publication_date\" value=\"\
+        2024-02-27\">    Date of first publication in the data centre  </INFO>\n \
+        \ <INFO name=\"rights_uri\" value=\"https://cds.unistra.fr/vizier-org/licences_vizier.html\"\
+        >    Licence URI  </INFO>\n\n  <COOSYS ID=\"H_2000.000\" system=\"ICRS\" epoch=\"\
+        2000.000\"/>\n  <TABLE ID=\"II_379_smssdr4\" name=\"II/379/smssdr4\">\n  \
+        \  <DESCRIPTION>SkyMapper DR4</DESCRIPTION>\n<!-- SkyMapper DR4 (\\originalcolumnnames)\
+        \ -->\n\n    <!-- RowName: -c=${$poseq}&-c.rs=0.004 -->\n    <!-- Definitions\
+        \ of GROUPs and FIELDs -->\n    <FIELD name=\"_r\" ucd=\"POS_ANG_DIST_GENERAL\"\
+        \ datatype=\"double\" width=\"8\" precision=\"6\">\n      <DESCRIPTION>Distance\
+        \ from center (002.716760-54.290648)[ICRS], at Epoch=J2000.0</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"SMSS\" ucd=\"ID_ALTERNATIVE\" datatype=\"\
+        char\" arraysize=\"18*\">\n      <DESCRIPTION>SkyMapper Southern Survey designation\
+        \ of the form SMSS Jhhmmss.ss+/-ddmmss.s derived from mean ICRS coordinates\
+        \ (smss_j)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"RAICRS\" ucd=\"\
+        POS_EQ_RA_MAIN\" ref=\"H_2000.000\" datatype=\"double\" width=\"10\" precision=\"\
+        6\" unit=\"deg\">\n      <DESCRIPTION>Mean ICRS Right Ascension of the object\
+        \ (ICRS, Ep=J2000) (raj2000)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"\
+        DEICRS\" ucd=\"POS_EQ_DEC_MAIN\" ref=\"H_2000.000\" datatype=\"double\" width=\"\
+        10\" precision=\"6\" unit=\"deg\">\n      <DESCRIPTION>Mean ICRS Declination\
+        \ of the object (ICRS, Ep=J2000) (dej2000)</DESCRIPTION>\n    </FIELD>\n \
+        \   <FIELD name=\"EpMean\" ucd=\"TIME_EPOCH\" datatype=\"double\" width=\"\
+        10\" precision=\"4\" unit=\"d\">\n      <DESCRIPTION>Mean MJD epoch of the\
+        \ observations (mean_epoch)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"\
+        ObjectId\" ucd=\"ID_MAIN\" datatype=\"long\" width=\"10\">\n      <DESCRIPTION>Global\
+        \ unique object ID in the master table (object_id)</DESCRIPTION>\n    </FIELD>\n\
+        \    <FIELD name=\"flags\" ucd=\"CODE_MISC\" datatype=\"int\" width=\"5\"\
+        >\n      <DESCRIPTION>Bitwise OR of Source Extractor flags across all observations\
+        \ (flags)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"ClassStar\" ucd=\"\
+        CLASS_STAR/GALAXY\" datatype=\"float\" width=\"6\" precision=\"3\">\n    \
+        \  <DESCRIPTION>Maximum stellarity index from photometry table (between 0=no\
+        \ star and 1=star) (class_star)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"\
+        uPSF\" ucd=\"PHOT_SDSS_U\" datatype=\"double\" width=\"7\" precision=\"4\"\
+        \ unit=\"mag\">\n      <DESCRIPTION>? Weighted mean u-band PSF magnitude (u_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_uPSF\" ucd=\"\
+        ERROR\" datatype=\"float\" width=\"7\" precision=\"4\" unit=\"mag\">\n   \
+        \   <DESCRIPTION>? Error in weighted mean u-band PSF magnitude (e_u_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"vPSF\" ucd=\"\
+        PHOT_MAG_V\" datatype=\"double\" width=\"7\" precision=\"4\" unit=\"mag\"\
+        >\n      <DESCRIPTION>? Weighted mean v-band PSF magnitude (v_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_vPSF\" ucd=\"\
+        ERROR\" datatype=\"float\" width=\"7\" precision=\"4\" unit=\"mag\">\n   \
+        \   <DESCRIPTION>? Error in weighted mean v-band PSF magnitude (e_v_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"gPSF\" ucd=\"\
+        PHOT_SDSS_G\" datatype=\"double\" width=\"7\" precision=\"4\" unit=\"mag\"\
+        >\n      <DESCRIPTION>? Weighted mean g-band PSF magnitude (g_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_gPSF\" ucd=\"\
+        ERROR\" datatype=\"float\" width=\"7\" precision=\"4\" unit=\"mag\">\n   \
+        \   <DESCRIPTION>? Error in weighted mean g-band PSF magnitude (e_g_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_rPSF\" ucd=\"\
+        ERROR\" datatype=\"float\" width=\"7\" precision=\"4\" unit=\"mag\">\n   \
+        \   <DESCRIPTION>? Error in weighted mean r-band PSF magnitude (e_r_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"iPSF\" ucd=\"\
+        PHOT_SDSS_I\" datatype=\"double\" width=\"7\" precision=\"4\" unit=\"mag\"\
+        >\n      <DESCRIPTION>? Weighted mean i-band PSF magnitude (i_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_iPSF\" ucd=\"\
+        ERROR\" datatype=\"float\" width=\"7\" precision=\"4\" unit=\"mag\">\n   \
+        \   <DESCRIPTION>? Error in weighted mean i-band PSF magnitude (e_i_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"zPSF\" ucd=\"\
+        PHOT_SDSS_Z\" datatype=\"double\" width=\"7\" precision=\"4\" unit=\"mag\"\
+        >\n      <DESCRIPTION>? Weighted mean z-band PSF magnitude (z_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_zPSF\" ucd=\"\
+        ERROR\" datatype=\"float\" width=\"7\" precision=\"4\" unit=\"mag\">\n   \
+        \   <DESCRIPTION>? Error in weighted mean z-band PSF magnitude (e_z_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"rPSF\" ucd=\"\
+        PHOT_SDSS_R\" datatype=\"double\" width=\"7\" precision=\"4\" unit=\"mag\"\
+        >\n      <DESCRIPTION>? Weighted mean r-band PSF magnitude (r_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n<DATA><TABLEDATA>\n<TR><TD>0.000044</TD><TD>001052.01-541726.1</TD><TD>002.716803</TD><TD>-54.290611</TD><TD>57880.3866</TD><TD>503264202</TD><TD>0</TD><TD>1.000</TD><TD>11.9227</TD><TD>0.0135</TD><TD>11.1721</TD><TD>0.0142</TD><TD>10.5768</TD><TD>0.0110</TD><TD>0.0117</TD><TD>10.7294</TD><TD>0.0104</TD><TD>10.8096</TD><TD>0.0119</TD><TD>10.6059</TD></TR>\n\
+        <TR><TD>0.002653</TD><TD>001050.94-541725.1</TD><TD>002.712251</TD><TD>-54.290314</TD><TD>58440.4552</TD><TD>2720971386</TD><TD>16</TD><TD>0.352</TD><TD>16.3191</TD><TD></TD><TD>16.4203</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.008252</TD><TD>001055.38-541728.9</TD><TD>002.730832</TD><TD>-54.291449</TD><TD>57979.2697</TD><TD>503264206</TD><TD>0</TD><TD>0.982</TD><TD>19.0103</TD><TD>0.0719</TD><TD>18.6209</TD><TD>0.0463</TD><TD>17.2462</TD><TD>0.0294</TD><TD>0.0242</TD><TD>16.5938</TD><TD>0.0086</TD><TD>16.5420</TD><TD>0.0103</TD><TD>16.8383</TD></TR>\n\
+        <TR><TD>0.011490</TD><TD>001047.36-541718.6</TD><TD>002.697428</TD><TD>-54.288484</TD><TD>58059.3974</TD><TD>503264203</TD><TD>1024</TD><TD>0.647</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>18.7200</TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.011779</TD><TD>001047.34-541737.8</TD><TD>002.697359</TD><TD>-54.293892</TD><TD>57869.0014</TD><TD>503264201</TD><TD>0</TD><TD>0.983</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>17.6651</TD><TD>0.0315</TD><TD>0.0394</TD><TD>16.6009</TD><TD>0.0083</TD><TD>16.4379</TD><TD>0.0091</TD><TD>17.0013</TD></TR>\n\
+        <TR><TD>0.013505</TD><TD>001051.79-541814.8</TD><TD>002.715871</TD><TD>-54.304143</TD><TD>58282.9934</TD><TD>503264192</TD><TD>0</TD><TD>0.915</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>18.9769</TD><TD>0.0155</TD><TD>18.5275</TD><TD>0.0466</TD><TD></TD></TR>\n\
+        <TR><TD>0.016218</TD><TD>001054.70-541632.7</TD><TD>002.728056</TD><TD>-54.275831</TD><TD>58059.3988</TD><TD>503264210</TD><TD>0</TD><TD>0.536</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.1251</TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.016313</TD><TD>001054.19-541630.7</TD><TD>002.725815</TD><TD>-54.275215</TD><TD>56939.4728</TD><TD>2720971394</TD><TD>1024</TD><TD>0.985</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>16.9669</TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.017189</TD><TD>001047.54-541814.2</TD><TD>002.698151</TD><TD>-54.303972</TD><TD>57924.1149</TD><TD>503264191</TD><TD>0</TD><TD>0.984</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>17.0604</TD><TD>0.0304</TD><TD>0.0182</TD><TD>15.9048</TD><TD>0.0057</TD><TD>15.7184</TD><TD>0.0073</TD><TD>16.3687</TD></TR>\n\
+        <TR><TD>0.017499</TD><TD>001059.07-541714.7</TD><TD>002.746227</TD><TD>-54.287425</TD><TD>58124.2774</TD><TD>503264207</TD><TD>0</TD><TD>0.995</TD><TD>17.9658</TD><TD>0.0653</TD><TD>17.6203</TD><TD>0.0307</TD><TD>15.9540</TD><TD>0.0248</TD><TD>0.0180</TD><TD>15.0002</TD><TD>0.0062</TD><TD>14.8544</TD><TD>0.0085</TD><TD>15.3708</TD></TR>\n\
+        <TR><TD>0.018700</TD><TD>001054.85-541828.7</TD><TD>002.728671</TD><TD>-54.308008</TD><TD>58215.8162</TD><TD>503264197</TD><TD>0</TD><TD>0.904</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.0080</TD><TD>0.0265</TD><TD>18.6821</TD><TD>0.0666</TD><TD></TD></TR>\n\
+        <TR><TD>0.021440</TD><TD>001056.26-541618.6</TD><TD>002.734536</TD><TD>-54.271887</TD><TD>58297.4158</TD><TD>503264211</TD><TD>0</TD><TD>0.976</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.2260</TD><TD>0.0339</TD><TD>0.0482</TD><TD>17.9801</TD><TD>0.0129</TD><TD>17.7753</TD><TD>0.0220</TD><TD>18.5299</TD></TR>\n\
+        <TR><TD>0.023856</TD><TD>001042.25-541735.1</TD><TD>002.676113</TD><TD>-54.293150</TD><TD>58086.8675</TD><TD>503264199</TD><TD>0</TD><TD>0.982</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.0471</TD><TD>17.4255</TD><TD>0.0077</TD><TD>16.8157</TD><TD>0.0114</TD><TD>19.0749</TD></TR>\n\
+        <TR><TD>0.024666</TD><TD>001059.06-541622.4</TD><TD>002.746102</TD><TD>-54.272900</TD><TD>56939.4717</TD><TD>2720971396</TD><TD>0</TD><TD>0.552</TD><TD></TD><TD></TD><TD>17.4402</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.025528</TD><TD>001053.34-541555.1</TD><TD>002.722355</TD><TD>-54.265330</TD><TD>58130.6351</TD><TD>503264205</TD><TD>0</TD><TD>0.984</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>18.3196</TD><TD>0.0239</TD><TD>0.0529</TD><TD>16.8251</TD><TD>0.0099</TD><TD>16.5376</TD><TD>0.0122</TD><TD>17.5415</TD></TR>\n\
+        <TR><TD>0.030288</TD><TD>001039.60-541716.7</TD><TD>002.665063</TD><TD>-54.288041</TD><TD>58059.3988</TD><TD>503264200</TD><TD>0</TD><TD>0.743</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>18.9577</TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.030317</TD><TD>001104.32-541742.7</TD><TD>002.768103</TD><TD>-54.295248</TD><TD>58193.4054</TD><TD>503264208</TD><TD>0</TD><TD>0.627</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.5589</TD><TD>0.0933</TD><TD>18.8891</TD><TD>0.1092</TD><TD></TD></TR>\n\
+        <TR><TD>0.031672</TD><TD>001041.87-541614.7</TD><TD>002.674593</TD><TD>-54.270721</TD><TD>58304.2651</TD><TD>503264204</TD><TD>0</TD><TD>0.623</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.0414</TD><TD>19.4975</TD><TD>0.0276</TD><TD></TD><TD></TD><TD>19.7288</TD></TR>\n\
+        <TR><TD>0.031674</TD><TD>001056.47-541913.3</TD><TD>002.735422</TD><TD>-54.320391</TD><TD>58215.8162</TD><TD>503264193</TD><TD>0</TD><TD>0.873</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.2377</TD><TD>0.0298</TD><TD>19.1510</TD><TD>0.0747</TD><TD></TD></TR>\n\
+        <TR><TD>0.033404</TD><TD>001038.31-541718.4</TD><TD>002.659653</TD><TD>-54.288465</TD><TD>56939.4725</TD><TD>2720971381</TD><TD>0</TD><TD>0.639</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>17.8780</TD></TR>\n\
+        <TR><TD>0.034876</TD><TD>001105.86-541757.8</TD><TD>002.774596</TD><TD>-54.299426</TD><TD>58302.6732</TD><TD>503264198</TD><TD>0</TD><TD>0.915</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.0717</TD><TD>18.8667</TD><TD>0.0295</TD><TD>18.6425</TD><TD>0.0772</TD><TD>19.2101</TD></TR>\n\
+        <TR><TD>0.036396</TD><TD>001100.08-541535.9</TD><TD>002.750362</TD><TD>-54.259993</TD><TD>58461.4200</TD><TD>2720987357</TD><TD>0</TD><TD>0.482</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.8651</TD><TD>0.1103</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.037255</TD><TD>001049.49-541514.1</TD><TD>002.706278</TD><TD>-54.253899</TD><TD>58461.4200</TD><TD>1616394320</TD><TD>0</TD><TD>0.550</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.5498</TD><TD>0.1460</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.037636</TD><TD>001102.40-541545.8</TD><TD>002.760062</TD><TD>-54.262769</TD><TD>58350.4252</TD><TD>503264212</TD><TD>0</TD><TD>0.953</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.6211</TD><TD>0.0606</TD><TD>0.0474</TD><TD>18.6801</TD><TD>0.0689</TD><TD>18.5484</TD><TD>0.0343</TD><TD>19.0703</TD></TR>\n\
+        <TR><TD>0.038264</TD><TD>001043.51-541530.4</TD><TD>002.681326</TD><TD>-54.258460</TD><TD>58461.4200</TD><TD>1616394318</TD><TD>0</TD><TD>0.478</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.7381</TD><TD>0.1278</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.041054</TD><TD>001035.38-541751.5</TD><TD>002.647469</TD><TD>-54.297723</TD><TD>58276.9531</TD><TD>503264181</TD><TD>0</TD><TD>0.900</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>18.9985</TD><TD>0.0183</TD><TD>18.3108</TD><TD>0.0231</TD><TD></TD></TR>\n\
+        <TR><TD>0.042476</TD><TD>001109.42-541716.3</TD><TD>002.789380</TD><TD>-54.287906</TD><TD>58105.4056</TD><TD>503264209</TD><TD>0</TD><TD>0.980</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.0453</TD><TD>17.9747</TD><TD>0.0174</TD><TD>17.4995</TD><TD>0.0135</TD><TD>19.2975</TD></TR>\n\
+        <TR><TD>0.042521</TD><TD>001048.66-541956.5</TD><TD>002.702847</TD><TD>-54.332387</TD><TD>58048.6185</TD><TD>503264189</TD><TD>0</TD><TD>0.979</TD><TD>17.8535</TD><TD>0.0459</TD><TD>17.4201</TD><TD>0.0219</TD><TD>16.4555</TD><TD>0.0260</TD><TD>0.0198</TD><TD>15.8058</TD><TD>0.0182</TD><TD>15.7378</TD><TD>0.0229</TD><TD>16.0826</TD></TR>\n\
+        <TR><TD>0.043249</TD><TD>001034.36-541744.9</TD><TD>002.643189</TD><TD>-54.295820</TD><TD>58768.6569</TD><TD>2720971362</TD><TD>1024</TD><TD>0.655</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>17.3292</TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.044463</TD><TD>001045.87-541956.9</TD><TD>002.691187</TD><TD>-54.332533</TD><TD>58052.1200</TD><TD>503264190</TD><TD>0</TD><TD>0.993</TD><TD>17.9763</TD><TD>0.0295</TD><TD>17.5377</TD><TD>0.0246</TD><TD>16.9154</TD><TD>0.0213</TD><TD>0.0294</TD><TD>16.5861</TD><TD>0.0077</TD><TD>16.5873</TD><TD>0.0099</TD><TD>16.7068</TD></TR>\n\
+        <TR><TD>0.047886</TD><TD>001107.67-541542.1</TD><TD>002.782141</TD><TD>-54.261738</TD><TD>57930.0345</TD><TD>503264213</TD><TD>0</TD><TD>0.996</TD><TD>17.5213</TD><TD>0.0463</TD><TD>17.0307</TD><TD>0.0263</TD><TD>16.4651</TD><TD>0.0288</TD><TD>0.0340</TD><TD>16.3611</TD><TD>0.0076</TD><TD>16.3984</TD><TD>0.0107</TD><TD>16.3831</TD></TR>\n\
+        <TR><TD>0.049035</TD><TD>001052.64-541429.9</TD><TD>002.719417</TD><TD>-54.241637</TD><TD>58320.4225</TD><TD>503274388</TD><TD>0</TD><TD>0.354</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.0154</TD><TD>0.1534</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.049519</TD><TD>001032.05-541650.7</TD><TD>002.633630</TD><TD>-54.280783</TD><TD>58017.7083</TD><TD>503264185</TD><TD>0</TD><TD>0.984</TD><TD>15.9162</TD><TD>0.0196</TD><TD>15.5736</TD><TD>0.0163</TD><TD>14.2982</TD><TD>0.0117</TD><TD>0.0111</TD><TD>13.8019</TD><TD>0.0056</TD><TD>13.7667</TD><TD>0.0074</TD><TD>13.9779</TD></TR>\n\
+        </TABLEDATA></DATA>\n<INFO name=\"matches\" value=\"33\">matching records</INFO>\n\
+        \    <INFO name=\"meta\" value=\"message\">      memory restriction caused\
+        \ by sort option (partial sort in bunches of 719023)    </INFO>\n\n<INFO name=\"\
+        Warning\" value=\"Column 'rPSf' unknown in 'II/379/smssdr4'\"/>\n<INFO name=\"\
+        Warning\" value=\"+++memory restriction caused by {\\bf sort} option (partial\
+        \ sort in bunches of 719023)\"/>\n  </TABLE>\n</RESOURCE>\n</VOTABLE>\n"
+- request:
+    method: POST
+    uri: https://vizier.cds.unistra.fr/viz-bin/votable
+    body: '-source=II/379/smssdr4
+
+      -out.max=unlimited
+
+      -out=SMSS,RAICRS,DEICRS,EpMean,ObjectId,flags,ClassStar,uPSF,e_uPSF,vPSF,e_vPSF,gPSF,e_gPSF,rPSf,e_rPSF,iPSF,e_iPSF,zPSF,e_zPSF,rPSF
+
+      -out.add=_r
+
+      -sort=_r
+
+      -c=2.71676018-54.29064769
+
+      -c.rd=0.01
+
+      -out.meta=huUD
+
+      -out.form=mini
+
+      -oc.form=d'
+    headers:
+      User-Agent:
+      - astroquery/0.4.11 Python/3.14.7 (Linux) python-requests/2.34.2
+      Accept-Encoding:
+      - gzip, deflate, zstd
+      Accept:
+      - '*/*'
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '273'
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Connection:
+      - Keep-Alive
+      DocumentRef:
+      - VOTx3772732
+      Server:
+      - Apache/2.4.52 (Ubuntu)
+      Keep-Alive:
+      - timeout=5, max=100
+      Content-Type:
+      - application/x-votable+xml
+      Vary:
+      - Accept-Encoding
+      Access-Control-Allow-Headers:
+      - Origin, X-Requested-With, Content-Type, Accept
+      Content-Disposition:
+      - attachment; filename=vizier_votable.vot
+      Access-Control-Allow-Origin:
+      - '*'
+      Date:
+      - Thu, 01 Oct 2026 09:29:20 GMT
+      Transfer-Encoding:
+      - chunked
+    body:
+      string: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<VOTABLE version=\"1.4\"\
+        \ xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n  xmlns=\"http://www.ivoa.net/xml/VOTable/v1.3\"\
+        \n  xsi:schemaLocation=\"http://www.ivoa.net/xml/VOTable/v1.3 http://www.ivoa.net/xml/VOTable/v1.3\"\
+        >\n <DESCRIPTION>\n   VizieR Astronomical Server vizier.cds.unistra.fr\n \
+        \   Date: 2026-10-01T09:29:20 [V7.6]\n   Explanations and Statistics of UCDs:\t\
+        \t\tSee LINK below\n   In case of problem, please report to:\tcds-question@unistra.fr\n\
+        \ </DESCRIPTION>\n<!-- VOTable description at http://www.ivoa.net/Documents/latest/VOT.html\
+        \ -->\n<INFO name=\"service_protocol\" value=\"ASU\">  IVOID of the protocol\
+        \ through which the data was retrieved</INFO>\n<INFO name=\"request_date\"\
+        \ value=\"2026-10-01T09:29:20\">  Query execution date</INFO>\n<INFO name=\"\
+        request\" value=\"https://vizier.cds.unistra.fr/viz-bin/votable?-oc.form=d&amp;-source=II/379/smssdr4&amp;-out.max=unlimited&amp;-out=SMSS,RAICRS,DEICRS,EpMean,ObjectId,flags,ClassStar,uPSF,e_uPSF,vPSF,e_vPSF,gPSF,e_gPSF,rPSf,e_rPSF,iPSF,e_iPSF,zPSF,e_zPSF,rPSF&amp;-out.add=_r&amp;-sort=_r&amp;-c=2.71676018-54.29064769&amp;-c.rd=0.01&amp;\"\
+        >  Full request URL (POST)</INFO>\n<INFO name=\"contact\" value=\"cds-question@unistra.fr\"\
+        >  Email or URL to contact publisher</INFO>\n<INFO name=\"server_software\"\
+        \ value=\"VizieR/7.6\">  Software version</INFO>\n<INFO name=\"publisher\"\
+        \ value=\"CDS\">  Data centre that produced the VOTable</INFO>\n<INFO name=\"\
+        header_format\" value=\"mini\"/>\n<INFO name=\"header_format\" value=\"mini\"\
+        />\n\n<RESOURCE ID=\"yCat_2379\" name=\"II/379\" type=\"results\">\n  <DESCRIPTION>SkyMapper\
+        \ Southern Sky Survey. DR4 (Onken+, 2024)</DESCRIPTION>  <INFO name=\"ivoid\"\
+        \ value=\"ivo://cds.vizier/ii/379\">    IVOID of underlying data collection\
+        \  </INFO>\n  <INFO name=\"data_ivoid\" value=\"ivo://cds.vizier/ii/379\"\
+        >    IVOID of underlying data collection  </INFO>\n  <INFO name=\"creator\"\
+        \ value=\"Onken C.A.\">    First author or institution  </INFO>\n  <INFO name=\"\
+        cites\" value=\"bibcode:2024arXiv240202015O\">    Article or Data origin sources\
+        \  </INFO>\n  <INFO name=\"journal\" value=\"arXi\">    Journal name  </INFO>\n\
+        \  <INFO name=\"original_date\" value=\"2024\">    Year of the article publication\
+        \  </INFO>\n  <INFO name=\"reference_url\" value=\"https://cdsarc.cds.unistra.fr/viz-bin/cat/II/379\"\
+        >    Dataset landing page  </INFO>\n  <INFO name=\"publication_date\" value=\"\
+        2024-02-27\">    Date of first publication in the data centre  </INFO>\n \
+        \ <INFO name=\"rights_uri\" value=\"https://cds.unistra.fr/vizier-org/licences_vizier.html\"\
+        >    Licence URI  </INFO>\n\n  <COOSYS ID=\"H_2000.000\" system=\"ICRS\" epoch=\"\
+        2000.000\"/>\n  <TABLE ID=\"II_379_smssdr4\" name=\"II/379/smssdr4\">\n  \
+        \  <DESCRIPTION>SkyMapper DR4</DESCRIPTION>\n<!-- SkyMapper DR4 (\\originalcolumnnames)\
+        \ -->\n\n    <!-- RowName: -c=${$poseq}&-c.rs=0.004 -->\n    <!-- Definitions\
+        \ of GROUPs and FIELDs -->\n    <FIELD name=\"_r\" ucd=\"POS_ANG_DIST_GENERAL\"\
+        \ datatype=\"double\" width=\"8\" precision=\"6\">\n      <DESCRIPTION>Distance\
+        \ from center (002.716760-54.290648)[ICRS], at Epoch=J2000.0</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"SMSS\" ucd=\"ID_ALTERNATIVE\" datatype=\"\
+        char\" arraysize=\"18*\">\n      <DESCRIPTION>SkyMapper Southern Survey designation\
+        \ of the form SMSS Jhhmmss.ss+/-ddmmss.s derived from mean ICRS coordinates\
+        \ (smss_j)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"RAICRS\" ucd=\"\
+        POS_EQ_RA_MAIN\" ref=\"H_2000.000\" datatype=\"double\" width=\"10\" precision=\"\
+        6\" unit=\"deg\">\n      <DESCRIPTION>Mean ICRS Right Ascension of the object\
+        \ (ICRS, Ep=J2000) (raj2000)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"\
+        DEICRS\" ucd=\"POS_EQ_DEC_MAIN\" ref=\"H_2000.000\" datatype=\"double\" width=\"\
+        10\" precision=\"6\" unit=\"deg\">\n      <DESCRIPTION>Mean ICRS Declination\
+        \ of the object (ICRS, Ep=J2000) (dej2000)</DESCRIPTION>\n    </FIELD>\n \
+        \   <FIELD name=\"EpMean\" ucd=\"TIME_EPOCH\" datatype=\"double\" width=\"\
+        10\" precision=\"4\" unit=\"d\">\n      <DESCRIPTION>Mean MJD epoch of the\
+        \ observations (mean_epoch)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"\
+        ObjectId\" ucd=\"ID_MAIN\" datatype=\"long\" width=\"10\">\n      <DESCRIPTION>Global\
+        \ unique object ID in the master table (object_id)</DESCRIPTION>\n    </FIELD>\n\
+        \    <FIELD name=\"flags\" ucd=\"CODE_MISC\" datatype=\"int\" width=\"5\"\
+        >\n      <DESCRIPTION>Bitwise OR of Source Extractor flags across all observations\
+        \ (flags)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"ClassStar\" ucd=\"\
+        CLASS_STAR/GALAXY\" datatype=\"float\" width=\"6\" precision=\"3\">\n    \
+        \  <DESCRIPTION>Maximum stellarity index from photometry table (between 0=no\
+        \ star and 1=star) (class_star)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"\
+        uPSF\" ucd=\"PHOT_SDSS_U\" datatype=\"double\" width=\"7\" precision=\"4\"\
+        \ unit=\"mag\">\n      <DESCRIPTION>? Weighted mean u-band PSF magnitude (u_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_uPSF\" ucd=\"\
+        ERROR\" datatype=\"float\" width=\"7\" precision=\"4\" unit=\"mag\">\n   \
+        \   <DESCRIPTION>? Error in weighted mean u-band PSF magnitude (e_u_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"vPSF\" ucd=\"\
+        PHOT_MAG_V\" datatype=\"double\" width=\"7\" precision=\"4\" unit=\"mag\"\
+        >\n      <DESCRIPTION>? Weighted mean v-band PSF magnitude (v_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_vPSF\" ucd=\"\
+        ERROR\" datatype=\"float\" width=\"7\" precision=\"4\" unit=\"mag\">\n   \
+        \   <DESCRIPTION>? Error in weighted mean v-band PSF magnitude (e_v_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"gPSF\" ucd=\"\
+        PHOT_SDSS_G\" datatype=\"double\" width=\"7\" precision=\"4\" unit=\"mag\"\
+        >\n      <DESCRIPTION>? Weighted mean g-band PSF magnitude (g_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_gPSF\" ucd=\"\
+        ERROR\" datatype=\"float\" width=\"7\" precision=\"4\" unit=\"mag\">\n   \
+        \   <DESCRIPTION>? Error in weighted mean g-band PSF magnitude (e_g_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_rPSF\" ucd=\"\
+        ERROR\" datatype=\"float\" width=\"7\" precision=\"4\" unit=\"mag\">\n   \
+        \   <DESCRIPTION>? Error in weighted mean r-band PSF magnitude (e_r_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"iPSF\" ucd=\"\
+        PHOT_SDSS_I\" datatype=\"double\" width=\"7\" precision=\"4\" unit=\"mag\"\
+        >\n      <DESCRIPTION>? Weighted mean i-band PSF magnitude (i_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_iPSF\" ucd=\"\
+        ERROR\" datatype=\"float\" width=\"7\" precision=\"4\" unit=\"mag\">\n   \
+        \   <DESCRIPTION>? Error in weighted mean i-band PSF magnitude (e_i_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"zPSF\" ucd=\"\
+        PHOT_SDSS_Z\" datatype=\"double\" width=\"7\" precision=\"4\" unit=\"mag\"\
+        >\n      <DESCRIPTION>? Weighted mean z-band PSF magnitude (z_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_zPSF\" ucd=\"\
+        ERROR\" datatype=\"float\" width=\"7\" precision=\"4\" unit=\"mag\">\n   \
+        \   <DESCRIPTION>? Error in weighted mean z-band PSF magnitude (e_z_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"rPSF\" ucd=\"\
+        PHOT_SDSS_R\" datatype=\"double\" width=\"7\" precision=\"4\" unit=\"mag\"\
+        >\n      <DESCRIPTION>? Weighted mean r-band PSF magnitude (r_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n<DATA><TABLEDATA>\n<TR><TD>0.000044</TD><TD>001052.01-541726.1</TD><TD>002.716803</TD><TD>-54.290611</TD><TD>57880.3866</TD><TD>503264202</TD><TD>0</TD><TD>1.000</TD><TD>11.9227</TD><TD>0.0135</TD><TD>11.1721</TD><TD>0.0142</TD><TD>10.5768</TD><TD>0.0110</TD><TD>0.0117</TD><TD>10.7294</TD><TD>0.0104</TD><TD>10.8096</TD><TD>0.0119</TD><TD>10.6059</TD></TR>\n\
+        <TR><TD>0.002653</TD><TD>001050.94-541725.1</TD><TD>002.712251</TD><TD>-54.290314</TD><TD>58440.4552</TD><TD>2720971386</TD><TD>16</TD><TD>0.352</TD><TD>16.3191</TD><TD></TD><TD>16.4203</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.008252</TD><TD>001055.38-541728.9</TD><TD>002.730832</TD><TD>-54.291449</TD><TD>57979.2697</TD><TD>503264206</TD><TD>0</TD><TD>0.982</TD><TD>19.0103</TD><TD>0.0719</TD><TD>18.6209</TD><TD>0.0463</TD><TD>17.2462</TD><TD>0.0294</TD><TD>0.0242</TD><TD>16.5938</TD><TD>0.0086</TD><TD>16.5420</TD><TD>0.0103</TD><TD>16.8383</TD></TR>\n\
+        </TABLEDATA></DATA>\n<INFO name=\"matches\" value=\"3\">matching records</INFO>\n\
+        \    <INFO name=\"meta\" value=\"message\">      memory restriction caused\
+        \ by sort option (partial sort in bunches of 719023)    </INFO>\n\n<INFO name=\"\
+        Warning\" value=\"Column 'rPSf' unknown in 'II/379/smssdr4'\"/>\n<INFO name=\"\
+        Warning\" value=\"+++memory restriction caused by {\\bf sort} option (partial\
+        \ sort in bunches of 719023)\"/>\n  </TABLE>\n</RESOURCE>\n</VOTABLE>\n"
+- request:
+    method: POST
+    uri: https://vizier.cds.unistra.fr/viz-bin/votable
+    body: '-source=II/379/smssdr4
+
+      -out.max=unlimited
+
+      -out=SMSS,RAICRS,DEICRS,EpMean,ObjectId,flags,ClassStar,uPSF,e_uPSF,vPSF,e_vPSF,gPSF,e_gPSF,rPSf,e_rPSF,iPSF,e_iPSF,zPSF,e_zPSF,rPSF
+
+      -out.add=_r
+
+      -sort=_r
+
+      -c=2.71676018-54.29064769
+
+      -c.rd=0.1
+
+      -out.meta=huUD
+
+      -out.form=mini
+
+      -oc.form=d'
+    headers:
+      User-Agent:
+      - astroquery/0.4.11 Python/3.14.7 (Linux) python-requests/2.34.2
+      Accept-Encoding:
+      - gzip, deflate, zstd
+      Accept:
+      - '*/*'
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '272'
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Connection:
+      - Keep-Alive
+      DocumentRef:
+      - VOTx3773220
+      Server:
+      - Apache/2.4.52 (Ubuntu)
+      Keep-Alive:
+      - timeout=5, max=100
+      Content-Type:
+      - application/x-votable+xml
+      Vary:
+      - Accept-Encoding
+      Access-Control-Allow-Headers:
+      - Origin, X-Requested-With, Content-Type, Accept
+      Content-Disposition:
+      - attachment; filename=vizier_votable.vot
+      Access-Control-Allow-Origin:
+      - '*'
+      Date:
+      - Thu, 01 Oct 2026 09:29:23 GMT
+      Transfer-Encoding:
+      - chunked
+    body:
+      string: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<VOTABLE version=\"1.4\"\
+        \ xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n  xmlns=\"http://www.ivoa.net/xml/VOTable/v1.3\"\
+        \n  xsi:schemaLocation=\"http://www.ivoa.net/xml/VOTable/v1.3 http://www.ivoa.net/xml/VOTable/v1.3\"\
+        >\n <DESCRIPTION>\n   VizieR Astronomical Server vizier.cds.unistra.fr\n \
+        \   Date: 2026-10-01T09:29:23 [V7.6]\n   Explanations and Statistics of UCDs:\t\
+        \t\tSee LINK below\n   In case of problem, please report to:\tcds-question@unistra.fr\n\
+        \ </DESCRIPTION>\n<!-- VOTable description at http://www.ivoa.net/Documents/latest/VOT.html\
+        \ -->\n<INFO name=\"service_protocol\" value=\"ASU\">  IVOID of the protocol\
+        \ through which the data was retrieved</INFO>\n<INFO name=\"request_date\"\
+        \ value=\"2026-10-01T09:29:23\">  Query execution date</INFO>\n<INFO name=\"\
+        request\" value=\"https://vizier.cds.unistra.fr/viz-bin/votable?-oc.form=d&amp;-source=II/379/smssdr4&amp;-out.max=unlimited&amp;-out=SMSS,RAICRS,DEICRS,EpMean,ObjectId,flags,ClassStar,uPSF,e_uPSF,vPSF,e_vPSF,gPSF,e_gPSF,rPSf,e_rPSF,iPSF,e_iPSF,zPSF,e_zPSF,rPSF&amp;-out.add=_r&amp;-sort=_r&amp;-c=2.71676018-54.29064769&amp;-c.rd=0.1&amp;\"\
+        >  Full request URL (POST)</INFO>\n<INFO name=\"contact\" value=\"cds-question@unistra.fr\"\
+        >  Email or URL to contact publisher</INFO>\n<INFO name=\"server_software\"\
+        \ value=\"VizieR/7.6\">  Software version</INFO>\n<INFO name=\"publisher\"\
+        \ value=\"CDS\">  Data centre that produced the VOTable</INFO>\n<INFO name=\"\
+        header_format\" value=\"mini\"/>\n<INFO name=\"header_format\" value=\"mini\"\
+        />\n\n<RESOURCE ID=\"yCat_2379\" name=\"II/379\" type=\"results\">\n  <DESCRIPTION>SkyMapper\
+        \ Southern Sky Survey. DR4 (Onken+, 2024)</DESCRIPTION>  <INFO name=\"ivoid\"\
+        \ value=\"ivo://cds.vizier/ii/379\">    IVOID of underlying data collection\
+        \  </INFO>\n  <INFO name=\"data_ivoid\" value=\"ivo://cds.vizier/ii/379\"\
+        >    IVOID of underlying data collection  </INFO>\n  <INFO name=\"creator\"\
+        \ value=\"Onken C.A.\">    First author or institution  </INFO>\n  <INFO name=\"\
+        cites\" value=\"bibcode:2024arXiv240202015O\">    Article or Data origin sources\
+        \  </INFO>\n  <INFO name=\"journal\" value=\"arXi\">    Journal name  </INFO>\n\
+        \  <INFO name=\"original_date\" value=\"2024\">    Year of the article publication\
+        \  </INFO>\n  <INFO name=\"reference_url\" value=\"https://cdsarc.cds.unistra.fr/viz-bin/cat/II/379\"\
+        >    Dataset landing page  </INFO>\n  <INFO name=\"publication_date\" value=\"\
+        2024-02-27\">    Date of first publication in the data centre  </INFO>\n \
+        \ <INFO name=\"rights_uri\" value=\"https://cds.unistra.fr/vizier-org/licences_vizier.html\"\
+        >    Licence URI  </INFO>\n\n  <COOSYS ID=\"H_2000.000\" system=\"ICRS\" epoch=\"\
+        2000.000\"/>\n  <TABLE ID=\"II_379_smssdr4\" name=\"II/379/smssdr4\">\n  \
+        \  <DESCRIPTION>SkyMapper DR4</DESCRIPTION>\n<!-- SkyMapper DR4 (\\originalcolumnnames)\
+        \ -->\n\n    <!-- RowName: -c=${$poseq}&-c.rs=0.004 -->\n    <!-- Definitions\
+        \ of GROUPs and FIELDs -->\n    <FIELD name=\"_r\" ucd=\"POS_ANG_DIST_GENERAL\"\
+        \ datatype=\"double\" width=\"8\" precision=\"6\">\n      <DESCRIPTION>Distance\
+        \ from center (002.716760-54.290648)[ICRS], at Epoch=J2000.0</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"SMSS\" ucd=\"ID_ALTERNATIVE\" datatype=\"\
+        char\" arraysize=\"18*\">\n      <DESCRIPTION>SkyMapper Southern Survey designation\
+        \ of the form SMSS Jhhmmss.ss+/-ddmmss.s derived from mean ICRS coordinates\
+        \ (smss_j)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"RAICRS\" ucd=\"\
+        POS_EQ_RA_MAIN\" ref=\"H_2000.000\" datatype=\"double\" width=\"10\" precision=\"\
+        6\" unit=\"deg\">\n      <DESCRIPTION>Mean ICRS Right Ascension of the object\
+        \ (ICRS, Ep=J2000) (raj2000)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"\
+        DEICRS\" ucd=\"POS_EQ_DEC_MAIN\" ref=\"H_2000.000\" datatype=\"double\" width=\"\
+        10\" precision=\"6\" unit=\"deg\">\n      <DESCRIPTION>Mean ICRS Declination\
+        \ of the object (ICRS, Ep=J2000) (dej2000)</DESCRIPTION>\n    </FIELD>\n \
+        \   <FIELD name=\"EpMean\" ucd=\"TIME_EPOCH\" datatype=\"double\" width=\"\
+        10\" precision=\"4\" unit=\"d\">\n      <DESCRIPTION>Mean MJD epoch of the\
+        \ observations (mean_epoch)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"\
+        ObjectId\" ucd=\"ID_MAIN\" datatype=\"long\" width=\"10\">\n      <DESCRIPTION>Global\
+        \ unique object ID in the master table (object_id)</DESCRIPTION>\n    </FIELD>\n\
+        \    <FIELD name=\"flags\" ucd=\"CODE_MISC\" datatype=\"int\" width=\"5\"\
+        >\n      <DESCRIPTION>Bitwise OR of Source Extractor flags across all observations\
+        \ (flags)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"ClassStar\" ucd=\"\
+        CLASS_STAR/GALAXY\" datatype=\"float\" width=\"6\" precision=\"3\">\n    \
+        \  <DESCRIPTION>Maximum stellarity index from photometry table (between 0=no\
+        \ star and 1=star) (class_star)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"\
+        uPSF\" ucd=\"PHOT_SDSS_U\" datatype=\"double\" width=\"7\" precision=\"4\"\
+        \ unit=\"mag\">\n      <DESCRIPTION>? Weighted mean u-band PSF magnitude (u_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_uPSF\" ucd=\"\
+        ERROR\" datatype=\"float\" width=\"7\" precision=\"4\" unit=\"mag\">\n   \
+        \   <DESCRIPTION>? Error in weighted mean u-band PSF magnitude (e_u_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"vPSF\" ucd=\"\
+        PHOT_MAG_V\" datatype=\"double\" width=\"7\" precision=\"4\" unit=\"mag\"\
+        >\n      <DESCRIPTION>? Weighted mean v-band PSF magnitude (v_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_vPSF\" ucd=\"\
+        ERROR\" datatype=\"float\" width=\"7\" precision=\"4\" unit=\"mag\">\n   \
+        \   <DESCRIPTION>? Error in weighted mean v-band PSF magnitude (e_v_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"gPSF\" ucd=\"\
+        PHOT_SDSS_G\" datatype=\"double\" width=\"7\" precision=\"4\" unit=\"mag\"\
+        >\n      <DESCRIPTION>? Weighted mean g-band PSF magnitude (g_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_gPSF\" ucd=\"\
+        ERROR\" datatype=\"float\" width=\"7\" precision=\"4\" unit=\"mag\">\n   \
+        \   <DESCRIPTION>? Error in weighted mean g-band PSF magnitude (e_g_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_rPSF\" ucd=\"\
+        ERROR\" datatype=\"float\" width=\"7\" precision=\"4\" unit=\"mag\">\n   \
+        \   <DESCRIPTION>? Error in weighted mean r-band PSF magnitude (e_r_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"iPSF\" ucd=\"\
+        PHOT_SDSS_I\" datatype=\"double\" width=\"7\" precision=\"4\" unit=\"mag\"\
+        >\n      <DESCRIPTION>? Weighted mean i-band PSF magnitude (i_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_iPSF\" ucd=\"\
+        ERROR\" datatype=\"float\" width=\"7\" precision=\"4\" unit=\"mag\">\n   \
+        \   <DESCRIPTION>? Error in weighted mean i-band PSF magnitude (e_i_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"zPSF\" ucd=\"\
+        PHOT_SDSS_Z\" datatype=\"double\" width=\"7\" precision=\"4\" unit=\"mag\"\
+        >\n      <DESCRIPTION>? Weighted mean z-band PSF magnitude (z_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_zPSF\" ucd=\"\
+        ERROR\" datatype=\"float\" width=\"7\" precision=\"4\" unit=\"mag\">\n   \
+        \   <DESCRIPTION>? Error in weighted mean z-band PSF magnitude (e_z_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"rPSF\" ucd=\"\
+        PHOT_SDSS_R\" datatype=\"double\" width=\"7\" precision=\"4\" unit=\"mag\"\
+        >\n      <DESCRIPTION>? Weighted mean r-band PSF magnitude (r_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n<DATA><TABLEDATA>\n<TR><TD>0.000044</TD><TD>001052.01-541726.1</TD><TD>002.716803</TD><TD>-54.290611</TD><TD>57880.3866</TD><TD>503264202</TD><TD>0</TD><TD>1.000</TD><TD>11.9227</TD><TD>0.0135</TD><TD>11.1721</TD><TD>0.0142</TD><TD>10.5768</TD><TD>0.0110</TD><TD>0.0117</TD><TD>10.7294</TD><TD>0.0104</TD><TD>10.8096</TD><TD>0.0119</TD><TD>10.6059</TD></TR>\n\
+        <TR><TD>0.002653</TD><TD>001050.94-541725.1</TD><TD>002.712251</TD><TD>-54.290314</TD><TD>58440.4552</TD><TD>2720971386</TD><TD>16</TD><TD>0.352</TD><TD>16.3191</TD><TD></TD><TD>16.4203</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.008252</TD><TD>001055.38-541728.9</TD><TD>002.730832</TD><TD>-54.291449</TD><TD>57979.2697</TD><TD>503264206</TD><TD>0</TD><TD>0.982</TD><TD>19.0103</TD><TD>0.0719</TD><TD>18.6209</TD><TD>0.0463</TD><TD>17.2462</TD><TD>0.0294</TD><TD>0.0242</TD><TD>16.5938</TD><TD>0.0086</TD><TD>16.5420</TD><TD>0.0103</TD><TD>16.8383</TD></TR>\n\
+        <TR><TD>0.011490</TD><TD>001047.36-541718.6</TD><TD>002.697428</TD><TD>-54.288484</TD><TD>58059.3974</TD><TD>503264203</TD><TD>1024</TD><TD>0.647</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>18.7200</TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.011779</TD><TD>001047.34-541737.8</TD><TD>002.697359</TD><TD>-54.293892</TD><TD>57869.0014</TD><TD>503264201</TD><TD>0</TD><TD>0.983</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>17.6651</TD><TD>0.0315</TD><TD>0.0394</TD><TD>16.6009</TD><TD>0.0083</TD><TD>16.4379</TD><TD>0.0091</TD><TD>17.0013</TD></TR>\n\
+        <TR><TD>0.013505</TD><TD>001051.79-541814.8</TD><TD>002.715871</TD><TD>-54.304143</TD><TD>58282.9934</TD><TD>503264192</TD><TD>0</TD><TD>0.915</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>18.9769</TD><TD>0.0155</TD><TD>18.5275</TD><TD>0.0466</TD><TD></TD></TR>\n\
+        <TR><TD>0.016218</TD><TD>001054.70-541632.7</TD><TD>002.728056</TD><TD>-54.275831</TD><TD>58059.3988</TD><TD>503264210</TD><TD>0</TD><TD>0.536</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.1251</TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.016313</TD><TD>001054.19-541630.7</TD><TD>002.725815</TD><TD>-54.275215</TD><TD>56939.4728</TD><TD>2720971394</TD><TD>1024</TD><TD>0.985</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>16.9669</TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.017189</TD><TD>001047.54-541814.2</TD><TD>002.698151</TD><TD>-54.303972</TD><TD>57924.1149</TD><TD>503264191</TD><TD>0</TD><TD>0.984</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>17.0604</TD><TD>0.0304</TD><TD>0.0182</TD><TD>15.9048</TD><TD>0.0057</TD><TD>15.7184</TD><TD>0.0073</TD><TD>16.3687</TD></TR>\n\
+        <TR><TD>0.017499</TD><TD>001059.07-541714.7</TD><TD>002.746227</TD><TD>-54.287425</TD><TD>58124.2774</TD><TD>503264207</TD><TD>0</TD><TD>0.995</TD><TD>17.9658</TD><TD>0.0653</TD><TD>17.6203</TD><TD>0.0307</TD><TD>15.9540</TD><TD>0.0248</TD><TD>0.0180</TD><TD>15.0002</TD><TD>0.0062</TD><TD>14.8544</TD><TD>0.0085</TD><TD>15.3708</TD></TR>\n\
+        <TR><TD>0.018700</TD><TD>001054.85-541828.7</TD><TD>002.728671</TD><TD>-54.308008</TD><TD>58215.8162</TD><TD>503264197</TD><TD>0</TD><TD>0.904</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.0080</TD><TD>0.0265</TD><TD>18.6821</TD><TD>0.0666</TD><TD></TD></TR>\n\
+        <TR><TD>0.021440</TD><TD>001056.26-541618.6</TD><TD>002.734536</TD><TD>-54.271887</TD><TD>58297.4158</TD><TD>503264211</TD><TD>0</TD><TD>0.976</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.2260</TD><TD>0.0339</TD><TD>0.0482</TD><TD>17.9801</TD><TD>0.0129</TD><TD>17.7753</TD><TD>0.0220</TD><TD>18.5299</TD></TR>\n\
+        <TR><TD>0.023856</TD><TD>001042.25-541735.1</TD><TD>002.676113</TD><TD>-54.293150</TD><TD>58086.8675</TD><TD>503264199</TD><TD>0</TD><TD>0.982</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.0471</TD><TD>17.4255</TD><TD>0.0077</TD><TD>16.8157</TD><TD>0.0114</TD><TD>19.0749</TD></TR>\n\
+        <TR><TD>0.024666</TD><TD>001059.06-541622.4</TD><TD>002.746102</TD><TD>-54.272900</TD><TD>56939.4717</TD><TD>2720971396</TD><TD>0</TD><TD>0.552</TD><TD></TD><TD></TD><TD>17.4402</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.025528</TD><TD>001053.34-541555.1</TD><TD>002.722355</TD><TD>-54.265330</TD><TD>58130.6351</TD><TD>503264205</TD><TD>0</TD><TD>0.984</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>18.3196</TD><TD>0.0239</TD><TD>0.0529</TD><TD>16.8251</TD><TD>0.0099</TD><TD>16.5376</TD><TD>0.0122</TD><TD>17.5415</TD></TR>\n\
+        <TR><TD>0.030288</TD><TD>001039.60-541716.7</TD><TD>002.665063</TD><TD>-54.288041</TD><TD>58059.3988</TD><TD>503264200</TD><TD>0</TD><TD>0.743</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>18.9577</TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.030317</TD><TD>001104.32-541742.7</TD><TD>002.768103</TD><TD>-54.295248</TD><TD>58193.4054</TD><TD>503264208</TD><TD>0</TD><TD>0.627</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.5589</TD><TD>0.0933</TD><TD>18.8891</TD><TD>0.1092</TD><TD></TD></TR>\n\
+        <TR><TD>0.031672</TD><TD>001041.87-541614.7</TD><TD>002.674593</TD><TD>-54.270721</TD><TD>58304.2651</TD><TD>503264204</TD><TD>0</TD><TD>0.623</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.0414</TD><TD>19.4975</TD><TD>0.0276</TD><TD></TD><TD></TD><TD>19.7288</TD></TR>\n\
+        <TR><TD>0.031674</TD><TD>001056.47-541913.3</TD><TD>002.735422</TD><TD>-54.320391</TD><TD>58215.8162</TD><TD>503264193</TD><TD>0</TD><TD>0.873</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.2377</TD><TD>0.0298</TD><TD>19.1510</TD><TD>0.0747</TD><TD></TD></TR>\n\
+        <TR><TD>0.033404</TD><TD>001038.31-541718.4</TD><TD>002.659653</TD><TD>-54.288465</TD><TD>56939.4725</TD><TD>2720971381</TD><TD>0</TD><TD>0.639</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>17.8780</TD></TR>\n\
+        <TR><TD>0.034876</TD><TD>001105.86-541757.8</TD><TD>002.774596</TD><TD>-54.299426</TD><TD>58302.6732</TD><TD>503264198</TD><TD>0</TD><TD>0.915</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.0717</TD><TD>18.8667</TD><TD>0.0295</TD><TD>18.6425</TD><TD>0.0772</TD><TD>19.2101</TD></TR>\n\
+        <TR><TD>0.036396</TD><TD>001100.08-541535.9</TD><TD>002.750362</TD><TD>-54.259993</TD><TD>58461.4200</TD><TD>2720987357</TD><TD>0</TD><TD>0.482</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.8651</TD><TD>0.1103</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.037255</TD><TD>001049.49-541514.1</TD><TD>002.706278</TD><TD>-54.253899</TD><TD>58461.4200</TD><TD>1616394320</TD><TD>0</TD><TD>0.550</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.5498</TD><TD>0.1460</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.037636</TD><TD>001102.40-541545.8</TD><TD>002.760062</TD><TD>-54.262769</TD><TD>58350.4252</TD><TD>503264212</TD><TD>0</TD><TD>0.953</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.6211</TD><TD>0.0606</TD><TD>0.0474</TD><TD>18.6801</TD><TD>0.0689</TD><TD>18.5484</TD><TD>0.0343</TD><TD>19.0703</TD></TR>\n\
+        <TR><TD>0.038264</TD><TD>001043.51-541530.4</TD><TD>002.681326</TD><TD>-54.258460</TD><TD>58461.4200</TD><TD>1616394318</TD><TD>0</TD><TD>0.478</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.7381</TD><TD>0.1278</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.041054</TD><TD>001035.38-541751.5</TD><TD>002.647469</TD><TD>-54.297723</TD><TD>58276.9531</TD><TD>503264181</TD><TD>0</TD><TD>0.900</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>18.9985</TD><TD>0.0183</TD><TD>18.3108</TD><TD>0.0231</TD><TD></TD></TR>\n\
+        <TR><TD>0.042476</TD><TD>001109.42-541716.3</TD><TD>002.789380</TD><TD>-54.287906</TD><TD>58105.4056</TD><TD>503264209</TD><TD>0</TD><TD>0.980</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.0453</TD><TD>17.9747</TD><TD>0.0174</TD><TD>17.4995</TD><TD>0.0135</TD><TD>19.2975</TD></TR>\n\
+        <TR><TD>0.042521</TD><TD>001048.66-541956.5</TD><TD>002.702847</TD><TD>-54.332387</TD><TD>58048.6185</TD><TD>503264189</TD><TD>0</TD><TD>0.979</TD><TD>17.8535</TD><TD>0.0459</TD><TD>17.4201</TD><TD>0.0219</TD><TD>16.4555</TD><TD>0.0260</TD><TD>0.0198</TD><TD>15.8058</TD><TD>0.0182</TD><TD>15.7378</TD><TD>0.0229</TD><TD>16.0826</TD></TR>\n\
+        <TR><TD>0.043249</TD><TD>001034.36-541744.9</TD><TD>002.643189</TD><TD>-54.295820</TD><TD>58768.6569</TD><TD>2720971362</TD><TD>1024</TD><TD>0.655</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>17.3292</TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.044463</TD><TD>001045.87-541956.9</TD><TD>002.691187</TD><TD>-54.332533</TD><TD>58052.1200</TD><TD>503264190</TD><TD>0</TD><TD>0.993</TD><TD>17.9763</TD><TD>0.0295</TD><TD>17.5377</TD><TD>0.0246</TD><TD>16.9154</TD><TD>0.0213</TD><TD>0.0294</TD><TD>16.5861</TD><TD>0.0077</TD><TD>16.5873</TD><TD>0.0099</TD><TD>16.7068</TD></TR>\n\
+        <TR><TD>0.047886</TD><TD>001107.67-541542.1</TD><TD>002.782141</TD><TD>-54.261738</TD><TD>57930.0345</TD><TD>503264213</TD><TD>0</TD><TD>0.996</TD><TD>17.5213</TD><TD>0.0463</TD><TD>17.0307</TD><TD>0.0263</TD><TD>16.4651</TD><TD>0.0288</TD><TD>0.0340</TD><TD>16.3611</TD><TD>0.0076</TD><TD>16.3984</TD><TD>0.0107</TD><TD>16.3831</TD></TR>\n\
+        <TR><TD>0.049035</TD><TD>001052.64-541429.9</TD><TD>002.719417</TD><TD>-54.241637</TD><TD>58320.4225</TD><TD>503274388</TD><TD>0</TD><TD>0.354</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.0154</TD><TD>0.1534</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.049519</TD><TD>001032.05-541650.7</TD><TD>002.633630</TD><TD>-54.280783</TD><TD>58017.7083</TD><TD>503264185</TD><TD>0</TD><TD>0.984</TD><TD>15.9162</TD><TD>0.0196</TD><TD>15.5736</TD><TD>0.0163</TD><TD>14.2982</TD><TD>0.0117</TD><TD>0.0111</TD><TD>13.8019</TD><TD>0.0056</TD><TD>13.7667</TD><TD>0.0074</TD><TD>13.9779</TD></TR>\n\
+        <TR><TD>0.050314</TD><TD>001046.82-541430.9</TD><TD>002.695179</TD><TD>-54.241938</TD><TD>58255.2955</TD><TD>503274387</TD><TD>0</TD><TD>0.721</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.2921</TD><TD>0.0426</TD><TD>19.0769</TD><TD>0.0944</TD><TD></TD></TR>\n\
+        <TR><TD>0.050586</TD><TD>001052.46-542028.5</TD><TD>002.718707</TD><TD>-54.341221</TD><TD>58143.4779</TD><TD>503264148</TD><TD>0</TD><TD>0.973</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.0268</TD><TD>18.2282</TD><TD>0.0145</TD><TD>17.8734</TD><TD>0.0329</TD><TD>19.3053</TD></TR>\n\
+        <TR><TD>0.050716</TD><TD>001042.40-542008.5</TD><TD>002.676763</TD><TD>-54.335678</TD><TD>58267.9557</TD><TD>503264188</TD><TD>0</TD><TD>0.579</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.0296</TD><TD>0.0843</TD><TD>18.9159</TD><TD>0.1097</TD><TD></TD></TR>\n\
+        <TR><TD>0.051407</TD><TD>001035.99-541927.0</TD><TD>002.649867</TD><TD>-54.324106</TD><TD>58222.4820</TD><TD>503264161</TD><TD>0</TD><TD>0.647</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.0357</TD><TD>0.1091</TD><TD>18.7224</TD><TD>0.3394</TD><TD></TD></TR>\n\
+        <TR><TD>0.053194</TD><TD>001032.31-541849.2</TD><TD>002.634631</TD><TD>-54.313733</TD><TD>58266.8055</TD><TD>503264165</TD><TD>0</TD><TD>0.599</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.3398</TD><TD>0.0589</TD><TD>0.1539</TD><TD>17.8497</TD><TD>0.0531</TD><TD>17.6067</TD><TD>0.0488</TD><TD>18.4310</TD></TR>\n\
+        <TR><TD>0.053295</TD><TD>001039.87-541446.4</TD><TD>002.666222</TD><TD>-54.246271</TD><TD>58311.1929</TD><TD>503274383</TD><TD>0</TD><TD>0.788</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>18.9849</TD><TD>0.0332</TD><TD>18.5827</TD><TD>0.0521</TD><TD></TD></TR>\n\
+        <TR><TD>0.054002</TD><TD>001032.46-541858.4</TD><TD>002.635298</TD><TD>-54.316278</TD><TD>58178.8884</TD><TD>503264164</TD><TD>0</TD><TD>0.597</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.1355</TD><TD>0.0785</TD><TD>18.9631</TD><TD>0.1357</TD><TD></TD></TR>\n\
+        <TR><TD>0.054006</TD><TD>001054.61-541413.3</TD><TD>002.727644</TD><TD>-54.237017</TD><TD>58260.4087</TD><TD>503274391</TD><TD>0</TD><TD>0.444</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.6976</TD><TD>0.0739</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.054166</TD><TD>001114.12-541701.3</TD><TD>002.808795</TD><TD>-54.283736</TD><TD>57990.0508</TD><TD>503264261</TD><TD>0</TD><TD>0.987</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>17.5568</TD><TD>0.0838</TD><TD>0.0262</TD><TD>16.6106</TD><TD>0.0111</TD><TD>16.4760</TD><TD>0.0105</TD><TD>16.9381</TD></TR>\n\
+        <TR><TD>0.054925</TD><TD>001030.06-541813.1</TD><TD>002.625331</TD><TD>-54.303679</TD><TD>58276.9693</TD><TD>503264167</TD><TD>0</TD><TD>0.925</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.3822</TD><TD>0.0590</TD><TD>0.0236</TD><TD>18.7681</TD><TD>0.0291</TD><TD>18.6290</TD><TD>0.1119</TD><TD>19.0064</TD></TR>\n\
+        <TR><TD>0.055108</TD><TD>001057.72-541414.3</TD><TD>002.740540</TD><TD>-54.237318</TD><TD>58440.4559</TD><TD>2720987359</TD><TD>1048</TD><TD>0.997</TD><TD></TD><TD></TD><TD>14.1359</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.055229</TD><TD>001054.96-542043.4</TD><TD>002.729239</TD><TD>-54.345395</TD><TD>58260.4087</TD><TD>503264149</TD><TD>0</TD><TD>0.417</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.0369</TD><TD>0.2428</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.056215</TD><TD>001031.25-541557.2</TD><TD>002.630277</TD><TD>-54.265938</TD><TD>58112.0326</TD><TD>503264187</TD><TD>0</TD><TD>0.982</TD><TD>18.8673</TD><TD>0.0371</TD><TD>18.7010</TD><TD>0.0487</TD><TD>17.0601</TD><TD>0.1360</TD><TD>0.0390</TD><TD>16.6529</TD><TD>0.0073</TD><TD>16.5644</TD><TD>0.0102</TD><TD>16.8853</TD></TR>\n\
+        <TR><TD>0.056926</TD><TD>001104.14-542021.5</TD><TD>002.767323</TD><TD>-54.339337</TD><TD>58438.5666</TD><TD>503264152</TD><TD>0</TD><TD>0.884</TD><TD></TD><TD></TD><TD>19.0602</TD><TD>0.0811</TD><TD>19.0189</TD><TD>0.0452</TD><TD>0.0308</TD><TD>18.7646</TD><TD>0.0408</TD><TD>19.2355</TD><TD>0.1104</TD><TD>18.8708</TD></TR>\n\
+        <TR><TD>0.056968</TD><TD>001115.35-541712.2</TD><TD>002.814130</TD><TD>-54.286761</TD><TD>58439.0795</TD><TD>503264260</TD><TD>0</TD><TD>0.920</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.0903</TD><TD>0.0476</TD><TD>0.0287</TD><TD>18.4201</TD><TD>0.0307</TD><TD>18.3647</TD><TD>0.0230</TD><TD>18.7444</TD></TR>\n\
+        <TR><TD>0.057087</TD><TD>001029.17-541639.2</TD><TD>002.621564</TD><TD>-54.277585</TD><TD>58258.8767</TD><TD>503264184</TD><TD>0</TD><TD>0.655</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.5851</TD><TD>0.0501</TD><TD>19.0008</TD><TD>0.0548</TD><TD></TD></TR>\n\
+        <TR><TD>0.057164</TD><TD>001029.85-541617.6</TD><TD>002.624459</TD><TD>-54.271569</TD><TD>58281.8174</TD><TD>503264186</TD><TD>0</TD><TD>0.975</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.0366</TD><TD>18.7495</TD><TD>0.0261</TD><TD>18.6484</TD><TD>0.0483</TD><TD>18.9489</TD></TR>\n\
+        <TR><TD>0.057557</TD><TD>001051.57-541359.0</TD><TD>002.715061</TD><TD>-54.233099</TD><TD>58260.4087</TD><TD>503274389</TD><TD>0</TD><TD>0.555</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.6171</TD><TD>0.1072</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.057744</TD><TD>001110.02-541941.5</TD><TD>002.791979</TD><TD>-54.328180</TD><TD>58260.4087</TD><TD>503264194</TD><TD>0</TD><TD>0.488</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.2344</TD><TD>0.2798</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.058556</TD><TD>001029.32-541836.6</TD><TD>002.622165</TD><TD>-54.310188</TD><TD>58178.8884</TD><TD>503264166</TD><TD>0</TD><TD>0.694</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.2409</TD><TD>0.0701</TD><TD>18.7452</TD><TD>0.3792</TD><TD></TD></TR>\n\
+        <TR><TD>0.058677</TD><TD>001036.70-541442.8</TD><TD>002.653012</TD><TD>-54.245293</TD><TD>58319.3994</TD><TD>503274384</TD><TD>0</TD><TD>0.599</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.1572</TD><TD>18.4885</TD><TD>0.0752</TD><TD>18.2221</TD><TD>0.0914</TD><TD>18.8227</TD></TR>\n\
+        <TR><TD>0.058983</TD><TD>001028.04-541654.2</TD><TD>002.616866</TD><TD>-54.281773</TD><TD>58391.4503</TD><TD>503264183</TD><TD>0</TD><TD>0.650</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.1659</TD><TD>18.2221</TD><TD>0.0891</TD><TD>18.0759</TD><TD>0.1211</TD><TD>18.7731</TD></TR>\n\
+        <TR><TD>0.059922</TD><TD>001115.90-541633.3</TD><TD>002.816257</TD><TD>-54.275922</TD><TD>56939.4717</TD><TD>2720971489</TD><TD>0</TD><TD>0.621</TD><TD></TD><TD></TD><TD>17.2137</TD><TD>0.2238</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.060617</TD><TD>001041.61-541407.7</TD><TD>002.673469</TD><TD>-54.235556</TD><TD>58009.2231</TD><TD>503274385</TD><TD>0</TD><TD>0.977</TD><TD></TD><TD></TD><TD>18.5877</TD><TD>0.0326</TD><TD>17.6826</TD><TD>0.1155</TD><TD>0.3317</TD><TD>18.0846</TD><TD>0.0160</TD><TD>18.1773</TD><TD>0.0319</TD><TD>17.8016</TD></TR>\n\
+        <TR><TD>0.061299</TD><TD>001108.42-542013.8</TD><TD>002.785285</TD><TD>-54.337120</TD><TD>58259.9174</TD><TD>503264153</TD><TD>512</TD><TD>0.561</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.4028</TD><TD>0.0814</TD><TD>19.3427</TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.061902</TD><TD>001114.96-541550.9</TD><TD>002.812549</TD><TD>-54.264115</TD><TD>58018.0401</TD><TD>503264265</TD><TD>0</TD><TD>0.594</TD><TD></TD><TD></TD><TD>18.2566</TD><TD>0.3396</TD><TD>17.2498</TD><TD>0.2708</TD><TD>0.2728</TD><TD>16.2994</TD><TD>0.1023</TD><TD>16.1277</TD><TD>0.0884</TD><TD>16.5207</TD></TR>\n\
+        <TR><TD>0.062267</TD><TD>001114.47-541914.3</TD><TD>002.810290</TD><TD>-54.320634</TD><TD>58231.6644</TD><TD>503264251</TD><TD>0</TD><TD>0.983</TD><TD>14.7009</TD><TD>0.0228</TD><TD>14.3094</TD><TD>0.0203</TD><TD>12.7737</TD><TD>0.0435</TD><TD>0.0534</TD><TD>12.1488</TD><TD>0.0441</TD><TD>12.0985</TD><TD>0.0509</TD><TD>12.3990</TD></TR>\n\
+        <TR><TD>0.062463</TD><TD>001038.00-542034.7</TD><TD>002.658370</TD><TD>-54.343008</TD><TD>58209.0069</TD><TD>503264147</TD><TD>0</TD><TD>0.624</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.3966</TD><TD>0.1659</TD><TD>19.2954</TD><TD>0.1364</TD><TD></TD></TR>\n\
+        <TR><TD>0.062946</TD><TD>001112.51-541944.8</TD><TD>002.802213</TD><TD>-54.329077</TD><TD>58059.3974</TD><TD>503264196</TD><TD>0</TD><TD>0.409</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.8767</TD><TD>0.0782</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.063206</TD><TD>001043.14-541352.3</TD><TD>002.679840</TD><TD>-54.231234</TD><TD>58209.0069</TD><TD>503274386</TD><TD>0</TD><TD>0.785</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.5506</TD><TD>0.0751</TD><TD>19.2934</TD><TD>0.0421</TD><TD></TD></TR>\n\
+        <TR><TD>0.064141</TD><TD>001029.89-541931.9</TD><TD>002.624484</TD><TD>-54.325514</TD><TD>58253.8921</TD><TD>503264158</TD><TD>0</TD><TD>0.546</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.0706</TD><TD>19.0264</TD><TD>0.0645</TD><TD>18.7584</TD><TD>0.0324</TD><TD>19.3201</TD></TR>\n\
+        <TR><TD>0.064399</TD><TD>001027.26-541603.9</TD><TD>002.613635</TD><TD>-54.267796</TD><TD>58461.4200</TD><TD>1616380269</TD><TD>0</TD><TD>0.481</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.7349</TD><TD>0.0724</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.064906</TD><TD>001045.10-542111.9</TD><TD>002.688016</TD><TD>-54.353351</TD><TD>58126.1215</TD><TD>503264146</TD><TD>0</TD><TD>0.981</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>17.0381</TD><TD>0.0101</TD><TD>16.6003</TD><TD>0.0125</TD><TD></TD></TR>\n\
+        <TR><TD>0.065577</TD><TD>001118.87-541705.3</TD><TD>002.828661</TD><TD>-54.284826</TD><TD>58440.4486</TD><TD>2720971485</TD><TD>1040</TD><TD>0.992</TD><TD></TD><TD></TD><TD>16.2256</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.066278</TD><TD>001028.09-541920.5</TD><TD>002.616985</TD><TD>-54.322333</TD><TD>58293.3010</TD><TD>503264160</TD><TD>0</TD><TD>0.678</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.1668</TD><TD>18.7805</TD><TD>0.0776</TD><TD>18.5325</TD><TD>0.0702</TD><TD>19.1775</TD></TR>\n\
+        <TR><TD>0.066725</TD><TD>001119.25-541753.6</TD><TD>002.830365</TD><TD>-54.298144</TD><TD>58354.4464</TD><TD>503264254</TD><TD>0</TD><TD>0.648</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.1379</TD><TD>18.4076</TD><TD>0.0706</TD><TD>18.2655</TD><TD>0.1009</TD><TD>19.0749</TD></TR>\n\
+        <TR><TD>0.066795</TD><TD>001028.45-541522.6</TD><TD>002.618619</TD><TD>-54.256333</TD><TD>58089.9808</TD><TD>503274369</TD><TD>0</TD><TD>0.981</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.0215</TD><TD>17.6705</TD><TD>0.0153</TD><TD>17.2717</TD><TD>0.0189</TD><TD>18.7343</TD></TR>\n\
+        <TR><TD>0.067296</TD><TD>001102.93-541343.6</TD><TD>002.762213</TD><TD>-54.228810</TD><TD>58287.7490</TD><TD>503274392</TD><TD>0</TD><TD>0.541</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.0071</TD><TD>0.1603</TD><TD>0.2058</TD><TD>17.8958</TD><TD>0.0997</TD><TD>17.6747</TD><TD>0.0933</TD><TD>18.4441</TD></TR>\n\
+        <TR><TD>0.067750</TD><TD>001028.71-541512.3</TD><TD>002.619732</TD><TD>-54.253500</TD><TD>58222.9958</TD><TD>503274370</TD><TD>0</TD><TD>0.984</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.3623</TD><TD>0.0601</TD><TD>0.0377</TD><TD>16.9775</TD><TD>0.0103</TD><TD>16.3394</TD><TD>0.0142</TD><TD>18.5496</TD></TR>\n\
+        <TR><TD>0.067840</TD><TD>001047.82-541324.7</TD><TD>002.699371</TD><TD>-54.223573</TD><TD>57954.8057</TD><TD>503274398</TD><TD>0</TD><TD>0.477</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>18.3367</TD><TD>0.1869</TD><TD>0.2198</TD><TD>17.1834</TD><TD>0.0803</TD><TD>16.9996</TD><TD>0.0797</TD><TD>17.7054</TD></TR>\n\
+        <TR><TD>0.068871</TD><TD>001027.05-541923.3</TD><TD>002.612766</TD><TD>-54.323232</TD><TD>58336.5129</TD><TD>503264159</TD><TD>0</TD><TD>0.861</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.1587</TD><TD>18.4924</TD><TD>0.0377</TD><TD>18.1501</TD><TD>0.0458</TD><TD>18.8790</TD></TR>\n\
+        <TR><TD>0.068907</TD><TD>001035.10-542045.3</TD><TD>002.646329</TD><TD>-54.345969</TD><TD>58178.8884</TD><TD>503264136</TD><TD>1</TD><TD>0.684</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.1209</TD><TD>0.1122</TD><TD>18.9325</TD><TD>0.2249</TD><TD></TD></TR>\n\
+        <TR><TD>0.069062</TD><TD>001046.88-541321.6</TD><TD>002.695525</TD><TD>-54.222709</TD><TD>58297.4663</TD><TD>503274397</TD><TD>0</TD><TD>0.964</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.0519</TD><TD>18.4185</TD><TD>0.0184</TD><TD>18.2539</TD><TD>0.0234</TD><TD>19.0220</TD></TR>\n\
+        <TR><TD>0.069895</TD><TD>001117.07-541929.5</TD><TD>002.821242</TD><TD>-54.324845</TD><TD>58253.2521</TD><TD>503264252</TD><TD>0</TD><TD>0.843</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.1059</TD><TD>19.0793</TD><TD>0.0893</TD><TD>18.7287</TD><TD>0.2678</TD><TD>19.6587</TD></TR>\n\
+        <TR><TD>0.070380</TD><TD>001034.78-542049.9</TD><TD>002.644944</TD><TD>-54.347205</TD><TD>58440.4319</TD><TD>2720971290</TD><TD>24</TD><TD>0.491</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.4041</TD></TR>\n\
+        <TR><TD>0.070461</TD><TD>001025.13-541900.9</TD><TD>002.604776</TD><TD>-54.317015</TD><TD>57875.1151</TD><TD>503264162</TD><TD>0</TD><TD>0.983</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>17.4023</TD><TD>0.0464</TD><TD>0.0226</TD><TD>16.9769</TD><TD>0.0088</TD><TD>16.9431</TD><TD>0.0134</TD><TD>17.1166</TD></TR>\n\
+        <TR><TD>0.070647</TD><TD>001032.61-542035.6</TD><TD>002.635899</TD><TD>-54.343244</TD><TD>59168.4375</TD><TD>2720971289</TD><TD>1024</TD><TD>0.961</TD><TD></TD><TD></TD><TD>16.6470</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.070882</TD><TD>001034.82-542052.4</TD><TD>002.645113</TD><TD>-54.347900</TD><TD>57888.3992</TD><TD>503264135</TD><TD>0</TD><TD>0.495</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>17.5886</TD><TD>0.0595</TD><TD>17.2795</TD><TD>0.0698</TD><TD></TD></TR>\n\
+        <TR><TD>0.072363</TD><TD>001033.53-542050.5</TD><TD>002.639731</TD><TD>-54.347373</TD><TD>58440.4276</TD><TD>2720971288</TD><TD>1048</TD><TD>0.645</TD><TD>16.1798</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.072394</TD><TD>001119.87-541554.2</TD><TD>002.832788</TD><TD>-54.265120</TD><TD>58461.4200</TD><TD>1616380403</TD><TD>0</TD><TD>0.354</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.6237</TD><TD>0.2367</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.072786</TD><TD>001113.17-542031.7</TD><TD>002.804911</TD><TD>-54.342163</TD><TD>56937.5430</TD><TD>2720971330</TD><TD>1040</TD><TD>0.652</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>14.3979</TD></TR>\n\
+        <TR><TD>0.072820</TD><TD>001037.12-542113.5</TD><TD>002.654639</TD><TD>-54.353815</TD><TD>58046.7241</TD><TD>503264145</TD><TD>0</TD><TD>0.982</TD><TD></TD><TD></TD><TD>19.2382</TD><TD>0.0800</TD><TD>17.6535</TD><TD>0.0449</TD><TD>0.0698</TD><TD>16.8692</TD><TD>0.0080</TD><TD>16.7720</TD><TD>0.0140</TD><TD>17.2458</TD></TR>\n\
+        <TR><TD>0.073560</TD><TD>001121.67-541817.5</TD><TD>002.840438</TD><TD>-54.304857</TD><TD>58337.5673</TD><TD>503264253</TD><TD>0</TD><TD>0.861</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.0865</TD><TD>18.7177</TD><TD>0.0533</TD><TD>18.5006</TD><TD>0.0431</TD><TD>19.3535</TD></TR>\n\
+        <TR><TD>0.073565</TD><TD>001045.76-541307.2</TD><TD>002.690707</TD><TD>-54.218674</TD><TD>56939.4725</TD><TD>2720987371</TD><TD>0</TD><TD>0.740</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>17.9423</TD></TR>\n\
+        <TR><TD>0.073718</TD><TD>001023.10-541846.5</TD><TD>002.596314</TD><TD>-54.312891</TD><TD>58461.4200</TD><TD>1616380242</TD><TD>0</TD><TD>0.657</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.2580</TD><TD>0.2766</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.074194</TD><TD>001109.58-541347.9</TD><TD>002.789920</TD><TD>-54.229996</TD><TD>58440.4486</TD><TD>2720987361</TD><TD>1048</TD><TD>0.645</TD><TD></TD><TD></TD><TD>15.3812</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.074340</TD><TD>001122.55-541726.1</TD><TD>002.844125</TD><TD>-54.290635</TD><TD>58059.3988</TD><TD>503264263</TD><TD>0</TD><TD>0.829</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>18.8257</TD><TD>0.0476</TD><TD></TD></TR>\n\
+        <TR><TD>0.074646</TD><TD>001039.33-541321.0</TD><TD>002.664032</TD><TD>-54.222653</TD><TD>58340.5676</TD><TD>503274393</TD><TD>0</TD><TD>0.776</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.0632</TD><TD>19.0599</TD><TD>0.0428</TD><TD>19.0167</TD><TD>0.0612</TD><TD>19.4847</TD></TR>\n\
+        <TR><TD>0.074986</TD><TD>001022.28-541837.5</TD><TD>002.592836</TD><TD>-54.310486</TD><TD>58306.6764</TD><TD>503264163</TD><TD>0</TD><TD>0.967</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>18.8113</TD><TD>0.0477</TD><TD>0.0232</TD><TD>18.3861</TD><TD>0.0128</TD><TD>18.2557</TD><TD>0.0296</TD><TD>18.5504</TD></TR>\n\
+        <TR><TD>0.075231</TD><TD>001032.39-542055.7</TD><TD>002.635080</TD><TD>-54.348872</TD><TD>58178.8884</TD><TD>503264134</TD><TD>0</TD><TD>0.555</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.2104</TD><TD>0.0782</TD><TD>19.0818</TD><TD>0.2391</TD><TD></TD></TR>\n\
+        <TR><TD>0.075996</TD><TD>001029.37-541417.8</TD><TD>002.622428</TD><TD>-54.238302</TD><TD>58251.7067</TD><TD>503274373</TD><TD>0</TD><TD>0.979</TD><TD>18.2700</TD><TD>0.0411</TD><TD>17.8424</TD><TD>0.0573</TD><TD>17.2450</TD><TD>0.0304</TD><TD>0.0288</TD><TD>16.8988</TD><TD>0.0073</TD><TD>16.8923</TD><TD>0.0108</TD><TD>16.9329</TD></TR>\n\
+        <TR><TD>0.076028</TD><TD>001123.22-541739.6</TD><TD>002.846865</TD><TD>-54.294402</TD><TD>58422.5765</TD><TD>503264262</TD><TD>0</TD><TD>0.562</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.2583</TD><TD>0.2393</TD><TD>0.2558</TD><TD>17.7219</TD><TD>0.1388</TD><TD>17.5051</TD><TD>0.1211</TD><TD>18.2854</TD></TR>\n\
+        <TR><TD>0.076398</TD><TD>001116.41-542019.7</TD><TD>002.818506</TD><TD>-54.338752</TD><TD>58260.4087</TD><TD>503264228</TD><TD>0</TD><TD>0.506</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.6085</TD><TD>0.1093</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.076434</TD><TD>001123.06-541809.2</TD><TD>002.846117</TD><TD>-54.302615</TD><TD>58260.4087</TD><TD>503264256</TD><TD>0</TD><TD>0.486</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.5356</TD><TD>0.0777</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.076664</TD><TD>001111.87-541351.9</TD><TD>002.799561</TD><TD>-54.231164</TD><TD>58260.4087</TD><TD>503274462</TD><TD>0</TD><TD>0.496</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.9603</TD><TD>0.0632</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.077088</TD><TD>001117.06-541436.4</TD><TD>002.821146</TD><TD>-54.243465</TD><TD>58461.4200</TD><TD>1616394436</TD><TD>0</TD><TD>0.495</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.4992</TD><TD>0.2048</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.077243</TD><TD>001049.86-542203.7</TD><TD>002.707923</TD><TD>-54.367719</TD><TD>58311.4473</TD><TD>503264144</TD><TD>0</TD><TD>0.610</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>18.0865</TD><TD>0.0877</TD><TD>17.8533</TD><TD>0.1866</TD><TD></TD></TR>\n\
+        <TR><TD>0.077615</TD><TD>001027.85-542028.9</TD><TD>002.616048</TD><TD>-54.341371</TD><TD>56937.5434</TD><TD>2720971287</TD><TD>1048</TD><TD>0.741</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>14.3600</TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.077620</TD><TD>001123.65-541801.4</TD><TD>002.848696</TD><TD>-54.300456</TD><TD>58080.2479</TD><TD>503264257</TD><TD>0</TD><TD>0.495</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.3283</TD><TD>0.0936</TD><TD>0.1671</TD><TD>17.7492</TD><TD>0.0689</TD><TD>17.4330</TD><TD>0.0875</TD><TD>18.3131</TD></TR>\n\
+        <TR><TD>0.077726</TD><TD>001020.09-541711.4</TD><TD>002.583787</TD><TD>-54.286533</TD><TD>57946.6025</TD><TD>503264180</TD><TD>0</TD><TD>0.992</TD><TD>16.0319</TD><TD>0.0191</TD><TD>15.7296</TD><TD>0.0219</TD><TD>14.6511</TD><TD>0.0124</TD><TD>0.0139</TD><TD>14.0946</TD><TD>0.0091</TD><TD>14.0272</TD><TD>0.0100</TD><TD>14.3107</TD></TR>\n\
+        <TR><TD>0.077850</TD><TD>001021.03-541615.6</TD><TD>002.587705</TD><TD>-54.271055</TD><TD>58059.3974</TD><TD>503264182</TD><TD>0</TD><TD>0.589</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.4988</TD><TD>0.3292</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.078736</TD><TD>001040.91-541259.8</TD><TD>002.670482</TD><TD>-54.216699</TD><TD>58255.8113</TD><TD>1616394340</TD><TD>1</TD><TD>0.000</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.5131</TD><TD>0.2897</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.079416</TD><TD>001043.84-542203.4</TD><TD>002.682747</TD><TD>-54.367547</TD><TD>58059.3974</TD><TD>503264143</TD><TD>0</TD><TD>0.513</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.9434</TD><TD>0.0760</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.079799</TD><TD>001056.64-542210.6</TD><TD>002.736089</TD><TD>-54.369647</TD><TD>58006.5876</TD><TD>503264150</TD><TD>0</TD><TD>0.955</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>18.7523</TD><TD>0.0406</TD><TD>18.0923</TD><TD>0.0426</TD><TD></TD></TR>\n\
+        <TR><TD>0.080211</TD><TD>001042.76-541249.0</TD><TD>002.678261</TD><TD>-54.213655</TD><TD>58036.1632</TD><TD>503274396</TD><TD>0</TD><TD>0.991</TD><TD>16.0042</TD><TD>0.0136</TD><TD>15.6583</TD><TD>0.0140</TD><TD>14.5235</TD><TD>0.0112</TD><TD>0.0099</TD><TD>14.0165</TD><TD>0.0055</TD><TD>13.9713</TD><TD>0.0065</TD><TD>14.1989</TD></TR>\n\
+        <TR><TD>0.080247</TD><TD>001124.87-541701.7</TD><TD>002.853737</TD><TD>-54.283830</TD><TD>58059.3981</TD><TD>503264264</TD><TD>0</TD><TD>0.505</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.7685</TD><TD>0.1887</TD><TD>19.1912</TD><TD>0.1481</TD><TD></TD></TR>\n\
+        <TR><TD>0.080255</TD><TD>001121.64-541933.3</TD><TD>002.840300</TD><TD>-54.325946</TD><TD>58260.4087</TD><TD>503264250</TD><TD>0</TD><TD>0.536</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.8169</TD><TD>0.0529</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.080860</TD><TD>001055.14-541236.3</TD><TD>002.729912</TD><TD>-54.210154</TD><TD>58141.0455</TD><TD>503274402</TD><TD>0</TD><TD>0.980</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.0360</TD><TD>17.9371</TD><TD>0.0165</TD><TD>17.6309</TD><TD>0.0294</TD><TD>18.9474</TD></TR>\n\
+        <TR><TD>0.081058</TD><TD>001038.14-541300.8</TD><TD>002.658926</TD><TD>-54.216967</TD><TD>58255.8113</TD><TD>1616394335</TD><TD>0</TD><TD>0.031</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.6533</TD><TD>0.3258</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.081236</TD><TD>001032.20-542121.7</TD><TD>002.634202</TD><TD>-54.356077</TD><TD>58015.1881</TD><TD>503264133</TD><TD>0</TD><TD>0.982</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>17.2228</TD><TD>0.0141</TD><TD>16.7925</TD><TD>0.0155</TD><TD></TD></TR>\n\
+        <TR><TD>0.081343</TD><TD>001047.34-542216.2</TD><TD>002.697253</TD><TD>-54.371191</TD><TD>58768.6583</TD><TD>2720971319</TD><TD>24</TD><TD>0.000</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>16.1380</TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.081441</TD><TD>001047.09-542216.3</TD><TD>002.696231</TD><TD>-54.371204</TD><TD>58768.6569</TD><TD>2720971318</TD><TD>24</TD><TD>0.000</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>16.6256</TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.081845</TD><TD>001124.61-541839.4</TD><TD>002.852637</TD><TD>-54.310944</TD><TD>58260.4087</TD><TD>503264255</TD><TD>0</TD><TD>0.507</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.7003</TD><TD>0.1078</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.082151</TD><TD>001031.70-541330.0</TD><TD>002.632113</TD><TD>-54.225043</TD><TD>58304.2704</TD><TD>503274382</TD><TD>0</TD><TD>0.927</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>18.9831</TD><TD>0.0198</TD><TD>18.4673</TD><TD>0.0285</TD><TD></TD></TR>\n\
+        <TR><TD>0.082916</TD><TD>001038.21-541253.1</TD><TD>002.659256</TD><TD>-54.214842</TD><TD>58255.8113</TD><TD>1616394336</TD><TD>0</TD><TD>0.000</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>18.5406</TD><TD>0.4116</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.083535</TD><TD>001045.27-542221.2</TD><TD>002.688654</TD><TD>-54.372559</TD><TD>58255.8127</TD><TD>2720971316</TD><TD>18</TD><TD>0.000</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>16.1548</TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.083625</TD><TD>001104.11-541244.6</TD><TD>002.767232</TD><TD>-54.212394</TD><TD>58260.4087</TD><TD>503274403</TD><TD>0</TD><TD>0.524</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.7701</TD><TD>0.2189</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.083641</TD><TD>001119.25-541422.7</TD><TD>002.830360</TD><TD>-54.239716</TD><TD>58287.7489</TD><TD>503274461</TD><TD>0</TD><TD>0.978</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.1224</TD><TD>0.0476</TD><TD>0.0287</TD><TD>18.1729</TD><TD>0.0176</TD><TD>18.0485</TD><TD>0.0189</TD><TD>18.5403</TD></TR>\n\
+        <TR><TD>0.083877</TD><TD>001044.77-542221.5</TD><TD>002.686583</TD><TD>-54.372658</TD><TD>58255.8113</TD><TD>2720971315</TD><TD>18</TD><TD>0.000</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>16.2437</TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.084217</TD><TD>001102.56-542215.0</TD><TD>002.760790</TD><TD>-54.370856</TD><TD>58220.0105</TD><TD>503264151</TD><TD>0</TD><TD>0.864</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.3153</TD><TD>0.0247</TD><TD>18.6689</TD><TD>0.0269</TD><TD></TD></TR>\n\
+        <TR><TD>0.084366</TD><TD>001027.45-541352.1</TD><TD>002.614375</TD><TD>-54.231139</TD><TD>56939.4728</TD><TD>2720987333</TD><TD>0</TD><TD>0.670</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>17.6202</TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.084624</TD><TD>001038.01-541247.3</TD><TD>002.658464</TD><TD>-54.213180</TD><TD>58258.8767</TD><TD>503274395</TD><TD>0</TD><TD>0.700</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.6168</TD><TD>0.0561</TD><TD>18.8170</TD><TD>0.1539</TD><TD></TD></TR>\n\
+        <TR><TD>0.084639</TD><TD>001034.98-541300.5</TD><TD>002.645920</TD><TD>-54.216816</TD><TD>58253.6177</TD><TD>503274394</TD><TD>0</TD><TD>0.495</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.1561</TD><TD>18.9827</TD><TD>0.0836</TD><TD>18.8458</TD><TD>0.3218</TD><TD>19.4340</TD></TR>\n\
+        <TR><TD>0.085232</TD><TD>001025.29-541407.7</TD><TD>002.605433</TD><TD>-54.235543</TD><TD>58115.4612</TD><TD>503274374</TD><TD>0</TD><TD>0.996</TD><TD>16.1904</TD><TD>0.0232</TD><TD>15.8710</TD><TD>0.0218</TD><TD>14.7928</TD><TD>0.0106</TD><TD>0.0111</TD><TD>14.3122</TD><TD>0.0056</TD><TD>14.2659</TD><TD>0.0075</TD><TD>14.4802</TD></TR>\n\
+        <TR><TD>0.085345</TD><TD>001025.07-542043.4</TD><TD>002.604538</TD><TD>-54.345412</TD><TD>58011.9438</TD><TD>503264132</TD><TD>0</TD><TD>0.984</TD><TD>16.7869</TD><TD>0.0233</TD><TD>16.4828</TD><TD>0.0256</TD><TD>15.0992</TD><TD>0.0121</TD><TD>0.0126</TD><TD>14.5366</TD><TD>0.0055</TD><TD>14.4942</TD><TD>0.0080</TD><TD>14.7325</TD></TR>\n\
+        <TR><TD>0.086324</TD><TD>001059.27-541222.0</TD><TD>002.747115</TD><TD>-54.206165</TD><TD>57971.4084</TD><TD>503274404</TD><TD>0</TD><TD>0.981</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>18.4484</TD><TD>0.0255</TD><TD>0.0952</TD><TD>17.7897</TD><TD>0.0106</TD><TD>17.7434</TD><TD>0.0252</TD><TD>18.0952</TD></TR>\n\
+        <TR><TD>0.086469</TD><TD>001037.46-541242.0</TD><TD>002.656227</TD><TD>-54.211742</TD><TD>58461.4200</TD><TD>1616394338</TD><TD>0</TD><TD>0.460</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.9052</TD><TD>0.0676</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.086937</TD><TD>001016.36-541703.7</TD><TD>002.568206</TD><TD>-54.284415</TD><TD>58272.2887</TD><TD>503264174</TD><TD>0</TD><TD>0.961</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>18.9482</TD><TD>0.0337</TD><TD>0.0350</TD><TD>18.4935</TD><TD>0.0191</TD><TD>18.4275</TD><TD>0.0344</TD><TD>18.7059</TD></TR>\n\
+        <TR><TD>0.087925</TD><TD>001032.03-541302.4</TD><TD>002.633473</TD><TD>-54.217412</TD><TD>58255.8113</TD><TD>1616394315</TD><TD>0</TD><TD>0.561</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.6413</TD><TD>0.2479</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.088446</TD><TD>001033.16-541253.9</TD><TD>002.638145</TD><TD>-54.215061</TD><TD>58255.8113</TD><TD>1616394316</TD><TD>0</TD><TD>0.478</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.6092</TD><TD>0.3322</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.089466</TD><TD>001050.66-541204.4</TD><TD>002.711119</TD><TD>-54.201242</TD><TD>58768.6576</TD><TD>2720987374</TD><TD>16</TD><TD>0.547</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>16.8207</TD><TD></TD><TD>16.6642</TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.089514</TD><TD>001051.01-541204.0</TD><TD>002.712696</TD><TD>-54.201165</TD><TD>58012.7558</TD><TD>503274400</TD><TD>0</TD><TD>0.983</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>18.7257</TD><TD>0.0266</TD><TD>0.0584</TD><TD>16.5052</TD><TD>0.0112</TD><TD>16.0079</TD><TD>0.0108</TD><TD>17.8020</TD></TR>\n\
+        <TR><TD>0.090147</TD><TD>001126.82-541535.3</TD><TD>002.861855</TD><TD>-54.259842</TD><TD>57992.7791</TD><TD>503264267</TD><TD>0</TD><TD>0.981</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>18.4347</TD><TD>0.0230</TD><TD>0.0278</TD><TD>17.2690</TD><TD>0.0153</TD><TD>17.0769</TD><TD>0.0216</TD><TD>18.0464</TD></TR>\n\
+        <TR><TD>0.090209</TD><TD>001028.80-542139.7</TD><TD>002.620005</TD><TD>-54.361031</TD><TD>59168.4375</TD><TD>2720971282</TD><TD>0</TD><TD>0.962</TD><TD></TD><TD></TD><TD>17.4610</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.090682</TD><TD>001117.03-541324.5</TD><TD>002.821127</TD><TD>-54.223518</TD><TD>58268.6377</TD><TD>503274463</TD><TD>0</TD><TD>0.521</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>18.9205</TD><TD>0.0833</TD><TD>0.1286</TD><TD>18.0025</TD><TD>0.0440</TD><TD>17.7319</TD><TD>0.0653</TD><TD>18.3789</TD></TR>\n\
+        <TR><TD>0.090906</TD><TD>001019.63-541443.0</TD><TD>002.581853</TD><TD>-54.245296</TD><TD>58133.7214</TD><TD>503274371</TD><TD>0</TD><TD>0.982</TD><TD></TD><TD></TD><TD>17.7943</TD><TD>0.0461</TD><TD>16.6544</TD><TD>0.0173</TD><TD>0.0207</TD><TD>16.2395</TD><TD>0.0099</TD><TD>16.2123</TD><TD>0.0090</TD><TD>16.4029</TD></TR>\n\
+        <TR><TD>0.091827</TD><TD>001034.84-542220.7</TD><TD>002.645238</TD><TD>-54.372458</TD><TD>57968.6826</TD><TD>503264131</TD><TD>3</TD><TD>0.975</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>17.8413</TD><TD>0.0171</TD><TD>17.6806</TD><TD>0.0234</TD><TD></TD></TR>\n\
+        <TR><TD>0.092208</TD><TD>001129.46-541635.2</TD><TD>002.872834</TD><TD>-54.276472</TD><TD>58260.4087</TD><TD>503264266</TD><TD>0</TD><TD>0.584</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.5393</TD><TD>0.1111</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.092413</TD><TD>001047.84-541155.5</TD><TD>002.699339</TD><TD>-54.198797</TD><TD>58077.3886</TD><TD>503274399</TD><TD>0</TD><TD>0.984</TD><TD></TD><TD></TD><TD>19.2639</TD><TD>0.0405</TD><TD>17.1094</TD><TD>0.0300</TD><TD>0.0207</TD><TD>16.1819</TD><TD>0.0078</TD><TD>16.0322</TD><TD>0.0103</TD><TD>16.5262</TD></TR>\n\
+        <TR><TD>0.092418</TD><TD>001125.49-542003.8</TD><TD>002.856288</TD><TD>-54.334418</TD><TD>57998.6954</TD><TD>503264229</TD><TD>0</TD><TD>0.980</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>18.4978</TD><TD>0.0257</TD><TD>0.0241</TD><TD>17.6771</TD><TD>0.0152</TD><TD>17.6070</TD><TD>0.0178</TD><TD>18.0347</TD></TR>\n\
+        <TR><TD>0.093130</TD><TD>001013.78-541737.1</TD><TD>002.557283</TD><TD>-54.293729</TD><TD>58157.6050</TD><TD>503264169</TD><TD>0</TD><TD>0.502</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.5329</TD><TD>0.0595</TD><TD>19.3251</TD><TD>0.0380</TD><TD></TD></TR>\n\
+        <TR><TD>0.093382</TD><TD>001129.98-541636.1</TD><TD>002.874930</TD><TD>-54.276704</TD><TD>56939.4717</TD><TD>2720971492</TD><TD>0</TD><TD>0.458</TD><TD></TD><TD></TD><TD>17.2835</TD><TD>0.2767</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.093843</TD><TD>001118.52-541321.1</TD><TD>002.827240</TD><TD>-54.222519</TD><TD>58260.4087</TD><TD>503274472</TD><TD>0</TD><TD>0.494</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.5976</TD><TD>0.0950</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.094087</TD><TD>001041.85-542253.1</TD><TD>002.674450</TD><TD>-54.381443</TD><TD>58178.8884</TD><TD>503264138</TD><TD>0</TD><TD>0.923</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>18.8420</TD><TD>0.0203</TD><TD>18.3985</TD><TD>0.0483</TD><TD></TD></TR>\n\
+        <TR><TD>0.094459</TD><TD>001043.55-542258.1</TD><TD>002.681536</TD><TD>-54.382847</TD><TD>57906.9239</TD><TD>503264139</TD><TD>0</TD><TD>0.490</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>17.6668</TD><TD>0.0700</TD><TD>17.4308</TD><TD>0.0582</TD><TD></TD></TR>\n\
+        <TR><TD>0.095223</TD><TD>001013.03-541655.1</TD><TD>002.554309</TD><TD>-54.281990</TD><TD>57647.5765</TD><TD>2720971353</TD><TD>1024</TD><TD>0.979</TD><TD></TD><TD></TD><TD>14.3834</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.095450</TD><TD>001021.70-541348.3</TD><TD>002.590412</TD><TD>-54.230115</TD><TD>58085.0199</TD><TD>503274372</TD><TD>0</TD><TD>0.983</TD><TD></TD><TD></TD><TD>17.5892</TD><TD>0.0526</TD><TD>16.9231</TD><TD>0.0285</TD><TD>0.0184</TD><TD>16.5833</TD><TD>0.0113</TD><TD>16.5665</TD><TD>0.0127</TD><TD>16.7626</TD></TR>\n\
+        <TR><TD>0.096210</TD><TD>001046.14-541143.7</TD><TD>002.692432</TD><TD>-54.195494</TD><TD>58228.3112</TD><TD>503274401</TD><TD>0</TD><TD>0.552</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.0364</TD><TD>19.7377</TD><TD>0.0405</TD><TD></TD><TD></TD><TD>19.6790</TD></TR>\n\
+        <TR><TD>0.096804</TD><TD>001013.26-541607.2</TD><TD>002.555267</TD><TD>-54.268707</TD><TD>58032.8367</TD><TD>503264179</TD><TD>0</TD><TD>0.606</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>17.5857</TD><TD>0.1724</TD><TD>0.1105</TD><TD>16.4206</TD><TD>0.0991</TD><TD>16.1650</TD><TD>0.0697</TD><TD>17.2000</TD></TR>\n\
+        <TR><TD>0.096959</TD><TD>001117.83-542152.5</TD><TD>002.824304</TD><TD>-54.364594</TD><TD>56939.4725</TD><TD>2720971422</TD><TD>1024</TD><TD>0.981</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>15.3967</TD></TR>\n\
+        <TR><TD>0.097157</TD><TD>001100.24-541144.0</TD><TD>002.751107</TD><TD>-54.195586</TD><TD>58193.4054</TD><TD>503274405</TD><TD>0</TD><TD>0.529</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.5173</TD><TD>0.0532</TD><TD>19.0741</TD><TD>0.1701</TD><TD></TD></TR>\n\
+        <TR><TD>0.097325</TD><TD>001105.28-542257.0</TD><TD>002.772043</TD><TD>-54.382481</TD><TD>58159.6577</TD><TD>503264141</TD><TD>0</TD><TD>0.512</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.1746</TD><TD>0.1092</TD><TD>18.6572</TD><TD>0.4220</TD><TD></TD></TR>\n\
+        <TR><TD>0.098065</TD><TD>001119.39-541307.2</TD><TD>002.830881</TD><TD>-54.218730</TD><TD>58140.8986</TD><TD>503274473</TD><TD>0</TD><TD>0.983</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>0.0417</TD><TD>17.4890</TD><TD>0.0140</TD><TD>16.9086</TD><TD>0.0135</TD><TD>19.0547</TD></TR>\n\
+        <TR><TD>0.098878</TD><TD>001028.29-542215.6</TD><TD>002.617925</TD><TD>-54.370994</TD><TD>58157.6043</TD><TD>503264130</TD><TD>1</TD><TD>0.580</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.6651</TD><TD>0.1204</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.099226</TD><TD>001032.07-541214.8</TD><TD>002.633630</TD><TD>-54.204123</TD><TD>58440.4472</TD><TD>2720987347</TD><TD>1024</TD><TD>0.647</TD><TD>15.8562</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.099824</TD><TD>001128.11-542017.4</TD><TD>002.867235</TD><TD>-54.338186</TD><TD>58193.4054</TD><TD>503264230</TD><TD>0</TD><TD>0.642</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>19.4767</TD><TD>0.1783</TD><TD>19.0072</TD><TD>0.0447</TD><TD></TD></TR>\n\
+        </TABLEDATA></DATA>\n<INFO name=\"matches\" value=\"159\">matching records</INFO>\n\
+        \    <INFO name=\"meta\" value=\"message\">      memory restriction caused\
+        \ by sort option (partial sort in bunches of 719023)    </INFO>\n\n<INFO name=\"\
+        Warning\" value=\"Column 'rPSf' unknown in 'II/379/smssdr4'\"/>\n<INFO name=\"\
+        Warning\" value=\"+++memory restriction caused by {\\bf sort} option (partial\
+        \ sort in bunches of 719023)\"/>\n  </TABLE>\n</RESOURCE>\n</VOTABLE>\n"
+- request:
+    method: POST
+    uri: https://vizier.cds.unistra.fr/viz-bin/votable
+    body: '-source=II/379/smssdr4
+
+      -out.max=unlimited
+
+      -out=SMSS,RAICRS,DEICRS,EpMean,ObjectId,flags,ClassStar,uPSF,e_uPSF,vPSF,e_vPSF,gPSF,e_gPSF,rPSf,e_rPSF,iPSF,e_iPSF,zPSF,e_zPSF,rPSF
+
+      -out.add=_r
+
+      -sort=_r
+
+      -c=2.71676018-54.29064769
+
+      -c.rs=10.0
+
+      -out.meta=huUD
+
+      -out.form=mini
+
+      -oc.form=d'
+    headers:
+      User-Agent:
+      - astroquery/0.4.11 Python/3.14.7 (Linux) python-requests/2.34.2
+      Accept-Encoding:
+      - gzip, deflate, zstd
+      Accept:
+      - '*/*'
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '273'
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Connection:
+      - Keep-Alive
+      DocumentRef:
+      - VOTx3773617
+      Server:
+      - Apache/2.4.52 (Ubuntu)
+      Keep-Alive:
+      - timeout=5, max=100
+      Content-Type:
+      - application/x-votable+xml
+      Vary:
+      - Accept-Encoding
+      Access-Control-Allow-Headers:
+      - Origin, X-Requested-With, Content-Type, Accept
+      Content-Disposition:
+      - attachment; filename=vizier_votable.vot
+      Access-Control-Allow-Origin:
+      - '*'
+      Date:
+      - Thu, 01 Oct 2026 09:29:26 GMT
+      Transfer-Encoding:
+      - chunked
+    body:
+      string: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<VOTABLE version=\"1.4\"\
+        \ xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n  xmlns=\"http://www.ivoa.net/xml/VOTable/v1.3\"\
+        \n  xsi:schemaLocation=\"http://www.ivoa.net/xml/VOTable/v1.3 http://www.ivoa.net/xml/VOTable/v1.3\"\
+        >\n <DESCRIPTION>\n   VizieR Astronomical Server vizier.cds.unistra.fr\n \
+        \   Date: 2026-10-01T09:29:26 [V7.6]\n   Explanations and Statistics of UCDs:\t\
+        \t\tSee LINK below\n   In case of problem, please report to:\tcds-question@unistra.fr\n\
+        \ </DESCRIPTION>\n<!-- VOTable description at http://www.ivoa.net/Documents/latest/VOT.html\
+        \ -->\n<INFO name=\"service_protocol\" value=\"ASU\">  IVOID of the protocol\
+        \ through which the data was retrieved</INFO>\n<INFO name=\"request_date\"\
+        \ value=\"2026-10-01T09:29:27\">  Query execution date</INFO>\n<INFO name=\"\
+        request\" value=\"https://vizier.cds.unistra.fr/viz-bin/votable?-oc.form=d&amp;-source=II/379/smssdr4&amp;-out.max=unlimited&amp;-out=SMSS,RAICRS,DEICRS,EpMean,ObjectId,flags,ClassStar,uPSF,e_uPSF,vPSF,e_vPSF,gPSF,e_gPSF,rPSf,e_rPSF,iPSF,e_iPSF,zPSF,e_zPSF,rPSF&amp;-out.add=_r&amp;-sort=_r&amp;-c=2.71676018-54.29064769&amp;-c.rs=10.0&amp;\"\
+        >  Full request URL (POST)</INFO>\n<INFO name=\"contact\" value=\"cds-question@unistra.fr\"\
+        >  Email or URL to contact publisher</INFO>\n<INFO name=\"server_software\"\
+        \ value=\"VizieR/7.6\">  Software version</INFO>\n<INFO name=\"publisher\"\
+        \ value=\"CDS\">  Data centre that produced the VOTable</INFO>\n<INFO name=\"\
+        header_format\" value=\"mini\"/>\n<INFO name=\"header_format\" value=\"mini\"\
+        />\n\n<RESOURCE ID=\"yCat_2379\" name=\"II/379\" type=\"results\">\n  <DESCRIPTION>SkyMapper\
+        \ Southern Sky Survey. DR4 (Onken+, 2024)</DESCRIPTION>  <INFO name=\"ivoid\"\
+        \ value=\"ivo://cds.vizier/ii/379\">    IVOID of underlying data collection\
+        \  </INFO>\n  <INFO name=\"data_ivoid\" value=\"ivo://cds.vizier/ii/379\"\
+        >    IVOID of underlying data collection  </INFO>\n  <INFO name=\"creator\"\
+        \ value=\"Onken C.A.\">    First author or institution  </INFO>\n  <INFO name=\"\
+        cites\" value=\"bibcode:2024arXiv240202015O\">    Article or Data origin sources\
+        \  </INFO>\n  <INFO name=\"journal\" value=\"arXi\">    Journal name  </INFO>\n\
+        \  <INFO name=\"original_date\" value=\"2024\">    Year of the article publication\
+        \  </INFO>\n  <INFO name=\"reference_url\" value=\"https://cdsarc.cds.unistra.fr/viz-bin/cat/II/379\"\
+        >    Dataset landing page  </INFO>\n  <INFO name=\"publication_date\" value=\"\
+        2024-02-27\">    Date of first publication in the data centre  </INFO>\n \
+        \ <INFO name=\"rights_uri\" value=\"https://cds.unistra.fr/vizier-org/licences_vizier.html\"\
+        >    Licence URI  </INFO>\n\n  <COOSYS ID=\"H_2000.000\" system=\"ICRS\" epoch=\"\
+        2000.000\"/>\n  <TABLE ID=\"II_379_smssdr4\" name=\"II/379/smssdr4\">\n  \
+        \  <DESCRIPTION>SkyMapper DR4</DESCRIPTION>\n<!-- SkyMapper DR4 (\\originalcolumnnames)\
+        \ -->\n\n    <!-- RowName: -c=${$poseq}&-c.rs=0.004 -->\n    <!-- Definitions\
+        \ of GROUPs and FIELDs -->\n    <FIELD name=\"_r\" ucd=\"POS_ANG_DIST_GENERAL\"\
+        \ datatype=\"double\" width=\"6\" precision=\"3\">\n      <DESCRIPTION>Distance\
+        \ from center (002.716760-54.290648)[ICRS], at Epoch=J2000.0</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"SMSS\" ucd=\"ID_ALTERNATIVE\" datatype=\"\
+        char\" arraysize=\"18*\">\n      <DESCRIPTION>SkyMapper Southern Survey designation\
+        \ of the form SMSS Jhhmmss.ss+/-ddmmss.s derived from mean ICRS coordinates\
+        \ (smss_j)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"RAICRS\" ucd=\"\
+        POS_EQ_RA_MAIN\" ref=\"H_2000.000\" datatype=\"double\" width=\"10\" precision=\"\
+        6\" unit=\"deg\">\n      <DESCRIPTION>Mean ICRS Right Ascension of the object\
+        \ (ICRS, Ep=J2000) (raj2000)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"\
+        DEICRS\" ucd=\"POS_EQ_DEC_MAIN\" ref=\"H_2000.000\" datatype=\"double\" width=\"\
+        10\" precision=\"6\" unit=\"deg\">\n      <DESCRIPTION>Mean ICRS Declination\
+        \ of the object (ICRS, Ep=J2000) (dej2000)</DESCRIPTION>\n    </FIELD>\n \
+        \   <FIELD name=\"EpMean\" ucd=\"TIME_EPOCH\" datatype=\"double\" width=\"\
+        10\" precision=\"4\" unit=\"d\">\n      <DESCRIPTION>Mean MJD epoch of the\
+        \ observations (mean_epoch)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"\
+        ObjectId\" ucd=\"ID_MAIN\" datatype=\"long\" width=\"10\">\n      <DESCRIPTION>Global\
+        \ unique object ID in the master table (object_id)</DESCRIPTION>\n    </FIELD>\n\
+        \    <FIELD name=\"flags\" ucd=\"CODE_MISC\" datatype=\"int\" width=\"5\"\
+        >\n      <DESCRIPTION>Bitwise OR of Source Extractor flags across all observations\
+        \ (flags)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"ClassStar\" ucd=\"\
+        CLASS_STAR/GALAXY\" datatype=\"float\" width=\"6\" precision=\"3\">\n    \
+        \  <DESCRIPTION>Maximum stellarity index from photometry table (between 0=no\
+        \ star and 1=star) (class_star)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"\
+        uPSF\" ucd=\"PHOT_SDSS_U\" datatype=\"double\" width=\"7\" precision=\"4\"\
+        \ unit=\"mag\">\n      <DESCRIPTION>? Weighted mean u-band PSF magnitude (u_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_uPSF\" ucd=\"\
+        ERROR\" datatype=\"float\" width=\"7\" precision=\"4\" unit=\"mag\">\n   \
+        \   <DESCRIPTION>? Error in weighted mean u-band PSF magnitude (e_u_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"vPSF\" ucd=\"\
+        PHOT_MAG_V\" datatype=\"double\" width=\"7\" precision=\"4\" unit=\"mag\"\
+        >\n      <DESCRIPTION>? Weighted mean v-band PSF magnitude (v_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_vPSF\" ucd=\"\
+        ERROR\" datatype=\"float\" width=\"7\" precision=\"4\" unit=\"mag\">\n   \
+        \   <DESCRIPTION>? Error in weighted mean v-band PSF magnitude (e_v_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"gPSF\" ucd=\"\
+        PHOT_SDSS_G\" datatype=\"double\" width=\"7\" precision=\"4\" unit=\"mag\"\
+        >\n      <DESCRIPTION>? Weighted mean g-band PSF magnitude (g_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_gPSF\" ucd=\"\
+        ERROR\" datatype=\"float\" width=\"7\" precision=\"4\" unit=\"mag\">\n   \
+        \   <DESCRIPTION>? Error in weighted mean g-band PSF magnitude (e_g_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_rPSF\" ucd=\"\
+        ERROR\" datatype=\"float\" width=\"7\" precision=\"4\" unit=\"mag\">\n   \
+        \   <DESCRIPTION>? Error in weighted mean r-band PSF magnitude (e_r_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"iPSF\" ucd=\"\
+        PHOT_SDSS_I\" datatype=\"double\" width=\"7\" precision=\"4\" unit=\"mag\"\
+        >\n      <DESCRIPTION>? Weighted mean i-band PSF magnitude (i_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_iPSF\" ucd=\"\
+        ERROR\" datatype=\"float\" width=\"7\" precision=\"4\" unit=\"mag\">\n   \
+        \   <DESCRIPTION>? Error in weighted mean i-band PSF magnitude (e_i_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"zPSF\" ucd=\"\
+        PHOT_SDSS_Z\" datatype=\"double\" width=\"7\" precision=\"4\" unit=\"mag\"\
+        >\n      <DESCRIPTION>? Weighted mean z-band PSF magnitude (z_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_zPSF\" ucd=\"\
+        ERROR\" datatype=\"float\" width=\"7\" precision=\"4\" unit=\"mag\">\n   \
+        \   <DESCRIPTION>? Error in weighted mean z-band PSF magnitude (e_z_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"rPSF\" ucd=\"\
+        PHOT_SDSS_R\" datatype=\"double\" width=\"7\" precision=\"4\" unit=\"mag\"\
+        >\n      <DESCRIPTION>? Weighted mean r-band PSF magnitude (r_psf)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n<DATA><TABLEDATA>\n<TR><TD>0.160</TD><TD>001052.01-541726.1</TD><TD>002.716803</TD><TD>-54.290611</TD><TD>57880.3866</TD><TD>503264202</TD><TD>0</TD><TD>1.000</TD><TD>11.9227</TD><TD>0.0135</TD><TD>11.1721</TD><TD>0.0142</TD><TD>10.5768</TD><TD>0.0110</TD><TD>0.0117</TD><TD>10.7294</TD><TD>0.0104</TD><TD>10.8096</TD><TD>0.0119</TD><TD>10.6059</TD></TR>\n\
+        <TR><TD>9.551</TD><TD>001050.94-541725.1</TD><TD>002.712251</TD><TD>-54.290314</TD><TD>58440.4552</TD><TD>2720971386</TD><TD>16</TD><TD>0.352</TD><TD>16.3191</TD><TD></TD><TD>16.4203</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        </TABLEDATA></DATA>\n<INFO name=\"matches\" value=\"2\">matching records</INFO>\n\
+        \    <INFO name=\"meta\" value=\"message\">      memory restriction caused\
+        \ by sort option (partial sort in bunches of 719023)    </INFO>\n\n<INFO name=\"\
+        Warning\" value=\"Column 'rPSf' unknown in 'II/379/smssdr4'\"/>\n<INFO name=\"\
+        Warning\" value=\"+++memory restriction caused by {\\bf sort} option (partial\
+        \ sort in bunches of 719023)\"/>\n  </TABLE>\n</RESOURCE>\n</VOTABLE>\n"

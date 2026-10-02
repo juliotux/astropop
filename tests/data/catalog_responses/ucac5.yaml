@@ -1,0 +1,160 @@
+version: 1
+interactions:
+- request:
+    method: POST
+    uri: https://vizier.cds.unistra.fr/viz-bin/votable
+    body: '-source=ucac5
+
+      -out.max=unlimited
+
+      -out.all
+
+      -out.add=_r
+
+      -sort=_r
+
+      -c=2.71674651-54.29064474
+
+      -c.rs=5.0
+
+      -out.meta=huUD
+
+      -out.form=mini
+
+      -oc.form=d'
+    headers:
+      User-Agent:
+      - astroquery/0.4.11 Python/3.14.7 (Linux) python-requests/2.34.2
+      Accept-Encoding:
+      - gzip, deflate, zstd
+      Accept:
+      - '*/*'
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '139'
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Connection:
+      - Keep-Alive
+      Keep-Alive:
+      - timeout=5, max=100
+      Date:
+      - Thu, 01 Oct 2026 09:48:49 GMT
+      Content-Type:
+      - application/x-votable+xml
+      Access-Control-Allow-Origin:
+      - '*'
+      Access-Control-Allow-Headers:
+      - Origin, X-Requested-With, Content-Type, Accept
+      Transfer-Encoding:
+      - chunked
+      Content-Disposition:
+      - attachment; filename=vizier_votable.vot
+      Vary:
+      - Accept-Encoding
+      DocumentRef:
+      - VOTx421590
+      Server:
+      - Apache/2.4.52 (Ubuntu)
+    body:
+      string: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<VOTABLE version=\"1.4\"\
+        \ xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n  xmlns=\"http://www.ivoa.net/xml/VOTable/v1.3\"\
+        \n  xsi:schemaLocation=\"http://www.ivoa.net/xml/VOTable/v1.3 http://www.ivoa.net/xml/VOTable/v1.3\"\
+        >\n <DESCRIPTION>\n   VizieR Astronomical Server vizier.cds.unistra.fr\n \
+        \   Date: 2026-10-01T09:48:50 [V7.6]\n   Explanations and Statistics of UCDs:\t\
+        \t\tSee LINK below\n   In case of problem, please report to:\tcds-question@unistra.fr\n\
+        \ </DESCRIPTION>\n<!-- VOTable description at http://www.ivoa.net/Documents/latest/VOT.html\
+        \ -->\n<INFO name=\"service_protocol\" value=\"ASU\">  IVOID of the protocol\
+        \ through which the data was retrieved</INFO>\n<INFO name=\"request_date\"\
+        \ value=\"2026-10-01T09:48:50\">  Query execution date</INFO>\n<INFO name=\"\
+        request\" value=\"https://vizier.cds.unistra.fr/viz-bin/votable?-oc.form=d&amp;-source=ucac5&amp;-out.max=unlimited&amp;-out.all&amp;-out.add=_r&amp;-sort=_r&amp;-c=2.71674651-54.29064474&amp;-c.rs=5.0&amp;\"\
+        >  Full request URL (POST)</INFO>\n<INFO name=\"contact\" value=\"cds-question@unistra.fr\"\
+        >  Email or URL to contact publisher</INFO>\n<INFO name=\"server_software\"\
+        \ value=\"VizieR/7.6\">  Software version</INFO>\n<INFO name=\"publisher\"\
+        \ value=\"CDS\">  Data centre that produced the VOTable</INFO>\n<INFO name=\"\
+        header_format\" value=\"mini\"/>\n<INFO name=\"header_format\" value=\"mini\"\
+        />\n\n<RESOURCE ID=\"yCat_1340\" name=\"I/340\" type=\"results\">\n  <DESCRIPTION>UCAC5\
+        \ Catalogue (Zacharias+ 2017)</DESCRIPTION>  <INFO name=\"ivoid\" value=\"\
+        ivo://cds.vizier/i/340\">    IVOID of underlying data collection  </INFO>\n\
+        \  <INFO name=\"data_ivoid\" value=\"ivo://cds.vizier/i/340\">    IVOID of\
+        \ underlying data collection  </INFO>\n  <INFO name=\"creator\" value=\"Zacharias\
+        \ N.\">    First author or institution  </INFO>\n  <INFO name=\"cites\" value=\"\
+        bibcode:2017AJ....153..166Z\">    Article or Data origin sources  </INFO>\n\
+        \  <INFO name=\"journal\" value=\"AJ\">    Journal name  </INFO>\n  <INFO\
+        \ name=\"original_date\" value=\"2017\">    Year of the article publication\
+        \  </INFO>\n  <INFO name=\"reference_url\" value=\"https://cdsarc.cds.unistra.fr/viz-bin/cat/I/340\"\
+        >    Dataset landing page  </INFO>\n  <INFO name=\"publication_date\" value=\"\
+        2023-12-19\">    Date of first publication in the data centre  </INFO>\n \
+        \ <INFO name=\"rights_uri\" value=\"https://cds.unistra.fr/vizier-org/licences_vizier.html\"\
+        >    Licence URI  </INFO>\n\n  <COOSYS ID=\"J2000\" system=\"eq_FK5\" equinox=\"\
+        J2000\"/>\n  <TABLE ID=\"I_340_ucac5\" name=\"I/340/ucac5\">\n    <DESCRIPTION>UCAC5\
+        \ catalog (107,758,513 sources)</DESCRIPTION>\n<!-- Fifth U.S. Naval Observatory\
+        \ CCD Astrograph Catalog (\\originalcolumnnames) -->\n\n    <!-- RowName:\
+        \ -c=${$poseq}&-c.rs=0.004 -->\n    <!-- Definitions of GROUPs and FIELDs\
+        \ -->\n    <FIELD name=\"_r\" ucd=\"POS_ANG_DIST_GENERAL\" datatype=\"double\"\
+        \ width=\"5\" precision=\"3\">\n      <DESCRIPTION>Distance from center (002.7167465-54.2906447)[FK5/J2000],\
+        \ at Epoch of catalog (EPucac)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"\
+        RAJ2000\" ucd=\"POS_EQ_RA_MAIN\" ref=\"J2000\" datatype=\"double\" width=\"\
+        11\" precision=\"7\" unit=\"deg\">\n      <DESCRIPTION>UCAC right ascension\
+        \ (J2000) at epoch \"EPucac\" on Gaia reference frame (ira)</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"DEJ2000\" ucd=\"POS_EQ_DEC_MAIN\" ref=\"\
+        J2000\" datatype=\"double\" width=\"11\" precision=\"7\" unit=\"deg\">\n \
+        \     <DESCRIPTION>UCAC declination (J2000) at epoch \"EPucac\" on Gaia reference\
+        \ frame (idc)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"SrcIDgaia\" ucd=\"\
+        ID_MAIN\" datatype=\"long\" width=\"19\">\n      <DESCRIPTION>Gaia source\
+        \ ID (srcid)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"RAgaia\" ucd=\"\
+        POS_EQ_RA_OTHER\" datatype=\"double\" width=\"11\" precision=\"7\" unit=\"\
+        deg\">\n      <DESCRIPTION>Gaia right ascension (ICRS) at epoch 2015.0 (rag)\
+        \ (1)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"e_RAgaia\" ucd=\"ERROR\"\
+        \ datatype=\"float\" width=\"5\" precision=\"1\" unit=\"mas\">\n      <DESCRIPTION>rms\
+        \ uncertainty on RAgaia (erg) (1)</DESCRIPTION>\n    </FIELD>\n    <FIELD\
+        \ name=\"DEgaia\" ucd=\"POS_EQ_DEC_OTHER\" datatype=\"double\" width=\"11\"\
+        \ precision=\"7\" unit=\"deg\">\n      <DESCRIPTION>Gaia declination (ICRS)\
+        \ at epoch 2015.0 (dcg) (1)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"\
+        e_DEgaia\" ucd=\"ERROR\" datatype=\"float\" width=\"4\" precision=\"1\" unit=\"\
+        mas\">\n      <DESCRIPTION>rms uncertainty on DEgaia (edg) (1)</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"Org\" ucd=\"CODE_MISC\" datatype=\"unsignedByte\"\
+        \ width=\"1\">\n      <DESCRIPTION>[1/3] TGAS/NOMAD flag (flg) (2)</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"Nu\" ucd=\"NUMBER\" datatype=\"short\" width=\"\
+        2\">\n      <DESCRIPTION>Number of images used for mean position (nu)</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"EPucac\" ucd=\"TIME_EPOCH\" ref=\"J2000\"\
+        \ datatype=\"double\" width=\"8\" precision=\"3\" unit=\"yr\">\n      <DESCRIPTION>UCAC\
+        \ epoch (epu)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"pmRA\" ucd=\"\
+        POS_EQ_PMRA\" ref=\"J2000\" datatype=\"double\" width=\"7\" precision=\"1\"\
+        \ unit=\"mas/yr\">\n      <DESCRIPTION>UCAC/Gaia proper motion in RA*cosDE\
+        \ (pmur)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"e_pmRA\" ucd=\"ERROR\"\
+        \ datatype=\"float\" width=\"5\" precision=\"1\" unit=\"mas/yr\">\n      <DESCRIPTION>rms\
+        \ uncertainty on pmRA (pmer)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"\
+        pmDE\" ucd=\"POS_EQ_PMDEC\" ref=\"J2000\" datatype=\"double\" width=\"7\"\
+        \ precision=\"1\" unit=\"mas/yr\">\n      <DESCRIPTION>UCAC/Gaia proper motion\
+        \ in DE (pmud)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"e_pmDE\" ucd=\"\
+        ERROR\" datatype=\"float\" width=\"4\" precision=\"1\" unit=\"mas/yr\">\n\
+        \      <DESCRIPTION>rms uncertainty on pmDE (pmed)</DESCRIPTION>\n    </FIELD>\n\
+        \    <FIELD name=\"Gmag\" ucd=\"PHOT_MAG_R\" datatype=\"float\" width=\"6\"\
+        \ precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>Gaia G magnitude (gmag)</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"f.mag\" ucd=\"PHOT_MAG_OPTICAL\" datatype=\"\
+        float\" width=\"6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>? Means\
+        \ UCAC model magnitude (umag)</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n\
+        \    </FIELD>\n    <FIELD name=\"Rmag\" ucd=\"PHOT_PHG_R\" datatype=\"float\"\
+        \ width=\"6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>? Photographic\
+        \ R magnitude from NOMAD (rmag)</DESCRIPTION>\n      <VALUES null=\"NaN\"\
+        \ />\n    </FIELD>\n    <FIELD name=\"Jmag\" ucd=\"PHOT_JHN_J\" datatype=\"\
+        float\" width=\"6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>? 2MASS\
+        \ J magnitude (jmag)</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"Hmag\" ucd=\"PHOT_JHN_H\" datatype=\"float\" width=\"6\"\
+        \ precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>? 2MASS H magnitude (hmag)</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"Kmag\" ucd=\"\
+        PHOT_JHN_K\" datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\">\n\
+        \      <DESCRIPTION>? 2MASS K magnitude (kmag)</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n<DATA><TABLEDATA>\n<TR><TD>0.053</TD><TD>002.7167594</TD><TD>-54.2906575</TD><TD>4923784386836902144</TD><TD>2.7168061</TD><TD>0.2</TD><TD>-54.2906100</TD><TD>0.2</TD><TD>1</TD><TD>6</TD><TD>1998.641</TD><TD>6.0</TD><TD>0.9</TD><TD>10.4</TD><TD>0.9</TD><TD>10.538</TD><TD>10.595</TD><TD>10.460</TD><TD>10.157</TD><TD>10.083</TD><TD>10.029</TD></TR>\n\
+        </TABLEDATA></DATA>\n<INFO name=\"matches\" value=\"1\">matching records</INFO>\n\
+        \    <INFO name=\"meta\" value=\"message\">      memory restriction caused\
+        \ by sort option (partial sort in bunches of 748982)    </INFO>\n\n<INFO name=\"\
+        Warning\" value=\"+++memory restriction caused by {\\bf sort} option (partial\
+        \ sort in bunches of 748982)\"/>\n<INFO name=\"Warning\" value=\"(patch vizier\
+        \ 20171220) accept several mainpos to add _V column\"/>\n  </TABLE>\n</RESOURCE>\n\
+        </VOTABLE>\n"

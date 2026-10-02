@@ -20,16 +20,25 @@ jobs:
     with:
       cache-path: ~/.astropy
       envs: |
-        - linux: py310-test-olddeps-online
+        - linux: py310-test-olddeps
           cache-key: ${{ github.ref }}-py310lin-astropycache
-        - linux: py311-test-online
+        - linux: py311-test
           cache-key: ${{ github.ref }}-py311lin-astropycache
-        - linux: py312-test-online
+        - linux: py312-test
           cache-key: ${{ github.ref }}-py312lin-astropycache
-        - linux: py313-test-online
+        - linux: py313-test
           cache-key: ${{ github.ref }}-py313lin-astropycache
-        - linux: py314-test-online
+        - linux: py314-test
           cache-key: ${{ github.ref }}-py314lin-astropycache
+
+  online_conformance:
+    name: Online catalog conformance
+    uses: OpenAstronomy/github-actions-workflows/.github/workflows/tox.yml@v1
+    if: "!(contains(github.event.head_commit.message, '[skip ci]') || contains(github.event.head_commit.message, '[ci skip]'))"
+    with:
+      envs: |
+        - linux: py314-catalogs-online
+          python-version: '3.14'
 
   build_docs:
     uses: OpenAstronomy/github-actions-workflows/.github/workflows/tox.yml@v1
@@ -102,7 +111,7 @@ jobs:
     - name: Run Pytest and generate coverage
       shell: bash -l {0}
       run: |
-        pytest --pyargs ./tests ./docs --remote-data --cov astropop --cov-config=./pyproject.toml
+        pytest --pyargs ./tests ./docs --remote-data=none --cov astropop --cov-config=./pyproject.toml
         coverage xml -o ./coverage.xml
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4

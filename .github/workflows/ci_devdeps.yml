@@ -25,16 +25,18 @@ jobs:
           - tzdata
           - libopenblas-dev
       envs: |
+        # Live service compatibility is checked in CI's online conformance job.
+        # These environments exercise dependency/platform changes with mocks.
         - name: (Allowed Failure) Python 3.13 with dev version of deps
-          linux: py313-test-devdeps-online
+          linux: py313-test-devdeps
           python-version: '3.13'
 
         - name: (Allowed Failure) Python 3.14 with dev version of deps
-          linux: py314-test-devdeps-online
+          linux: py314-test-devdeps
           python-version: '3.14'
 
-        - macos: py313-test-online
+        - macos: py313-test
           cache-key: ${{ github.ref }}-py313mac-astropycache
 
-        - windows: py313-test-online
+        - windows: py313-test
           cache-key: ${{ github.ref }}-py313win-astropycache
