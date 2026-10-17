@@ -1,6 +1,6 @@
 # Working on Astropop
 
-Read [.agents/rules/development.md](.agents/rules/development.md) before changing this repository. These instructions apply throughout the checkout; explicit user instructions take precedence.
+Read [.agents/rules/development.md](rules/development.md) before changing this repository. These instructions apply throughout the checkout; explicit user instructions take precedence.
 
 ## Commit messages
 
@@ -21,7 +21,7 @@ Read the relevant skill when its workflow applies. Ordinary small edits do not r
 
 | Skill | Use when |
 | --- | --- |
-| [astropop-ci](.agents/skills/astropop-ci/SKILL.md) | Diagnosing test, coverage, dependency, or GitHub Actions failures. |
-| [astropop-catalogs](.agents/skills/astropop-catalogs/SKILL.md) | Changing SIMBAD, VizieR, Gaia, or recorded/live catalog tests. |
-| [astropop-scientific-code](.agents/skills/astropop-scientific-code/SKILL.md) | Changing image reduction, FrameData, units, uncertainties, photometry, or polarimetry. |
-| [astropop-docs](.agents/skills/astropop-docs/SKILL.md) | Editing API docs, scientific examples, or fixing Sphinx builds. |
+| [astropop-ci](skills/astropop-ci/SKILL.md) | Diagnosing test, coverage, dependency, or GitHub Actions failures. |
+| [astropop-catalogs](skills/astropop-catalogs/SKILL.md) | Changing SIMBAD, VizieR, Gaia, or recorded/live catalog tests. |
+| [astropop-scientific-code](skills/astropop-scientific-code/SKILL.md) | Changing image reduction, FrameData, units, uncertainties, photometry, or polarimetry. |
+| [astropop-docs](skills/astropop-docs/SKILL.md) | Editing API docs, scientific examples, or fixing Sphinx builds. |

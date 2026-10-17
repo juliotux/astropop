@@ -27,6 +27,6 @@
 
 ## Commits and handoff
 
-Follow the module-prefix convention in the root `AGENTS.md`. Review the staged diff and commit in small batches, grouping implementation with its applicable tests. Stage named paths or hunks so unrelated changes are not included.
+Follow the module-prefix convention in [AGENTS.md](../AGENTS.md). Review the staged diff and commit in small batches, grouping implementation with its applicable tests. Stage named paths or hunks so unrelated changes are not included.
 
 PR descriptions should explain the concrete failure and resulting behavior, then give relevant validation and known limitations. Distinguish implemented fixes from future work and verified service behavior from recordings or historical observations.
