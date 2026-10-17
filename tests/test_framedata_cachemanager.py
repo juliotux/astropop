@@ -21,20 +21,19 @@ class Test_AtExit:
 import sys
 from astropop.framedata import cache_manager
 from astropop.framedata.cache_manager import TempDir
-cache_manager.DELETE_ON_EXIT = sys.argv[2] != 'retain'
+cache_manager.DELETE_ON_EXIT = sys.argv[1] != 'retain'
 folder = TempDir('testing')
 print(folder.full_path)
 with folder.create_file('owned.txt').open('w') as stream:
     stream.write('owned')
 """
-        folder = tmp_path / 'child-cache'
         (tmp_path / 'cache').mkdir()
         (tmp_path / 'config').mkdir()
         env = dict(os.environ, XDG_CACHE_HOME=str(tmp_path / 'cache'),
                    XDG_CONFIG_HOME=str(tmp_path / 'config'))
-        result = subprocess.run([sys.executable, '-c', script, str(folder),
-                        'retain' if retain else 'delete'],
-                       check=True, env=env, capture_output=True, text=True)
+        result = subprocess.run(
+            [sys.executable, '-c', script, 'retain' if retain else 'delete'],
+            check=True, env=env, capture_output=True, text=True)
         folder = Path(result.stdout.strip())
         assert folder.exists() is retain
         assert (folder / 'owned.txt').exists() is retain
