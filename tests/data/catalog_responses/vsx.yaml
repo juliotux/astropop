@@ -1,0 +1,679 @@
+version: 1
+interactions:
+- request:
+    method: POST
+    uri: https://vizier.cds.unistra.fr/viz-bin/votable
+    body: '-source=B/vsx
+
+      -out.max=unlimited
+
+      -out.all
+
+      -out.add=_r
+
+      -sort=_r
+
+      -c=2.71676018-54.29064769
+
+      -c.rs=0.5
+
+      -out.meta=huUD
+
+      -out.form=mini
+
+      -oc.form=d'
+    headers:
+      User-Agent:
+      - astroquery/0.4.11 Python/3.14.7 (Linux) python-requests/2.34.2
+      Accept-Encoding:
+      - gzip, deflate, zstd
+      Accept:
+      - '*/*'
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '139'
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Connection:
+      - Keep-Alive
+      DocumentRef:
+      - VOTx3698485
+      Server:
+      - Apache/2.4.52 (Ubuntu)
+      Keep-Alive:
+      - timeout=5, max=100
+      Content-Type:
+      - application/x-votable+xml
+      Vary:
+      - Accept-Encoding
+      Access-Control-Allow-Headers:
+      - Origin, X-Requested-With, Content-Type, Accept
+      Content-Disposition:
+      - attachment; filename=vizier_votable.vot
+      Access-Control-Allow-Origin:
+      - '*'
+      Date:
+      - Thu, 01 Oct 2026 09:25:09 GMT
+      Transfer-Encoding:
+      - chunked
+    body:
+      string: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<VOTABLE version=\"1.4\"\
+        \ xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n  xmlns=\"http://www.ivoa.net/xml/VOTable/v1.3\"\
+        \n  xsi:schemaLocation=\"http://www.ivoa.net/xml/VOTable/v1.3 http://www.ivoa.net/xml/VOTable/v1.3\"\
+        >\n <DESCRIPTION>\n   VizieR Astronomical Server vizier.cds.unistra.fr\n \
+        \   Date: 2026-10-01T09:25:09 [V7.6]\n   Explanations and Statistics of UCDs:\t\
+        \t\tSee LINK below\n   In case of problem, please report to:\tcds-question@unistra.fr\n\
+        \ </DESCRIPTION>\n<!-- VOTable description at http://www.ivoa.net/Documents/latest/VOT.html\
+        \ -->\n<INFO name=\"service_protocol\" value=\"ASU\">  IVOID of the protocol\
+        \ through which the data was retrieved</INFO>\n<INFO name=\"request_date\"\
+        \ value=\"2026-10-01T09:25:09\">  Query execution date</INFO>\n<INFO name=\"\
+        request\" value=\"https://vizier.cds.unistra.fr/viz-bin/votable?-oc.form=d&amp;-source=B/vsx&amp;-out.max=unlimited&amp;-out.all&amp;-out.add=_r&amp;-sort=_r&amp;-c=2.71676018-54.29064769&amp;-c.rs=0.5&amp;\"\
+        >  Full request URL (POST)</INFO>\n<INFO name=\"contact\" value=\"cds-question@unistra.fr\"\
+        >  Email or URL to contact publisher</INFO>\n<INFO name=\"server_software\"\
+        \ value=\"VizieR/7.6\">  Software version</INFO>\n<INFO name=\"publisher\"\
+        \ value=\"CDS\">  Data centre that produced the VOTable</INFO>\n<INFO name=\"\
+        header_format\" value=\"mini\"/>\n<INFO name=\"header_format\" value=\"mini\"\
+        />\n<INFO name=\"header_format\" value=\"mini\"/>\n<RESOURCE>\n</RESOURCE>\n\
+        <INFO name=\"meta\" value=\"message\">  memory restriction caused by sort\
+        \ option (partial sort in bunches of 610820)</INFO>\n\n<INFO name=\"Warning\"\
+        \ value=\"+++memory restriction caused by {\\bf sort} option (partial sort\
+        \ in bunches of 610820)\"/>\n<RESOURCE>\n</RESOURCE>\n</VOTABLE>\n"
+- request:
+    method: POST
+    uri: https://vizier.cds.unistra.fr/viz-bin/votable
+    body: '-source=B/vsx
+
+      -out.max=unlimited
+
+      -out.all
+
+      -out.add=_r
+
+      -sort=_r
+
+      -c=101.28716127-16.71612178
+
+      -c.rd=0.05
+
+      -out.meta=huUD
+
+      -out.form=mini
+
+      -oc.form=d'
+    headers:
+      User-Agent:
+      - astroquery/0.4.11 Python/3.14.7 (Linux) python-requests/2.34.2
+      Accept-Encoding:
+      - gzip, deflate, zstd
+      Accept:
+      - '*/*'
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '142'
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Connection:
+      - Keep-Alive
+      DocumentRef:
+      - VOTx3727563
+      Server:
+      - Apache/2.4.52 (Ubuntu)
+      Keep-Alive:
+      - timeout=5, max=100
+      Content-Type:
+      - application/x-votable+xml
+      Vary:
+      - Accept-Encoding
+      Access-Control-Allow-Headers:
+      - Origin, X-Requested-With, Content-Type, Accept
+      Content-Disposition:
+      - attachment; filename=vizier_votable.vot
+      Access-Control-Allow-Origin:
+      - '*'
+      Date:
+      - Thu, 01 Oct 2026 09:26:51 GMT
+      Transfer-Encoding:
+      - chunked
+    body:
+      string: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<VOTABLE version=\"1.4\"\
+        \ xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n  xmlns=\"http://www.ivoa.net/xml/VOTable/v1.3\"\
+        \n  xsi:schemaLocation=\"http://www.ivoa.net/xml/VOTable/v1.3 http://www.ivoa.net/xml/VOTable/v1.3\"\
+        >\n <DESCRIPTION>\n   VizieR Astronomical Server vizier.cds.unistra.fr\n \
+        \   Date: 2026-10-01T09:26:51 [V7.6]\n   Explanations and Statistics of UCDs:\t\
+        \t\tSee LINK below\n   In case of problem, please report to:\tcds-question@unistra.fr\n\
+        \ </DESCRIPTION>\n<!-- VOTable description at http://www.ivoa.net/Documents/latest/VOT.html\
+        \ -->\n<INFO name=\"service_protocol\" value=\"ASU\">  IVOID of the protocol\
+        \ through which the data was retrieved</INFO>\n<INFO name=\"request_date\"\
+        \ value=\"2026-10-01T09:26:51\">  Query execution date</INFO>\n<INFO name=\"\
+        request\" value=\"https://vizier.cds.unistra.fr/viz-bin/votable?-oc.form=d&amp;-source=B/vsx&amp;-out.max=unlimited&amp;-out.all&amp;-out.add=_r&amp;-sort=_r&amp;-c=101.28716127-16.71612178&amp;-c.rd=0.05&amp;\"\
+        >  Full request URL (POST)</INFO>\n<INFO name=\"contact\" value=\"cds-question@unistra.fr\"\
+        >  Email or URL to contact publisher</INFO>\n<INFO name=\"server_software\"\
+        \ value=\"VizieR/7.6\">  Software version</INFO>\n<INFO name=\"publisher\"\
+        \ value=\"CDS\">  Data centre that produced the VOTable</INFO>\n<INFO name=\"\
+        header_format\" value=\"mini\"/>\n<INFO name=\"header_format\" value=\"mini\"\
+        />\n<INFO name=\"header_format\" value=\"mini\"/>\n\n<RESOURCE ID=\"yCat_102027\"\
+        \ name=\"B/vsx\" type=\"results\">\n  <DESCRIPTION>AAVSO International Variable\
+        \ Star Index VSX (Watson+, 2006-)</DESCRIPTION>  <INFO name=\"ivoid\" value=\"\
+        ivo://cds.vizier/b/vsx\">    IVOID of underlying data collection  </INFO>\n\
+        \  <INFO name=\"data_ivoid\" value=\"ivo://cds.vizier/b/vsx\">    IVOID of\
+        \ underlying data collection  </INFO>\n  <INFO name=\"creator\" value=\"Watson\
+        \ C.\">    First author or institution  </INFO>\n  <INFO name=\"cites\" value=\"\
+        bibcode:2006SASS...25...47W\">    Article or Data origin sources  </INFO>\n\
+        \  <INFO name=\"journal\" value=\"SASS\">    Journal name  </INFO>\n  <INFO\
+        \ name=\"original_date\" value=\"2006\">    Year of the article publication\
+        \  </INFO>\n  <INFO name=\"reference_url\" value=\"https://cdsarc.cds.unistra.fr/viz-bin/cat/B/vsx\"\
+        >    Dataset landing page  </INFO>\n  <INFO name=\"publication_date\" value=\"\
+        2026-08-11\">    Date of first publication in the data centre  </INFO>\n \
+        \ <INFO name=\"rights_uri\" value=\"https://cds.unistra.fr/vizier-org/licences_vizier.html\"\
+        >    Licence URI  </INFO>\n\n  <COOSYS ID=\"J2000\" system=\"eq_FK5\" equinox=\"\
+        J2000\"/>\n  <TIMESYS ID=\"time_1\" refposition=\"UNKNOWN\" timeorigin=\"\
+        0.000000\" timescale=\"UNKNOWN\"/>\n  <TABLE ID=\"B_vsx_vsx\" name=\"B/vsx/vsx\"\
+        >\n    <DESCRIPTION>Variable Star indeX, Version 2026-08-09 (\\originalcolumnnames)</DESCRIPTION>\n\
+        \    <!-- RowName: ${OID} -->\n    <!-- Definitions of GROUPs and FIELDs -->\n\
+        \    <FIELD name=\"_r\" ucd=\"POS_ANG_DIST_GENERAL\" datatype=\"double\" width=\"\
+        8\" precision=\"6\">\n      <DESCRIPTION>Distance from center (101.28716-16.71612)[FK5/J2000]</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"recno\" ucd=\"RECORD\" datatype=\"int\" width=\"\
+        8\">\n      <DESCRIPTION>Record number assigned by the VizieR team. Should\
+        \ Not be used for identification.</DESCRIPTION>\n    </FIELD>\n    <FIELD\
+        \ name=\"OID\" ucd=\"ID_NUMBER\" datatype=\"int\" width=\"8\">\n      <DESCRIPTION>Internal\
+        \ identifier, can be used to link out to the VSX database (1)</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"Name\" datatype=\"char\" arraysize=\"30\"\
+        >\n      <DESCRIPTION>Variable star identifier</DESCRIPTION>\n      <VALUES\
+        \ null=\" \" />\n    </FIELD>\n    <FIELD name=\"V\" datatype=\"unsignedByte\"\
+        \ width=\"1\">\n      <DESCRIPTION>Variability flag (2) (VarFlag)</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"RAJ2000\" ucd=\"POS_EQ_RA_MAIN\" ref=\"J2000\"\
+        \ datatype=\"float\" width=\"9\" precision=\"5\" unit=\"deg\">\n      <DESCRIPTION>[0.0/360.0]\
+        \ Right ascension (J2000)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"\
+        DEJ2000\" ucd=\"POS_EQ_DEC_MAIN\" ref=\"J2000\" datatype=\"float\" width=\"\
+        9\" precision=\"5\" unit=\"deg\">\n      <DESCRIPTION>[-89.93/89.91] Declination\
+        \ (J2000)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"Type\" datatype=\"\
+        char\" arraysize=\"30\">\n      <DESCRIPTION>? Variability type, ariability\
+        \ type, as in GCVS catalog Variability type (see details of VSX type list)</DESCRIPTION>\n\
+        \      <VALUES null=\" \" />\n    </FIELD>\n    <FIELD name=\"l_max\" datatype=\"\
+        char\" arraysize=\"1\">\n      <DESCRIPTION>? Limit flag on max (LimitFlagOnMax)</DESCRIPTION>\n\
+        \      <VALUES null=\" \" />\n    </FIELD>\n    <FIELD name=\"max\" datatype=\"\
+        double\" width=\"7\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>[-6.0/25.2]?\
+        \ Magnitude at maximum, or amplitude (MagMax)</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"u_max\" datatype=\"char\"\
+        \ arraysize=\"1\">\n      <DESCRIPTION>? Uncertainty flag on max (MaxUncertaintyFlag)</DESCRIPTION>\n\
+        \      <VALUES null=\" \" />\n    </FIELD>\n    <FIELD name=\"n_max\" datatype=\"\
+        char\" arraysize=\"10\">\n      <DESCRIPTION>? Passband on max magnitude (4)\
+        \ (MaxPassband)</DESCRIPTION>\n      <VALUES null=\" \" />\n    </FIELD>\n\
+        \    <FIELD name=\"f_min\" datatype=\"char\" arraysize=\"1\">\n      <DESCRIPTION>?\
+        \ Flag to indicate an amplitude (MinIsAmplitude)</DESCRIPTION>\n      <VALUES\
+        \ null=\" \" />\n    </FIELD>\n    <FIELD name=\"l_min\" datatype=\"char\"\
+        \ arraysize=\"1\">\n      <DESCRIPTION>? Limit flag on min (LimitFlagOnMin)</DESCRIPTION>\n\
+        \      <VALUES null=\" \" />\n    </FIELD>\n    <FIELD name=\"min\" datatype=\"\
+        double\" width=\"7\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>[-0.02/28.0]?\
+        \ Magnitude at minimum, or amplitude (MagMin)</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"u_min\" datatype=\"char\"\
+        \ arraysize=\"1\">\n      <DESCRIPTION>? Uncertainty flag on min (MinUncertaintyFlag)</DESCRIPTION>\n\
+        \      <VALUES null=\" \" />\n    </FIELD>\n    <FIELD name=\"n_min\" datatype=\"\
+        char\" arraysize=\"8\">\n      <DESCRIPTION>? Passband on min magnitude (MinPassband)</DESCRIPTION>\n\
+        \      <VALUES null=\" \" />\n    </FIELD>\n    <FIELD name=\"Epoch\" ref=\"\
+        time_1\" datatype=\"double\" width=\"14\" precision=\"5\" unit=\"d\">\n  \
+        \    <DESCRIPTION>? Epoch of maximum or minimum (HJD)</DESCRIPTION>\n    \
+        \  <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"u_Epoch\" datatype=\"\
+        char\" arraysize=\"1\">\n      <DESCRIPTION>? Uncertainty flag on epoch (EpochUncertaintyFlag)</DESCRIPTION>\n\
+        \      <VALUES null=\" \" />\n    </FIELD>\n    <FIELD name=\"l_Period\" datatype=\"\
+        char\" arraysize=\"1\">\n      <DESCRIPTION>? Limit flag on period (3) (LimitFlagOnPeriod)</DESCRIPTION>\n\
+        \      <VALUES null=\" \" />\n    </FIELD>\n    <FIELD name=\"Period\" datatype=\"\
+        double\" width=\"19\" precision=\"12\" unit=\"d\">\n      <DESCRIPTION>[0.0/27400.0]?\
+        \ Period of the variable in days</DESCRIPTION>\n      <VALUES null=\"NaN\"\
+        \ />\n    </FIELD>\n    <FIELD name=\"u_Period\" datatype=\"char\" arraysize=\"\
+        1\">\n      <DESCRIPTION>? Uncertainty flag on Period (3) (PeriodUncertaintyFlag)</DESCRIPTION>\n\
+        \      <VALUES null=\" \" />\n    </FIELD>\n    <FIELD name=\"Sp\" ucd=\"\
+        SPECT_TYPE_MK\" datatype=\"char\" arraysize=\"29\">\n      <DESCRIPTION>?\
+        \ Spectral type (SpectralType)</DESCRIPTION>\n      <VALUES null=\" \" />\n\
+        \    </FIELD>\n    <FIELD name=\"n_OID\" datatype=\"char\" arraysize=\"1\"\
+        >\n      <DESCRIPTION>B indicates bibliography (in file \"refs.dat\")</DESCRIPTION>\n\
+        <!-- {\\bf B} indicates bibliography (in file \"refs.dat\") -->\n\n      <VALUES\
+        \ null=\" \" />\n    </FIELD>\n<DATA><TABLEDATA>\n<TR><TD>0.000014</TD><TD>1359703</TD><TD>55608</TD><TD>NSV\
+        \ 17173</TD><TD>2</TD><TD>101.28717</TD><TD>-16.71611</TD><TD>CST:</TD><TD></TD><TD>-1.460</TD><TD></TD><TD>V</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>A0mA1Va</TD><TD>B</TD></TR>\n\
+        <TR><TD>0.001093</TD><TD>1359718</TD><TD>55609</TD><TD>NSV 17174</TD><TD>1</TD><TD>101.28792</TD><TD>-16.71694</TD><TD></TD><TD></TD><TD>7.980</TD><TD></TD><TD>V</TD><TD></TD><TD></TD><TD>8.270</TD><TD></TD><TD>V</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>DA2</TD><TD>B</TD></TR>\n\
+        <TR><TD>0.027340</TD><TD>1360445</TD><TD>3198078</TD><TD>Gaia DR3 2947050397812509184</TD><TD>0</TD><TD>101.31503</TD><TD>-16.72203</TD><TD>S</TD><TD></TD><TD>15.560</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>15.890</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>M</TD><TD></TD></TR>\n\
+        <TR><TD>0.030993</TD><TD>1358982</TD><TD>3196946</TD><TD>Gaia DR3 2947051291165341696</TD><TD>0</TD><TD>101.25725</TD><TD>-16.70430</TD><TD>VAR</TD><TD></TD><TD>14.330</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>14.460</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>0.027130500000</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.034284</TD><TD>1358874</TD><TD>3196866</TD><TD>Gaia DR3 2947051291165346176</TD><TD>0</TD><TD>101.25297</TD><TD>-16.70598</TD><TD>VAR</TD><TD></TD><TD>16.010</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>16.250</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>0.018160200000</TD><TD></TD><TD>M</TD><TD></TD></TR>\n\
+        <TR><TD>0.034429</TD><TD>1359210</TD><TD>3197125</TD><TD>Gaia DR3 2947051462964006144</TD><TD>0</TD><TD>101.26663</TD><TD>-16.68786</TD><TD>VAR</TD><TD></TD><TD>14.520</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>14.700</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>0.031770100000</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.039900</TD><TD>1360226</TD><TD>3197901</TD><TD>Gaia DR3 2947050191653974272</TD><TD>0</TD><TD>101.30694</TD><TD>-16.75124</TD><TD>VAR</TD><TD></TD><TD>14.920</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>15.160</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>0.022352000000</TD><TD></TD><TD>M</TD><TD></TD></TR>\n\
+        </TABLEDATA></DATA>\n<INFO name=\"matches\" value=\"7\">matching records</INFO>\n\
+        \    <INFO name=\"meta\" value=\"message\">      memory restriction caused\
+        \ by sort option (partial sort in bunches of 610820)    </INFO>\n\n<INFO name=\"\
+        Warning\" value=\"+++memory restriction caused by {\\bf sort} option (partial\
+        \ sort in bunches of 610820)\"/>\n  </TABLE>\n</RESOURCE>\n</VOTABLE>\n"
+- request:
+    method: POST
+    uri: https://vizier.cds.unistra.fr/viz-bin/votable
+    body: '-source=B/vsx
+
+      -out.max=unlimited
+
+      -out.all
+
+      -out.add=_r
+
+      -sort=_r
+
+      -c=16.82589675-72.46768171
+
+      -c.rd=0.1
+
+      -out.meta=huUD
+
+      -out.form=mini
+
+      -oc.form=d'
+    headers:
+      User-Agent:
+      - astroquery/0.4.11 Python/3.14.7 (Linux) python-requests/2.34.2
+      Accept-Encoding:
+      - gzip, deflate, zstd
+      Accept:
+      - '*/*'
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '140'
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Connection:
+      - Keep-Alive
+      DocumentRef:
+      - VOTx3729481
+      Server:
+      - Apache/2.4.52 (Ubuntu)
+      Keep-Alive:
+      - timeout=5, max=100
+      Content-Type:
+      - application/x-votable+xml
+      Vary:
+      - Accept-Encoding
+      Access-Control-Allow-Headers:
+      - Origin, X-Requested-With, Content-Type, Accept
+      Content-Disposition:
+      - attachment; filename=vizier_votable.vot
+      Access-Control-Allow-Origin:
+      - '*'
+      Date:
+      - Thu, 01 Oct 2026 09:26:59 GMT
+      Transfer-Encoding:
+      - chunked
+    body:
+      string: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<VOTABLE version=\"1.4\"\
+        \ xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n  xmlns=\"http://www.ivoa.net/xml/VOTable/v1.3\"\
+        \n  xsi:schemaLocation=\"http://www.ivoa.net/xml/VOTable/v1.3 http://www.ivoa.net/xml/VOTable/v1.3\"\
+        >\n <DESCRIPTION>\n   VizieR Astronomical Server vizier.cds.unistra.fr\n \
+        \   Date: 2026-10-01T09:26:59 [V7.6]\n   Explanations and Statistics of UCDs:\t\
+        \t\tSee LINK below\n   In case of problem, please report to:\tcds-question@unistra.fr\n\
+        \ </DESCRIPTION>\n<!-- VOTable description at http://www.ivoa.net/Documents/latest/VOT.html\
+        \ -->\n<INFO name=\"service_protocol\" value=\"ASU\">  IVOID of the protocol\
+        \ through which the data was retrieved</INFO>\n<INFO name=\"request_date\"\
+        \ value=\"2026-10-01T09:26:59\">  Query execution date</INFO>\n<INFO name=\"\
+        request\" value=\"https://vizier.cds.unistra.fr/viz-bin/votable?-oc.form=d&amp;-source=B/vsx&amp;-out.max=unlimited&amp;-out.all&amp;-out.add=_r&amp;-sort=_r&amp;-c=16.82589675-72.46768171&amp;-c.rd=0.1&amp;\"\
+        >  Full request URL (POST)</INFO>\n<INFO name=\"contact\" value=\"cds-question@unistra.fr\"\
+        >  Email or URL to contact publisher</INFO>\n<INFO name=\"server_software\"\
+        \ value=\"VizieR/7.6\">  Software version</INFO>\n<INFO name=\"publisher\"\
+        \ value=\"CDS\">  Data centre that produced the VOTable</INFO>\n<INFO name=\"\
+        header_format\" value=\"mini\"/>\n<INFO name=\"header_format\" value=\"mini\"\
+        />\n<INFO name=\"header_format\" value=\"mini\"/>\n\n<RESOURCE ID=\"yCat_102027\"\
+        \ name=\"B/vsx\" type=\"results\">\n  <DESCRIPTION>AAVSO International Variable\
+        \ Star Index VSX (Watson+, 2006-)</DESCRIPTION>  <INFO name=\"ivoid\" value=\"\
+        ivo://cds.vizier/b/vsx\">    IVOID of underlying data collection  </INFO>\n\
+        \  <INFO name=\"data_ivoid\" value=\"ivo://cds.vizier/b/vsx\">    IVOID of\
+        \ underlying data collection  </INFO>\n  <INFO name=\"creator\" value=\"Watson\
+        \ C.\">    First author or institution  </INFO>\n  <INFO name=\"cites\" value=\"\
+        bibcode:2006SASS...25...47W\">    Article or Data origin sources  </INFO>\n\
+        \  <INFO name=\"journal\" value=\"SASS\">    Journal name  </INFO>\n  <INFO\
+        \ name=\"original_date\" value=\"2006\">    Year of the article publication\
+        \  </INFO>\n  <INFO name=\"reference_url\" value=\"https://cdsarc.cds.unistra.fr/viz-bin/cat/B/vsx\"\
+        >    Dataset landing page  </INFO>\n  <INFO name=\"publication_date\" value=\"\
+        2026-08-11\">    Date of first publication in the data centre  </INFO>\n \
+        \ <INFO name=\"rights_uri\" value=\"https://cds.unistra.fr/vizier-org/licences_vizier.html\"\
+        >    Licence URI  </INFO>\n\n  <COOSYS ID=\"J2000\" system=\"eq_FK5\" equinox=\"\
+        J2000\"/>\n  <TIMESYS ID=\"time_1\" refposition=\"UNKNOWN\" timeorigin=\"\
+        0.000000\" timescale=\"UNKNOWN\"/>\n  <TABLE ID=\"B_vsx_vsx\" name=\"B/vsx/vsx\"\
+        >\n    <DESCRIPTION>Variable Star indeX, Version 2026-08-09 (\\originalcolumnnames)</DESCRIPTION>\n\
+        \    <!-- RowName: ${OID} -->\n    <!-- Definitions of GROUPs and FIELDs -->\n\
+        \    <FIELD name=\"_r\" ucd=\"POS_ANG_DIST_GENERAL\" datatype=\"double\" width=\"\
+        8\" precision=\"6\">\n      <DESCRIPTION>Distance from center ( 16.82590-72.46768)[FK5/J2000]</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"recno\" ucd=\"RECORD\" datatype=\"int\" width=\"\
+        8\">\n      <DESCRIPTION>Record number assigned by the VizieR team. Should\
+        \ Not be used for identification.</DESCRIPTION>\n    </FIELD>\n    <FIELD\
+        \ name=\"OID\" ucd=\"ID_NUMBER\" datatype=\"int\" width=\"8\">\n      <DESCRIPTION>Internal\
+        \ identifier, can be used to link out to the VSX database (1)</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"Name\" datatype=\"char\" arraysize=\"30\"\
+        >\n      <DESCRIPTION>Variable star identifier</DESCRIPTION>\n      <VALUES\
+        \ null=\" \" />\n    </FIELD>\n    <FIELD name=\"V\" datatype=\"unsignedByte\"\
+        \ width=\"1\">\n      <DESCRIPTION>Variability flag (2) (VarFlag)</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"RAJ2000\" ucd=\"POS_EQ_RA_MAIN\" ref=\"J2000\"\
+        \ datatype=\"float\" width=\"9\" precision=\"5\" unit=\"deg\">\n      <DESCRIPTION>[0.0/360.0]\
+        \ Right ascension (J2000)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"\
+        DEJ2000\" ucd=\"POS_EQ_DEC_MAIN\" ref=\"J2000\" datatype=\"float\" width=\"\
+        9\" precision=\"5\" unit=\"deg\">\n      <DESCRIPTION>[-89.93/89.91] Declination\
+        \ (J2000)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"Type\" datatype=\"\
+        char\" arraysize=\"30\">\n      <DESCRIPTION>? Variability type, ariability\
+        \ type, as in GCVS catalog Variability type (see details of VSX type list)</DESCRIPTION>\n\
+        \      <VALUES null=\" \" />\n    </FIELD>\n    <FIELD name=\"l_max\" datatype=\"\
+        char\" arraysize=\"1\">\n      <DESCRIPTION>? Limit flag on max (LimitFlagOnMax)</DESCRIPTION>\n\
+        \      <VALUES null=\" \" />\n    </FIELD>\n    <FIELD name=\"max\" datatype=\"\
+        double\" width=\"7\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>[-6.0/25.2]?\
+        \ Magnitude at maximum, or amplitude (MagMax)</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"u_max\" datatype=\"char\"\
+        \ arraysize=\"1\">\n      <DESCRIPTION>? Uncertainty flag on max (MaxUncertaintyFlag)</DESCRIPTION>\n\
+        \      <VALUES null=\" \" />\n    </FIELD>\n    <FIELD name=\"n_max\" datatype=\"\
+        char\" arraysize=\"10\">\n      <DESCRIPTION>? Passband on max magnitude (4)\
+        \ (MaxPassband)</DESCRIPTION>\n      <VALUES null=\" \" />\n    </FIELD>\n\
+        \    <FIELD name=\"f_min\" datatype=\"char\" arraysize=\"1\">\n      <DESCRIPTION>?\
+        \ Flag to indicate an amplitude (MinIsAmplitude)</DESCRIPTION>\n      <VALUES\
+        \ null=\" \" />\n    </FIELD>\n    <FIELD name=\"l_min\" datatype=\"char\"\
+        \ arraysize=\"1\">\n      <DESCRIPTION>? Limit flag on min (LimitFlagOnMin)</DESCRIPTION>\n\
+        \      <VALUES null=\" \" />\n    </FIELD>\n    <FIELD name=\"min\" datatype=\"\
+        double\" width=\"7\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>[-0.02/28.0]?\
+        \ Magnitude at minimum, or amplitude (MagMin)</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"u_min\" datatype=\"char\"\
+        \ arraysize=\"1\">\n      <DESCRIPTION>? Uncertainty flag on min (MinUncertaintyFlag)</DESCRIPTION>\n\
+        \      <VALUES null=\" \" />\n    </FIELD>\n    <FIELD name=\"n_min\" datatype=\"\
+        char\" arraysize=\"8\">\n      <DESCRIPTION>? Passband on min magnitude (MinPassband)</DESCRIPTION>\n\
+        \      <VALUES null=\" \" />\n    </FIELD>\n    <FIELD name=\"Epoch\" ref=\"\
+        time_1\" datatype=\"double\" width=\"14\" precision=\"5\" unit=\"d\">\n  \
+        \    <DESCRIPTION>? Epoch of maximum or minimum (HJD)</DESCRIPTION>\n    \
+        \  <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"u_Epoch\" datatype=\"\
+        char\" arraysize=\"1\">\n      <DESCRIPTION>? Uncertainty flag on epoch (EpochUncertaintyFlag)</DESCRIPTION>\n\
+        \      <VALUES null=\" \" />\n    </FIELD>\n    <FIELD name=\"l_Period\" datatype=\"\
+        char\" arraysize=\"1\">\n      <DESCRIPTION>? Limit flag on period (3) (LimitFlagOnPeriod)</DESCRIPTION>\n\
+        \      <VALUES null=\" \" />\n    </FIELD>\n    <FIELD name=\"Period\" datatype=\"\
+        double\" width=\"19\" precision=\"12\" unit=\"d\">\n      <DESCRIPTION>[0.0/27400.0]?\
+        \ Period of the variable in days</DESCRIPTION>\n      <VALUES null=\"NaN\"\
+        \ />\n    </FIELD>\n    <FIELD name=\"u_Period\" datatype=\"char\" arraysize=\"\
+        1\">\n      <DESCRIPTION>? Uncertainty flag on Period (3) (PeriodUncertaintyFlag)</DESCRIPTION>\n\
+        \      <VALUES null=\" \" />\n    </FIELD>\n    <FIELD name=\"Sp\" ucd=\"\
+        SPECT_TYPE_MK\" datatype=\"char\" arraysize=\"29\">\n      <DESCRIPTION>?\
+        \ Spectral type (SpectralType)</DESCRIPTION>\n      <VALUES null=\" \" />\n\
+        \    </FIELD>\n    <FIELD name=\"n_OID\" datatype=\"char\" arraysize=\"1\"\
+        >\n      <DESCRIPTION>B indicates bibliography (in file \"refs.dat\")</DESCRIPTION>\n\
+        <!-- {\\bf B} indicates bibliography (in file \"refs.dat\") -->\n\n      <VALUES\
+        \ null=\" \" />\n    </FIELD>\n<DATA><TABLEDATA>\n<TR><TD>0.000011</TD><TD>189408</TD><TD>234935</TD><TD>SMC\
+        \ V2018</TD><TD>0</TD><TD>16.82592</TD><TD>-72.46769</TD><TD>SDOR</TD><TD></TD><TD>9.500</TD><TD></TD><TD>V</TD><TD></TD><TD></TD><TD>10.730</TD><TD></TD><TD>V</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>B8Ia-A3Ia+</TD><TD></TD></TR>\n\
+        <TR><TD>0.008710</TD><TD>189092</TD><TD>2670392</TD><TD>Gaia DR3 4687436700232930432</TD><TD>0</TD><TD>16.79766</TD><TD>-72.46956</TD><TD>DCEPS:</TD><TD></TD><TD>17.840</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>18.200</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>0.693360000000</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.016621</TD><TD>189053</TD><TD>10633823</TD><TD>Gaia DR3 4687437456193615104</TD><TD>0</TD><TD>16.79424</TD><TD>-72.45407</TD><TD>E</TD><TD></TD><TD>19.640</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>20.040</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>5.253500000000</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.017369</TD><TD>188765</TD><TD>2670165</TD><TD>Gaia DR3 4687436665919534208</TD><TD>0</TD><TD>16.77069</TD><TD>-72.47270</TD><TD>DSCT|GDOR|SXPHE</TD><TD></TD><TD>18.740</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>18.860</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>2.692120000000</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.019382</TD><TD>188726</TD><TD>2670137</TD><TD>Gaia DR3 4687436670190080640</TD><TD>0</TD><TD>16.76661</TD><TD>-72.47522</TD><TD>DCEPS:</TD><TD></TD><TD>17.370</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>17.710</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>0.860860000000</TD><TD></TD><TD>F</TD><TD></TD></TR>\n\
+        <TR><TD>0.020883</TD><TD>190129</TD><TD>2671166</TD><TD>Gaia DR3 4687436532750657792</TD><TD>0</TD><TD>16.88912</TD><TD>-72.47626</TD><TD>BE|GCAS|SDOR|WR</TD><TD></TD><TD>15.780</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>15.860</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>B</TD><TD></TD></TR>\n\
+        <TR><TD>0.021981</TD><TD>188819</TD><TD>555568</TD><TD>ASASSN-V J010705.80-722707.7</TD><TD>0</TD><TD>16.77419</TD><TD>-72.45218</TD><TD>GCAS</TD><TD></TD><TD>14.110</TD><TD></TD><TD>V</TD><TD></TD><TD></TD><TD>14.410</TD><TD></TD><TD>V</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>B</TD></TR>\n\
+        <TR><TD>0.023959</TD><TD>189995</TD><TD>10636201</TD><TD>Gaia DR3 4687436837718263552</TD><TD>0</TD><TD>16.87572</TD><TD>-72.44901</TD><TD>E</TD><TD></TD><TD>19.430</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>19.820</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>0.595250000000</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.024231</TD><TD>189596</TD><TD>2670774</TD><TD>Gaia DR3 4687437559272723584</TD><TD>0</TD><TD>16.84256</TD><TD>-72.44398</TD><TD>E</TD><TD></TD><TD>17.320</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>17.500</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>0.420513000000</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.024665</TD><TD>190012</TD><TD>2671080</TD><TD>Gaia DR3 4687436459761112832</TD><TD>0</TD><TD>16.87715</TD><TD>-72.48692</TD><TD>E</TD><TD></TD><TD>18.350</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>18.480</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>5.542000000000</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.025207</TD><TD>188690</TD><TD>2670108</TD><TD>Gaia DR3 4687436670165936256</TD><TD>0</TD><TD>16.76344</TD><TD>-72.48447</TD><TD>VAR</TD><TD></TD><TD>16.910</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>17.540</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>0.795330000000</TD><TD></TD><TD>F</TD><TD></TD></TR>\n\
+        <TR><TD>0.026998</TD><TD>188417</TD><TD>2669914</TD><TD>Gaia DR3 4687437494823799168</TD><TD>0</TD><TD>16.74121</TD><TD>-72.45886</TD><TD>BE|GCAS|SDOR|WR</TD><TD></TD><TD>15.340</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>15.650</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>B</TD><TD></TD></TR>\n\
+        <TR><TD>0.027460</TD><TD>189691</TD><TD>2670842</TD><TD>Gaia DR3 4687436360951996160</TD><TD>0</TD><TD>16.85075</TD><TD>-72.49410</TD><TD>DCEP</TD><TD></TD><TD>14.930</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>15.620</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>5.911600000000</TD><TD></TD><TD>F</TD><TD></TD></TR>\n\
+        <TR><TD>0.028468</TD><TD>188325</TD><TD>2669844</TD><TD>Gaia DR3 4687437421825444224</TD><TD>0</TD><TD>16.73176</TD><TD>-72.46521</TD><TD>RRAB</TD><TD></TD><TD>18.750</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>19.980</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>0.510440000000</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.030934</TD><TD>189317</TD><TD>36980</TD><TD>TV Tuc</TD><TD>0</TD><TD>16.81850</TD><TD>-72.43683</TD><TD>DCEP</TD><TD></TD><TD>15.500</TD><TD></TD><TD>pg</TD><TD></TD><TD></TD><TD>16.600</TD><TD></TD><TD>pg</TD><TD>2430528.64000</TD><TD></TD><TD></TD><TD>3.802571000000</TD><TD></TD><TD></TD><TD>B</TD></TR>\n\
+        <TR><TD>0.032703</TD><TD>189005</TD><TD>2670333</TD><TD>Gaia DR3 4687436395311744000</TD><TD>0</TD><TD>16.78995</TD><TD>-72.49854</TD><TD>E</TD><TD></TD><TD>16.730</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>17.440</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>1.524030000000</TD><TD></TD><TD>B</TD><TD></TD></TR>\n\
+        <TR><TD>0.032716</TD><TD>190255</TD><TD>2671261</TD><TD>Gaia DR3 4687436464031201664</TD><TD>0</TD><TD>16.90143</TD><TD>-72.49120</TD><TD>SR|M</TD><TD></TD><TD>15.600</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>15.950</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>67.070000000000</TD><TD></TD><TD>K</TD><TD></TD></TR>\n\
+        <TR><TD>0.033256</TD><TD>190612</TD><TD>2671512</TD><TD>Gaia DR3 4687436567110380032</TD><TD>0</TD><TD>16.93430</TD><TD>-72.46142</TD><TD>DSCT|GDOR|SXPHE</TD><TD></TD><TD>15.320</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>15.420</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>0.350549000000</TD><TD></TD><TD>O</TD><TD></TD></TR>\n\
+        <TR><TD>0.033328</TD><TD>190629</TD><TD>2671527</TD><TD>Gaia DR3 4687436567110382848</TD><TD>0</TD><TD>16.93549</TD><TD>-72.46315</TD><TD>BE|GCAS|SDOR|WR</TD><TD></TD><TD>15.980</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>16.270</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>O</TD><TD></TD></TR>\n\
+        <TR><TD>0.034018</TD><TD>189873</TD><TD>2670982</TD><TD>Gaia DR3 4687437593642794496</TD><TD>0</TD><TD>16.86571</TD><TD>-72.43585</TD><TD>DSCT|GDOR|SXPHE</TD><TD></TD><TD>17.010</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>17.130</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>0.699540000000</TD><TD></TD><TD>B</TD><TD></TD></TR>\n\
+        <TR><TD>0.034491</TD><TD>190388</TD><TD>573065</TD><TD>ASASSN-V J010739.54-722645.4</TD><TD>0</TD><TD>16.91476</TD><TD>-72.44595</TD><TD>VAR</TD><TD></TD><TD>12.660</TD><TD></TD><TD>V</TD><TD></TD><TD></TD><TD>12.880</TD><TD></TD><TD>V</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>B</TD></TR>\n\
+        <TR><TD>0.035027</TD><TD>190034</TD><TD>2671098</TD><TD>Gaia DR3 4687436464031216128</TD><TD>0</TD><TD>16.87945</TD><TD>-72.49878</TD><TD>BE|GCAS|SDOR|WR</TD><TD></TD><TD>15.550</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>15.770</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>B</TD><TD></TD></TR>\n\
+        <TR><TD>0.036811</TD><TD>189735</TD><TD>2670875</TD><TD>Gaia DR3 4687437632238526336</TD><TD>0</TD><TD>16.85382</TD><TD>-72.43185</TD><TD>E</TD><TD></TD><TD>18.540</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>18.820</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>0.209999000000</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.038639</TD><TD>190619</TD><TD>2671519</TD><TD>Gaia DR3 4687460236710409984</TD><TD>0</TD><TD>16.93489</TD><TD>-72.44734</TD><TD>E</TD><TD></TD><TD>17.900</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>18.190</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>0.901890000000</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.038914</TD><TD>188809</TD><TD>2670199</TD><TD>Gaia DR3 4687436395311753984</TD><TD>0</TD><TD>16.77367</TD><TD>-72.50328</TD><TD>L</TD><TD></TD><TD>16.020</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>16.240</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>M</TD><TD></TD></TR>\n\
+        <TR><TD>0.043168</TD><TD>188059</TD><TD>2669654</TD><TD>Gaia DR3 4687436292232523904</TD><TD>0</TD><TD>16.70695</TD><TD>-72.49179</TD><TD>DCEP</TD><TD></TD><TD>15.390</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>16.160</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>4.342900000000</TD><TD></TD><TD>F</TD><TD></TD></TR>\n\
+        <TR><TD>0.043300</TD><TD>190526</TD><TD>2671452</TD><TD>Gaia DR3 4687433543453452160</TD><TD>0</TD><TD>16.92553</TD><TD>-72.49892</TD><TD>E</TD><TD></TD><TD>17.850</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>17.990</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>1.514330000000</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.043602</TD><TD>190638</TD><TD>2671533</TD><TD>Gaia DR3 4687460305373420288</TD><TD>0</TD><TD>16.93597</TD><TD>-72.43940</TD><TD>E</TD><TD></TD><TD>15.430</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>15.910</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>3.394640000000</TD><TD></TD><TD>B</TD><TD></TD></TR>\n\
+        <TR><TD>0.044364</TD><TD>190739</TD><TD>2671604</TD><TD>Gaia DR3 4687433539133376768</TD><TD>0</TD><TD>16.94607</TD><TD>-72.49336</TD><TD>E</TD><TD></TD><TD>18.180</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>18.790</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>2.599320000000</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.045873</TD><TD>190875</TD><TD>2671697</TD><TD>Gaia DR3 4687460240963577088</TD><TD>0</TD><TD>16.95685</TD><TD>-72.44431</TD><TD>BE|GCAS|SDOR|WR</TD><TD></TD><TD>13.750</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>13.890</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>B</TD><TD></TD></TR>\n\
+        <TR><TD>0.045880</TD><TD>188102</TD><TD>2669685</TD><TD>Gaia DR3 4687437769701209984</TD><TD>0</TD><TD>16.71067</TD><TD>-72.43771</TD><TD>BE|GCAS|SDOR|WR</TD><TD></TD><TD>17.120</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>17.230</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>B</TD><TD></TD></TR>\n\
+        <TR><TD>0.046443</TD><TD>190408</TD><TD>2671372</TD><TD>Gaia DR3 4687461065581958784</TD><TD>0</TD><TD>16.91617</TD><TD>-72.43005</TD><TD>E</TD><TD></TD><TD>17.560</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>17.780</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>9.745500000000</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.046825</TD><TD>190886</TD><TD>2671707</TD><TD>Gaia DR3 4687460240963573376</TD><TD>0</TD><TD>16.95765</TD><TD>-72.44288</TD><TD>BE|GCAS|SDOR|WR</TD><TD></TD><TD>16.790</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>16.890</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>B</TD><TD></TD></TR>\n\
+        <TR><TD>0.046977</TD><TD>188064</TD><TD>2669657</TD><TD>Gaia DR3 4687436292232534912</TD><TD>0</TD><TD>16.70785</TD><TD>-72.49841</TD><TD>DCEP</TD><TD></TD><TD>16.300</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>17.010</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>2.055440000000</TD><TD></TD><TD>F</TD><TD></TD></TR>\n\
+        <TR><TD>0.048244</TD><TD>189354</TD><TD>2670596</TD><TD>Gaia DR3 4687433401696926720</TD><TD>0</TD><TD>16.82145</TD><TD>-72.51591</TD><TD>SR|M</TD><TD></TD><TD>15.630</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>17.340</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>278.000000000000</TD><TD></TD><TD>M</TD><TD></TD></TR>\n\
+        <TR><TD>0.048860</TD><TD>189911</TD><TD>10848857</TD><TD>Gaia DR3 4687433406014529792</TD><TD>0</TD><TD>16.86895</TD><TD>-72.51479</TD><TD>RRAB</TD><TD></TD><TD>19.210</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>20.190</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>0.575220000000</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.049040</TD><TD>187649</TD><TD>2230626</TD><TD>ASASSN-V J010640.24-722845.3</TD><TD>0</TD><TD>16.66764</TD><TD>-72.47924</TD><TD>SRD</TD><TD></TD><TD>13.360</TD><TD></TD><TD>g</TD><TD>Y</TD><TD></TD><TD>0.270</TD><TD></TD><TD>g</TD><TD>2459094.52500</TD><TD></TD><TD></TD><TD>247.000000000000</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.049465</TD><TD>187761</TD><TD>2669445</TD><TD>Gaia DR3 4687437391744096640</TD><TD>0</TD><TD>16.67808</TD><TD>-72.44620</TD><TD>DSCT|GDOR|SXPHE</TD><TD></TD><TD>17.570</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>17.690</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>8.953800000000</TD><TD></TD><TD>B</TD><TD></TD></TR>\n\
+        <TR><TD>0.050281</TD><TD>189345</TD><TD>2670590</TD><TD>Gaia DR3 4687437834104992768</TD><TD>0</TD><TD>16.82051</TD><TD>-72.41743</TD><TD>E</TD><TD></TD><TD>16.280</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>16.510</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>0.708530000000</TD><TD></TD><TD>B</TD><TD></TD></TR>\n\
+        <TR><TD>0.051889</TD><TD>191292</TD><TD>2672019</TD><TD>Gaia DR3 4687459961775624704</TD><TD>0</TD><TD>16.99554</TD><TD>-72.45876</TD><TD>E</TD><TD></TD><TD>17.530</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>17.700</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>1.710920000000</TD><TD></TD><TD>B</TD><TD></TD></TR>\n\
+        <TR><TD>0.054135</TD><TD>188826</TD><TD>2670209</TD><TD>Gaia DR3 4687436322313763456</TD><TD>0</TD><TD>16.77493</TD><TD>-72.51960</TD><TD>BE|GCAS|SDOR|WR</TD><TD></TD><TD>17.180</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>17.320</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.054479</TD><TD>188771</TD><TD>2670169</TD><TD>Gaia DR3 4687436326568651264</TD><TD>0</TD><TD>16.77110</TD><TD>-72.51961</TD><TD>DCEP</TD><TD></TD><TD>16.890</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>17.580</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>1.830180000000</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.055363</TD><TD>189719</TD><TD>36981</TD><TD>TW Tuc</TD><TD>0</TD><TD>16.85308</TD><TD>-72.52244</TD><TD>DCEP</TD><TD></TD><TD>15.300</TD><TD></TD><TD>B</TD><TD></TD><TD></TD><TD>16.700</TD><TD></TD><TD>B</TD><TD>2432466.39400</TD><TD></TD><TD></TD><TD>6.112096000000</TD><TD></TD><TD></TD><TD>B</TD></TR>\n\
+        <TR><TD>0.056780</TD><TD>190265</TD><TD>2671269</TD><TD>Gaia DR3 4687461134316709376</TD><TD>0</TD><TD>16.90261</TD><TD>-72.41583</TD><TD>L</TD><TD></TD><TD>15.440</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>15.930</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>M</TD><TD></TD></TR>\n\
+        <TR><TD>0.057338</TD><TD>188062</TD><TD>8708509</TD><TD>Gaia DR3 4687484700843910144</TD><TD>0</TD><TD>16.70747</TD><TD>-72.42283</TD><TD>E</TD><TD></TD><TD>19.530</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>19.890</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>1.294100000000</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.057716</TD><TD>191506</TD><TD>2672169</TD><TD>Gaia DR3 4687460000445432704</TD><TD>0</TD><TD>17.01490</TD><TD>-72.45831</TD><TD>DSCT|GDOR|SXPHE</TD><TD></TD><TD>17.090</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>17.170</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>7.401700000000</TD><TD></TD><TD>B</TD><TD></TD></TR>\n\
+        <TR><TD>0.059194</TD><TD>189200</TD><TD>8708562</TD><TD>Gaia DR3 4687437907140146688</TD><TD>0</TD><TD>16.80791</TD><TD>-72.40874</TD><TD>E</TD><TD></TD><TD>19.280</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>19.780</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>0.512730000000</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.059449</TD><TD>188123</TD><TD>2669699</TD><TD>Gaia DR3 4687436017354656512</TD><TD>0</TD><TD>16.71216</TD><TD>-72.51630</TD><TD>E</TD><TD></TD><TD>17.870</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>17.980</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>8.267800000000</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.061173</TD><TD>187960</TD><TD>8708498</TD><TD>Gaia DR3 4687436184835772032</TD><TD>0</TD><TD>16.69715</TD><TD>-72.51503</TD><TD>RRC</TD><TD></TD><TD>19.350</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>19.890</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>0.362756000000</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.061797</TD><TD>191484</TD><TD>2672156</TD><TD>Gaia DR3 4687456938165402496</TD><TD>0</TD><TD>17.01329</TD><TD>-72.49291</TD><TD>DSCT|GDOR|SXPHE</TD><TD></TD><TD>17.690</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>17.790</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>0.450778000000</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.062530</TD><TD>187174</TD><TD>2669015</TD><TD>Gaia DR3 4687437353114279424</TD><TD>0</TD><TD>16.62441</TD><TD>-72.45275</TD><TD>E</TD><TD></TD><TD>18.450</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>18.900</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>4.600620000000</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.063420</TD><TD>191274</TD><TD>2672008</TD><TD>Gaia DR3 4687460344042751872</TD><TD>0</TD><TD>16.99381</TD><TD>-72.42950</TD><TD>SR|M</TD><TD></TD><TD>15.410</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>15.910</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>604.800000000000</TD><TD></TD><TD>M</TD><TD></TD></TR>\n\
+        <TR><TD>0.063447</TD><TD>188280</TD><TD>8708520</TD><TD>Gaia DR3 4687484735144711296</TD><TD>0</TD><TD>16.72838</TD><TD>-72.41147</TD><TD>L</TD><TD></TD><TD>19.130</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>20.760</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.065912</TD><TD>191699</TD><TD>8708673</TD><TD>Gaia DR3 4687460064884721408</TD><TD>0</TD><TD>17.03202</TD><TD>-72.44568</TD><TD>E</TD><TD></TD><TD>19.500</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>20.770</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>1.103730000000</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.066362</TD><TD>188634</TD><TD>2670066</TD><TD>Gaia DR3 4687432989410243840</TD><TD>0</TD><TD>16.75909</TD><TD>-72.53093</TD><TD>E</TD><TD></TD><TD>18.980</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>19.230</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>0.428186000000</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.066738</TD><TD>191155</TD><TD>2671915</TD><TD>Gaia DR3 4687433268551901184</TD><TD>0</TD><TD>16.98352</TD><TD>-72.51464</TD><TD>E</TD><TD></TD><TD>18.670</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>19.490</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>2.747350000000</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.069652</TD><TD>191645</TD><TD>2672267</TD><TD>Gaia DR3 4687456736270366336</TD><TD>0</TD><TD>17.02735</TD><TD>-72.50197</TD><TD>L</TD><TD></TD><TD>15.520</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>15.800</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>M</TD><TD></TD></TR>\n\
+        <TR><TD>0.070406</TD><TD>188208</TD><TD>2669756</TD><TD>Gaia DR3 4687435948611577600</TD><TD>0</TD><TD>16.72074</TD><TD>-72.53059</TD><TD>E</TD><TD></TD><TD>18.300</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>18.500</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>1.719820000000</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.072124</TD><TD>191502</TD><TD>2672167</TD><TD>Gaia DR3 4687460339733469312</TD><TD>0</TD><TD>17.01457</TD><TD>-72.42337</TD><TD>SR|M</TD><TD></TD><TD>15.430</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>15.970</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>787.400000000000</TD><TD></TD><TD>K</TD><TD></TD></TR>\n\
+        <TR><TD>0.072191</TD><TD>187253</TD><TD>2669077</TD><TD>Gaia DR3 4687436154793604992</TD><TD>0</TD><TD>16.63056</TD><TD>-72.50960</TD><TD>L</TD><TD></TD><TD>15.900</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>16.150</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>K</TD><TD></TD></TR>\n\
+        <TR><TD>0.073450</TD><TD>192094</TD><TD>2672604</TD><TD>Gaia DR3 4687456972525173888</TD><TD>0</TD><TD>17.06662</TD><TD>-72.47950</TD><TD>E</TD><TD></TD><TD>18.700</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>18.950</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>4.239920000000</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.073498</TD><TD>192126</TD><TD>2672625</TD><TD>Gaia DR3 4687457148587508736</TD><TD>0</TD><TD>17.06988</TD><TD>-72.46761</TD><TD>L</TD><TD></TD><TD>15.650</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>15.840</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>K</TD><TD></TD></TR>\n\
+        <TR><TD>0.073656</TD><TD>192104</TD><TD>2672611</TD><TD>Gaia DR3 4687456972478110720</TD><TD>0</TD><TD>17.06778</TD><TD>-72.47859</TD><TD>DSCT|GDOR|SXPHE</TD><TD></TD><TD>16.640</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>16.730</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>5.315800000000</TD><TD></TD><TD>B</TD><TD></TD></TR>\n\
+        <TR><TD>0.074393</TD><TD>187607</TD><TD>2669332</TD><TD>Gaia DR3 4687436189153366784</TD><TD>0</TD><TD>16.66247</TD><TD>-72.52352</TD><TD>L</TD><TD></TD><TD>15.540</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>15.820</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>K</TD><TD></TD></TR>\n\
+        <TR><TD>0.074804</TD><TD>186737</TD><TD>2668681</TD><TD>Gaia DR3 4687437181315419008</TD><TD>0</TD><TD>16.57981</TD><TD>-72.47784</TD><TD>E</TD><TD></TD><TD>18.520</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>18.820</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>1.273310000000</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.074888</TD><TD>191808</TD><TD>2672389</TD><TD>Gaia DR3 4687460378402486912</TD><TD>0</TD><TD>17.04108</TD><TD>-72.43030</TD><TD>DCEP</TD><TD></TD><TD>15.580</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>15.810</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>5.461600000000</TD><TD></TD><TD>F</TD><TD></TD></TR>\n\
+        <TR><TD>0.074984</TD><TD>191712</TD><TD>2672320</TD><TD>Gaia DR3 4687460378402475776</TD><TD>0</TD><TD>17.03273</TD><TD>-72.42607</TD><TD>BE|GCAS|SDOR|WR</TD><TD></TD><TD>15.760</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>15.850</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>B</TD><TD></TD></TR>\n\
+        <TR><TD>0.075972</TD><TD>190542</TD><TD>2671466</TD><TD>Gaia DR3 4687461340460747776</TD><TD>0</TD><TD>16.92673</TD><TD>-72.39807</TD><TD>RRAB</TD><TD></TD><TD>18.690</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>19.670</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>0.529860000000</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.076103</TD><TD>186677</TD><TD>2668637</TD><TD>Gaia DR3 4687437254305163904</TD><TD>0</TD><TD>16.57363</TD><TD>-72.46377</TD><TD>E</TD><TD></TD><TD>16.100</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>16.290</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>1.783400000000</TD><TD></TD><TD>B</TD><TD></TD></TR>\n\
+        <TR><TD>0.076636</TD><TD>186648</TD><TD>2668613</TD><TD>Gaia DR3 4687437254305169024</TD><TD>0</TD><TD>16.57150</TD><TD>-72.46816</TD><TD>BE|GCAS|SDOR|WR</TD><TD></TD><TD>16.510</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>16.600</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>B</TD><TD></TD></TR>\n\
+        <TR><TD>0.076717</TD><TD>186650</TD><TD>2668615</TD><TD>Gaia DR3 4687437254305162880</TD><TD>0</TD><TD>16.57174</TD><TD>-72.46298</TD><TD>BE|GCAS|SDOR|WR</TD><TD></TD><TD>13.200</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>13.370</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>O</TD><TD></TD></TR>\n\
+        <TR><TD>0.078536</TD><TD>190418</TD><TD>2671379</TD><TD>Gaia DR3 4687461336166372864</TD><TD>0</TD><TD>16.91735</TD><TD>-72.39416</TD><TD>DCEPS</TD><TD></TD><TD>15.920</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>16.360</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>1.769850000000</TD><TD></TD><TD>F</TD><TD></TD></TR>\n\
+        <TR><TD>0.078574</TD><TD>191446</TD><TD>2672127</TD><TD>Gaia DR3 4687456667563336064</TD><TD>0</TD><TD>17.00935</TD><TD>-72.52362</TD><TD>E</TD><TD></TD><TD>18.820</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>19.370</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>0.405164000000</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.079419</TD><TD>187603</TD><TD>2669328</TD><TD>Gaia DR3 4687484979984257152</TD><TD>0</TD><TD>16.66239</TD><TD>-72.40545</TD><TD>L</TD><TD></TD><TD>15.440</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>15.620</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>K</TD><TD></TD></TR>\n\
+        <TR><TD>0.079738</TD><TD>186546</TD><TD>2668539</TD><TD>Gaia DR3 4687437254281486080</TD><TD>0</TD><TD>16.56235</TD><TD>-72.47528</TD><TD>VAR</TD><TD></TD><TD>17.300</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>17.960</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>0.819570000000</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.079759</TD><TD>192058</TD><TD>2672576</TD><TD>Gaia DR3 4687456701910913792</TD><TD>0</TD><TD>17.06320</TD><TD>-72.50320</TD><TD>DCEP</TD><TD></TD><TD>13.530</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>14.030</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>30.020000000000</TD><TD></TD><TD>K</TD><TD></TD></TR>\n\
+        <TR><TD>0.080498</TD><TD>192206</TD><TD>2672689</TD><TD>Gaia DR3 4687460099271563008</TD><TD>0</TD><TD>17.07870</TD><TD>-72.44176</TD><TD>E</TD><TD></TD><TD>18.680</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>19.070</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>0.562490000000</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.081835</TD><TD>187976</TD><TD>2669593</TD><TD>Gaia DR3 4687435909996875264</TD><TD>0</TD><TD>16.69913</TD><TD>-72.54010</TD><TD>E</TD><TD></TD><TD>17.680</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>18.090</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>2.711070000000</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.081966</TD><TD>189654</TD><TD>2670819</TD><TD>Gaia DR3 4687484876886840064</TD><TD>0</TD><TD>16.84794</TD><TD>-72.38599</TD><TD>E</TD><TD></TD><TD>16.770</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>17.070</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>0.819550000000</TD><TD></TD><TD>B</TD><TD></TD></TR>\n\
+        <TR><TD>0.082152</TD><TD>188579</TD><TD>2670024</TD><TD>Gaia DR3 4687485014343947008</TD><TD>0</TD><TD>16.75407</TD><TD>-72.38844</TD><TD>BE|GCAS|SDOR|WR</TD><TD></TD><TD>15.580</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>15.660</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>O</TD><TD></TD></TR>\n\
+        <TR><TD>0.082165</TD><TD>190842</TD><TD>2230654</TD><TD>ASASSN-V J010748.90-722342.5</TD><TD>0</TD><TD>16.95374</TD><TD>-72.39514</TD><TD>SR</TD><TD></TD><TD>13.240</TD><TD></TD><TD>g</TD><TD>Y</TD><TD></TD><TD>0.180</TD><TD></TD><TD>g</TD><TD>2458841.64100</TD><TD></TD><TD></TD><TD>275.000000000000</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.086012</TD><TD>191895</TD><TD>2672456</TD><TD>Gaia DR3 4687455911636934016</TD><TD>0</TD><TD>17.04826</TD><TD>-72.52176</TD><TD>DCEP</TD><TD></TD><TD>13.160</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>13.990</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>33.710000000000</TD><TD></TD><TD>A</TD><TD></TD></TR>\n\
+        <TR><TD>0.087556</TD><TD>186359</TD><TD>2668398</TD><TD>Gaia DR3 4687437151225990528</TD><TD>0</TD><TD>16.54464</TD><TD>-72.48996</TD><TD>E</TD><TD></TD><TD>16.900</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>17.010</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>4.411960000000</TD><TD></TD><TD>B</TD><TD></TD></TR>\n\
+        <TR><TD>0.088205</TD><TD>191663</TD><TD>2672282</TD><TD>Gaia DR3 4687455911636697600</TD><TD>0</TD><TD>17.02903</TD><TD>-72.53131</TD><TD>SR|M</TD><TD></TD><TD>15.500</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>16.030</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>301.000000000000</TD><TD></TD><TD>K</TD><TD></TD></TR>\n\
+        <TR><TD>0.090377</TD><TD>190383</TD><TD>8708614</TD><TD>Gaia DR3 4687461404886095872</TD><TD>0</TD><TD>16.91458</TD><TD>-72.38136</TD><TD>E</TD><TD></TD><TD>19.060</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>19.550</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>0.621960000000</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.090392</TD><TD>189056</TD><TD>2670370</TD><TD>Gaia DR3 4687432718819854464</TD><TD>0</TD><TD>16.79471</TD><TD>-72.55759</TD><TD>DCEPS</TD><TD></TD><TD>16.860</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>17.230</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>1.172980000000</TD><TD></TD><TD>F</TD><TD></TD></TR>\n\
+        <TR><TD>0.090901</TD><TD>189541</TD><TD>8708573</TD><TD>Gaia DR3 4687433023786572160</TD><TD>0</TD><TD>16.83862</TD><TD>-72.55850</TD><TD>RRC</TD><TD></TD><TD>19.820</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>20.520</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>0.369108000000</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.091695</TD><TD>191788</TD><TD>2672376</TD><TD>Gaia DR3 4687455842917458432</TD><TD>0</TD><TD>17.03920</TD><TD>-72.53321</TD><TD>BE|GCAS|SDOR|WR</TD><TD></TD><TD>15.510</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>15.580</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>B</TD><TD></TD></TR>\n\
+        <TR><TD>0.091830</TD><TD>192717</TD><TD>2673072</TD><TD>Gaia DR3 4687457182946865408</TD><TD>0</TD><TD>17.12643</TD><TD>-72.45253</TD><TD>BE|GCAS|SDOR|WR</TD><TD></TD><TD>14.730</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>14.790</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>B</TD><TD></TD></TR>\n\
+        <TR><TD>0.092029</TD><TD>191186</TD><TD>2671937</TD><TD>Gaia DR3 4687432375222427136</TD><TD>0</TD><TD>16.98549</TD><TD>-72.54622</TD><TD>SR|M</TD><TD></TD><TD>16.000</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>16.340</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>339.400000000000</TD><TD></TD><TD>K</TD><TD></TD></TR>\n\
+        <TR><TD>0.092231</TD><TD>190896</TD><TD>2671714</TD><TD>Gaia DR3 4687432409582178176</TD><TD>0</TD><TD>16.95871</TD><TD>-72.55083</TD><TD>E</TD><TD></TD><TD>18.330</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>18.440</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>1.089170000000</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.094158</TD><TD>190011</TD><TD>2671079</TD><TD>Gaia DR3 4687508344599736320</TD><TD>0</TD><TD>16.87709</TD><TD>-72.37480</TD><TD>DCEPS</TD><TD></TD><TD>16.400</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>16.950</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>1.078300000000</TD><TD></TD><TD>F</TD><TD></TD></TR>\n\
+        <TR><TD>0.094250</TD><TD>186681</TD><TD>2668641</TD><TD>Gaia DR3 4687484636386897024</TD><TD>0</TD><TD>16.57392</TD><TD>-72.41197</TD><TD>DCEP</TD><TD></TD><TD>16.480</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>17.040</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>1.670210000000</TD><TD></TD><TD>F</TD><TD></TD></TR>\n\
+        <TR><TD>0.094350</TD><TD>186130</TD><TD>2668229</TD><TD>Gaia DR3 4687484464588280832</TD><TD>0</TD><TD>16.52403</TD><TD>-72.44276</TD><TD>SR|M</TD><TD></TD><TD>16.020</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>16.510</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>361.100000000000</TD><TD></TD><TD>M</TD><TD></TD></TR>\n\
+        <TR><TD>0.094750</TD><TD>186884</TD><TD>2668797</TD><TD>Gaia DR3 4687436051690813568</TD><TD>0</TD><TD>16.59473</TD><TD>-72.53207</TD><TD>DCEP</TD><TD></TD><TD>17.050</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>17.790</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>1.501790000000</TD><TD></TD><TD>B</TD><TD></TD></TR>\n\
+        <TR><TD>0.094880</TD><TD>190190</TD><TD>2671210</TD><TD>Gaia DR3 4687432306502991744</TD><TD>0</TD><TD>16.89518</TD><TD>-72.56025</TD><TD>E</TD><TD></TD><TD>16.790</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>16.920</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>0.533050000000</TD><TD></TD><TD>B</TD><TD></TD></TR>\n\
+        <TR><TD>0.096581</TD><TD>192553</TD><TD>2672945</TD><TD>Gaia DR3 4687455945996396928</TD><TD>0</TD><TD>17.11045</TD><TD>-72.51238</TD><TD>BE|GCAS|SDOR|WR</TD><TD></TD><TD>15.890</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>16.030</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>B</TD><TD></TD></TR>\n\
+        <TR><TD>0.097161</TD><TD>190429</TD><TD>2671388</TD><TD>Gaia DR3 4687508344599736192</TD><TD>0</TD><TD>16.91834</TD><TD>-72.37462</TD><TD>L</TD><TD></TD><TD>15.330</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>15.630</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>C</TD><TD></TD></TR>\n\
+        <TR><TD>0.097448</TD><TD>192287</TD><TD>2672750</TD><TD>Gaia DR3 4687460412762176768</TD><TD>0</TD><TD>17.08687</TD><TD>-72.41027</TD><TD>BE|GCAS|SDOR|WR</TD><TD></TD><TD>17.560</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>17.650</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>B</TD><TD></TD></TR>\n\
+        <TR><TD>0.097781</TD><TD>192563</TD><TD>2672954</TD><TD>Gaia DR3 4687460202294554496</TD><TD>0</TD><TD>17.11086</TD><TD>-72.42107</TD><TD>E</TD><TD></TD><TD>18.470</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>19.000</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>1.006440000000</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.097818</TD><TD>186654</TD><TD>2668619</TD><TD>Gaia DR3 4687484636386883840</TD><TD>0</TD><TD>16.57193</TD><TD>-72.40689</TD><TD>L</TD><TD></TD><TD>15.540</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>16.110</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>K</TD><TD></TD></TR>\n\
+        <TR><TD>0.098201</TD><TD>188313</TD><TD>2669834</TD><TD>Gaia DR3 4687432886300204928</TD><TD>0</TD><TD>16.73067</TD><TD>-72.56162</TD><TD>E</TD><TD></TD><TD>18.620</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>18.780</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>0.710130000000</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.098309</TD><TD>185850</TD><TD>2668023</TD><TD>Gaia DR3 4687484155350701056</TD><TD>0</TD><TD>16.49969</TD><TD>-72.47082</TD><TD>E</TD><TD></TD><TD>16.800</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>17.250</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>0.805460000000</TD><TD></TD><TD>B</TD><TD></TD></TR>\n\
+        <TR><TD>0.098721</TD><TD>186265</TD><TD>2668322</TD><TD>Gaia DR3 4687436876348126464</TD><TD>0</TD><TD>16.53715</TD><TD>-72.51458</TD><TD>CEP</TD><TD></TD><TD>16.470</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>17.380</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>0.014797100000</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.098779</TD><TD>191928</TD><TD>2672482</TD><TD>Gaia DR3 4687455838653178752</TD><TD>0</TD><TD>17.05092</TD><TD>-72.53966</TD><TD>DCEP</TD><TD></TD><TD>15.990</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>16.930</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>2.992200000000</TD><TD></TD><TD>F</TD><TD></TD></TR>\n\
+        <TR><TD>0.098887</TD><TD>186356</TD><TD>8708416</TD><TD>Gaia DR3 4687436872077129984</TD><TD>0</TD><TD>16.54451</TD><TD>-72.51881</TD><TD>DSCT|GDOR|SXPHE</TD><TD></TD><TD>20.370</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>20.720</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.099281</TD><TD>185885</TD><TD>2668048</TD><TD>Gaia DR3 4687484430228555008</TD><TD>0</TD><TD>16.50276</TD><TD>-72.44842</TD><TD>DCEP</TD><TD></TD><TD>16.490</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD>17.680</TD><TD></TD><TD>G</TD><TD></TD><TD></TD><TD></TD><TD>1.642260000000</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        </TABLEDATA></DATA>\n<INFO name=\"matches\" value=\"107\">matching records</INFO>\n\
+        \    <INFO name=\"meta\" value=\"message\">      memory restriction caused\
+        \ by sort option (partial sort in bunches of 610820)    </INFO>\n\n<INFO name=\"\
+        Warning\" value=\"+++memory restriction caused by {\\bf sort} option (partial\
+        \ sort in bunches of 610820)\"/>\n  </TABLE>\n</RESOURCE>\n</VOTABLE>\n"
+- request:
+    method: POST
+    uri: https://vizier.cds.unistra.fr/viz-bin/votable
+    body: '-source=B/vsx
+
+      -out.max=unlimited
+
+      -out.all
+
+      -out.add=_r
+
+      -sort=_r
+
+      -c=16.82589675-72.46768171
+
+      -c.rs=10.0
+
+      -out.meta=huUD
+
+      -out.form=mini
+
+      -oc.form=d'
+    headers:
+      User-Agent:
+      - astroquery/0.4.11 Python/3.14.7 (Linux) python-requests/2.34.2
+      Accept-Encoding:
+      - gzip, deflate, zstd
+      Accept:
+      - '*/*'
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '141'
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Connection:
+      - Keep-Alive
+      DocumentRef:
+      - VOTx3729985
+      Server:
+      - Apache/2.4.52 (Ubuntu)
+      Keep-Alive:
+      - timeout=5, max=100
+      Content-Type:
+      - application/x-votable+xml
+      Vary:
+      - Accept-Encoding
+      Access-Control-Allow-Headers:
+      - Origin, X-Requested-With, Content-Type, Accept
+      Content-Disposition:
+      - attachment; filename=vizier_votable.vot
+      Access-Control-Allow-Origin:
+      - '*'
+      Date:
+      - Thu, 01 Oct 2026 09:27:02 GMT
+      Transfer-Encoding:
+      - chunked
+    body:
+      string: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<VOTABLE version=\"1.4\"\
+        \ xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n  xmlns=\"http://www.ivoa.net/xml/VOTable/v1.3\"\
+        \n  xsi:schemaLocation=\"http://www.ivoa.net/xml/VOTable/v1.3 http://www.ivoa.net/xml/VOTable/v1.3\"\
+        >\n <DESCRIPTION>\n   VizieR Astronomical Server vizier.cds.unistra.fr\n \
+        \   Date: 2026-10-01T09:27:02 [V7.6]\n   Explanations and Statistics of UCDs:\t\
+        \t\tSee LINK below\n   In case of problem, please report to:\tcds-question@unistra.fr\n\
+        \ </DESCRIPTION>\n<!-- VOTable description at http://www.ivoa.net/Documents/latest/VOT.html\
+        \ -->\n<INFO name=\"service_protocol\" value=\"ASU\">  IVOID of the protocol\
+        \ through which the data was retrieved</INFO>\n<INFO name=\"request_date\"\
+        \ value=\"2026-10-01T09:27:02\">  Query execution date</INFO>\n<INFO name=\"\
+        request\" value=\"https://vizier.cds.unistra.fr/viz-bin/votable?-oc.form=d&amp;-source=B/vsx&amp;-out.max=unlimited&amp;-out.all&amp;-out.add=_r&amp;-sort=_r&amp;-c=16.82589675-72.46768171&amp;-c.rs=10.0&amp;\"\
+        >  Full request URL (POST)</INFO>\n<INFO name=\"contact\" value=\"cds-question@unistra.fr\"\
+        >  Email or URL to contact publisher</INFO>\n<INFO name=\"server_software\"\
+        \ value=\"VizieR/7.6\">  Software version</INFO>\n<INFO name=\"publisher\"\
+        \ value=\"CDS\">  Data centre that produced the VOTable</INFO>\n<INFO name=\"\
+        header_format\" value=\"mini\"/>\n<INFO name=\"header_format\" value=\"mini\"\
+        />\n<INFO name=\"header_format\" value=\"mini\"/>\n\n<RESOURCE ID=\"yCat_102027\"\
+        \ name=\"B/vsx\" type=\"results\">\n  <DESCRIPTION>AAVSO International Variable\
+        \ Star Index VSX (Watson+, 2006-)</DESCRIPTION>  <INFO name=\"ivoid\" value=\"\
+        ivo://cds.vizier/b/vsx\">    IVOID of underlying data collection  </INFO>\n\
+        \  <INFO name=\"data_ivoid\" value=\"ivo://cds.vizier/b/vsx\">    IVOID of\
+        \ underlying data collection  </INFO>\n  <INFO name=\"creator\" value=\"Watson\
+        \ C.\">    First author or institution  </INFO>\n  <INFO name=\"cites\" value=\"\
+        bibcode:2006SASS...25...47W\">    Article or Data origin sources  </INFO>\n\
+        \  <INFO name=\"journal\" value=\"SASS\">    Journal name  </INFO>\n  <INFO\
+        \ name=\"original_date\" value=\"2006\">    Year of the article publication\
+        \  </INFO>\n  <INFO name=\"reference_url\" value=\"https://cdsarc.cds.unistra.fr/viz-bin/cat/B/vsx\"\
+        >    Dataset landing page  </INFO>\n  <INFO name=\"publication_date\" value=\"\
+        2026-08-11\">    Date of first publication in the data centre  </INFO>\n \
+        \ <INFO name=\"rights_uri\" value=\"https://cds.unistra.fr/vizier-org/licences_vizier.html\"\
+        >    Licence URI  </INFO>\n\n  <COOSYS ID=\"J2000\" system=\"eq_FK5\" equinox=\"\
+        J2000\"/>\n  <TIMESYS ID=\"time_1\" refposition=\"UNKNOWN\" timeorigin=\"\
+        0.000000\" timescale=\"UNKNOWN\"/>\n  <TABLE ID=\"B_vsx_vsx\" name=\"B/vsx/vsx\"\
+        >\n    <DESCRIPTION>Variable Star indeX, Version 2026-08-09 (\\originalcolumnnames)</DESCRIPTION>\n\
+        \    <!-- RowName: ${OID} -->\n    <!-- Definitions of GROUPs and FIELDs -->\n\
+        \    <FIELD name=\"_r\" ucd=\"POS_ANG_DIST_GENERAL\" datatype=\"double\" width=\"\
+        5\" precision=\"2\">\n      <DESCRIPTION>Distance from center ( 16.82590-72.46768)[FK5/J2000]</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"recno\" ucd=\"RECORD\" datatype=\"int\" width=\"\
+        8\">\n      <DESCRIPTION>Record number assigned by the VizieR team. Should\
+        \ Not be used for identification.</DESCRIPTION>\n    </FIELD>\n    <FIELD\
+        \ name=\"OID\" ucd=\"ID_NUMBER\" datatype=\"int\" width=\"8\">\n      <DESCRIPTION>Internal\
+        \ identifier, can be used to link out to the VSX database (1)</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"Name\" datatype=\"char\" arraysize=\"30\"\
+        >\n      <DESCRIPTION>Variable star identifier</DESCRIPTION>\n      <VALUES\
+        \ null=\" \" />\n    </FIELD>\n    <FIELD name=\"V\" datatype=\"unsignedByte\"\
+        \ width=\"1\">\n      <DESCRIPTION>Variability flag (2) (VarFlag)</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"RAJ2000\" ucd=\"POS_EQ_RA_MAIN\" ref=\"J2000\"\
+        \ datatype=\"float\" width=\"9\" precision=\"5\" unit=\"deg\">\n      <DESCRIPTION>[0.0/360.0]\
+        \ Right ascension (J2000)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"\
+        DEJ2000\" ucd=\"POS_EQ_DEC_MAIN\" ref=\"J2000\" datatype=\"float\" width=\"\
+        9\" precision=\"5\" unit=\"deg\">\n      <DESCRIPTION>[-89.93/89.91] Declination\
+        \ (J2000)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"Type\" datatype=\"\
+        char\" arraysize=\"30\">\n      <DESCRIPTION>? Variability type, ariability\
+        \ type, as in GCVS catalog Variability type (see details of VSX type list)</DESCRIPTION>\n\
+        \      <VALUES null=\" \" />\n    </FIELD>\n    <FIELD name=\"l_max\" datatype=\"\
+        char\" arraysize=\"1\">\n      <DESCRIPTION>? Limit flag on max (LimitFlagOnMax)</DESCRIPTION>\n\
+        \      <VALUES null=\" \" />\n    </FIELD>\n    <FIELD name=\"max\" datatype=\"\
+        double\" width=\"7\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>[-6.0/25.2]?\
+        \ Magnitude at maximum, or amplitude (MagMax)</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"u_max\" datatype=\"char\"\
+        \ arraysize=\"1\">\n      <DESCRIPTION>? Uncertainty flag on max (MaxUncertaintyFlag)</DESCRIPTION>\n\
+        \      <VALUES null=\" \" />\n    </FIELD>\n    <FIELD name=\"n_max\" datatype=\"\
+        char\" arraysize=\"10\">\n      <DESCRIPTION>? Passband on max magnitude (4)\
+        \ (MaxPassband)</DESCRIPTION>\n      <VALUES null=\" \" />\n    </FIELD>\n\
+        \    <FIELD name=\"f_min\" datatype=\"char\" arraysize=\"1\">\n      <DESCRIPTION>?\
+        \ Flag to indicate an amplitude (MinIsAmplitude)</DESCRIPTION>\n      <VALUES\
+        \ null=\" \" />\n    </FIELD>\n    <FIELD name=\"l_min\" datatype=\"char\"\
+        \ arraysize=\"1\">\n      <DESCRIPTION>? Limit flag on min (LimitFlagOnMin)</DESCRIPTION>\n\
+        \      <VALUES null=\" \" />\n    </FIELD>\n    <FIELD name=\"min\" datatype=\"\
+        double\" width=\"7\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>[-0.02/28.0]?\
+        \ Magnitude at minimum, or amplitude (MagMin)</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"u_min\" datatype=\"char\"\
+        \ arraysize=\"1\">\n      <DESCRIPTION>? Uncertainty flag on min (MinUncertaintyFlag)</DESCRIPTION>\n\
+        \      <VALUES null=\" \" />\n    </FIELD>\n    <FIELD name=\"n_min\" datatype=\"\
+        char\" arraysize=\"8\">\n      <DESCRIPTION>? Passband on min magnitude (MinPassband)</DESCRIPTION>\n\
+        \      <VALUES null=\" \" />\n    </FIELD>\n    <FIELD name=\"Epoch\" ref=\"\
+        time_1\" datatype=\"double\" width=\"14\" precision=\"5\" unit=\"d\">\n  \
+        \    <DESCRIPTION>? Epoch of maximum or minimum (HJD)</DESCRIPTION>\n    \
+        \  <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"u_Epoch\" datatype=\"\
+        char\" arraysize=\"1\">\n      <DESCRIPTION>? Uncertainty flag on epoch (EpochUncertaintyFlag)</DESCRIPTION>\n\
+        \      <VALUES null=\" \" />\n    </FIELD>\n    <FIELD name=\"l_Period\" datatype=\"\
+        char\" arraysize=\"1\">\n      <DESCRIPTION>? Limit flag on period (3) (LimitFlagOnPeriod)</DESCRIPTION>\n\
+        \      <VALUES null=\" \" />\n    </FIELD>\n    <FIELD name=\"Period\" datatype=\"\
+        double\" width=\"19\" precision=\"12\" unit=\"d\">\n      <DESCRIPTION>[0.0/27400.0]?\
+        \ Period of the variable in days</DESCRIPTION>\n      <VALUES null=\"NaN\"\
+        \ />\n    </FIELD>\n    <FIELD name=\"u_Period\" datatype=\"char\" arraysize=\"\
+        1\">\n      <DESCRIPTION>? Uncertainty flag on Period (3) (PeriodUncertaintyFlag)</DESCRIPTION>\n\
+        \      <VALUES null=\" \" />\n    </FIELD>\n    <FIELD name=\"Sp\" ucd=\"\
+        SPECT_TYPE_MK\" datatype=\"char\" arraysize=\"29\">\n      <DESCRIPTION>?\
+        \ Spectral type (SpectralType)</DESCRIPTION>\n      <VALUES null=\" \" />\n\
+        \    </FIELD>\n    <FIELD name=\"n_OID\" datatype=\"char\" arraysize=\"1\"\
+        >\n      <DESCRIPTION>B indicates bibliography (in file \"refs.dat\")</DESCRIPTION>\n\
+        <!-- {\\bf B} indicates bibliography (in file \"refs.dat\") -->\n\n      <VALUES\
+        \ null=\" \" />\n    </FIELD>\n<DATA><TABLEDATA>\n<TR><TD>0.04</TD><TD>189408</TD><TD>234935</TD><TD>SMC\
+        \ V2018</TD><TD>0</TD><TD>16.82592</TD><TD>-72.46769</TD><TD>SDOR</TD><TD></TD><TD>9.500</TD><TD></TD><TD>V</TD><TD></TD><TD></TD><TD>10.730</TD><TD></TD><TD>V</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>B8Ia-A3Ia+</TD><TD></TD></TR>\n\
+        </TABLEDATA></DATA>\n<INFO name=\"matches\" value=\"1\">matching records</INFO>\n\
+        \    <INFO name=\"meta\" value=\"message\">      memory restriction caused\
+        \ by sort option (partial sort in bunches of 610820)    </INFO>\n\n<INFO name=\"\
+        Warning\" value=\"+++memory restriction caused by {\\bf sort} option (partial\
+        \ sort in bunches of 610820)\"/>\n  </TABLE>\n</RESOURCE>\n</VOTABLE>\n"
