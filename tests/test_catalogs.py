@@ -327,7 +327,7 @@ class Test_SourcesCatalog_Conformance:
 
     def test_sourcescatalog_ensure_mag_dict(self):
         with pytest.raises(TypeError, match='mag must be a dict'):
-            s = SourcesCatalog(ids=sources['id'],
+            _s = SourcesCatalog(ids=sources['id'],
                                ra=sources['ra'],
                                dec=sources['dec'],
                                unit=u.degree,
@@ -335,7 +335,7 @@ class Test_SourcesCatalog_Conformance:
 
     def test_sourcescatalog_ensure_mag_lenght(self):
         with pytest.raises(ValueError, match='Lengths of magnitudes must be'):
-            s = SourcesCatalog(ids=sources['id'],
+            _s = SourcesCatalog(ids=sources['id'],
                                ra=sources['ra'],
                                dec=sources['dec'],
                                unit=u.degree,

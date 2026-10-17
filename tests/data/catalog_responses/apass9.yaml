@@ -1,0 +1,1079 @@
+version: 1
+interactions:
+- request:
+    method: POST
+    uri: https://vizier.cds.unistra.fr/viz-bin/votable
+    body: '-source=II/336/apass9
+
+      -out.max=unlimited
+
+      -out.all
+
+      -out.add=_r
+
+      -sort=_r
+
+      -c=101.28716127-16.71612178
+
+      -c.rd=0.05
+
+      -out.meta=huUD
+
+      -out.form=mini
+
+      -oc.form=d'
+    headers:
+      User-Agent:
+      - astroquery/0.4.11 Python/3.14.7 (Linux) python-requests/2.34.2
+      Accept-Encoding:
+      - gzip, deflate, zstd
+      Accept:
+      - '*/*'
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '150'
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Connection:
+      - Keep-Alive
+      DocumentRef:
+      - VOTx3712107
+      Server:
+      - Apache/2.4.52 (Ubuntu)
+      Keep-Alive:
+      - timeout=5, max=100
+      Content-Type:
+      - application/x-votable+xml
+      Vary:
+      - Accept-Encoding
+      Access-Control-Allow-Headers:
+      - Origin, X-Requested-With, Content-Type, Accept
+      Content-Disposition:
+      - attachment; filename=vizier_votable.vot
+      Access-Control-Allow-Origin:
+      - '*'
+      Date:
+      - Thu, 01 Oct 2026 09:25:43 GMT
+      Transfer-Encoding:
+      - chunked
+    body:
+      string: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<VOTABLE version=\"1.4\"\
+        \ xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n  xmlns=\"http://www.ivoa.net/xml/VOTable/v1.3\"\
+        \n  xsi:schemaLocation=\"http://www.ivoa.net/xml/VOTable/v1.3 http://www.ivoa.net/xml/VOTable/v1.3\"\
+        >\n <DESCRIPTION>\n   VizieR Astronomical Server vizier.cds.unistra.fr\n \
+        \   Date: 2026-10-01T09:25:43 [V7.6]\n   Explanations and Statistics of UCDs:\t\
+        \t\tSee LINK below\n   In case of problem, please report to:\tcds-question@unistra.fr\n\
+        \ </DESCRIPTION>\n<!-- VOTable description at http://www.ivoa.net/Documents/latest/VOT.html\
+        \ -->\n<INFO name=\"service_protocol\" value=\"ASU\">  IVOID of the protocol\
+        \ through which the data was retrieved</INFO>\n<INFO name=\"request_date\"\
+        \ value=\"2026-10-01T09:25:43\">  Query execution date</INFO>\n<INFO name=\"\
+        request\" value=\"https://vizier.cds.unistra.fr/viz-bin/votable?-oc.form=d&amp;-source=II/336/apass9&amp;-out.max=unlimited&amp;-out.all&amp;-out.add=_r&amp;-sort=_r&amp;-c=101.28716127-16.71612178&amp;-c.rd=0.05&amp;\"\
+        >  Full request URL (POST)</INFO>\n<INFO name=\"contact\" value=\"cds-question@unistra.fr\"\
+        >  Email or URL to contact publisher</INFO>\n<INFO name=\"server_software\"\
+        \ value=\"VizieR/7.6\">  Software version</INFO>\n<INFO name=\"publisher\"\
+        \ value=\"CDS\">  Data centre that produced the VOTable</INFO>\n<INFO name=\"\
+        header_format\" value=\"mini\"/>\n<INFO name=\"header_format\" value=\"mini\"\
+        />\n\n<RESOURCE ID=\"yCat_2336\" name=\"II/336\" type=\"results\">\n  <DESCRIPTION>AAVSO\
+        \ Photometric All Sky Survey (APASS) DR9 (Henden+, 2016)</DESCRIPTION>  <INFO\
+        \ name=\"ivoid\" value=\"ivo://cds.vizier/ii/336\">    IVOID of underlying\
+        \ data collection  </INFO>\n  <INFO name=\"data_ivoid\" value=\"ivo://cds.vizier/ii/336\"\
+        >    IVOID of underlying data collection  </INFO>\n  <INFO name=\"creator\"\
+        \ value=\"Henden A.A.\">    First author or institution  </INFO>\n  <INFO\
+        \ name=\"cites\" value=\"bibcode:2015AAS...22533616H\">    Article or Data\
+        \ origin sources  </INFO>\n  <INFO name=\"journal\" value=\"AAS\">    Journal\
+        \ name  </INFO>\n  <INFO name=\"original_date\" value=\"2015\">    Year of\
+        \ the article publication  </INFO>\n  <INFO name=\"reference_url\" value=\"\
+        https://cdsarc.cds.unistra.fr/viz-bin/cat/II/336\">    Dataset landing page\
+        \  </INFO>\n  <INFO name=\"publication_date\" value=\"2024-10-24\">    Date\
+        \ of first publication in the data centre  </INFO>\n  <INFO name=\"rights_uri\"\
+        \ value=\"https://cds.unistra.fr/vizier-org/licences_vizier.html\">    Licence\
+        \ URI  </INFO>\n\n  <COOSYS ID=\"J2000\" system=\"eq_FK5\" equinox=\"J2000\"\
+        />\n  <TABLE ID=\"II_336_apass9\" name=\"II/336/apass9\">\n    <DESCRIPTION>The\
+        \ APASS catalog, output (on a total of 62 million sources)</DESCRIPTION>\n\
+        <!-- The APASS catalog -->\n\n    <!-- RowName: -c=${$poseq}&-c.rs=0.004 -->\n\
+        \    <!-- Definitions of GROUPs and FIELDs -->\n    <FIELD name=\"_r\" ucd=\"\
+        POS_ANG_DIST_GENERAL\" datatype=\"double\" width=\"8\" precision=\"6\">\n\
+        \      <DESCRIPTION>Distance from center (101.287161-16.716122)[FK5/J2000]</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"RAJ2000\" ucd=\"POS_EQ_RA_MAIN\" ref=\"J2000\"\
+        \ datatype=\"double\" width=\"10\" precision=\"6\" unit=\"deg\">\n      <DESCRIPTION>Right\
+        \ ascension in decimal degrees (J2000)</DESCRIPTION>\n    </FIELD>\n    <FIELD\
+        \ name=\"DEJ2000\" ucd=\"POS_EQ_DEC_MAIN\" ref=\"J2000\" datatype=\"double\"\
+        \ width=\"10\" precision=\"6\" unit=\"deg\">\n      <DESCRIPTION>Declination\
+        \ in decimal degrees (J2000)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"\
+        e_RAJ2000\" ucd=\"ERROR\" datatype=\"float\" width=\"6\" precision=\"3\" unit=\"\
+        arcsec\">\n      <DESCRIPTION>[0/2.4] RA uncertainty</DESCRIPTION>\n    </FIELD>\n\
+        \    <FIELD name=\"e_DEJ2000\" ucd=\"ERROR\" datatype=\"float\" width=\"6\"\
+        \ precision=\"3\" unit=\"arcsec\">\n      <DESCRIPTION>[0/2.4] DEC uncertainty</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"Field\" ucd=\"ID_FIELD\" datatype=\"long\"\
+        \ width=\"10\">\n      <DESCRIPTION>[20110001/9999988888] Field name</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"nobs\" ucd=\"NUMBER\" datatype=\"short\"\
+        \ width=\"3\">\n      <DESCRIPTION>[2/387] Number of observed nights</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"mobs\" ucd=\"NUMBER\" datatype=\"short\"\
+        \ width=\"4\">\n      <DESCRIPTION>[2/3476] Number of images for this field,\
+        \ usually nobs*5</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"B-V\" ucd=\"\
+        PHOT_JHN_B-V\" datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\"\
+        >\n      <DESCRIPTION>[-7.5/13]? B-V color index</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_B-V\" ucd=\"ERROR\" datatype=\"\
+        float\" width=\"6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>[0/10.1]?\
+        \ B-V uncertainty</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"Vmag\" ucd=\"PHOT_JHN_V\" datatype=\"float\" width=\"6\"\
+        \ precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>[5.5/27.4]? Johnson V-band\
+        \ magnitude</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n    </FIELD>\n \
+        \   <FIELD name=\"e_Vmag\" ucd=\"ERROR\" datatype=\"float\" width=\"6\" precision=\"\
+        3\" unit=\"mag\">\n      <DESCRIPTION>[0/7]? Vmag uncertainty</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"u_e_Vmag\"\
+        \ ucd=\"CODE_ERROR\" datatype=\"unsignedByte\" width=\"1\">\n      <DESCRIPTION>[0/1]?\
+        \ Uncertainty flag on e_Vmag (1)</DESCRIPTION>\n      <VALUES null=\"255\"\
+        \ />\n    </FIELD>\n    <FIELD name=\"Bmag\" ucd=\"PHOT_JHN_B\" datatype=\"\
+        float\" width=\"6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>[5.4/27.3]?\
+        \ Johnson B-band magnitude</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n\
+        \    </FIELD>\n    <FIELD name=\"e_Bmag\" ucd=\"ERROR\" datatype=\"float\"\
+        \ width=\"6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>[0/10]? Bmag\
+        \ uncertainty</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"u_e_Bmag\" ucd=\"CODE_ERROR\" datatype=\"unsignedByte\"\
+        \ width=\"1\">\n      <DESCRIPTION>[0/1]? Uncertainty flag on e_Bmag (1)</DESCRIPTION>\n\
+        \      <VALUES null=\"255\" />\n    </FIELD>\n    <FIELD name=\"g'mag\" ucd=\"\
+        PHOT_SDSS_G\" datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\"\
+        >\n      <DESCRIPTION>[5.9/24.2]? g'-band AB magnitude, Sloan filter</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_g'mag\"\
+        \ ucd=\"ERROR\" datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\"\
+        >\n      <DESCRIPTION>[0/9.7]? g'mag uncertainty</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"u_e_g'mag\" ucd=\"CODE_ERROR\"\
+        \ datatype=\"unsignedByte\" width=\"1\">\n      <DESCRIPTION>[0/1]? Uncertainty\
+        \ flag on e_g'mag (1)</DESCRIPTION>\n      <VALUES null=\"255\" />\n    </FIELD>\n\
+        \    <FIELD name=\"r'mag\" ucd=\"PHOT_SDSS_R\" datatype=\"float\" width=\"\
+        6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>[5.1/23.9]? r'-band\
+        \ AB magnitude, Sloan filter</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n\
+        \    </FIELD>\n    <FIELD name=\"e_r'mag\" ucd=\"ERROR\" datatype=\"float\"\
+        \ width=\"6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>[0/6.5]? r'mag\
+        \ uncertainty</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"u_e_r'mag\" ucd=\"CODE_ERROR\" datatype=\"unsignedByte\"\
+        \ width=\"1\">\n      <DESCRIPTION>[0/1]? Uncertainty flag on e_r'mag (1)</DESCRIPTION>\n\
+        \      <VALUES null=\"255\" />\n    </FIELD>\n    <FIELD name=\"i'mag\" ucd=\"\
+        PHOT_SDSS_I\" datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\"\
+        >\n      <DESCRIPTION>[4.2/29.1]? i'-band AB magnitude, Sloan filter</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_i'mag\"\
+        \ ucd=\"ERROR\" datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\"\
+        >\n      <DESCRIPTION>[0/9.6]? i'mag uncertainty</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"u_e_i'mag\" ucd=\"CODE_ERROR\"\
+        \ datatype=\"unsignedByte\" width=\"1\">\n      <DESCRIPTION>[0/1]? Uncertainty\
+        \ flag on e_i'mag (1)</DESCRIPTION>\n      <VALUES null=\"255\" />\n    </FIELD>\n\
+        <DATA><TABLEDATA>\n<TR><TD>0.029290</TD><TD>101.314782</TD><TD>-16.703550</TD><TD>1.202</TD><TD>1.391</TD><TD>20160966</TD><TD>2</TD><TD>7</TD><TD>-0.113</TD><TD>0.049</TD><TD>10.545</TD><TD>0.017</TD><TD>0</TD><TD>10.431</TD><TD>0.046</TD><TD>0</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>10.848</TD><TD>0.073</TD><TD>0</TD></TR>\n\
+        <TR><TD>0.047963</TD><TD>101.248098</TD><TD>-16.686113</TD><TD>1.222</TD><TD>0.757</TD><TD>20160966</TD><TD>2</TD><TD>4</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        </TABLEDATA></DATA>\n<INFO name=\"matches\" value=\"2\">matching records</INFO>\n\
+        \    <INFO name=\"meta\" value=\"message\">      memory restriction caused\
+        \ by sort option (partial sort in bunches of 699050)    </INFO>\n\n<INFO name=\"\
+        Warning\" value=\"+++memory restriction caused by {\\bf sort} option (partial\
+        \ sort in bunches of 699050)\"/>\n  </TABLE>\n</RESOURCE>\n</VOTABLE>\n"
+- request:
+    method: POST
+    uri: https://vizier.cds.unistra.fr/viz-bin/votable
+    body: '-source=II/336/apass9
+
+      -out.max=unlimited
+
+      -out.all
+
+      -out.add=_r
+
+      -sort=_r
+
+      -c=2.71676018-54.29064769
+
+      -c.rd=0.1
+
+      -out.meta=huUD
+
+      -out.form=mini
+
+      -oc.form=d'
+    headers:
+      User-Agent:
+      - astroquery/0.4.11 Python/3.14.7 (Linux) python-requests/2.34.2
+      Accept-Encoding:
+      - gzip, deflate, zstd
+      Accept:
+      - '*/*'
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '147'
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Connection:
+      - Keep-Alive
+      DocumentRef:
+      - VOTx3712758
+      Server:
+      - Apache/2.4.52 (Ubuntu)
+      Keep-Alive:
+      - timeout=5, max=100
+      Content-Type:
+      - application/x-votable+xml
+      Vary:
+      - Accept-Encoding
+      Access-Control-Allow-Headers:
+      - Origin, X-Requested-With, Content-Type, Accept
+      Content-Disposition:
+      - attachment; filename=vizier_votable.vot
+      Access-Control-Allow-Origin:
+      - '*'
+      Date:
+      - Thu, 01 Oct 2026 09:25:46 GMT
+      Transfer-Encoding:
+      - chunked
+    body:
+      string: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<VOTABLE version=\"1.4\"\
+        \ xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n  xmlns=\"http://www.ivoa.net/xml/VOTable/v1.3\"\
+        \n  xsi:schemaLocation=\"http://www.ivoa.net/xml/VOTable/v1.3 http://www.ivoa.net/xml/VOTable/v1.3\"\
+        >\n <DESCRIPTION>\n   VizieR Astronomical Server vizier.cds.unistra.fr\n \
+        \   Date: 2026-10-01T09:25:46 [V7.6]\n   Explanations and Statistics of UCDs:\t\
+        \t\tSee LINK below\n   In case of problem, please report to:\tcds-question@unistra.fr\n\
+        \ </DESCRIPTION>\n<!-- VOTable description at http://www.ivoa.net/Documents/latest/VOT.html\
+        \ -->\n<INFO name=\"service_protocol\" value=\"ASU\">  IVOID of the protocol\
+        \ through which the data was retrieved</INFO>\n<INFO name=\"request_date\"\
+        \ value=\"2026-10-01T09:25:46\">  Query execution date</INFO>\n<INFO name=\"\
+        request\" value=\"https://vizier.cds.unistra.fr/viz-bin/votable?-oc.form=d&amp;-source=II/336/apass9&amp;-out.max=unlimited&amp;-out.all&amp;-out.add=_r&amp;-sort=_r&amp;-c=2.71676018-54.29064769&amp;-c.rd=0.1&amp;\"\
+        >  Full request URL (POST)</INFO>\n<INFO name=\"contact\" value=\"cds-question@unistra.fr\"\
+        >  Email or URL to contact publisher</INFO>\n<INFO name=\"server_software\"\
+        \ value=\"VizieR/7.6\">  Software version</INFO>\n<INFO name=\"publisher\"\
+        \ value=\"CDS\">  Data centre that produced the VOTable</INFO>\n<INFO name=\"\
+        header_format\" value=\"mini\"/>\n<INFO name=\"header_format\" value=\"mini\"\
+        />\n\n<RESOURCE ID=\"yCat_2336\" name=\"II/336\" type=\"results\">\n  <DESCRIPTION>AAVSO\
+        \ Photometric All Sky Survey (APASS) DR9 (Henden+, 2016)</DESCRIPTION>  <INFO\
+        \ name=\"ivoid\" value=\"ivo://cds.vizier/ii/336\">    IVOID of underlying\
+        \ data collection  </INFO>\n  <INFO name=\"data_ivoid\" value=\"ivo://cds.vizier/ii/336\"\
+        >    IVOID of underlying data collection  </INFO>\n  <INFO name=\"creator\"\
+        \ value=\"Henden A.A.\">    First author or institution  </INFO>\n  <INFO\
+        \ name=\"cites\" value=\"bibcode:2015AAS...22533616H\">    Article or Data\
+        \ origin sources  </INFO>\n  <INFO name=\"journal\" value=\"AAS\">    Journal\
+        \ name  </INFO>\n  <INFO name=\"original_date\" value=\"2015\">    Year of\
+        \ the article publication  </INFO>\n  <INFO name=\"reference_url\" value=\"\
+        https://cdsarc.cds.unistra.fr/viz-bin/cat/II/336\">    Dataset landing page\
+        \  </INFO>\n  <INFO name=\"publication_date\" value=\"2024-10-24\">    Date\
+        \ of first publication in the data centre  </INFO>\n  <INFO name=\"rights_uri\"\
+        \ value=\"https://cds.unistra.fr/vizier-org/licences_vizier.html\">    Licence\
+        \ URI  </INFO>\n\n  <COOSYS ID=\"J2000\" system=\"eq_FK5\" equinox=\"J2000\"\
+        />\n  <TABLE ID=\"II_336_apass9\" name=\"II/336/apass9\">\n    <DESCRIPTION>The\
+        \ APASS catalog, output (on a total of 62 million sources)</DESCRIPTION>\n\
+        <!-- The APASS catalog -->\n\n    <!-- RowName: -c=${$poseq}&-c.rs=0.004 -->\n\
+        \    <!-- Definitions of GROUPs and FIELDs -->\n    <FIELD name=\"_r\" ucd=\"\
+        POS_ANG_DIST_GENERAL\" datatype=\"double\" width=\"8\" precision=\"6\">\n\
+        \      <DESCRIPTION>Distance from center (002.716760-54.290648)[FK5/J2000]</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"RAJ2000\" ucd=\"POS_EQ_RA_MAIN\" ref=\"J2000\"\
+        \ datatype=\"double\" width=\"10\" precision=\"6\" unit=\"deg\">\n      <DESCRIPTION>Right\
+        \ ascension in decimal degrees (J2000)</DESCRIPTION>\n    </FIELD>\n    <FIELD\
+        \ name=\"DEJ2000\" ucd=\"POS_EQ_DEC_MAIN\" ref=\"J2000\" datatype=\"double\"\
+        \ width=\"10\" precision=\"6\" unit=\"deg\">\n      <DESCRIPTION>Declination\
+        \ in decimal degrees (J2000)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"\
+        e_RAJ2000\" ucd=\"ERROR\" datatype=\"float\" width=\"6\" precision=\"3\" unit=\"\
+        arcsec\">\n      <DESCRIPTION>[0/2.4] RA uncertainty</DESCRIPTION>\n    </FIELD>\n\
+        \    <FIELD name=\"e_DEJ2000\" ucd=\"ERROR\" datatype=\"float\" width=\"6\"\
+        \ precision=\"3\" unit=\"arcsec\">\n      <DESCRIPTION>[0/2.4] DEC uncertainty</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"Field\" ucd=\"ID_FIELD\" datatype=\"long\"\
+        \ width=\"10\">\n      <DESCRIPTION>[20110001/9999988888] Field name</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"nobs\" ucd=\"NUMBER\" datatype=\"short\"\
+        \ width=\"3\">\n      <DESCRIPTION>[2/387] Number of observed nights</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"mobs\" ucd=\"NUMBER\" datatype=\"short\"\
+        \ width=\"4\">\n      <DESCRIPTION>[2/3476] Number of images for this field,\
+        \ usually nobs*5</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"B-V\" ucd=\"\
+        PHOT_JHN_B-V\" datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\"\
+        >\n      <DESCRIPTION>[-7.5/13]? B-V color index</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_B-V\" ucd=\"ERROR\" datatype=\"\
+        float\" width=\"6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>[0/10.1]?\
+        \ B-V uncertainty</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"Vmag\" ucd=\"PHOT_JHN_V\" datatype=\"float\" width=\"6\"\
+        \ precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>[5.5/27.4]? Johnson V-band\
+        \ magnitude</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n    </FIELD>\n \
+        \   <FIELD name=\"e_Vmag\" ucd=\"ERROR\" datatype=\"float\" width=\"6\" precision=\"\
+        3\" unit=\"mag\">\n      <DESCRIPTION>[0/7]? Vmag uncertainty</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"u_e_Vmag\"\
+        \ ucd=\"CODE_ERROR\" datatype=\"unsignedByte\" width=\"1\">\n      <DESCRIPTION>[0/1]?\
+        \ Uncertainty flag on e_Vmag (1)</DESCRIPTION>\n      <VALUES null=\"255\"\
+        \ />\n    </FIELD>\n    <FIELD name=\"Bmag\" ucd=\"PHOT_JHN_B\" datatype=\"\
+        float\" width=\"6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>[5.4/27.3]?\
+        \ Johnson B-band magnitude</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n\
+        \    </FIELD>\n    <FIELD name=\"e_Bmag\" ucd=\"ERROR\" datatype=\"float\"\
+        \ width=\"6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>[0/10]? Bmag\
+        \ uncertainty</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"u_e_Bmag\" ucd=\"CODE_ERROR\" datatype=\"unsignedByte\"\
+        \ width=\"1\">\n      <DESCRIPTION>[0/1]? Uncertainty flag on e_Bmag (1)</DESCRIPTION>\n\
+        \      <VALUES null=\"255\" />\n    </FIELD>\n    <FIELD name=\"g'mag\" ucd=\"\
+        PHOT_SDSS_G\" datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\"\
+        >\n      <DESCRIPTION>[5.9/24.2]? g'-band AB magnitude, Sloan filter</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_g'mag\"\
+        \ ucd=\"ERROR\" datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\"\
+        >\n      <DESCRIPTION>[0/9.7]? g'mag uncertainty</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"u_e_g'mag\" ucd=\"CODE_ERROR\"\
+        \ datatype=\"unsignedByte\" width=\"1\">\n      <DESCRIPTION>[0/1]? Uncertainty\
+        \ flag on e_g'mag (1)</DESCRIPTION>\n      <VALUES null=\"255\" />\n    </FIELD>\n\
+        \    <FIELD name=\"r'mag\" ucd=\"PHOT_SDSS_R\" datatype=\"float\" width=\"\
+        6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>[5.1/23.9]? r'-band\
+        \ AB magnitude, Sloan filter</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n\
+        \    </FIELD>\n    <FIELD name=\"e_r'mag\" ucd=\"ERROR\" datatype=\"float\"\
+        \ width=\"6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>[0/6.5]? r'mag\
+        \ uncertainty</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"u_e_r'mag\" ucd=\"CODE_ERROR\" datatype=\"unsignedByte\"\
+        \ width=\"1\">\n      <DESCRIPTION>[0/1]? Uncertainty flag on e_r'mag (1)</DESCRIPTION>\n\
+        \      <VALUES null=\"255\" />\n    </FIELD>\n    <FIELD name=\"i'mag\" ucd=\"\
+        PHOT_SDSS_I\" datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\"\
+        >\n      <DESCRIPTION>[4.2/29.1]? i'-band AB magnitude, Sloan filter</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_i'mag\"\
+        \ ucd=\"ERROR\" datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\"\
+        >\n      <DESCRIPTION>[0/9.6]? i'mag uncertainty</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"u_e_i'mag\" ucd=\"CODE_ERROR\"\
+        \ datatype=\"unsignedByte\" width=\"1\">\n      <DESCRIPTION>[0/1]? Uncertainty\
+        \ flag on e_i'mag (1)</DESCRIPTION>\n      <VALUES null=\"255\" />\n    </FIELD>\n\
+        <DATA><TABLEDATA>\n<TR><TD>0.000007</TD><TD>002.716748</TD><TD>-54.290647</TD><TD>0.187</TD><TD>0.224</TD><TD>20132335</TD><TD>13</TD><TD>57</TD><TD>0.149</TD><TD>0.053</TD><TD>10.626</TD><TD>0.043</TD><TD>0</TD><TD>10.775</TD><TD>0.031</TD><TD>0</TD><TD>10.783</TD><TD>0.104</TD><TD>0</TD><TD>10.675</TD><TD>0.047</TD><TD>0</TD><TD>10.726</TD><TD>0.077</TD><TD>0</TD></TR>\n\
+        <TR><TD>0.016984</TD><TD>002.698086</TD><TD>-54.303674</TD><TD>0.919</TD><TD>0.785</TD><TD>20162334</TD><TD>4</TD><TD>13</TD><TD>1.167</TD><TD>0.046</TD><TD>16.748</TD><TD>0.022</TD><TD>0</TD><TD>17.915</TD><TD>0.041</TD><TD>0</TD><TD>17.313</TD><TD>0.151</TD><TD>0</TD><TD>16.378</TD><TD>0.082</TD><TD>0</TD><TD>15.908</TD><TD>0.000</TD><TD>1</TD></TR>\n\
+        <TR><TD>0.017473</TD><TD>002.746172</TD><TD>-54.287396</TD><TD>0.786</TD><TD>0.781</TD><TD>20162334</TD><TD>11</TD><TD>52</TD><TD>0.934</TD><TD>0.115</TD><TD>15.730</TD><TD>0.090</TD><TD>0</TD><TD>16.664</TD><TD>0.071</TD><TD>0</TD><TD>16.165</TD><TD>0.040</TD><TD>0</TD><TD>15.438</TD><TD>0.065</TD><TD>0</TD><TD>15.041</TD><TD>0.109</TD><TD>0</TD></TR>\n\
+        <TR><TD>0.042589</TD><TD>002.702500</TD><TD>-54.332416</TD><TD>0.869</TD><TD>1.207</TD><TD>20162334</TD><TD>2</TD><TD>10</TD><TD>0.785</TD><TD>0.106</TD><TD>16.264</TD><TD>0.039</TD><TD>0</TD><TD>17.049</TD><TD>0.098</TD><TD>0</TD><TD>16.560</TD><TD>0.067</TD><TD>0</TD><TD>16.156</TD><TD>0.048</TD><TD>0</TD><TD>15.951</TD><TD>0.023</TD><TD>0</TD></TR>\n\
+        <TR><TD>0.042798</TD><TD>002.702747</TD><TD>-54.332658</TD><TD>0.946</TD><TD>1.087</TD><TD>20162334</TD><TD>6</TD><TD>13</TD><TD>0.592</TD><TD>0.209</TD><TD>16.310</TD><TD>0.100</TD><TD>0</TD><TD>16.902</TD><TD>0.184</TD><TD>0</TD><TD>16.558</TD><TD>0.037</TD><TD>0</TD><TD>16.091</TD><TD>0.106</TD><TD>0</TD><TD>15.807</TD><TD>0.000</TD><TD>1</TD></TR>\n\
+        <TR><TD>0.044549</TD><TD>002.691250</TD><TD>-54.332637</TD><TD>0.652</TD><TD>1.219</TD><TD>20162334</TD><TD>4</TD><TD>9</TD><TD>0.643</TD><TD>0.097</TD><TD>16.760</TD><TD>0.000</TD><TD>1</TD><TD>17.403</TD><TD>0.097</TD><TD>1</TD><TD>16.933</TD><TD>0.081</TD><TD>0</TD><TD>16.626</TD><TD>0.083</TD><TD>0</TD><TD>16.778</TD><TD>0.000</TD><TD>1</TD></TR>\n\
+        <TR><TD>0.047945</TD><TD>002.782275</TD><TD>-54.261743</TD><TD>0.972</TD><TD>0.938</TD><TD>20162334</TD><TD>7</TD><TD>23</TD><TD>0.270</TD><TD>0.150</TD><TD>16.453</TD><TD>0.111</TD><TD>0</TD><TD>16.722</TD><TD>0.100</TD><TD>0</TD><TD>16.504</TD><TD>0.056</TD><TD>0</TD><TD>16.364</TD><TD>0.115</TD><TD>0</TD><TD>16.428</TD><TD>0.000</TD><TD>1</TD></TR>\n\
+        <TR><TD>0.049538</TD><TD>002.633585</TD><TD>-54.280819</TD><TD>0.212</TD><TD>0.210</TD><TD>20162334</TD><TD>11</TD><TD>55</TD><TD>0.695</TD><TD>0.042</TD><TD>14.179</TD><TD>0.033</TD><TD>0</TD><TD>14.874</TD><TD>0.026</TD><TD>0</TD><TD>14.455</TD><TD>0.018</TD><TD>0</TD><TD>14.015</TD><TD>0.034</TD><TD>0</TD><TD>13.797</TD><TD>0.087</TD><TD>0</TD></TR>\n\
+        <TR><TD>0.054524</TD><TD>002.809530</TD><TD>-54.284284</TD><TD>0.367</TD><TD>0.135</TD><TD>20162334</TD><TD>2</TD><TD>2</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>17.660</TD><TD>0.000</TD><TD>1</TD><TD></TD><TD></TD><TD></TD><TD>16.488</TD><TD>0.221</TD><TD>1</TD></TR>\n\
+        <TR><TD>0.056295</TD><TD>002.630194</TD><TD>-54.265856</TD><TD>1.286</TD><TD>1.254</TD><TD>20162334</TD><TD>4</TD><TD>8</TD><TD>0.919</TD><TD>0.036</TD><TD>17.051</TD><TD>0.026</TD><TD>0</TD><TD>17.970</TD><TD>0.025</TD><TD>0</TD><TD>17.360</TD><TD>0.068</TD><TD>0</TD><TD>16.727</TD><TD>0.133</TD><TD>0</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.061778</TD><TD>002.812463</TD><TD>-54.264298</TD><TD>0.939</TD><TD>0.850</TD><TD>20162334</TD><TD>5</TD><TD>14</TD><TD>0.625</TD><TD>0.147</TD><TD>16.776</TD><TD>0.141</TD><TD>0</TD><TD>17.401</TD><TD>0.042</TD><TD>0</TD><TD>17.068</TD><TD>0.067</TD><TD>0</TD><TD>16.539</TD><TD>0.142</TD><TD>0</TD><TD>16.008</TD><TD>0.000</TD><TD>1</TD></TR>\n\
+        <TR><TD>0.062243</TD><TD>002.810197</TD><TD>-54.320683</TD><TD>0.178</TD><TD>0.120</TD><TD>20132335</TD><TD>12</TD><TD>58</TD><TD>0.739</TD><TD>0.057</TD><TD>12.675</TD><TD>0.046</TD><TD>0</TD><TD>13.414</TD><TD>0.035</TD><TD>0</TD><TD>12.971</TD><TD>0.014</TD><TD>0</TD><TD>12.465</TD><TD>0.056</TD><TD>0</TD><TD>12.251</TD><TD>0.078</TD><TD>0</TD></TR>\n\
+        <TR><TD>0.075967</TD><TD>002.622945</TD><TD>-54.238028</TD><TD>0.982</TD><TD>1.203</TD><TD>20162334</TD><TD>2</TD><TD>4</TD><TD>0.612</TD><TD>0.137</TD><TD>16.991</TD><TD>0.000</TD><TD>1</TD><TD>17.603</TD><TD>0.137</TD><TD>1</TD><TD>17.257</TD><TD>0.000</TD><TD>1</TD><TD>17.049</TD><TD>0.000</TD><TD>1</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.077792</TD><TD>002.583667</TD><TD>-54.286601</TD><TD>0.444</TD><TD>0.384</TD><TD>20132335</TD><TD>12</TD><TD>56</TD><TD>0.633</TD><TD>0.049</TD><TD>14.539</TD><TD>0.026</TD><TD>0</TD><TD>15.172</TD><TD>0.041</TD><TD>0</TD><TD>14.791</TD><TD>0.027</TD><TD>0</TD><TD>14.350</TD><TD>0.029</TD><TD>0</TD><TD>14.105</TD><TD>0.109</TD><TD>0</TD></TR>\n\
+        <TR><TD>0.080207</TD><TD>002.678169</TD><TD>-54.213675</TD><TD>0.261</TD><TD>0.249</TD><TD>20162334</TD><TD>11</TD><TD>55</TD><TD>0.641</TD><TD>0.047</TD><TD>14.424</TD><TD>0.032</TD><TD>0</TD><TD>15.066</TD><TD>0.034</TD><TD>0</TD><TD>14.679</TD><TD>0.028</TD><TD>0</TD><TD>14.239</TD><TD>0.048</TD><TD>0</TD><TD>14.018</TD><TD>0.068</TD><TD>0</TD></TR>\n\
+        <TR><TD>0.085265</TD><TD>002.605391</TD><TD>-54.235520</TD><TD>0.386</TD><TD>0.327</TD><TD>20162334</TD><TD>11</TD><TD>55</TD><TD>0.634</TD><TD>0.057</TD><TD>14.699</TD><TD>0.042</TD><TD>0</TD><TD>15.332</TD><TD>0.039</TD><TD>0</TD><TD>14.940</TD><TD>0.017</TD><TD>0</TD><TD>14.548</TD><TD>0.056</TD><TD>0</TD><TD>14.329</TD><TD>0.111</TD><TD>0</TD></TR>\n\
+        <TR><TD>0.085349</TD><TD>002.604573</TD><TD>-54.345442</TD><TD>0.403</TD><TD>0.352</TD><TD>20162334</TD><TD>9</TD><TD>33</TD><TD>0.756</TD><TD>0.061</TD><TD>14.949</TD><TD>0.026</TD><TD>0</TD><TD>15.705</TD><TD>0.056</TD><TD>0</TD><TD>15.249</TD><TD>0.022</TD><TD>0</TD><TD>14.728</TD><TD>0.055</TD><TD>0</TD><TD>14.533</TD><TD>0.117</TD><TD>0</TD></TR>\n\
+        <TR><TD>0.090735</TD><TD>002.582124</TD><TD>-54.245363</TD><TD>0.677</TD><TD>0.923</TD><TD>20162334</TD><TD>6</TD><TD>22</TD><TD>0.635</TD><TD>0.163</TD><TD>16.561</TD><TD>0.152</TD><TD>0</TD><TD>17.196</TD><TD>0.060</TD><TD>0</TD><TD>16.884</TD><TD>0.030</TD><TD>0</TD><TD>16.608</TD><TD>0.048</TD><TD>0</TD><TD>16.342</TD><TD>0.061</TD><TD>0</TD></TR>\n\
+        <TR><TD>0.092342</TD><TD>002.699493</TD><TD>-54.198859</TD><TD>0.501</TD><TD>0.793</TD><TD>20162334</TD><TD>3</TD><TD>6</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>17.430</TD><TD>0.062</TD><TD>0</TD><TD>16.500</TD><TD>0.029</TD><TD>0</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.094687</TD><TD>002.591957</TD><TD>-54.230219</TD><TD>1.591</TD><TD>0.695</TD><TD>20162334</TD><TD>2</TD><TD>2</TD><TD></TD><TD></TD><TD>16.824</TD><TD>0.110</TD><TD>1</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>16.859</TD><TD>0.000</TD><TD>1</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.095460</TD><TD>002.590424</TD><TD>-54.230090</TD><TD>0.863</TD><TD>1.295</TD><TD>20162334</TD><TD>6</TD><TD>14</TD><TD>0.550</TD><TD>0.200</TD><TD>16.813</TD><TD>0.162</TD><TD>0</TD><TD>17.362</TD><TD>0.117</TD><TD>0</TD><TD>17.063</TD><TD>0.068</TD><TD>0</TD><TD>16.847</TD><TD>0.096</TD><TD>0</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.096656</TD><TD>002.555551</TD><TD>-54.268647</TD><TD>1.321</TD><TD>0.686</TD><TD>20132335</TD><TD>2</TD><TD>5</TD><TD>0.891</TD><TD>0.126</TD><TD>16.806</TD><TD>0.000</TD><TD>1</TD><TD>17.697</TD><TD>0.126</TD><TD>1</TD><TD>17.457</TD><TD>0.000</TD><TD>1</TD><TD>16.374</TD><TD>0.000</TD><TD>1</TD><TD>16.036</TD><TD>0.000</TD><TD>1</TD></TR>\n\
+        </TABLEDATA></DATA>\n<INFO name=\"matches\" value=\"22\">matching records</INFO>\n\
+        \    <INFO name=\"meta\" value=\"message\">      memory restriction caused\
+        \ by sort option (partial sort in bunches of 699050)    </INFO>\n\n<INFO name=\"\
+        Warning\" value=\"+++memory restriction caused by {\\bf sort} option (partial\
+        \ sort in bunches of 699050)\"/>\n  </TABLE>\n</RESOURCE>\n</VOTABLE>\n"
+- request:
+    method: POST
+    uri: https://vizier.cds.unistra.fr/viz-bin/votable
+    body: '-source=II/336/apass9
+
+      -out.max=unlimited
+
+      -out.all
+
+      -out.add=_r
+
+      -sort=_r
+
+      -c=2.71666518-54.29055329
+
+      -c.rd=0.1
+
+      -out.meta=huUD
+
+      -out.form=mini
+
+      -oc.form=d'
+    headers:
+      User-Agent:
+      - astroquery/0.4.11 Python/3.14.7 (Linux) python-requests/2.34.2
+      Accept-Encoding:
+      - gzip, deflate, zstd
+      Accept:
+      - '*/*'
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '147'
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Connection:
+      - Keep-Alive
+      DocumentRef:
+      - VOTx3713714
+      Server:
+      - Apache/2.4.52 (Ubuntu)
+      Keep-Alive:
+      - timeout=5, max=100
+      Content-Type:
+      - application/x-votable+xml
+      Vary:
+      - Accept-Encoding
+      Access-Control-Allow-Headers:
+      - Origin, X-Requested-With, Content-Type, Accept
+      Content-Disposition:
+      - attachment; filename=vizier_votable.vot
+      Access-Control-Allow-Origin:
+      - '*'
+      Date:
+      - Thu, 01 Oct 2026 09:25:51 GMT
+      Transfer-Encoding:
+      - chunked
+    body:
+      string: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<VOTABLE version=\"1.4\"\
+        \ xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n  xmlns=\"http://www.ivoa.net/xml/VOTable/v1.3\"\
+        \n  xsi:schemaLocation=\"http://www.ivoa.net/xml/VOTable/v1.3 http://www.ivoa.net/xml/VOTable/v1.3\"\
+        >\n <DESCRIPTION>\n   VizieR Astronomical Server vizier.cds.unistra.fr\n \
+        \   Date: 2026-10-01T09:25:51 [V7.6]\n   Explanations and Statistics of UCDs:\t\
+        \t\tSee LINK below\n   In case of problem, please report to:\tcds-question@unistra.fr\n\
+        \ </DESCRIPTION>\n<!-- VOTable description at http://www.ivoa.net/Documents/latest/VOT.html\
+        \ -->\n<INFO name=\"service_protocol\" value=\"ASU\">  IVOID of the protocol\
+        \ through which the data was retrieved</INFO>\n<INFO name=\"request_date\"\
+        \ value=\"2026-10-01T09:25:51\">  Query execution date</INFO>\n<INFO name=\"\
+        request\" value=\"https://vizier.cds.unistra.fr/viz-bin/votable?-oc.form=d&amp;-source=II/336/apass9&amp;-out.max=unlimited&amp;-out.all&amp;-out.add=_r&amp;-sort=_r&amp;-c=2.71666518-54.29055329&amp;-c.rd=0.1&amp;\"\
+        >  Full request URL (POST)</INFO>\n<INFO name=\"contact\" value=\"cds-question@unistra.fr\"\
+        >  Email or URL to contact publisher</INFO>\n<INFO name=\"server_software\"\
+        \ value=\"VizieR/7.6\">  Software version</INFO>\n<INFO name=\"publisher\"\
+        \ value=\"CDS\">  Data centre that produced the VOTable</INFO>\n<INFO name=\"\
+        header_format\" value=\"mini\"/>\n<INFO name=\"header_format\" value=\"mini\"\
+        />\n\n<RESOURCE ID=\"yCat_2336\" name=\"II/336\" type=\"results\">\n  <DESCRIPTION>AAVSO\
+        \ Photometric All Sky Survey (APASS) DR9 (Henden+, 2016)</DESCRIPTION>  <INFO\
+        \ name=\"ivoid\" value=\"ivo://cds.vizier/ii/336\">    IVOID of underlying\
+        \ data collection  </INFO>\n  <INFO name=\"data_ivoid\" value=\"ivo://cds.vizier/ii/336\"\
+        >    IVOID of underlying data collection  </INFO>\n  <INFO name=\"creator\"\
+        \ value=\"Henden A.A.\">    First author or institution  </INFO>\n  <INFO\
+        \ name=\"cites\" value=\"bibcode:2015AAS...22533616H\">    Article or Data\
+        \ origin sources  </INFO>\n  <INFO name=\"journal\" value=\"AAS\">    Journal\
+        \ name  </INFO>\n  <INFO name=\"original_date\" value=\"2015\">    Year of\
+        \ the article publication  </INFO>\n  <INFO name=\"reference_url\" value=\"\
+        https://cdsarc.cds.unistra.fr/viz-bin/cat/II/336\">    Dataset landing page\
+        \  </INFO>\n  <INFO name=\"publication_date\" value=\"2024-10-24\">    Date\
+        \ of first publication in the data centre  </INFO>\n  <INFO name=\"rights_uri\"\
+        \ value=\"https://cds.unistra.fr/vizier-org/licences_vizier.html\">    Licence\
+        \ URI  </INFO>\n\n  <COOSYS ID=\"J2000\" system=\"eq_FK5\" equinox=\"J2000\"\
+        />\n  <TABLE ID=\"II_336_apass9\" name=\"II/336/apass9\">\n    <DESCRIPTION>The\
+        \ APASS catalog, output (on a total of 62 million sources)</DESCRIPTION>\n\
+        <!-- The APASS catalog -->\n\n    <!-- RowName: -c=${$poseq}&-c.rs=0.004 -->\n\
+        \    <!-- Definitions of GROUPs and FIELDs -->\n    <FIELD name=\"_r\" ucd=\"\
+        POS_ANG_DIST_GENERAL\" datatype=\"double\" width=\"8\" precision=\"6\">\n\
+        \      <DESCRIPTION>Distance from center (002.716665-54.290553)[FK5/J2000]</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"RAJ2000\" ucd=\"POS_EQ_RA_MAIN\" ref=\"J2000\"\
+        \ datatype=\"double\" width=\"10\" precision=\"6\" unit=\"deg\">\n      <DESCRIPTION>Right\
+        \ ascension in decimal degrees (J2000)</DESCRIPTION>\n    </FIELD>\n    <FIELD\
+        \ name=\"DEJ2000\" ucd=\"POS_EQ_DEC_MAIN\" ref=\"J2000\" datatype=\"double\"\
+        \ width=\"10\" precision=\"6\" unit=\"deg\">\n      <DESCRIPTION>Declination\
+        \ in decimal degrees (J2000)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"\
+        e_RAJ2000\" ucd=\"ERROR\" datatype=\"float\" width=\"6\" precision=\"3\" unit=\"\
+        arcsec\">\n      <DESCRIPTION>[0/2.4] RA uncertainty</DESCRIPTION>\n    </FIELD>\n\
+        \    <FIELD name=\"e_DEJ2000\" ucd=\"ERROR\" datatype=\"float\" width=\"6\"\
+        \ precision=\"3\" unit=\"arcsec\">\n      <DESCRIPTION>[0/2.4] DEC uncertainty</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"Field\" ucd=\"ID_FIELD\" datatype=\"long\"\
+        \ width=\"10\">\n      <DESCRIPTION>[20110001/9999988888] Field name</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"nobs\" ucd=\"NUMBER\" datatype=\"short\"\
+        \ width=\"3\">\n      <DESCRIPTION>[2/387] Number of observed nights</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"mobs\" ucd=\"NUMBER\" datatype=\"short\"\
+        \ width=\"4\">\n      <DESCRIPTION>[2/3476] Number of images for this field,\
+        \ usually nobs*5</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"B-V\" ucd=\"\
+        PHOT_JHN_B-V\" datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\"\
+        >\n      <DESCRIPTION>[-7.5/13]? B-V color index</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_B-V\" ucd=\"ERROR\" datatype=\"\
+        float\" width=\"6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>[0/10.1]?\
+        \ B-V uncertainty</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"Vmag\" ucd=\"PHOT_JHN_V\" datatype=\"float\" width=\"6\"\
+        \ precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>[5.5/27.4]? Johnson V-band\
+        \ magnitude</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n    </FIELD>\n \
+        \   <FIELD name=\"e_Vmag\" ucd=\"ERROR\" datatype=\"float\" width=\"6\" precision=\"\
+        3\" unit=\"mag\">\n      <DESCRIPTION>[0/7]? Vmag uncertainty</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"u_e_Vmag\"\
+        \ ucd=\"CODE_ERROR\" datatype=\"unsignedByte\" width=\"1\">\n      <DESCRIPTION>[0/1]?\
+        \ Uncertainty flag on e_Vmag (1)</DESCRIPTION>\n      <VALUES null=\"255\"\
+        \ />\n    </FIELD>\n    <FIELD name=\"Bmag\" ucd=\"PHOT_JHN_B\" datatype=\"\
+        float\" width=\"6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>[5.4/27.3]?\
+        \ Johnson B-band magnitude</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n\
+        \    </FIELD>\n    <FIELD name=\"e_Bmag\" ucd=\"ERROR\" datatype=\"float\"\
+        \ width=\"6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>[0/10]? Bmag\
+        \ uncertainty</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"u_e_Bmag\" ucd=\"CODE_ERROR\" datatype=\"unsignedByte\"\
+        \ width=\"1\">\n      <DESCRIPTION>[0/1]? Uncertainty flag on e_Bmag (1)</DESCRIPTION>\n\
+        \      <VALUES null=\"255\" />\n    </FIELD>\n    <FIELD name=\"g'mag\" ucd=\"\
+        PHOT_SDSS_G\" datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\"\
+        >\n      <DESCRIPTION>[5.9/24.2]? g'-band AB magnitude, Sloan filter</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_g'mag\"\
+        \ ucd=\"ERROR\" datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\"\
+        >\n      <DESCRIPTION>[0/9.7]? g'mag uncertainty</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"u_e_g'mag\" ucd=\"CODE_ERROR\"\
+        \ datatype=\"unsignedByte\" width=\"1\">\n      <DESCRIPTION>[0/1]? Uncertainty\
+        \ flag on e_g'mag (1)</DESCRIPTION>\n      <VALUES null=\"255\" />\n    </FIELD>\n\
+        \    <FIELD name=\"r'mag\" ucd=\"PHOT_SDSS_R\" datatype=\"float\" width=\"\
+        6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>[5.1/23.9]? r'-band\
+        \ AB magnitude, Sloan filter</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n\
+        \    </FIELD>\n    <FIELD name=\"e_r'mag\" ucd=\"ERROR\" datatype=\"float\"\
+        \ width=\"6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>[0/6.5]? r'mag\
+        \ uncertainty</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"u_e_r'mag\" ucd=\"CODE_ERROR\" datatype=\"unsignedByte\"\
+        \ width=\"1\">\n      <DESCRIPTION>[0/1]? Uncertainty flag on e_r'mag (1)</DESCRIPTION>\n\
+        \      <VALUES null=\"255\" />\n    </FIELD>\n    <FIELD name=\"i'mag\" ucd=\"\
+        PHOT_SDSS_I\" datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\"\
+        >\n      <DESCRIPTION>[4.2/29.1]? i'-band AB magnitude, Sloan filter</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_i'mag\"\
+        \ ucd=\"ERROR\" datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\"\
+        >\n      <DESCRIPTION>[0/9.6]? i'mag uncertainty</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"u_e_i'mag\" ucd=\"CODE_ERROR\"\
+        \ datatype=\"unsignedByte\" width=\"1\">\n      <DESCRIPTION>[0/1]? Uncertainty\
+        \ flag on e_i'mag (1)</DESCRIPTION>\n      <VALUES null=\"255\" />\n    </FIELD>\n\
+        <DATA><TABLEDATA>\n<TR><TD>0.000105</TD><TD>002.716748</TD><TD>-54.290647</TD><TD>0.187</TD><TD>0.224</TD><TD>20132335</TD><TD>13</TD><TD>57</TD><TD>0.149</TD><TD>0.053</TD><TD>10.626</TD><TD>0.043</TD><TD>0</TD><TD>10.775</TD><TD>0.031</TD><TD>0</TD><TD>10.783</TD><TD>0.104</TD><TD>0</TD><TD>10.675</TD><TD>0.047</TD><TD>0</TD><TD>10.726</TD><TD>0.077</TD><TD>0</TD></TR>\n\
+        <TR><TD>0.017021</TD><TD>002.698086</TD><TD>-54.303674</TD><TD>0.919</TD><TD>0.785</TD><TD>20162334</TD><TD>4</TD><TD>13</TD><TD>1.167</TD><TD>0.046</TD><TD>16.748</TD><TD>0.022</TD><TD>0</TD><TD>17.915</TD><TD>0.041</TD><TD>0</TD><TD>17.313</TD><TD>0.151</TD><TD>0</TD><TD>16.378</TD><TD>0.082</TD><TD>0</TD><TD>15.908</TD><TD>0.000</TD><TD>1</TD></TR>\n\
+        <TR><TD>0.017510</TD><TD>002.746172</TD><TD>-54.287396</TD><TD>0.786</TD><TD>0.781</TD><TD>20162334</TD><TD>11</TD><TD>52</TD><TD>0.934</TD><TD>0.115</TD><TD>15.730</TD><TD>0.090</TD><TD>0</TD><TD>16.664</TD><TD>0.071</TD><TD>0</TD><TD>16.165</TD><TD>0.040</TD><TD>0</TD><TD>15.438</TD><TD>0.065</TD><TD>0</TD><TD>15.041</TD><TD>0.109</TD><TD>0</TD></TR>\n\
+        <TR><TD>0.042671</TD><TD>002.702500</TD><TD>-54.332416</TD><TD>0.869</TD><TD>1.207</TD><TD>20162334</TD><TD>2</TD><TD>10</TD><TD>0.785</TD><TD>0.106</TD><TD>16.264</TD><TD>0.039</TD><TD>0</TD><TD>17.049</TD><TD>0.098</TD><TD>0</TD><TD>16.560</TD><TD>0.067</TD><TD>0</TD><TD>16.156</TD><TD>0.048</TD><TD>0</TD><TD>15.951</TD><TD>0.023</TD><TD>0</TD></TR>\n\
+        <TR><TD>0.042880</TD><TD>002.702747</TD><TD>-54.332658</TD><TD>0.946</TD><TD>1.087</TD><TD>20162334</TD><TD>6</TD><TD>13</TD><TD>0.592</TD><TD>0.209</TD><TD>16.310</TD><TD>0.100</TD><TD>0</TD><TD>16.902</TD><TD>0.184</TD><TD>0</TD><TD>16.558</TD><TD>0.037</TD><TD>0</TD><TD>16.091</TD><TD>0.106</TD><TD>0</TD><TD>15.807</TD><TD>0.000</TD><TD>1</TD></TR>\n\
+        <TR><TD>0.044619</TD><TD>002.691250</TD><TD>-54.332637</TD><TD>0.652</TD><TD>1.219</TD><TD>20162334</TD><TD>4</TD><TD>9</TD><TD>0.643</TD><TD>0.097</TD><TD>16.760</TD><TD>0.000</TD><TD>1</TD><TD>17.403</TD><TD>0.097</TD><TD>1</TD><TD>16.933</TD><TD>0.081</TD><TD>0</TD><TD>16.626</TD><TD>0.083</TD><TD>0</TD><TD>16.778</TD><TD>0.000</TD><TD>1</TD></TR>\n\
+        <TR><TD>0.047933</TD><TD>002.782275</TD><TD>-54.261743</TD><TD>0.972</TD><TD>0.938</TD><TD>20162334</TD><TD>7</TD><TD>23</TD><TD>0.270</TD><TD>0.150</TD><TD>16.453</TD><TD>0.111</TD><TD>0</TD><TD>16.722</TD><TD>0.100</TD><TD>0</TD><TD>16.504</TD><TD>0.056</TD><TD>0</TD><TD>16.364</TD><TD>0.115</TD><TD>0</TD><TD>16.428</TD><TD>0.000</TD><TD>1</TD></TR>\n\
+        <TR><TD>0.049465</TD><TD>002.633585</TD><TD>-54.280819</TD><TD>0.212</TD><TD>0.210</TD><TD>20162334</TD><TD>11</TD><TD>55</TD><TD>0.695</TD><TD>0.042</TD><TD>14.179</TD><TD>0.033</TD><TD>0</TD><TD>14.874</TD><TD>0.026</TD><TD>0</TD><TD>14.455</TD><TD>0.018</TD><TD>0</TD><TD>14.015</TD><TD>0.034</TD><TD>0</TD><TD>13.797</TD><TD>0.087</TD><TD>0</TD></TR>\n\
+        <TR><TD>0.054568</TD><TD>002.809530</TD><TD>-54.284284</TD><TD>0.367</TD><TD>0.135</TD><TD>20162334</TD><TD>2</TD><TD>2</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>17.660</TD><TD>0.000</TD><TD>1</TD><TD></TD><TD></TD><TD></TD><TD>16.488</TD><TD>0.221</TD><TD>1</TD></TR>\n\
+        <TR><TD>0.056203</TD><TD>002.630194</TD><TD>-54.265856</TD><TD>1.286</TD><TD>1.254</TD><TD>20162334</TD><TD>4</TD><TD>8</TD><TD>0.919</TD><TD>0.036</TD><TD>17.051</TD><TD>0.026</TD><TD>0</TD><TD>17.970</TD><TD>0.025</TD><TD>0</TD><TD>17.360</TD><TD>0.068</TD><TD>0</TD><TD>16.727</TD><TD>0.133</TD><TD>0</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.061788</TD><TD>002.812463</TD><TD>-54.264298</TD><TD>0.939</TD><TD>0.850</TD><TD>20162334</TD><TD>5</TD><TD>14</TD><TD>0.625</TD><TD>0.147</TD><TD>16.776</TD><TD>0.141</TD><TD>0</TD><TD>17.401</TD><TD>0.042</TD><TD>0</TD><TD>17.068</TD><TD>0.067</TD><TD>0</TD><TD>16.539</TD><TD>0.142</TD><TD>0</TD><TD>16.008</TD><TD>0.000</TD><TD>1</TD></TR>\n\
+        <TR><TD>0.062337</TD><TD>002.810197</TD><TD>-54.320683</TD><TD>0.178</TD><TD>0.120</TD><TD>20132335</TD><TD>12</TD><TD>58</TD><TD>0.739</TD><TD>0.057</TD><TD>12.675</TD><TD>0.046</TD><TD>0</TD><TD>13.414</TD><TD>0.035</TD><TD>0</TD><TD>12.971</TD><TD>0.014</TD><TD>0</TD><TD>12.465</TD><TD>0.056</TD><TD>0</TD><TD>12.251</TD><TD>0.078</TD><TD>0</TD></TR>\n\
+        <TR><TD>0.075862</TD><TD>002.622945</TD><TD>-54.238028</TD><TD>0.982</TD><TD>1.203</TD><TD>20162334</TD><TD>2</TD><TD>4</TD><TD>0.612</TD><TD>0.137</TD><TD>16.991</TD><TD>0.000</TD><TD>1</TD><TD>17.603</TD><TD>0.137</TD><TD>1</TD><TD>17.257</TD><TD>0.000</TD><TD>1</TD><TD>17.049</TD><TD>0.000</TD><TD>1</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.077732</TD><TD>002.583667</TD><TD>-54.286601</TD><TD>0.444</TD><TD>0.384</TD><TD>20132335</TD><TD>12</TD><TD>56</TD><TD>0.633</TD><TD>0.049</TD><TD>14.539</TD><TD>0.026</TD><TD>0</TD><TD>15.172</TD><TD>0.041</TD><TD>0</TD><TD>14.791</TD><TD>0.027</TD><TD>0</TD><TD>14.350</TD><TD>0.029</TD><TD>0</TD><TD>14.105</TD><TD>0.109</TD><TD>0</TD></TR>\n\
+        <TR><TD>0.080100</TD><TD>002.678169</TD><TD>-54.213675</TD><TD>0.261</TD><TD>0.249</TD><TD>20162334</TD><TD>11</TD><TD>55</TD><TD>0.641</TD><TD>0.047</TD><TD>14.424</TD><TD>0.032</TD><TD>0</TD><TD>15.066</TD><TD>0.034</TD><TD>0</TD><TD>14.679</TD><TD>0.028</TD><TD>0</TD><TD>14.239</TD><TD>0.048</TD><TD>0</TD><TD>14.018</TD><TD>0.068</TD><TD>0</TD></TR>\n\
+        <TR><TD>0.085162</TD><TD>002.605391</TD><TD>-54.235520</TD><TD>0.386</TD><TD>0.327</TD><TD>20162334</TD><TD>11</TD><TD>55</TD><TD>0.634</TD><TD>0.057</TD><TD>14.699</TD><TD>0.042</TD><TD>0</TD><TD>15.332</TD><TD>0.039</TD><TD>0</TD><TD>14.940</TD><TD>0.017</TD><TD>0</TD><TD>14.548</TD><TD>0.056</TD><TD>0</TD><TD>14.329</TD><TD>0.111</TD><TD>0</TD></TR>\n\
+        <TR><TD>0.085367</TD><TD>002.604573</TD><TD>-54.345442</TD><TD>0.403</TD><TD>0.352</TD><TD>20162334</TD><TD>9</TD><TD>33</TD><TD>0.756</TD><TD>0.061</TD><TD>14.949</TD><TD>0.026</TD><TD>0</TD><TD>15.705</TD><TD>0.056</TD><TD>0</TD><TD>15.249</TD><TD>0.022</TD><TD>0</TD><TD>14.728</TD><TD>0.055</TD><TD>0</TD><TD>14.533</TD><TD>0.117</TD><TD>0</TD></TR>\n\
+        <TR><TD>0.090640</TD><TD>002.582124</TD><TD>-54.245363</TD><TD>0.677</TD><TD>0.923</TD><TD>20162334</TD><TD>6</TD><TD>22</TD><TD>0.635</TD><TD>0.163</TD><TD>16.561</TD><TD>0.152</TD><TD>0</TD><TD>17.196</TD><TD>0.060</TD><TD>0</TD><TD>16.884</TD><TD>0.030</TD><TD>0</TD><TD>16.608</TD><TD>0.048</TD><TD>0</TD><TD>16.342</TD><TD>0.061</TD><TD>0</TD></TR>\n\
+        <TR><TD>0.092242</TD><TD>002.699493</TD><TD>-54.198859</TD><TD>0.501</TD><TD>0.793</TD><TD>20162334</TD><TD>3</TD><TD>6</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>17.430</TD><TD>0.062</TD><TD>0</TD><TD>16.500</TD><TD>0.029</TD><TD>0</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.094584</TD><TD>002.591957</TD><TD>-54.230219</TD><TD>1.591</TD><TD>0.695</TD><TD>20162334</TD><TD>2</TD><TD>2</TD><TD></TD><TD></TD><TD>16.824</TD><TD>0.110</TD><TD>1</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>16.859</TD><TD>0.000</TD><TD>1</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.095358</TD><TD>002.590424</TD><TD>-54.230090</TD><TD>0.863</TD><TD>1.295</TD><TD>20162334</TD><TD>6</TD><TD>14</TD><TD>0.550</TD><TD>0.200</TD><TD>16.813</TD><TD>0.162</TD><TD>0</TD><TD>17.362</TD><TD>0.117</TD><TD>0</TD><TD>17.063</TD><TD>0.068</TD><TD>0</TD><TD>16.847</TD><TD>0.096</TD><TD>0</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.096580</TD><TD>002.555551</TD><TD>-54.268647</TD><TD>1.321</TD><TD>0.686</TD><TD>20132335</TD><TD>2</TD><TD>5</TD><TD>0.891</TD><TD>0.126</TD><TD>16.806</TD><TD>0.000</TD><TD>1</TD><TD>17.697</TD><TD>0.126</TD><TD>1</TD><TD>17.457</TD><TD>0.000</TD><TD>1</TD><TD>16.374</TD><TD>0.000</TD><TD>1</TD><TD>16.036</TD><TD>0.000</TD><TD>1</TD></TR>\n\
+        </TABLEDATA></DATA>\n<INFO name=\"matches\" value=\"22\">matching records</INFO>\n\
+        \    <INFO name=\"meta\" value=\"message\">      memory restriction caused\
+        \ by sort option (partial sort in bunches of 699050)    </INFO>\n\n<INFO name=\"\
+        Warning\" value=\"+++memory restriction caused by {\\bf sort} option (partial\
+        \ sort in bunches of 699050)\"/>\n  </TABLE>\n</RESOURCE>\n</VOTABLE>\n"
+- request:
+    method: POST
+    uri: https://vizier.cds.unistra.fr/viz-bin/votable
+    body: '-source=II/336/apass9
+
+      -out.max=unlimited
+
+      -out.all
+
+      -out.add=_r
+
+      -sort=_r
+
+      -c=2.71674651-54.29064474
+
+      -c.rd=0.1
+
+      -out.meta=huUD
+
+      -out.form=mini
+
+      -oc.form=d'
+    headers:
+      User-Agent:
+      - astroquery/0.4.11 Python/3.14.7 (Linux) python-requests/2.34.2
+      Accept-Encoding:
+      - gzip, deflate, zstd
+      Accept:
+      - '*/*'
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '147'
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Connection:
+      - Keep-Alive
+      DocumentRef:
+      - VOTx3714045
+      Server:
+      - Apache/2.4.52 (Ubuntu)
+      Keep-Alive:
+      - timeout=5, max=100
+      Content-Type:
+      - application/x-votable+xml
+      Vary:
+      - Accept-Encoding
+      Access-Control-Allow-Headers:
+      - Origin, X-Requested-With, Content-Type, Accept
+      Content-Disposition:
+      - attachment; filename=vizier_votable.vot
+      Access-Control-Allow-Origin:
+      - '*'
+      Date:
+      - Thu, 01 Oct 2026 09:25:53 GMT
+      Transfer-Encoding:
+      - chunked
+    body:
+      string: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<VOTABLE version=\"1.4\"\
+        \ xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n  xmlns=\"http://www.ivoa.net/xml/VOTable/v1.3\"\
+        \n  xsi:schemaLocation=\"http://www.ivoa.net/xml/VOTable/v1.3 http://www.ivoa.net/xml/VOTable/v1.3\"\
+        >\n <DESCRIPTION>\n   VizieR Astronomical Server vizier.cds.unistra.fr\n \
+        \   Date: 2026-10-01T09:25:53 [V7.6]\n   Explanations and Statistics of UCDs:\t\
+        \t\tSee LINK below\n   In case of problem, please report to:\tcds-question@unistra.fr\n\
+        \ </DESCRIPTION>\n<!-- VOTable description at http://www.ivoa.net/Documents/latest/VOT.html\
+        \ -->\n<INFO name=\"service_protocol\" value=\"ASU\">  IVOID of the protocol\
+        \ through which the data was retrieved</INFO>\n<INFO name=\"request_date\"\
+        \ value=\"2026-10-01T09:25:53\">  Query execution date</INFO>\n<INFO name=\"\
+        request\" value=\"https://vizier.cds.unistra.fr/viz-bin/votable?-oc.form=d&amp;-source=II/336/apass9&amp;-out.max=unlimited&amp;-out.all&amp;-out.add=_r&amp;-sort=_r&amp;-c=2.71674651-54.29064474&amp;-c.rd=0.1&amp;\"\
+        >  Full request URL (POST)</INFO>\n<INFO name=\"contact\" value=\"cds-question@unistra.fr\"\
+        >  Email or URL to contact publisher</INFO>\n<INFO name=\"server_software\"\
+        \ value=\"VizieR/7.6\">  Software version</INFO>\n<INFO name=\"publisher\"\
+        \ value=\"CDS\">  Data centre that produced the VOTable</INFO>\n<INFO name=\"\
+        header_format\" value=\"mini\"/>\n<INFO name=\"header_format\" value=\"mini\"\
+        />\n\n<RESOURCE ID=\"yCat_2336\" name=\"II/336\" type=\"results\">\n  <DESCRIPTION>AAVSO\
+        \ Photometric All Sky Survey (APASS) DR9 (Henden+, 2016)</DESCRIPTION>  <INFO\
+        \ name=\"ivoid\" value=\"ivo://cds.vizier/ii/336\">    IVOID of underlying\
+        \ data collection  </INFO>\n  <INFO name=\"data_ivoid\" value=\"ivo://cds.vizier/ii/336\"\
+        >    IVOID of underlying data collection  </INFO>\n  <INFO name=\"creator\"\
+        \ value=\"Henden A.A.\">    First author or institution  </INFO>\n  <INFO\
+        \ name=\"cites\" value=\"bibcode:2015AAS...22533616H\">    Article or Data\
+        \ origin sources  </INFO>\n  <INFO name=\"journal\" value=\"AAS\">    Journal\
+        \ name  </INFO>\n  <INFO name=\"original_date\" value=\"2015\">    Year of\
+        \ the article publication  </INFO>\n  <INFO name=\"reference_url\" value=\"\
+        https://cdsarc.cds.unistra.fr/viz-bin/cat/II/336\">    Dataset landing page\
+        \  </INFO>\n  <INFO name=\"publication_date\" value=\"2024-10-24\">    Date\
+        \ of first publication in the data centre  </INFO>\n  <INFO name=\"rights_uri\"\
+        \ value=\"https://cds.unistra.fr/vizier-org/licences_vizier.html\">    Licence\
+        \ URI  </INFO>\n\n  <COOSYS ID=\"J2000\" system=\"eq_FK5\" equinox=\"J2000\"\
+        />\n  <TABLE ID=\"II_336_apass9\" name=\"II/336/apass9\">\n    <DESCRIPTION>The\
+        \ APASS catalog, output (on a total of 62 million sources)</DESCRIPTION>\n\
+        <!-- The APASS catalog -->\n\n    <!-- RowName: -c=${$poseq}&-c.rs=0.004 -->\n\
+        \    <!-- Definitions of GROUPs and FIELDs -->\n    <FIELD name=\"_r\" ucd=\"\
+        POS_ANG_DIST_GENERAL\" datatype=\"double\" width=\"8\" precision=\"6\">\n\
+        \      <DESCRIPTION>Distance from center (002.716747-54.290645)[FK5/J2000]</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"RAJ2000\" ucd=\"POS_EQ_RA_MAIN\" ref=\"J2000\"\
+        \ datatype=\"double\" width=\"10\" precision=\"6\" unit=\"deg\">\n      <DESCRIPTION>Right\
+        \ ascension in decimal degrees (J2000)</DESCRIPTION>\n    </FIELD>\n    <FIELD\
+        \ name=\"DEJ2000\" ucd=\"POS_EQ_DEC_MAIN\" ref=\"J2000\" datatype=\"double\"\
+        \ width=\"10\" precision=\"6\" unit=\"deg\">\n      <DESCRIPTION>Declination\
+        \ in decimal degrees (J2000)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"\
+        e_RAJ2000\" ucd=\"ERROR\" datatype=\"float\" width=\"6\" precision=\"3\" unit=\"\
+        arcsec\">\n      <DESCRIPTION>[0/2.4] RA uncertainty</DESCRIPTION>\n    </FIELD>\n\
+        \    <FIELD name=\"e_DEJ2000\" ucd=\"ERROR\" datatype=\"float\" width=\"6\"\
+        \ precision=\"3\" unit=\"arcsec\">\n      <DESCRIPTION>[0/2.4] DEC uncertainty</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"Field\" ucd=\"ID_FIELD\" datatype=\"long\"\
+        \ width=\"10\">\n      <DESCRIPTION>[20110001/9999988888] Field name</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"nobs\" ucd=\"NUMBER\" datatype=\"short\"\
+        \ width=\"3\">\n      <DESCRIPTION>[2/387] Number of observed nights</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"mobs\" ucd=\"NUMBER\" datatype=\"short\"\
+        \ width=\"4\">\n      <DESCRIPTION>[2/3476] Number of images for this field,\
+        \ usually nobs*5</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"B-V\" ucd=\"\
+        PHOT_JHN_B-V\" datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\"\
+        >\n      <DESCRIPTION>[-7.5/13]? B-V color index</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_B-V\" ucd=\"ERROR\" datatype=\"\
+        float\" width=\"6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>[0/10.1]?\
+        \ B-V uncertainty</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"Vmag\" ucd=\"PHOT_JHN_V\" datatype=\"float\" width=\"6\"\
+        \ precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>[5.5/27.4]? Johnson V-band\
+        \ magnitude</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n    </FIELD>\n \
+        \   <FIELD name=\"e_Vmag\" ucd=\"ERROR\" datatype=\"float\" width=\"6\" precision=\"\
+        3\" unit=\"mag\">\n      <DESCRIPTION>[0/7]? Vmag uncertainty</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"u_e_Vmag\"\
+        \ ucd=\"CODE_ERROR\" datatype=\"unsignedByte\" width=\"1\">\n      <DESCRIPTION>[0/1]?\
+        \ Uncertainty flag on e_Vmag (1)</DESCRIPTION>\n      <VALUES null=\"255\"\
+        \ />\n    </FIELD>\n    <FIELD name=\"Bmag\" ucd=\"PHOT_JHN_B\" datatype=\"\
+        float\" width=\"6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>[5.4/27.3]?\
+        \ Johnson B-band magnitude</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n\
+        \    </FIELD>\n    <FIELD name=\"e_Bmag\" ucd=\"ERROR\" datatype=\"float\"\
+        \ width=\"6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>[0/10]? Bmag\
+        \ uncertainty</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"u_e_Bmag\" ucd=\"CODE_ERROR\" datatype=\"unsignedByte\"\
+        \ width=\"1\">\n      <DESCRIPTION>[0/1]? Uncertainty flag on e_Bmag (1)</DESCRIPTION>\n\
+        \      <VALUES null=\"255\" />\n    </FIELD>\n    <FIELD name=\"g'mag\" ucd=\"\
+        PHOT_SDSS_G\" datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\"\
+        >\n      <DESCRIPTION>[5.9/24.2]? g'-band AB magnitude, Sloan filter</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_g'mag\"\
+        \ ucd=\"ERROR\" datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\"\
+        >\n      <DESCRIPTION>[0/9.7]? g'mag uncertainty</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"u_e_g'mag\" ucd=\"CODE_ERROR\"\
+        \ datatype=\"unsignedByte\" width=\"1\">\n      <DESCRIPTION>[0/1]? Uncertainty\
+        \ flag on e_g'mag (1)</DESCRIPTION>\n      <VALUES null=\"255\" />\n    </FIELD>\n\
+        \    <FIELD name=\"r'mag\" ucd=\"PHOT_SDSS_R\" datatype=\"float\" width=\"\
+        6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>[5.1/23.9]? r'-band\
+        \ AB magnitude, Sloan filter</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n\
+        \    </FIELD>\n    <FIELD name=\"e_r'mag\" ucd=\"ERROR\" datatype=\"float\"\
+        \ width=\"6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>[0/6.5]? r'mag\
+        \ uncertainty</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"u_e_r'mag\" ucd=\"CODE_ERROR\" datatype=\"unsignedByte\"\
+        \ width=\"1\">\n      <DESCRIPTION>[0/1]? Uncertainty flag on e_r'mag (1)</DESCRIPTION>\n\
+        \      <VALUES null=\"255\" />\n    </FIELD>\n    <FIELD name=\"i'mag\" ucd=\"\
+        PHOT_SDSS_I\" datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\"\
+        >\n      <DESCRIPTION>[4.2/29.1]? i'-band AB magnitude, Sloan filter</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_i'mag\"\
+        \ ucd=\"ERROR\" datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\"\
+        >\n      <DESCRIPTION>[0/9.6]? i'mag uncertainty</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"u_e_i'mag\" ucd=\"CODE_ERROR\"\
+        \ datatype=\"unsignedByte\" width=\"1\">\n      <DESCRIPTION>[0/1]? Uncertainty\
+        \ flag on e_i'mag (1)</DESCRIPTION>\n      <VALUES null=\"255\" />\n    </FIELD>\n\
+        <DATA><TABLEDATA>\n<TR><TD>0.000002</TD><TD>002.716748</TD><TD>-54.290647</TD><TD>0.187</TD><TD>0.224</TD><TD>20132335</TD><TD>13</TD><TD>57</TD><TD>0.149</TD><TD>0.053</TD><TD>10.626</TD><TD>0.043</TD><TD>0</TD><TD>10.775</TD><TD>0.031</TD><TD>0</TD><TD>10.783</TD><TD>0.104</TD><TD>0</TD><TD>10.675</TD><TD>0.047</TD><TD>0</TD><TD>10.726</TD><TD>0.077</TD><TD>0</TD></TR>\n\
+        <TR><TD>0.016981</TD><TD>002.698086</TD><TD>-54.303674</TD><TD>0.919</TD><TD>0.785</TD><TD>20162334</TD><TD>4</TD><TD>13</TD><TD>1.167</TD><TD>0.046</TD><TD>16.748</TD><TD>0.022</TD><TD>0</TD><TD>17.915</TD><TD>0.041</TD><TD>0</TD><TD>17.313</TD><TD>0.151</TD><TD>0</TD><TD>16.378</TD><TD>0.082</TD><TD>0</TD><TD>15.908</TD><TD>0.000</TD><TD>1</TD></TR>\n\
+        <TR><TD>0.017480</TD><TD>002.746172</TD><TD>-54.287396</TD><TD>0.786</TD><TD>0.781</TD><TD>20162334</TD><TD>11</TD><TD>52</TD><TD>0.934</TD><TD>0.115</TD><TD>15.730</TD><TD>0.090</TD><TD>0</TD><TD>16.664</TD><TD>0.071</TD><TD>0</TD><TD>16.165</TD><TD>0.040</TD><TD>0</TD><TD>15.438</TD><TD>0.065</TD><TD>0</TD><TD>15.041</TD><TD>0.109</TD><TD>0</TD></TR>\n\
+        <TR><TD>0.042590</TD><TD>002.702500</TD><TD>-54.332416</TD><TD>0.869</TD><TD>1.207</TD><TD>20162334</TD><TD>2</TD><TD>10</TD><TD>0.785</TD><TD>0.106</TD><TD>16.264</TD><TD>0.039</TD><TD>0</TD><TD>17.049</TD><TD>0.098</TD><TD>0</TD><TD>16.560</TD><TD>0.067</TD><TD>0</TD><TD>16.156</TD><TD>0.048</TD><TD>0</TD><TD>15.951</TD><TD>0.023</TD><TD>0</TD></TR>\n\
+        <TR><TD>0.042800</TD><TD>002.702747</TD><TD>-54.332658</TD><TD>0.946</TD><TD>1.087</TD><TD>20162334</TD><TD>6</TD><TD>13</TD><TD>0.592</TD><TD>0.209</TD><TD>16.310</TD><TD>0.100</TD><TD>0</TD><TD>16.902</TD><TD>0.184</TD><TD>0</TD><TD>16.558</TD><TD>0.037</TD><TD>0</TD><TD>16.091</TD><TD>0.106</TD><TD>0</TD><TD>15.807</TD><TD>0.000</TD><TD>1</TD></TR>\n\
+        <TR><TD>0.044549</TD><TD>002.691250</TD><TD>-54.332637</TD><TD>0.652</TD><TD>1.219</TD><TD>20162334</TD><TD>4</TD><TD>9</TD><TD>0.643</TD><TD>0.097</TD><TD>16.760</TD><TD>0.000</TD><TD>1</TD><TD>17.403</TD><TD>0.097</TD><TD>1</TD><TD>16.933</TD><TD>0.081</TD><TD>0</TD><TD>16.626</TD><TD>0.083</TD><TD>0</TD><TD>16.778</TD><TD>0.000</TD><TD>1</TD></TR>\n\
+        <TR><TD>0.047950</TD><TD>002.782275</TD><TD>-54.261743</TD><TD>0.972</TD><TD>0.938</TD><TD>20162334</TD><TD>7</TD><TD>23</TD><TD>0.270</TD><TD>0.150</TD><TD>16.453</TD><TD>0.111</TD><TD>0</TD><TD>16.722</TD><TD>0.100</TD><TD>0</TD><TD>16.504</TD><TD>0.056</TD><TD>0</TD><TD>16.364</TD><TD>0.115</TD><TD>0</TD><TD>16.428</TD><TD>0.000</TD><TD>1</TD></TR>\n\
+        <TR><TD>0.049529</TD><TD>002.633585</TD><TD>-54.280819</TD><TD>0.212</TD><TD>0.210</TD><TD>20162334</TD><TD>11</TD><TD>55</TD><TD>0.695</TD><TD>0.042</TD><TD>14.179</TD><TD>0.033</TD><TD>0</TD><TD>14.874</TD><TD>0.026</TD><TD>0</TD><TD>14.455</TD><TD>0.018</TD><TD>0</TD><TD>14.015</TD><TD>0.034</TD><TD>0</TD><TD>13.797</TD><TD>0.087</TD><TD>0</TD></TR>\n\
+        <TR><TD>0.054532</TD><TD>002.809530</TD><TD>-54.284284</TD><TD>0.367</TD><TD>0.135</TD><TD>20162334</TD><TD>2</TD><TD>2</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>17.660</TD><TD>0.000</TD><TD>1</TD><TD></TD><TD></TD><TD></TD><TD>16.488</TD><TD>0.221</TD><TD>1</TD></TR>\n\
+        <TR><TD>0.056286</TD><TD>002.630194</TD><TD>-54.265856</TD><TD>1.286</TD><TD>1.254</TD><TD>20162334</TD><TD>4</TD><TD>8</TD><TD>0.919</TD><TD>0.036</TD><TD>17.051</TD><TD>0.026</TD><TD>0</TD><TD>17.970</TD><TD>0.025</TD><TD>0</TD><TD>17.360</TD><TD>0.068</TD><TD>0</TD><TD>16.727</TD><TD>0.133</TD><TD>0</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.061784</TD><TD>002.812463</TD><TD>-54.264298</TD><TD>0.939</TD><TD>0.850</TD><TD>20162334</TD><TD>5</TD><TD>14</TD><TD>0.625</TD><TD>0.147</TD><TD>16.776</TD><TD>0.141</TD><TD>0</TD><TD>17.401</TD><TD>0.042</TD><TD>0</TD><TD>17.068</TD><TD>0.067</TD><TD>0</TD><TD>16.539</TD><TD>0.142</TD><TD>0</TD><TD>16.008</TD><TD>0.000</TD><TD>1</TD></TR>\n\
+        <TR><TD>0.062251</TD><TD>002.810197</TD><TD>-54.320683</TD><TD>0.178</TD><TD>0.120</TD><TD>20132335</TD><TD>12</TD><TD>58</TD><TD>0.739</TD><TD>0.057</TD><TD>12.675</TD><TD>0.046</TD><TD>0</TD><TD>13.414</TD><TD>0.035</TD><TD>0</TD><TD>12.971</TD><TD>0.014</TD><TD>0</TD><TD>12.465</TD><TD>0.056</TD><TD>0</TD><TD>12.251</TD><TD>0.078</TD><TD>0</TD></TR>\n\
+        <TR><TD>0.075960</TD><TD>002.622945</TD><TD>-54.238028</TD><TD>0.982</TD><TD>1.203</TD><TD>20162334</TD><TD>2</TD><TD>4</TD><TD>0.612</TD><TD>0.137</TD><TD>16.991</TD><TD>0.000</TD><TD>1</TD><TD>17.603</TD><TD>0.137</TD><TD>1</TD><TD>17.257</TD><TD>0.000</TD><TD>1</TD><TD>17.049</TD><TD>0.000</TD><TD>1</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.077784</TD><TD>002.583667</TD><TD>-54.286601</TD><TD>0.444</TD><TD>0.384</TD><TD>20132335</TD><TD>12</TD><TD>56</TD><TD>0.633</TD><TD>0.049</TD><TD>14.539</TD><TD>0.026</TD><TD>0</TD><TD>15.172</TD><TD>0.041</TD><TD>0</TD><TD>14.791</TD><TD>0.027</TD><TD>0</TD><TD>14.350</TD><TD>0.029</TD><TD>0</TD><TD>14.105</TD><TD>0.109</TD><TD>0</TD></TR>\n\
+        <TR><TD>0.080202</TD><TD>002.678169</TD><TD>-54.213675</TD><TD>0.261</TD><TD>0.249</TD><TD>20162334</TD><TD>11</TD><TD>55</TD><TD>0.641</TD><TD>0.047</TD><TD>14.424</TD><TD>0.032</TD><TD>0</TD><TD>15.066</TD><TD>0.034</TD><TD>0</TD><TD>14.679</TD><TD>0.028</TD><TD>0</TD><TD>14.239</TD><TD>0.048</TD><TD>0</TD><TD>14.018</TD><TD>0.068</TD><TD>0</TD></TR>\n\
+        <TR><TD>0.085257</TD><TD>002.605391</TD><TD>-54.235520</TD><TD>0.386</TD><TD>0.327</TD><TD>20162334</TD><TD>11</TD><TD>55</TD><TD>0.634</TD><TD>0.057</TD><TD>14.699</TD><TD>0.042</TD><TD>0</TD><TD>15.332</TD><TD>0.039</TD><TD>0</TD><TD>14.940</TD><TD>0.017</TD><TD>0</TD><TD>14.548</TD><TD>0.056</TD><TD>0</TD><TD>14.329</TD><TD>0.111</TD><TD>0</TD></TR>\n\
+        <TR><TD>0.085345</TD><TD>002.604573</TD><TD>-54.345442</TD><TD>0.403</TD><TD>0.352</TD><TD>20162334</TD><TD>9</TD><TD>33</TD><TD>0.756</TD><TD>0.061</TD><TD>14.949</TD><TD>0.026</TD><TD>0</TD><TD>15.705</TD><TD>0.056</TD><TD>0</TD><TD>15.249</TD><TD>0.022</TD><TD>0</TD><TD>14.728</TD><TD>0.055</TD><TD>0</TD><TD>14.533</TD><TD>0.117</TD><TD>0</TD></TR>\n\
+        <TR><TD>0.090727</TD><TD>002.582124</TD><TD>-54.245363</TD><TD>0.677</TD><TD>0.923</TD><TD>20162334</TD><TD>6</TD><TD>22</TD><TD>0.635</TD><TD>0.163</TD><TD>16.561</TD><TD>0.152</TD><TD>0</TD><TD>17.196</TD><TD>0.060</TD><TD>0</TD><TD>16.884</TD><TD>0.030</TD><TD>0</TD><TD>16.608</TD><TD>0.048</TD><TD>0</TD><TD>16.342</TD><TD>0.061</TD><TD>0</TD></TR>\n\
+        <TR><TD>0.092338</TD><TD>002.699493</TD><TD>-54.198859</TD><TD>0.501</TD><TD>0.793</TD><TD>20162334</TD><TD>3</TD><TD>6</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>17.430</TD><TD>0.062</TD><TD>0</TD><TD>16.500</TD><TD>0.029</TD><TD>0</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.094679</TD><TD>002.591957</TD><TD>-54.230219</TD><TD>1.591</TD><TD>0.695</TD><TD>20162334</TD><TD>2</TD><TD>2</TD><TD></TD><TD></TD><TD>16.824</TD><TD>0.110</TD><TD>1</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD>16.859</TD><TD>0.000</TD><TD>1</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.095452</TD><TD>002.590424</TD><TD>-54.230090</TD><TD>0.863</TD><TD>1.295</TD><TD>20162334</TD><TD>6</TD><TD>14</TD><TD>0.550</TD><TD>0.200</TD><TD>16.813</TD><TD>0.162</TD><TD>0</TD><TD>17.362</TD><TD>0.117</TD><TD>0</TD><TD>17.063</TD><TD>0.068</TD><TD>0</TD><TD>16.847</TD><TD>0.096</TD><TD>0</TD><TD></TD><TD></TD><TD></TD></TR>\n\
+        <TR><TD>0.096647</TD><TD>002.555551</TD><TD>-54.268647</TD><TD>1.321</TD><TD>0.686</TD><TD>20132335</TD><TD>2</TD><TD>5</TD><TD>0.891</TD><TD>0.126</TD><TD>16.806</TD><TD>0.000</TD><TD>1</TD><TD>17.697</TD><TD>0.126</TD><TD>1</TD><TD>17.457</TD><TD>0.000</TD><TD>1</TD><TD>16.374</TD><TD>0.000</TD><TD>1</TD><TD>16.036</TD><TD>0.000</TD><TD>1</TD></TR>\n\
+        </TABLEDATA></DATA>\n<INFO name=\"matches\" value=\"22\">matching records</INFO>\n\
+        \    <INFO name=\"meta\" value=\"message\">      memory restriction caused\
+        \ by sort option (partial sort in bunches of 699050)    </INFO>\n\n<INFO name=\"\
+        Warning\" value=\"+++memory restriction caused by {\\bf sort} option (partial\
+        \ sort in bunches of 699050)\"/>\n  </TABLE>\n</RESOURCE>\n</VOTABLE>\n"
+- request:
+    method: POST
+    uri: https://vizier.cds.unistra.fr/viz-bin/votable
+    body: '-source=II/336/apass9
+
+      -out.max=unlimited
+
+      -out.all
+
+      -out.add=_r
+
+      -sort=_r
+
+      -c=2.71676018-54.29064769
+
+      -c.rd=0.05
+
+      -out.meta=huUD
+
+      -out.form=mini
+
+      -oc.form=d'
+    headers:
+      User-Agent:
+      - astroquery/0.4.11 Python/3.14.7 (Linux) python-requests/2.34.2
+      Accept-Encoding:
+      - gzip, deflate, zstd
+      Accept:
+      - '*/*'
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '148'
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Connection:
+      - close
+      DocumentRef:
+      - VOTx3714688
+      Server:
+      - Apache/2.4.52 (Ubuntu)
+      Content-Type:
+      - application/x-votable+xml
+      Vary:
+      - Accept-Encoding
+      Access-Control-Allow-Headers:
+      - Origin, X-Requested-With, Content-Type, Accept
+      Content-Disposition:
+      - attachment; filename=vizier_votable.vot
+      Access-Control-Allow-Origin:
+      - '*'
+      Date:
+      - Thu, 01 Oct 2026 09:25:57 GMT
+      Transfer-Encoding:
+      - chunked
+    body:
+      string: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<VOTABLE version=\"1.4\"\
+        \ xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n  xmlns=\"http://www.ivoa.net/xml/VOTable/v1.3\"\
+        \n  xsi:schemaLocation=\"http://www.ivoa.net/xml/VOTable/v1.3 http://www.ivoa.net/xml/VOTable/v1.3\"\
+        >\n <DESCRIPTION>\n   VizieR Astronomical Server vizier.cds.unistra.fr\n \
+        \   Date: 2026-10-01T09:25:57 [V7.6]\n   Explanations and Statistics of UCDs:\t\
+        \t\tSee LINK below\n   In case of problem, please report to:\tcds-question@unistra.fr\n\
+        \ </DESCRIPTION>\n<!-- VOTable description at http://www.ivoa.net/Documents/latest/VOT.html\
+        \ -->\n<INFO name=\"service_protocol\" value=\"ASU\">  IVOID of the protocol\
+        \ through which the data was retrieved</INFO>\n<INFO name=\"request_date\"\
+        \ value=\"2026-10-01T09:25:57\">  Query execution date</INFO>\n<INFO name=\"\
+        request\" value=\"https://vizier.cds.unistra.fr/viz-bin/votable?-oc.form=d&amp;-source=II/336/apass9&amp;-out.max=unlimited&amp;-out.all&amp;-out.add=_r&amp;-sort=_r&amp;-c=2.71676018-54.29064769&amp;-c.rd=0.05&amp;\"\
+        >  Full request URL (POST)</INFO>\n<INFO name=\"contact\" value=\"cds-question@unistra.fr\"\
+        >  Email or URL to contact publisher</INFO>\n<INFO name=\"server_software\"\
+        \ value=\"VizieR/7.6\">  Software version</INFO>\n<INFO name=\"publisher\"\
+        \ value=\"CDS\">  Data centre that produced the VOTable</INFO>\n<INFO name=\"\
+        header_format\" value=\"mini\"/>\n<INFO name=\"header_format\" value=\"mini\"\
+        />\n\n<RESOURCE ID=\"yCat_2336\" name=\"II/336\" type=\"results\">\n  <DESCRIPTION>AAVSO\
+        \ Photometric All Sky Survey (APASS) DR9 (Henden+, 2016)</DESCRIPTION>  <INFO\
+        \ name=\"ivoid\" value=\"ivo://cds.vizier/ii/336\">    IVOID of underlying\
+        \ data collection  </INFO>\n  <INFO name=\"data_ivoid\" value=\"ivo://cds.vizier/ii/336\"\
+        >    IVOID of underlying data collection  </INFO>\n  <INFO name=\"creator\"\
+        \ value=\"Henden A.A.\">    First author or institution  </INFO>\n  <INFO\
+        \ name=\"cites\" value=\"bibcode:2015AAS...22533616H\">    Article or Data\
+        \ origin sources  </INFO>\n  <INFO name=\"journal\" value=\"AAS\">    Journal\
+        \ name  </INFO>\n  <INFO name=\"original_date\" value=\"2015\">    Year of\
+        \ the article publication  </INFO>\n  <INFO name=\"reference_url\" value=\"\
+        https://cdsarc.cds.unistra.fr/viz-bin/cat/II/336\">    Dataset landing page\
+        \  </INFO>\n  <INFO name=\"publication_date\" value=\"2024-10-24\">    Date\
+        \ of first publication in the data centre  </INFO>\n  <INFO name=\"rights_uri\"\
+        \ value=\"https://cds.unistra.fr/vizier-org/licences_vizier.html\">    Licence\
+        \ URI  </INFO>\n\n  <COOSYS ID=\"J2000\" system=\"eq_FK5\" equinox=\"J2000\"\
+        />\n  <TABLE ID=\"II_336_apass9\" name=\"II/336/apass9\">\n    <DESCRIPTION>The\
+        \ APASS catalog, output (on a total of 62 million sources)</DESCRIPTION>\n\
+        <!-- The APASS catalog -->\n\n    <!-- RowName: -c=${$poseq}&-c.rs=0.004 -->\n\
+        \    <!-- Definitions of GROUPs and FIELDs -->\n    <FIELD name=\"_r\" ucd=\"\
+        POS_ANG_DIST_GENERAL\" datatype=\"double\" width=\"8\" precision=\"6\">\n\
+        \      <DESCRIPTION>Distance from center (002.716760-54.290648)[FK5/J2000]</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"RAJ2000\" ucd=\"POS_EQ_RA_MAIN\" ref=\"J2000\"\
+        \ datatype=\"double\" width=\"10\" precision=\"6\" unit=\"deg\">\n      <DESCRIPTION>Right\
+        \ ascension in decimal degrees (J2000)</DESCRIPTION>\n    </FIELD>\n    <FIELD\
+        \ name=\"DEJ2000\" ucd=\"POS_EQ_DEC_MAIN\" ref=\"J2000\" datatype=\"double\"\
+        \ width=\"10\" precision=\"6\" unit=\"deg\">\n      <DESCRIPTION>Declination\
+        \ in decimal degrees (J2000)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"\
+        e_RAJ2000\" ucd=\"ERROR\" datatype=\"float\" width=\"6\" precision=\"3\" unit=\"\
+        arcsec\">\n      <DESCRIPTION>[0/2.4] RA uncertainty</DESCRIPTION>\n    </FIELD>\n\
+        \    <FIELD name=\"e_DEJ2000\" ucd=\"ERROR\" datatype=\"float\" width=\"6\"\
+        \ precision=\"3\" unit=\"arcsec\">\n      <DESCRIPTION>[0/2.4] DEC uncertainty</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"Field\" ucd=\"ID_FIELD\" datatype=\"long\"\
+        \ width=\"10\">\n      <DESCRIPTION>[20110001/9999988888] Field name</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"nobs\" ucd=\"NUMBER\" datatype=\"short\"\
+        \ width=\"3\">\n      <DESCRIPTION>[2/387] Number of observed nights</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"mobs\" ucd=\"NUMBER\" datatype=\"short\"\
+        \ width=\"4\">\n      <DESCRIPTION>[2/3476] Number of images for this field,\
+        \ usually nobs*5</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"B-V\" ucd=\"\
+        PHOT_JHN_B-V\" datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\"\
+        >\n      <DESCRIPTION>[-7.5/13]? B-V color index</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_B-V\" ucd=\"ERROR\" datatype=\"\
+        float\" width=\"6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>[0/10.1]?\
+        \ B-V uncertainty</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"Vmag\" ucd=\"PHOT_JHN_V\" datatype=\"float\" width=\"6\"\
+        \ precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>[5.5/27.4]? Johnson V-band\
+        \ magnitude</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n    </FIELD>\n \
+        \   <FIELD name=\"e_Vmag\" ucd=\"ERROR\" datatype=\"float\" width=\"6\" precision=\"\
+        3\" unit=\"mag\">\n      <DESCRIPTION>[0/7]? Vmag uncertainty</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"u_e_Vmag\"\
+        \ ucd=\"CODE_ERROR\" datatype=\"unsignedByte\" width=\"1\">\n      <DESCRIPTION>[0/1]?\
+        \ Uncertainty flag on e_Vmag (1)</DESCRIPTION>\n      <VALUES null=\"255\"\
+        \ />\n    </FIELD>\n    <FIELD name=\"Bmag\" ucd=\"PHOT_JHN_B\" datatype=\"\
+        float\" width=\"6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>[5.4/27.3]?\
+        \ Johnson B-band magnitude</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n\
+        \    </FIELD>\n    <FIELD name=\"e_Bmag\" ucd=\"ERROR\" datatype=\"float\"\
+        \ width=\"6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>[0/10]? Bmag\
+        \ uncertainty</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"u_e_Bmag\" ucd=\"CODE_ERROR\" datatype=\"unsignedByte\"\
+        \ width=\"1\">\n      <DESCRIPTION>[0/1]? Uncertainty flag on e_Bmag (1)</DESCRIPTION>\n\
+        \      <VALUES null=\"255\" />\n    </FIELD>\n    <FIELD name=\"g'mag\" ucd=\"\
+        PHOT_SDSS_G\" datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\"\
+        >\n      <DESCRIPTION>[5.9/24.2]? g'-band AB magnitude, Sloan filter</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_g'mag\"\
+        \ ucd=\"ERROR\" datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\"\
+        >\n      <DESCRIPTION>[0/9.7]? g'mag uncertainty</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"u_e_g'mag\" ucd=\"CODE_ERROR\"\
+        \ datatype=\"unsignedByte\" width=\"1\">\n      <DESCRIPTION>[0/1]? Uncertainty\
+        \ flag on e_g'mag (1)</DESCRIPTION>\n      <VALUES null=\"255\" />\n    </FIELD>\n\
+        \    <FIELD name=\"r'mag\" ucd=\"PHOT_SDSS_R\" datatype=\"float\" width=\"\
+        6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>[5.1/23.9]? r'-band\
+        \ AB magnitude, Sloan filter</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n\
+        \    </FIELD>\n    <FIELD name=\"e_r'mag\" ucd=\"ERROR\" datatype=\"float\"\
+        \ width=\"6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>[0/6.5]? r'mag\
+        \ uncertainty</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"u_e_r'mag\" ucd=\"CODE_ERROR\" datatype=\"unsignedByte\"\
+        \ width=\"1\">\n      <DESCRIPTION>[0/1]? Uncertainty flag on e_r'mag (1)</DESCRIPTION>\n\
+        \      <VALUES null=\"255\" />\n    </FIELD>\n    <FIELD name=\"i'mag\" ucd=\"\
+        PHOT_SDSS_I\" datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\"\
+        >\n      <DESCRIPTION>[4.2/29.1]? i'-band AB magnitude, Sloan filter</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_i'mag\"\
+        \ ucd=\"ERROR\" datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\"\
+        >\n      <DESCRIPTION>[0/9.6]? i'mag uncertainty</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"u_e_i'mag\" ucd=\"CODE_ERROR\"\
+        \ datatype=\"unsignedByte\" width=\"1\">\n      <DESCRIPTION>[0/1]? Uncertainty\
+        \ flag on e_i'mag (1)</DESCRIPTION>\n      <VALUES null=\"255\" />\n    </FIELD>\n\
+        <DATA><TABLEDATA>\n<TR><TD>0.000007</TD><TD>002.716748</TD><TD>-54.290647</TD><TD>0.187</TD><TD>0.224</TD><TD>20132335</TD><TD>13</TD><TD>57</TD><TD>0.149</TD><TD>0.053</TD><TD>10.626</TD><TD>0.043</TD><TD>0</TD><TD>10.775</TD><TD>0.031</TD><TD>0</TD><TD>10.783</TD><TD>0.104</TD><TD>0</TD><TD>10.675</TD><TD>0.047</TD><TD>0</TD><TD>10.726</TD><TD>0.077</TD><TD>0</TD></TR>\n\
+        <TR><TD>0.016984</TD><TD>002.698086</TD><TD>-54.303674</TD><TD>0.919</TD><TD>0.785</TD><TD>20162334</TD><TD>4</TD><TD>13</TD><TD>1.167</TD><TD>0.046</TD><TD>16.748</TD><TD>0.022</TD><TD>0</TD><TD>17.915</TD><TD>0.041</TD><TD>0</TD><TD>17.313</TD><TD>0.151</TD><TD>0</TD><TD>16.378</TD><TD>0.082</TD><TD>0</TD><TD>15.908</TD><TD>0.000</TD><TD>1</TD></TR>\n\
+        <TR><TD>0.017473</TD><TD>002.746172</TD><TD>-54.287396</TD><TD>0.786</TD><TD>0.781</TD><TD>20162334</TD><TD>11</TD><TD>52</TD><TD>0.934</TD><TD>0.115</TD><TD>15.730</TD><TD>0.090</TD><TD>0</TD><TD>16.664</TD><TD>0.071</TD><TD>0</TD><TD>16.165</TD><TD>0.040</TD><TD>0</TD><TD>15.438</TD><TD>0.065</TD><TD>0</TD><TD>15.041</TD><TD>0.109</TD><TD>0</TD></TR>\n\
+        <TR><TD>0.042589</TD><TD>002.702500</TD><TD>-54.332416</TD><TD>0.869</TD><TD>1.207</TD><TD>20162334</TD><TD>2</TD><TD>10</TD><TD>0.785</TD><TD>0.106</TD><TD>16.264</TD><TD>0.039</TD><TD>0</TD><TD>17.049</TD><TD>0.098</TD><TD>0</TD><TD>16.560</TD><TD>0.067</TD><TD>0</TD><TD>16.156</TD><TD>0.048</TD><TD>0</TD><TD>15.951</TD><TD>0.023</TD><TD>0</TD></TR>\n\
+        <TR><TD>0.042798</TD><TD>002.702747</TD><TD>-54.332658</TD><TD>0.946</TD><TD>1.087</TD><TD>20162334</TD><TD>6</TD><TD>13</TD><TD>0.592</TD><TD>0.209</TD><TD>16.310</TD><TD>0.100</TD><TD>0</TD><TD>16.902</TD><TD>0.184</TD><TD>0</TD><TD>16.558</TD><TD>0.037</TD><TD>0</TD><TD>16.091</TD><TD>0.106</TD><TD>0</TD><TD>15.807</TD><TD>0.000</TD><TD>1</TD></TR>\n\
+        <TR><TD>0.044549</TD><TD>002.691250</TD><TD>-54.332637</TD><TD>0.652</TD><TD>1.219</TD><TD>20162334</TD><TD>4</TD><TD>9</TD><TD>0.643</TD><TD>0.097</TD><TD>16.760</TD><TD>0.000</TD><TD>1</TD><TD>17.403</TD><TD>0.097</TD><TD>1</TD><TD>16.933</TD><TD>0.081</TD><TD>0</TD><TD>16.626</TD><TD>0.083</TD><TD>0</TD><TD>16.778</TD><TD>0.000</TD><TD>1</TD></TR>\n\
+        <TR><TD>0.047945</TD><TD>002.782275</TD><TD>-54.261743</TD><TD>0.972</TD><TD>0.938</TD><TD>20162334</TD><TD>7</TD><TD>23</TD><TD>0.270</TD><TD>0.150</TD><TD>16.453</TD><TD>0.111</TD><TD>0</TD><TD>16.722</TD><TD>0.100</TD><TD>0</TD><TD>16.504</TD><TD>0.056</TD><TD>0</TD><TD>16.364</TD><TD>0.115</TD><TD>0</TD><TD>16.428</TD><TD>0.000</TD><TD>1</TD></TR>\n\
+        <TR><TD>0.049538</TD><TD>002.633585</TD><TD>-54.280819</TD><TD>0.212</TD><TD>0.210</TD><TD>20162334</TD><TD>11</TD><TD>55</TD><TD>0.695</TD><TD>0.042</TD><TD>14.179</TD><TD>0.033</TD><TD>0</TD><TD>14.874</TD><TD>0.026</TD><TD>0</TD><TD>14.455</TD><TD>0.018</TD><TD>0</TD><TD>14.015</TD><TD>0.034</TD><TD>0</TD><TD>13.797</TD><TD>0.087</TD><TD>0</TD></TR>\n\
+        </TABLEDATA></DATA>\n<INFO name=\"matches\" value=\"8\">matching records</INFO>\n\
+        \    <INFO name=\"meta\" value=\"message\">      memory restriction caused\
+        \ by sort option (partial sort in bunches of 699050)    </INFO>\n\n<INFO name=\"\
+        Warning\" value=\"+++memory restriction caused by {\\bf sort} option (partial\
+        \ sort in bunches of 699050)\"/>\n  </TABLE>\n</RESOURCE>\n</VOTABLE>\n"
+- request:
+    method: POST
+    uri: https://vizier.cds.unistra.fr/viz-bin/votable
+    body: '-source=II/336/apass9
+
+      -out.max=unlimited
+
+      -out.all
+
+      -out.add=_r
+
+      -sort=_r
+
+      -c=2.71676018-54.29064769
+
+      -c.rs=10.0
+
+      -out.meta=huUD
+
+      -out.form=mini
+
+      -oc.form=d'
+    headers:
+      User-Agent:
+      - astroquery/0.4.11 Python/3.14.7 (Linux) python-requests/2.34.2
+      Accept-Encoding:
+      - gzip, deflate, zstd
+      Accept:
+      - '*/*'
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '148'
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Connection:
+      - Keep-Alive
+      DocumentRef:
+      - VOTx3715252
+      Server:
+      - Apache/2.4.52 (Ubuntu)
+      Keep-Alive:
+      - timeout=5, max=100
+      Content-Type:
+      - application/x-votable+xml
+      Vary:
+      - Accept-Encoding
+      Access-Control-Allow-Headers:
+      - Origin, X-Requested-With, Content-Type, Accept
+      Content-Disposition:
+      - attachment; filename=vizier_votable.vot
+      Access-Control-Allow-Origin:
+      - '*'
+      Date:
+      - Thu, 01 Oct 2026 09:26:01 GMT
+      Transfer-Encoding:
+      - chunked
+    body:
+      string: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<VOTABLE version=\"1.4\"\
+        \ xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n  xmlns=\"http://www.ivoa.net/xml/VOTable/v1.3\"\
+        \n  xsi:schemaLocation=\"http://www.ivoa.net/xml/VOTable/v1.3 http://www.ivoa.net/xml/VOTable/v1.3\"\
+        >\n <DESCRIPTION>\n   VizieR Astronomical Server vizier.cds.unistra.fr\n \
+        \   Date: 2026-10-01T09:26:01 [V7.6]\n   Explanations and Statistics of UCDs:\t\
+        \t\tSee LINK below\n   In case of problem, please report to:\tcds-question@unistra.fr\n\
+        \ </DESCRIPTION>\n<!-- VOTable description at http://www.ivoa.net/Documents/latest/VOT.html\
+        \ -->\n<INFO name=\"service_protocol\" value=\"ASU\">  IVOID of the protocol\
+        \ through which the data was retrieved</INFO>\n<INFO name=\"request_date\"\
+        \ value=\"2026-10-01T09:26:01\">  Query execution date</INFO>\n<INFO name=\"\
+        request\" value=\"https://vizier.cds.unistra.fr/viz-bin/votable?-oc.form=d&amp;-source=II/336/apass9&amp;-out.max=unlimited&amp;-out.all&amp;-out.add=_r&amp;-sort=_r&amp;-c=2.71676018-54.29064769&amp;-c.rs=10.0&amp;\"\
+        >  Full request URL (POST)</INFO>\n<INFO name=\"contact\" value=\"cds-question@unistra.fr\"\
+        >  Email or URL to contact publisher</INFO>\n<INFO name=\"server_software\"\
+        \ value=\"VizieR/7.6\">  Software version</INFO>\n<INFO name=\"publisher\"\
+        \ value=\"CDS\">  Data centre that produced the VOTable</INFO>\n<INFO name=\"\
+        header_format\" value=\"mini\"/>\n<INFO name=\"header_format\" value=\"mini\"\
+        />\n\n<RESOURCE ID=\"yCat_2336\" name=\"II/336\" type=\"results\">\n  <DESCRIPTION>AAVSO\
+        \ Photometric All Sky Survey (APASS) DR9 (Henden+, 2016)</DESCRIPTION>  <INFO\
+        \ name=\"ivoid\" value=\"ivo://cds.vizier/ii/336\">    IVOID of underlying\
+        \ data collection  </INFO>\n  <INFO name=\"data_ivoid\" value=\"ivo://cds.vizier/ii/336\"\
+        >    IVOID of underlying data collection  </INFO>\n  <INFO name=\"creator\"\
+        \ value=\"Henden A.A.\">    First author or institution  </INFO>\n  <INFO\
+        \ name=\"cites\" value=\"bibcode:2015AAS...22533616H\">    Article or Data\
+        \ origin sources  </INFO>\n  <INFO name=\"journal\" value=\"AAS\">    Journal\
+        \ name  </INFO>\n  <INFO name=\"original_date\" value=\"2015\">    Year of\
+        \ the article publication  </INFO>\n  <INFO name=\"reference_url\" value=\"\
+        https://cdsarc.cds.unistra.fr/viz-bin/cat/II/336\">    Dataset landing page\
+        \  </INFO>\n  <INFO name=\"publication_date\" value=\"2024-10-24\">    Date\
+        \ of first publication in the data centre  </INFO>\n  <INFO name=\"rights_uri\"\
+        \ value=\"https://cds.unistra.fr/vizier-org/licences_vizier.html\">    Licence\
+        \ URI  </INFO>\n\n  <COOSYS ID=\"J2000\" system=\"eq_FK5\" equinox=\"J2000\"\
+        />\n  <TABLE ID=\"II_336_apass9\" name=\"II/336/apass9\">\n    <DESCRIPTION>The\
+        \ APASS catalog, output (on a total of 62 million sources)</DESCRIPTION>\n\
+        <!-- The APASS catalog -->\n\n    <!-- RowName: -c=${$poseq}&-c.rs=0.004 -->\n\
+        \    <!-- Definitions of GROUPs and FIELDs -->\n    <FIELD name=\"_r\" ucd=\"\
+        POS_ANG_DIST_GENERAL\" datatype=\"double\" width=\"6\" precision=\"3\">\n\
+        \      <DESCRIPTION>Distance from center (002.716760-54.290648)[FK5/J2000]</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"RAJ2000\" ucd=\"POS_EQ_RA_MAIN\" ref=\"J2000\"\
+        \ datatype=\"double\" width=\"10\" precision=\"6\" unit=\"deg\">\n      <DESCRIPTION>Right\
+        \ ascension in decimal degrees (J2000)</DESCRIPTION>\n    </FIELD>\n    <FIELD\
+        \ name=\"DEJ2000\" ucd=\"POS_EQ_DEC_MAIN\" ref=\"J2000\" datatype=\"double\"\
+        \ width=\"10\" precision=\"6\" unit=\"deg\">\n      <DESCRIPTION>Declination\
+        \ in decimal degrees (J2000)</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"\
+        e_RAJ2000\" ucd=\"ERROR\" datatype=\"float\" width=\"6\" precision=\"3\" unit=\"\
+        arcsec\">\n      <DESCRIPTION>[0/2.4] RA uncertainty</DESCRIPTION>\n    </FIELD>\n\
+        \    <FIELD name=\"e_DEJ2000\" ucd=\"ERROR\" datatype=\"float\" width=\"6\"\
+        \ precision=\"3\" unit=\"arcsec\">\n      <DESCRIPTION>[0/2.4] DEC uncertainty</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"Field\" ucd=\"ID_FIELD\" datatype=\"long\"\
+        \ width=\"10\">\n      <DESCRIPTION>[20110001/9999988888] Field name</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"nobs\" ucd=\"NUMBER\" datatype=\"short\"\
+        \ width=\"3\">\n      <DESCRIPTION>[2/387] Number of observed nights</DESCRIPTION>\n\
+        \    </FIELD>\n    <FIELD name=\"mobs\" ucd=\"NUMBER\" datatype=\"short\"\
+        \ width=\"4\">\n      <DESCRIPTION>[2/3476] Number of images for this field,\
+        \ usually nobs*5</DESCRIPTION>\n    </FIELD>\n    <FIELD name=\"B-V\" ucd=\"\
+        PHOT_JHN_B-V\" datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\"\
+        >\n      <DESCRIPTION>[-7.5/13]? B-V color index</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_B-V\" ucd=\"ERROR\" datatype=\"\
+        float\" width=\"6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>[0/10.1]?\
+        \ B-V uncertainty</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"Vmag\" ucd=\"PHOT_JHN_V\" datatype=\"float\" width=\"6\"\
+        \ precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>[5.5/27.4]? Johnson V-band\
+        \ magnitude</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n    </FIELD>\n \
+        \   <FIELD name=\"e_Vmag\" ucd=\"ERROR\" datatype=\"float\" width=\"6\" precision=\"\
+        3\" unit=\"mag\">\n      <DESCRIPTION>[0/7]? Vmag uncertainty</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"u_e_Vmag\"\
+        \ ucd=\"CODE_ERROR\" datatype=\"unsignedByte\" width=\"1\">\n      <DESCRIPTION>[0/1]?\
+        \ Uncertainty flag on e_Vmag (1)</DESCRIPTION>\n      <VALUES null=\"255\"\
+        \ />\n    </FIELD>\n    <FIELD name=\"Bmag\" ucd=\"PHOT_JHN_B\" datatype=\"\
+        float\" width=\"6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>[5.4/27.3]?\
+        \ Johnson B-band magnitude</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n\
+        \    </FIELD>\n    <FIELD name=\"e_Bmag\" ucd=\"ERROR\" datatype=\"float\"\
+        \ width=\"6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>[0/10]? Bmag\
+        \ uncertainty</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"u_e_Bmag\" ucd=\"CODE_ERROR\" datatype=\"unsignedByte\"\
+        \ width=\"1\">\n      <DESCRIPTION>[0/1]? Uncertainty flag on e_Bmag (1)</DESCRIPTION>\n\
+        \      <VALUES null=\"255\" />\n    </FIELD>\n    <FIELD name=\"g'mag\" ucd=\"\
+        PHOT_SDSS_G\" datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\"\
+        >\n      <DESCRIPTION>[5.9/24.2]? g'-band AB magnitude, Sloan filter</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_g'mag\"\
+        \ ucd=\"ERROR\" datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\"\
+        >\n      <DESCRIPTION>[0/9.7]? g'mag uncertainty</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"u_e_g'mag\" ucd=\"CODE_ERROR\"\
+        \ datatype=\"unsignedByte\" width=\"1\">\n      <DESCRIPTION>[0/1]? Uncertainty\
+        \ flag on e_g'mag (1)</DESCRIPTION>\n      <VALUES null=\"255\" />\n    </FIELD>\n\
+        \    <FIELD name=\"r'mag\" ucd=\"PHOT_SDSS_R\" datatype=\"float\" width=\"\
+        6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>[5.1/23.9]? r'-band\
+        \ AB magnitude, Sloan filter</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n\
+        \    </FIELD>\n    <FIELD name=\"e_r'mag\" ucd=\"ERROR\" datatype=\"float\"\
+        \ width=\"6\" precision=\"3\" unit=\"mag\">\n      <DESCRIPTION>[0/6.5]? r'mag\
+        \ uncertainty</DESCRIPTION>\n      <VALUES null=\"NaN\" />\n    </FIELD>\n\
+        \    <FIELD name=\"u_e_r'mag\" ucd=\"CODE_ERROR\" datatype=\"unsignedByte\"\
+        \ width=\"1\">\n      <DESCRIPTION>[0/1]? Uncertainty flag on e_r'mag (1)</DESCRIPTION>\n\
+        \      <VALUES null=\"255\" />\n    </FIELD>\n    <FIELD name=\"i'mag\" ucd=\"\
+        PHOT_SDSS_I\" datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\"\
+        >\n      <DESCRIPTION>[4.2/29.1]? i'-band AB magnitude, Sloan filter</DESCRIPTION>\n\
+        \      <VALUES null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"e_i'mag\"\
+        \ ucd=\"ERROR\" datatype=\"float\" width=\"6\" precision=\"3\" unit=\"mag\"\
+        >\n      <DESCRIPTION>[0/9.6]? i'mag uncertainty</DESCRIPTION>\n      <VALUES\
+        \ null=\"NaN\" />\n    </FIELD>\n    <FIELD name=\"u_e_i'mag\" ucd=\"CODE_ERROR\"\
+        \ datatype=\"unsignedByte\" width=\"1\">\n      <DESCRIPTION>[0/1]? Uncertainty\
+        \ flag on e_i'mag (1)</DESCRIPTION>\n      <VALUES null=\"255\" />\n    </FIELD>\n\
+        <DATA><TABLEDATA>\n<TR><TD>0.026</TD><TD>002.716748</TD><TD>-54.290647</TD><TD>0.187</TD><TD>0.224</TD><TD>20132335</TD><TD>13</TD><TD>57</TD><TD>0.149</TD><TD>0.053</TD><TD>10.626</TD><TD>0.043</TD><TD>0</TD><TD>10.775</TD><TD>0.031</TD><TD>0</TD><TD>10.783</TD><TD>0.104</TD><TD>0</TD><TD>10.675</TD><TD>0.047</TD><TD>0</TD><TD>10.726</TD><TD>0.077</TD><TD>0</TD></TR>\n\
+        </TABLEDATA></DATA>\n<INFO name=\"matches\" value=\"1\">matching records</INFO>\n\
+        \    <INFO name=\"meta\" value=\"message\">      memory restriction caused\
+        \ by sort option (partial sort in bunches of 699050)    </INFO>\n\n<INFO name=\"\
+        Warning\" value=\"+++memory restriction caused by {\\bf sort} option (partial\
+        \ sort in bunches of 699050)\"/>\n  </TABLE>\n</RESOURCE>\n</VOTABLE>\n"
