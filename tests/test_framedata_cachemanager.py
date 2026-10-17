@@ -2,6 +2,9 @@
 # flake8: noqa: F403, F405
 
 import os
+import subprocess
+import sys
+from pathlib import Path
 import pytest
 from astropop.framedata import cache_manager
 from astropop.framedata.cache_manager import TempDir, BaseTempDir, TempFile
@@ -10,31 +13,45 @@ from astropop.testing import *
 
 
 class Test_AtExit:
-    def test_ensure_delete_on_exit(self):
+    @pytest.mark.parametrize('retain', [False, True])
+    def test_process_exit(self, tmp_path, retain):
+        # Run real interpreter shutdown in a child. Calling _run_exitfuncs in
+        # pytest would also shut down coverage and unrelated library handlers.
+        script = """
+import sys
+from astropop.framedata import cache_manager
+from astropop.framedata.cache_manager import TempDir
+cache_manager.DELETE_ON_EXIT = sys.argv[2] != 'retain'
+folder = TempDir('testing')
+print(folder.full_path)
+with folder.create_file('owned.txt').open('w') as stream:
+    stream.write('owned')
+"""
+        folder = tmp_path / 'child-cache'
+        (tmp_path / 'cache').mkdir()
+        (tmp_path / 'config').mkdir()
+        env = dict(os.environ, XDG_CACHE_HOME=str(tmp_path / 'cache'),
+                   XDG_CONFIG_HOME=str(tmp_path / 'config'))
+        result = subprocess.run([sys.executable, '-c', script, str(folder),
+                        'retain' if retain else 'delete'],
+                       check=True, env=env, capture_output=True, text=True)
+        folder = Path(result.stdout.strip())
+        assert folder.exists() is retain
+        assert (folder / 'owned.txt').exists() is retain
+
+    def test_cleanup_does_not_run_unrelated_exit_handlers(self):
         import atexit
-        t = TempDir('testing')
-        assert_in(t, BaseTempDir.managed.values())
-        assert_in(BaseTempDir, cache_manager.managed_folders)
-        assert_path_exists(t.full_path)
-        assert_path_exists(BaseTempDir.full_path)
+        called = []
 
-        atexit._run_exitfuncs()
-        assert_path_not_exists(t.full_path)
-        assert_path_not_exists(BaseTempDir.full_path)
+        def callback():
+            called.append(True)
 
-    def test_keep_on_exit(self):
-        import atexit
-        cache_manager.DELETE_ON_EXIT = False
-        t = TempDir('testing', delete_on_remove=False)
-        assert_in(t, BaseTempDir.managed.values())
-        assert_path_exists(t.full_path)
-        assert_path_exists(BaseTempDir.full_path)
-
-        atexit._run_exitfuncs()
-        assert_path_exists(t.full_path)
-        assert_path_exists(BaseTempDir.full_path)
-        # restore the behavior
-        cache_manager.DELETE_ON_EXIT = True
+        atexit.register(callback)
+        try:
+            cache_manager.cleanup()
+            assert called == []
+        finally:
+            atexit.unregister(callback)
 
 
 class Test_TempDir_Init:
@@ -97,7 +114,7 @@ class Test_TempDir_Delete:
 
     def test_keep_if_children_file(self):
         tmp = TempDir('testing')
-        f = tmp.create_file('file.txt', delete_on_remove=False)
+        tmp.create_file('file.txt', delete_on_remove=False)
         path = tmp.full_path
         assert_path_exists(path)
         tmp.delete()
@@ -105,7 +122,7 @@ class Test_TempDir_Delete:
 
     def test_keep_if_children_folder(self):
         tmp = TempDir('testing')
-        sub = tmp.create_folder('subfolder', delete_on_remove=False)
+        tmp.create_folder('subfolder', delete_on_remove=False)
         path = tmp.full_path
         assert_path_exists(path)
         tmp.delete()
@@ -114,7 +131,7 @@ class Test_TempDir_Delete:
     def test_delete_children_multi_level(self):
         tmp = TempDir('testing')
         sub = tmp.create_folder('subfolder')
-        f = sub.create_file('file.txt', delete_on_remove=False)
+        sub.create_file('file.txt', delete_on_remove=False)
         tmp.delete()
         assert_path_exists(tmp.full_path)
 
@@ -126,7 +143,7 @@ class Test_TempDir_Attributes:
     def test_is_removable_multi_level(self):
         tmp = TempDir('testing')
         sub = tmp.create_folder('subfolder', delete_on_remove=True)
-        f = sub.create_file('file.txt', delete_on_remove=False)
+        sub.create_file('file.txt', delete_on_remove=False)
         assert_false(tmp.is_removable)
         assert_false(sub.is_removable)
 
