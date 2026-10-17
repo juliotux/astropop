@@ -130,7 +130,7 @@ class Test_NormalizeAndStripHeader():
         header += "TEST    =           0.10000000 / Test multiple keywords\n"
         header += "Test    =           0.20000000 / Test multiple keywords\n"
         h = fits.Header.fromstring(header, sep='\n')
-        with pytest.warns(UserWarning) as record:
+        with pytest.warns(UserWarning) as _record:
             h = _normalize_and_strip_dict(h)
 
     def test_enforce_fits(self):

@@ -21,8 +21,7 @@ from astropop.astrometry.astrometrynet import solve_astrometry_image, \
                                               solve_astrometry_hdu, \
                                               solve_astrometry_framedata, \
                                               AstrometrySolver, \
-                                              SolveFieldCommand, \
-                                              _solve_field
+                                              SolveFieldCommand, _solve_field
 from astropop.astrometry.astrometrynet import _parse_angle, \
                                               _parse_coordinates, \
                                               _parse_crpix, \
@@ -42,9 +41,9 @@ def compare_wcs(wcs, nwcs):
         assert_almost_equal(res1, res2, decimal=1)
 
 
-skip_astrometry = pytest.mark.skipif("_solve_field is None or "
-                                     "os.getenv('SKIP_TEST_ASTROMETRY', "
-                                     "False)")
+skip_astrometry = pytest.mark.skipif(
+    _solve_field is None or bool(os.getenv('SKIP_TEST_ASTROMETRY', False)),
+    reason='Astrometry.net is unavailable or explicitly disabled')
 
 
 @skip_astrometry
