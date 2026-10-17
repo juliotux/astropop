@@ -1,0 +1,32 @@
+# Development rules
+
+## Scope and branches
+
+- Inspect `git status`, the current branch, and nearby code/tests before editing. Preserve unrelated work.
+- Keep independent fixes and features separate. A CI repair is not permission to redesign cache ownership, uncertainty semantics, or registration algorithms.
+- When asked for a new independent branch, use the requested base; otherwise prefer local `main` and state the choice. Use a feature branch as a base only when the work depends on it. Do not silently reset, discard work, or rewrite history.
+- Complete authorized local work without repeated confirmation. Local edits or commits do not themselves authorize a push, PR publication, merge, or release.
+
+## Implementation
+
+- Follow neighboring Python conventions and NumPy-style docstrings. Prefer the smallest change that fixes the cause while preserving public behavior.
+- Preserve physical units, coordinate frames/epochs, masks, uncertainties, shapes, and in-place semantics unless the task explicitly changes them.
+- Add regression coverage for behavioral fixes. Do not delete operations from exception or nonmutation tests just because their return values are unused.
+- Use `tmp_path` for disposable files/directories. Never hand a shared directory such as the system temporary root to an object that deletes its cache directory.
+- Test interpreter shutdown in a child process. Never call `atexit._run_exitfuncs()` inside pytest: it can stop coverage measurement and execute unrelated handlers.
+- Keep helpers inside their owning test classes where practical. Put genuinely shared fixtures in `conftest.py`; avoid one-off test files when an existing module fits.
+
+## Validation
+
+- Treat `pyproject.toml`, `tox.ini`, and `.github/workflows/` in this checkout as authoritative. Do not assume a test option or feature from another branch exists here.
+- Use an isolated Python environment with the appropriate test/docs extras. If using `XDG_CACHE_HOME` or `XDG_CONFIG_HOME`, create the directories first; Astropy may ignore nonexistent paths.
+- Start with the affected tests and broaden to the relevant integration checks. Once checks pass, repeat them only for new changes, failures, or unresolved concerns.
+- Keep ordinary CI offline and live catalog conformance in one explicit job when that infrastructure is present. Never make missing recorded responses silently fall through to the network.
+- Report commands/results, skips, and outstanding checks accurately. A local Linux pass does not prove Windows, macOS, oldest dependencies, development dependencies, or remote CI passed.
+- Do not globally suppress warnings or weaken tolerances to hide a failure. Expect deliberate warnings locally and fix unintended behavior at its source.
+
+## Commits and handoff
+
+Follow the module-prefix convention in the root `AGENTS.md`. Review the staged diff and commit in small batches, grouping implementation with its applicable tests. Stage named paths or hunks so unrelated changes are not included.
+
+PR descriptions should explain the concrete failure and resulting behavior, then give relevant validation and known limitations. Distinguish implemented fixes from future work and verified service behavior from recordings or historical observations.
