@@ -3,8 +3,8 @@
 
 import pytest
 import numpy as np
-import tempfile
 import os
+from pathlib import Path
 from astropop.framedata.framedata import setup_filename, extract_units, \
                                          shape_consistency, \
                                          uncertainty_unit_consistency, \
@@ -175,7 +175,8 @@ class Test_FrameData_Setup_Filename:
     def test_manual_filename_with_full_path(self, tmp_path):
         temp = str(tmp_path)
         frame = self.frame(temp)
-        ntemp = tempfile.mkstemp(suffix='.npy', dir=temp)[1]
+        ntemp = str(tmp_path / 'existing.npy')
+        Path(ntemp).touch()
         assert_equal(setup_filename(frame, filename=ntemp), ntemp)
 
     def test_manual_filename_without_full_path(self, tmp_path):
@@ -188,7 +189,7 @@ class Test_FrameData_Setup_Filename:
     def test_manual_cache_folder_without_file(self, tmp_path):
         temp = str(tmp_path)
         frame = self.frame(temp)
-        ntemp = os.path.dirname(tempfile.mkstemp(suffix='.npy')[1])
+        ntemp = str(tmp_path / 'new-cache')
         cache_file = os.path.join(ntemp, self.fname)
         assert_equal(setup_filename(frame, cache_folder=ntemp), cache_file)
 
@@ -196,7 +197,7 @@ class Test_FrameData_Setup_Filename:
         temp = str(tmp_path)
         frame = self.frame(temp)
         nfile = '/no-existing/testing.file.npy'
-        ndir = os.path.dirname(tempfile.mkstemp(suffix='.npy')[1])
+        ndir = str(tmp_path / 'new-cache')
         cache_file = os.path.join(ndir, os.path.basename(nfile))
         assert_equal(setup_filename(frame, cache_folder=ndir, filename=nfile),
                      cache_file)

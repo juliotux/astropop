@@ -2,8 +2,7 @@ import sys
 import os
 
 ap_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-sys.path.append(ap_dir)
-sys.tracebacklimit = 0
+sys.path.insert(0, ap_dir)
 
 # Minimum version, enforced by sphinx
 needs_sphinx = '4.3.0'

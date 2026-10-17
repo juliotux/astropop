@@ -216,9 +216,9 @@ async def _subprocess(args, stdout, stderr, stdout_loglevel, stderr_loglevel,
 def _run_async_task(task):
     """Run async task and avoid problems with Jupyter."""
     try:
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
     except RuntimeError:
-        loop = None
+        return asyncio.run(task)
 
     # patch asyncio when running inside Jupyter or other running loop
     if loop and loop.is_running():

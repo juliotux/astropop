@@ -76,9 +76,13 @@ def astroquery_skycoord(center, simbad=None):
             if simbad is None:
                 simbad = Simbad()
             t = simbad.query_object(center)
-            if t is None:
+            if t is None or len(t) == 0:
                 raise ValueError(f'Coordinates {center} could not be'
                                  ' resolved.')
+            # The TAP interface (Astroquery >= 0.4.8) returns degrees
+            # under lowercase names; the legacy interface used sexagesimal.
+            if 'ra' in t.colnames and 'dec' in t.colnames:
+                return SkyCoord(t['ra'][0], t['dec'][0], unit='deg')
             return guess_coordinates(t['RA'][0], t['DEC'][0], skycoord=True)
     if isinstance(center, (tuple, list, np.ndarray)) and len(center) == 2:
         return guess_coordinates(center[0], center[1], skycoord=True)

@@ -2,15 +2,24 @@
 # flake8: noqa: F403, F405
 
 import os
+import copy
+import socket
+from types import SimpleNamespace
+from unittest.mock import Mock
 import pytest
+import yaml
 import numpy as np
-from astropy.table import Table
+from astropy.table import Table, MaskedColumn
 from astropy.coordinates import SkyCoord, Angle
 from astropy import units as u
 from astropy.time import Time
-from astropop.catalogs.simbad import SimbadSourcesCatalog, simbad_query_id
+from astroquery.exceptions import NoResultsWarning
+from erfa import ErfaWarning
+from astropop.catalogs.simbad import SimbadSourcesCatalog, simbad_query_id, \
+                                      _normalize_tap_result
 from astropop.catalogs import vizier
-from astropop.catalogs.gaia import GaiaDR3SourcesCatalog
+from astropop.catalogs.gaia import Gaia, GaiaDR3SourcesCatalog, \
+                                    _gaia_query_timeout
 from astropop.catalogs._online_tools import _timeout_retry, \
                                             _fix_query_table, \
                                             get_center_radius, \
@@ -68,7 +77,6 @@ search_radius = ['0.1d', 0.1, Angle('0.1d')]
 
 
 @pytest.mark.flaky(reruns=5)
-@pytest.mark.remote_data
 class Test_OnlineTools:
     def test_timeout_retry_error(self):
         def _only_fail(*args, **kwargs):
@@ -138,8 +146,10 @@ class Test_OnlineTools:
 
     def test_astroquery_skycoord_error(self):
         value = 'this should raise error'
-        with pytest.raises(ValueError, match='could not be resolved'):
-            astroquery_skycoord(value)
+        # The deliberately nonexistent name also produces a SIMBAD warning.
+        with pytest.warns(NoResultsWarning, match='no data corresponding'):
+            with pytest.raises(ValueError, match='could not be resolved'):
+                astroquery_skycoord(value)
 
         with pytest.raises(ValueError, match='Center coordinates 1.0'):
             astroquery_skycoord(1.0)
@@ -172,9 +182,9 @@ class Test_OnlineTools:
 class Test_DummySourcesCatalog:
     # Test things handled by the base catalog
     def test_catalog_creation(self):
-        c = DummySourcesCatalog(sirius_coords[0], search_radius[0])
+        c = DummySourcesCatalog(sirius_coords[-1], search_radius[0])
         assert_is_instance(c, SourcesCatalog)
-        c = DummySourcesCatalog(sirius_coords[0], search_radius[0],
+        c = DummySourcesCatalog(sirius_coords[-1], search_radius[0],
                                 band='A')
         assert_is_instance(c, SourcesCatalog)
 
@@ -182,7 +192,10 @@ class Test_DummySourcesCatalog:
             DummySourcesCatalog()
 
     @pytest.mark.parametrize('radius', search_radius)
-    @pytest.mark.parametrize('center', sirius_coords)
+    @pytest.mark.parametrize('center', [
+        sirius_coords[0],
+        *sirius_coords[1:],
+    ])
     def test_catalog_center_radius(self, center, radius):
         c = DummySourcesCatalog(center, radius)
 
@@ -194,7 +207,7 @@ class Test_DummySourcesCatalog:
         assert_almost_equal(c.radius.degree, 0.1)
 
     def test_catalog_properties(self):
-        c = DummySourcesCatalog(sirius_coords[0], search_radius[0])
+        c = DummySourcesCatalog(sirius_coords[-1], search_radius[0])
         assert_is_instance(c.sources_id(), np.ndarray)
         assert_equal(c.sources_id().shape, (4))
         assert_is_instance(c.skycoord(), SkyCoord)
@@ -210,7 +223,7 @@ class Test_DummySourcesCatalog:
         assert_almost_equal(c.mag_list('A')[:, 1], sources['mag_error'])
 
     def test_catalog_table(self):
-        c = DummySourcesCatalog(sirius_coords[0], search_radius[0])
+        c = DummySourcesCatalog(sirius_coords[-1], search_radius[0])
         t = c.table()
         assert_is_instance(t, Table)
         assert_equal(t.colnames, ['id', 'ra', 'dec', 'pm_ra_cosdec',
@@ -225,7 +238,7 @@ class Test_DummySourcesCatalog:
         assert_almost_equal(t['B_error'], sources['mag_error'])
 
     def test_catalog_getitem_number(self):
-        c = DummySourcesCatalog(sirius_coords[0], search_radius[0])
+        c = DummySourcesCatalog(sirius_coords[-1], search_radius[0])
         nc = c[0]
         assert_equal(nc.sources_id(), sources['id'][0])
         assert_almost_equal(nc.ra_dec_list(),
@@ -234,7 +247,7 @@ class Test_DummySourcesCatalog:
                             [[sources['mag'][0], sources['mag_error'][0]]])
 
     def test_catalog_getitem_array(self):
-        c = DummySourcesCatalog(sirius_coords[0], search_radius[0])
+        c = DummySourcesCatalog(sirius_coords[-1], search_radius[0])
         for items in [[2, 3], slice(2, None), np.array([2, 3])]:
             nc = c[items]
             assert_equal(len(nc), 2)
@@ -254,7 +267,7 @@ class Test_DummySourcesCatalog:
             c[(2, 3)]
 
     def test_catalog_getitem_columns(self):
-        c = DummySourcesCatalog(sirius_coords[0], search_radius[0])
+        c = DummySourcesCatalog(sirius_coords[-1], search_radius[0])
         for i in sources.colnames:
             assert_equal(c[i], sources[i])
 
@@ -262,12 +275,12 @@ class Test_DummySourcesCatalog:
             c['no column']
 
     def test_catalog_len(self):
-        c = DummySourcesCatalog(sirius_coords[0], search_radius[0])
+        c = DummySourcesCatalog(sirius_coords[-1], search_radius[0])
         assert_equal(len(c), 4)
         assert_equal(len(c[0]), 1)
 
     def test_catalog_match_objects(self):
-        c = DummySourcesCatalog(sirius_coords[0], search_radius[0])
+        c = DummySourcesCatalog(sirius_coords[-1], search_radius[0])
         m = c.match_objects([0.52525258, 0.87265989, 4.16526547],
                             [3.65404807, 5.50588171, 3.80703142],
                             limit_angle='1 arcsec')
@@ -281,19 +294,19 @@ class Test_DummySourcesCatalog:
         assert_almost_equal(m.mag_list('B')[:, 1], [0.02, np.nan, 0.03], decimal=2)
 
     def test_catalog_band(self):
-        c = DummySourcesCatalog(sirius_coords[0], search_radius[0],
+        c = DummySourcesCatalog(sirius_coords[-1], search_radius[0],
                                 band='A')
         assert_equal(c.filters, ['A'])
 
         # default behavior is all
-        c = DummySourcesCatalog(sirius_coords[0], search_radius[0])
+        c = DummySourcesCatalog(sirius_coords[-1], search_radius[0])
         assert_equal(c.filters, ['A', 'B'])
-        c = DummySourcesCatalog(sirius_coords[0], search_radius[0],
+        c = DummySourcesCatalog(sirius_coords[-1], search_radius[0],
                                 band='all')
         assert_equal(c.filters, ['A', 'B'])
 
         # None should have no filters
-        c = DummySourcesCatalog(sirius_coords[0], search_radius[0],
+        c = DummySourcesCatalog(sirius_coords[-1], search_radius[0],
                                 band=None)
         assert_equal(c.filters, [])
 
@@ -301,20 +314,95 @@ class Test_DummySourcesCatalog:
         for i in ['C', ('A', 'C'), ['A', 'C']]:
             with pytest.raises(ValueError,
                                match='not available for this catalog'):
-                c = DummySourcesCatalog(sirius_coords[0], search_radius[0],
+                c = DummySourcesCatalog(sirius_coords[-1], search_radius[0],
                                         band=i)
-        c = DummySourcesCatalog(sirius_coords[0], search_radius[0])
+        c = DummySourcesCatalog(sirius_coords[-1], search_radius[0])
         with pytest.raises(ValueError, match='not available'):
             c.mag_list('C')
 
         D = DummySourcesCatalog
         D._available_filters = None
         with pytest.raises(ValueError, match='No filters'):
-            c = D(sirius_coords[0], search_radius[0], band='A')
+            c = D(sirius_coords[-1], search_radius[0], band='A')
+
+
+class Test_SimbadTAP:
+    def test_tap_flux_rows_preserve_source_order_filters_and_missing_values(self):
+        query = Table({'main_id': ['z', 'z', 'a'],
+                       'ra': [20., 20., 10.], 'dec': [-2., -2., -1.],
+                       'pmra': [1., 1., 2.], 'pmdec': [3., 3., 4.],
+                       'coo_bibcode': ['coords-z', 'coords-z', 'coords-a'],
+                       'flux.filter': ['R', 'r', 'R'],
+                       'flux': [4., 5., 6.],
+                       'flux.bibcode': ['upper', 'lower', 'other']})
+        query['flux_err'] = MaskedColumn([0.1, 0.2, 999.], mask=[False, False, True])
+        original = query.copy()
+        result = _normalize_tap_result(query, ['R', 'r', 'V'])
+        assert list(result['MAIN_ID']) == ['z', 'a']
+        np.testing.assert_allclose(result['RA'], [20., 10.])
+        np.testing.assert_allclose(result['FLUX_R'], [4., 6.])
+        np.testing.assert_allclose(result['FLUX_r'], [5., np.nan])
+        np.testing.assert_allclose(result['FLUX_ERROR_R'], [0.1, np.nan])
+        assert list(result['FLUX_BIBCODE_R']) == ['upper', 'other']
+        assert list(result['FLUX_BIBCODE_r']) == ['lower', '']
+        assert np.all(np.isnan(result['FLUX_V']))
+        assert query.colnames == original.colnames
+        assert len(query) == 3
+
+    def test_tap_without_photometry(self):
+        query = Table({'main_id': ['star'], 'ra': [20.], 'dec': [-2.],
+                       'pmra': [1.], 'pmdec': [3.], 'coo_bibcode': ['reference']})
+        result = _normalize_tap_result(query, [])
+        assert list(result['MAIN_ID']) == ['star']
+        assert 'FLUX_V' not in result.colnames
+
+    def test_tap_catalog_sorts_sources_and_preserves_photometry(self, monkeypatch):
+        import importlib
+        from astropy import units as u
+        module = importlib.import_module('astropop.catalogs.simbad')
+
+        class Simbad:
+            tap = None
+
+            def add_votable_fields(self, *fields):
+                assert 'pm' not in fields
+
+            def query_region(self, center, radius):
+                assert self.ROW_LIMIT == -1
+                table = Table({'main_id': ['far', 'near'],
+                               'ra': [21., 20.], 'dec': [-2., -2.],
+                               'coo_bibcode': ['far-coords', 'near-coords'],
+                               'flux.filter': ['V', 'V'], 'flux': [8., 4.],
+                               'flux_err': [0.2, 0.1],
+                               'flux.bibcode': ['far-flux', 'near-flux']})
+                table['pmra'] = [1., 2.] * u.mas / u.yr
+                table['pmdec'] = [3., 4.] * u.mas / u.yr
+                return table
+
+        monkeypatch.setattr(module, 'Simbad', Simbad)
+        catalog = module.SimbadSourcesCatalog((20., -2.), '2 deg', band='V')
+        assert list(catalog.sources_id()) == ['near', 'far']
+        np.testing.assert_allclose(catalog.mag_list('V'), [[4., 0.1], [8., 0.2]])
+        assert list(catalog.magnitudes_bibcode('V')) == ['near-flux', 'far-flux']
+        assert list(catalog.coordinates_bibcode()) == ['near-coords', 'far-coords']
+
+    def test_identifier_prefix_does_not_match_double_star(self, monkeypatch):
+        import importlib
+        module = importlib.import_module('astropop.catalogs.simbad')
+
+        class Simbad:
+            def query_region(self, center, radius):
+                return Table({'main_id': ['* target'], 'ra': [20.], 'dec': [-2.]})
+
+            def query_objectids(self, name):
+                return Table({'id': ['** unrelated', '* target', 'NAME Target']})
+
+        monkeypatch.setattr(module, 'Simbad', Simbad)
+        assert module.simbad_query_id(20., -2., '1s', name_order=['*']) == 'target'
+        assert module.simbad_query_id(20., -2., '1s', name_order=['NAME']) == 'Target'
 
 
 @pytest.mark.flaky(reruns=5)
-@pytest.mark.remote_data
 class Test_Simbad():
     def test_simbad_creation_errors(self):
         # Need arguments
@@ -405,10 +493,9 @@ class Test_Simbad():
 
 
 @pytest.mark.flaky(reruns=5)
-@pytest.mark.remote_data
 class Test_SimbadQueryID:
     @pytest.mark.parametrize('order, expect', [(None, 'alf CMa'),
-                                               (['NAME'], 'Dog Star'),
+                                               (['NAME'], 'Sirius'),
                                                (['*'], 'alf CMa'),
                                                (['HIP'], 'HIP 32349'),
                                                (['HIC', 'HD'], 'HIC 32349'),
@@ -436,6 +523,44 @@ class Test_SimbadQueryID:
         assert_equal(res, name)
 
 
+class Test_VizierAliases:
+    @pytest.mark.parametrize('legacy_names', [False, True])
+    def test_column_aliases_preserve_filter_api(
+            self, tmp_path, monkeypatch, legacy_names):
+        config = {'table': 'example', 'columns': ['+_r', '**'],
+                  'available_filters': {'g_': 'Sloan g'},
+                  'column_aliases': {"g'mag": 'g_mag', "e_g'mag": 'e_g_mag',
+                                     '2MASS': '_2MASS'},
+                  'coordinates': {'ra_column': 'RAJ2000', 'dec_column': 'DEJ2000'},
+                  'magnitudes': {'mag_column': '{band}mag',
+                                 'err_mag_column': 'e_{band}mag'},
+                  'ids': {'column': '_2MASS'}}
+        path = tmp_path / 'catalog.yml'
+        path.write_text(yaml.safe_dump(config))
+
+        class Vizier:
+            def __init__(self, catalog, columns):
+                assert "g'mag" in columns
+                assert 'g_mag' not in columns
+
+            def query_region(self, center, radius):
+                table = Table({'2MASS': ['source']})
+                table['RAJ2000'] = [20.] * u.deg
+                table['DEJ2000'] = [-2.] * u.deg
+                table["g'mag"] = [12.] * u.mag
+                table["e_g'mag"] = [0.1] * u.mag
+                if legacy_names:
+                    for raw, alias in config['column_aliases'].items():
+                        table.rename_column(raw, alias)
+                return [table]
+
+        monkeypatch.setattr(vizier, 'Vizier', Vizier)
+        result = vizier.VizierSourcesCatalog(path, (20., -2.), '1s')
+        assert result.filters == ['g_']
+        assert list(result.sources_id()) == ['source']
+        np.testing.assert_allclose(result.mag_list('g_'), [[12., 0.1]])
+
+
 @pytest.mark.flaky(reruns=5)
 class Test_VizierGeneral:
     def test_print_available_catalogs(self):
@@ -460,9 +585,16 @@ class Test_VizierGeneral:
         assert_equal(cat._conf['description'], "UCAC4 Catalogue (Zacharias+, 2012)")
         assert_in('ucac4', cat.help())
 
+    def test_ucac5_coordinates_and_photometry(self):
+        cat = vizier.ucac5(hd674_coords[-1], '5 arcsec', band='J')
+        assert_greater(len(cat), 0)
+        assert_less(cat.skycoord().separation(hd674_coords[-1]).min().arcsec, 5)
+        assert_true(np.any(np.isfinite(cat.magnitude('J').nominal)))
+        assert_true(all(identifier.startswith('Gaia ')
+                        for identifier in cat.sources_id()))
+
 
 @pytest.mark.flaky(reruns=5)
-# @pytest.mark.remote_data
 class Test_Vizier_UCAC4:
     hd674_mags = {
         'J': [10.157, 0.02],
@@ -531,7 +663,6 @@ class Test_Vizier_UCAC4:
 
 
 @pytest.mark.flaky(reruns=5)
-@pytest.mark.remote_data
 class Test_Vizier_APASS9:
     hd674_mags = {
         'B': [10.775, 0.031],
@@ -599,7 +730,6 @@ class Test_Vizier_APASS9:
 
 
 @pytest.mark.flaky(reruns=5)
-@pytest.mark.remote_data
 class Test_Vizier_GSC242:
     hd674_mags = {
         'G': [10.551350, 0.000404],
@@ -689,7 +819,6 @@ class Test_Vizier_GSC242:
 
 
 @pytest.mark.flaky(reruns=5)
-@pytest.mark.remote_data
 class Test_VSXVizierCatalog:
     def test_vsx_creation_errors(self):
         # Need arguments
@@ -1010,9 +1139,173 @@ class Test_Tycho2VizierSourcesCatalog:
         assert_equal(s.filters, ['BT', 'VT'])
 
 
+class Test_GaiaDR3Sync:
+    """Check the async alternative offline, including the sync row-limit trap.
+
+    Mock the server so completeness and failure behavior remain testable when
+    Gaia itself is slow. These tests intentionally have no remote_data marker.
+    """
+
+    @staticmethod
+    def _catalog(mode='sync'):
+        # Bypass construction, which would resolve coordinates and query Gaia.
+        result = object.__new__(GaiaDR3SourcesCatalog)
+        result._query_mode = mode
+        result._max_g_mag = 12
+        result._g = Mock(MAIN_GAIA_TABLE='gaiadr3.gaia_source',
+                         MAIN_GAIA_TABLE_RA='ra', MAIN_GAIA_TABLE_DEC='dec')
+        return result
+
+    @staticmethod
+    def _page(start, count):
+        # Use integer IDs above 2**53 to catch rounding of the page cursor.
+        # Reverse the synthetic distances so ID order cannot pass as the final
+        # distance order. Units must survive stacking the pages too.
+        ids = np.arange(start, start + count, dtype=np.int64)
+        table = Table({'source_id': ids, 'ra': np.arange(count, dtype=float),
+                       'dist': np.arange(start + count, start, -1, dtype=np.int64)})
+        table['ra'].unit = 'deg'
+        return table
+
+    @staticmethod
+    def _query(cat, columns=('ra',)):
+        return cat._query_object(SkyCoord(10, -20, unit='deg'), .1, columns)
+
+    # Cover both sides of the 2000-row cap and exact multiples, which require
+    # a final empty page to establish completeness.
+    @pytest.mark.parametrize('count', [0, 1, 1999, 2000, 2001, 4000])
+    def test_sync_returns_every_page_and_sorts_by_distance(self, count):
+        cat = self._catalog()
+        start = 4923784391133336960
+        pages = [self._page(start + offset, min(2000, count - offset))
+                 for offset in range(0, count + 1, 2000)]
+        cat._g.launch_job.side_effect = [Mock(get_results=Mock(return_value=p))
+                                        for p in pages]
+        result = self._query(cat)
+        assert len(result) == count
+        assert result.colnames == ['ra', 'dist']
+        assert str(result['ra'].unit) == 'deg'
+        assert list(result['dist']) == sorted(result['dist'])
+        cat._g.launch_job_async.assert_not_called()
+        assert cat._g.launch_job.call_count == len(pages)
+        for i, call in enumerate(cat._g.launch_job.call_args_list):
+            sql = call.args[0]
+            assert 'SELECT TOP 2000' in sql
+            assert 'source_id ASC' in sql
+            assert 'phot_g_mean_mag < 12' in sql
+            assert '10.0, -20.0, 0.1' in sql
+            if i:
+                assert f'AND source_id > {start + i * 2000 - 1}' in sql
+            else:
+                assert 'source_id >' not in sql
+
+    def test_sync_retains_explicitly_requested_id(self):
+        cat = self._catalog()
+        cat._g.launch_job.return_value.get_results.return_value = self._page(123, 2)
+        result = self._query(cat, columns=('ra', 'source_id'))
+        assert 'source_id' in result.colnames
+
+    def test_sync_does_not_return_partial_data_on_failure(self):
+        # Page one succeeding must not hide a failure on page two. Falling
+        # back to async here would reintroduce the service path being avoided.
+        cat = self._catalog()
+        cat._g.launch_job.side_effect = [
+            Mock(get_results=Mock(return_value=self._page(123, 2000))),
+            TimeoutError('sync unavailable')]
+        with pytest.raises(TimeoutError, match='sync unavailable'):
+            self._query(cat)
+        cat._g.launch_job_async.assert_not_called()
+
+    def test_repeated_page_fails_instead_of_looping(self):
+        # A server returning the same full page must not grow the catalog with
+        # duplicates or keep requesting it until the network budget expires.
+        cat = self._catalog()
+        cat._g.launch_job.return_value.get_results.return_value = self._page(123, 2000)
+        with pytest.raises(RuntimeError, match='pagination stalled'):
+            self._query(cat)
+        assert cat._g.launch_job.call_count == 2
+
+    def test_async_path_keeps_original_launcher(self):
+        cat = self._catalog('async')
+        expected = object()
+        cat._g.launch_job_async.return_value.get_results.return_value = expected
+        assert self._query(cat) is expected
+        cat._g.launch_job.assert_not_called()
+        sql = cat._g.launch_job_async.call_args.args[0]
+        assert 'dist ASC' in sql
+        assert 'TOP 2000' not in sql
+        assert 'source_id' not in sql
+
+    def test_invalid_mode_rejected_before_query(self):
+        with pytest.raises(ValueError, match='query_mode'):
+            GaiaDR3SourcesCatalog((10, -20), .1, query_mode='invalid')
+
+
+class Test_GaiaDR3Timeout:
+    """Check deadline enforcement without waiting for a real Gaia outage."""
+
+    def test_timeout_is_local_to_copied_gaia_client(self, monkeypatch):
+        client = copy.deepcopy(Gaia)
+        handler = client._TapPlus__getconnhandler()._TapConn__connectionHandler
+        original = handler.get_connection
+        global_timeout = socket.getdefaulttimeout()
+        global_handler = Gaia._TapPlus__getconnhandler()._TapConn__connectionHandler
+        global_connection = global_handler.get_connection(ishttps=True)
+        original_connection_timeout = global_connection.timeout
+        global_connection.close()
+        # Advance a fake clock between connections: polling consumes one
+        # shared budget, while other Gaia users retain their original settings.
+        now = [10.]
+        monkeypatch.setattr('astropop.catalogs.gaia.time.monotonic', lambda: now[0])
+        with _gaia_query_timeout(client, timeout=5):
+            connection = handler.get_connection(ishttps=True)
+            assert connection.timeout == 5
+            now[0] = 14.
+            assert handler.get_connection(ishttps=True).timeout == 1
+            assert socket.getdefaulttimeout() == global_timeout
+            global_connection = global_handler.get_connection(ishttps=True)
+            assert global_connection.timeout is original_connection_timeout
+            global_connection.close()
+            now[0] = 15.
+            with pytest.raises(TimeoutError, match='Gaia query'):
+                handler.get_connection(ishttps=True)
+        assert handler.get_connection == original
+
+    def test_expired_retry_cannot_create_another_connection(self, monkeypatch):
+        now = [0.]
+        monkeypatch.setattr('astropop.catalogs.gaia.time.monotonic', lambda: now[0])
+        connection = Mock()
+        factory = Mock(return_value=connection)
+        handler = SimpleNamespace(get_connection=factory)
+        client = Mock()
+        client._TapPlus__getconnhandler.return_value = SimpleNamespace(
+            _TapConn__connectionHandler=handler)
+
+        def stalled_query():
+            # Model a socket wait consuming the entire remaining budget. The
+            # existing retry helper may call again, but must not open another
+            # connection after expiry (and therefore cannot resubmit a job).
+            handler.get_connection(ishttps=True)
+            now[0] = 5.
+            raise TimeoutError('stalled socket')
+
+        with pytest.raises(TimeoutError):
+            with _gaia_query_timeout(client, timeout=5):
+                astroquery_query(stalled_query)
+        factory.assert_called_once_with(ishttps=True)
+        connection.close.assert_called_once()
+        assert handler.get_connection is factory
+
+
 @pytest.mark.flaky(reruns=5)
-# @pytest.mark.remote_data
+@pytest.mark.gaia_query
 class Test_GaiaDR3:
+    def _catalog(self, *args, **kwargs):
+        # Use the same synchronous query path for live and replayed tests.
+        # ESA's async queue can stall even for tiny fields; launcher selection
+        # and timeout behavior are covered separately by the focused tests.
+        return GaiaDR3SourcesCatalog(*args, query_mode='sync', **kwargs)
+
     hd674_mags = {
         'G': [10.552819, 0.000337826],
         'BP': [10.649535, 0.00091911],
@@ -1022,26 +1315,24 @@ class Test_GaiaDR3:
     def test_gaiadr3_creation_errors(self):
         # Need arguments
         with pytest.raises(TypeError):
-            GaiaDR3SourcesCatalog()
+            self._catalog()
         with pytest.raises(TypeError):
-            GaiaDR3SourcesCatalog('test')
+            self._catalog('test')
 
         with pytest.raises(ValueError, match='Filter None not available.'):
-            GaiaDR3SourcesCatalog('Sirius', '0.05d', band='None')
+            self._catalog('Sirius', '0.05d', band='None')
         # Filter None should pass, no mag data
-        GaiaDR3SourcesCatalog('Sirius', '0.05d', None)
+        self._catalog('Sirius', '0.05d', None)
 
     def test_gaiadr3_creation_filters(self):
-        c = GaiaDR3SourcesCatalog(hd674_coords[0], '0.01d')
+        c = self._catalog(hd674_coords[0], '0.01d')
 
         assert_equal(c.sources_id()[0], 'Gaia DR3 4923784391133336960')
         for k, v in self.hd674_mags.items():
             assert_almost_equal(c.mag_list(k)[0], v)
 
     def test_gaiadr3_properties_types(self):
-        s = GaiaDR3SourcesCatalog(hd674_coords[0],
-                                  search_radius[0],
-                                  band='G')
+        s = self._catalog(hd674_coords[0], search_radius[0], band='G')
 
         assert_is_instance(s.sources_id(), np.ndarray)
         assert_equal(s.sources_id().shape, (len(s)))
@@ -1066,8 +1357,7 @@ class Test_GaiaDR3:
         assert_equal(s.in_galaxy_candidates().dtype, bool)
 
     def test_gaiadr3_properties(self):
-        s = GaiaDR3SourcesCatalog(hd674_coords[0], search_radius[0],
-                                  band=['G'])
+        s = self._catalog(hd674_coords[0], search_radius[0], band=['G'])
         assert_equal(s.available_filters,
                      ['G', 'BP', 'RP'])
         assert_is_instance(s.center, SkyCoord)
@@ -1075,21 +1365,21 @@ class Test_GaiaDR3:
         assert_equal(s.filters, ['G'])
 
     def test_gaiadr3_sources_limit(self):
-        # test for bug #94
-        # when using non-async functions, the output is limited to 2000 sources
-        g = GaiaDR3SourcesCatalog('RMC 40', radius='15 arcmin')
+        # Regression for #94: synchronous TAP caps each page at 2000 rows.
+        # This modest M31 field exceeds that cap without recording the much
+        # larger RMC 40 field. Both live and replay modes must retrieve all pages.
+        g = self._catalog((10.684, 41.269), radius='0.1 deg')
         assert_greater(len(g), 2001)
 
     def test_gaiadr3_max_mag(self):
-        s = GaiaDR3SourcesCatalog(hd674_coords[0], '1.0 deg',
-                                  band=['G'], max_g_mag=15)
+        s = self._catalog(hd674_coords[0], '1.0 deg',
+                          band=['G'], max_g_mag=15)
         # GAIA DR3 has only 741 sources brighter than 15 mag in this radius
         assert_less(len(s), 1000)
         assert_false(np.any(s.magnitude('G').nominal > 15))
 
     def test_gaiadr3_pm_in_skycoord(self):
-        s = GaiaDR3SourcesCatalog(hd674_coords[0], '0.1 deg',
-                                  band=['G'])
+        s = self._catalog(hd674_coords[0], '0.1 deg', band=['G'])
         assert_is_instance(s.skycoord().pm_ra_cosdec, u.Quantity)
         assert_is_instance(s.skycoord().pm_dec, u.Quantity)
         assert_almost_equal(s.skycoord().pm_ra_cosdec.value[0],
@@ -1098,17 +1388,28 @@ class Test_GaiaDR3:
                             9.578, decimal=3)
 
     def test_gaiadr3_pm_in_get_coordinates(self):
-        s = GaiaDR3SourcesCatalog(hd674_coords[0], '0.1 deg',
-                                  band=['G'])
+        # HD 674 has measured proper motion; unrelated field sources can have
+        # missing values and are unsuitable for this propagation check.
+        s = self._catalog(hd674_coords[0], '0.1 deg', band=['G'])[0]
         a = s.get_coordinates()
-        c = s.get_coordinates(obstime=Time('J10016.0'))
-        # space motion must be applyied
-        assert_not_equal(c.ra.degree, a.ra.degree)
-        assert_not_equal(c.dec.degree, a.dec.degree)
+        target = Time('J2020.0', scale='tt')
+        # Catalog coordinates omit distances. ERFA supplies a distance for
+        # propagation and warns about it, even with valid proper motions.
+        with pytest.warns(ErfaWarning, match='pmsafe.*distance overridden'):
+            c = s.get_coordinates(obstime=target)
+        elapsed = (target - a.obstime).to(u.yr)
+        # Over four years the angular offsets follow the measured motions.
+        dra = (c.ra - a.ra) * np.cos(a.dec)
+        ddec = c.dec - a.dec
+        np.testing.assert_allclose(dra.to_value(u.mas),
+                                   (a.pm_ra_cosdec * elapsed).to_value(u.mas),
+                                   rtol=1e-4)
+        np.testing.assert_allclose(ddec.to_value(u.mas),
+                                   (a.pm_dec * elapsed).to_value(u.mas),
+                                   rtol=1e-4)
 
 
 @pytest.mark.flaky(reruns=5)
-# @pytest.mark.remote_data
 class Test_SMSSDR4:
     hd674_mags = {
         'u': [11.9227, 0.0135],
@@ -1166,3 +1467,31 @@ class Test_SMSSDR4:
         assert_is_instance(s.center, SkyCoord)
         assert_is_instance(s.radius, Angle)
         assert_equal(s.filters, ['u', 'v', 'g', 'r', 'i', 'z'])
+
+
+def test_vizier_missing_module_attribute():
+    assert not hasattr(vizier, '__mro__')
+    with pytest.raises(AttributeError, match='no attribute'):
+        getattr(vizier, 'not_a_catalog')
+
+
+@pytest.mark.parametrize('modern', [False, True])
+def test_simbad_name_resolution_column_formats(modern):
+    class Resolver:
+        def query_object(self, name):
+            if modern:
+                return Table({'ra': [101.25], 'dec': [-16.5]})
+            return Table({'RA': ['06 45 00'], 'DEC': ['-16 30 00']})
+
+    result = astroquery_skycoord('Sirius', simbad=Resolver())
+    assert_almost_equal(result.ra.degree, 101.25)
+    assert_almost_equal(result.dec.degree, -16.5)
+
+
+def test_simbad_empty_name_resolution():
+    class Resolver:
+        def query_object(self, name):
+            return Table({'ra': [], 'dec': []})
+
+    with pytest.raises(ValueError, match='could not be resolved'):
+        astroquery_skycoord('missing object', simbad=Resolver())

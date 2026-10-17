@@ -214,3 +214,29 @@ class Test_Broadcast():
 
         assert_equal(bc.iters, [np.arange(10), [None]*10, [2]*10])
 
+
+
+@pytest.mark.parametrize('loop_state', ['absent', 'idle', 'closed'])
+def test_run_command_without_running_event_loop(loop_state):
+    import asyncio
+    import sys
+
+    try:
+        previous = asyncio.get_event_loop()
+    except RuntimeError:
+        previous = None
+    loop = None if loop_state == 'absent' else asyncio.new_event_loop()
+    if loop_state == 'closed':
+        loop.close()
+    asyncio.set_event_loop(loop)
+    try:
+        result, stdout, stderr = run_command([sys.executable, '-c', 'print(42)'])
+        assert_equal(result.returncode, 0)
+        assert_equal(stdout, ['42'])
+        assert_equal(stderr, [])
+        if loop_state == 'idle':
+            assert not loop.is_closed()
+    finally:
+        if loop is not None:
+            loop.close()
+        asyncio.set_event_loop(previous)

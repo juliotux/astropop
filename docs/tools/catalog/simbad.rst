@@ -16,14 +16,14 @@ It provides objects identification across multiple catalogs, photometry for seve
 
 To generate a |SourcesCatalog| from any Simbad query, use the |SimbadSourcesCatalog| class or simply by |simbad| interfaces. During the instance creation, instead of pass the data itself, you must pass a query ``center``, a search ``radius`` and (optionally) the list of photometric ``band`` you want to retrieve. The query will be performed and the data will be downloaded and stored in the instance and can be accessed just like any other |SourcesCatalog|.
 
-.. ipython:: python
+.. code-block:: python
 
     from astropop.catalogs import simbad
     simbad_sources = simbad.simbad(center='Sirius', radius='1 arcmin',
                                    band=['g'])
     simbad_sources.table()
 
-.. ipython:: python
+.. code-block:: python
 
     simbad_sources = simbad.SimbadSourcesCatalog(center='Sirius',
                                                  radius='1 arcmin',
@@ -35,7 +35,7 @@ The default behavior of the catalog is that whe no photometric band is passed, n
 
 Also, additionally to the |SourcesCatalog| methods, |SimbadSourcesCatalog| have `~astropop.catalogs.simbad.SimbadSourcesCatalog.coordinates_bibcode` and `~astropop.catalogs.simbad.SimbadSourcesCatalog.magnitudes_bibcode` properties that returns the bibcode of the coordinates and photometry data, respectively.
 
-.. ipython:: python
+.. code-block:: python
 
     simbad_sources.coordinates_bibcode()
     simbad_sources.magnitudes_bibcode('V')
@@ -47,7 +47,7 @@ Identifying Sources in Simbad
 
 The `~astropop.catalogs.simbad` module provides an additional method for identify a source or a list of sources based on their RA and Dec coordinates. This is done using |simbad_query_id| method.
 
-.. ipython:: python
+.. code-block:: python
 
     from astropop.catalogs.simbad import simbad_query_id
     simbad_query_id(101.287155, -16.716115833333333, limit_angle='1 arcsec')
@@ -59,7 +59,7 @@ See that a ``limit_angle`` must be provided. This is the maximum distance betwee
 
 The default behavior is to use the ``MAIN_ID`` column as name. But you can choose a priority order to get the name of the star. Example: if you want to get only HD, HYP and TYC names, in this priority order, you can do with ``name_order`` parameter:
 
-.. ipython:: python
+.. code-block:: python
 
     simbad_query_id(101.287155, -16.716115833333333, limit_angle='1 arcsec',
                     name_order=['HD', 'HYP', 'TYC'])

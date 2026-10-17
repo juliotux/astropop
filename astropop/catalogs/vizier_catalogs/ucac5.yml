@@ -2,7 +2,7 @@
 table: 'ucac5'
 bibcode: "2017yCat.1340....0Z"
 description: 'UCAC5 Catalogue (Zacharias+ 2017)'
-columns: ['+r', '**']
+columns: ['+_r', '**']
 available_filters: {
   'G': 'Gaia G magnitude',
   'R': 'Photographic R magnitude from NOMAD',
@@ -20,7 +20,7 @@ magnitudes:
   mag_column: '{band}mag'
   err_mag_column: 'e_{band}mag'
 epoch:
-  value: 'J2015.0'
+  value: 2015.0
   format: 'jyear'
 ids:
   prepend: 'Gaia'
