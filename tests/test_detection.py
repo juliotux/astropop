@@ -418,7 +418,7 @@ class Test_Segmentation_Detection():
                        sigma=[5*gaussian_fwhm_to_sigma],
                        skip_poisson=True)
         im_o = im.copy()
-        sources = segfind(im, 5, 800, 10)
+        _sources = segfind(im, 5, 800, 10)
         assert_equal(im_o, im)
 
 
@@ -618,7 +618,7 @@ class Test_DAOFind_Detection():
                        sigma=[5*gaussian_fwhm_to_sigma],
                        skip_poisson=True)
         im_o = im.copy()
-        sources = daofind(im, 5, 800, 10, 5)
+        _sources = daofind(im, 5, 800, 10, 5)
         assert_equal(im_o, im)
 
 
@@ -782,5 +782,5 @@ class Test_StarFind():
                        sigma=[5*gaussian_fwhm_to_sigma],
                        skip_poisson=True)
         im_o = im.copy()
-        sources = starfind(im, 5, 800, 10)
+        _sources = starfind(im, 5, 800, 10)
         assert_equal(im_o, im)

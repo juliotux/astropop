@@ -8,7 +8,7 @@ import pytest
 from astropy.io import fits
 
 from astropy.utils import NumpyRNGContext
-from astropop.framedata import FrameData, PixelMaskFlags
+from astropop.framedata import FrameData
 from astropop.logger import logger, log_to_list
 from astropop.image.imcombine import imcombine, _sigma_clip, \
                                      _minmax_clip, ImCombiner
@@ -412,8 +412,8 @@ class Test_ImCombiner_ChunkYielder():
         comb._load_images(li)
 
         logs = []
-        lh = log_to_list(logger, logs, False)
-        level = logger.getEffectiveLevel()
+        _lh = log_to_list(logger, logs, False)
+        _level = logger.getEffectiveLevel()
         logger.setLevel('DEBUG')
 
         if method == 'median':
@@ -468,8 +468,8 @@ class Test_ImCombiner_ChunkYielder():
         comb._load_images(li)
 
         logs = []
-        lh = log_to_list(logger, logs, False)
-        level = logger.getEffectiveLevel()
+        _lh = log_to_list(logger, logs, False)
+        _level = logger.getEffectiveLevel()
         logger.setLevel('DEBUG')
 
         if method == 'median':
@@ -721,7 +721,7 @@ class Test_ImCombiner_Rejection():
         data[0:2, 0:3] = np.nan
         expect[0:2, 0:3] = 1
         expect = expect.astype(bool)
-        s = np.sum(expect)
+        _s = np.sum(expect)
 
         # force assign the buffer
         comb = ImCombiner()
@@ -730,7 +730,7 @@ class Test_ImCombiner_Rejection():
         comb.set_minmax_clip(_min, _max)
         comb._apply_rejection()
         # original mask must be kept
-        sr = np.sum(np.isnan(comb._buffer))
+        _sr = np.sum(np.isnan(comb._buffer))
         assert_equal(np.isnan(comb._buffer), expect)
 
     def test_apply_sigmaclip(self):
