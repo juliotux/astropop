@@ -3,6 +3,13 @@ table: 'II/336/apass9'
 bibcode: '2015AAS...22533616H'
 description: 'AAVSO Photometric All Sky Survey (APASS) DR9 (Henden+, 2016)'
 columns: ['+_r', '**']  # not so many columns
+column_aliases:
+  "g'mag": g_mag
+  "e_g'mag": e_g_mag
+  "r'mag": r_mag
+  "e_r'mag": e_r_mag
+  "i'mag": i_mag
+  "e_i'mag": e_i_mag
 available_filters: {
   'B': 'Johnson B-band magnitude',
   'V': 'Johnson V-band magnitude',
