@@ -23,6 +23,19 @@ class TestOptionalArrays:
         def __array__(self, *args, **kwargs):
             raise AssertionError('Disabled data must not be converted')
 
+    @pytest.mark.parametrize('memmap', [False, True])
+    def test_uncertainty_assignment_keeps_existing_dtype(self, tmp_path, memmap):
+        frame = FrameData(np.ones((2, 3)), dtype='f4',
+                         cache_folder=str(tmp_path / 'frame'),
+                         use_memmap_backend=memmap)
+        # Existing setters expand Python scalars with their own dtype, while
+        # explicitly supplied arrays are converted to the image dtype.
+        frame.uncertainty = 0.123456789012345
+        assert frame.uncertainty.dtype == np.dtype('f8')
+        frame.uncertainty = np.full(frame.shape, 0.25)
+        assert frame.uncertainty.dtype == np.dtype('f4')
+        np.testing.assert_array_equal(frame.uncertainty, 0.25)
+
     @pytest.mark.parametrize('operation, expected, unit', [
         ('+', 2.5, u.m), ('-', 1.5, u.m),
         ('*', 100, u.m*u.cm), ('/', 0.04, u.m/u.cm),

@@ -436,7 +436,7 @@ class FrameData:
         _, value, _, _ = shape_consistency(self.data, uncertainty=value)
 
         # Copy a possible view before closing/replacing the original mapping.
-        self._unct = reset_memmap_array(self._unct, value, dtype=self.dtype)
+        self._unct = reset_memmap_array(self._unct, value)
         self._update_memmaps()
 
     def get_uncertainty(self, return_none=True):
