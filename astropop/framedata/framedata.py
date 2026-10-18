@@ -509,12 +509,10 @@ class FrameData:
         self._flags[where] |= flag.value
 
     @property
-    @_optional('FRAMEDATA_DISABLE_FLAGS')
     def mask(self):
         """Return masked pixels, or None when flags are absent or disabled."""
         return self.mask_flags(PixelMaskFlags.MASKED)
 
-    @_optional('FRAMEDATA_DISABLE_FLAGS')
     def mask_flags(self, flags):
         """Get a mask pixels with an specific flag.
 
@@ -527,9 +525,10 @@ class FrameData:
         mask: `~numpy.ndarray` or None
             True for masked pixels; None when flags are absent or disabled.
         """
-        if self._flags is None:
+        pixel_flags = self.flags
+        if pixel_flags is None:
             return None
-        return mask_from_flags(self._flags, flags,
+        return mask_from_flags(pixel_flags, flags,
                                allowed_flags_class=PixelMaskFlags)
 
     def mask_pixels(self, pixels):
