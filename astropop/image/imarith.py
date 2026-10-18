@@ -75,6 +75,32 @@ def _arith(operand1, operand2, operation):
     return _arith_funcs[operation](qf1, qf2)
 
 
+def _prepare_operands(operand1, operand2, operation, skip_uncertainty):
+    """Validate nominal exponents and convert operands for arithmetic."""
+    if skip_uncertainty and operation == '**':
+        exponent = operand2.nominal if isinstance(operand2, QFloat) else operand2
+        if isinstance(exponent, u.Quantity):
+            exponent = exponent.value
+        if not isinstance(exponent, (u.UnitBase, str)) and not np.isscalar(exponent):
+            raise ValueError('Power operation requires a dimensionless scalar exponent')
+    converter = _as_quantity if skip_uncertainty else convert_to_qfloat
+    return (_qf_or_framedata(operand1, alternative=converter),
+            _qf_or_framedata(operand2, alternative=converter))
+
+
+def _merge_arithmetic_flags(operand1, operand2, shape, method):
+    """Merge operand flags, honoring disabled storage and missing arrays."""
+    if conf.FRAMEDATA_DISABLE_FLAGS:
+        return None
+    f1 = operand1.flags if isinstance(operand1, FrameData) else None
+    f2 = operand2.flags if isinstance(operand2, FrameData) else None
+    if f1 is None:
+        f1 = np.zeros(shape, dtype=np.uint8)
+    if f2 is None:
+        f2 = np.zeros(shape, dtype=np.uint8)
+    return merge_flag(f1, f2, method=method)
+
+
 def imarith(operand1, operand2, operation, inplace=False,
             merge_flags='or', merge_headers='only_equal', **kwargs):
     """Perform arithmetic operations using `~astropop.framedata.FrameData`.
@@ -136,15 +162,8 @@ def imarith(operand1, operand2, operation, inplace=False,
 
     skip_uncertainty = (conf.IMARITH_SKIP_UNCERTAINTY or
                         conf.FRAMEDATA_DISABLE_UNCERTAINTY)
-    if skip_uncertainty and operation == '**':
-        exponent = operand2.nominal if isinstance(operand2, QFloat) else operand2
-        if isinstance(exponent, u.Quantity):
-            exponent = exponent.value
-        if not isinstance(exponent, (u.UnitBase, str)) and not np.isscalar(exponent):
-            raise ValueError('Power operation requires a dimensionless scalar exponent')
-    converter = _as_quantity if skip_uncertainty else convert_to_qfloat
-    operand1 = _qf_or_framedata(operand1, alternative=converter)
-    operand2 = _qf_or_framedata(operand2, alternative=converter)
+    operand1, operand2 = _prepare_operands(
+        operand1, operand2, operation, skip_uncertainty)
 
     if isinstance(operand1, FrameData) and inplace:
         ccd = operand1
@@ -173,16 +192,8 @@ def imarith(operand1, operand2, operation, inplace=False,
         ccd.unit = result.unit
         ccd.uncertainty = None if skip_uncertainty else result.uncertainty
 
-        if not conf.FRAMEDATA_DISABLE_FLAGS:
-            f1 = operand1.flags if isinstance(operand1, FrameData) else None
-            f2 = operand2.flags if isinstance(operand2, FrameData) else None
-            if f1 is None:
-                f1 = np.zeros(ccd.shape, dtype=np.uint8)
-            if f2 is None:
-                f2 = np.zeros(ccd.shape, dtype=np.uint8)
-            ccd.flags = merge_flag(f1, f2, method=merge_flags)
-        else:
-            ccd.flags = None
+        ccd.flags = _merge_arithmetic_flags(
+            operand1, operand2, ccd.shape, merge_flags)
 
         # Perform merging headers operation only if both operands have headers
         h1 = getattr(operand1, 'header', None)
