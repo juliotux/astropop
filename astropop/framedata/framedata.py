@@ -14,7 +14,7 @@ from astropy import units as u
 from astropy.io import fits
 from astropy.wcs import WCS
 
-from ..config import AstropopConfig as conf
+from ..config import AstropopConfig as conf, _optional
 from ..flags import mask_from_flags
 from .cache_manager import TempDir
 from ._memmap import create_array_memmap, delete_array_memmap, \
@@ -415,8 +415,9 @@ class FrameData:
         return d
 
     @property
+    @_optional('FRAMEDATA_DISABLE_UNCERTAINTY')
     def uncertainty(self):
-        """Get the uncertainty frame container."""
+        """Get the uncertainty array, or None when absent or disabled."""
         return self._unct
 
     @uncertainty.setter
@@ -445,8 +446,9 @@ class FrameData:
         In some cases, like interfacing with QFloat, the uncertainty cannot be
         None or an empty container. So, in cases like this, is prefered to get
         a whole matrix containing zeroes. This method is responsible for this
-        special returns. For non-empty containers, a copy in `~numpy.ndarray`
-        container will be returned.
+        special returns. For enabled, non-empty containers, a copy in
+        `~numpy.ndarray` container will be returned. Disabled uncertainties
+        behave like absent arrays, including the explicit zero-filled fallback.
 
         Parameters
         ----------
@@ -455,15 +457,17 @@ class FrameData:
           matrix filled with zeroes will be returned.
           Default: True
         """
-        if self._unct is None and return_none:
+        uncertainty = self.uncertainty
+        if uncertainty is None and return_none:
             return None
-        elif self._unct is None:
+        elif uncertainty is None:
             return np.zeros_like(self.data)
-        return np.array(self._unct, dtype=self.dtype)
+        return np.array(uncertainty, dtype=self.dtype)
 
     @property
+    @_optional('FRAMEDATA_DISABLE_FLAGS')
     def flags(self):
-        """Get the flags array, or None when no flags are stored."""
+        """Get the flags array, or None when absent or disabled."""
         return self._flags
 
     @flags.setter
@@ -505,10 +509,12 @@ class FrameData:
         self._flags[where] |= flag.value
 
     @property
+    @_optional('FRAMEDATA_DISABLE_FLAGS')
     def mask(self):
-        """Return masked pixels, or None when no flags are stored."""
+        """Return masked pixels, or None when flags are absent or disabled."""
         return self.mask_flags(PixelMaskFlags.MASKED)
 
+    @_optional('FRAMEDATA_DISABLE_FLAGS')
     def mask_flags(self, flags):
         """Get a mask pixels with an specific flag.
 
@@ -518,8 +524,8 @@ class FrameData:
 
         Returns
         -------
-        mask: `~numpy.ndarray`
-            Masked pixels. True for masked pixels.
+        mask: `~numpy.ndarray` or None
+            True for masked pixels; None when flags are absent or disabled.
         """
         if self._flags is None:
             return None
@@ -617,10 +623,10 @@ class FrameData:
         nf._data = delete_array_memmap(self._data, read=True, remove=False)
         if dtype is not None:
             nf._data = nf._data.astype(dtype)
-        if not conf.FRAMEDATA_DISABLE_FLAGS:
-            nf._flags = delete_array_memmap(self._flags, read=True, remove=False)
-        if self._unct is not None and not conf.FRAMEDATA_DISABLE_UNCERTAINTY:
-            nf._unct = delete_array_memmap(self._unct, read=True, remove=False)
+        nf._flags = delete_array_memmap(self.flags, read=True, remove=False)
+        uncertainty = self.uncertainty
+        if uncertainty is not None:
+            nf._unct = delete_array_memmap(uncertainty, read=True, remove=False)
             if dtype is not None:
                 nf._unct = nf._unct.astype(dtype)
 

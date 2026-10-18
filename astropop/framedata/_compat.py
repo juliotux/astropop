@@ -257,7 +257,7 @@ def _to_ccddata(frame):
     unit = frame.unit
     meta = dict(frame.header)
     wcs = frame.wcs
-    uncertainty = frame._unct
+    uncertainty = frame.uncertainty
     if uncertainty is not None:
         uncertainty = StdDevUncertainty(uncertainty, unit=unit)
     mask = frame.mask
@@ -296,8 +296,8 @@ def _to_hdu(frame, hdu_uncertainty=_HDU_UNCERT, hdu_flags=_HDU_FLAGS,
             header['comment'] = i
     hdul = fits.HDUList(fits.PrimaryHDU(data, header=header))
 
-    if hdu_uncertainty and frame._unct is not None:
-        uncert = frame.uncertainty
+    uncert = frame.uncertainty if hdu_uncertainty else None
+    if uncert is not None:
         uncert_h = fits.Header()
         uncert_h[unit_key] = unit_string
         hdul.append(fits.ImageHDU(uncert, header=uncert_h,
