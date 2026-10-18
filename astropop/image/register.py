@@ -65,6 +65,28 @@ class _BaseRegister(abc.ABC):
 
     _name = None
 
+    def __init__(self, window=None):
+        if window is not None:
+            if (not isinstance(window, tuple) or len(window) != 2
+                    or not all(isinstance(i, slice) for i in window)):
+                raise ValueError('window must be a tuple of two slices '
+                                 '(rows, columns).')
+            if any(i.step not in (None, 1) for i in window):
+                raise ValueError('window slices must have unit steps.')
+        self.window = window
+
+    def _window_slices(self, image1, image2):
+        """Validate and normalize the window against both image shapes."""
+        if image1.ndim != 2 or image1.shape != image2.shape:
+            raise ValueError('Window registration requires matching 2D shapes.')
+        slices = []
+        for section, size in zip(self.window, image1.shape):
+            start, stop, _ = section.indices(size)
+            if start >= stop:
+                raise ValueError('window must select a non-empty image region.')
+            slices.append(slice(start, stop))
+        return tuple(slices)
+
     @staticmethod
     def _apply_transform_image(image, tform, cval=0, order=3):
         """Apply the transform to an image."""
@@ -95,10 +117,29 @@ class _BaseRegister(abc.ABC):
 
         Returns
         -------
-        tfrom : `~skimage.transform.AffineTransform`
-            Transform computed to project image2 in image2.
+        tform : `~skimage.transform.AffineTransform`
+            Transform in full-image coordinates.
+
+        Notes
+        -----
+        Only pixels inside the configured ``window`` are used to estimate
+        the transform.
         """
-        return self._compute_transform(image1, image2, mask1, mask2)
+        if self.window is None:
+            return self._compute_transform(image1, image2, mask1, mask2)
+
+        image1, image2 = np.asarray(image1), np.asarray(image2)
+        window = self._window_slices(image1, image2)
+        mask1 = None if mask1 is None else np.asarray(mask1)[window]
+        mask2 = None if mask2 is None else np.asarray(mask2)[window]
+        tform = self._compute_transform(image1[window], image2[window],
+                                        mask1, mask2)
+        # The algorithm returns a mapping from reference to moving pixels.
+        # Translate its local window coordinates back to full-image coordinates.
+        origin = transform.AffineTransform(
+            translation=(window[1].start, window[0].start)).params
+        return transform.AffineTransform(
+            matrix=origin @ tform.params @ np.linalg.inv(origin))
 
     def register_image(self, image1, image2, mask1=None, mask2=None,
                        cval='median'):
@@ -124,16 +165,19 @@ class _BaseRegister(abc.ABC):
             Registered image according the transform computed by the class.
         mask : `~numpy.ndarray`
             Mask for the registered image.
-        tfrom : `~skimage.transform.AffineTransform`
-            Transform computed to project image2 in image2.
+        tform : `~skimage.transform.AffineTransform`
+            Sampling transform from reference to moving image coordinates.
         """
+        if self.window is not None:
+            self._window_slices(np.asarray(image1), np.asarray(image2))
+
         # equal images are just returned
         if np.all(image1 == image2):
             logger.info('Images are equal, skipping registering.')
             return (image1, np.zeros_like(image1, dtype=bool),
                     transform.AffineTransform(translation=(0, 0)))
 
-        tform = self._compute_transform(image1, image2, mask1, mask2)
+        tform = self.compute_transform(image1, image2, mask1, mask2)
         if mask2 is None:
             mask2 = np.zeros_like(image2)
 
@@ -163,7 +207,7 @@ class _BaseRegister(abc.ABC):
         ----------
         frame1 : `~astropop.framedata.FrameData`
             Reference image for registration.
-        image2 : `~astropop.framedata.FrameData`
+        frame2 : `~astropop.framedata.FrameData`
             Moving image for registration.
         cval : `float` or {'median', 'mean'} (optional)
             Fill value for transformed pixels from outside the image. If
@@ -234,6 +278,13 @@ class CrossCorrelationRegister(_BaseRegister):
 
     Parameters
     ----------
+    window : tuple of slice, optional
+        Region used to estimate the transform, in NumPy (rows, columns) order.
+        For example, ``(slice(100, 300), slice(200, 400))``. The same region
+        is selected in both images; only its pixels are used for registration.
+        Slices follow NumPy bounds and must have unit steps and select a
+        non-empty region. The transform is applied to the full image.
+        Default: `None` (use the full image).
     upsample_factor : int, optional
         Upsampling factor. Images will be registered to within
         ``1 / upsample_factor`` of a pixel. For example
@@ -269,7 +320,11 @@ class CrossCorrelationRegister(_BaseRegister):
     -----
     - Due to a bug in the `~skimage.registration.phase_cross_correlation`
       normalization is automatically disabled.
-    - ``return_error`` is set to ``'always'`` to avoid keep compatibility.
+    - On older scikit-image versions, ``return_error`` is set to ``'always'``
+      for compatibility with the expected return format.
+    - Input masks passed to the registration methods are currently ignored
+      during transform estimation. Use ``window`` to select a region.
+    - A window requires real-space input (``space='real'``).
 
     References
     ----------
@@ -278,7 +333,10 @@ class CrossCorrelationRegister(_BaseRegister):
 
     _name = 'cross-correlation'
 
-    def __init__(self, **kwargs):
+    def __init__(self, window=None, **kwargs):
+        super().__init__(window=window)
+        if window is not None and kwargs.get('space', 'real').lower() != 'real':
+            raise ValueError('window requires real-space image data.')
         import skimage
         from skimage.registration import phase_cross_correlation
         if skimage.__version__ >= '0.19':
@@ -298,35 +356,38 @@ class CrossCorrelationRegister(_BaseRegister):
 class AsterismRegister(_BaseRegister):
     """Register images using asterism matching. Based on astroalign [1]_.
 
-    This Register algorith compute the transform between 2 images based
-    on the position of detected sources. It can handle both translation and
-    rotation of the images. It compare similar 3-points asterisms in 2
-    images and find the best possible affine transform between them.
-
-    This package requires `astroalign` to work. The main difference here to
-    the bare astroalign Register is that we use our `starfind`
-    implementation to find the sources, to keep just good punctual sources
-    in the Register, and sort them by brightness, using the brighter sources
-    in the work. This may allow a better result in the Register, according our
-    experiments.
+    Match triangles of detected sources to estimate translation, rotation,
+    and scale between two images. Sources are detected with an astropop
+    photometry detector and sorted by brightness before matching. The
+    brightest sources, up to ``max_control_points``, are passed to astroalign.
+    Background estimation and detection use only the configured window.
+    Input masks are currently ignored during transform estimation.
 
     Parameters
     ----------
+    window : tuple of slice, optional
+        Region used to estimate the transform, in NumPy (rows, columns) order.
+        For example, ``(slice(100, 300), slice(200, 400))``. The same region
+        is selected in both images; only its pixels are used for registration.
+        Slices follow NumPy bounds and must have unit steps and select a
+        non-empty region. The transform is applied to the full image.
+        Default: `None` (use the full image).
     max_control_points : int, optional
         Maximum control points (stars) used in asterism matching.
         Default: 50
     detection_threshold : int, optional
         Minimum SNR detection threshold.
         Default: 5
-    detection_function : {'sepfind', 'starfind', 'daofind'} (optional)
+    detection_function : {'segfind', 'starfind', 'daofind'} (optional)
         Detection function to use.
-        Default: 'sepfind'
-    detection_kwargs : dict (optional)
+        Default: 'segfind'
+    **detection_kwargs :
         Keyword arguments to pass to the detection function.
 
     Raises
     ------
-    ImportError: if astroalign is not installed
+    ImportError
+        If astroalign is not installed.
 
     References
     ----------
@@ -336,7 +397,8 @@ class AsterismRegister(_BaseRegister):
     _name = 'asterism-matching'
 
     def __init__(self, max_control_points=50, detection_threshold=5,
-                 detection_function='segfind', **detection_kwargs):
+                 detection_function='segfind', window=None, **detection_kwargs):
+        super().__init__(window=window)
         try:
             import astroalign
         except ImportError:
@@ -378,7 +440,7 @@ class AsterismRegister(_BaseRegister):
 
 
 def compute_shift_list(frame_list, algorithm='cross-correlation',
-                       ref_image=0, skip_failure=False, **kwargs):
+                       ref_image=0, skip_failure=False, window=None, **kwargs):
     """Compute the shift between a list of frames.
 
     Parameters
@@ -390,7 +452,7 @@ def compute_shift_list(frame_list, algorithm='cross-correlation',
         The algorithm to compute the `~skimage.transform.AffineTransform`
         between the images.
         'cross-correlation' will compute the transform
-        using `~skimage.transform.phase_cross_correlation` method.
+        using `~skimage.registration.phase_cross_correlation` method.
         'asterism-matching' will use `~astroalign` to match asterisms of 3
         detected stars in the field and compute the transform.
         Default: 'cross-correlation'
@@ -398,15 +460,30 @@ def compute_shift_list(frame_list, algorithm='cross-correlation',
         Reference image index to compute the registration.
         Default: 0
     skip_failure : bool (optional)
-        If True, the images that fail to register will be skipped and their
+        If True, failed images retain their list positions and their
         shifts will be set to nan.
         Default: False
+    window : tuple of slice, optional
+        Region used to estimate the transform, in NumPy (rows, columns) order.
+        For example, ``(slice(100, 300), slice(200, 400))``. The same region
+        is selected in both images; only its pixels are used for registration.
+        Slices follow NumPy bounds and must have unit steps and select a
+        non-empty region. Shifts are reported in full-image coordinates.
+        Default: `None` (use the full image).
     **kwargs :
         keyword arguments to be passed to `CrossCorrelationRegister` or
         `AsterismRegister` during instance creation. See the parameters in
         each class documentation.
+
+    Returns
+    -------
+    shifts : list of list
+        One ``[dx, dy]`` translation in pixels per input frame, in input order.
+        The reference entry is ``[0, 0]``. Transforms map reference coordinates
+        to moving-image coordinates, so alignment moves features in the
+        opposite direction. Rotation and scale are not returned.
     """
-    reg = _algorithm_check(algorithm, kwargs)
+    reg = _algorithm_check(algorithm, dict(kwargs, window=window))
     _check_compatible_list(frame_list)
 
     n = len(frame_list)
@@ -441,7 +518,7 @@ def compute_shift_list(frame_list, algorithm='cross-correlation',
 def register_framedata_list(frame_list, algorithm='cross-correlation',
                             ref_image=0, clip_output=False,
                             cval='median', inplace=False, skip_failure=False,
-                            **kwargs):
+                            window=None, **kwargs):
     """Perform registration in a framedata list.
 
     Parameters
@@ -449,11 +526,11 @@ def register_framedata_list(frame_list, algorithm='cross-correlation',
     frame_list : list
         A list containing `~astropop.framedata.FrameData` images to be
         registered. All images must have the same shape.
-    algorith : {'cross-correlation', 'asterism-matching'} (optional)
+    algorithm : {'cross-correlation', 'asterism-matching'} (optional)
         The algorithm to compute the `~skimage.transform.AffineTransform`
         between the images.
         'cross-correlation' will compute the transform
-        using `~skimage.transform.phase_cross_correlation` method.
+        using `~skimage.registration.phase_cross_correlation` method.
         'asterism-matching' will use `~astroalign` to match asterisms of 3
         detected stars in the field and compute the transform.
         Default: 'cross-correlation'
@@ -461,27 +538,40 @@ def register_framedata_list(frame_list, algorithm='cross-correlation',
         Reference image index to compute the registration.
         Default: 0
     clip_output : bool (optional)
-        If True, the output images will be clipped to a only-valid pixels
-        frame.
+        If True, trim the outputs using their measured translations.
+        Rotation and scale are not included in the clipping calculation.
     cval : float or {'median', 'mean'} (optional)
         Fill value for the empty pixels in the transformed image. If 'mean' or
         'median', the correspondent values will be computed from the image.
         Default: 'median'
     skip_failure: bool (optional)
-        If True, the images that fail to register will be skipped. Their data
-        will be fill with the cval and all pixels mask will be set to
-        True. If False, the error will be raised.
+        If True, failed images retain their list positions. Their data
+        will be filled with cval and all pixels will be masked.
+        If False, the error will be raised.
         Default: False
     inplace : bool (optional)
         Perform the operation inplace, modifying the original FrameData
         container. If `False`, a new container will be created.
         Default: `False`
+    window : tuple of slice, optional
+        Region used to estimate the transform, in NumPy (rows, columns) order.
+        For example, ``(slice(100, 300), slice(200, 400))``. The same region
+        is selected in both images; only its pixels are used for registration.
+        Slices follow NumPy bounds and must have unit steps and select a
+        non-empty region. The transform is applied to the full image.
+        Default: `None` (use the full image).
     **kwargs :
         keyword arguments to be passed to `CrossCorrelationRegister` or
         `AsterismRegister` during instance creation. See the parameters in
         each class documentation.
+
+    Returns
+    -------
+    registered : list of `~astropop.framedata.FrameData`
+        Registered frames in input order, including the reference and any
+        failed frames retained by ``skip_failure=True``.
     """
-    reg = _algorithm_check(algorithm, kwargs)
+    reg = _algorithm_check(algorithm, dict(kwargs, window=window))
     _check_compatible_list(frame_list)
 
     n = len(frame_list)
