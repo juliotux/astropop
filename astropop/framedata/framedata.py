@@ -14,6 +14,7 @@ from astropy import units as u
 from astropy.io import fits
 from astropy.wcs import WCS
 
+from ..config import AstropopConfig as conf
 from ..flags import mask_from_flags
 from .cache_manager import TempDir
 from ._memmap import create_array_memmap, delete_array_memmap, \
@@ -244,6 +245,12 @@ class FrameData:
         else:
             dtype = np.dtype('f8')
 
+        # Disabled arrays must not be validated, converted, or allocated.
+        if conf.FRAMEDATA_DISABLE_UNCERTAINTY:
+            uncertainty = None
+        if conf.FRAMEDATA_DISABLE_FLAGS:
+            flags = mask = None
+
         # raise errors if incompatible shapes
         data, uncertainty, mask, flags = shape_consistency(data, uncertainty,
                                                            mask, flags)
@@ -252,12 +259,12 @@ class FrameData:
         self.unit = unit
 
         # setup flags and mask
-        if flags is None:
+        if flags is None and not conf.FRAMEDATA_DISABLE_FLAGS:
             flags = np.zeros_like(data, dtype=PixelMaskFlags.dtype)
 
         # set data to the variables
         self._data = np.asarray(data, dtype=dtype)
-        self.flags = np.asarray(flags, dtype=PixelMaskFlags.dtype)
+        self.flags = flags
         self.uncertainty = uncertainty
         # create flag for masked pixels
         if mask is not None:
@@ -403,7 +410,9 @@ class FrameData:
     def get_masked_data(self, fill_value=np.nan):
         """Return a copy of the data with masked pixels as `fill_value`."""
         d = self.data.copy()
-        d[self.mask] = fill_value
+        mask = self.mask
+        if mask is not None:
+            d[mask] = fill_value
         return d
 
     @property
@@ -413,11 +422,8 @@ class FrameData:
 
     @uncertainty.setter
     def uncertainty(self, value):
-        if value is None:
-            self._unct = None
-            # do not delete earlier to avoid security issues if other parts of
-            # the code raises error
-            delete_array_memmap(self._unct, read=False, remove=True)
+        if value is None or conf.FRAMEDATA_DISABLE_UNCERTAINTY:
+            self._unct = delete_array_memmap(self._unct, read=False, remove=True)
             return
 
         # Put is valid containers
@@ -430,9 +436,8 @@ class FrameData:
         value = uncertainty_unit_consistency(self.unit, value)
         _, value, _, _ = shape_consistency(self.data, uncertainty=value)
 
-        # ensure that the memmap is removed
-        self._unct = delete_array_memmap(self._unct, read=False, remove=True)
-        self._unct = value
+        # Copy a possible view before closing/replacing the original mapping.
+        self._unct = reset_memmap_array(self._unct, value, dtype=self.dtype)
         self._update_memmaps()
 
     def get_uncertainty(self, return_none=True):
@@ -459,16 +464,13 @@ class FrameData:
 
     @property
     def flags(self):
-        """Get the flags frame container."""
+        """Get the flags array, or None when no flags are stored."""
         return self._flags
 
     @flags.setter
     def flags(self, value):
-        if value is None:
-            self._flags = None
-            # do not delete earlier to avoid security issues if other parts of
-            # the code raises error
-            delete_array_memmap(self._flags, read=False, remove=True)
+        if value is None or conf.FRAMEDATA_DISABLE_FLAGS:
+            self._flags = delete_array_memmap(self._flags, read=False, remove=True)
             return
 
         # Put is valid containers
@@ -480,7 +482,8 @@ class FrameData:
             value = np.asarray(value, dtype=PixelMaskFlags.dtype)
         _, _, _, flags = shape_consistency(self.data, flags=value)
 
-        self._flags = value
+        self._flags = reset_memmap_array(self._flags, value,
+                                          dtype=PixelMaskFlags.dtype)
         self._update_memmaps()
 
     def add_flags(self, flag, where):
@@ -495,11 +498,16 @@ class FrameData:
         """
         if not isinstance(flag, PixelMaskFlags):
             raise TypeError('Flag must be a PixelMaskFlags instance.')
+        if conf.FRAMEDATA_DISABLE_FLAGS:
+            self.flags = None
+            return
+        if self._flags is None:
+            self.flags = np.zeros(self.shape, dtype=PixelMaskFlags.dtype)
         self._flags[where] |= flag.value
 
     @property
     def mask(self):
-        """Mask all flagged pixels. True for all masked/removed pixels."""
+        """Return masked pixels, or None when no flags are stored."""
         return self.mask_flags(PixelMaskFlags.MASKED)
 
     def mask_flags(self, flags):
@@ -514,6 +522,8 @@ class FrameData:
         mask: `~numpy.ndarray`
             Masked pixels. True for masked pixels.
         """
+        if self._flags is None:
+            return None
         return mask_from_flags(self._flags, flags,
                                allowed_flags_class=PixelMaskFlags)
 
@@ -525,9 +535,9 @@ class FrameData:
         pixels: `~numpy.ndarray` or tuple
             Pixels to be masked. Can be a tuple of (y, x) positions or a
             boolean array where True means masked. Uses the same standard as
-            `~numpy.ndarray`[pixels] access.
+            ``array[pixels]`` indexing.
         """
-        self._flags[pixels] |= PixelMaskFlags.MASKED.value
+        self.add_flags(PixelMaskFlags.MASKED, pixels)
 
     def enable_memmap(self, cache_folder=None, filename=None):
         """Enable array file memmapping.
@@ -564,18 +574,13 @@ class FrameData:
         """Update the memmap files."""
 
         if self._memmapping:
-            # get the default files if names are not provided
-            dataf = self.cache.create_file(self.cache_filename + '.data.npy')
-            flagf = self.cache.create_file(self.cache_filename + '.flags.npy')
-            unctf = self.cache.create_file(self.cache_filename + '.unct.npy')
-            if not isinstance(self._data, np.memmap):
-                self._data = create_array_memmap(str(dataf), self._data)
-            if not isinstance(self._flags, np.memmap) and \
-               self._flags is not None:
-                self._flags = create_array_memmap(str(flagf), self._flags)
-            if not isinstance(self._unct, np.memmap) and \
-               self._unct is not None:
-                self._unct = create_array_memmap(str(unctf), self._unct)
+            for attr, suffix in (('_data', 'data'), ('_flags', 'flags'),
+                                 ('_unct', 'unct')):
+                value = getattr(self, attr)
+                if value is not None and not isinstance(value, np.memmap):
+                    filename = self.cache.create_file(
+                        self.cache_filename + f'.{suffix}.npy')
+                    setattr(self, attr, create_array_memmap(str(filename), value))
 
     def copy(self, dtype=None):
         """Copy the current FrameData to a new instance.
@@ -600,16 +605,19 @@ class FrameData:
         if cache_fname is not None:
             cache_fname = cache_fname + '_copy'
         nf._origin = self._origin
-        nf.cache = TempDir(self.cache.dirname + '_copy',
-                           parent=self.cache.parent)
+        cache_dir = self.cache.dirname + '_copy'
+        if os.path.exists(self.cache.full_path + '_copy'):
+            cache_dir += '_' + os.urandom(8).hex()
+        nf.cache = TempDir(cache_dir, parent=self.cache.parent)
         nf.cache_filename = cache_fname
 
         # copy data
         nf._data = delete_array_memmap(self._data, read=True, remove=False)
         if dtype is not None:
             nf._data = nf._data.astype(dtype)
-        nf._flags = delete_array_memmap(self._flags, read=True, remove=False)
-        if self._unct is not None:
+        if not conf.FRAMEDATA_DISABLE_FLAGS:
+            nf._flags = delete_array_memmap(self._flags, read=True, remove=False)
+        if self._unct is not None and not conf.FRAMEDATA_DISABLE_UNCERTAINTY:
             nf._unct = delete_array_memmap(self._unct, read=True, remove=False)
             if dtype is not None:
                 nf._unct = nf._unct.astype(dtype)
@@ -623,6 +631,12 @@ class FrameData:
     def __copy__(self):
         """Copy the current instance to a new one."""
         return self.copy()
+
+    def __deepcopy__(self, memo):
+        """Copy arrays and metadata without sharing memory maps."""
+        result = self.copy()
+        memo[id(self)] = result
+        return result
 
     def __del__(self):
         if self.cache is not None:
