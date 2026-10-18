@@ -91,7 +91,7 @@ def background(data, box_size=64, filter_size=3, mask=None,
     bkg = Background2D(data, box_size=box_size, filter_size=filter_size,
                        mask=mask, sigma_clip=sclip,
                        bkg_estimator=_bkg_methods[bkg_method](),
-                       bkgrms_estimator=_rms_methods[rms_method]())
+                       bkg_rms_estimator=_rms_methods[rms_method]())
 
     if global_bkg:
         return float(bkg.background_median), float(bkg.background_rms_median)

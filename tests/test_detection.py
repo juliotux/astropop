@@ -101,7 +101,9 @@ def gen_image(size, x, y, flux, sky, rdnoise, model='gaussian', **kwargs):
     if not kwargs.get('skip_poisson', False):
         # prevent negative number error
         negatives = np.where(im < 0)
-        im = np.random.poisson(np.absolute(im))
+        # Keep the synthetic image independent of pytest's execution order.
+        with NumpyRNGContext(123):
+            im = np.random.poisson(np.absolute(im))
         # restore the negatives
         im[negatives] = -im[negatives]
     return im
@@ -426,6 +428,33 @@ class Test_Segmentation_Detection():
 class Test_DAOFind_Detection():
     # DAOFind detection. Only round unsturaded stars
 
+    @pytest.mark.parametrize('masked', [False, True])
+    def test_morphology_overlapping_and_edge_apertures(self, masked):
+        from astropop.photometry.detection import _dao_source_morphology
+
+        data = np.arange(81, dtype=float).reshape(9, 9) + 1
+        original = data.copy()
+        mask = np.zeros(data.shape, dtype=bool)
+        mask[1, 1] = masked
+        x, y = [0.5, 2.5], [1.0, 1.5]
+        radius = 3
+        sources = _dao_source_morphology(data, x, y, radius,
+                                         mask=mask if masked else None)
+        yy, xx = np.indices(data.shape)
+        for i, (xi, yi) in enumerate(zip(x, y)):
+            inside = ((xx-xi)**2 + (yy-yi)**2 < radius**2) & ~mask
+            assert_equal(sources['segment_flux'][i], data[inside].sum())
+            # Check the second moments independently of SourceCatalog.
+            weights = data[inside]
+            dx, dy = xx[inside], yy[inside]
+            var_x = np.average((dx-np.average(dx, weights=weights))**2,
+                               weights=weights)
+            var_y = np.average((dy-np.average(dy, weights=weights))**2,
+                               weights=weights)
+            expected = 2*np.sqrt(np.log(2)*(var_x+var_y))
+            assert_almost_equal(sources['fwhm'][i].value, expected)
+        assert_equal(data, original)
+
     def test_daofind_sharpness(self):
         # compare my implementation with D.Jones PythonPhot
         # without filtering, both have to output the same round/sharp and
@@ -446,8 +475,9 @@ class Test_DAOFind_Detection():
                                                                        sigma)
         expect_sharp = [3.5, 0.8, 0.5, 0.5, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4][::-1]
 
+        # Test the profile statistic without Poisson centroid fluctuations.
         im = gen_image(image_size, xpos, ypos, flux, sky, rdnoise,
-                       model='gaussian', sigma=sigma)
+                       model='gaussian', sigma=sigma, skip_poisson=True)
 
         sources = daofind(im, threshold, sky, rdnoise, fwhm,
                           sharp_limit=None, round_limit=None)
