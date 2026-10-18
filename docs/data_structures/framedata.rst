@@ -136,11 +136,12 @@ For reductions that do not need uncertainties or masks, configure
       - Effect when True
     * - ``FRAMEDATA_DISABLE_UNCERTAINTY``
       - Ignore uncertainty inputs and assignments, omit them from copies and
-        newly read frames, and skip uncertainty calculations in image arithmetic
-        and combination.
+        newly read frames, return ``None`` from uncertainty getters, and skip
+        uncertainty calculations in image arithmetic and combination.
     * - ``FRAMEDATA_DISABLE_FLAGS``
       - Ignore mask and flag inputs and assignments. New frames and copies
-        have no flags or mask arrays. Masking methods do not store flags.
+        have no flags or mask arrays. Flag and mask getters return ``None``;
+        masking methods do not store flags.
     * - ``IMARITH_SKIP_UNCERTAINTY``
       - Skip uncertainty propagation in ``imarith`` and uncertainty estimation
         in ``imcombine``. The result has ``uncertainty=None``; input frames keep
@@ -153,25 +154,34 @@ For example, temporarily disable uncertainty storage::
     >>> from astropop.framedata import FrameData
     >>> from astropop.image.imarith import imarith
     >>> previous = AstropopConfig.FRAMEDATA_DISABLE_UNCERTAINTY
+    >>> existing = FrameData(np.ones((2, 2)), uncertainty=0.5)
     >>> try:
     ...     AstropopConfig.FRAMEDATA_DISABLE_UNCERTAINTY = True
+    ...     assert existing.uncertainty is None
     ...     minimal = FrameData(np.ones((100, 100)), uncertainty=0.5)
     ...     assert minimal.uncertainty is None
     ...     result = imarith(minimal, 2, '*')
     ...     assert result.uncertainty is None
     ... finally:
     ...     AstropopConfig.FRAMEDATA_DISABLE_UNCERTAINTY = previous
+    >>> np.testing.assert_allclose(existing.uncertainty, 0.5)
 
 These are process-wide class attributes, not per-frame settings. Changing them
-is not thread-local and does not remove arrays already held by existing frames.
+is not thread-local. The settings are checked on each getter or uncertainty
+calculation call. Disabling storage hides arrays already held by existing
+frames without deleting them: the corresponding properties and mask methods
+return ``None``. Re-enabling storage exposes those arrays again. This also
+applies to memory-mapped arrays, whose files remain available while hidden.
 New assignments and copies use the current settings. Assigning an uncertainty
-or flags while their storage is disabled clears any previously stored array.
-Ignored inputs are not validated or converted.
+or flags while their storage is disabled clears any previously stored array,
+so re-enabling storage cannot restore it. Ignored inputs are not validated or
+converted.
 
 Disabling uncertainty propagation preserves unit conversion and nominal data
 operations. Combination still performs configured rejection and excludes stored
-masked pixels. Disabling flag storage discards masks on newly loaded frames and
-copies, so those masks cannot exclude pixels from a subsequent reduction.
+masked pixels. Disabling flag storage hides masks on existing frames and
+discards them on newly loaded frames and copies, so those masks cannot exclude
+pixels from a subsequent reduction.
 Internal rejection masks are still used while combining, even when output flag
 storage is disabled.
 
@@ -188,10 +198,11 @@ loading to avoid that conversion too. Rejection uses its own data buffers and
 continues to operate. With propagation enabled, rejected samples are excluded
 from the summed uncertainties as well as from the nominal data.
 
-FITS output omits missing uncertainty and mask extensions. CCDData conversion
-uses ``None`` for these fields. ``get_uncertainty(return_none=False)`` remains an
-explicit request for a zero-filled array when no uncertainty is stored; it
-allocates that array even with uncertainty storage disabled.
+FITS output omits missing or disabled uncertainty and mask extensions. CCDData
+conversion uses ``None`` for these fields. ``get_uncertainty(return_none=False)``
+remains an explicit request for a zero-filled array when the uncertainty is
+missing or disabled; it allocates that array even if an existing uncertainty
+array is hidden by the configuration.
 
 Memory mapping
 --------------
