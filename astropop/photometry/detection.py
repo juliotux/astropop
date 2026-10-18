@@ -4,10 +4,9 @@ import numpy as np
 from astropy.convolution import convolve
 from astropy.modeling.fitting import LevMarLSQFitter
 from astropy.nddata.utils import overlap_slices
-from astropy.table import Table
-from astropy.utils import lazyproperty
+from astropy.table import Table, vstack
 from photutils.detection import DAOStarFinder
-from photutils.segmentation import SourceFinder, SourceCatalog, \
+from photutils.segmentation import SourceFinder, SourceCatalog, SegmentationImage, \
                                    make_2dgaussian_kernel
 
 from astropop.math.models import PSFMoffatRadial, PSFGaussianRadial
@@ -15,12 +14,6 @@ from astropop.math.array import trim_array, xy2r
 
 
 __all__ = ['segfind', 'daofind', 'starfind', 'median_fwhm']
-
-
-_default_morfology_columns = ['segment_flux', 'fwhm', 'eccentricity',
-                              'ellipticity', 'elongation', 'cxx', 'cyy', 'cxy',
-                              'semimajor_sigma', 'semiminor_sigma',
-                              'orientation']
 
 
 def segfind(data, threshold, background, noise, mask=None, fwhm=None, npix=5,
@@ -106,7 +99,7 @@ def segfind(data, threshold, background, noise, mask=None, fwhm=None, npix=5,
         noise = np.ones_like(data)*noise
 
     # run the segmentation algorithm
-    finder = SourceFinder(npixels=npix, deblend=deblend, progress_bar=False)
+    finder = SourceFinder(n_pixels=npix, deblend=deblend)
     seg_img = finder(conv_data, threshold, mask=mask)
     if seg_img is None:
         raise ValueError('No sources found')
@@ -116,20 +109,20 @@ def segfind(data, threshold, background, noise, mask=None, fwhm=None, npix=5,
     # reorganize the table using the keywords of daofind
     res = Table()
     res['id'] = sources.label
-    res['x'] = sources.xcentroid
-    res['y'] = sources.ycentroid
+    res['x'] = sources.x_centroid
+    res['y'] = sources.y_centroid
     res['peak'] = sources.max_value
     res['flux'] = sources.segment_flux
     res['fwhm'] = sources.fwhm
-    res['sigma_x'] = sources.semimajor_sigma
-    res['sigma_y'] = sources.semiminor_sigma
+    res['sigma_x'] = sources.semimajor_axis
+    res['sigma_y'] = sources.semiminor_axis
     res['theta'] = sources.orientation
     res['eccentricity'] = sources.eccentricity
     res['elongation'] = sources.elongation
     res['ellipticity'] = sources.ellipticity
-    res['cxx'] = sources.cxx
-    res['cyy'] = sources.cyy
-    res['cxy'] = sources.cxy
+    res['cxx'] = sources.ellipse_cxx
+    res['cyy'] = sources.ellipse_cyy
+    res['cxy'] = sources.ellipse_cxy
     res['area'] = sources.area
     res['label'] = sources.label
 
@@ -140,50 +133,25 @@ def segfind(data, threshold, background, noise, mask=None, fwhm=None, npix=5,
     return res
 
 
-class _DAOSourcesMorfology(SourceCatalog):
-    """Class to handle sources morfology for DAOFind.
-
-    DAOFind do not provide sources morfology. So we need to compute it.
-    Photutils uses a segmentation image, not provided by DAOFind. So we need
-    to fake it using circular apertures.
-    """
-
-    def __init__(self, data, x, y, r, background=None, mask=None,
-                 localbkg_width=0, detection_cat=None, convolved_data=None):
-        shape = data.shape
-        box = (2*r+1, 2*r+1)
-        slices = [overlap_slices(shape, box, position=(yi, xi),
-                                 mode='partial')[0]
-                  for xi, yi in zip(x, y)]
-        self._r = r
-        self._indy, self._indx = np.indices(data.shape)
-        self._x = x
-        self._y = y
-
-        self._data_unit = None
-        self._data = self._validate_array(data, 'data', shape=False)
-        self._mask = self._validate_array(mask, 'mask')
-        self._background = self._validate_array(background, 'background')
-        self._convolved_data = self._validate_array(convolved_data,
-                                                    'convolved_data')
-        if self._convolved_data is None:
-            self._convolved_data = self._data
-
-        self.localbkg_width = self._validate_localbkg_width(localbkg_width)
-        self._detection_cat = self._validate_detection_cat(detection_cat)
-
-        self._slices = slices
-        self._labels = np.arange(len(slices))+1
-
-    @lazyproperty
-    def _cutout_segment_masks(self):
-        """Return the circular cotouts segment masks."""
-        cutouts = [None]*len(self._labels)
-        for i, s in enumerate(self._slices):
-            dist_sq = (self._indx[s]-self._x[i])**2
-            dist_sq += (self._indy[s]-self._y[i])**2
-            cutouts[i] = dist_sq >= self._r**2
-        return cutouts
+def _dao_source_morphology(data, x, y, r, mask=None):
+    """Measure each DAO source within its own circular segmentation mask."""
+    columns = ['segment_flux', 'fwhm', 'eccentricity', 'elongation',
+               'ellipticity', 'ellipse_cxx', 'ellipse_cyy', 'ellipse_cxy']
+    tables = []
+    for xi, yi in zip(x, y):
+        slices = overlap_slices(data.shape, (2*r+1, 2*r+1),
+                                position=(yi, xi), mode='partial')[0]
+        cutout = data[slices]
+        yy, xx = np.indices(cutout.shape)
+        distance_sq = (xx + slices[1].start - xi)**2
+        distance_sq += (yy + slices[0].start - yi)**2
+        # Separate catalogs preserve overlapping apertures: a shared label
+        # image would assign their common pixels to only one of the sources.
+        segment = SegmentationImage((distance_sq < r**2).astype(int))
+        cutout_mask = None if mask is None else mask[slices]
+        catalog = SourceCatalog(cutout, segment, mask=cutout_mask)
+        tables.append(catalog.to_table(columns=columns))
+    return vstack(tables, metadata_conflicts='silent')
 
 
 def daofind(data, threshold, background, noise, fwhm,
@@ -264,16 +232,6 @@ def daofind(data, threshold, background, noise, fwhm,
           See [SourceExtractor docs]_
         - ``area``: area of the segment, in pixels
     """
-    # Get the parameters for sharpness and roundness
-    if sharp_limit is None:
-        sharplo, sharphi = (-np.inf, np.inf)
-    else:
-        sharplo, sharphi = sharp_limit
-    if round_limit is None:
-        roundlo, roundhi = (-np.inf, np.inf)
-    else:
-        roundlo, roundhi = round_limit
-
     # always use background subtracted data
     d = data-background
 
@@ -281,29 +239,29 @@ def daofind(data, threshold, background, noise, fwhm,
     thresh = np.median(threshold * noise)
 
     dao = DAOStarFinder(thresh, fwhm=fwhm,
-                        sharplo=sharplo, sharphi=sharphi,
-                        roundlo=roundlo, roundhi=roundhi,
+                        sharpness_range=sharp_limit,
+                        roundness_range=round_limit,
                         exclude_border=exclude_border,
                         xycoords=positions)
     sources = dao(d, mask=mask)
     # additional filtering steps?
 
-    catalog = _DAOSourcesMorfology(d,
-                                   sources['xcentroid'],
-                                   sources['ycentroid'],
+    catalog = _dao_source_morphology(d,
+                                   sources['x_centroid'],
+                                   sources['y_centroid'],
                                    fwhm,
                                    mask=mask)
 
     # reorganize the table using more standard keywords
     res = Table()
     res['id'] = sources['id']
-    res['x'] = sources['xcentroid']
-    res['y'] = sources['ycentroid']
-    res['xcentroid'] = sources['xcentroid']
-    res['ycentroid'] = sources['ycentroid']
+    res['x'] = sources['x_centroid']
+    res['y'] = sources['y_centroid']
+    res['xcentroid'] = sources['x_centroid']
+    res['ycentroid'] = sources['y_centroid']
     res['peak'] = sources['peak']
-    res['flux'] = catalog.segment_flux
-    res['fwhm'] = catalog.fwhm
+    res['flux'] = catalog['segment_flux']
+    res['fwhm'] = catalog['fwhm']
     res['sharpness'] = sources['sharpness']
     r_arr = np.absolute([sources['roundness1'],
                          sources['roundness2']]).transpose()
@@ -311,12 +269,12 @@ def daofind(data, threshold, background, noise, fwhm,
     res['roundness'] = r_arr[np.arange(len(r_arg)), r_arg]
     res['s_roundness'] = sources['roundness1']
     res['g_roundness'] = sources['roundness2']
-    res['eccentricity'] = catalog.eccentricity
-    res['elongation'] = catalog.elongation
-    res['ellipticity'] = catalog.ellipticity
-    res['cxx'] = catalog.cxx
-    res['cyy'] = catalog.cyy
-    res['cxy'] = catalog.cxy
+    res['eccentricity'] = catalog['eccentricity']
+    res['elongation'] = catalog['elongation']
+    res['ellipticity'] = catalog['ellipticity']
+    res['cxx'] = catalog['ellipse_cxx']
+    res['cyy'] = catalog['ellipse_cyy']
+    res['cxy'] = catalog['ellipse_cxy']
 
     # reorder the sources by flux
     res.sort('flux', reverse=True)  # Sort the results by flux.

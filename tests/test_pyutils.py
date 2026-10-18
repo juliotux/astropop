@@ -3,6 +3,7 @@
 
 import pytest
 import shlex
+import sys
 from astropop.py_utils import string_fix, batch_key_replace, \
                               run_command, check_number, \
                               broadcast
@@ -47,10 +48,33 @@ def test_string_fix(inp, enc, res):
 
 
 class Test_RunCommand():
-    com = (["bash", "-c", 'for i in {1..10}; do echo "$i"; sleep 0.1; done'],
-           "bash -c 'for i in {1..10}; do echo \"$i\"; sleep 0.1; done'")
-    com2 = ("bash -c 'echo \"this is an error\" 1>&2'",
-            ["bash", "-c", 'echo "this is an error" 1>&2'])
+    # Exercise list and string commands with the active interpreter. Bash may
+    # be absent or resolve to an unconfigured WSL launcher on Windows.
+    _stdout_args = [sys.executable, '-u', '-c',
+                    'import time\nfor i in range(1, 11):\n'
+                    '    print(i)\n    time.sleep(0.1)']
+    _stderr_args = [sys.executable, '-c',
+                    'import sys; print("this is an error", file=sys.stderr)']
+    com = (_stdout_args, shlex.join(_stdout_args))
+    com2 = (shlex.join(_stderr_args), _stderr_args)
+
+    def test_run_command_preserves_arguments(self):
+        import json
+
+        # Windows executable paths cannot use POSIX single-quote escaping.
+        # Arguments must also survive spaces, quotes and shell operators.
+        values = ['two words', r'C:\path with spaces\file', '"quoted"',
+                  'a&b|c;d', '%PATH%', '']
+        # Emit Windows line endings explicitly on every test platform.
+        script = ('import json, sys; sys.stdout.buffer.write('
+                  '(json.dumps(sys.argv[1:]) + "\\r\\n").encode()); '
+                  'sys.stderr.buffer.write(b"error line\\r\\n")')
+        args = [sys.executable, '-c', script, *values]
+        result, stdout, stderr = run_command(args)
+        assert_equal(result.returncode, 0)
+        assert_equal(result.args, args)
+        assert_equal(stdout, [json.dumps(values)])
+        assert_equal(stderr, ['error line'])
 
     # This test break all the others
     # def test_nested_async(self):
@@ -63,7 +87,8 @@ class Test_RunCommand():
     def test_process_error(self):
         import subprocess
         with pytest.raises(subprocess.CalledProcessError):
-            run_command('python -c "import sys; sys.exit(1000)"')
+            run_command(shlex.join([sys.executable, '-c',
+                                    'import sys; sys.exit(1000)']))
 
     @pytest.mark.parametrize('com', com)
     def test_run_command(self, com):

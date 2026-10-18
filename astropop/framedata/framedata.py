@@ -626,6 +626,12 @@ class FrameData:
 
     def __del__(self):
         if self.cache is not None:
+            # Release mappings before deleting their files on Windows. There
+            # is no need to copy the arrays when destroying the frame.
+            if self._memmapping:
+                for array in (self._data, self._flags, self._unct):
+                    if isinstance(array, np.memmap) and array._mmap is not None:
+                        array._mmap.close()
             self.cache.delete()
 
     def median(self, **kwargs):

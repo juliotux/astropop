@@ -523,15 +523,14 @@ class Test_StokesParameters:
 
     def test_repr(self):
         p = StokesParameters('halfwave', 0, 0.1)
-        i = id(p)
-        assert_equal(repr(p), "<astropop.polarimetry.StokesParameters object "
-                     f"at {hex(i)}>\nq=0.0+-0.0, u=0.1+-0.0")
+        # The base repr formats addresses differently on Windows.
+        assert_equal(repr(p), object.__repr__(p) +
+                     "\nq=0.0+-0.0, u=0.1+-0.0")
 
     def test_repr_with_v(self):
         p = StokesParameters('quarterwave', 0, 0.1, 0.05)
-        i = id(p)
-        assert_equal(repr(p), "<astropop.polarimetry.StokesParameters object "
-                     f"at {hex(i)}>\nq=0.0+-0.0, u=0.1+-0.0, v=0.05+-0.0")
+        assert_equal(repr(p), object.__repr__(p) +
+                     "\nq=0.0+-0.0, u=0.1+-0.0, v=0.05+-0.0")
 
     def test_str(self):
         p = StokesParameters('halfwave', 0, 0.1)

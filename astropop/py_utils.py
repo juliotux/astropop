@@ -5,6 +5,7 @@ from os import linesep
 import subprocess
 import asyncio
 import shlex
+import sys
 from numbers import Number
 
 import numpy as np
@@ -180,12 +181,21 @@ async def _subprocess(args, stdout, stderr, stdout_loglevel, stderr_loglevel,
                       logger, **kwargs):
     """Execute subprocesses."""
     def proccess_out(line, std_l, loglevel):
-        line = line.decode("utf-8").strip('\n')
+        line = line.decode("utf-8").rstrip('\r\n')
         std_l.append(line)
         logger.log(loglevel, line)
 
-    proc = await asyncio.create_subprocess_shell(
-        shlex.join(args),
+    if sys.platform == 'win32':
+        # shlex.join uses POSIX quoting, which cmd.exe treats literally.
+        # Pass argv directly so paths and shell metacharacters stay intact.
+        create_process = asyncio.create_subprocess_exec
+        command = args
+    else:
+        create_process = asyncio.create_subprocess_shell
+        command = [shlex.join(args)]
+
+    proc = await create_process(
+        *command,
         limit=2**23,  # 8 MB
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
@@ -255,7 +265,8 @@ def run_command(args, stdout=None, stderr=None, stdout_loglevel='DEBUG',
     logger: `~logging.Logger` (optional)
         Custom logger to print the outputs.
     **kwargs: dict (optional)
-        Additional arguments to be passed to `~asyncio.create_subprocess_shell`
+        Additional arguments passed to `~asyncio.create_subprocess_exec` on
+        Windows or `~asyncio.create_subprocess_shell` on other platforms.
 
     Returns
     -------

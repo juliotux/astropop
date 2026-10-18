@@ -95,10 +95,23 @@ class CatalogResponses:
         return urlencode(sorted(normalized))
 
     @staticmethod
+    def vizier_body(body):
+        if isinstance(body, bytes):
+            body = body.decode('utf-8')
+        # Astroquery development versions omit the optional UCD metadata flag.
+        # It does not change the selected rows or columns; keep all query
+        # criteria exact while sharing the recorded metadata-rich response.
+        return '\n'.join('-out.meta=huD' if line == '-out.meta=huUD' else line
+                         for line in (body or '').split('\n'))
+
+    @staticmethod
     def match_body(left, right):
         if '/simbad/sim-tap/' in left.uri:
             assert (CatalogResponses.simbad_body(left.body) ==
                     CatalogResponses.simbad_body(right.body))
+        elif urlsplit(left.uri).hostname == 'vizier.cds.unistra.fr':
+            assert (CatalogResponses.vizier_body(left.body) ==
+                    CatalogResponses.vizier_body(right.body))
         else:
             from vcr.matchers import body
             body(left, right)
@@ -113,6 +126,8 @@ class CatalogResponses:
             body = request['body']
             if '/simbad/sim-tap/' in request['uri']:
                 body = CatalogResponses.simbad_body(body)
+            elif urlsplit(request['uri']).hostname == 'vizier.cds.unistra.fr':
+                body = CatalogResponses.vizier_body(body)
             key = (request['method'], request['uri'], body)
             unique[key] = interaction
         data['interactions'] = list(unique.values())

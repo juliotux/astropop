@@ -64,6 +64,32 @@ class TestMemmapCreation:
 class TestMemmapDeletion:
     a = np.ones((30, 30), dtype='i4')
 
+    @pytest.mark.parametrize('read', [True, False])
+    def test_delete_closes_mapping_before_remove(self, tmp_path, monkeypatch,
+                                                read):
+        filename = tmp_path / 'testarray.npy'
+        values = np.arange(12, dtype='i4').reshape(3, 4)
+        array = create_array_memmap(filename, values)
+        mapping = array._mmap
+        remove = os.remove
+
+        def remove_closed_file(path):
+            # Model Windows' refusal to unlink a file with an open mapping,
+            # even on systems where unlinking such a file is allowed.
+            if not mapping.closed:
+                raise PermissionError('Cannot remove an open memory map')
+            remove(path)
+
+        monkeypatch.setattr(os, 'remove', remove_closed_file)
+        result = delete_array_memmap(array, read=read, remove=True)
+        assert_true(mapping.closed)
+        assert_false(filename.exists())
+        if read:
+            assert_equal(result, values)
+            assert_equal(result.dtype, values.dtype)
+        else:
+            assert_is_none(result)
+
     def test_delete_memmap_read_no_remove(self, tmpdir):
         f = os.path.join(tmpdir, 'testarray.npy')
         b = create_array_memmap(f, self.a)
@@ -73,6 +99,11 @@ class TestMemmapDeletion:
         assert_is_instance(d, np.ndarray)
         assert_equal(self.a, d)
         assert_true(os.path.exists(f))
+        # Reading for a copy must leave the source mapping usable.
+        b[0, 0] = 2
+        assert_equal(d[0, 0], 1)
+        assert_equal(b[0, 0], 2)
+        assert_false(b._mmap.closed)
 
     def test_delete_memmap_read_remove(self, tmpdir):
         f = os.path.join(tmpdir, 'testarray.npy')
