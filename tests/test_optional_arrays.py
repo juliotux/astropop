@@ -1,6 +1,7 @@
 """Optional storage and propagation preserve image values and units."""
 
 import copy
+import importlib
 from pathlib import Path
 
 import numpy as np
@@ -10,6 +11,7 @@ from astropy.nddata import CCDData, StdDevUncertainty
 
 from astropop.config import AstropopConfig as conf
 from astropop.framedata import FrameData, PixelMaskFlags, read_framedata
+from astropop.image.imarith import imarith
 from astropop.math.physical import QFloat
 
 
@@ -17,6 +19,38 @@ class TestOptionalArrays:
     class UnreadableArray:
         def __array__(self, *args, **kwargs):
             raise AssertionError('Disabled data must not be converted')
+
+    @pytest.mark.parametrize('kind', ['frame', 'qfloat', 'ccd'])
+    def test_arithmetic_never_reads_skipped_uncertainty(self, monkeypatch,
+                                                       caplog, kind):
+        data = np.full((2, 3), 4.0)
+        if kind == 'frame':
+            operand = FrameData(data, unit='m', uncertainty=1)
+        elif kind == 'qfloat':
+            operand = QFloat(data, data, u.m)
+        else:
+            operand = CCDData(data, unit='m', uncertainty=StdDevUncertainty(data))
+
+        def unreadable(*args, **kwargs):
+            pytest.fail('Read an input uncertainty while propagation was skipped')
+
+        monkeypatch.setattr(conf, 'IMARITH_SKIP_UNCERTAINTY', True)
+        original = type(operand).uncertainty
+        monkeypatch.setattr(type(operand), 'uncertainty',
+                            property(unreadable, original.fset))
+        from astropop.logger import logger
+        with caplog.at_level('DEBUG', logger=logger.name):
+            result = imarith(operand, 100*u.cm, '+')
+        np.testing.assert_allclose(result.data, 5)
+        assert result.unit == u.m
+
+    def test_arithmetic_failure_removes_log_handler(self, monkeypatch):
+        from astropop.logger import logger
+        handlers = list(logger.handlers)
+        monkeypatch.setattr(conf, 'IMARITH_SKIP_UNCERTAINTY', True)
+        with pytest.raises(u.UnitsError):
+            imarith(FrameData(np.ones((2, 3)), unit='m'), 1*u.s, '+')
+        assert logger.handlers == handlers
 
     @pytest.mark.parametrize('name', ['flags', 'uncertainty'])
     def test_clear_mapped_array_without_reading(self, monkeypatch, tmp_path,
@@ -136,3 +170,37 @@ class TestOptionalArrays:
         assert reread.flags is reread.uncertainty is None
         np.testing.assert_array_equal(reread.data, original.data)
 
+    @pytest.mark.parametrize('option', ['IMARITH_SKIP_UNCERTAINTY', 'FRAMEDATA_DISABLE_UNCERTAINTY'])
+    @pytest.mark.parametrize('operation', ['+', '-', '*', '/', '//', '%', '**'])
+    @pytest.mark.parametrize('inplace', [False, True])
+    def test_arithmetic_without_error_calculations(self, monkeypatch, option, operation, inplace):
+        first = FrameData(np.full((3, 4), 4.0), uncertainty=0.3)
+        second = QFloat(2, 0.1)
+        expected = imarith(first, second, operation)
+        module = importlib.import_module('astropop.image.imarith')
+        monkeypatch.setattr(conf, option, True)
+        monkeypatch.setattr(module, '_arith', lambda *args: pytest.fail('QFloat propagation called'))
+        actual = imarith(first, second, operation, inplace=inplace)
+        assert (actual is first) == inplace
+        assert actual.uncertainty is None
+        np.testing.assert_allclose(actual.data, expected.data)
+        assert actual.unit == expected.unit
+        if not inplace:
+            assert first.uncertainty is not None
+
+
+    @pytest.mark.parametrize('kind', ['quantity', 'frame', 'ccd', 'qfloat'])
+    def test_skip_arithmetic_units(self, monkeypatch, kind):
+        monkeypatch.setattr(conf, 'IMARITH_SKIP_UNCERTAINTY', True)
+        first = FrameData(np.full((2, 3), 2), unit='m', uncertainty=0.2)
+        values = np.full((2, 3), 100)
+        second = {'quantity': values*u.cm,
+                  'frame': FrameData(values, unit='cm', uncertainty=1),
+                  'ccd': CCDData(values, unit='cm', uncertainty=StdDevUncertainty(values)),
+                  'qfloat': QFloat(values, np.ones(values.shape), 'cm')}[kind]
+        result = imarith(first, second, '+')
+        np.testing.assert_allclose(result.data, 3)
+        assert result.unit == u.m
+        assert result.uncertainty is None
+        with pytest.raises(u.UnitsError):
+            imarith(first, np.ones((2, 3))*u.s, '+')
