@@ -52,6 +52,25 @@ class Test_RunCommand():
     com2 = ("bash -c 'echo \"this is an error\" 1>&2'",
             ["bash", "-c", 'echo "this is an error" 1>&2'])
 
+    def test_run_command_preserves_arguments(self):
+        import json
+        import sys
+
+        # Windows executable paths cannot use POSIX single-quote escaping.
+        # Arguments must also survive spaces, quotes and shell operators.
+        values = ['two words', r'C:\path with spaces\file', '"quoted"',
+                  'a&b|c;d', '%PATH%', '']
+        # Emit Windows line endings explicitly on every test platform.
+        script = ('import json, sys; sys.stdout.buffer.write('
+                  '(json.dumps(sys.argv[1:]) + "\\r\\n").encode()); '
+                  'sys.stderr.buffer.write(b"error line\\r\\n")')
+        args = [sys.executable, '-c', script, *values]
+        result, stdout, stderr = run_command(args)
+        assert_equal(result.returncode, 0)
+        assert_equal(result.args, args)
+        assert_equal(stdout, [json.dumps(values)])
+        assert_equal(stderr, ['error line'])
+
     # This test break all the others
     # def test_nested_async(self):
     #     import asyncio
