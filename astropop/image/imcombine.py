@@ -8,7 +8,7 @@ from astropy.stats import mad_std
 
 from ..framedata import FrameData, check_framedata
 from ..py_utils import check_number
-from ..config import AstropopConfig as conf
+from ..config import AstropopConfig as conf, _optional
 from ..logger import logger
 from ._tools import merge_header
 
@@ -399,9 +399,10 @@ class ImCombiner:
         self._unit = base_unit
 
     @property
+    @_optional('IMARITH_SKIP_UNCERTAINTY', 'FRAMEDATA_DISABLE_UNCERTAINTY')
     def _propagate_uncertainty(self):
-        return not (conf.IMARITH_SKIP_UNCERTAINTY or
-                    conf.FRAMEDATA_DISABLE_UNCERTAINTY)
+        """Enable uncertainty buffers only when propagation is enabled."""
+        return True
 
     def _chunk_yielder(self, method):
         """Split the data in chuncks according to the method."""
@@ -473,23 +474,10 @@ class ImCombiner:
         if self._unct_bf is not None:
             self._unct_bf[mask] = np.nan
 
-    def _combine(self, method, **kwargs):
-        """Process the combine and compute the uncertainty."""
-        # number of masked pixels for each position
-        n_masked = np.sum(np.isnan(self._buffer), axis=0)
-        # number of images
-        n = float(len(self._buffer))
-        # number of not masked pixels for each position
-        n_no_mask = n - n_masked
-
-        if not self._propagate_uncertainty:
-            data = _funcs[method](self._buffer, axis=0)
-            if method == 'sum' and kwargs.get('sum_normalize', True):
-                data *= n/n_no_mask
-            return data, None
-
+    @_optional('IMARITH_SKIP_UNCERTAINTY', 'FRAMEDATA_DISABLE_UNCERTAINTY')
+    def _combine_uncertainty(self, method, n_no_mask):
+        """Estimate uncertainties for a chunk before sum normalization."""
         if method == 'sum':
-            data = _funcs['sum'](self._buffer, axis=0)
             if self._unct_bf is None:
                 logger.info('Data with no uncertainties. Using the std dev'
                             ' approximation to compute the sum uncertainty.')
@@ -503,17 +491,25 @@ class ImCombiner:
                 unct = _funcs['sum'](np.square(self._unct_bf), axis=0)
                 unct = np.sqrt(unct)
 
-            if kwargs.get('sum_normalize', True):
-                norm = n/n_no_mask
-                data *= norm
-                unct *= norm
-
         elif method in ('median', 'mean'):
-            data = _funcs[method](self._buffer, axis=0)
             # uncertainty = sigma/sqrt(n)
             unct = _funcs['std'](self._buffer, axis=0)
             unct /= np.sqrt(n_no_mask)
 
+        return unct
+
+    def _combine(self, method, **kwargs):
+        """Combine nominal values and optionally compute uncertainties."""
+        # Counts and normalization also affect nominal data when errors are off.
+        n = float(len(self._buffer))
+        n_no_mask = n - np.sum(np.isnan(self._buffer), axis=0)
+        data = _funcs[method](self._buffer, axis=0)
+        unct = self._combine_uncertainty(method, n_no_mask)
+        if method == 'sum' and kwargs.get('sum_normalize', True):
+            norm = n/n_no_mask
+            data *= norm
+            if unct is not None:
+                unct *= norm
         return data, unct
 
     def combine(self, image_list, method, **kwargs):

@@ -5,7 +5,7 @@ import numpy as np
 from astropy.units.core import UnitConversionError
 from astropy import units as u
 
-from ..config import AstropopConfig as conf
+from ..config import _optional
 
 from ._tools import merge_header
 from ._tools import merge_flag
@@ -24,13 +24,6 @@ _arith_funcs = {'+': np.add,
                 '*': np.multiply,
                 '**': np.power,
                 '%': np.remainder}
-
-
-def _qf_or_framedata(data, alternative=convert_to_qfloat):
-    """Check if the data is QFloat or FrameData. Else, convert it."""
-    if isinstance(data, (QFloat, FrameData)):
-        return data
-    return alternative(data)
 
 
 def _as_quantity(value):
@@ -57,7 +50,7 @@ def _arith_nominal(value1, value2, operation):
     if operation in ('//', '%'):
         # QFloat applies these operators to the supplied nominal numbers,
         # whereas Quantity converts compatible units first. Preserve the
-        # existing arithmetic convention when propagation is disabled.
+        # existing arithmetic convention independently of propagation.
         data = _arith_funcs[operation](value1.value, value2.value)
         unit = value1.unit / value2.unit if operation == '//' else value1.unit
         return u.Quantity(np.asarray(data), unit, copy=False)
@@ -67,31 +60,29 @@ def _arith_nominal(value1, value2, operation):
     return _arith_funcs[operation](value1, value2)
 
 
-def _arith(operand1, operand2, operation):
-    """Perform the math operation itself using QFloats."""
+@_optional('IMARITH_SKIP_UNCERTAINTY', 'FRAMEDATA_DISABLE_UNCERTAINTY')
+def _arith_uncertainty(operand1, operand2, operation):
+    """Propagate uncertainties using the existing QFloat arithmetic."""
     qf1 = convert_to_qfloat(operand1)
     qf2 = convert_to_qfloat(operand2)
 
-    return _arith_funcs[operation](qf1, qf2)
+    return _arith_funcs[operation](qf1, qf2).uncertainty
 
 
-def _prepare_operands(operand1, operand2, operation, skip_uncertainty):
+def _prepare_operands(operand1, operand2, operation):
     """Validate nominal exponents and convert operands for arithmetic."""
-    if skip_uncertainty and operation == '**':
+    if operation == '**':
         exponent = operand2.nominal if isinstance(operand2, QFloat) else operand2
         if isinstance(exponent, u.Quantity):
             exponent = exponent.value
         if not isinstance(exponent, (u.UnitBase, str)) and not np.isscalar(exponent):
             raise ValueError('Power operation requires a dimensionless scalar exponent')
-    converter = _as_quantity if skip_uncertainty else convert_to_qfloat
-    return (_qf_or_framedata(operand1, alternative=converter),
-            _qf_or_framedata(operand2, alternative=converter))
+    return _as_quantity(operand1), _as_quantity(operand2)
 
 
+@_optional('FRAMEDATA_DISABLE_FLAGS')
 def _merge_arithmetic_flags(operand1, operand2, shape, method):
     """Merge operand flags, honoring disabled storage and missing arrays."""
-    if conf.FRAMEDATA_DISABLE_FLAGS:
-        return None
     f1 = operand1.flags if isinstance(operand1, FrameData) else None
     f2 = operand2.flags if isinstance(operand2, FrameData) else None
     if f1 is None:
@@ -160,10 +151,7 @@ def imarith(operand1, operand2, operation, inplace=False,
     if operation not in _arith_funcs.keys():
         raise ValueError(f"Operation {operation} not supported.")
 
-    skip_uncertainty = (conf.IMARITH_SKIP_UNCERTAINTY or
-                        conf.FRAMEDATA_DISABLE_UNCERTAINTY)
-    operand1, operand2 = _prepare_operands(
-        operand1, operand2, operation, skip_uncertainty)
+    value1, value2 = _prepare_operands(operand1, operand2, operation)
 
     if isinstance(operand1, FrameData) and inplace:
         ccd = operand1
@@ -173,31 +161,27 @@ def imarith(operand1, operand2, operation, inplace=False,
     # Add the operation entry to the ccd history.
     lh = log_to_list(logger, ccd.history)
     try:
-        value1 = _as_quantity(operand1) if skip_uncertainty else operand1
-        value2 = _as_quantity(operand2) if skip_uncertainty else operand2
         # Logging a QFloat itself can read its uncertainty via __str__.
         logger.debug('Operation %s between %s and %s',
                      operation, value1, value2)
         # Perform data, mask and uncertainty operations
         try:
-            if skip_uncertainty:
-                result = _arith_nominal(value1, value2, operation)
-            else:
-                result = _arith(operand1, operand2, operation)
+            result = _arith_nominal(value1, value2, operation)
+            uncertainty = _arith_uncertainty(operand1, operand2, operation)
         except UnitConversionError:
-            raise UnitsError(f'Units {operand1.unit} and {operand2.unit} are'
+            raise UnitsError(f'Units {value1.unit} and {value2.unit} are'
                              f' incompatible for {operation} operation.')
 
-        ccd.data = result.value if skip_uncertainty else result.nominal
+        ccd.data = result.value
         ccd.unit = result.unit
-        ccd.uncertainty = None if skip_uncertainty else result.uncertainty
+        ccd.uncertainty = uncertainty
 
         ccd.flags = _merge_arithmetic_flags(
             operand1, operand2, ccd.shape, merge_flags)
 
-        # Perform merging headers operation only if both operands have headers
-        h1 = getattr(operand1, 'header', None)
-        h2 = getattr(operand2, 'header', None)
+        # Only FrameData operands contribute headers, as before conversion.
+        h1 = operand1.header if isinstance(operand1, FrameData) else None
+        h2 = operand2.header if isinstance(operand2, FrameData) else None
         keys = kwargs.get('selected_keys', None)
         ccd.meta = merge_header(h1, h2, method=merge_headers, selected_keys=keys)
 
