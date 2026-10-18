@@ -30,6 +30,10 @@ jobs:
           cache-key: ${{ github.ref }}-py313lin-astropycache
         - linux: py314-test
           cache-key: ${{ github.ref }}-py314lin-astropycache
+        - macos: py313-test
+          cache-key: ${{ github.ref }}-py313mac-astropycache
+        - windows: py313-test
+          cache-key: ${{ github.ref }}-py313win-astropycache
 
   online_conformance:
     name: Online catalog conformance

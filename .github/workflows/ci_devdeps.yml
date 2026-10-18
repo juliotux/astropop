@@ -14,29 +14,27 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  allowed_failures:
-    uses: OpenAstronomy/github-actions-workflows/.github/workflows/tox.yml@v1
+  devdeps:
+    name: Python ${{ matrix.python }} with development dependencies
+    runs-on: ubuntu-24.04
     if: "!(contains(github.event.head_commit.message, '[skip ci]') || contains(github.event.head_commit.message, '[ci skip]'))"
-    with:
-      cache-path: ~/.astropy
-      cache-key: ${{ github.ref }}-${{ matrix.toxenv }}-astropycache
-      libraries: |
-        apt:
-          - tzdata
-          - libopenblas-dev
-      envs: |
-        # Live service compatibility is checked in CI's online conformance job.
-        # These environments exercise dependency/platform changes with mocks.
-        - name: (Allowed Failure) Python 3.13 with dev version of deps
-          linux: py313-test-devdeps
-          python-version: '3.13'
-
-        - name: (Allowed Failure) Python 3.14 with dev version of deps
-          linux: py314-test-devdeps
-          python-version: '3.14'
-
-        - macos: py313-test
-          cache-key: ${{ github.ref }}-py313mac-astropycache
-
-        - windows: py313-test
-          cache-key: ${{ github.ref }}-py313win-astropycache
+    strategy:
+      fail-fast: false
+      matrix:
+        # Update together when a new Python minor version becomes stable.
+        python: ['3.15', '3.16']
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+    # uv supplies development Python before setup-python's manifest does.
+    - uses: astral-sh/setup-uv@v7
+      with:
+        python-version: ${{ matrix.python }}
+    - name: Install Python
+      run: uv python install "${{ matrix.python }}"
+    - name: Install build libraries
+      run: sudo apt-get update && sudo apt-get install -y libopenblas-dev
+    - name: Run offline tests with development dependencies
+      # Live services are tested separately by online_conformance.
+      run: uv tool run --with pip --with setuptools tox -e py-test-devdeps -- --remote-data=none
