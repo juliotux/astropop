@@ -68,6 +68,15 @@ class TestOptionalArrays:
         with pytest.raises(TypeError):
             imarith(FrameData(np.ones((2, 2))), None, '+')
 
+    @pytest.mark.parametrize('operation, expected', [('//', 2), ('%', 0)])
+    def test_skipped_scalar_arithmetic_without_optional_arrays(self, monkeypatch,
+                                                               operation, expected):
+        monkeypatch.setattr(conf, 'IMARITH_SKIP_UNCERTAINTY', True)
+        monkeypatch.setattr(conf, 'FRAMEDATA_DISABLE_FLAGS', True)
+        result = imarith(4, 2, operation)
+        np.testing.assert_allclose(result.data, expected)
+        assert result.uncertainty is result.flags is None
+
     @pytest.mark.parametrize('memmap', [False, True])
     @pytest.mark.parametrize('inplace', [False, True])
     @pytest.mark.parametrize('disabled', [False, True])

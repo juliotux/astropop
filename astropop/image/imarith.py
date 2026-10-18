@@ -60,7 +60,7 @@ def _arith_nominal(value1, value2, operation):
         # existing arithmetic convention when propagation is disabled.
         data = _arith_funcs[operation](value1.value, value2.value)
         unit = value1.unit / value2.unit if operation == '//' else value1.unit
-        return u.Quantity(data, unit, copy=False)
+        return u.Quantity(np.asarray(data), unit, copy=False)
     if operation == '**' and (value2.unit != u.dimensionless_unscaled or
                               not np.isscalar(value2.value)):
         raise ValueError('Power operation requires a dimensionless scalar exponent')
