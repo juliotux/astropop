@@ -38,7 +38,8 @@ class TestOptionalArrays:
         np.testing.assert_allclose(result.data, expected)
         assert result.unit == unit
 
-    @pytest.mark.parametrize('exponent', [np.array([2, 2]), 2*u.m])
+    @pytest.mark.parametrize('exponent', [np.array([2, 2]), np.array(2),
+                                         QFloat(np.array(2)), 2*u.m])
     def test_skipped_power_keeps_exponent_validation(self, monkeypatch, exponent):
         monkeypatch.setattr(conf, 'IMARITH_SKIP_UNCERTAINTY', True)
         with pytest.raises(ValueError):
@@ -48,6 +49,11 @@ class TestOptionalArrays:
         monkeypatch.setattr(conf, 'IMARITH_SKIP_UNCERTAINTY', True)
         result = imarith(np.array([[50_000]], dtype=np.int32), 2, '**')
         np.testing.assert_allclose(result.data, 2_500_000_000)
+
+    def test_skipped_arithmetic_rejects_none(self, monkeypatch):
+        monkeypatch.setattr(conf, 'IMARITH_SKIP_UNCERTAINTY', True)
+        with pytest.raises(TypeError):
+            imarith(FrameData(np.ones((2, 2))), None, '+')
 
     @pytest.mark.parametrize('memmap', [False, True])
     @pytest.mark.parametrize('inplace', [False, True])

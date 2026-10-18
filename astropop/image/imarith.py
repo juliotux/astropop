@@ -35,6 +35,8 @@ def _qf_or_framedata(data, alternative=convert_to_qfloat):
 
 def _as_quantity(value):
     """Extract values and units without allocating or propagating errors."""
+    if value is None:
+        raise TypeError('value must not be None.')
     if isinstance(value, u.Quantity):
         return u.Quantity(np.asarray(value.value, dtype=float), value.unit,
                           copy=False)
@@ -134,6 +136,12 @@ def imarith(operand1, operand2, operation, inplace=False,
 
     skip_uncertainty = (conf.IMARITH_SKIP_UNCERTAINTY or
                         conf.FRAMEDATA_DISABLE_UNCERTAINTY)
+    if skip_uncertainty and operation == '**':
+        exponent = operand2.nominal if isinstance(operand2, QFloat) else operand2
+        if isinstance(exponent, u.Quantity):
+            exponent = exponent.value
+        if not isinstance(exponent, (u.UnitBase, str)) and not np.isscalar(exponent):
+            raise ValueError('Power operation requires a dimensionless scalar exponent')
     converter = _as_quantity if skip_uncertainty else convert_to_qfloat
     operand1 = _qf_or_framedata(operand1, alternative=converter)
     operand2 = _qf_or_framedata(operand2, alternative=converter)
