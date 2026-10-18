@@ -40,23 +40,27 @@ Some of astropop dependencies (numpy, astropy, scipy, astroscrappy) need gcc to 
 
 There is nothing that prevent astropop itself to run on Windows. However, due to problems that comes from dependencies, mainly numpy and astrometry.net, astropop is currently supported only on Linux and Mac.
 
+Astropop requires Python 3.11 or newer.
+
 Bellow we list all the necessary dependencies for the good working of the code. Note that this can be changed with the time.
 
 - astroalign;
 
-- astropy >= 4.3;
+- astropy >= 6.1.4;
 
 - astroquery;
 
 - astroscrappy;
 
-- numpy >= 1.17;
+- numpy >= 2.0;
+
+- photutils >= 3.0;
 
 - scikit-image;
 
 - scikit-learn;
 
-- scipy;
+- scipy >= 1.13;
 
 - sep.
 
@@ -72,7 +76,7 @@ We recomend to use a `anaconda <https://www.anaconda.com/>`_ environment to use 
 
 .. code-block::
 
-    conda create -n <environment name> -c conda-forge python=3.10 astroalign astropy astroquery astroscrappy matplotlib numpy pyyaml reproject scikit-image scikit-learn scipy sep
+    conda create -n <environment name> -c conda-forge python=3.14 astroalign astropy astroquery astroscrappy matplotlib numpy photutils pyyaml reproject scikit-image scikit-learn scipy sep
 
 Once the environment is created, you can `activate the environment <https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#activating-an-environment>`_ and install the astropop with `pip`.
 
