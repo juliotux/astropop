@@ -1,94 +1,196 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
-"""Perform math operations with astronomical images in FrameData contianer."""
+"""Perform arithmetic with images, physical units and uncertainties."""
 
 import numpy as np
 from astropy.units.core import UnitConversionError
 from astropy import units as u
+from astropy.io.fits import Header
+from astropy.nddata import CCDData, StdDevUncertainty
 
 from ..config import _optional
 
 from ._tools import merge_header
 from ._tools import merge_flag
 from ..framedata import FrameData
-from ..math.physical import QFloat, convert_to_qfloat, UnitsError
+from ..math.physical import QFloat, UnitsError
 from ..logger import logger, log_to_list
 
 
-__all__ = ['imarith']
+__all__ = ['ImArith', 'imarith']
 
 
-_arith_funcs = {'+': np.add,
-                '-': np.subtract,
-                '/': np.true_divide,
-                '//': np.floor_divide,
-                '*': np.multiply,
-                '**': np.power,
-                '%': np.remainder}
+class ImArith:
+    """Configure and perform image arithmetic.
 
+    Parameters
+    ----------
+    merge_flags : {'or', 'and', 'no_merge'}, optional
+        Strategy for merging FrameData pixel flags. Default: 'or'.
+    merge_headers : {'only_equal', 'first', 'selected_keys', 'no_merge'}, optional
+        Strategy for merging FrameData headers. Default: 'only_equal'.
+    selected_keys : list of str, optional
+        Header keys to keep with the 'selected_keys' strategy.
 
-def _as_quantity(value):
-    """Extract values and units without allocating or propagating errors."""
-    if value is None:
-        raise TypeError('value must not be None.')
-    if isinstance(value, (u.UnitBase, str)):
-        return u.Quantity(1.0, u.Unit(value))
-    unit = getattr(value, 'unit', None)
-    if isinstance(value, u.Quantity):
-        value = value.value
-    elif isinstance(value, QFloat):
-        value = value.nominal
-    elif hasattr(value, 'data') and hasattr(value, 'unit'):
-        value = value.data
-    return u.Quantity(np.asarray(value, dtype=float), unit, copy=False)
+    Notes
+    -----
+    Instances retain only merge settings and can run multiple operations.
+    Optional-array configuration is evaluated for each call to `run`.
+    Arithmetic uses QFloat for uncertainty propagation and Quantity when
+    propagation is disabled. Both paths share nominal conversion and retain
+    the existing raw-value conventions for floor division and remainder.
+    """
 
+    _operations = {'+': np.add, '-': np.subtract, '*': np.multiply,
+                   '/': np.true_divide, '//': np.floor_divide,
+                   '**': np.power, '%': np.remainder}
 
-def _arith_nominal(value1, value2, operation):
-    """Return data, unit and None with the existing QFloat unit conventions."""
-    if operation == '**' and value2.unit != u.dimensionless_unscaled:
-        raise ValueError('Power operation requires a dimensionless scalar exponent')
-    if operation in ('//', '%'):
-        # QFloat applies these operators to the supplied nominal numbers,
-        # whereas Quantity converts compatible units first. Preserve the
-        # existing arithmetic convention independently of propagation.
-        data = _arith_funcs[operation](value1.value, value2.value)
-        unit = value1.unit / value2.unit if operation == '//' else value1.unit
-        result = u.Quantity(np.asarray(data), unit, copy=False)
-    else:
-        result = _arith_funcs[operation](value1, value2)
-    return result.value, result.unit, None
+    def __init__(self, merge_flags='or', merge_headers='only_equal',
+                 selected_keys=None):
+        self._flag_strategy = merge_flags
+        self._header_strategy = merge_headers
+        self._selected_keys = selected_keys
 
+    @staticmethod
+    def _nominal(value):
+        """Read numerical values without reading or formatting errors."""
+        return value.nominal if isinstance(value, QFloat) else value.value
 
-@_optional('IMARITH_SKIP_UNCERTAINTY', 'FRAMEDATA_DISABLE_UNCERTAINTY')
-def _arith_with_uncertainty(operand1, operand2, operation):
-    """Return data, unit and uncertainty from one QFloat calculation."""
-    qf1 = convert_to_qfloat(operand1)
-    qf2 = convert_to_qfloat(operand2)
+    def _as_quantity(self, value):
+        """Normalize values and units without touching optional arrays."""
+        if value is None:
+            raise TypeError('value must not be None.')
+        if isinstance(value, (u.UnitBase, str)):
+            return u.Quantity(1.0, u.Unit(value))
+        unit = getattr(value, 'unit', None)
+        if isinstance(value, (u.Quantity, QFloat)):
+            value = self._nominal(value)
+        elif hasattr(value, 'data') and hasattr(value, 'unit'):
+            value = value.data
+        if np.any(np.asarray(value) == None) or not np.any(np.isreal(value)):  # noqa: E711
+            raise TypeError('Nominal values must be real numbers and not None.')
+        return u.Quantity(np.asarray(value, dtype=float), unit, copy=False)
 
-    result = _arith_funcs[operation](qf1, qf2)
-    return result.nominal, result.unit, result.uncertainty
+    @_optional('IMARITH_SKIP_UNCERTAINTY', 'FRAMEDATA_DISABLE_UNCERTAINTY')
+    def _with_uncertainty(self, value, source):
+        """Prepare propagation only when enabled, preserving error units."""
+        if isinstance(source, QFloat):
+            return source
+        if isinstance(source, FrameData):
+            uncertainty = source.get_uncertainty()
+        elif isinstance(source, CCDData):
+            uncertainty = source.uncertainty
+            if uncertainty is not None:
+                if not isinstance(uncertainty, StdDevUncertainty):
+                    uncertainty = uncertainty.represent_as(StdDevUncertainty)
+                uncertainty = uncertainty.quantity.to_value(value.unit)
+        else:
+            uncertainty = None
+        return QFloat(value.value, uncertainty, value.unit)
 
+    def _convert_operand(self, source):
+        """Select the arithmetic representation after nominal conversion."""
+        value = self._as_quantity(source)
+        with_uncertainty = self._with_uncertainty(value, source)
+        return value if with_uncertainty is None else with_uncertainty
 
-def _prepare_operands(operand1, operand2, operation):
-    """Validate nominal exponents and convert operands for arithmetic."""
-    if operation == '**':
-        exponent = operand2.nominal if isinstance(operand2, QFloat) else operand2
-        if isinstance(exponent, u.Quantity):
-            exponent = exponent.value
-        if not isinstance(exponent, (u.UnitBase, str)) and not np.isscalar(exponent):
+    def _validate_operation(self, operation, operand2):
+        """Keep scalar-exponent validation independent of propagation."""
+        if operation not in self._operations:
+            raise ValueError(f'Operation {operation} not supported.')
+        if operation == '**':
+            exponent = operand2.nominal if isinstance(operand2, QFloat) else operand2
+            if isinstance(exponent, u.Quantity):
+                exponent = exponent.value
+            if not isinstance(exponent, (u.UnitBase, str)) and not np.isscalar(exponent):
+                raise ValueError('Power operation requires a dimensionless scalar exponent')
+
+    def _calculate(self, value1, value2, operation):
+        """Apply one operation and translate incompatible-unit errors."""
+        if operation == '**' and value2.unit != u.dimensionless_unscaled:
             raise ValueError('Power operation requires a dimensionless scalar exponent')
-    return _as_quantity(operand1), _as_quantity(operand2)
+        try:
+            if isinstance(value1, u.Quantity) and operation in ('//', '%'):
+                # QFloat uses raw nominal values for these operations. Quantity
+                # normally rescales the divisor, which would change results
+                # when uncertainty propagation is switched off.
+                data = self._operations[operation](value1.value, value2.value)
+                unit = value1.unit / value2.unit if operation == '//' else value1.unit
+                return u.Quantity(np.asarray(data), unit, copy=False)
+            return self._operations[operation](value1, value2)
+        except UnitConversionError:
+            raise UnitsError(f'Units {value1.unit} and {value2.unit} are'
+                             f' incompatible for {operation} operation.')
 
+    @_optional('FRAMEDATA_DISABLE_FLAGS')
+    def _merge_flags(self, operand1, operand2, shape):
+        """Treat missing flags as zero without reading disabled arrays."""
+        flags1 = operand1.flags if isinstance(operand1, FrameData) else None
+        flags2 = operand2.flags if isinstance(operand2, FrameData) else None
+        if flags1 is None:
+            flags1 = np.zeros(shape, dtype=np.uint8)
+        if flags2 is None:
+            flags2 = np.zeros(shape, dtype=np.uint8)
+        return merge_flag(flags1, flags2, method=self._flag_strategy)
 
-@_optional('FRAMEDATA_DISABLE_FLAGS')
-def _merge_arithmetic_flags(operand1, operand2, shape, method):
-    """Merge operand flags, honoring disabled storage and missing arrays."""
-    f1 = operand1.flags if isinstance(operand1, FrameData) else None
-    f2 = operand2.flags if isinstance(operand2, FrameData) else None
-    if f1 is None:
-        f1 = np.zeros(shape, dtype=np.uint8)
-    if f2 is None:
-        f2 = np.zeros(shape, dtype=np.uint8)
-    return merge_flag(f1, f2, method=method)
+    def _merge_headers(self, operand1, operand2):
+        """Only FrameData operands contribute headers, as in imarith."""
+        header1 = operand1.header if isinstance(operand1, FrameData) else Header()
+        header2 = operand2.header if isinstance(operand2, FrameData) else Header()
+        return merge_header(header1, header2, method=self._header_strategy,
+                            selected_keys=self._selected_keys)
+
+    def _write_result(self, output, result, flags, header):
+        """Assign through FrameData setters to retain memory-map behavior."""
+        output.data = self._nominal(result)
+        output.unit = result.unit
+        output.uncertainty = getattr(result, 'uncertainty', None)
+        output.flags = flags
+        output.meta = header
+        return output
+
+    def run(self, operand1, operand2, operation, inplace=False):
+        """Perform an operation with the operand and result contract of imarith.
+
+        Parameters
+        ----------
+        operand1, operand2 : FrameData, QFloat, Quantity, CCDData or array_like
+            Operands. Numbers and units are also accepted.
+        operation : {'+', '-', '*', '/', '//', '**', '%'}
+            Arithmetic operation; powers require a dimensionless scalar.
+        inplace : bool, optional
+            Update operand1 if it is FrameData. Default: False.
+
+        Returns
+        -------
+        FrameData
+            Arithmetic result, with merged flags and headers. Non-inplace
+            calls leave source data, uncertainties and flags unchanged.
+        """
+        self._validate_operation(operation, operand2)
+        value1 = self._convert_operand(operand1)
+        value2 = self._convert_operand(operand2)
+        if isinstance(operand1, FrameData) and inplace:
+            output = operand1
+        else:
+            # The constructor requires 2D images; imarith also accepts scalars
+            # and arrays of other dimensions. Populate through the setters.
+            output = object.__new__(FrameData)
+            output._history = []
+            output._comments = []
+
+        handler = log_to_list(logger, output.history)
+        try:
+            logger.debug('Operation %s between %s %s and %s %s', operation,
+                         self._nominal(value1), value1.unit,
+                         self._nominal(value2), value2.unit)
+            result = self._calculate(value1, value2, operation)
+            # Complete merges before modifying an in-place operand.
+            flags = self._merge_flags(operand1, operand2,
+                                     np.shape(self._nominal(result)))
+            header = self._merge_headers(operand1, operand2)
+            return self._write_result(output, result, flags, header)
+        finally:
+            logger.removeHandler(handler)
 
 
 def imarith(operand1, operand2, operation, inplace=False,
@@ -147,42 +249,6 @@ def imarith(operand1, operand2, operation, inplace=False,
         new `FrameData` instance if not ``inplace``, else the ``operand1``
         `~astropop.framedata.FrameData` instance.
     """
-    if operation not in _arith_funcs.keys():
-        raise ValueError(f"Operation {operation} not supported.")
-
-    value1, value2 = _prepare_operands(operand1, operand2, operation)
-
-    if isinstance(operand1, FrameData) and inplace:
-        ccd = operand1
-    else:
-        ccd = object.__new__(FrameData)
-
-    # Add the operation entry to the ccd history.
-    lh = log_to_list(logger, ccd.history)
-    try:
-        # Logging a QFloat itself can read its uncertainty via __str__.
-        logger.debug('Operation %s between %s and %s',
-                     operation, value1, value2)
-        # Perform data, mask and uncertainty operations
-        try:
-            result = _arith_with_uncertainty(operand1, operand2, operation)
-            if result is None:
-                result = _arith_nominal(value1, value2, operation)
-        except UnitConversionError:
-            raise UnitsError(f'Units {value1.unit} and {value2.unit} are'
-                             f' incompatible for {operation} operation.')
-
-        ccd.data, ccd.unit, ccd.uncertainty = result
-
-        ccd.flags = _merge_arithmetic_flags(
-            operand1, operand2, ccd.shape, merge_flags)
-
-        # Only FrameData operands contribute headers, as before conversion.
-        h1 = operand1.header if isinstance(operand1, FrameData) else None
-        h2 = operand2.header if isinstance(operand2, FrameData) else None
-        keys = kwargs.get('selected_keys', None)
-        ccd.meta = merge_header(h1, h2, method=merge_headers, selected_keys=keys)
-
-        return ccd
-    finally:
-        logger.removeHandler(lh)
+    arithmetic = ImArith(merge_flags=merge_flags, merge_headers=merge_headers,
+                         selected_keys=kwargs.get('selected_keys', None))
+    return arithmetic.run(operand1, operand2, operation, inplace=inplace)

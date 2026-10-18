@@ -112,14 +112,14 @@ class TestOptionalArrays:
     def test_arithmetic_calculates_nominal_values_once(self, monkeypatch, option):
         frame = FrameData(np.full((2, 3), 4), unit='m', uncertainty=3)
         module = importlib.import_module('astropop.image.imarith')
-        add = module._arith_funcs['+']
+        add = module.ImArith._operations['+']
         calls = []
 
         def counted_add(first, second):
             calls.append(1)
             return add(first, second)
 
-        monkeypatch.setitem(module._arith_funcs, '+', counted_add)
+        monkeypatch.setitem(module.ImArith._operations, '+', counted_add)
         if option is not None:
             monkeypatch.setattr(conf, option, True)
         result = imarith(frame, QFloat(2, 4, 'm'), '+')
@@ -169,8 +169,10 @@ class TestOptionalArrays:
             np.testing.assert_array_equal(moving._unct, 1)
 
     @pytest.mark.parametrize('kind', ['frame', 'qfloat', 'ccd'])
+    @pytest.mark.parametrize('option', ['IMARITH_SKIP_UNCERTAINTY',
+                                       'FRAMEDATA_DISABLE_UNCERTAINTY'])
     def test_arithmetic_never_reads_skipped_uncertainty(self, monkeypatch,
-                                                       caplog, kind):
+                                                       caplog, kind, option):
         data = np.full((2, 3), 4.0)
         if kind == 'frame':
             operand = FrameData(data, unit='m', uncertainty=1)
@@ -182,7 +184,7 @@ class TestOptionalArrays:
         def unreadable(*args, **kwargs):
             pytest.fail('Read an input uncertainty while propagation was skipped')
 
-        monkeypatch.setattr(conf, 'IMARITH_SKIP_UNCERTAINTY', True)
+        monkeypatch.setattr(conf, option, True)
         original = type(operand).uncertainty
         monkeypatch.setattr(type(operand), 'uncertainty',
                             property(unreadable, original.fset))
@@ -393,10 +395,9 @@ class TestOptionalArrays:
         first = FrameData(np.full((3, 4), 4.0), uncertainty=0.3)
         second = QFloat(2, 0.1)
         expected = imarith(first, second, operation)
-        module = importlib.import_module('astropop.image.imarith')
         monkeypatch.setattr(conf, option, True)
-        monkeypatch.setattr(module, 'convert_to_qfloat',
-                            lambda *args: pytest.fail('QFloat conversion called'))
+        monkeypatch.setattr(QFloat, '__init__',
+                            lambda *args, **kwargs: pytest.fail('QFloat conversion called'))
         actual = imarith(first, second, operation, inplace=inplace)
         assert (actual is first) == inplace
         assert actual.uncertainty is None
