@@ -13,6 +13,8 @@ from astropop.config import AstropopConfig as conf
 from astropop.framedata import FrameData, PixelMaskFlags, read_framedata
 from astropop.image.imarith import imarith
 from astropop.image.imcombine import ImCombiner, imcombine
+from astropop.image.processing import trim_image
+from astropop.image.register import CrossCorrelationRegister
 from astropop.math.physical import QFloat
 
 
@@ -20,6 +22,29 @@ class TestOptionalArrays:
     class UnreadableArray:
         def __array__(self, *args, **kwargs):
             raise AssertionError('Disabled data must not be converted')
+
+    @pytest.mark.parametrize('memmap', [False, True])
+    @pytest.mark.parametrize('inplace', [False, True])
+    @pytest.mark.parametrize('disabled', [False, True])
+    def test_registration_preserves_flags_and_optional_errors(self, monkeypatch,
+                                                              tmp_path, memmap,
+                                                              inplace, disabled):
+        reference = np.zeros((24, 24))
+        reference[8, 8] = 100
+        moving = FrameData(np.roll(reference, (2, 3), axis=(0, 1)),
+                           uncertainty=1, cache_folder=str(tmp_path / 'moving'),
+                           use_memmap_backend=memmap)
+        moving.add_flags(PixelMaskFlags.BAD, (12, 13))
+        monkeypatch.setattr(conf, 'FRAMEDATA_DISABLE_UNCERTAINTY', disabled)
+        result = CrossCorrelationRegister(window=(slice(3, 21),)*2).register_framedata(
+            FrameData(reference), moving, inplace=inplace)
+        assert (result is moving) is inplace
+        np.testing.assert_allclose(result.data, reference, atol=1e-10)
+        assert result.mask_flags(PixelMaskFlags.BAD)[10, 10]
+        assert (result.uncertainty is None) is disabled
+        if not inplace:
+            assert moving.mask_flags(PixelMaskFlags.BAD)[12, 13]
+            np.testing.assert_array_equal(moving.uncertainty, 1)
 
     @pytest.mark.parametrize('kind', ['frame', 'qfloat', 'ccd'])
     def test_arithmetic_never_reads_skipped_uncertainty(self, monkeypatch,
@@ -292,3 +317,44 @@ class TestOptionalArrays:
         result = combiner.combine(frames, method='mean')
         np.testing.assert_array_equal(result.data, 1)
         assert result.uncertainty is None
+
+    def test_disabled_flags_arithmetic_and_registration(self, monkeypatch):
+        monkeypatch.setattr(conf, 'FRAMEDATA_DISABLE_FLAGS', True)
+        first = FrameData(np.arange(100).reshape(10, 10), uncertainty=1)
+        first.mask_pixels((1, 1))
+        second = imarith(first, 2, '*')
+        assert second.flags is second.mask is None
+        registered = CrossCorrelationRegister().register_framedata(first, second)
+        assert registered.flags is registered.mask is None
+        trimmed = trim_image(registered, slice(2, 8), slice(3, 9))
+        assert trimmed.flags is trimmed.mask is None
+        assert trimmed.shape == (6, 6)
+
+
+    @pytest.mark.parametrize('inplace', [False, True])
+    @pytest.mark.parametrize('disabled', [False, True])
+    def test_trim_preserves_absent_uncertainty(self, monkeypatch, inplace, disabled):
+        frame = FrameData(np.arange(30).reshape(5, 6))
+        monkeypatch.setattr(conf, 'FRAMEDATA_DISABLE_UNCERTAINTY', disabled)
+        monkeypatch.setattr(FrameData, 'get_uncertainty',
+                            lambda *a, **k: pytest.fail('Allocated missing uncertainty'))
+        result = trim_image(frame, slice(1, 4), slice(2, 5), inplace=inplace)
+        assert result.uncertainty is None
+        np.testing.assert_array_equal(result.data, np.arange(30).reshape(5, 6)[2:5, 1:4])
+
+
+    @pytest.mark.parametrize('inplace', [False, True])
+    @pytest.mark.parametrize('operation', ['trim', 'register'])
+    def test_processing_does_not_read_disabled_uncertainty(self, monkeypatch, inplace, operation):
+        frame = FrameData(np.arange(100).reshape(10, 10), uncertainty=2)
+        monkeypatch.setattr(conf, 'FRAMEDATA_DISABLE_UNCERTAINTY', True)
+        monkeypatch.setattr(FrameData, 'get_uncertainty',
+                            lambda *a, **k: pytest.fail('Read disabled uncertainty'))
+        if operation == 'trim':
+            result = trim_image(frame, slice(2, 8), slice(1, 7), inplace=inplace)
+        else:
+            register = CrossCorrelationRegister()
+            result = register.register_framedata(frame, frame, inplace=inplace)
+        assert result.uncertainty is None
+        if not inplace:
+            np.testing.assert_array_equal(frame.uncertainty, 2)

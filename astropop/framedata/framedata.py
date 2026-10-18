@@ -605,11 +605,14 @@ class FrameData:
         if cache_fname is not None:
             cache_fname = cache_fname + '_copy'
         nf._origin = self._origin
-        cache_dir = self.cache.dirname + '_copy'
-        if os.path.exists(self.cache.full_path + '_copy'):
-            cache_dir += '_' + os.urandom(8).hex()
-        nf.cache = TempDir(cache_dir, parent=self.cache.parent)
-        nf.cache_filename = cache_fname
+        if self.cache is None:
+            setup_filename(nf, filename=cache_fname)
+        else:
+            cache_dir = self.cache.dirname + '_copy'
+            if os.path.exists(self.cache.full_path + '_copy'):
+                cache_dir += '_' + os.urandom(8).hex()
+            nf.cache = TempDir(cache_dir, parent=self.cache.parent)
+            nf.cache_filename = cache_fname
 
         # copy data
         nf._data = delete_array_memmap(self._data, read=True, remove=False)
