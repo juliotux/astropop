@@ -27,8 +27,9 @@ print(folder.full_path)
 with folder.create_file('owned.txt').open('w') as stream:
     stream.write('owned')
 """
-        (tmp_path / 'cache').mkdir()
-        (tmp_path / 'config').mkdir()
+        # Astropy 6 uses its home cache unless these XDG subdirectories exist.
+        (tmp_path / 'cache' / 'astropy').mkdir(parents=True)
+        (tmp_path / 'config' / 'astropy').mkdir(parents=True)
         env = dict(os.environ, XDG_CACHE_HOME=str(tmp_path / 'cache'),
                    XDG_CONFIG_HOME=str(tmp_path / 'config'))
         result = subprocess.run(
