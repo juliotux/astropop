@@ -107,6 +107,30 @@ class TestOptionalArrays:
             np.testing.assert_array_equal(frame.data, 4.5)
             np.testing.assert_array_equal(frame.uncertainty, 0.3)
 
+    @pytest.mark.parametrize('option', [None, 'IMARITH_SKIP_UNCERTAINTY',
+                                       'FRAMEDATA_DISABLE_UNCERTAINTY'])
+    def test_arithmetic_calculates_nominal_values_once(self, monkeypatch, option):
+        frame = FrameData(np.full((2, 3), 4), unit='m', uncertainty=3)
+        module = importlib.import_module('astropop.image.imarith')
+        add = module._arith_funcs['+']
+        calls = []
+
+        def counted_add(first, second):
+            calls.append(1)
+            return add(first, second)
+
+        monkeypatch.setitem(module._arith_funcs, '+', counted_add)
+        if option is not None:
+            monkeypatch.setattr(conf, option, True)
+        result = imarith(frame, QFloat(2, 4, 'm'), '+')
+        assert len(calls) == 1
+        np.testing.assert_array_equal(result.data, 6)
+        assert result.unit == u.m
+        if option is None:
+            np.testing.assert_array_equal(result.uncertainty, 5)
+        else:
+            assert result.uncertainty is None
+
     def test_skipped_arithmetic_rejects_none(self, monkeypatch):
         monkeypatch.setattr(conf, 'IMARITH_SKIP_UNCERTAINTY', True)
         with pytest.raises(TypeError):
@@ -180,13 +204,17 @@ class TestOptionalArrays:
         frames = [FrameData(np.full((3, 4), value), uncertainty=1)
                   for value in (1, 2, 3)]
 
-        def unreadable(*args):
-            pytest.fail('Read disabled input storage while combining')
-
         monkeypatch.setattr(conf, 'IMARITH_SKIP_UNCERTAINTY', True)
         monkeypatch.setattr(conf, 'FRAMEDATA_DISABLE_FLAGS', True)
         for name in ('uncertainty', 'flags'):
             descriptor = getattr(FrameData, name)
+
+            def unreadable(frame, getter=descriptor.fget):
+                if any(frame is source for source in frames):
+                    pytest.fail('Read disabled input storage while combining')
+                # Working copies retain their real configuration-aware getters.
+                return getter(frame)
+
             monkeypatch.setattr(FrameData, name,
                                 property(unreadable, descriptor.fset))
         result = imcombine(frames, method='sum')

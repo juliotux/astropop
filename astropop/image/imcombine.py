@@ -362,8 +362,7 @@ class ImCombiner:
                                unit=source.unit, dtype=self._dtype,
                                flags=(None if conf.FRAMEDATA_DISABLE_FLAGS
                                       else source.flags),
-                               uncertainty=(source.uncertainty
-                                            if self._propagate_uncertainty else None))
+                               uncertainty=self._get_uncertainty(source))
                 # The source header is already normalized by FrameData.
                 ic._meta = source.header.copy()
 
@@ -398,22 +397,19 @@ class ImCombiner:
         self._shape = base_shape
         self._unit = base_unit
 
-    @property
     @_optional('IMARITH_SKIP_UNCERTAINTY', 'FRAMEDATA_DISABLE_UNCERTAINTY')
-    def _propagate_uncertainty(self):
-        """Enable uncertainty buffers only when propagation is enabled."""
-        return True
+    def _get_uncertainty(self, frame):
+        """Read an input uncertainty only when propagation is enabled."""
+        return frame.uncertainty
 
     def _chunk_yielder(self, method):
         """Split the data in chuncks according to the method."""
         # sum needs uncertainties, others ignore it
-        unct = False
-        if method == 'sum' and self._propagate_uncertainty:
-            if not np.any([i.uncertainty is None for i in self._images]):
-                unct = True
-            else:
-                logger.debug('One or more frames have empty uncertainty. '
-                             'Some features are disabled.')
+        unct = method == 'sum' and all(self._get_uncertainty(i) is not None
+                                      for i in self._images)
+        if method == 'sum' and not unct:
+            logger.debug('One or more frames have empty uncertainty. '
+                         'Some features are disabled.')
 
         # flags and uncertainty are ignored
         shape = self._images[0].shape
@@ -561,8 +557,7 @@ class ImCombiner:
             # temp combined data, mask and uncertainty
             data = np.zeros(self._shape, dtype=self._dtype)
             data.fill(np.nan)
-            unct = (np.zeros(self._shape, dtype=self._dtype)
-                    if self._propagate_uncertainty else None)
+            unct = None
             mask = (None if conf.FRAMEDATA_DISABLE_FLAGS
                     else np.zeros(self._shape, dtype=bool))
 
@@ -573,7 +568,9 @@ class ImCombiner:
 
                 # combine the images and compute the uncertainty
                 data[slc], chunk_uncertainty = self._combine(method, **kwargs)
-                if unct is not None:
+                if chunk_uncertainty is not None:
+                    if unct is None:
+                        unct = np.empty(self._shape, dtype=self._dtype)
                     unct[slc] = chunk_uncertainty
                 if mask is not None:
                     mask[slc] = np.isnan(data[slc])

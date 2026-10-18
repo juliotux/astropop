@@ -30,43 +30,42 @@ def _as_quantity(value):
     """Extract values and units without allocating or propagating errors."""
     if value is None:
         raise TypeError('value must not be None.')
-    if isinstance(value, u.Quantity):
-        return u.Quantity(np.asarray(value.value, dtype=float), value.unit,
-                          copy=False)
-    if isinstance(value, QFloat):
-        return u.Quantity(np.asarray(value.nominal, dtype=float), value.unit,
-                          copy=False, dtype=None)
-    if isinstance(value, FrameData) or (hasattr(value, 'data') and
-                                       hasattr(value, 'unit')):
-        return u.Quantity(np.asarray(value.data, dtype=float), value.unit,
-                          copy=False, dtype=None)
     if isinstance(value, (u.UnitBase, str)):
         return u.Quantity(1.0, u.Unit(value))
-    return u.Quantity(np.asarray(value, dtype=float), copy=False, dtype=None)
+    unit = getattr(value, 'unit', None)
+    if isinstance(value, u.Quantity):
+        value = value.value
+    elif isinstance(value, QFloat):
+        value = value.nominal
+    elif hasattr(value, 'data') and hasattr(value, 'unit'):
+        value = value.data
+    return u.Quantity(np.asarray(value, dtype=float), unit, copy=False)
 
 
 def _arith_nominal(value1, value2, operation):
-    """Calculate nominal results with the existing QFloat unit conventions."""
+    """Return data, unit and None with the existing QFloat unit conventions."""
+    if operation == '**' and value2.unit != u.dimensionless_unscaled:
+        raise ValueError('Power operation requires a dimensionless scalar exponent')
     if operation in ('//', '%'):
         # QFloat applies these operators to the supplied nominal numbers,
         # whereas Quantity converts compatible units first. Preserve the
         # existing arithmetic convention independently of propagation.
         data = _arith_funcs[operation](value1.value, value2.value)
         unit = value1.unit / value2.unit if operation == '//' else value1.unit
-        return u.Quantity(np.asarray(data), unit, copy=False)
-    if operation == '**' and (value2.unit != u.dimensionless_unscaled or
-                              not np.isscalar(value2.value)):
-        raise ValueError('Power operation requires a dimensionless scalar exponent')
-    return _arith_funcs[operation](value1, value2)
+        result = u.Quantity(np.asarray(data), unit, copy=False)
+    else:
+        result = _arith_funcs[operation](value1, value2)
+    return result.value, result.unit, None
 
 
 @_optional('IMARITH_SKIP_UNCERTAINTY', 'FRAMEDATA_DISABLE_UNCERTAINTY')
-def _arith_uncertainty(operand1, operand2, operation):
-    """Propagate uncertainties using the existing QFloat arithmetic."""
+def _arith_with_uncertainty(operand1, operand2, operation):
+    """Return data, unit and uncertainty from one QFloat calculation."""
     qf1 = convert_to_qfloat(operand1)
     qf2 = convert_to_qfloat(operand2)
 
-    return _arith_funcs[operation](qf1, qf2).uncertainty
+    result = _arith_funcs[operation](qf1, qf2)
+    return result.nominal, result.unit, result.uncertainty
 
 
 def _prepare_operands(operand1, operand2, operation):
@@ -166,15 +165,14 @@ def imarith(operand1, operand2, operation, inplace=False,
                      operation, value1, value2)
         # Perform data, mask and uncertainty operations
         try:
-            result = _arith_nominal(value1, value2, operation)
-            uncertainty = _arith_uncertainty(operand1, operand2, operation)
+            result = _arith_with_uncertainty(operand1, operand2, operation)
+            if result is None:
+                result = _arith_nominal(value1, value2, operation)
         except UnitConversionError:
             raise UnitsError(f'Units {value1.unit} and {value2.unit} are'
                              f' incompatible for {operation} operation.')
 
-        ccd.data = result.value
-        ccd.unit = result.unit
-        ccd.uncertainty = uncertainty
+        ccd.data, ccd.unit, ccd.uncertainty = result
 
         ccd.flags = _merge_arithmetic_flags(
             operand1, operand2, ccd.shape, merge_flags)
