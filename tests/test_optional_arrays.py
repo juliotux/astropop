@@ -109,25 +109,39 @@ class TestOptionalArrays:
 
     @pytest.mark.parametrize('option', [None, 'IMARITH_SKIP_UNCERTAINTY',
                                        'FRAMEDATA_DISABLE_UNCERTAINTY'])
-    def test_arithmetic_calculates_nominal_values_once(self, monkeypatch, option):
+    @pytest.mark.parametrize('operation, expected, unit, uncertainty', [
+        ('+', 6, u.m, 5), ('-', 2, u.m, 5), ('*', 8, u.m**2, np.sqrt(292)),
+        ('/', 2, u.dimensionless_unscaled, np.sqrt(18.25)),
+        ('//', 2, u.dimensionless_unscaled, 0),
+        ('%', 0, u.m, np.inf), ('**', 16, u.m**2, 24),
+    ])
+    def test_arithmetic_calculates_nominal_values_once(self, monkeypatch, option,
+                                                      operation, expected, unit,
+                                                      uncertainty):
         frame = FrameData(np.full((2, 3), 4), unit='m', uncertainty=3)
         module = importlib.import_module('astropop.image.imarith')
-        add = module.ImArith._operations['+']
+        function = module.ImArith._operations[operation]
         calls = []
 
-        def counted_add(first, second):
+        def counted_operation(first, second):
+            # Every mode must use numerical arrays, without dispatching back
+            # into QFloat or Quantity arithmetic for its nominal result.
+            assert not isinstance(first, (QFloat, u.Quantity))
+            assert not isinstance(second, (QFloat, u.Quantity))
             calls.append(1)
-            return add(first, second)
+            return function(first, second)
 
-        monkeypatch.setitem(module.ImArith._operations, '+', counted_add)
+        monkeypatch.setitem(module.ImArith._operations, operation, counted_operation)
         if option is not None:
             monkeypatch.setattr(conf, option, True)
-        result = imarith(frame, QFloat(2, 4, 'm'), '+')
+        other = QFloat(2, 0 if operation == '**' else 4,
+                       None if operation == '**' else 'm')
+        result = imarith(frame, other, operation)
         assert len(calls) == 1
-        np.testing.assert_array_equal(result.data, 6)
-        assert result.unit == u.m
+        np.testing.assert_array_equal(result.data, expected)
+        assert result.unit == unit
         if option is None:
-            np.testing.assert_array_equal(result.uncertainty, 5)
+            np.testing.assert_array_equal(result.uncertainty, uncertainty)
         else:
             assert result.uncertainty is None
 
@@ -395,9 +409,12 @@ class TestOptionalArrays:
         first = FrameData(np.full((3, 4), 4.0), uncertainty=0.3)
         second = QFloat(2, 0.1)
         expected = imarith(first, second, operation)
+        module = importlib.import_module('astropop.image.imarith')
         monkeypatch.setattr(conf, option, True)
         monkeypatch.setattr(QFloat, '__init__',
                             lambda *args, **kwargs: pytest.fail('QFloat conversion called'))
+        monkeypatch.setattr(module, 'propagate_2',
+                            lambda *args: pytest.fail('Uncertainty propagation called'))
         actual = imarith(first, second, operation, inplace=inplace)
         assert (actual is first) == inplace
         assert actual.uncertainty is None

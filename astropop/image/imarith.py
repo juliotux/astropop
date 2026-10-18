@@ -13,6 +13,7 @@ from ._tools import merge_header
 from ._tools import merge_flag
 from ..framedata import FrameData
 from ..math.physical import QFloat, UnitsError
+from ..math._deriv import propagate_2
 from ..logger import logger, log_to_list
 
 
@@ -35,14 +36,17 @@ class ImArith:
     -----
     Instances retain only merge settings and can run multiple operations.
     Optional-array configuration is evaluated for each call to `run`.
-    Arithmetic uses QFloat for uncertainty propagation and Quantity when
-    propagation is disabled. Both paths share nominal conversion and retain
-    the existing raw-value conventions for floor division and remainder.
+    All calls use the same NumPy calculation on normalized values and units.
+    Uncertainties use the existing derivative helpers when enabled; disabling
+    them skips extraction and propagation. Floor division and remainder
+    retain the existing raw-value conventions.
     """
 
     _operations = {'+': np.add, '-': np.subtract, '*': np.multiply,
                    '/': np.true_divide, '//': np.floor_divide,
                    '**': np.power, '%': np.remainder}
+    _derivatives = {'+': 'add', '-': 'sub', '*': 'mul', '/': 'truediv',
+                    '//': 'floordiv', '**': 'pow', '%': 'mod'}
 
     def __init__(self, merge_flags='or', merge_headers='only_equal',
                  selected_keys=None):
@@ -71,27 +75,35 @@ class ImArith:
         return u.Quantity(np.asarray(value, dtype=float), unit, copy=False)
 
     @_optional('IMARITH_SKIP_UNCERTAINTY', 'FRAMEDATA_DISABLE_UNCERTAINTY')
-    def _with_uncertainty(self, value, source):
-        """Prepare propagation only when enabled, preserving error units."""
-        if isinstance(source, QFloat):
-            return source
+    def _read_uncertainty(self, source, unit):
+        """Extract standard deviations in the normalized operand unit."""
         if isinstance(source, FrameData):
-            uncertainty = source.get_uncertainty()
+            uncertainty = source.get_uncertainty(False)
+        elif isinstance(source, QFloat):
+            uncertainty = source.uncertainty
         elif isinstance(source, CCDData):
             uncertainty = source.uncertainty
-            if uncertainty is not None:
-                if not isinstance(uncertainty, StdDevUncertainty):
-                    uncertainty = uncertainty.represent_as(StdDevUncertainty)
-                uncertainty = uncertainty.quantity.to_value(value.unit)
+            if uncertainty is None:
+                return 0.0
+            if not isinstance(uncertainty, StdDevUncertainty):
+                uncertainty = uncertainty.represent_as(StdDevUncertainty)
+            return uncertainty.quantity.to_value(unit)
         else:
-            uncertainty = None
-        return QFloat(value.value, uncertainty, value.unit)
+            return 0.0
+        return u.Quantity(uncertainty, source.unit).to_value(unit)
 
-    def _convert_operand(self, source):
-        """Select the arithmetic representation after nominal conversion."""
-        value = self._as_quantity(source)
-        with_uncertainty = self._with_uncertainty(value, source)
-        return value if with_uncertainty is None else with_uncertainty
+    def _convert_operands(self, operand1, operand2, operation):
+        """Normalize values and optional errors before the common calculation."""
+        value1 = self._as_quantity(operand1)
+        value2 = self._as_quantity(operand2)
+        try:
+            if operation in ('+', '-'):
+                value2 = value2.to(value1.unit)
+            return ((value1, self._read_uncertainty(operand1, value1.unit)),
+                    (value2, self._read_uncertainty(operand2, value2.unit)))
+        except UnitConversionError:
+            raise UnitsError(f'Units {value1.unit} and {value2.unit} are'
+                             f' incompatible for {operation} operation.')
 
     def _validate_operation(self, operation, operand2):
         """Keep scalar-exponent validation independent of propagation."""
@@ -104,22 +116,39 @@ class ImArith:
             if not isinstance(exponent, (u.UnitBase, str)) and not np.isscalar(exponent):
                 raise ValueError('Power operation requires a dimensionless scalar exponent')
 
-    def _calculate(self, value1, value2, operation):
-        """Apply one operation and translate incompatible-unit errors."""
-        if operation == '**' and value2.unit != u.dimensionless_unscaled:
+    @staticmethod
+    def _result_unit(value1, value2, operation):
+        """Apply the existing unit rules independently of error propagation."""
+        if operation in ('+', '-', '%'):
+            return value1.unit
+        if operation in ('/', '//'):
+            return value1.unit / value2.unit
+        if operation == '*':
+            return value1.unit * value2.unit
+        if value2.unit != u.dimensionless_unscaled:
             raise ValueError('Power operation requires a dimensionless scalar exponent')
-        try:
-            if isinstance(value1, u.Quantity) and operation in ('//', '%'):
-                # QFloat uses raw nominal values for these operations. Quantity
-                # normally rescales the divisor, which would change results
-                # when uncertainty propagation is switched off.
-                data = self._operations[operation](value1.value, value2.value)
-                unit = value1.unit / value2.unit if operation == '//' else value1.unit
-                return u.Quantity(np.asarray(data), unit, copy=False)
-            return self._operations[operation](value1, value2)
-        except UnitConversionError:
-            raise UnitsError(f'Units {value1.unit} and {value2.unit} are'
-                             f' incompatible for {operation} operation.')
+        return value1.unit ** value2.value
+
+    @_optional('IMARITH_SKIP_UNCERTAINTY', 'FRAMEDATA_DISABLE_UNCERTAINTY')
+    def _propagate_uncertainty(self, result, first, second, operation):
+        """Reuse the derivative formulas used by QFloat without recalculating data."""
+        value1, uncertainty1 = first
+        value2, uncertainty2 = second
+        uncertainty = propagate_2(self._derivatives[operation], result.value,
+                                  value1.value, value2.value, uncertainty1, uncertainty2)
+        # Constant derivatives can leave errors smaller than a broadcast
+        # result, particularly when the other operand has no uncertainty.
+        return np.broadcast_to(uncertainty, result.shape)
+
+    def _calculate(self, first, second, operation):
+        """Calculate nominal data once, then optionally propagate errors."""
+        value1, _ = first
+        value2, _ = second
+        unit = self._result_unit(value1, value2, operation)
+        data = self._operations[operation](value1.value, value2.value)
+        result = u.Quantity(np.asarray(data), unit, copy=False)
+        uncertainty = self._propagate_uncertainty(result, first, second, operation)
+        return result, uncertainty
 
     @_optional('FRAMEDATA_DISABLE_FLAGS')
     def _merge_flags(self, operand1, operand2, shape):
@@ -139,11 +168,11 @@ class ImArith:
         return merge_header(header1, header2, method=self._header_strategy,
                             selected_keys=self._selected_keys)
 
-    def _write_result(self, output, result, flags, header):
+    def _write_result(self, output, result, uncertainty, flags, header):
         """Assign through FrameData setters to retain memory-map behavior."""
-        output.data = self._nominal(result)
+        output.data = result.value
         output.unit = result.unit
-        output.uncertainty = getattr(result, 'uncertainty', None)
+        output.uncertainty = uncertainty
         output.flags = flags
         output.meta = header
         return output
@@ -167,8 +196,7 @@ class ImArith:
             calls leave source data, uncertainties and flags unchanged.
         """
         self._validate_operation(operation, operand2)
-        value1 = self._convert_operand(operand1)
-        value2 = self._convert_operand(operand2)
+        first, second = self._convert_operands(operand1, operand2, operation)
         if isinstance(operand1, FrameData) and inplace:
             output = operand1
         else:
@@ -181,14 +209,13 @@ class ImArith:
         handler = log_to_list(logger, output.history)
         try:
             logger.debug('Operation %s between %s %s and %s %s', operation,
-                         self._nominal(value1), value1.unit,
-                         self._nominal(value2), value2.unit)
-            result = self._calculate(value1, value2, operation)
+                         first[0].value, first[0].unit,
+                         second[0].value, second[0].unit)
+            result, uncertainty = self._calculate(first, second, operation)
             # Complete merges before modifying an in-place operand.
-            flags = self._merge_flags(operand1, operand2,
-                                     np.shape(self._nominal(result)))
+            flags = self._merge_flags(operand1, operand2, result.shape)
             header = self._merge_headers(operand1, operand2)
-            return self._write_result(output, result, flags, header)
+            return self._write_result(output, result, uncertainty, flags, header)
         finally:
             logger.removeHandler(handler)
 

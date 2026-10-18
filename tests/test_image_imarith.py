@@ -119,6 +119,24 @@ class Test_ImArith:
     @pytest.mark.parametrize('entry', ['function', 'class'])
     @pytest.mark.parametrize('option', [None, 'IMARITH_SKIP_UNCERTAINTY',
                                        'FRAMEDATA_DISABLE_UNCERTAINTY'])
+    def test_broadcasting_with_exact_operand(self, monkeypatch, entry, option):
+        first = FrameData([[4.], [9.]], uncertainty=[[3.], [4.]], unit='m')
+        second = np.array([[100., 200., 300.]]) * units.cm
+        if option:
+            monkeypatch.setattr(conf, option, True)
+        result = self.run(entry, first, second, '+')
+        np.testing.assert_array_equal(result.data, [[5, 6, 7], [10, 11, 12]])
+        assert result.unit == units.m
+        if option:
+            assert result.uncertainty is None
+        else:
+            np.testing.assert_array_equal(result.uncertainty, [[3, 3, 3], [4, 4, 4]])
+        np.testing.assert_array_equal(first.data, [[4], [9]])
+        np.testing.assert_array_equal(second.value, [[100, 200, 300]])
+
+    @pytest.mark.parametrize('entry', ['function', 'class'])
+    @pytest.mark.parametrize('option', [None, 'IMARITH_SKIP_UNCERTAINTY',
+                                       'FRAMEDATA_DISABLE_UNCERTAINTY'])
     @pytest.mark.parametrize('other', [units.m, 'm'])
     def test_unit_operands(self, monkeypatch, entry, option, other):
         frame = FrameData(np.full((2, 3), 4.), uncertainty=3., unit='m')
