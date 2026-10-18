@@ -54,11 +54,6 @@ class ImArith:
         self._header_strategy = merge_headers
         self._selected_keys = selected_keys
 
-    @staticmethod
-    def _nominal(value):
-        """Read numerical values without reading or formatting errors."""
-        return value.nominal if isinstance(value, QFloat) else value.value
-
     def _as_quantity(self, value):
         """Normalize values and units without touching optional arrays."""
         if value is None:
@@ -67,7 +62,7 @@ class ImArith:
             return u.Quantity(1.0, u.Unit(value))
         unit = getattr(value, 'unit', None)
         if isinstance(value, (u.Quantity, QFloat)):
-            value = self._nominal(value)
+            value = value.value
         elif hasattr(value, 'data') and hasattr(value, 'unit'):
             value = value.data
         if np.any(np.asarray(value) == None) or not np.any(np.isreal(value)):  # noqa: E711
