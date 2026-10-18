@@ -42,6 +42,10 @@ This avoids waiting on ESA's asynchronous queue when refreshing the examples.
 SIMBAD's simple SELECT column lists are compared without regard to order:
 Astroquery builds some of them from sets, while Astropop accesses fields by name.
 Expressions and query criteria still have to match.
+VizieR's optional UCD metadata flag is normalized between Astroquery releases
+(`-out.meta=huUD`) and development versions (`-out.meta=huD`). This changes
+only column descriptions in the response; row selection, requested columns,
+coordinates, radii, and filters still have to match exactly.
 
 To refresh responses, run:
 

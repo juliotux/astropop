@@ -76,6 +76,38 @@ hd674_coords = ["HD 674", "00h10m52s -54d17m26s", [2.716748, -54.290647],
 search_radius = ['0.1d', 0.1, Angle('0.1d')]
 
 
+class Test_CatalogResponseMatching:
+    @staticmethod
+    def _vizier_request(metadata='huUD', **changes):
+        params = {'-source': 'ucac4', '-c': '2.71676018-54.29064769',
+                  '-c.rs': '0.5', '-out': 'UCAC4,RAJ2000,DEJ2000',
+                  '-out.meta': metadata}
+        params.update(changes)
+        body = '\n'.join(f'{key}={value}' for key, value in params.items())
+        return SimpleNamespace(
+            uri='https://vizier.cds.unistra.fr/viz-bin/votable', body=body)
+
+    @pytest.mark.parametrize('encoded', [False, True])
+    def test_vizier_optional_ucd_metadata(self, encoded):
+        from .conftest import CatalogResponses
+
+        recorded = self._vizier_request()
+        current = self._vizier_request(metadata='huD')
+        if encoded:
+            current.body = current.body.encode('utf-8')
+        CatalogResponses.match_body(recorded, current)
+
+    @pytest.mark.parametrize('changes', [
+        {'-source': 'ucac5'}, {'-c': '3.0-54.0'}, {'-c.rs': '1.0'},
+        {'-out': 'UCAC4,RAJ2000'}, {'Vmag': '<12'}, {'-out.meta': 'h'}])
+    def test_vizier_query_criteria_must_match(self, changes):
+        from .conftest import CatalogResponses
+
+        with pytest.raises(AssertionError):
+            CatalogResponses.match_body(self._vizier_request(),
+                                        self._vizier_request('huD', **changes))
+
+
 @pytest.mark.flaky(reruns=5)
 class Test_OnlineTools:
     def test_timeout_retry_error(self):
