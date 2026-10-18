@@ -36,17 +36,33 @@ def _qf_or_framedata(data, alternative=convert_to_qfloat):
 def _as_quantity(value):
     """Extract values and units without allocating or propagating errors."""
     if isinstance(value, u.Quantity):
-        return value
+        return u.Quantity(np.asarray(value.value, dtype=float), value.unit,
+                          copy=False)
     if isinstance(value, QFloat):
-        return u.Quantity(np.asarray(value.nominal), value.unit,
+        return u.Quantity(np.asarray(value.nominal, dtype=float), value.unit,
                           copy=False, dtype=None)
     if isinstance(value, FrameData) or (hasattr(value, 'data') and
                                        hasattr(value, 'unit')):
-        return u.Quantity(np.asarray(value.data), value.unit,
+        return u.Quantity(np.asarray(value.data, dtype=float), value.unit,
                           copy=False, dtype=None)
     if isinstance(value, (u.UnitBase, str)):
         return u.Quantity(1.0, u.Unit(value))
-    return u.Quantity(np.asarray(value), copy=False, dtype=None)
+    return u.Quantity(np.asarray(value, dtype=float), copy=False, dtype=None)
+
+
+def _arith_nominal(value1, value2, operation):
+    """Calculate nominal results with the existing QFloat unit conventions."""
+    if operation in ('//', '%'):
+        # QFloat applies these operators to the supplied nominal numbers,
+        # whereas Quantity converts compatible units first. Preserve the
+        # existing arithmetic convention when propagation is disabled.
+        data = _arith_funcs[operation](value1.value, value2.value)
+        unit = value1.unit / value2.unit if operation == '//' else value1.unit
+        return u.Quantity(data, unit, copy=False)
+    if operation == '**' and (value2.unit != u.dimensionless_unscaled or
+                              not np.isscalar(value2.value)):
+        raise ValueError('Power operation requires a dimensionless scalar exponent')
+    return _arith_funcs[operation](value1, value2)
 
 
 def _arith(operand1, operand2, operation):
@@ -138,7 +154,7 @@ def imarith(operand1, operand2, operation, inplace=False,
         # Perform data, mask and uncertainty operations
         try:
             if skip_uncertainty:
-                result = _arith_funcs[operation](value1, value2)
+                result = _arith_nominal(value1, value2, operation)
             else:
                 result = _arith(operand1, operand2, operation)
         except UnitConversionError:

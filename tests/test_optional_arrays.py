@@ -23,6 +23,32 @@ class TestOptionalArrays:
         def __array__(self, *args, **kwargs):
             raise AssertionError('Disabled data must not be converted')
 
+    @pytest.mark.parametrize('operation, expected, unit', [
+        ('+', 2.5, u.m), ('-', 1.5, u.m),
+        ('*', 100, u.m*u.cm), ('/', 0.04, u.m/u.cm),
+        ('//', 0, u.m/u.cm), ('%', 2, u.m),
+    ])
+    def test_skipping_keeps_existing_unit_conventions(self, monkeypatch,
+                                                      operation, expected, unit):
+        # Floor division and remainder intentionally retain QFloat's existing
+        # raw-nominal conventions; changing their unit policy is separate work.
+        frame = FrameData(np.full((2, 3), 2), unit='m', uncertainty=0.1)
+        monkeypatch.setattr(conf, 'IMARITH_SKIP_UNCERTAINTY', True)
+        result = imarith(frame, 50*u.cm, operation)
+        np.testing.assert_allclose(result.data, expected)
+        assert result.unit == unit
+
+    @pytest.mark.parametrize('exponent', [np.array([2, 2]), 2*u.m])
+    def test_skipped_power_keeps_exponent_validation(self, monkeypatch, exponent):
+        monkeypatch.setattr(conf, 'IMARITH_SKIP_UNCERTAINTY', True)
+        with pytest.raises(ValueError):
+            imarith(FrameData(np.ones((2, 2))), exponent, '**')
+
+    def test_skipped_integer_inputs_do_not_overflow(self, monkeypatch):
+        monkeypatch.setattr(conf, 'IMARITH_SKIP_UNCERTAINTY', True)
+        result = imarith(np.array([[50_000]], dtype=np.int32), 2, '**')
+        np.testing.assert_allclose(result.data, 2_500_000_000)
+
     @pytest.mark.parametrize('memmap', [False, True])
     @pytest.mark.parametrize('inplace', [False, True])
     @pytest.mark.parametrize('disabled', [False, True])
