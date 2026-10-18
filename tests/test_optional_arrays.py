@@ -12,6 +12,7 @@ from astropy.nddata import CCDData, StdDevUncertainty
 from astropop.config import AstropopConfig as conf
 from astropop.framedata import FrameData, PixelMaskFlags, read_framedata
 from astropop.image.imarith import imarith
+from astropop.image.imcombine import ImCombiner, imcombine
 from astropop.math.physical import QFloat
 
 
@@ -51,6 +52,41 @@ class TestOptionalArrays:
         with pytest.raises(u.UnitsError):
             imarith(FrameData(np.ones((2, 3)), unit='m'), 1*u.s, '+')
         assert logger.handlers == handlers
+
+    def test_combine_does_not_read_disabled_input_arrays(self, monkeypatch):
+        frames = [FrameData(np.full((3, 4), value), uncertainty=1)
+                  for value in (1, 2, 3)]
+
+        def unreadable(*args):
+            pytest.fail('Read disabled input storage while combining')
+
+        monkeypatch.setattr(conf, 'IMARITH_SKIP_UNCERTAINTY', True)
+        monkeypatch.setattr(conf, 'FRAMEDATA_DISABLE_FLAGS', True)
+        for name in ('uncertainty', 'flags'):
+            descriptor = getattr(FrameData, name)
+            monkeypatch.setattr(FrameData, name,
+                                property(unreadable, descriptor.fset))
+        result = imcombine(frames, method='sum')
+        np.testing.assert_array_equal(result.data, 6)
+        assert result._unct is result._flags is None
+
+    def test_combine_partial_load_releases_mapped_arrays(self, monkeypatch,
+                                                        tmp_path):
+        frames = [FrameData(np.ones((3, 4)), uncertainty=1) for _ in range(2)]
+        enable = FrameData.enable_memmap
+
+        def fail_second_image(frame, *args, **kwargs):
+            enable(frame, *args, **kwargs)
+            if kwargs.get('filename') == 'image_1':
+                raise RuntimeError('Partial load failure')
+
+        monkeypatch.setattr(FrameData, 'enable_memmap', fail_second_image)
+        combiner = ImCombiner(use_disk_cache=True, tmp_dir=str(tmp_path))
+        with pytest.raises(RuntimeError, match='Partial load failure'):
+            combiner.combine(frames, 'sum')
+        assert combiner._images == []
+        assert combiner._buffer is combiner._unct_bf is None
+        assert not list(tmp_path.glob('*'))
 
     @pytest.mark.parametrize('name', ['flags', 'uncertainty'])
     def test_clear_mapped_array_without_reading(self, monkeypatch, tmp_path,
@@ -204,3 +240,55 @@ class TestOptionalArrays:
         assert result.uncertainty is None
         with pytest.raises(u.UnitsError):
             imarith(first, np.ones((2, 3))*u.s, '+')
+
+    @pytest.mark.parametrize('disable_flags', [False, True])
+    @pytest.mark.parametrize('method', ['sum', 'mean', 'median'])
+    @pytest.mark.parametrize('option', ['IMARITH_SKIP_UNCERTAINTY', 'FRAMEDATA_DISABLE_UNCERTAINTY'])
+    @pytest.mark.parametrize('disk_cache', [False, True])
+    def test_combine_without_uncertainty(self, monkeypatch, tmp_path, method, option,
+                                         disable_flags, disk_cache):
+        monkeypatch.setattr(conf, 'FRAMEDATA_DISABLE_FLAGS', disable_flags)
+        frames = [FrameData(np.full((4, 5), i), unit='adu', uncertainty=0.5)
+                  for i in [1, 2, 6]]
+        frames[0].mask_pixels((0, 0))
+        expected = imcombine(frames, method=method)
+        monkeypatch.setattr(conf, option, True)
+        module = importlib.import_module('astropop.image.imcombine')
+        monkeypatch.setitem(module._funcs, 'std', lambda *a, **k: pytest.fail('Uncertainty std calculated'))
+        comb = ImCombiner(max_memory=200, use_disk_cache=disk_cache, tmp_dir=str(tmp_path))
+        comb._load_images(frames)
+        assert all(f.uncertainty is None for f in comb._images)
+        for _, uncertainty_buffer, _ in comb._chunk_yielder(method):
+            assert uncertainty_buffer is None
+        actual = comb.combine(frames, method)
+        np.testing.assert_allclose(actual.data, expected.data)
+        assert actual.unit == expected.unit
+        assert actual.uncertainty is None
+        assert (actual.mask is None) == disable_flags
+        assert not list(tmp_path.glob('*'))
+        assert all(f.uncertainty is not None for f in frames)
+
+
+    @pytest.mark.parametrize('skip', [False, True])
+    def test_combine_failure_releases_buffers(self, monkeypatch, tmp_path, skip):
+        monkeypatch.setattr(conf, 'IMARITH_SKIP_UNCERTAINTY', skip)
+        comb = ImCombiner(use_disk_cache=True, tmp_dir=str(tmp_path))
+        with pytest.raises(ValueError, match='shape'):
+            comb.combine([FrameData(np.ones((3, 4))),
+                          FrameData(np.ones((4, 4)))], 'sum')
+        assert not list(tmp_path.glob('*'))
+        assert comb._images == []
+        assert comb._buffer is comb._unct_bf is None
+        result = comb.combine([FrameData(np.ones((3, 4)))], 'mean')
+        np.testing.assert_array_equal(result.data, 1)
+
+
+    def test_skip_uncertainty_keeps_rejection(self, monkeypatch):
+        frames = [FrameData(np.full((3, 4), value), uncertainty=1)
+                  for value in [1, 1, 1, 1, 100]]
+        monkeypatch.setattr(conf, 'IMARITH_SKIP_UNCERTAINTY', True)
+        combiner = ImCombiner()
+        combiner.set_minmax_clip(0, 5)
+        result = combiner.combine(frames, method='mean')
+        np.testing.assert_array_equal(result.data, 1)
+        assert result.uncertainty is None
