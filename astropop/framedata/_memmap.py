@@ -58,7 +58,8 @@ def delete_array_memmap(memmap, read=True, remove=False):
     read : `bool` (optional)
         Read the data to memory before delete.
     remove : `bool` (optional)
-        Delete the memmap file.
+        Close the mapping and delete the memmap file. References to the
+        mapping, including views, must not be used afterwards.
 
     Returns
     -------
@@ -78,7 +79,10 @@ def delete_array_memmap(memmap, read=True, remove=False):
 
     name = memmap.filename
     if remove:
-        del memmap
+        # Deleting a local reference leaves the caller's mapping open.
+        # Windows requires the mapping to be closed before unlinking its file.
+        if memmap._mmap is not None:
+            memmap._mmap.close()
         if os.path.exists(name):
             os.remove(name)
     return data

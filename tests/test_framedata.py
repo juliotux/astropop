@@ -321,6 +321,33 @@ class TestFrameDataCreationData:
 
 
 class TestFrameDataMemMap:
+    @pytest.mark.parametrize('retain', [False, True])
+    @pytest.mark.parametrize('uncertainty', [None, 0.5])
+    def test_destroy_closes_memmaps_before_deleting_cache(self, tmp_path,
+                                                        monkeypatch,
+                                                        uncertainty, retain):
+        frame = FrameData(np.arange(12).reshape(3, 4),
+                         uncertainty=uncertainty, use_memmap_backend=True,
+                         cache_folder=str(tmp_path / 'frame'))
+        frame.cache.delete_on_remove = not retain
+        mapped_files = {array.filename: array._mmap for array in
+                        (frame._data, frame._flags, frame._unct)
+                        if isinstance(array, np.memmap)}
+        remove = os.remove
+
+        def remove_closed_file(path):
+            # Windows cannot delete a file until its own mapping is closed.
+            if path in mapped_files:
+                assert_true(mapped_files[path].closed)
+            remove(path)
+
+        monkeypatch.setattr(os, 'remove', remove_closed_file)
+        del frame
+        assert_true(all(mapping.closed for mapping in mapped_files.values()))
+        assert (tmp_path / 'frame').exists() is retain
+        for filename in mapped_files:
+            assert os.path.exists(filename) is retain
+
     def test_framedata_memmap_default(self):
         # default is created with None unct and flags
         frame = create_framedata()
