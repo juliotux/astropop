@@ -95,6 +95,8 @@ Uncertainties are standard deviations in the same unit as the data. Supply a
 scalar or an array matching the image shape. An absent uncertainty is ``None``;
 assigning ``frame.uncertainty = None`` removes it. ``get_uncertainty()`` returns
 a copy of the uncertainty array, or ``None`` when absent.
+Absence means the uncertainty is not stored or calculated; it is not a
+measurement of zero error.
 
 Pixel flags are a ``uint8`` array, initially zero unless flag storage is
 disabled. ``PixelMaskFlags`` defines INTERPOLATED, MASKED (also called REMOVED),
@@ -288,4 +290,7 @@ FrameData API
 -------------
 
 .. automodapi:: astropop.framedata
+    :no-inheritance-diagram:
+
+.. automodapi:: astropop.config
     :no-inheritance-diagram:
