@@ -6,6 +6,7 @@ import json
 import subprocess
 import sys
 import textwrap
+import warnings
 import numpy as np
 import pytest
 
@@ -1294,7 +1295,12 @@ class TestMaskedScatterEdges:
         from astropop.image._combine import _reduce
         data = np.array([[[1, np.inf, np.inf]], [[2, np.inf, 3]]], dtype=dtype)
         with np.errstate(invalid='ignore'):
-            with pytest.warns(RuntimeWarning, match='All-NaN slice'):
+            # Astropy's NumPy backend warns on all-NaN residuals, whereas its
+            # optional Bottleneck backend can return NaN silently. Compare the
+            # numerical result without requiring either backend's warning.
+            with warnings.catch_warnings():
+                warnings.filterwarnings('ignore', message='All-NaN slice',
+                                        category=RuntimeWarning)
                 expected = mad_std(data, axis=0, ignore_nan=True)
             result = _reduce(data, np.ones(data.shape, dtype=bool), 'mad_std', block_pixels=1)
         np.testing.assert_allclose(result, expected, equal_nan=True)
