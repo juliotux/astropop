@@ -312,8 +312,8 @@ class CrossCorrelationRegister(_BaseRegister):
     overlap_ratio : float, optional
         Minimum allowed overlap ratio between images. The correlation for
         translations corresponding with an overlap ratio lower than this
-        threshold will be ignored. A lower `overlap_ratio` leads to smaller
-        maximum translation, while a higher `overlap_ratio` leads to greater
+        threshold will be ignored. A lower ``overlap_ratio`` leads to smaller
+        maximum translation, while a higher ``overlap_ratio`` leads to greater
         robustness against spurious matches due to small overlap between
         masked images. Used only if one of ``reference_mask`` or
         ``moving_mask`` is not None.

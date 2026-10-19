@@ -184,7 +184,7 @@ class StokesParameters:
 
     Parameters
     ----------
-    q, u, v: `~astropop.math.QFloat`
+    q, u, v: `~astropop.math.physical.QFloat`
         Stokes parameters.
     retarder: str
         'quarterwave' or 'halfwave'
@@ -192,11 +192,11 @@ class StokesParameters:
         Normalization constant used to compute zi.
     zero: float
         Zero position of the retarder in degrees.
-    zi: `~astropop.math.QFloat`
+    zi: `~astropop.math.physical.QFloat`
         Relative difference of fluxes between ordinary and extraordinary beams.
     psi: array_like
         Array of retarder positions in degrees.
-    flux: `~astropop.math.QFloat` (optional)
+    flux: `~astropop.math.physical.QFloat` (optional)
         Sum of ordinary and extraordinary counts in each retarder position.
     """
 
@@ -457,17 +457,17 @@ class _DualBeamPolarimetry(abc.ABC):
         psi : array_like
             Retarder positions in degrees. Must be multiple of 22.5 degrees.
         f_ord : array_like
-            Fluxes of ordinary beam. If `~astropop.math.QFloat`, the errors
+            Fluxes of ordinary beam. If `~astropop.math.physical.QFloat`, the errors
             will be considered in the parameters computation.
         f_ext : array_like
-            Fluxes of extraordinary beam. If `~astropop.math.QFloat`, the
+            Fluxes of extraordinary beam. If `~astropop.math.physical.QFloat`, the
             errors will be considered in the parameters computation.
         f_ord_error : array_like, optional
-            Errors of the ordinary fluxes. Conflicts with the error of `f_ord`
-            if it is a `~astropop.math.QFloat`.
+            Errors of the ordinary fluxes. Conflicts with the error of ``f_ord``
+            if it is a `~astropop.math.physical.QFloat`.
         f_ext_error : array_like, optional
             Errors of the extraordinary fluxes. Conflicts with the error of
-            `f_ext` if it is a `~astropop.math.QFloat`.
+            ``f_ext`` if it is a `~astropop.math.physical.QFloat`.
 
         Returns
         -------
@@ -533,7 +533,7 @@ class SLSDualBeamPolarimetry(_DualBeamPolarimetry):
 
     Notes
     -----
-    - The model fitting is performed by `~scipy.optimize.cure_fit` function,
+    - The model fitting is performed by `~scipy.optimize.curve_fit` function,
       using the Trust Region Reflective ``trf`` method.
     - If ``k`` or ``zero`` arguments are passed, they won't be computed.
       Instead, the passed values will be used.

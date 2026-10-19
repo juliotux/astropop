@@ -175,14 +175,14 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto',
 
     - Calculate the total error (bkg+poisson) from input data, based on data
       and bkg_error.
-    - It assumes the `'exact'` method of subpixel sampling.
+    - It assumes the ``'exact'`` method of subpixel sampling.
     - Compute an optimal aperture radius, considering only the gaussian
       background-only error. This radius is defined as r=0.6371*GFWHM.
     - Use sigma clipping for annulus background calculation.
     - Perform photometry flags generation. See
       `~astropop.photometry.aperture.PhotometryFlags`.
     - Sources recentering using `~photutils.centroids` methods. Only performed
-      if `recenter_limit` is not None.
+      if ``recenter_limit`` is not None.
 
     Most of the reduction is based on Astropy workshop sample notebooks [1]_.
 
@@ -192,12 +192,12 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto',
         2D image data for photometry
     x, y : array_like
         Positions of the sources
-    r : float, `'auto'` (optional)
+    r : float, ``'auto'`` (optional)
         Aperture radius, in pixels. If 'auto', the value will be estimated
         based in the median gaussian FWHM of the sources in the image
         (r=0.6371*GFWHM).
         Default: 'auto'
-    r_ann : array_like([float, float]), `'auto'` `None` (optional)
+    r_ann : array_like([float, float]), ``'auto'`` `None` (optional)
         Annulus radii (r_in, r_out) for local background extraction in pixels.
         If 'auto', the annulus will be set based on aperture as (4*r, 6*r).
         If None, no local background subtraction will be performed.
@@ -208,8 +208,8 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto',
         Default: `None`
     recenter_method : 'com', 'gaussian' or 'quadratic' (optional)
         Algorithm to recenter the apertures. If None, no recentering will be
-        performed. `'com'` method will use the center of mass of the aperture,
-        `'gaussian'` will use a gaussian fit to the aperture and `'quadratic'`
+        performed. ``'com'`` method will use the center of mass of the aperture,
+        ``'gaussian'`` will use a gaussian fit to the aperture and ``'quadratic'``
         will use a quadratic fit to the aperture. See `~photutils.centroids`
         for more information.
         Default: 'com'
@@ -231,9 +231,9 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto',
         Flags must follow the `~astropop.framedata.PixelMaskFlags` standard.
         Default: `None`
     bkg_method : 'mmm', 'mode', 'median' or 'mean' (optional)
-        Algorith to calculate the background value. `'mode'` or `'mmm'`
+        Algorith to calculate the background value. ``'mode'`` or ``'mmm'``
         (mean, median, mode) are computed as (3*median - 2*mean) and
-        should be better for populated fields. `'median'` and `'mean'`
+        should be better for populated fields. ``'median'`` and ``'mean'``
         just compute these values in the annulus. All algorithms can use sigma
         clipping if ``bkg_sigma_clip`` is not None.
         Default: 'mmm'

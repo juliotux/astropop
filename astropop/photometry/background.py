@@ -29,9 +29,9 @@ def background(data, box_size=64, filter_size=3, mask=None,
     """Estimate the background and noise values in a image.
 
     The used algorithm is described by `photutils.background.Background2D`. It
-    splits the image into boxes of size `box_size` and calculate the
+    splits the image into boxes of size ``box_size`` and calculate the
     background and noise in each box. The final background and noise values
-    are interpolated using `filter_size` neighboring boxes.
+    are interpolated using ``filter_size`` neighboring boxes.
 
     Parameters
     ----------

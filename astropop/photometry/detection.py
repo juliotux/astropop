@@ -43,7 +43,7 @@ def segfind(data, threshold, background, noise, mask=None, fwhm=None, npix=5,
         Default: `None`
     npix: `int` (optional)
         Minimum number of connected pixels to consider a source.
-        Default: `5`
+        Default: ``5``
     deblend: `bool` (optional)
         If `True`, the algorithm will try to deblend the sources.
         Default: `True`
@@ -435,7 +435,7 @@ def median_fwhm(data, x, y, box_size=25, model='gaussian', min_fwhm=3.0):
         Default: 25
     model: {`gaussian`, `moffat`}
         Choose a Gaussian or Moffat model.
-        Default: `gausiann`
+        Default: ``gaussian``
     min_fwhm: float
         Minimum value for FWHM.
         Default: 3.0
@@ -466,7 +466,7 @@ def calc_fwhm(*args, **kwargs):
         Default: 25
     model: {`gaussian`, `moffat`}
         Choose a Gaussian or Moffat model.
-        Default: `gausiann`
+        Default: ``gaussian``
     min_fwhm: float
         Minimum value for FWHM.
         Default: 3.0
