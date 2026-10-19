@@ -53,7 +53,7 @@ successful detection before using source columns.
 Use representative isolated stars, rather than saturated or blended sources.
 
 Aperture fluxes and local sky
-----------------------------
+-----------------------------
 
 Use a numerical ``r`` for a fixed circular radius. ``r='auto'`` estimates
 ``0.6371 * median Gaussian FWHM``. ``r_ann=(inner, outer)`` measures a local

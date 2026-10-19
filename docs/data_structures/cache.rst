@@ -1,5 +1,5 @@
 Temporary storage and cache ownership
-====================================
+=====================================
 
 FrameData can store arrays in memory-mapped files, and ImCombiner can use a
 disk cache for its private input copies. Prefer those interfaces for reduction

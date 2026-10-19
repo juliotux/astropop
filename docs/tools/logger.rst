@@ -26,7 +26,7 @@ Set the level on the shared logger and restore it after temporary changes::
 logging level name. Invalid names are not silently replaced by a default.
 
 Capturing messages in a list
----------------------------
+----------------------------
 
 ``log_to_list`` attaches a ``ListHandler`` and returns it. By default, the list
 contains formatted message strings, without timestamps or level prefixes.

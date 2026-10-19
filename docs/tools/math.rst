@@ -8,7 +8,7 @@ modules below operate on numerical arrays and model parameters; they do not
 propagate FrameData units, flags, or configuration automatically.
 
 Array coordinates and cutouts
-----------------------------
+-----------------------------
 
 ``iraf_indices`` returns coordinate grids in ``(x, y)`` order, with integer
 values at pixel centers starting at zero. ``xy2r`` converts those grids into
@@ -37,7 +37,7 @@ to the supplied center before selecting bounds; prefer the default zero-based
 coordinates. ``all_equal`` expects a nonempty array.
 
 Gaussian and Moffat profiles
----------------------------
+----------------------------
 
 :mod:`astropop.math.models` supplies Astropy fittable models for one-dimensional,
 two-dimensional, and radial Gaussian/Moffat profiles. ``flux`` controls the

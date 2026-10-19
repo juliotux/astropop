@@ -22,7 +22,7 @@ scalar numbers, excluding booleans, complex numbers, and arrays::
     (True, False, False)
 
 Iterating with scalar defaults
------------------------------
+------------------------------
 
 ``broadcast`` repeats scalars and ``None`` alongside iterable inputs of equal
 length. Unlike NumPy broadcasting, it compares iterable lengths rather than

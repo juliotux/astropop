@@ -74,7 +74,7 @@ Optional keywords also exist to improve the class behavior. The most important a
 Files Summary and Header Keyword Values
 ---------------------------------------
 
-Once the files are read, all headers are stored internally in a database. But a |Table| containing all the headers can be accessed using the `~astropop.file_colletcion.FitsFileGroup.summary` attribute. This table is a copy of the internal database, so modifying it will not affect the database or the filegroup itself.
+Once the files are read, all headers are stored internally in a database. But a |Table| containing all the headers can be accessed using the `~astropop.file_collection.FitsFileGroup.summary` attribute. This table is a copy of the internal database, so modifying it will not affect the database or the filegroup itself.
 
 .. ipython::
     :verbatim:
@@ -90,7 +90,7 @@ Once the files are read, all headers are stored internally in a database. But a 
     file3.fits     3.0     R     star3
 
 
-Also, a full list of the files can be accessed using the `~astropop.file_colletcion.FitsFileGroup.files` attribute.
+Also, a full list of the files can be accessed using the `~astropop.file_collection.FitsFileGroup.files` attribute.
 
 .. ipython::
     :verbatim:
@@ -101,7 +101,7 @@ Also, a full list of the files can be accessed using the `~astropop.file_colletc
      '/path/to/data/file2.fits',
      '/path/to/data/file3.fits']
 
-You can also get a list of the values of a given header keyword using the `~astropop.file_colletcion.FitsFileGroup.values` method. This method returns a list of the values of the given keyword, in the same order as the files in the `~astropop.file_colletcion.FitsFileGroup.files` attribute. If ``unique`` is set to True, only unique values are returned and the order is not guaranteed.
+You can also get a list of the values of a given header keyword using the `~astropop.file_collection.FitsFileGroup.values` method. This method returns a list of the values of the given keyword, in the same order as the files in the `~astropop.file_collection.FitsFileGroup.files` attribute. If ``unique`` is set to True, only unique values are returned and the order is not guaranteed.
 
 .. ipython::
     :verbatim:
@@ -116,9 +116,9 @@ You can also get a list of the values of a given header keyword using the `~astr
 Adding or Removing Files
 ------------------------
 
-Adding or removing files to the group is done using the `~astropop.file_colletcion.FitsFileGroup.add_file` and `~astropop.file_colletcion.FitsFileGroup.remove_files` methods.
+Adding or removing files to the group is done using the `~astropop.file_collection.FitsFileGroup.add_file` and `~astropop.file_collection.FitsFileGroup.remove_files` methods.
 
-To add a file, use `~astropop.file_colletcion.FitsFileGroup.add_file`. Its only argument is ``file`` to set the file name. Prefer using full (absolute) paths for the file name in this function.
+To add a file, use `~astropop.file_collection.FitsFileGroup.add_file`. Its only argument is ``file`` to set the file name. Prefer using full (absolute) paths for the file name in this function.
 
 .. ipython::
     :verbatim:
@@ -132,7 +132,7 @@ To add a file, use `~astropop.file_colletcion.FitsFileGroup.add_file`. Its only 
      '/path/to/data/file3.fits',
      '/path/to/data/file4.fits']
 
-For remove a file, the `~astropop.file_colletcion.FitsFileGroup.remove_files` accepts a file name with absolute path, or a path relative to the filegroup location. Prefere using absolute paths for the file name in this function too.
+For remove a file, the `~astropop.file_collection.FitsFileGroup.remove_files` accepts a file name with absolute path, or a path relative to the filegroup location. Prefere using absolute paths for the file name in this function too.
 
 .. ipython::
     :verbatim:
@@ -155,7 +155,7 @@ For remove a file, the `~astropop.file_colletcion.FitsFileGroup.remove_files` ac
 Adding a Custom Column
 ----------------------
 
-It is also possible to add a custom column to the database and use it to filter the files. However, as the |FitsFileGroup| is designed to do not change the files, this column/keyword will not be added to the headers in the files. To do this, use the `~astropop.file_colletcion.FitsFileGroup.add_column` method. This method accepts two arguments: ``name`` to set the column name and ``values`` to set the values of the column. The values must be a list with the same length as the number of files in the filegroup.
+It is also possible to add a custom column to the database and use it to filter the files. However, as the |FitsFileGroup| is designed to do not change the files, this column/keyword will not be added to the headers in the files. To do this, use the `~astropop.file_collection.FitsFileGroup.add_column` method. This method accepts two arguments: ``name`` to set the column name and ``values`` to set the values of the column. The values must be a list with the same length as the number of files in the filegroup.
 
 .. ipython::
     :verbatim:
@@ -183,7 +183,7 @@ The main usage of |FitsFileGroup| is to filter, sort and organize FITS files. Th
 Filtering by Keyword Values
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The method `~astropop.file_colletcion.FitsFileGroup.filtered` receives a dictionary with the keywords and values to filter the files. So, a new |FitsFileGroup| will be created with only the matched files for all the keywords.
+The method `~astropop.file_collection.FitsFileGroup.filtered` receives a dictionary with the keywords and values to filter the files. So, a new |FitsFileGroup| will be created with only the matched files for all the keywords.
 
 .. ipython::
     :verbatim:
@@ -212,7 +212,7 @@ The method `~astropop.file_colletcion.FitsFileGroup.filtered` receives a diction
 Grouping Files
 ^^^^^^^^^^^^^^
 
-If you want to not only generate a group of files from a single set of keyword valeus, but instead generate multiple groups of files that have the same values in a set of keywords, you can use the `~astropop.file_colletcion.FitsFileGroup.grouped_by` method. This method `yeilds <https://docs.python.org/3/reference/expressions.html#yield-expressions>`_ a new |FitsFileGroup| object for each group of files.
+If you want to not only generate a group of files from a single set of keyword valeus, but instead generate multiple groups of files that have the same values in a set of keywords, you can use the `~astropop.file_collection.FitsFileGroup.grouped_by` method. This method `yeilds <https://docs.python.org/3/reference/expressions.html#yield-expressions>`_ a new |FitsFileGroup| object for each group of files.
 
 .. Note::
 

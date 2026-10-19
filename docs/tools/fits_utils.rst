@@ -9,7 +9,7 @@ uncertainties should travel together. The small :mod:`astropop.fits_utils`
 module provides shared FITS conventions used by those interfaces.
 
 Identifying image HDUs
----------------------
+----------------------
 
 ``imhdus`` is a tuple of the Astropy image-HDU classes accepted by Astropop,
 including primary, image-extension, compressed-image, and streaming HDUs. Use
@@ -27,7 +27,7 @@ Header-key normalization
 
 ``string_to_header_key`` uppercases standard FITS keywords of at most eight
 characters. For longer or nonstandard keywords, it preserves their spelling
-and removes a leading ``HIERARCH `` prefix if supplied. Astropy's Header
+and removes a leading ``HIERARCH`` prefix and its following space if supplied. Astropy's Header
 interface handles that prefix when the key is written::
 
     >>> from astropop.fits_utils import string_to_header_key

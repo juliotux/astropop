@@ -10,7 +10,7 @@ steps appropriate to your detector. Inputs must have matching geometry and
 compatible units; these functions do not register calibration frames.
 
 Bias, dark, and flat correction
-------------------------------
+-------------------------------
 
 ``subtract_bias`` subtracts an already combined bias. ``subtract_dark`` scales
 an already bias-corrected dark by ``image_exposure / dark_exposure`` before
@@ -61,7 +61,7 @@ with the required flag strategy. Configure optional-array settings before
 loading frames; see :ref:`optional-frame-arrays`.
 
 Cropping and cosmic rays
------------------------
+------------------------
 
 ``trim_image`` uses ``x_slice`` for columns and ``y_slice`` for rows, following
 Python's zero-based, stop-exclusive slicing. It crops data, uncertainties, and

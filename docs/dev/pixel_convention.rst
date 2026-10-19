@@ -54,7 +54,7 @@ one-based external source lists explicitly; do not infer their origin from
 a column's name alone.
 
 Registration windows and cropping
---------------------------------
+---------------------------------
 
 Registration windows use ``(row_slice, column_slice)`` ordering. Estimated
 transforms must be expressed in full-image coordinates before applying them

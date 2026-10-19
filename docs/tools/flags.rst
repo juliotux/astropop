@@ -8,7 +8,7 @@ bits at once. FrameData uses ``PixelMaskFlags`` and aperture photometry uses
 integer arrays.
 
 Selecting any of several bits
-----------------------------
+-----------------------------
 
 ``mask_from_flags`` returns a Boolean array that is true wherever any requested
 bit occurs. Supply flag members, not raw integer bit numbers. The optional
