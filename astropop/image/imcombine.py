@@ -131,7 +131,42 @@ def _yield_slices(shape, n_chunks):
 
 
 class ImCombiner:
-    """Process the combining operation of images, like the IRAF imcombine."""
+    """Configure and combine aligned images with rejection and optional errors.
+
+    Parameters
+    ----------
+    max_memory : int or float, optional
+        Positive, finite budget in bytes for combination chunks and statistics
+        work blocks. Internal input copies, outputs and some temporaries require
+        additional memory. Default: 1e9.
+    dtype : numpy dtype or str, optional
+        Real numeric dtype for pixel working arrays, combination arithmetic,
+        uncertainty calculations and output. Accepts NumPy integer and
+        floating-point types, dtype objects and strings. Default: numpy.float64.
+    tmp_dir : str, optional
+        Dedicated disk-cache directory. Cleanup may remove the directory and
+        its contents. If absent, create a temporary directory when disk caching
+        is enabled.
+    use_disk_cache : bool, optional
+        Store internal input copies in memory-mapped files. Caller-owned arrays
+        remain allocated. Default: False.
+    **kwargs
+        merge_header : {'no_merge', 'first', 'only_equal', 'selected_keys'}, optional
+            Header merge strategy. Default: 'no_merge'.
+        merge_header_keys : list of str, optional
+            Keywords to retain with merge_header='selected_keys'.
+
+    Notes
+    -----
+    Clipping is disabled initially. Configure rejection with set_sigma_clip
+    and set_minmax_clip, then call combine. Settings can be reused for multiple
+    collections; input copies and work arrays are released after each call,
+    including failures. Optional-array configuration is evaluated at call time.
+
+    See Also
+    --------
+    imcombine : Convenience function including clipping and header options.
+    """
 
     _sigma_clip = None  # sigmaclip thresholds
     _sigma_cen_func = None  # sigmaclip central function
@@ -153,34 +188,7 @@ class ImCombiner:
 
     def __init__(self, max_memory=1e9, dtype=np.float64, tmp_dir=None,
                  use_disk_cache=False, **kwargs):
-        """Combine images using various algorithms.
-
-        Parameters
-        ----------
-        max_memory: int (optional)
-          Budget in bytes used to size rejection and combination chunks.
-          Input copies, output arrays and some temporaries are additional.
-          Default: 1e9 (1GB)
-        dtype: `~numpy.dtype` (optional)
-          Real numeric dtype used consistently for pixel working arrays,
-          reduction accumulators, uncertainty calculations and the result.
-          Accepts NumPy integer and floating-point types, dtype objects and
-          dtype strings. Controls the memory required per pixel.
-          Default: `~numpy.float64`
-        tmp_dir: `str` (optional)
-          Directory to store temporary files used in the combining. If None,
-          a tmp dir will be created with `~tempfile.mkdtemp`.
-          default: `None`
-        use_disk_cache: `bool`
-            Cache internal image copies in memory-mapped temporary files.
-            This adds disk I/O and must be enabled explicitly. Caller-owned
-            frames remain in memory. Default: False.
-        merge_header: {'no_merge', 'first', 'only_equal', 'selected_keys'}
-            Strategy for merging headers.
-            default: 'no_merge'
-        merge_header_keys: `list` (optional)
-            Keywords for header merging if the strategy is 'selected_keys'.
-            default: None
+        """Initialize combination settings; see ImCombiner for parameters.
         """
         try:
             dtype = np.dtype(dtype)
@@ -203,26 +211,26 @@ class ImCombiner:
 
     def set_sigma_clip(self, sigma_limits=None,
                        center_func='median', dev_func='mad_std'):
-        """Enable sigma clipping during the combine.
+        """Configure one-pass sigma rejection along the image stack.
 
         Parameters
         ----------
-        sigma_limits: `float`, `tuple` or `None` (optional)
-          Set the low and high thresholds for sigma clipping. A number is
-          applyed to both low and high limits. A tuple will be considered
-          (low, high) limits. `None` disable the clipping.
-          Default: `None`
-        center_func: callable or {'median', 'mean'} (optional)
-          Function to compute de central tendency of the data.
-          Default: 'median'
-        dev_func: callable or {'std', 'mad_std'} (optional)
-          Function to compute the deviation sigma for clipping.
-          Defautl: 'mad_std'
+        sigma_limits : float, tuple or None, optional
+            Number of deviations below and above the center. A scalar sets both
+            limits; a pair sets (low, high), with None leaving a side open.
+            None disables sigma rejection. Default: None.
+        center_func : callable or {'median', 'mean'}, optional
+            Center estimator. Default: 'median'.
+        dev_func : callable or {'std', 'mad_std'}, optional
+            Population standard deviation or Gaussian-scaled median absolute
+            deviation. Default: 'mad_std'. The imcombine convenience function
+            instead defaults to 'std'.
 
         Notes
         -----
-        - 'median' and 'mad_std' gives a much better sigma clipping than
-          'mean' and 'std'.
+        Custom estimators must accept axis and handle excluded values; see
+        imcombine. If minmax rejection is also enabled, sigma statistics use
+        original unmasked samples before either rejection rule is applied.
         """
         if sigma_limits is None:
             # None simply disables sigma clipping
@@ -249,16 +257,21 @@ class ImCombiner:
         self._sigma_dev_func = dev_func
 
     def set_minmax_clip(self, min_value=None, max_value=None):
-        """Enable minmax clipping during the combine.
+        """Configure rejection outside an accepted pixel-value range.
 
         Parameters
         ----------
-        min_value: `float` or `None` (optional)
-          Minimum threshold of the clipping. `None` disables minimum masking.
-          Default: `None`
-        max_value: `float` or `None` (optional)
-          Maximum threshold of the clipping. `None` disables maximum masking.
-          Default: `None`
+        min_value : number or None, optional
+            Reject values below this bound. None disables the lower bound.
+            Default: None.
+        max_value : number or None, optional
+            Reject values above this bound. None disables the upper bound.
+            Default: None.
+
+        Notes
+        -----
+        With two bounds, sort them into increasing order. Values equal to a bound
+        are accepted. Setting both to None disables minmax rejection.
         """
         low, high = min_value, max_value
         # disable
@@ -278,30 +291,21 @@ class ImCombiner:
         self._minmax = (low, high)
 
     def set_merge_header(self, strategy, keys=None):
-        """Set the strategy to merge headers during combination.
-
-        Strategies
-        ----------
-        no_merge:
-            No header merging will be done. The resulting combined image
-            will contain only new keys based on fits standards.
-            Default behavior.
-        first:
-            All keys from the first header will be used.
-        only_equal:
-            All keys are compared and just the keys that are equal between
-            all hedaers are merged and kept.
-        selected_keys:
-            Only a list of selected keys by the user will be merged and kept.
-            If they are different between headers, the value in the first
-            header willbe used.
+        """Configure metadata merging for the combined image.
 
         Parameters
         ----------
-        strategy: {'no_merge', 'first', 'only_equal', 'selected_keys'}
-            Header merging strategy.
-        keys: list
-            List of the keys to be used for `selected_keys` strategy.
+        strategy : {'no_merge', 'first', 'only_equal', 'selected_keys'}
+            Start with an empty header, copy the first header, retain only keys
+            equal in every header, or select named keys by first occurrence.
+        keys : list of str or None, optional
+            Required for 'selected_keys'; ignored by other strategies.
+            Default: None.
+
+        Notes
+        -----
+        Image count and combination method are recorded regardless of strategy.
+        WCS is not propagated to the combined image.
         """
         if strategy not in {'no_merge', 'first',
                             'only_equal', 'selected_keys'}:
@@ -486,39 +490,35 @@ class ImCombiner:
         return data, uncertainty, empty | np.isnan(data)
 
     def combine(self, image_list, method, **kwargs):
-        """Perform the image combining.
+        """Combine images using the configured clipping, dtype and header settings.
 
         Parameters
         ----------
-        image_list: `list` or `tuple`
-            List containing the images to be combined. The values in the list
-            must be all of the same type and `~astropop.framedata.FrameData`
-            supported.
-        method: {'mean', 'median', 'sum'}
-            Combining method.
-        **kwargs:
-            sum_normalize: bool (optional)
-                If True, the imaged will be multiplied, pixel by pixel, by the
-                number of images divided by the number of non-masked pixels.
-                This will avoid discrepancies by different numbers of masked
-                pixels across the image. If False, the raw sum of images will
-                be returned.
-                Default: True
+        image_list : list or tuple
+            Nonempty sequence of images accepted by read_framedata. All images
+            must have the same shape and equal units. Source arrays are unchanged.
+        method : {'mean', 'median', 'sum'}
+            Combination method. See imcombine for the uncertainty estimators.
+        **kwargs
+            sum_normalize : bool, optional
+                Multiply summed data and uncertainty by total image count divided
+                by accepted sample count at each pixel. False returns the raw sum.
+                Applies only to method='sum'. Default: True.
 
         Returns
         -------
-        combined: `~astropop.framedata.FrameData`
-          The combined image.
+        combined : `~astropop.framedata.FrameData`
+            Combined image in the configured dtype and input unit, with optional
+            uncertainty and mask arrays.
 
         Notes
         -----
-        - For now, it don't consider WCS, so it perform plain between the
-          images, whitout registering.
-        - Clipping parameters are set using class functions.
-        - If the images exceed the maximum memory allowed, they are splited
-          to perform the median and mean combine.
-        - Masked elements are skiped. Result pixels will be masked if all the
-          source pixels combined in it are also masked.
+        Masked samples and NaNs are excluded. Pixels with no accepted samples are
+        masked when flag storage is enabled. Images must already be aligned; WCS
+        is not propagated. The memory budget sizes chunks and statistics blocks;
+        internal input copies and output arrays require additional memory. Internal
+        arrays and mapped files are released on success and on failure. Clipping
+        and header settings remain available for subsequent calls.
         """
         if method not in self._methods:
             raise ValueError(f'{method} is not a valid combining method.')
@@ -565,81 +565,88 @@ class ImCombiner:
 
 
 def imcombine(frames, method='median', memory_limit=1e9, dtype=np.float64, **kwargs):
-    """Combine a list of images or frames in a single one.
+    """Combine images with optional rejection and uncertainty estimation.
 
     Parameters
     ----------
-    frames: list
-        List of the frames to be combined. Can be a list of `FrameData`,
-        a list of file names, a list of `~astropy.fits.ImageHDU` or
-        a list of `~numpy.ndarray`. All members must have the same dimensions.
-        For `FrameData`, all units must be the compatible.
-    method: {'sum', 'median', 'mean'}
-        Combining method. Each one has a proper math and a proper error
-        computation.
-    memory_limit: int (optional)
-        Budget in bytes used to size rejection and combination chunks.
-        Input copies, output arrays and some temporary arrays are additional;
-        this is not a limit on total process memory. Default: 1e9.
-    dtype: numpy dtype or str (optional)
-        Real numeric dtype used consistently for pixel working arrays,
-        reduction accumulators, uncertainty calculations and output arrays.
-        Accepts NumPy integer and floating-point types, dtype objects and
-        strings such as ``'int16'`` or ``'float32'``. Controls the memory
-        required per pixel. Default: ``numpy.float64``.
-    **kwargs:
-        sigma_clip: float or tuple (optional)
-            Threshold of sigma clipping rejection. If `None`, it disables the
-            sigma clipping. If a number is provided, it is applied for both low
-            and high values. If a tuple is provided, it is interpreted as
-            (sigma_low, sigma_high) values.
-            Default: `None`
-        sigma_cen_func: callable or {'median', 'mean'} (optional)
-            Function to compute the central value of sigma clipping rejection.
-            If a name is provided, it must follow the convention in Notes.
-            If a callable is provided, it will be applied directly on the data
-            and must accept 'axis' argument.
-            Default: 'median'
-        sigma_dev_func: callable or {'std', 'mad_std'} (optional)
-            Function to compute the std deviation of sigma clipping rejection.
-            If a name is provided, it must follow the convention in Notes.
-            If a callable is provided, it will be applied directly on the data
-            and must accept 'axis' argument.
-            Default: 'std'
-        minmax_clip: tuple (optional)
-            Minimum and maximum limits for minmax clipping. The values are
-            interpreted as (min, max) limits. All values lower then the minimum
-            limit and greater then the maximum limit will be masked. If `None`,
-            the minmax clipping will be disabled.
-            Default: `None`
-        merge_header: {'first', 'selected_keys', 'no_merge'} (optional)
-            Strategy to merge the headers of the images. If 'first', the first
-            image header will be used. If 'selected_keys', the headers will be
-            merged using the keys provided in the `header_merge_keys`.
-            If 'no_merge', the headers will not be merged.
-            Default: 'no_merge'
-        header_merge_keys: list (optional)
-            List of the keywords to be used to merge the headers.
-            Defaut: `None`
+    frames : list or tuple
+        Nonempty sequence of images accepted by read_framedata, including
+        FrameData, FITS paths or image HDUs, CCDData, Quantity, QFloat, and NumPy
+        arrays. Images must have equal shapes and units; equivalent units are
+        not converted automatically. Source arrays are not modified.
+    method : {'median', 'mean', 'sum'}, optional
+        Combination method. Default: 'median'.
+    memory_limit : int or float, optional
+        Positive, finite budget in bytes used to size combination chunks and
+        statistics blocks. Internal input copies, output arrays and some
+        temporaries are additional; this does not cap process memory.
+        Default: 1e9.
+    dtype : numpy dtype or str, optional
+        Real numeric dtype for pixel working arrays, combination arithmetic,
+        uncertainty calculations and output arrays. Accepts NumPy integer and
+        floating-point types, dtype objects and strings. Its item size controls
+        memory per pixel. Default: numpy.float64.
+    **kwargs
+        sigma_clip : float or tuple, optional
+            Rejection threshold in multiples of the selected deviation. A
+            number applies to both sides; a pair gives (low_sigma, high_sigma).
+            Use None for an open side. Default: None (disabled).
+        sigma_cen_func : callable or {'median', 'mean'}, optional
+            Center estimator for sigma rejection. Default: 'median'.
+        sigma_dev_func : callable or {'std', 'mad_std'}, optional
+            Deviation estimator: population standard deviation or
+            Gaussian-scaled median absolute deviation. Default: 'std'.
+        minmax_clip : tuple, optional
+            (low, high) accepted pixel limits. Values outside are rejected;
+            None leaves a side open. Default: None (disabled).
+        sum_normalize : bool, optional
+            For sums, multiply data and uncertainty by total image count divided
+            by accepted sample count at each pixel. False returns the raw sum.
+            Default: True.
+        merge_header : {'no_merge', 'first', 'only_equal', 'selected_keys'}, optional
+            Header strategy: empty header, first header, equal keys, or selected
+            keys by first occurrence. Default: 'no_merge'.
+        merge_header_keys : list of str, optional
+            Keys for merge_header='selected_keys'. Default: None.
+        use_disk_cache : bool, optional
+            Store internal input copies in memory-mapped temporary files.
+            Caller-owned arrays remain allocated. Default: False.
+        tmp_dir : str, optional
+            Dedicated directory for disk-cache files. Cache cleanup may remove
+            the directory and its contents. When absent, a temporary directory
+            is created if disk caching is enabled.
 
     Returns
     -------
-    result: `FrameData`
-        A `FrameData` containing the combined image and its uncertainty.
+    result : `~astropop.framedata.FrameData`
+        Combined data, optional standard uncertainties and output mask, in the
+        selected dtype and input unit. The header records the image count and
+        combination method, in addition to any merged keys.
 
     Notes
     -----
-    - It is not recomended using clipping with 'sum' method, since it will
-      change the number of elements to be summed in each column.
-    - To disable a low or high clipping, use tuple with None. For example,
-      using `sigma_clip=(None, 2)`, the lower clipping will be disabled.
-    - The center function names are:
-      - 'median': median of the accepted samples
-      - 'mean': mean of the accepted samples
-    - The deviation function names are:
-      - 'std': population standard deviation of the accepted samples
-      - 'mad_std': Gaussian-scaled median absolute deviation
-    - Built-in statistics use the selected dtype and a shared validity mask.
+    Input MASKED pixels and NaNs are excluded. Rejection uses one shared validity
+    mask for data and errors. Sigma clipping makes one pass; when both rejection
+    rules are enabled, sigma statistics use the original unmasked samples.
+    Built-in statistics use bounded work blocks. Custom estimators must accept
+    axis and handle excluded samples in a protected copy (NaNs for floating
+    arrays, a masked array for integer data); their workspace is not bounded.
+
+    Mean and median uncertainty is population scatter divided by sqrt(n), where
+    n is the accepted sample count. Sum uncertainty propagates all available
+    input errors in quadrature; if any input lacks errors, it uses population
+    scatter times sqrt(n). Normalized sums then scale both data and uncertainty
+    by N/n. Rejected errors do not contribute; NaN input errors contribute zero.
+    Pixels with no accepted samples are masked when flag storage is enabled.
+
+    AstropopConfig.IMARITH_SKIP_UNCERTAINTY or FRAMEDATA_DISABLE_UNCERTAINTY
+    skips uncertainty calculations and output storage. FRAMEDATA_DISABLE_FLAGS
+    hides input masks and omits output flags; internal rejection still applies.
+    Images must already be aligned; WCS is not propagated to the result.
+
+    See Also
+    --------
+    ImCombiner : Reuse combination settings across image collections.
     """
     # Sanitize kwargs and create combiner
     kargs = {'dtype': dtype,

@@ -217,59 +217,60 @@ class ImArith:
 
 def imarith(operand1, operand2, operation, inplace=False,
             merge_flags='or', merge_headers='only_equal', **kwargs):
-    """Perform arithmetic operations using `~astropop.framedata.FrameData`.
-
-    Notes
-    -----
-    * Keeps the header of the first image.
-
-    * If ``operand1`` is not a `~astropop.framedata.FrameData` instance,
-      inplies in ``inplace=False``, and a new `~astropop.framedata.FrameData`
-      instance will be created.
-
-    * Supported operations:
-        - ``+`` : add. Example: 1+1=2
-        - ``-`` : subtract. Example: 2-1=1
-        - ``*`` : scalar product. Example: 2*3=6
-        - ``/`` : true division. Example: 3/2=1.5
-        - ``**`` : power. Example: 3**2=9
-        - ``%`` : modulus. Example: 7%2=1
-        - ``//`` : floor division. Example: 7//2=3
+    """Perform image arithmetic with physical units and optional uncertainties.
 
     Parameters
     ----------
-    operand1, operand2: `~astropop.framedata.FrameData` compatible
-        Values to perform the operation. `~astropop.math.physical.QFloat`
-        `~astropy.units.Quantity`, numerical values and
-        `~astropy.nddata.CCDData` are also suported.
-    operation: {``+``, ``-``, ``*``, ``/``, ``**``, ``%``, ``//``}
-        Math operation.
-    inplace: bool, optional
-        If True, the operations will be performed inplace in the operand 1.
-    merge_flags: {'or', 'and', 'no_merge'}, optional
-        How to join the masks of the operands. If ``'or'``, the resulting mask
-        will be the union of the masks of the operands. If ``'and'``, the
-        resulting mask will be the intersection of the masks of the operands.
-        If ``'no_merge'``, the resulting mask will be only zeroes.
-    merge_headers: {'no_merge', 'first', 'only_equal', 'selected_keys'}
-        How to merge the headers of the operands. If ``'no_merge'``, the
-        resulting header will be ``None``. If ``'first'``, the resulting
-        header will be the header of the first operand. If ``'only_equal'``,
-        the resulting header will be the header of the first operand, but only
-        the keys that are equal in both operands. If ``'selected_keys'``, the
-        resulting header will be the header of the first operand, but only the
-        keys in ``selected_keys``.
-    **kwargs:
-        Additional arguments:
-            selected_keys: list, optional
-                List of keys to be merged in the header. Only used if
-                ``merge_headers='selected_keys'``.
+    operand1, operand2 : FrameData, QFloat, Quantity, CCDData or array_like
+        Operands. Numbers, unit objects and unit strings are also accepted.
+        A unit operand represents one of that unit. Numerical values are
+        normalized to floating point and follow NumPy broadcasting rules.
+    operation : {'+', '-', '*', '/', '//', '**', '%'}
+        Arithmetic operation. Powers require a dimensionless scalar exponent.
+    inplace : bool, optional
+        Update and return operand1 when it is a FrameData. Otherwise return a
+        new FrameData. Default: False.
+    merge_flags : {'or', 'and', 'no_merge'}, optional
+        Merge FrameData flag bits by bitwise OR (default), bitwise AND, or
+        return zero flags. Missing flags count as zero. Masked pixels still
+        participate in arithmetic; flags mark the result.
+    merge_headers : {'only_equal', 'first', 'selected_keys', 'no_merge'}, optional
+        Keep header keys equal in both operands (default), copy the first
+        header, select named keys by first occurrence, or use an empty header.
+        Only FrameData operands contribute headers and flags.
+    **kwargs
+        selected_keys : list of str, optional
+            Keys to retain with merge_headers='selected_keys'.
 
     Returns
     -------
-    `~astropop.framedata.FrameData`:
-        new `FrameData` instance if not ``inplace``, else the ``operand1``
-        `~astropop.framedata.FrameData` instance.
+    result : `~astropop.framedata.FrameData`
+        Data and unit of the result, merged flags and header, and propagated
+        standard uncertainties when enabled.
+
+    Notes
+    -----
+    Addition and subtraction convert the second unit to the first; incompatible
+    units raise UnitsError. Multiplication and division combine units. Floor
+    division and remainder use raw numerical operands without unit conversion;
+    floor division returns the quotient unit and remainder the first unit.
+
+    Uncertainties use first-order derivatives, assuming independent operands.
+    Missing uncertainties contribute zero, so enabled propagation produces an
+    uncertainty array even for exact inputs. CCDData uncertainties are converted
+    to standard deviations. Convert CCDData with read_framedata first to retain
+    its mask and metadata.
+
+    The process-wide AstropopConfig.IMARITH_SKIP_UNCERTAINTY and
+    AstropopConfig.FRAMEDATA_DISABLE_UNCERTAINTY switches skip extraction and
+    propagation. The result then has uncertainty=None, including an in-place
+    result. FRAMEDATA_DISABLE_FLAGS omits output flags and masks. These settings
+    are evaluated at call time. Non-inplace calls leave source arrays unchanged.
+    Images are not aligned, and WCS is not propagated to a new result.
+
+    See Also
+    --------
+    ImArith : Reuse flag and header merge settings across operations.
     """
     arithmetic = ImArith(merge_flags=merge_flags, merge_headers=merge_headers,
                          selected_keys=kwargs.get('selected_keys', None))
