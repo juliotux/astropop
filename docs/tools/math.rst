@@ -40,9 +40,9 @@ Gaussian and Moffat profiles
 ----------------------------
 
 :mod:`astropop.math.models` supplies Astropy fittable models for one-dimensional,
-two-dimensional, and radial Gaussian/Moffat profiles. ``flux`` controls the
-normalized profile amplitude through integrated flux, rather than a peak
-pixel value; ``sky`` is an additive constant background. Choose the profile's
+two-dimensional, and radial Gaussian/Moffat profiles. For two-dimensional
+models, ``flux`` is integrated flux rather than a peak pixel value; ``sky``
+is an additive constant background. Choose the profile's
 parameters explicitly, and use Astropy's fitting tools if a fit is required::
 
     >>> from astropop.math.models import PSFGaussian2D, PSFMoffat2D
@@ -53,10 +53,14 @@ parameters explicitly, and use Astropy's fitting tools if a fit is required::
     >>> assert float(moffat.fwhm) > 0
 
 Gaussian widths are standard deviations; Moffat ``width`` and ``power``
-control the core and wings. Radial models evaluate a two-dimensional profile
-as a function of radius; their radial samples are not automatically weighted
-by annulus area. A finite sampled cutout need not sum to the model's total
-flux. Model and equation classes expose the corresponding FWHM relations.
+control the core and wings. Two-dimensional Gaussian ``theta`` is in degrees.
+The one-dimensional Gaussian has one-dimensional integral normalization. Radial
+Gaussian models use that same normalization as a function of radius. The
+one-dimensional and radial Moffat variants instead use the historical
+amplitude ``flux * 2 * (power - 1) / width**2``; do not assume their one-dimensional
+integrals or area-weighted radial integrals equal ``flux``. A finite sampled
+cutout need not sum to a model's flux parameter. Model and equation classes
+expose the corresponding FWHM relations.
 
 Short identifiers
 -----------------

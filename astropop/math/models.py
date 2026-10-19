@@ -24,7 +24,6 @@ class MoffatEquations:
 
     @staticmethod
     def fwhm(width, power):
-        """Full width at half maximum in the model coordinate units."""
         """Get FWHM based on Moffat width."""
         return 2*width*np.sqrt(2**(1/power) - 1)
 
@@ -32,7 +31,8 @@ class MoffatEquations:
     def model_radial(r, width, power, flux, sky):
         """Radial Moffat model.
 
-        Parameters:
+        Parameters
+        ----------
         r: float or array
             Radial distance from the center.
         width: float
@@ -44,8 +44,9 @@ class MoffatEquations:
         sky: float
             Sky level parameter.
 
-        Returns:
-        float or array
+        Returns
+        -------
+        values : float or array
             Values of the model at r.
         """
         # multiply by pi to normalize in 1D
@@ -56,7 +57,8 @@ class MoffatEquations:
     def model_1d(x, x0, width, power, flux, sky):
         """1D Moffat model.
 
-        Parameters:
+        Parameters
+        ----------
         x: float or array
             X coordinates to evaluate.
         x0: float
@@ -70,8 +72,9 @@ class MoffatEquations:
         sky: float
             Sky level parameter.
 
-        Returns:
-        float or array
+        Returns
+        -------
+        values : float or array
             Values of the model at x.
         """
         a = flux*2*(power - 1)/(width**2)
@@ -81,7 +84,8 @@ class MoffatEquations:
     def model_2d(x, y, x0, y0, width, power, flux, sky):
         """2D Moffat model.
 
-        Parameters:
+        Parameters
+        ----------
         x, y: float or array
             X and Y coordinates to evaluate.
         x0, y0: float
@@ -95,8 +99,9 @@ class MoffatEquations:
         sky: float
             Sky level parameter.
 
-        Returns:
-        float or array
+        Returns
+        -------
+        values : float or array
             Values of the model at (x, y).
         """
         a = flux*(power - 1)/(np.pi*width**2)
@@ -196,7 +201,6 @@ class GaussianEquations:
 
     @staticmethod
     def fwhm(sigma):
-        """Full width at half maximum in the model coordinate units."""
         """Get FWHM based on Gaussian width."""
         return sigma/gaussian_fwhm_to_sigma
 
@@ -204,7 +208,8 @@ class GaussianEquations:
     def model_radial(r, flux, sigma, sky):
         """Radial Gaussian model.
 
-        Parameters:
+        Parameters
+        ----------
         r: float or array
             Radial distance from the center.
         flux: float
@@ -214,8 +219,9 @@ class GaussianEquations:
         sky: float
             Sky level parameter.
 
-        Returns:
-        float or array
+        Returns
+        -------
+        values : float or array
             Values of the model at r.
         """
         return sky + flux*np.exp(-0.5*(r**2)/(sigma**2))/(SQRT_TWO_PI*sigma)
@@ -224,7 +230,8 @@ class GaussianEquations:
     def model_1d(x, x0, flux, sigma, sky):
         """1D Gaussian model.
 
-        Parameters:
+        Parameters
+        ----------
         x: float or array
             X coordinates to evaluate.
         x0: float
@@ -236,8 +243,9 @@ class GaussianEquations:
         sky: float
             Sky level parameter.
 
-        Returns:
-        float or array
+        Returns
+        -------
+        values : float or array
             Values of the model at x.
         """
         a = flux/(SQRT_TWO_PI*sigma)
@@ -247,7 +255,8 @@ class GaussianEquations:
     def model_2d(x, y, x0, y0, flux, sigma_x, sigma_y, theta, sky):
         """2D Gaussian model.
 
-        Parameters:
+        Parameters
+        ----------
         x, y: float or array
             X and Y coordinates to evaluate.
         x0, y0: float
@@ -259,8 +268,9 @@ class GaussianEquations:
         sky: float
             Sky level parameter.
 
-        Returns:
-        float or array
+        Returns
+        -------
+        values : float or array
             Values of the model at (x, y).
         """
         theta = np.radians(theta)
@@ -302,7 +312,6 @@ class PSFGaussian2D(Fittable2DModel):
 
     @property
     def fwhm(self):
-        """Full width at half maximum in the model coordinate units."""
         """Mean FWHM of the Gaussian in X and Y."""
         return np.mean([GaussianEquations.fwhm(sigma=self.sigma_x),
                         GaussianEquations.fwhm(sigma=self.sigma_y)])
