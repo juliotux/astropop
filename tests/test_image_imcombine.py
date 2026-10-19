@@ -204,6 +204,16 @@ class Test_SigmaClip():
 
 
 class Test_ImCombineConformance():
+    @pytest.mark.parametrize('dtype', ['float32', np.dtype('float32'), np.float32])
+    def test_dtype_specification(self, dtype):
+        combiner = ImCombiner(dtype=dtype)
+        assert combiner._dtype == np.dtype('float32')
+
+    @pytest.mark.parametrize('dtype', [np.dtype('complex64'), bool, 'invalid'])
+    def test_invalid_dtype_specification(self, dtype):
+        with pytest.raises(ValueError, match='Only integer or float dtypes'):
+            ImCombiner(dtype=dtype)
+
     def test_class_creation(self):
         # defaults
         c = ImCombiner()
@@ -221,15 +231,7 @@ class Test_ImCombineConformance():
         assert_equal(f._dtype, np.float32)
 
     def test_creation_error_dtype(self):
-        msg = "Only float dtypes are allowed in ImCombiner."
-        with pytest.raises(ValueError, match=msg):
-            ImCombiner(dtype=np.int_)
-        with pytest.raises(ValueError, match=msg):
-            ImCombiner(dtype=np.int16)
-
-        with pytest.raises(ValueError, match=msg):
-            ImCombiner(dtype=np.int32)
-
+        msg = "Only integer or float dtypes are allowed in ImCombiner."
         with pytest.raises(ValueError, match=msg):
             ImCombiner(dtype=np.complex64)
 
@@ -240,9 +242,8 @@ class Test_ImCombineConformance():
         c = ImCombiner(dtype=float)
         assert_equal(c._dtype, float)
 
-        msg = "Only float dtypes are allowed in ImCombiner."
-        with pytest.raises(ValueError, match=msg):
-            ImCombiner(dtype=int)
+        msg = "Only integer or float dtypes are allowed in ImCombiner."
+        assert_equal(ImCombiner(dtype=int)._dtype, np.dtype(int))
 
         with pytest.raises(ValueError, match=msg):
             ImCombiner(dtype=complex)
@@ -783,6 +784,167 @@ class Test_ImCombiner_Rejection():
 
 
 class Test_ImCombiner_Combine():
+    @pytest.mark.parametrize('entry', ['class', 'function'])
+    @pytest.mark.parametrize('disk_cache', [False, True])
+    @pytest.mark.parametrize('method', ['sum', 'median', 'mean'])
+    @pytest.mark.parametrize('dtype', ['int16', np.int32, np.dtype('uint16'), '>i2'])
+    def test_integer_computation(self, tmp_path, entry, disk_cache, method, dtype):
+        images = [FrameData([[value, 50], [value, value]], uncertainty=error,
+                            unit='adu', mask=[[False, True], [False, False]])
+                  for value, error in [(1.9, 3.9), (4.9, 4.9)]]
+        kwargs = dict(dtype=dtype, use_disk_cache=disk_cache,
+                      tmp_dir=str(tmp_path / 'cache'))
+        if entry == 'class':
+            result = ImCombiner(**kwargs).combine(images, method)
+        else:
+            result = imcombine(images, method=method, **kwargs)
+        # Pixels and errors are converted before any reduction: [1, 4],
+        # [3, 4]. Integer mean is 2; integer population std is 1.
+        assert result.dtype == np.dtype(dtype)
+        # FrameData uncertainty setters normalize byte order for memmaps.
+        assert result.uncertainty.dtype == np.dtype(dtype).newbyteorder('=')
+        expected = 5 if method == 'sum' else 2
+        error = 5 if method == 'sum' else 1
+        np.testing.assert_array_equal(result.data, [[expected, 0], [expected, expected]])
+        np.testing.assert_array_equal(result.uncertainty, [[error, 0], [error, error]])
+        np.testing.assert_array_equal(result.mask, [[False, True], [False, False]])
+        assert result.unit == images[0].unit
+        for frame, value in zip(images, (1.9, 4.9)):
+            assert frame.data[0, 0] == value
+        assert not list((tmp_path / 'cache').glob('*.npy'))
+
+    @pytest.mark.parametrize('method', ['sum', 'mean', 'median'])
+    def test_integer_accumulator_wraps(self, method):
+        images = [np.full((2, 2), 30000, dtype='int16') for _ in range(2)]
+        result = imcombine(images, method=method, dtype='int16')
+        # 30000 + 30000 wraps to -5536 before division or median averaging.
+        np.testing.assert_array_equal(result.data, -5536 if method == 'sum' else -2768)
+        assert result.dtype == np.dtype('int16')
+
+    @pytest.mark.parametrize('method', ['mean', 'median'])
+    def test_integer_negative_fraction_truncates_towards_zero(self, method):
+        result = imcombine([np.full((2, 2), n) for n in (-1, -4)],
+                           method=method, dtype='int16')
+        np.testing.assert_array_equal(result.data, -2)
+
+    def test_integer_uncertainty_wraps_before_root(self):
+        images = [FrameData([[1]], uncertainty=200) for _ in range(2)]
+        result = imcombine(images, method='sum', dtype='int16')
+        # 200**2 + 200**2 wraps to 14464; floor(sqrt(14464)) = 120.
+        np.testing.assert_array_equal(result.uncertainty, [[120]])
+
+    @pytest.mark.parametrize('dtype, error', [('int16', 181), ('uint16', 255),
+                                             ('int32', 46340), ('uint32', 65535),
+                                             ('int64', 3037000499), ('uint64', 4294967295)])
+    def test_integer_root_at_large_exact_squares(self, dtype, error):
+        result = imcombine([FrameData([[1]], uncertainty=error)],
+                           method='sum', dtype=dtype)
+        np.testing.assert_array_equal(result.uncertainty, [[error]])
+        assert result.uncertainty.dtype == np.dtype(dtype)
+
+    def test_integer_negative_variance_raises(self):
+        with pytest.raises(ValueError, match='negative variance'):
+            imcombine([FrameData([[1]], uncertainty=200)], method='sum', dtype='int16')
+
+    @pytest.mark.parametrize('invalid', [np.nan, np.inf])
+    def test_integer_nonfinite_input_raises(self, invalid):
+        with pytest.raises(ValueError, match='finite input pixels'):
+            imcombine([np.full((2, 2), invalid)], dtype='int16')
+
+    @pytest.mark.parametrize('method', ['mean', 'median', 'sum'])
+    @pytest.mark.parametrize('skip', [False, True])
+    def test_integer_rejection(self, monkeypatch, method, skip):
+        from astropop.config import AstropopConfig
+        images = [FrameData(np.full((3, 4), v), uncertainty=e)
+                  for v, e in [(1, 3), (4, 4), (100, 100)]]
+        monkeypatch.setattr(AstropopConfig, 'IMARITH_SKIP_UNCERTAINTY', skip)
+        combiner = ImCombiner(dtype='int16', max_memory=64)
+        combiner.set_minmax_clip(0, 10)
+        result = combiner.combine(images, method)
+        # Normalization factor 3/2 is truncated to 1 before multiplication.
+        np.testing.assert_array_equal(result.data, 5 if method == 'sum' else 2)
+        if skip:
+            assert result.uncertainty is None
+        else:
+            np.testing.assert_array_equal(result.uncertainty, 5 if method == 'sum' else 1)
+        assert images[-1].uncertainty[0, 0] == 100
+
+    def test_integer_sigma_clipping(self):
+        images = [np.full((2, 2), value) for value in (1, 2, 3, 100)]
+        result = imcombine(images, method='mean', dtype='int16', sigma_clip=3,
+                           sigma_dev_func='mad_std')
+        np.testing.assert_array_equal(result.data, 2)
+
+    def test_integer_clipping_callback_cannot_modify_pixels(self):
+        def center(data, axis):
+            data[:] = 999
+            return np.full(data.shape[1:], 2, dtype=data.dtype)
+
+        images = [np.full((2, 2), value) for value in (1, 2, 3)]
+        result = imcombine(images, method='mean', dtype='int16', sigma_clip=3,
+                           sigma_cen_func=center, sigma_dev_func='mad_std')
+        np.testing.assert_array_equal(result.data, 2)
+
+    @pytest.mark.parametrize('dtype, value', [('int64', 2**53 + 1),
+                                             ('uint64', 2**64 - 1)])
+    def test_integer_reductions_keep_large_integer_values(self, dtype, value):
+        result = imcombine([np.full((2, 2), value, dtype=dtype)],
+                           dtype=dtype, method='mean')
+        np.testing.assert_array_equal(result.data, value)
+
+    def test_integer_image_count_must_fit(self):
+        with pytest.raises(ValueError, match='Image count does not fit'):
+            imcombine([np.ones((1, 1))] * 128, dtype='int8')
+
+    @pytest.mark.parametrize('entry', ['class', 'function'])
+    @pytest.mark.parametrize('disk_cache', [False, True])
+    @pytest.mark.parametrize('method', ['sum', 'median', 'mean'])
+    @pytest.mark.parametrize('dtype', [np.float16, np.float32, np.float64,
+                                      'float32', np.dtype('float32')])
+    def test_combination_preserves_dtype(self, tmp_path, entry, disk_cache, method, dtype):
+        images = [FrameData(np.full((3, 4), value), unit='adu', uncertainty=error)
+                  for value, error in [(1, 3), (3, 4)]]
+        if entry == 'class':
+            result = ImCombiner(dtype=dtype, use_disk_cache=disk_cache,
+                                tmp_dir=str(tmp_path)).combine(images, method)
+        else:
+            # Keep the existing positional method and memory-limit arguments.
+            result = imcombine(images, method, 1e6, dtype=dtype,
+                               use_disk_cache=disk_cache, tmp_dir=str(tmp_path))
+        expected_dtype = np.dtype(dtype)
+        assert result.data.dtype == result.uncertainty.dtype == expected_dtype
+        assert result.data.nbytes == 12 * expected_dtype.itemsize
+        np.testing.assert_array_equal(result.data, 4 if method == 'sum' else 2)
+        if method == 'sum':
+            np.testing.assert_array_equal(result.uncertainty, 5)
+        else:
+            # Population scatter of [1, 3], divided by sqrt(2).
+            expected = np.asarray(1 / np.sqrt(2), dtype=expected_dtype)
+            np.testing.assert_allclose(result.uncertainty, expected,
+                                       rtol=np.finfo(expected_dtype).eps)
+        assert result.unit == images[0].unit
+        np.testing.assert_array_equal(result.mask, False)
+        for image, value, error in zip(images, (1, 3), (3, 4)):
+            np.testing.assert_array_equal(image.data, value)
+            np.testing.assert_array_equal(image.uncertainty, error)
+            assert image.dtype == np.dtype('float64')
+        assert not tmp_path.exists() or not list(tmp_path.iterdir())
+
+    def test_default_dtype_remains_float64(self):
+        result = imcombine([np.ones((2, 3), dtype=np.float32)], method='sum')
+        assert result.data.dtype == result.uncertainty.dtype == np.dtype('float64')
+
+    @pytest.mark.parametrize('option', ['IMARITH_SKIP_UNCERTAINTY',
+                                       'FRAMEDATA_DISABLE_UNCERTAINTY'])
+    def test_float32_with_disabled_errors(self, monkeypatch, option):
+        from astropop.config import AstropopConfig
+        images = [FrameData(np.full((3, 4), value), uncertainty=1) for value in (1, 3)]
+        monkeypatch.setattr(AstropopConfig, option, True)
+        result = imcombine(images, method='mean', dtype='float32')
+        assert result.dtype == np.dtype('float32')
+        assert result.uncertainty is None
+        np.testing.assert_array_equal(result.data, 2)
+
     @pytest.mark.parametrize('method', ['sum', 'median', 'mean'])
     def test_combine_mask_median(self, method):
         # Just check if mask combining works.
@@ -1001,17 +1163,19 @@ class Test_ImCombiner_HeaderMerging():
 class TestRejectedUncertainties:
     @pytest.mark.parametrize('skip', [False, True])
     @pytest.mark.parametrize('normalize', [False, True])
+    @pytest.mark.parametrize('dtype', [np.float32, np.float64])
     def test_rejected_samples_do_not_contribute_uncertainty(self, monkeypatch,
-                                                          skip, normalize):
+                                                          skip, normalize, dtype):
         from astropop.config import AstropopConfig
 
         frames = [FrameData(np.full((3, 4), value), uncertainty=error)
                   for value, error in [(1, 3), (2, 4), (100, 1000)]]
         monkeypatch.setattr(AstropopConfig, 'IMARITH_SKIP_UNCERTAINTY', skip)
-        combiner = ImCombiner()
+        combiner = ImCombiner(dtype=dtype)
         combiner.set_minmax_clip(0, 10)
         result = combiner.combine(frames, 'sum', sum_normalize=normalize)
         factor = 1.5 if normalize else 1
+        assert result.dtype == np.dtype(dtype)
         np.testing.assert_allclose(result.data, 3*factor)
         if skip:
             assert result.uncertainty is None

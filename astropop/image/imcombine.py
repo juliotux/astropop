@@ -37,6 +37,72 @@ __all__ = ['imcombine', 'ImCombiner']
 _funcs['mad_std'] = functools.partial(mad_std, ignore_nan=True)
 
 
+def _integer_divide(data, divisor):
+    """Divide integer pixels in place, truncating towards zero."""
+    divisor = np.asarray(divisor, dtype=data.dtype)
+    remainder = np.remainder(data, divisor)
+    negative = data < 0
+    np.floor_divide(data, divisor, out=data, casting='unsafe')
+    data[negative & (remainder != 0)] += 1
+    return data
+
+
+def _integer_sqrt(data):
+    """Integer square root without floating-point working arrays."""
+    if np.any(data < 0):
+        raise ValueError('Integer overflow produced a negative variance; '
+                         'choose a wider dtype.')
+    # Restoring square root, processing two bits per iteration. All working
+    # values retain the requested integer dtype, including its signedness.
+    remainder = data.copy()
+    root = np.zeros_like(remainder)
+    for shift in range((data.dtype.itemsize * 8 - 1) // 2 * 2, -1, -2):
+        bit = remainder.dtype.type(1 << shift)
+        trial = root + bit
+        accept = remainder >= trial
+        remainder[accept] -= trial[accept]
+        root >>= 1
+        root[accept] += bit
+    return root
+
+
+def _integer_reduce(data, mask, method):
+    """Reduce integer pixels without promoting pixel accumulators.
+
+    Counts and selection indices use NumPy's index dtype. Pixel arithmetic
+    wraps in the selected dtype, and integer divisions truncate towards zero.
+    Fully rejected pixels have the placeholder value zero.
+    """
+    count = np.count_nonzero(~mask, axis=0)
+    divisor = np.maximum(count, 1)
+    if method in ('sum', 'mean'):
+        result = np.sum(data, where=~mask, axis=0, dtype=data.dtype.type)
+        return _integer_divide(result, divisor) if method == 'mean' else result
+    if method == 'median':
+        ordered = np.sort(np.where(mask, np.iinfo(data.dtype).max, data), axis=0)
+        lower = np.maximum(count - 1, 0) // 2
+        upper = count // 2
+        low = np.take_along_axis(ordered, lower[None], axis=0)[0]
+        high = np.take_along_axis(ordered, upper[None], axis=0)[0]
+        # Only even samples need addition; a one-sample median must not wrap.
+        even = (count % 2 == 0) & (count > 0)
+        low[even] = _integer_divide(low[even] + high[even], 2)
+        low[count == 0] = 0
+        return low
+    center = _integer_reduce(data, mask, 'mean' if method == 'std' else 'median')
+    delta = np.subtract(data, center, dtype=data.dtype.type)
+    if method == 'std':
+        np.square(delta, out=delta)
+        variance = _integer_reduce(delta, mask, 'mean')
+        return _integer_sqrt(variance)
+    if method == 'mad_std':
+        # MAD's Gaussian scale factor (1.4826...) becomes 1 in integer
+        # arithmetic, just as any other fractional constant is truncated.
+        np.absolute(delta, out=delta)
+        return _integer_reduce(delta, mask, 'median')
+    raise ValueError(f'{method} is not an integer reduction method.')
+
+
 def _sigma_clip(data, threshold=3, cen_func='median', dev_func='mad_std',
                 axis=None):
     """Create a mask of the sigma clipped pixels.
@@ -168,6 +234,7 @@ class ImCombiner:
     _max_memory = 1e8  # max memory to be used by the combiner
     _buffer = None  # Temporary buffer to store the image
     _unct_bf = None  # Temporary buffer to store the uncertainties
+    _rejected = None  # Separate validity mask for integer working arrays
     _disk_cache = False  # Enable disk caching for _images
     _images = None  # List containing the loaded images
     _methods = {'median', 'mean', 'sum'}
@@ -185,21 +252,23 @@ class ImCombiner:
         Parameters
         ----------
         max_memory: int (optional)
-          Maximum memory to be used during median and mean combining.
-          In bytes.
+          Budget in bytes used to size rejection and combination chunks.
+          Input copies, output arrays and some temporaries are additional.
           Default: 1e9 (1GB)
         dtype: `~numpy.dtype` (optional)
-          Data type to be used during the operations and the final result.
-          Defualt: `~numpy.float64`
+          Integer or floating-point dtype for all pixel working arrays,
+          accumulators, uncertainties and the final result.
+          Accepts NumPy types, dtype objects and dtype strings.
+          Integer arithmetic wraps on overflow and truncates fractions.
+          Default: `~numpy.float64`
         tmp_dir: `str` (optional)
           Directory to store temporary files used in the combining. If None,
           a tmp dir will be created with `~tempfile.mkdtemp`.
           default: `None`
         use_disk_cache: `bool`
-            Enable caching images to disk. This slow down the process, but
-            avoid memory overflow for large number of images. If the memory
-            size needed exceeds max_memory, it is enabled automatically.
-            default: false
+            Cache internal image copies in memory-mapped temporary files.
+            This adds disk I/O and must be enabled explicitly. Caller-owned
+            frames remain in memory. Default: False.
         merge_header: {'no_merge', 'first', 'only_equal', 'selected_keys'}
             Strategy for merging headers.
             default: 'no_merge'
@@ -207,9 +276,12 @@ class ImCombiner:
             Keywords for header merging if the strategy is 'selected_keys'.
             default: None
         """
-        # workaround to check dtype
-        if not isinstance(dtype(0), (float, np.floating)):
-            raise ValueError("Only float dtypes are allowed in ImCombiner.")
+        try:
+            dtype = np.dtype(dtype)
+        except (TypeError, ValueError):
+            raise ValueError('Only integer or float dtypes are allowed in ImCombiner.') from None
+        if dtype.kind not in 'iuf':
+            raise ValueError('Only integer or float dtypes are allowed in ImCombiner.')
         self._tmpdir = tmp_dir
         if self._tmpdir is None:
             self._tmpdir = mkdtemp(prefix='astropop')
@@ -336,6 +408,7 @@ class ImCombiner:
         """Clear buffer and images."""
         self._buffer = None
         self._unct_bf = None
+        self._rejected = None
         # ensure cleaning of tmp files and free memory
         for i in self._images:
             # Release arrays without loading memory maps back into RAM.
@@ -353,11 +426,16 @@ class ImCombiner:
 
         if len(image_list) == 0:
             raise ValueError('Image list is empty.')
+        if self._dtype.kind in 'iu' and len(image_list) > np.iinfo(self._dtype).max:
+            raise ValueError('Image count does not fit the integer dtype; '
+                             'choose a wider dtype.')
 
         try:
             for indx, i in enumerate(image_list):
                 # before combine, copy everything to FrameData
-                source = check_framedata(i)
+                source = check_framedata(i, dtype=self._dtype)
+                if self._dtype.kind in 'iu' and not np.all(np.isfinite(source.data)):
+                    raise ValueError('Integer combining requires finite input pixels.')
                 ic = FrameData(np.array(source.data, dtype=self._dtype, copy=True),
                                unit=source.unit, dtype=self._dtype,
                                flags=(None if conf.FRAMEDATA_DISABLE_FLAGS
@@ -432,9 +510,12 @@ class ImCombiner:
             buff_shp = (len(self._images),
                         slc_y.stop-slc_y.start,
                         slc_x.stop-slc_x.start)
-            buffer = np.full(buff_shp, fill_value=np.nan, dtype=self._dtype)
+            integer = self._dtype.kind in 'iu'
+            fill = 0 if integer else np.nan
+            buffer = np.full(buff_shp, fill_value=fill, dtype=self._dtype)
+            self._rejected = np.zeros(buff_shp, dtype=bool) if integer else None
             if unct:
-                unct_buffer = np.full(buff_shp, fill_value=np.nan,
+                unct_buffer = np.full(buff_shp, fill_value=fill,
                                       dtype=self._dtype)
             else:
                 unct_buffer = None
@@ -443,15 +524,21 @@ class ImCombiner:
                 buffer[i] = frame.data[slc_y, slc_x]
                 mask = frame.mask
                 if mask is not None:
-                    buffer[i][mask[slc_y, slc_x]] = np.nan
+                    if integer:
+                        self._rejected[i] = mask[slc_y, slc_x]
+                    else:
+                        buffer[i][mask[slc_y, slc_x]] = np.nan
                 if unct:
                     unct_buffer[i] = frame.uncertainty[slc_y, slc_x]
-                    if mask is not None:
+                    if mask is not None and not integer:
                         unct_buffer[i][mask[slc_y, slc_x]] = np.nan
 
             yield buffer, unct_buffer, (slc_y, slc_x)
 
     def _apply_rejection(self):
+        if self._rejected is not None:
+            self._apply_integer_rejection()
+            return
         mask = np.zeros(self._buffer[0].shape)
         if self._sigma_clip is not None:
             mask = _sigma_clip(self._buffer,
@@ -470,9 +557,39 @@ class ImCombiner:
         if self._unct_bf is not None:
             self._unct_bf[mask] = np.nan
 
+    def _apply_integer_rejection(self):
+        """Apply rejection using integer statistics and a separate mask."""
+        mask = self._rejected.copy()
+        if self._sigma_clip is not None:
+            def statistic(func):
+                if callable(func):
+                    # A custom callback receives masked integer data and must
+                    # respect the selected dtype in its own calculations.
+                    return np.asarray(func(np.ma.array(self._buffer, mask=mask,
+                                                       copy=True),
+                                           axis=0), dtype=self._dtype)
+                return _integer_reduce(self._buffer, mask, func)
+
+            center = statistic(self._sigma_cen_func)
+            deviation = statistic(self._sigma_dev_func)
+            limits = self._sigma_clip
+            low, high = (limits, limits) if np.isscalar(limits) else limits
+            if low is not None:
+                bound = center - self._dtype.type(low) * deviation
+                self._rejected |= self._buffer < bound
+            if high is not None:
+                bound = center + self._dtype.type(high) * deviation
+                self._rejected |= self._buffer > bound
+        if self._minmax is not None:
+            limits = [None if limit is None else self._dtype.type(limit)
+                      for limit in self._minmax]
+            self._rejected |= _minmax_clip(self._buffer, *limits)
+
     @_optional('IMARITH_SKIP_UNCERTAINTY', 'FRAMEDATA_DISABLE_UNCERTAINTY')
     def _combine_uncertainty(self, method, n_no_mask):
         """Estimate uncertainties for a chunk before sum normalization."""
+        if self._rejected is not None:
+            return self._combine_integer_uncertainty(method, n_no_mask)
         if method == 'sum':
             if self._unct_bf is None:
                 logger.info('Data with no uncertainties. Using the std dev'
@@ -494,15 +611,37 @@ class ImCombiner:
 
         return unct
 
+    def _combine_integer_uncertainty(self, method, count):
+        """Propagate errors using integer accumulators and integer roots."""
+        if method == 'sum' and self._unct_bf is not None:
+            squared = np.square(self._unct_bf, dtype=self._dtype.type)
+            variance = _integer_reduce(squared, self._rejected, 'sum')
+            return _integer_sqrt(variance)
+        uncertainty = _integer_reduce(self._buffer, self._rejected, 'std')
+        root_count = _integer_sqrt(np.asarray(count, dtype=self._dtype))
+        if method == 'sum':
+            uncertainty *= root_count
+        else:
+            _integer_divide(uncertainty, np.maximum(root_count, 1))
+        return uncertainty
+
     def _combine(self, method, **kwargs):
         """Combine nominal values and optionally compute uncertainties."""
         # Counts and normalization also affect nominal data when errors are off.
         n = float(len(self._buffer))
-        n_no_mask = n - np.sum(np.isnan(self._buffer), axis=0)
-        data = _funcs[method](self._buffer, axis=0)
+        if self._rejected is None:
+            n_no_mask = n - np.sum(np.isnan(self._buffer), axis=0)
+            data = _funcs[method](self._buffer, axis=0)
+        else:
+            n_no_mask = np.count_nonzero(~self._rejected, axis=0)
+            data = _integer_reduce(self._buffer, self._rejected, method)
         unct = self._combine_uncertainty(method, n_no_mask)
         if method == 'sum' and kwargs.get('sum_normalize', True):
-            norm = n/n_no_mask
+            if self._rejected is None:
+                norm = n/n_no_mask
+            else:
+                norm = np.full(data.shape, n, dtype=self._dtype)
+                _integer_divide(norm, np.maximum(n_no_mask, 1))
             data *= norm
             if unct is not None:
                 unct *= norm
@@ -556,7 +695,8 @@ class ImCombiner:
 
             # temp combined data, mask and uncertainty
             data = np.zeros(self._shape, dtype=self._dtype)
-            data.fill(np.nan)
+            if self._dtype.kind == 'f':
+                data.fill(np.nan)
             unct = None
             mask = (None if conf.FRAMEDATA_DISABLE_FLAGS
                     else np.zeros(self._shape, dtype=bool))
@@ -573,11 +713,12 @@ class ImCombiner:
                         unct = np.empty(self._shape, dtype=self._dtype)
                     unct[slc] = chunk_uncertainty
                 if mask is not None:
-                    mask[slc] = np.isnan(data[slc])
+                    mask[slc] = (np.isnan(data[slc]) if self._rejected is None
+                                 else np.all(self._rejected, axis=0))
 
             n = len(self._images)
-            combined = FrameData(data, unit=self._unit, uncertainty=unct,
-                                 mask=mask)
+            combined = FrameData(data, unit=self._unit, dtype=self._dtype,
+                                 uncertainty=unct, mask=mask)
             combined.meta = merge_header(*[i.header for i in self._images],
                                          method=self._header_strategy,
                                          selected_keys=self._header_merge_keys)
@@ -589,7 +730,7 @@ class ImCombiner:
             self._clear()
 
 
-def imcombine(frames, method='median', memory_limit=1e9, **kwargs):
+def imcombine(frames, method='median', memory_limit=1e9, dtype=np.float64, **kwargs):
     """Combine a list of images or frames in a single one.
 
     Parameters
@@ -603,9 +744,19 @@ def imcombine(frames, method='median', memory_limit=1e9, **kwargs):
         Combining method. Each one has a proper math and a proper error
         computation.
     memory_limit: int (optional)
-        The maximum memory limit (in bytes) to be used in the combining.
-        If the data exceeds the maximum memory limit, it will be slipted in
-        chunks for the rejection and combining processes.
+        Budget in bytes used to size rejection and combination chunks.
+        Input copies, output arrays and some temporary arrays are additional;
+        this is not a limit on total process memory. Default: 1e9.
+    dtype: numpy dtype or str (optional)
+        Integer or floating-point dtype for pixel working arrays, reduction
+        accumulators, uncertainties and output. Accepts NumPy types, dtype
+        objects and strings such as ``'float32'`` or ``'int16'``.
+        Default: ``numpy.float64``. Integer operations wrap on overflow;
+        divisions, roots and fractional constants truncate. Fully rejected
+        integer pixels contain zero and are masked when flags are enabled.
+        Integer input pixels must be finite, and the image count must fit the
+        dtype. Overflow that produces a negative variance raises ValueError.
+        Use a wider dtype for larger ranges.
     **kwargs:
         sigma_clip: float or tuple (optional)
             Threshold of sigma clipping rejection. If `None`, it disables the
@@ -660,7 +811,7 @@ def imcombine(frames, method='median', memory_limit=1e9, **kwargs):
       - 'mad_std': `~astropy.stats.funcs.mad_std`
     """
     # Sanitize kwargs and create combiner
-    kargs = {'dtype': kwargs.pop('dtype', np.float64),
+    kargs = {'dtype': dtype,
              'use_disk_cache': kwargs.pop('use_disk_cache', False),
              'tmp_dir': kwargs.pop('tmp_dir', None)}
     combiner = ImCombiner(max_memory=memory_limit, **kargs)
