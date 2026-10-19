@@ -73,6 +73,8 @@ The default behavior is to use the ``MAIN_ID`` column as name. But you can choos
     :no-inheritance-diagram:
     :inherited-members:
 
+.. currentmodule:: None
+
 .. py:data:: astropop.catalogs.simbad.simbad
 
     Alias of :class:`~astropop.catalogs.simbad.SimbadSourcesCatalog`; accepts the same

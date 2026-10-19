@@ -47,6 +47,8 @@ FITS utilities API
 
 .. autofunction:: astropop.fits_utils.string_to_header_key
 
+.. currentmodule:: None
+
 .. py:data:: astropop.fits_utils.imhdus
 
     Tuple of Astropy image-HDU classes suitable for ``isinstance`` checks,

@@ -1,6 +1,8 @@
 Astropop documentation
 ======================
 
+.. py:module:: astropop
+
 Astropop is a Python library for astronomical image reduction, with tools for
 photometry, polarimetry, astrometry, and catalog matching. Combine its functions
 in scripts tailored to your detector and instrument; the library does not choose
@@ -41,6 +43,7 @@ Developer documentation
 
     dev/pixel_convention
     dev/testing
+    dev/internal_interfaces
 
 API reference
 -------------

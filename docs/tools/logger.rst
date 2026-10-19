@@ -57,3 +57,10 @@ Logging API
 
 .. automodapi:: astropop.logger
     :no-inheritance-diagram:
+
+.. currentmodule:: None
+
+.. py:data:: astropop.logger.logger
+
+    Shared standard-library Logger named ``astropop``. Its initial level is
+    ``INFO``; changing its level affects subsequent library log messages.

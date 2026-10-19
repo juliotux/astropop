@@ -152,5 +152,14 @@ To configure a new catalog, you can use a `YAML <https://yaml.org/>`_ configure 
       # separator: '-'  # separator between columns
 
 .. automodapi:: astropop.catalogs.vizier
+    :skip: list_vizier_catalogs
     :no-inheritance-diagram:
     :inherited-members:
+
+.. currentmodule:: astropop.catalogs.vizier
+
+.. py:function:: list_vizier_catalogs()
+
+    Return a formatted string listing preconfigured catalog names, descriptions,
+    and reference bibcodes from the packaged YAML files. Print the returned
+    string to inspect the installed choices. No online query is performed.

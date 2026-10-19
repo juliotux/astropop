@@ -249,9 +249,9 @@ To avoid an additional module containing trigonometric functions inside |astropo
     np.cos(qf)
     np.sin(qf)
 
-For trionometric (and hyperbolic) functions, like `~numpy.sin` and `~numpy.sinh`, only angle are accepted. So, only |QFloat| with `~astropy.units.degree` or `~astropy.units.radians` will not raise |UnitsError|. Also, all these functions will result in |dimensionless_unscaled| values.
+For trionometric (and hyperbolic) functions, like `~numpy.sin` and `~numpy.sinh`, only angle are accepted. So, only |QFloat| with ``astropy.units.deg`` or ``astropy.units.rad`` will not raise |UnitsError|. Also, all these functions will result in |dimensionless_unscaled| values.
 
-For inverse trigonometric functions, like `~numpy.arcsin`, the inverse happens. The input must be a |dimensionless_unscaled| |QFloat|, and output will be in units of `~astropy.units.radians`.
+For inverse trigonometric functions, like `~numpy.arcsin`, the inverse happens. The input must be a |dimensionless_unscaled| |QFloat|, and output will be in units of ``astropy.units.rad``.
 
 .. ipython:: python
 
@@ -354,10 +354,14 @@ Physical Quantities API
     :skip: UnitsError
     :no-inheritance-diagram:
 
+.. currentmodule:: None
+
 .. py:data:: astropop.math.physical.units
 
     Alias of :mod:`astropy.units`, available for constructing units and
     quantities used by QFloat. This is not a separate unit registry.
+
+.. currentmodule:: None
 
 .. py:exception:: astropop.math.physical.UnitsError
 

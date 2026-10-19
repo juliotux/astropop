@@ -6,15 +6,15 @@
 .. |imarith| replace:: `~astropop.image.imarith.imarith`
 .. |imcombine| replace:: `~astropop.image.imcombine.imcombine`
 .. |ImCombiner| replace:: `~astropop.image.imcombine.ImCombiner`
-.. |MemMapArray| replace:: `~astropop.framedata.memmap.MemMapArray`
+.. |MemMapArray| replace:: `~numpy.memmap`
 .. |QFloat| replace:: `~astropop.math.physical.QFloat`
 .. |run_command| replace:: `~astropop.py_utils.run_command`
 .. |SourcesCatalog| replace:: `~astropop.catalogs.SourcesCatalog`
 
-.. |astropy| replace:: :mod:`astropy`
+.. |astropy| replace:: `Astropy <https://docs.astropy.org/en/stable/>`_
 .. |CCDData| replace:: `~astropy.nddata.ccddata.CCDData`
 .. |dimensionless_angles| replace:: `~astropy.units.dimensionless_angles`
-.. |dimensionless_unscaled| replace:: `~astropy.units.dimensionless_unscaled`
+.. |dimensionless_unscaled| replace:: ``astropy.units.dimensionless_unscaled``
 .. |HDUList| replace:: `~astropy.io.fits.HDUList`
 .. |Header| replace:: `~astropy.io.fits.Header`
 .. |ImageHDU| replace:: `~astropy.io.fits.ImageHDU`
@@ -25,7 +25,7 @@
 .. |UnitsError| replace:: `~astropy.units.UnitsError`
 .. |WCS| replace:: `~astropy.wcs.WCS`
 
-.. |astroquery| replace:: :mod:`astroquery`
+.. |astroquery| replace:: `Astroquery <https://astroquery.readthedocs.io/en/latest/>`_
 
 .. |uncertainties| replace:: :mod:`uncertainties`
 

@@ -70,6 +70,10 @@ autosummary_generate = True
 
 default_role = 'py:obj'
 intersphinx_mapping = {
+    'photutils': ('https://photutils.readthedocs.io/en/stable/', None),
+    'skimage': ('https://scikit-image.org/docs/stable/', None),
+    'astroalign': ('https://astroalign.quatrope.org/en/latest/', None),
+    'ccdproc': ('https://ccdproc.readthedocs.io/en/latest/', None),
     "python": ("https://docs.python.org/3/", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
     "scipy": ("https://docs.scipy.org/doc/scipy/", None),

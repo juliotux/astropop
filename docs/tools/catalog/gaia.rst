@@ -109,6 +109,8 @@ Also, important variability and non-punctual flags are available as properties:
     :no-inheritance-diagram:
     :inherited-members:
 
+.. currentmodule:: None
+
 .. py:data:: astropop.catalogs.gaia.gaiadr3
 
     Alias of :class:`~astropop.catalogs.gaia.GaiaDR3SourcesCatalog`; accepts the same

@@ -79,6 +79,8 @@ notebook examples without executing remote queries. The ordinary test command
 uses recorded catalog responses; live catalog conformance is a separate,
 explicit check described in :doc:`dev/testing`.
 
+.. currentmodule:: None
+
 .. py:data:: astropop.__version__
 
     Installed Astropop version string. For an editable checkout the version is

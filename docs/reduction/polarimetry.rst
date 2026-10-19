@@ -86,7 +86,7 @@ And fits a equation for a given set o positions. There are two equations that ca
     plt.tight_layout()
     plt.show()
 
-Where :math:`Q`, :math:`U` and :math:`V` are the linear and circular polarization fractions and $\psi_i$ is the retarder plate position.
+Where :math:`Q`, :math:``U`` and :math:``V`` are the linear and circular polarization fractions and $\psi_i$ is the retarder plate position.
 
 Normalization
 ^^^^^^^^^^^^^
@@ -281,7 +281,7 @@ And with errors:
 `~astropop.polarimetry.StokesParameters` class
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The result of `~astropop.polarimetry.SLSDualBeamPolarimetry.compute` is a `~astropop.polarimetry.StokesParameters` instance. This class is just a container that stores relevant parameters of the computation. Both final Stokes parameters (:math:`Q`, `U` and `V`) and intermediate data, like :math:`\psi_i` retarder positions, :math:`Z_i` relative diference of fluxes, zero position and total flux in each position. It also compute some important properties, like position angle of linear polarization :math:`\theta`, linear polarization degree :math:`P` and theoretical error in Stokes parameters. Most of the properties are stored as |QFloat| containers.
+The result of `~astropop.polarimetry.SLSDualBeamPolarimetry.compute` is a `~astropop.polarimetry.StokesParameters` instance. This class is just a container that stores relevant parameters of the computation. Both final Stokes parameters (:math:`Q`, ``U`` and ``V``) and intermediate data, like :math:`\psi_i` retarder positions, :math:`Z_i` relative diference of fluxes, zero position and total flux in each position. It also compute some important properties, like position angle of linear polarization :math:`\theta`, linear polarization degree :math:`P` and theoretical error in Stokes parameters. Most of the properties are stored as |QFloat| containers.
 
 The stored parameters are:
 
@@ -325,13 +325,13 @@ A theoretical expected error based on the fluxes SNR can be also computed by `~a
 
   result.theor_sigma
 
-The computation of this theoretical error is not trivial. For `halfwave` retarders it is:
+The computation of this theoretical error is not trivial. For ``halfwave`` retarders it is:
 
 .. math::
 
   \sigma_P = \sigma_Q = \sigma_U = \frac{\sqrt{2}}{SNR}
 
-and for `quarterwave` retarders it is:
+and for ``quarterwave`` retarders it is:
 
 .. math::
 
