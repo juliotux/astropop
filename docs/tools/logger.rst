@@ -1,48 +1,59 @@
 .. include:: ../references.txt
 
-Logging System
+Logging system
 ==============
 
+Astropop uses the standard-library ``logging`` package. Its named logger,
+``astropop``, defaults to level ``INFO``; ordinary Python handlers, formatters,
+and child loggers can be used to integrate it with an application.
 
-Astropop has its own logger, with special abillities, by default.
+Choosing a level
+----------------
 
-It hierits Python's default logger module (not Astropy's one), due to bugs found in Astropy. It allows multiple childres, like for pipeline products, and have the special abillity to log to a list, for after use.
+Levels are ``DEBUG`` (10), ``INFO`` (20), ``WARNING`` (30), ``ERROR`` (40), and
+``CRITICAL`` (50). Messages below the logger's effective level are discarded.
+Set the level on the shared logger and restore it after temporary changes::
 
-Using logger are far recommended over simple `print` funtions, due to level filtering, storing, properly displaying, etc. The log levels are:
+    >>> import logging
+    >>> from astropop.logger import logger, resolve_level_string
+    >>> previous = logger.level
+    >>> logger.setLevel('WARNING')
+    >>> resolve_level_string('INFO') == logging.INFO
+    True
+    >>> logger.setLevel(previous)
 
-=============  =======  =======================================================
-``DEBUG``       ``10``  Diagnostic informations. Very verbose level.
--------------  -------  -------------------------------------------------------
-``INFO``        ``20``  Important diagnostic informations. Low verbosity level.
--------------  -------  -------------------------------------------------------
-``WARNING``     ``30``  Something is possibly wrong, but not a properly error.
--------------  -------  -------------------------------------------------------
-``ERROR``       ``40``  Error.
--------------  -------  -------------------------------------------------------
-``CRITICAL``    ``50``  Very serious error.
-=============  =======  =======================================================
+``resolve_level_string`` accepts an integer, a numeric string, or an uppercase
+logging level name. Invalid names are not silently replaced by a default.
 
-The function `~astropop.logger.resolve_level_string` can be used to convert a string to an integer log level.
+Capturing messages in a list
+---------------------------
 
-Using Logger
-------------
+``log_to_list`` attaches a ``ListHandler`` and returns it. By default, the list
+contains formatted message strings, without timestamps or level prefixes.
+Always remove the handler when finished so later messages do not accumulate::
 
-To use the logger, just import it and set a log level:
+    >>> from astropop.logger import log_to_list
+    >>> messages = []
+    >>> previous = logger.level
+    >>> logger.setLevel('INFO')
+    >>> handler = log_to_list(logger, messages)
+    >>> try:
+    ...     logger.info('Processing image %d', 3)
+    ... finally:
+    ...     logger.removeHandler(handler)
+    ...     logger.setLevel(previous)
+    >>> messages
+    ['Processing image 3']
 
-.. ipython:: python
+Omit the list argument to create a new list accessible as ``handler.log_list``.
+Use ``full_record=True`` to store ``logging.LogRecord`` objects instead of
+strings; their ``levelname``, ``name``, and ``getMessage()`` provide structured
+information. The handler captures only records that pass logging's level and
+filter checks. List storage has no size limit or additional thread-safety
+guarantees; applications control its lifetime.
 
-    from astropop.logger import logger
-    logger.setLevel('WARN')
-
-You are now read to print simple logging:
-
-.. ipython:: python
-
-    logger.error('Matrix error. Agents needeed.')
-
-The general behavior of Astropop logger is the same of Python default logger, very well documentated in `Python Log docs <https://docs.python.org/3/library/logging.html>`_.
-
-.. TODO:: log_to_list doc
+Logging API
+-----------
 
 .. automodapi:: astropop.logger
     :no-inheritance-diagram:
