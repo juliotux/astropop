@@ -9,7 +9,7 @@ from ..py_utils import check_number
 from ..config import AstropopConfig as conf, _optional
 from ..logger import logger
 from ._tools import merge_header
-from ._combine import _divide, _sqrt, _reduce, _statistic
+from ._combine import _reduce, _statistic, _quadrature
 
 
 __all__ = ['imcombine', 'ImCombiner']
@@ -64,9 +64,9 @@ def _sigma_clip(data, threshold=3, cen_func='median', dev_func='mad_std',
     dev = _statistic(data, valid, dev_func, axis, block_pixels)
     mask = ~np.isfinite(data)
     if slow is not None:
-        mask |= data < cen - data.dtype.type(slow) * dev
+        mask |= data < cen - slow * dev
     if shigh is not None:
-        mask |= data > cen + data.dtype.type(shigh) * dev
+        mask |= data > cen + shigh * dev
 
     logger.debug('Rejected %i pixels by sigmaclip method.',
                  np.sum(mask))
@@ -98,9 +98,9 @@ def _minmax_clip(data, min_clip=None, max_clip=None):
     data = np.asarray(data)
     mask = ~np.isfinite(data)
     if min_clip is not None:
-        mask |= data < data.dtype.type(min_clip)
+        mask |= data < min_clip
     if max_clip is not None:
-        mask |= data > data.dtype.type(max_clip)
+        mask |= data > max_clip
 
     logger.debug('Rejected %i pixels by minmax method.',
                  np.sum(mask))
@@ -140,9 +140,11 @@ class ImCombiner:
         work blocks. Internal input copies, outputs and some temporaries require
         additional memory. Default: 1e9.
     dtype : numpy dtype or str, optional
-        Real numeric dtype for pixel working arrays, combination arithmetic,
-        uncertainty calculations and output. Accepts NumPy integer and
-        floating-point types, dtype objects and strings. Default: numpy.float64.
+        Storage dtype for input copies, image-stack buffers and output arrays.
+        NumPy controls arithmetic promotion in accumulators and bounded work
+        blocks. Results are cast to this dtype only after reduction. Accepts
+        NumPy integer and floating-point types, dtype objects and strings.
+        Default: numpy.float64.
     tmp_dir : str, optional
         Dedicated disk-cache directory. Cleanup may remove the directory and
         its contents. If absent, create a temporary directory when disk caching
@@ -345,9 +347,6 @@ class ImCombiner:
 
         if len(image_list) == 0:
             raise ValueError('Image list is empty.')
-        if self._dtype.kind in 'iu' and len(image_list) > np.iinfo(self._dtype).max:
-            raise ValueError('Image count does not fit the integer dtype; '
-                             'choose a wider dtype.')
 
         try:
             for indx, i in enumerate(image_list):
@@ -397,9 +396,10 @@ class ImCombiner:
     def _block_pixels(self):
         """Bound reduction workspace independently of the image tile size."""
         # Statistics copy small groups of output pixels into contiguous sample
-        # blocks. Account for one value and validity byte per image, plus an
-        # allowance for per-pixel statistics, leaving half the budget for tiles.
-        per_pixel = len(self._images) * (self._dtype.itemsize + 1) + 128
+        # blocks. Include promoted subtraction/squaring and median copies,
+        # leaving half the budget for the storage-dtype image tiles.
+        scratch = 3 * np.result_type(self._dtype, float).itemsize
+        per_pixel = len(self._images) * (self._dtype.itemsize + scratch + 1) + 128
         return max(1, min(1024, int(self._max_memory // (2 * per_pixel))))
 
     def _chunk_slices(self, propagate_errors):
@@ -486,15 +486,14 @@ class ImCombiner:
     def _combine_uncertainty(self, method, count):
         """Compute errors separately, using the nominal values' validity."""
         if method == 'sum' and self._unct_bf is not None:
-            np.square(self._unct_bf, out=self._unct_bf, where=self._valid)
-            return _sqrt(_reduce(self._unct_bf, self._valid, 'sum', count))
+            return _quadrature(self._unct_bf, self._valid, self._block_pixels())
         uncertainty = _reduce(self._buffer, self._valid, 'std', count,
                               self._block_pixels())
-        root_count = _sqrt(np.asarray(count, dtype=self._dtype))
+        root_count = np.sqrt(count)
         if method == 'sum':
             uncertainty *= root_count
         else:
-            _divide(uncertainty, np.maximum(root_count, 1))
+            uncertainty = uncertainty / np.maximum(root_count, 1)
         return uncertainty
 
     def _combine(self, method, **kwargs):
@@ -503,9 +502,8 @@ class ImCombiner:
         data = _reduce(self._buffer, self._valid, method, count, self._block_pixels())
         uncertainty = self._combine_uncertainty(method, count)
         if method == 'sum' and kwargs.get('sum_normalize', True):
-            norm = np.full(data.shape, len(self._buffer), dtype=self._dtype)
-            _divide(norm, np.maximum(count, 1))
-            data *= norm
+            norm = len(self._buffer) / np.maximum(count, 1)
+            data = data * norm
             if uncertainty is not None:
                 uncertainty *= norm
         empty = count == 0
@@ -513,7 +511,11 @@ class ImCombiner:
         data[empty] = fill
         if uncertainty is not None:
             uncertainty[empty] = fill
-        return data, uncertainty, empty | np.isnan(data)
+        invalid = empty | np.isnan(data)
+        data = np.asarray(data, dtype=self._dtype)
+        if uncertainty is not None:
+            uncertainty = np.asarray(uncertainty, dtype=self._dtype)
+        return data, uncertainty, invalid
 
     def combine(self, image_list, method, **kwargs):
         """Combine images using the configured clipping, dtype and header settings.
@@ -608,10 +610,13 @@ def imcombine(frames, method='median', memory_limit=1e9, dtype=np.float64, **kwa
         temporaries are additional; this does not cap process memory.
         Default: 1e9.
     dtype : numpy dtype or str, optional
-        Real numeric dtype for pixel working arrays, combination arithmetic,
-        uncertainty calculations and output arrays. Accepts NumPy integer and
-        floating-point types, dtype objects and strings. Its item size controls
-        memory per pixel. Default: numpy.float64.
+        Storage dtype for input copies, image-stack buffers and output arrays.
+        Temporary accumulators, clipping statistics and uncertainty calculations
+        may promote to wider types; the full stack stays in the requested dtype.
+        NumPy controls temporary arithmetic and the final conversion, including
+        integer truncation, overflow and precision limits.
+        Accepts NumPy integer and floating-point types, dtype objects and strings.
+        Default: numpy.float64.
     **kwargs
         sigma_clip : float or tuple, optional
             Rejection threshold in multiples of the selected deviation. A

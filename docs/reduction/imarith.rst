@@ -225,13 +225,30 @@ calculations. Clipping still computes any statistics needed for rejection.
 Dtype and memory use
 ^^^^^^^^^^^^^^^^^^^^
 
-``dtype`` selects the real numeric type used consistently for pixel working
-arrays, combination arithmetic, uncertainty calculations, and output arrays.
-It accepts supported NumPy integer and floating-point types, dtype objects,
-and dtype strings, and defaults to ``numpy.float64``. Choose a type with the
-range and precision required by your data; its item size controls the memory
-required per pixel throughout the combination. Sample counts and Boolean
-validity masks are bookkeeping arrays with their own types.
+``dtype`` selects the storage type for internal input copies, image-stack
+buffers and output data and uncertainty arrays. It accepts supported NumPy
+integer and floating-point types, dtype objects and dtype strings, and defaults
+to ``numpy.float64``. Input values are converted to this storage type when loaded.
+
+Temporary accumulators and statistics may use wider types. Means divide the
+promoted sum before conversion to the output type; medians promote the selected
+middle values before averaging. Clipping, variance and uncertainty propagation
+also use promoted arithmetic. This prevents a stack of 150 images at 1000 ADU
+from overflowing a ``uint16`` mean accumulator. The entire stack is never
+converted to a wider temporary cube: scatter and quadrature use bounded blocks.
+Intermediate precision follows NumPy's reduction and dtype-promotion rules.
+
+Integer data and uncertainty outputs discard fractional parts toward zero only
+when the final reduction is stored. Fractional sum-normalization factors are
+applied before that conversion. Final conversion follows NumPy's normal casting
+rules, including overflow when a result cannot fit the selected type. Select a
+storage dtype with sufficient range. NumPy's floating calculations can also lose
+precision for large 64-bit integer values. Floating outputs retain the precision
+and range of their selected storage type.
+
+The item size still controls memory for the stack. Promoted work blocks need
+additional scratch space, which is included in their block-size estimate.
+Sample counts and Boolean validity masks have their own bookkeeping types.
 
 ``memory_limit`` is a positive, finite budget in bytes used to size image
 chunks and statistics work blocks. Median selection and scatter statistics

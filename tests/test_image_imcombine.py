@@ -20,7 +20,7 @@ from astropop.testing import *
 
 
 class TestCombinerMemory:
-    @pytest.mark.parametrize('dtype', ['float32', 'float64'])
+    @pytest.mark.parametrize('dtype', ['uint16', 'float32', 'float64'])
     def test_median_peak_allocations(self, dtype):
         # Isolate tracing from pytest/plugins and any already-running tracer.
         # Imports and caller-owned frames are prepared before measurement;
@@ -59,7 +59,7 @@ class TestCombinerMemory:
                                memory_limit=64 * 2**20)
             peak = tracemalloc.get_traced_memory()[1] - baseline
             tracemalloc.stop()
-            np.testing.assert_array_equal(result.data, 63.5)
+            np.testing.assert_array_equal(result.data, 63 if dtype.kind in 'iu' else 63.5)
             assert result.uncertainty is not None
             assert not result.mask.any()
             print(json.dumps(dict(peak=peak, cube_bytes=cube_bytes)))
@@ -73,7 +73,10 @@ class TestCombinerMemory:
         # for Python objects and NumPy/platform variation. A full-stack median
         # workspace exceeded this bound in the former implementation. This is
         # an allocation regression bound, not an RSS or memory_limit promise.
-        assert measured['peak'] < 4 * measured['cube_bytes'], measured
+        # Two-byte pixels need more relative room for flags and promoted
+        # statistics blocks; a full float64 sample cube still exceeds it.
+        allowance = 6 if dtype == 'uint16' else 4
+        assert measured['peak'] < allowance * measured['cube_bytes'], measured
 
 
 class Test_MinMaxClip():
@@ -774,12 +777,12 @@ class Test_ImCombiner_Combine():
             assert frame.data[0, 0] == value
         assert not list((tmp_path / 'cache').glob('*.npy'))
 
-    @pytest.mark.parametrize('method', ['sum', 'mean', 'median'])
-    def test_integer_accumulator_wraps(self, method):
+    @pytest.mark.parametrize('method', ['mean', 'median'])
+    def test_integer_accumulators_promote(self, method):
         images = [np.full((2, 2), 30000, dtype='int16') for _ in range(2)]
         result = imcombine(images, method=method, dtype='int16')
-        # 30000 + 30000 wraps to -5536 before division or median averaging.
-        np.testing.assert_array_equal(result.data, -5536 if method == 'sum' else -2768)
+        # The intermediate 60000 must not wrap before division by two.
+        np.testing.assert_array_equal(result.data, 30000)
         assert result.dtype == np.dtype('int16')
 
     @pytest.mark.parametrize('method', ['mean', 'median'])
@@ -788,11 +791,10 @@ class Test_ImCombiner_Combine():
                            method=method, dtype='int16')
         np.testing.assert_array_equal(result.data, -2)
 
-    def test_integer_uncertainty_wraps_before_root(self):
+    def test_integer_uncertainty_promotes_before_squaring(self):
         images = [FrameData([[1]], uncertainty=200) for _ in range(2)]
         result = imcombine(images, method='sum', dtype='int16')
-        # 200**2 + 200**2 wraps to 14464; floor(sqrt(14464)) = 120.
-        np.testing.assert_array_equal(result.uncertainty, [[120]])
+        np.testing.assert_array_equal(result.uncertainty, [[282]])
 
     @pytest.mark.parametrize('dtype, error', [('int16', 181), ('uint16', 255),
                                              ('int32', 46340), ('uint32', 65535),
@@ -803,9 +805,10 @@ class Test_ImCombiner_Combine():
         np.testing.assert_array_equal(result.uncertainty, [[error]])
         assert result.uncertainty.dtype == np.dtype(dtype)
 
-    def test_integer_negative_variance_raises(self):
-        with pytest.raises(ValueError, match='negative variance'):
-            imcombine([FrameData([[1]], uncertainty=200)], method='sum', dtype='int16')
+    def test_integer_output_cast_follows_numpy(self):
+        values = np.full((2, 2, 2), 30000, dtype='int16')
+        result = imcombine(list(values), method='sum', dtype='int16', sum_normalize=False)
+        np.testing.assert_array_equal(result.data, np.sum(values, axis=0).astype('int16'))
 
     @pytest.mark.parametrize('invalid', [np.nan, np.inf])
     def test_integer_nonfinite_input_raises(self, invalid):
@@ -822,12 +825,12 @@ class Test_ImCombiner_Combine():
         combiner = ImCombiner(dtype='int16', max_memory=64)
         combiner.set_minmax_clip(0, 10)
         result = combiner.combine(images, method)
-        # Normalization factor 3/2 is truncated to 1 before multiplication.
-        np.testing.assert_array_equal(result.data, 5 if method == 'sum' else 2)
+        # Normalize in promoted arithmetic, then truncate only the output.
+        np.testing.assert_array_equal(result.data, 7 if method == 'sum' else 2)
         if skip:
             assert result.uncertainty is None
         else:
-            np.testing.assert_array_equal(result.uncertainty, 5 if method == 'sum' else 1)
+            np.testing.assert_array_equal(result.uncertainty, 7 if method == 'sum' else 1)
         assert images[-1]._unct[0, 0] == 100
 
     def test_integer_sigma_clipping(self):
@@ -848,15 +851,16 @@ class Test_ImCombiner_Combine():
         np.testing.assert_array_equal(result.data, 2)
 
     @pytest.mark.parametrize('dtype, value', [('int64', 2**53 + 1),
-                                             ('uint64', 2**64 - 1)])
-    def test_integer_reductions_keep_large_integer_values(self, dtype, value):
-        result = imcombine([np.full((2, 2), value, dtype=dtype)],
-                           dtype=dtype, method='mean')
-        np.testing.assert_array_equal(result.data, value)
+                                             ('uint64', 2**63)])
+    def test_integer_reductions_follow_numpy_precision(self, dtype, value):
+        data = np.full((1, 2, 2), value, dtype=dtype)
+        result = imcombine(list(data), dtype=dtype, method='mean')
+        expected = np.mean(data, axis=0).astype(dtype)
+        np.testing.assert_array_equal(result.data, expected)
 
-    def test_integer_image_count_must_fit(self):
-        with pytest.raises(ValueError, match='Image count does not fit'):
-            imcombine([np.ones((1, 1))] * 128, dtype='int8')
+    def test_integer_image_count_uses_bookkeeping_dtype(self):
+        result = imcombine([np.ones((1, 1))] * 128, dtype='int8', method='mean')
+        np.testing.assert_array_equal(result.data, 1)
 
     @pytest.mark.parametrize('entry', ['class', 'function'])
     @pytest.mark.parametrize('disk_cache', [False, True])
@@ -1148,25 +1152,17 @@ class TestRejectedUncertainties:
 class TestMaskedReductions:
     @staticmethod
     def _median_oracle(data, valid):
-        result = np.empty(data.shape[1:], dtype=data.dtype)
+        result = np.empty(data.shape[1:], dtype=np.result_type(data.dtype, float))
         for pixel in np.ndindex(result.shape):
             values = sorted(v.item() for v, keep in
                             zip(data[(slice(None),) + pixel], valid[(slice(None),) + pixel]) if keep)
             if not values:
                 result[pixel] = np.nan if data.dtype.kind == 'f' else 0
             elif len(values) % 2:
-                result[pixel] = values[len(values) // 2]
+                result[pixel] = np.median(np.array(values, dtype=data.dtype))
             else:
                 lower, upper = values[len(values) // 2 - 1:len(values) // 2 + 1]
-                if data.dtype.kind == 'f':
-                    total = data.dtype.type(lower) + data.dtype.type(upper)
-                    result[pixel] = total / data.dtype.type(2)
-                else:
-                    info = np.iinfo(data.dtype)
-                    total = (lower + upper) % 2**info.bits
-                    if data.dtype.kind == 'i' and total > info.max:
-                        total -= 2**info.bits
-                    result[pixel] = (abs(total) // 2) * (-1 if total < 0 else 1)
+                result[pixel] = np.mean(np.array([lower, upper], dtype=data.dtype))
         return result
 
     @pytest.mark.parametrize('dtype', ['float16', 'float32', 'float64', 'int8',
@@ -1189,7 +1185,6 @@ class TestMaskedReductions:
         valid &= ~np.isnan(data)
         original, original_valid = data.copy(), valid.copy()
         result = _masked_median(data, valid, block_pixels=block_pixels)
-        assert result.dtype == dt
         np.testing.assert_array_equal(result, self._median_oracle(data, valid))
         np.testing.assert_array_equal(data, original)
         np.testing.assert_array_equal(valid, original_valid)
@@ -1203,14 +1198,14 @@ class TestMaskedReductions:
         data = rng.normal(100, 4, (31, 4, 5)).astype(dtype)
         valid = rng.random(data.shape) > 0.2
         valid[0] = True
-        filled = data.copy()
+        # Compare promoted calculations with an independent float64 reference.
+        filled = data.astype(np.float64)
         filled[~valid] = np.nan
         if method == 'mad_std':
             expected = mad_std(filled, axis=0, ignore_nan=True)
         else:
             expected = getattr(np, 'nan' + method)(filled, axis=0)
         result = _reduce(data, valid, method, block_pixels=3)
-        assert result.dtype == np.dtype(dtype)
         np.testing.assert_allclose(result, expected, rtol=5 * np.finfo(dtype).eps)
 
     def test_median_work_blocks_are_bounded(self, monkeypatch):
@@ -1303,3 +1298,58 @@ class TestMaskedScatterEdges:
                 expected = mad_std(data, axis=0, ignore_nan=True)
             result = _reduce(data, np.ones(data.shape, dtype=bool), 'mad_std', block_pixels=1)
         np.testing.assert_allclose(result, expected, equal_nan=True)
+
+
+class TestPromotedIntegerReductions:
+    @pytest.mark.parametrize('disk_cache', [False, True])
+    @pytest.mark.parametrize('budget', [256, 65536])
+    def test_uint16_bias_mean(self, tmp_path, disk_cache, budget):
+        frames = [FrameData(np.full((3, 4), 1000, dtype=np.uint16), dtype='uint16')
+                  for _ in range(150)]
+        result = imcombine(frames, method='mean', dtype='uint16',
+                           memory_limit=budget, use_disk_cache=disk_cache,
+                           tmp_dir=str(tmp_path/'cache'))
+        np.testing.assert_array_equal(result.data, 1000)
+        np.testing.assert_array_equal(result.uncertainty, 0)
+        assert result.dtype == result.uncertainty.dtype == np.dtype('uint16')
+        assert all(frame.dtype == np.dtype('uint16') for frame in frames)
+        assert not list(tmp_path.glob('cache/*'))
+
+    @pytest.mark.parametrize('method', ['mean', 'median'])
+    def test_mean_and_scatter_agree_with_float_reference(self, method):
+        rng = np.random.default_rng(20261019)
+        data = rng.integers(900, 1100, (150, 3, 4), dtype=np.uint16)
+        frames = [FrameData(image, dtype='uint16') for image in data]
+        result = imcombine(frames, method=method, dtype='uint16')
+        expected = getattr(np, method)(data.astype(np.float64), axis=0)
+        expected_error = np.std(data.astype(np.float64), axis=0)/np.sqrt(len(data))
+        np.testing.assert_array_equal(result.data, expected.astype('uint16'))
+        np.testing.assert_array_equal(result.uncertainty, expected_error.astype('uint16'))
+        for frame, original in zip(frames, data):
+            np.testing.assert_array_equal(frame.data, original)
+
+    @pytest.mark.parametrize('method', ['mean', 'median'])
+    def test_uint16_high_median_values(self, method):
+        result = imcombine([np.full((2, 2), 60000, dtype='uint16')]*2,
+                           method=method, dtype='uint16')
+        np.testing.assert_array_equal(result.data, 60000)
+        np.testing.assert_array_equal(result.uncertainty, 0)
+
+    @pytest.mark.parametrize('deviation', ['std', 'mad_std'])
+    def test_unsigned_clipping_matches_astropy(self, deviation):
+        from astropy.stats import sigma_clip
+        data = np.array([0, 1, 1, 2, 1000], dtype='uint16')[:, None, None]
+        expected = sigma_clip(data.astype(float), sigma=2.5, cenfunc='median',
+                              stdfunc=deviation, axis=0, maxiters=1)
+        result = imcombine(list(data), method='mean', dtype='uint16',
+                           sigma_clip=2.5, sigma_dev_func=deviation)
+        np.testing.assert_array_equal(result.data, expected.mean(axis=0).astype('uint16'))
+
+    @pytest.mark.parametrize('dtype, value', [('int64', 2**62),
+                                             ('uint64', 2**63)])
+    @pytest.mark.parametrize('method', ['mean', 'median'])
+    def test_representable_large_integer_values(self, dtype, value, method):
+        images = [np.full((2, 2), value, dtype=dtype)]*2
+        result = imcombine(images, method=method, dtype=dtype)
+        np.testing.assert_array_equal(result.data, value)
+        np.testing.assert_array_equal(result.uncertainty, 0)
