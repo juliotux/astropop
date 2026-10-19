@@ -396,6 +396,9 @@ class ImCombiner:
 
     def _block_pixels(self):
         """Bound reduction workspace independently of the image tile size."""
+        # Statistics copy small groups of output pixels into contiguous sample
+        # blocks. Account for one value and validity byte per image, plus an
+        # allowance for per-pixel statistics, leaving half the budget for tiles.
         per_pixel = len(self._images) * (self._dtype.itemsize + 1) + 128
         return max(1, min(1024, int(self._max_memory // (2 * per_pixel))))
 
@@ -403,34 +406,55 @@ class ImCombiner:
         """Reserve half the workspace budget for stack data and validity."""
         n = len(self._images)
         shape = self._images[0].shape
+        # Every output pixel needs a sample from all n images: one data value,
+        # an optional uncertainty value, and one Boolean validity byte each.
         per_pixel = n * (self._dtype.itemsize * (1 + propagate_errors) + 1)
-        # Counts and pixel results coexist with the sample stack.
+        # Allow space for counts and intermediate pixel results, which coexist
+        # with the sample stack. This is an estimate, not an exact allocation.
         per_pixel += 4 * (np.dtype(np.intp).itemsize + self._dtype.itemsize)
+        # Use half the budget for the tile, leaving room for reduction scratch.
+        # At least one output pixel's entire sample stack must be processed.
+        # Loaded input copies and full output images are outside this budget.
         pixels = max(1, int(self._max_memory // (2 * per_pixel)))
         n_chunks = max(1, int(np.ceil(np.prod(shape) / pixels)))
+        # Convert the target chunk count to spatial slices shared by all inputs.
+        # The row-first tiling can produce more chunks than the requested count.
         return _yield_slices(shape, n_chunks)
 
     def _read_chunk(self, slc, propagate_errors):
         """Copy a tile and read flag bits only for that tile."""
+        # Axis 0 spans images; the remaining axes are this tile's rows/columns.
+        # Own these buffers so rejection and uncertainty arithmetic cannot
+        # modify source arrays, including memory-mapped inputs.
         shape = (len(self._images), *(s.stop - s.start for s in slc))
         data = np.empty(shape, dtype=self._dtype)
         self._valid = np.empty(shape, dtype=bool)
         uncertainty = np.empty_like(data) if propagate_errors else None
         for index, frame in enumerate(self._images):
             data[index] = frame.data[slc]
+            # True means accepted. Reuse this Boolean storage to exclude NaNs;
+            # clipping later updates the same mask for both data and errors.
             np.isnan(data[index], out=self._valid[index])
             np.logical_not(self._valid[index], out=self._valid[index])
             flags = None if conf.FRAMEDATA_DISABLE_FLAGS else frame.flags
             if flags is not None:
+                # Slice flags before deriving the mask: frame.mask would create
+                # a full-image Boolean array for every tile. Other flag bits
+                # describe pixel status but do not exclude samples on their own.
                 self._valid[index] &= (flags[slc] & PixelMaskFlags.MASKED.value) == 0
             if propagate_errors:
                 uncertainty[index] = frame.uncertainty[slc]
-                # A missing error sample contributed zero to the old nansum.
+                # Preserve quadrature's nansum convention: a NaN error adds
+                # zero variance without rejecting its nominal data sample.
                 np.copyto(uncertainty[index], 0, where=np.isnan(uncertainty[index]))
         return data, uncertainty
 
     def _chunk_yielder(self, method):
         """Yield owned data/error tiles and maintain their shared mask."""
+        # Only sums with errors on every input propagate those arrays. Mean,
+        # median and sums with missing errors estimate uncertainty from data
+        # scatter instead. Disabled propagation also makes the getter return
+        # None, avoiding an uncertainty stack altogether.
         propagate = method == 'sum' and all(self._get_uncertainty(i) is not None
                                             for i in self._images)
         if method == 'sum' and not propagate:
@@ -439,7 +463,9 @@ class ImCombiner:
         for slc in self._chunk_slices(propagate):
             data, uncertainty = self._read_chunk(slc, propagate)
             yield data, uncertainty, slc
-            # Clear both generator and consumer references before allocation.
+            # combine() consumes the tile through self._buffer/self._unct_bf.
+            # Release those references and the generator's locals before
+            # allocating the next tile, avoiding two live stacks at the peak.
             self._buffer = self._unct_bf = self._valid = None
             del data, uncertainty
 
