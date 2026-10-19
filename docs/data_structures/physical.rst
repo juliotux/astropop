@@ -351,4 +351,15 @@ Physical Quantities API
 -----------------------
 
 .. automodapi:: astropop.math.physical
+    :skip: UnitsError
     :no-inheritance-diagram:
+
+.. py:data:: astropop.math.physical.units
+
+    Alias of :mod:`astropy.units`, available for constructing units and
+    quantities used by QFloat. This is not a separate unit registry.
+
+.. py:exception:: astropop.math.physical.UnitsError
+
+    Alias of :class:`astropy.units.UnitsError`, used for incompatible physical
+    units. It is the Astropy exception class, not a distinct Astropop subtype.

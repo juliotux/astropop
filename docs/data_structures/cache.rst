@@ -57,3 +57,18 @@ Cache-manager API
 
 .. automodapi:: astropop.framedata.cache_manager
     :no-inheritance-diagram:
+
+.. py:data:: astropop.framedata.cache_manager.BaseTempDir
+
+    Shared TempDir instance at ``CACHE_DIR``. Relative top-level manager names
+    are created beneath this instance.
+
+.. py:data:: astropop.framedata.cache_manager.CACHE_DIR
+
+    Path beneath Astropy's cache directory used for Astropop-managed files.
+    The value is established when the module is imported.
+
+.. py:data:: astropop.framedata.cache_manager.DELETE_ON_EXIT
+
+    Module-level Boolean, initially ``True``, controlling shutdown cleanup.
+    Individual entries' retention policies still apply when cleanup is enabled.

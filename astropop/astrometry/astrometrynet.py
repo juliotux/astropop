@@ -35,7 +35,19 @@ _solve_field = shutil.which('solve-field')
 
 
 class SolveFieldCommand:
-    """Astrometry.net solve field check and run command."""
+    """Locate and invoke an Astrometry.net solve-field executable.
+
+    Parameters
+    ----------
+    command : str or SolveFieldCommand, optional
+        Existing executable path, defaulting to solve-field found on PATH.
+        An existing wrapper can be copied to reuse its cached version.
+
+    Notes
+    -----
+    Construction checks path existence. The version property runs
+    ``solve-field --version`` lazily; run executes the supplied arguments.
+    """
     _version = None
 
     def __init__(self, command=_solve_field):

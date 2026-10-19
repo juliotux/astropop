@@ -78,3 +78,9 @@ to the Python documentation packages. The documentation build renders stored
 notebook examples without executing remote queries. The ordinary test command
 uses recorded catalog responses; live catalog conformance is a separate,
 explicit check described in :doc:`dev/testing`.
+
+.. py:data:: astropop.__version__
+
+    Installed Astropop version string. For an editable checkout the version is
+    derived from Git metadata by setuptools-scm. Print this value and
+    ``astropop.__file__`` when diagnosing an unexpected notebook installation.
