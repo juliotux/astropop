@@ -183,17 +183,23 @@ Using keyword arguments to be passed to |run_command| you can store ``stdout`` a
     Field parity: pos
     Creating new FITS file "/tmp/M20_test_file_6kk3quwg_astrometry.net/M20_test_file.new"...
 
-Also, you can pass any parameter of ``astrometry.cfg`` file to the options. These parameters will be organized and a custom configuration file will be created, enabling these options only for that run. Manual edition of the config is also available using `~astropop.astrometry.AstrometrySolver.config` dictionary.
+Set reusable command-line options through ``defaults`` and override them in
+individual calls through ``options``. Dictionary keys omit leading dashes;
+flag-only options use ``None`` values:
 
-.. ipython:: python
-    :verbatim:
+.. code-block:: python
 
-    solver = AstrometrySolver(config={'index': 'index-401.fits',
-                              'add_path': ['/data1', '/data2']})
-    solver.config['inparallel'] = False
+    solver = AstrometrySolver(defaults={'cpulimit': 60})
     solution = solver.solve_field(filename,
-                                  options={'add_path': '/home/user/gaia-indexes',
-                                           'autoindex': True})
+                                  options={'scale-low': 0.2,
+                                           'scale-high': 0.4,
+                                           'scale-units': 'arcsecperpix'})
+
+The current constructor accepts ``solve_field``, ``defaults``, and
+``keep_files``. It has no ``config`` property or ``config_file`` constructor
+argument. Configure local index paths through Astrometry.net itself before
+running the wrapper; arbitrary astrometry.cfg entries are not translated into
+per-call configuration files.
 
 Additional Python inputs, like |ImageHDU|, |FrameData|, and ``(x, y, flux)`` arrays are supported trough hepler functions, described in the section bellow.
 
@@ -218,9 +224,10 @@ Each function has its own specific arguments, but all of them have the same opti
 Supported ``solve-field`` options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The |astropop| `astrometry.net`_ wrapper don't support all `solve-field` command-line interface options.
+The |astropop| `astrometry.net`_ wrapper don't support all ``solve-field`` command-line interface options.
 
-Also, we added the possibility to add any ``astrometry.cfg`` configuration file parameter to options. These configuration parameters will be read and popped out from options, a new config file will be created and used just for that run.
+Use only the supported command-line option names below. Configuration-file
+entries are not interchangeable with command-line options.
 
 The supported options can be print in the screen using `~astropop.astrometry.AstrometrySolver.print_options_help` or `~astropop.astrometry.astrometrynet.get_options_help` funtions. They are described bellow.
 
@@ -242,4 +249,3 @@ required for using image arithmetic or a manually constructed WCS.
 
 .. autoclass:: astropop.astrometry.astrometrynet.SolveFieldCommand
     :members:
-

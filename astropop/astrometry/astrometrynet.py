@@ -413,7 +413,7 @@ class AstrometricSolution():
 
     @property
     def wcs(self):
-        """World Coordinate System `~astropy.coordinates.WCS` solution."""
+        """World Coordinate System `~astropy.wcs.WCS` solution."""
         return copy.deepcopy(self._wcs)
 
     @property
@@ -445,49 +445,27 @@ class AstrometricSolution():
 
 
 class AstrometrySolver():
-    """Use astrometry.net to solve the astrometry of images or list of stars.
-    For convenience, all the auxiliary files will be deleted, except you
-    specify to keep it with ``keep_files``.
+    """Solve image or source-list astrometry with a local Astrometry.net command.
 
     Parameters
     ----------
-    solve_field: string (optional)
-        ``solve-field`` command from astrometry.net package. If not set, it
-        will be determined by `~shutil.which` function.
-    config_file: string (optional)
-        Custom ``astrometry.cfg`` file to read the configuration from. If
-        `None`, default file will be used.
-    config: dict (optional)
-        Config parameters for astrometry.net. If None is passed, the parameters
-        will be read from the default ``astrometry.cfg`` file.
-    defaults: `dict` (optional)
-        Default arguments to be passed to ``solve-field`` program. If not set,
-        arguments ``no-plot`` and ``overwrite`` will be used. Use only double
-        dashed arguments, ignoring the dashed in the `dict` keys.
-        See `~astropop.astrometry.astrometrynet.print_options_help`
-    keep_files: bool (optional)
-        Keep the temporary files after finish.
+    solve_field : str, optional
+        Existing solve-field executable path. The default is found on PATH.
+        Astrometry.net version 0.95 or newer is required.
+    defaults : dict, optional
+        Default solve-field options, using names without leading dashes.
+        These update the initial no-plots and overwrite flag options. Per-call
+        options supplied to solve_field override the defaults. See
+        `~astropop.astrometry.astrometrynet.get_options_help` for supported keys.
+    keep_files : bool, optional
+        Keep auxiliary solver products instead of removing them after solving.
+        Default is False.
 
     Notes
     -----
-    - Configuration parameters are:
-        - cpu_limit: int
-            Maximum CPU time to spend on a field, in seconds.
-        - inparallel: bool
-            Check indexes in parallel. Only enable it if you have memory to
-            store all indexes.
-        - minwidth and maxwidth: int
-            If no scale estimate is given, use these limits on field width in
-            deg.
-        - depths: int or list(int)
-            If no depths are given, use these.
-        - add_path: string or list(string)
-            Location of astrometry.net index files. If None provided, default
-            astrometry.net "$prefix/data" directory will be used.
-        - autoindex: bool
-            Load any indices found in the directories listed.
-        - index: string or list(string)
-            Explicitly list the indices to load.
+    Index installation and Astrometry.net's own configuration are external
+    setup steps. This wrapper has no config or config_file constructor option
+    and does not synthesize astrometry.cfg files from arbitrary parameters.
     """
 
     def __init__(self, solve_field=_solve_field, defaults=None,
@@ -652,9 +630,9 @@ def create_xyls(fname, x, y, flux, imagew, imageh, header=None, dtype='f8'):
     flux: array_like
         Estimated flux of the sources.
     imagew: float or int
-        Width of the original image. `IMAGEW` header field of .xyls
+        Width of the original image. ``IMAGEW`` header field of .xyls
     imageh: float or int
-        Height of the original image. `IMAGEH` header field of .xyls
+        Height of the original image. ``IMAGEH`` header field of .xyls
     dtype: `~numpy.dtype`, optional
         Data type of the fields. Default: 'f8'
     """
@@ -693,7 +671,7 @@ def solve_astrometry_xy(x, y, flux, width, height,
         Original image header.
     options: dict
         Dictionary of ``solve-field`` options. See
-        `~astropop.astrometry.astrometrynet.print_options_help` for all
+        `~astropop.astrometry.astrometrynet.get_options_help` for all
         available options. The most useful are:
         - center or ra and dec: field center
         - radius: maximum search radius
@@ -732,7 +710,7 @@ def solve_astrometry_framedata(frame, options=None, command=_solve_field,
         Image to be solved.
     options: dict
         Dictionary of ``solve-field`` options. See
-        `~astropop.astrometry.astrometrynet.print_options_help` for all
+        `~astropop.astrometry.astrometrynet.get_options_help` for all
         available options. The most useful are:
         - center or ra and dec: field center
         - radius: maximum search radius
@@ -764,7 +742,7 @@ def solve_astrometry_image(filename, options=None, command=_solve_field,
         Path to the image to solve.
     options: dict
         Dictionary of ``solve-field`` options. See
-        `~astropop.astrometry.astrometrynet.print_options_help` for all
+        `~astropop.astrometry.astrometrynet.get_options_help` for all
         available options. The most useful are:
         - center or ra and dec: field center
         - radius: maximum search radius
@@ -785,15 +763,15 @@ def solve_astrometry_image(filename, options=None, command=_solve_field,
 
 
 def solve_astrometry_hdu(hdu, options=None, command=_solve_field, **kwargs):
-    """Solve astrometry from a `~astropy.fits.ImageHDU` using astrometry.net.
+    """Solve astrometry from a `~astropy.io.fits.ImageHDU` using astrometry.net.
 
     Parameters
     ----------
-    hdu: `astropy.fits.ImageHDU`
+    hdu: `astropy.io.fits.ImageHDU`
         FITS hdu containing the image to solve.
     options: dict
         Dictionary of ``solve-field`` options. See
-        `~astropop.astrometry.astrometrynet.print_options_help` for all
+        `~astropop.astrometry.astrometrynet.get_options_help` for all
         available options. The most useful are:
         - center or ra and dec: field center
         - radius: maximum search radius

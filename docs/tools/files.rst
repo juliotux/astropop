@@ -116,7 +116,7 @@ You can also get a list of the values of a given header keyword using the `~astr
 Adding or Removing Files
 ------------------------
 
-Adding or removing files to the group is done using the `~astropop.file_collection.FitsFileGroup.add_file` and `~astropop.file_collection.FitsFileGroup.remove_files` methods.
+Adding or removing files to the group is done using the `~astropop.file_collection.FitsFileGroup.add_file` and `~astropop.file_collection.FitsFileGroup.remove_file` methods.
 
 To add a file, use `~astropop.file_collection.FitsFileGroup.add_file`. Its only argument is ``file`` to set the file name. Prefer using full (absolute) paths for the file name in this function.
 
@@ -132,12 +132,12 @@ To add a file, use `~astropop.file_collection.FitsFileGroup.add_file`. Its only 
      '/path/to/data/file3.fits',
      '/path/to/data/file4.fits']
 
-For remove a file, the `~astropop.file_collection.FitsFileGroup.remove_files` accepts a file name with absolute path, or a path relative to the filegroup location. Prefere using absolute paths for the file name in this function too.
+For remove a file, the `~astropop.file_collection.FitsFileGroup.remove_file` accepts a file name with absolute path, or a path relative to the filegroup location. Prefere using absolute paths for the file name in this function too.
 
 .. ipython::
     :verbatim:
 
-    In [15]: ffg.remove_files('/path/to/data/file4.fits')
+    In [15]: ffg.remove_file('/path/to/data/file4.fits')
 
     In [16]: ffg.files
     Out[16]:
@@ -145,7 +145,7 @@ For remove a file, the `~astropop.file_collection.FitsFileGroup.remove_files` ac
      '/path/to/data/file2.fits',
      '/path/to/data/file3.fits']
 
-    In [17]: ffg.remove_files('file1.fits')
+    In [17]: ffg.remove_file('file1.fits')
 
     In [18]: ffg.files
     Out[18]:
@@ -212,7 +212,7 @@ The method `~astropop.file_collection.FitsFileGroup.filtered` receives a diction
 Grouping Files
 ^^^^^^^^^^^^^^
 
-If you want to not only generate a group of files from a single set of keyword valeus, but instead generate multiple groups of files that have the same values in a set of keywords, you can use the `~astropop.file_collection.FitsFileGroup.grouped_by` method. This method `yeilds <https://docs.python.org/3/reference/expressions.html#yield-expressions>`_ a new |FitsFileGroup| object for each group of files.
+If you want to not only generate a group of files from a single set of keyword valeus, but instead generate multiple groups of files that have the same values in a set of keywords, you can use the `~astropop.file_collection.FitsFileGroup.group_by` method. This method `yeilds <https://docs.python.org/3/reference/expressions.html#yield-expressions>`_ a new |FitsFileGroup| object for each group of files.
 
 .. Note::
 
@@ -234,7 +234,7 @@ If you want to not only generate a group of files from a single set of keyword v
   file5.fits      2.0    G     star2      2
   file6.fits      3.0    R     star3      2
 
-  In [29]: for group in ffg.grouped_by(['FILTER']):
+  In [29]: for group in ffg.group_by(['FILTER']):
       ...:     print(f'filter {group.values("FILTER")[0]}')
       ...:     print(f'images {len(group)}')
       ...:     print(group.summary)
@@ -308,7 +308,7 @@ There are also methods for iterating over the files from a |FitsFileGroup|. All 
     G
     R
 
-- `~astropop.file_collection.FitsFileGroup.framedata`: Iterate over the files generating |FrameData| objects from them. Use any argument that `~astropop.framedata.util.read_framedata` method.
+- `~astropop.file_collection.FitsFileGroup.framedata`: Iterate over the files generating |FrameData| objects from them. Use any argument that `~astropop.framedata.read_framedata` method.
 
   .. ipython::
     :verbatim:
@@ -322,12 +322,12 @@ There are also methods for iterating over the files from a |FitsFileGroup|. All 
 
   .. Note::
 
-    If you want to to create a list of |FrameData| for a large number of files, you may fill all available memory. In this case, use ``use_memmap_backend=True`` that will create temporary `memmap <https://numpy.org/doc/stable/reference/generated/numpy.memmap.html>`_ files to store the data. By default, the files will be created on default system temporary directory. You can change this using the ``cache_folder`` argument.
+    If you want to to create a list of |FrameData| for a large number of files, you may fill all available memory. In this case, use ``use_memmap_backend=True`` that will create temporary `memmap <https://numpy.org/doc/stable/reference/generated/numpy.memmap.html>`_ files to store the data. By default, mapped files are created beneath Astropy's Astropop cache directory. You can change this using the ``cache_folder`` argument.
 
     .. ipython::
       :verbatim:
 
-      In [34]: ffg.framedata(use_memmap_backend=True, cache_folder='/path/to/my/cache/folder')
+      In [34]: list(ffg.framedata(use_memmap_backend=True))
       Out[34]:
       [<FrameData object at 0xabcdef123456>,
        <FrameData object at 0x654321fedcba>,
