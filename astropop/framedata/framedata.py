@@ -410,7 +410,21 @@ class FrameData:
         self._data = reset_memmap_array(self._data, value)
 
     def get_masked_data(self, fill_value=np.nan):
-        """Copy data with masked pixels filled; nonfinite fills promote ints."""
+        """Copy pixel values, replacing MASKED pixels with a fill value.
+
+        Parameters
+        ----------
+        fill_value : number, optional
+            Value assigned to masked pixels in the copy. Default: numpy.nan.
+
+        Returns
+        -------
+        data : numpy.ndarray
+            Independent data array. The stored pixels are unchanged. Integer data
+            with an enabled mask are promoted to floating point for a nonfinite
+            fill; finite fills retain the data dtype. With flags absent or disabled,
+            return an unchanged copy of the data.
+        """
         d = self.data.copy()
         mask = self.mask
         if mask is not None:
@@ -450,21 +464,19 @@ class FrameData:
         self._update_memmaps()
 
     def get_uncertainty(self, return_none=True):
-        """Get the uncertainty frame in a safer way.
-
-        In some cases, like interfacing with QFloat, the uncertainty cannot be
-        None or an empty container. So, in cases like this, is prefered to get
-        a whole matrix containing zeroes. This method is responsible for this
-        special returns. For enabled, non-empty containers, a copy in
-        `~numpy.ndarray` container will be returned. Disabled uncertainties
-        behave like absent arrays, including the explicit zero-filled fallback.
+        """Return a copy of the standard uncertainties or an explicit fallback.
 
         Parameters
         ----------
-        - return_none: bool (optional)
-          If True, an empty uncertainty frame will return only None. Else, a
-          matrix filled with zeroes will be returned.
-          Default: True
+        return_none : bool, optional
+            Return None for missing or disabled uncertainty. If False, allocate
+            a zero-filled array instead. Default: True.
+
+        Returns
+        -------
+        uncertainty : numpy.ndarray or None
+            Independent array with the data shape and dtype, or None. Returning
+            zeros is an explicit allocation even when storage is disabled.
         """
         uncertainty = self.uncertainty
         if uncertainty is None and return_none:
@@ -596,14 +608,21 @@ class FrameData:
                     setattr(self, attr, create_array_memmap(str(filename), value))
 
     def copy(self, dtype=None):
-        """Copy the current FrameData to a new instance.
+        """Copy data, enabled optional arrays, metadata and WCS independently.
 
         Parameters
         ----------
-        - dtype: `~numpy.dtype` (optional)
-            Data type for the copied FrameData. If `None`, the data type will
-            be the same as the original Framedata.
-            Default: `None`
+        dtype : numpy dtype or str, optional
+            Convert the copied data and present uncertainties to this dtype.
+            If None, keep their existing dtypes. Default: None.
+
+        Returns
+        -------
+        frame : FrameData
+            Independent frame with a separate cache directory. Memory-mapped
+            sources produce a copy with its own mapped files. Optional-array
+            configuration is evaluated when copying, so hidden arrays are omitted.
+            Origin filename, history and comments are preserved.
         """
         nf = object.__new__(FrameData)
         # copy metadata

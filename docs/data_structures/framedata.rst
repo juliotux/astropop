@@ -1,5 +1,7 @@
 .. include:: ../references.txt
 
+.. _framedata-container:
+
 FrameData Container
 ===================
 
@@ -29,7 +31,9 @@ shape::
 
 A |Quantity| supplies its own unit. A conflicting explicit ``unit`` raises an
 error. Without either, the data are dimensionless. Access the numerical array
-through ``frame.data`` and its unit through ``frame.unit``.
+through ``frame.data`` and its unit through ``frame.unit``. ``shape``, ``size``,
+and ``dtype`` describe the stored data; flags always use ``uint8`` independently
+of the pixel dtype.
 
 Construction can share a supplied array of the selected dtype. Use ``copy()``
 for an independent frame, or ``astype()`` to copy while changing dtype.
@@ -46,9 +50,16 @@ from the pixels. ``get_masked_data()`` returns a floating-point copy when a
 nonfinite fill such as the default NaN is requested; a finite integer fill
 keeps the integer dtype.
 
-``read_framedata(frame)`` returns the same object. Use
-``read_framedata(frame, copy=True)`` to request a copy. ``check_framedata`` is an
-alias of ``read_framedata``.
+``read_framedata(frame)`` returns the same object and ignores constructor
+options, including ``dtype``. Use ``read_framedata(frame, copy=True)`` to request
+a copy, or ``read_framedata(frame, copy=True, dtype='float32')`` to convert the
+copy. ``check_framedata`` is an alias of ``read_framedata``.
+
+The ``data``, ``uncertainty``, and ``flags`` properties expose the stored arrays
+directly. Editing one of these arrays changes the frame. In contrast,
+``get_uncertainty()`` and ``get_masked_data()`` return independent arrays.
+``copy()`` also copies the header, WCS, history, and comments; it preserves
+``origin_filename`` as descriptive metadata rather than opening that file.
 
 Arithmetic and statistics
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -61,7 +72,9 @@ Use ``imarith`` for arithmetic with units and uncertainty propagation::
     >>> np.testing.assert_allclose(scaled.uncertainty, frame.uncertainty * 2)
     >>> assert scaled.unit == frame.unit
 
-Direct changes to ``frame.data`` do not propagate uncertainties.
+FrameData does not overload Python arithmetic operators. Direct changes to
+``frame.data`` do not propagate uncertainties. See
+:doc:`../reduction/imarith` for arithmetic, rejection, and combination examples.
 ``mean()``, ``median()``, ``std()``, ``min()``, and ``max()`` return quantities
 when a physical unit is stored, and numerical values otherwise. ``statistics()`` returns these values in a dictionary.
 These methods use all data pixels; they do not exclude masked pixels or weight
@@ -100,7 +113,18 @@ Masks and uncertainties
 Uncertainties are standard deviations in the same unit as the data. Supply a
 scalar or an array matching the image shape. An absent uncertainty is ``None``;
 assigning ``frame.uncertainty = None`` removes it. ``get_uncertainty()`` returns
-a copy of the uncertainty array, or ``None`` when absent.
+a copy in the data dtype, or ``None`` when absent. A scalar uncertainty is
+expanded across the image. Convert uncertainty quantities to the data unit
+before assigning their numerical values::
+
+    >>> from astropy import units as u
+    >>> errors = (np.full((2, 2), 10) * u.cm).to_value(u.m)
+    >>> measured = FrameData(np.ones((2, 2)), unit='m', uncertainty=errors)
+    >>> np.testing.assert_allclose(measured.get_uncertainty(), 0.1)
+    >>> no_errors = FrameData(np.ones((2, 2)))
+    >>> assert no_errors.get_uncertainty() is None
+    >>> np.testing.assert_array_equal(no_errors.get_uncertainty(False), 0)
+
 Absence means the uncertainty is not stored or calculated; it is not a
 measurement of zero error.
 
@@ -126,7 +150,11 @@ copy with masked pixels replaced by NaN, or by a specified ``fill_value``.
 
 Constructor ``mask`` and ``flags`` arrays must match the image shape. True
 values in an input mask add MASKED and UNSPECIFIED bits to the supplied flags.
-When flags are absent, both ``frame.flags`` and ``frame.mask`` are ``None``.
+Assigning ``frame.flags = None`` removes the flag array; both ``frame.flags``
+and ``frame.mask`` then return ``None``. Calling ``mask_pixels()`` or
+``add_flags()`` allocates flags again when storage is enabled.
+
+.. _optional-frame-arrays:
 
 Optional storage and propagation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -204,6 +232,14 @@ loading to avoid that conversion too. Rejection uses its own data buffers and
 continues to operate. With propagation enabled, rejected samples are excluded
 from the summed uncertainties as well as from the nominal data.
 
+For a frame containing :math:`P` pixels, stored data require
+``P * frame.dtype.itemsize`` bytes, flags require another ``P`` bytes when
+present, and uncertainties require ``frame.uncertainty.nbytes`` when present.
+This describes array storage only: masks returned by getters, temporary
+calculations, metadata, and cache bookkeeping require additional memory.
+Configure storage before reading images to avoid allocating arrays that will
+only be hidden later.
+
 FITS output omits missing or disabled uncertainty and mask extensions. CCDData
 conversion uses ``None`` for these fields. ``get_uncertainty(return_none=False)``
 remains an explicit request for a zero-filled array when the uncertainty is
@@ -243,6 +279,20 @@ HDU lists, |CCDData|, NumPy arrays, |Quantity|, and two-dimensional
 ``astropop.math.physical.QFloat`` objects. Arrays must be two-dimensional.
 Additional constructor options, such as ``dtype`` and ``cache_folder``, can be
 passed when loading a new frame.
+
+For example, a QFloat image supplies nominal values, standard uncertainties,
+and units together::
+
+    >>> from astropop.math.physical import QFloat
+    >>> quantity_image = QFloat(np.ones((2, 2)), np.full((2, 2), 0.2), 'adu')
+    >>> adapted = read_framedata(quantity_image, dtype='float32')
+    >>> assert adapted.dtype == np.dtype('float32')
+    >>> np.testing.assert_allclose(adapted.uncertainty, 0.2)
+    >>> assert adapted.unit == u.adu
+
+Masked-array or Quantity masks are not inferred by the FrameData constructor.
+Pass a separate ``mask=`` array when loading numerical values that carry a
+mask; FITS and CCDData adapters transfer their Boolean masks automatically.
 
 FITS files and HDUs
 ^^^^^^^^^^^^^^^^^^^^^^
