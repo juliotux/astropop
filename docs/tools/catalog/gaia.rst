@@ -67,12 +67,14 @@ Additional Catalog Properties
 The |GaiaDR3SourcesCatalog| class has some additional properties. You can get parallax and radial velocities from the catalog using the ``parallax`` and ``radial_velocity`` properties.
 
 .. automethod:: astropop.catalogs.gaia.GaiaDR3SourcesCatalog.parallax
+    :noindex:
 
 .. code-block:: python
 
     gaia_sources.parallax()
 
 .. automethod:: astropop.catalogs.gaia.GaiaDR3SourcesCatalog.radial_velocity
+    :noindex:
 
 .. code-block:: python
 
@@ -81,18 +83,21 @@ The |GaiaDR3SourcesCatalog| class has some additional properties. You can get pa
 Also, important variability and non-punctual flags are available as properties:
 
 .. automethod:: astropop.catalogs.gaia.GaiaDR3SourcesCatalog.phot_variable_flag
+    :noindex:
 
 .. code-block:: python
 
     gaia_sources.phot_variable_flag()
 
 .. automethod:: astropop.catalogs.gaia.GaiaDR3SourcesCatalog.non_single_star
+    :noindex:
 
 .. code-block:: python
 
     gaia_sources.non_single_star()
 
 .. automethod:: astropop.catalogs.gaia.GaiaDR3SourcesCatalog.in_galaxy_candidates
+    :noindex:
 
 .. code-block:: python
 
@@ -100,5 +105,11 @@ Also, important variability and non-punctual flags are available as properties:
 
 
 .. automodapi:: astropop.catalogs.gaia
+    :skip: gaiadr3
     :no-inheritance-diagram:
     :inherited-members:
+
+.. py:data:: astropop.catalogs.gaia.gaiadr3
+
+    Alias of :class:`~astropop.catalogs.gaia.GaiaDR3SourcesCatalog`; accepts the same
+    constructor arguments and returns the same catalog type.

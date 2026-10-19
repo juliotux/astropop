@@ -181,9 +181,15 @@ class SimbadSourcesCatalog(_OnlineSourcesCatalog):
         super(SimbadSourcesCatalog, self).__init__(center, radius, band)
 
     def coordinates_bibcode(self):
+        """Return coordinate-reference bibcodes in the catalog's source order."""
         return np.array(self._query['COO_BIBCODE'])
 
     def magnitudes_bibcode(self, band):
+        """Return photometry-reference bibcodes for a queried, case-sensitive band.
+
+        The band must be available in this catalog. Returned strings follow
+        the source order; missing references may be empty strings.
+        """
         self._ensure_band(band)
         return np.array(self._query[f'FLUX_BIBCODE_{band}'])
 

@@ -64,7 +64,6 @@ html_static_path = ['_static']
 htmlhelp_basename = 'astropop'
 html_theme_options = {
   "show_prev_next": False,
-  "footer_items": ["copyright", "sphinx-version", "theme-version"]
 }
 
 autosummary_generate = True
@@ -72,10 +71,10 @@ autosummary_generate = True
 default_role = 'py:obj'
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3/", None),
-    "numpy": ("https://docs.scipy.org/doc/numpy/", None),
-    "scipy": ("https://docs.scipy.org/doc/scipy/reference", None),
-    "matplotlib": ("https://matplotlib.org/", None),
-    "astropy": ('http://docs.astropy.org/en/latest/', None),
+    "numpy": ("https://numpy.org/doc/stable/", None),
+    "scipy": ("https://docs.scipy.org/doc/scipy/", None),
+    "matplotlib": ("https://matplotlib.org/stable/", None),
+    "astropy": ('https://docs.astropy.org/en/stable/', None),
     'astroquery': ('https://astroquery.readthedocs.io/en/latest/', None),
-    'uncertainties': ('https://uncertainties-python-package.readthedocs.io/en/latest/', None)
+    'uncertainties': ('https://uncertainties.readthedocs.io/en/latest/', None)
 }
