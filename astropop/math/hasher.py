@@ -7,17 +7,19 @@ __all__ = ['hasher']
 
 
 def hasher(string, size=8):
-    """Simple function to generate a SHA-256 hash of a string.
+    """Return a truncated SHA-256 hexadecimal digest of a stringified value.
 
-    Parameters:
-        - string : string or bytes
-            The string to be hashed.
-        - size : int
-            Size of the output hash string.
+    Parameters
+    ----------
+    string : object
+        Value converted with str and encoded as UTF-8 before hashing.
+    size : int, optional
+        Number of leading hexadecimal characters to return. Default: 8.
 
-    Returns:
-        - h : string
-            Hash string trunked to size.
+    Returns
+    -------
+    digest : str
+        Leading digest characters. Truncated digests can collide.
     """
     string = str(string)
     h = hashlib.sha256(string.encode()).hexdigest()

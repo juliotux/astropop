@@ -33,20 +33,20 @@ class MoffatEquations:
 
         Parameters
         ----------
-        r: float or array
+        r : float or array
             Radial distance from the center.
-        width: float
+        width : float
             Moffat width parameter.
-        power: float
+        power : float
             Moffat power parameter.
-        flux: float
+        flux : float
             Total integrated flux parameter.
-        sky: float
+        sky : float
             Sky level parameter.
 
         Returns
         -------
-        values : float or array
+        values  : float or array
             Values of the model at r.
         """
         # multiply by pi to normalize in 1D
@@ -59,22 +59,22 @@ class MoffatEquations:
 
         Parameters
         ----------
-        x: float or array
+        x : float or array
             X coordinates to evaluate.
-        x0: float
+        x0 : float
             Center coordinates of the model.
-        width: float
+        width : float
             Moffat width parameter.
-        power: float
+        power : float
             Moffat power parameter.
-        flux: float
+        flux : float
             Total integrated flux parameter.
-        sky: float
+        sky : float
             Sky level parameter.
 
         Returns
         -------
-        values : float or array
+        values  : float or array
             Values of the model at x.
         """
         a = flux*2*(power - 1)/(width**2)
@@ -86,22 +86,22 @@ class MoffatEquations:
 
         Parameters
         ----------
-        x, y: float or array
+        x, y : float or array
             X and Y coordinates to evaluate.
-        x0, y0: float
+        x0, y0 : float
             Center coordinates of the model.
-        width: float
+        width : float
             Moffat width parameter.
-        power: float
+        power : float
             Moffat power parameter.
-        flux: float
+        flux : float
             Total integrated flux parameter.
-        sky: float
+        sky : float
             Sky level parameter.
 
         Returns
         -------
-        values : float or array
+        values  : float or array
             Values of the model at (x, y).
         """
         a = flux*(power - 1)/(np.pi*width**2)
@@ -210,18 +210,18 @@ class GaussianEquations:
 
         Parameters
         ----------
-        r: float or array
+        r : float or array
             Radial distance from the center.
-        flux: float
+        flux : float
             Total integrated flux parameter.
-        sigma: float
+        sigma : float
             Gaussian standard deviation parameter.
-        sky: float
+        sky : float
             Sky level parameter.
 
         Returns
         -------
-        values : float or array
+        values  : float or array
             Values of the model at r.
         """
         return sky + flux*np.exp(-0.5*(r**2)/(sigma**2))/(SQRT_TWO_PI*sigma)
@@ -232,20 +232,20 @@ class GaussianEquations:
 
         Parameters
         ----------
-        x: float or array
+        x : float or array
             X coordinates to evaluate.
-        x0: float
+        x0 : float
             Center coordinates of the model.
-        flux: float
+        flux : float
             Total integrated flux parameter.
-        sigma: float
+        sigma : float
             Gaussian standard deviation parameter.
-        sky: float
+        sky : float
             Sky level parameter.
 
         Returns
         -------
-        values : float or array
+        values  : float or array
             Values of the model at x.
         """
         a = flux/(SQRT_TWO_PI*sigma)
@@ -257,20 +257,20 @@ class GaussianEquations:
 
         Parameters
         ----------
-        x, y: float or array
+        x, y : float or array
             X and Y coordinates to evaluate.
-        x0, y0: float
+        x0, y0 : float
             Center coordinates of the model.
-        sigma_x, sigma_y: float
+        sigma_x, sigma_y : float
             Gaussian standard deviation parameters.
-        flux: float
+        flux : float
             Total integrated flux parameter.
-        sky: float
+        sky : float
             Sky level parameter.
 
         Returns
         -------
-        values : float or array
+        values  : float or array
             Values of the model at (x, y).
         """
         theta = np.radians(theta)
