@@ -36,33 +36,16 @@ We have a community of people using astropop to perform data reduction. Also, we
 Dependencies
 ^^^^^^^^^^^^
 
-Some of astropop dependencies (numpy, astropy, scipy, astroscrappy) need gcc to get build. Make sure gcc is installed properly in your system.
+Astropop requires Python 3.11 or newer. Required Python packages are declared
+in ``pyproject.toml`` and installed automatically by pip. The current checkout
+requires NumPy >= 2.0, Astropy >= 6.1.4, SciPy >= 1.13, and Photutils >= 3.0,
+along with the other dependencies listed in that metadata. Matplotlib is an
+optional plotting dependency, available through ``astropop[all]``.
 
-There is nothing that prevent astropop itself to run on Windows. However, due to problems that comes from dependencies, mainly numpy and astrometry.net, astropop is currently supported only on Linux and Mac.
-
-Astropop requires Python 3.11 or newer.
-
-Bellow we list all the necessary dependencies for the good working of the code. Note that this can be changed with the time.
-
-- astroalign;
-
-- astropy >= 6.1.4;
-
-- astroquery;
-
-- astroscrappy;
-
-- numpy >= 2.0;
-
-- photutils >= 3.0;
-
-- scikit-image;
-
-- scikit-learn;
-
-- scipy >= 1.13;
-
-- sep.
+Some dependencies contain compiled extensions; binary wheels or conda packages
+can avoid building them locally. The Astrometry.net solver wrappers additionally
+require a separately installed ``solve-field`` executable and local index files.
+The other image-reduction tools do not require Astrometry.net.
 
 Installation
 ^^^^^^^^^^^^
@@ -145,7 +128,7 @@ Also, for latex citation, you can use the following BibTex:
 Documentation
 ^^^^^^^^^^^^^
 
-Documentation (not complete yet) can be found at `astropop.readthedocs.io <https://astropop.readthedocs.io>`_
+The user guides and API reference can be found at `astropop.readthedocs.io <https://astropop.readthedocs.io>`_
 
 .. |GHAction Status| image:: https://github.com/sparc4-dev/astropop/actions/workflows/ci_workflows.yml/badge.svg
     :target: https://github.com/sparc4-dev/astropop/actions
