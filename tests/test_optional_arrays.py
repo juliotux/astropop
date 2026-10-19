@@ -222,17 +222,21 @@ class TestOptionalArrays:
 
         monkeypatch.setattr(conf, 'IMARITH_SKIP_UNCERTAINTY', True)
         monkeypatch.setattr(conf, 'FRAMEDATA_DISABLE_FLAGS', True)
-        for name in ('uncertainty', 'flags'):
-            descriptor = getattr(FrameData, name)
+        # Keep the real flag getter: reading a disabled property is valid,
+        # but using its hidden storage must never happen.
+        for frame in frames:
+            frame._flags = self.UnreadableArray()
+        descriptor = FrameData.uncertainty
 
-            def unreadable(frame, getter=descriptor.fget):
-                if any(frame is source for source in frames):
-                    pytest.fail('Read disabled input storage while combining')
-                # Working copies retain their real configuration-aware getters.
-                return getter(frame)
+        # Skipping propagation must bypass extraction even while uncertainty
+        # storage itself remains enabled.
+        def unreadable(frame):
+            if any(frame is source for source in frames):
+                pytest.fail('Read source uncertainties while propagation was skipped')
+            return descriptor.fget(frame)
 
-            monkeypatch.setattr(FrameData, name,
-                                property(unreadable, descriptor.fset))
+        monkeypatch.setattr(FrameData, 'uncertainty',
+                            property(unreadable, descriptor.fset))
         result = imcombine(frames, method='sum')
         np.testing.assert_array_equal(result.data, 6)
         assert result._unct is result._flags is None
@@ -521,16 +525,19 @@ class TestOptionalArrays:
 
     @pytest.mark.parametrize('inplace', [False, True])
     @pytest.mark.parametrize('operation', ['trim', 'register'])
-    def test_processing_does_not_read_disabled_uncertainty(self, monkeypatch, inplace, operation):
+    def test_processing_does_not_read_disabled_storage(self, monkeypatch, inplace, operation):
         frame = FrameData(np.arange(100).reshape(10, 10), uncertainty=2)
         monkeypatch.setattr(conf, 'FRAMEDATA_DISABLE_UNCERTAINTY', True)
-        monkeypatch.setattr(FrameData, 'get_uncertainty',
-                            lambda *a, **k: pytest.fail('Read disabled uncertainty'))
+        monkeypatch.setattr(conf, 'FRAMEDATA_DISABLE_FLAGS', True)
+        uncertainty, flags = self.UnreadableArray(), self.UnreadableArray()
+        frame._unct, frame._flags = uncertainty, flags
         if operation == 'trim':
             result = trim_image(frame, slice(2, 8), slice(1, 7), inplace=inplace)
         else:
             register = CrossCorrelationRegister()
             result = register.register_framedata(frame, frame, inplace=inplace)
-        assert result.uncertainty is None
+        assert result.uncertainty is result.flags is result.mask is None
+        assert result._unct is result._flags is None
         if not inplace:
-            np.testing.assert_array_equal(frame._unct, 2)
+            assert frame._unct is uncertainty
+            assert frame._flags is flags

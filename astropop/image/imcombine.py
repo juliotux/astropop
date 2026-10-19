@@ -351,8 +351,7 @@ class ImCombiner:
                     raise ValueError('Integer combining requires finite input pixels.')
                 ic = FrameData(np.array(source.data, dtype=self._dtype, copy=True),
                                unit=source.unit, dtype=self._dtype,
-                               flags=(None if conf.FRAMEDATA_DISABLE_FLAGS
-                                      else source.flags),
+                               flags=source.flags,
                                uncertainty=(self._get_uncertainty(source)
                                             if method in (None, 'sum') else None))
                 # The source header is already normalized by FrameData.
@@ -389,7 +388,7 @@ class ImCombiner:
         self._shape = base_shape
         self._unit = base_unit
 
-    @_optional('IMARITH_SKIP_UNCERTAINTY', 'FRAMEDATA_DISABLE_UNCERTAINTY')
+    @_optional('IMARITH_SKIP_UNCERTAINTY')
     def _get_uncertainty(self, frame):
         """Read an input uncertainty only when propagation is enabled."""
         return frame.uncertainty
@@ -436,7 +435,7 @@ class ImCombiner:
             # clipping later updates the same mask for both data and errors.
             np.isnan(data[index], out=self._valid[index])
             np.logical_not(self._valid[index], out=self._valid[index])
-            flags = None if conf.FRAMEDATA_DISABLE_FLAGS else frame.flags
+            flags = frame.flags
             if flags is not None:
                 # Slice flags before deriving the mask: frame.mask would create
                 # a full-image Boolean array for every tile. Other flag bits

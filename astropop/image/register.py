@@ -7,7 +7,6 @@ from skimage import transform
 import numpy as np
 
 from .processing import trim_image
-from ..config import AstropopConfig as conf
 from ..logger import logger
 from ..framedata import check_framedata, FrameData, PixelMaskFlags
 
@@ -228,8 +227,8 @@ class _BaseRegister(abc.ABC):
 
         im1 = np.array(frame1.data)
         im2 = np.array(frame2.data)
-        msk1 = None if conf.FRAMEDATA_DISABLE_FLAGS else frame1.mask
-        msk2 = None if conf.FRAMEDATA_DISABLE_FLAGS else frame2.mask
+        msk1 = frame1.mask
+        msk2 = frame2.mask
 
         data, mask, tform = self.register_image(im1, im2, msk1, msk2,
                                                 cval=cval)
@@ -241,7 +240,7 @@ class _BaseRegister(abc.ABC):
             reg_frame = frame2.copy()
 
         reg_frame.data = data
-        flags = None if conf.FRAMEDATA_DISABLE_FLAGS else frame2.flags
+        flags = frame2.flags
         if flags is not None:
             flags = self._apply_transform_image(flags, tform, cval=0, order=0)
             reg_frame.flags = flags
@@ -249,13 +248,11 @@ class _BaseRegister(abc.ABC):
                             PixelMaskFlags.MASKED,
                             mask)
 
-        if conf.FRAMEDATA_DISABLE_UNCERTAINTY:
-            reg_frame.uncertainty = None
-        elif frame2.uncertainty is not None:
-            unct = frame2.get_uncertainty(return_none=False)
+        unct = frame2.get_uncertainty()
+        if unct is not None:
             unct = self._apply_transform_image(unct, tform, cval=np.nan,
                                                order=1)
-            reg_frame.uncertainty = unct
+        reg_frame.uncertainty = unct
 
         sx, sy = tform.translation
         theta = np.rad2deg(tform.rotation)
