@@ -159,9 +159,12 @@ and ``frame.mask`` then return ``None``. Calling ``mask_pixels()`` or
 Optional storage and propagation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-For reductions that do not need uncertainties or masks, configure
-``AstropopConfig`` before loading frames. All three switches default to
-``False``:
+For reductions that do not need uncertainties or masks, you must set the
+``AstropopConfig`` class attributes **before loading or creating frames**,
+including calls to ``read_framedata`` and ``FrameData``. Do not instantiate the
+configuration class. Setting these options only before arithmetic or combination
+does not recover memory already allocated for existing frames. Both switches
+default to ``False``:
 
 .. list-table:: Memory and propagation settings
     :header-rows: 1
@@ -177,24 +180,21 @@ For reductions that do not need uncertainties or masks, configure
         have no flags or mask arrays. Flag and mask getters return ``None``;
         masking methods do not store flags.
 
-For example, temporarily disable uncertainty storage::
+For example, set the option before creating any frames for the reduction::
 
     >>> import numpy as np
     >>> from astropop.config import AstropopConfig
     >>> from astropop.framedata import FrameData
     >>> from astropop.image.imarith import imarith
     >>> previous = AstropopConfig.FRAMEDATA_DISABLE_UNCERTAINTY
-    >>> existing = FrameData(np.ones((2, 2)), uncertainty=0.5)
     >>> try:
     ...     AstropopConfig.FRAMEDATA_DISABLE_UNCERTAINTY = True
-    ...     assert existing.uncertainty is None
     ...     minimal = FrameData(np.ones((100, 100)), uncertainty=0.5)
     ...     assert minimal.uncertainty is None
     ...     result = imarith(minimal, 2, '*')
     ...     assert result.uncertainty is None
     ... finally:
     ...     AstropopConfig.FRAMEDATA_DISABLE_UNCERTAINTY = previous
-    >>> np.testing.assert_allclose(existing.uncertainty, 0.5)
 
 These are process-wide class attributes, not per-frame settings. Changing them
 is not thread-local. The settings are checked on each getter or uncertainty

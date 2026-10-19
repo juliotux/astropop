@@ -59,9 +59,11 @@ array. Correlations between operands are not tracked, including when the same
 frame is passed twice. CCDData variance and inverse-variance uncertainties are
 converted to standard deviations before propagation.
 
-Set ``AstropopConfig.FRAMEDATA_DISABLE_UNCERTAINTY`` to skip uncertainty extraction
-and propagation; the result then has ``uncertainty=None``. Unit handling and
-nominal calculations are unchanged. See :ref:`optional-frame-arrays` for the
+Set ``AstropopConfig.FRAMEDATA_DISABLE_UNCERTAINTY = True`` **before loading or
+creating frames** to omit uncertainty storage and skip extraction and
+propagation; the result then has ``uncertainty=None``. Setting the option after
+loading hides existing uncertainty arrays without freeing their memory. Unit
+handling and nominal calculations are unchanged. See :ref:`optional-frame-arrays` for the
 storage switches, their effect on existing frames, and a temporary-setting
 example.
 

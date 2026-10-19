@@ -686,7 +686,11 @@ def imcombine(frames, method='median', memory_limit=1e9, dtype=np.float64, **kwa
     Pixels with no accepted samples are masked when flag storage is enabled.
 
     AstropopConfig.FRAMEDATA_DISABLE_UNCERTAINTY skips uncertainty calculations
-    and output storage. FRAMEDATA_DISABLE_FLAGS hides input masks and omits output flags; internal rejection still applies.
+    and output storage. FRAMEDATA_DISABLE_FLAGS hides input masks and omits
+    output flags; internal rejection still applies. Set these class attributes
+    before loading or creating frames to avoid allocating optional arrays.
+    Disabling storage after loading hides existing arrays without freeing
+    their memory.
     Images must already be aligned; WCS is not propagated to the result.
 
     See Also

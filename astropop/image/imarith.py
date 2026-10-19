@@ -274,7 +274,10 @@ def imarith(operand1, operand2, operation, inplace=False,
     The process-wide AstropopConfig.FRAMEDATA_DISABLE_UNCERTAINTY switch skips
     extraction and propagation. The result then has uncertainty=None, including
     an in-place result. FRAMEDATA_DISABLE_FLAGS omits output flags and masks.
-    These settings are evaluated at call time. Non-inplace calls leave source arrays unchanged.
+    Set these class attributes before loading or creating frames to avoid
+    allocating optional arrays. They are evaluated at call time, but disabling
+    storage after loading hides existing arrays without freeing their memory.
+    Non-inplace calls leave source arrays unchanged.
     Images are not aligned, and WCS is not propagated to a new result.
 
     See Also

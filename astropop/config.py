@@ -24,9 +24,12 @@ def _optional(*disable_options):
 class AstropopConfig:
     """Global configuration parameters for astropop.
 
-    Set these class attributes directly before creating frames or running
-    reductions. Settings are process-wide and are not thread-local. Disabling
-    storage hides arrays on existing frames without deleting them.
+    Set these class attributes directly before loading or creating frames;
+    do not instantiate this class. To avoid allocating optional arrays, the
+    settings must be applied before FrameData construction or read_framedata.
+    Changing them only before a reduction does not free existing arrays.
+    Settings are process-wide and are not thread-local. Disabling storage
+    hides arrays on existing frames without deleting them.
     Setters and copies honor the current settings; ignored input arrays are
     not validated or stored. Restore settings after temporary use.
 

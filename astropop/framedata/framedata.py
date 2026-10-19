@@ -210,7 +210,9 @@ class FrameData:
     - Built-in arithmetic operators are not supported. Use
       `~astropop.image.imarith.imarith` for arithmetic and propagation.
     - Optional uncertainty and flag storage follow the process-wide
-      `~astropop.config.AstropopConfig` settings.
+      `~astropop.config.AstropopConfig` settings. Set them before loading or
+      creating frames to avoid allocating these arrays. Changing the settings
+      afterward hides existing arrays without freeing their memory.
     """
 
     _memmapping = False
