@@ -1182,3 +1182,108 @@ class TestRejectedUncertainties:
         else:
             np.testing.assert_allclose(result.uncertainty, 5*factor)
         np.testing.assert_array_equal(frames[-1].uncertainty, 1000)
+
+
+class TestMaskedReductions:
+    @staticmethod
+    def _median_oracle(data, valid):
+        result = np.empty(data.shape[1:], dtype=data.dtype)
+        for pixel in np.ndindex(result.shape):
+            values = sorted(v.item() for v, keep in
+                            zip(data[(slice(None),) + pixel], valid[(slice(None),) + pixel]) if keep)
+            if not values:
+                result[pixel] = np.nan if data.dtype.kind == 'f' else 0
+            elif len(values) % 2:
+                result[pixel] = values[len(values) // 2]
+            else:
+                lower, upper = values[len(values) // 2 - 1:len(values) // 2 + 1]
+                if data.dtype.kind == 'f':
+                    total = data.dtype.type(lower) + data.dtype.type(upper)
+                    result[pixel] = total / data.dtype.type(2)
+                else:
+                    info = np.iinfo(data.dtype)
+                    total = (lower + upper) % 2**info.bits
+                    if data.dtype.kind == 'i' and total > info.max:
+                        total -= 2**info.bits
+                    result[pixel] = (abs(total) // 2) * (-1 if total < 0 else 1)
+        return result
+
+    @pytest.mark.parametrize('dtype', ['float16', 'float32', 'float64', 'int8',
+                                      'uint8', 'int16', 'uint16', 'int32',
+                                      'int64', 'uint64', '>i2', '>f4'])
+    @pytest.mark.parametrize('samples', [1, 2, 7, 8])
+    @pytest.mark.parametrize('block_pixels', [1, 4, 1024])
+    def test_median_matches_scalar_oracle(self, dtype, samples, block_pixels):
+        from astropop.image._combine import _masked_median
+        rng = np.random.default_rng(301018)
+        dt = np.dtype(dtype)
+        data = rng.integers(0, 30, (samples, 3, 5)).astype(dt)
+        if dt.kind in 'iu':
+            data[:, 0, 1] = np.iinfo(dt).max
+        else:
+            data[0, 0, 1] = np.nan
+        valid = rng.random(data.shape) > 0.3
+        valid[:, 0, 0] = False
+        valid[:, 0, 1] = True
+        valid &= ~np.isnan(data)
+        original, original_valid = data.copy(), valid.copy()
+        result = _masked_median(data, valid, block_pixels=block_pixels)
+        assert result.dtype == dt
+        np.testing.assert_array_equal(result, self._median_oracle(data, valid))
+        np.testing.assert_array_equal(data, original)
+        np.testing.assert_array_equal(valid, original_valid)
+
+    @pytest.mark.parametrize('dtype', ['float32', 'float64'])
+    @pytest.mark.parametrize('method', ['mean', 'sum', 'std', 'mad_std'])
+    def test_masked_statistics_match_independent_functions(self, dtype, method):
+        from astropy.stats import mad_std
+        from astropop.image._combine import _reduce
+        rng = np.random.default_rng(123)
+        data = rng.normal(100, 4, (31, 4, 5)).astype(dtype)
+        valid = rng.random(data.shape) > 0.2
+        valid[0] = True
+        filled = data.copy()
+        filled[~valid] = np.nan
+        if method == 'mad_std':
+            expected = mad_std(filled, axis=0, ignore_nan=True)
+        else:
+            expected = getattr(np, 'nan' + method)(filled, axis=0)
+        result = _reduce(data, valid, method, block_pixels=3)
+        assert result.dtype == np.dtype(dtype)
+        np.testing.assert_allclose(result, expected, rtol=5 * np.finfo(dtype).eps)
+
+    def test_median_work_blocks_are_bounded(self, monkeypatch):
+        import astropop.image._combine as module
+        middle = module._middle_values
+        sizes = []
+        def record(work, accepted, count):
+            sizes.append(len(work))
+            assert work.flags.c_contiguous
+            return middle(work, accepted, count)
+        monkeypatch.setattr(module, '_middle_values', record)
+        data = np.arange(300 * 17 * 19, dtype='float32').reshape(300, 17, 19)
+        result = module._masked_median(data, np.ones(data.shape, dtype=bool), block_pixels=13)
+        np.testing.assert_array_equal(result, np.median(data, axis=0))
+        assert len(sizes) > 1 and max(sizes) <= 13
+
+
+class TestMaskedScatterEdges:
+    @pytest.mark.parametrize('dtype', ['float32', 'float64'])
+    def test_rejected_extremes_do_not_overflow_scatter(self, dtype):
+        from astropop.image._combine import _reduce
+        data = np.array([[[1]], [[3]], [[np.finfo(dtype).max]]], dtype=dtype)
+        valid = np.array([[[True]], [[True]], [[False]]])
+        with np.errstate(over='raise', invalid='raise'):
+            result = _reduce(data, valid, 'std', block_pixels=1)
+        np.testing.assert_array_equal(result, [[1]])
+
+    @pytest.mark.parametrize('dtype', ['float32', 'float64'])
+    def test_mad_ignores_nan_residuals_from_infinities(self, dtype):
+        from astropy.stats import mad_std
+        from astropop.image._combine import _reduce
+        data = np.array([[[1, np.inf, np.inf]], [[2, np.inf, 3]]], dtype=dtype)
+        with np.errstate(invalid='ignore'):
+            with pytest.warns(RuntimeWarning, match='All-NaN slice'):
+                expected = mad_std(data, axis=0, ignore_nan=True)
+            result = _reduce(data, np.ones(data.shape, dtype=bool), 'mad_std', block_pixels=1)
+        np.testing.assert_allclose(result, expected, equal_nan=True)
