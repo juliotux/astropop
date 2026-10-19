@@ -40,8 +40,39 @@ Create disposable fixtures in a test-specific temporary directory rather than
 in the source tree. See :doc:`../dev/testing` for running the project's offline
 tests, documentation checks, and separate live catalog conformance.
 
+For example, require one warning and then check a warning-free block::
+
+    >>> import warnings
+    >>> from astropop.testing import assert_warns, assert_not_warnings
+    >>> with warnings.catch_warnings(record=True) as recorded:
+    ...     warnings.simplefilter('always')
+    ...     with assert_warns(UserWarning):
+    ...         warnings.warn('example warning', UserWarning)
+    ...     with assert_not_warnings():
+    ...         assert 1 + 1 == 2
+    >>> assert all(issubclass(item.category, DeprecationWarning) for item in recorded)
+
+Recent NumPy versions deprecate these upstream warning helpers; the example
+captures those deprecations locally for compatibility with older versions.
+For new tests, prefer ``pytest.warns`` or ``warnings.catch_warnings``.
+
 Testing helpers API
 -------------------
 
 .. automodapi:: astropop.testing
+    :skip: assert_warns, assert_not_warnings
     :no-inheritance-diagram:
+
+.. currentmodule:: astropop.testing
+
+.. py:function:: assert_warns(warning_class, *args, **kwargs)
+
+    Alias of :func:`numpy.testing.assert_warns`. Use it as a context manager to
+    require a warning, or pass a callable and its arguments to invoke it under
+    the warning check. The assertion fails if the requested warning does not
+    occur.
+
+.. py:function:: assert_not_warnings(*args, **kwargs)
+
+    Alias of :func:`numpy.testing.assert_no_warnings`. Use it as a context
+    manager or pass a callable and arguments to require warning-free execution.

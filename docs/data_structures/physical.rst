@@ -198,7 +198,7 @@ To simplify the way we perform some math operations, we also support some import
 
 The current supported ufuncs are:
 
-- `~numpy.absolute` (`~numpy.abs`)
+- `~numpy.absolute` (``numpy.abs``)
 - `~numpy.add`
 - `~numpy.arccos`
 - `~numpy.arccosh`

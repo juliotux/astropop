@@ -231,7 +231,17 @@ entries are not interchangeable with command-line options.
 
 The supported options can be print in the screen using `~astropop.astrometry.AstrometrySolver.print_options_help` or `~astropop.astrometry.astrometrynet.get_options_help` funtions. They are described bellow.
 
-.. autofunction:: astropop.astrometry.astrometrynet.get_options_help
+.. currentmodule:: None
+
+.. py:function:: astropop.astrometry.astrometrynet.get_options_help()
+
+    Return a formatted string listing supported solve-field option names and
+    descriptions. This inspects local metadata without invoking solve-field.
+
+.. ipython:: python
+
+    from astropop.astrometry.astrometrynet import get_options_help
+    print(get_options_help())
 
 Astrometry API
 --------------

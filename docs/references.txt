@@ -11,7 +11,7 @@
 .. |run_command| replace:: `~astropop.py_utils.run_command`
 .. |SourcesCatalog| replace:: `~astropop.catalogs.SourcesCatalog`
 
-.. |astropy| replace:: `Astropy <https://docs.astropy.org/en/stable/>`_
+.. |astropy| replace:: `Astropy <https://docs.astropy.org/en/stable/>`__
 .. |CCDData| replace:: `~astropy.nddata.ccddata.CCDData`
 .. |dimensionless_angles| replace:: `~astropy.units.dimensionless_angles`
 .. |dimensionless_unscaled| replace:: ``astropy.units.dimensionless_unscaled``
@@ -25,7 +25,7 @@
 .. |UnitsError| replace:: `~astropy.units.UnitsError`
 .. |WCS| replace:: `~astropy.wcs.WCS`
 
-.. |astroquery| replace:: `Astroquery <https://astroquery.readthedocs.io/en/latest/>`_
+.. |astroquery| replace:: `Astroquery <https://astroquery.readthedocs.io/en/latest/>`__
 
 .. |uncertainties| replace:: :mod:`uncertainties`
 

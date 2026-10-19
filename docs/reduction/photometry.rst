@@ -90,7 +90,11 @@ sky statistics, and integer ``flags``. Quality bits are defined by
 operations, rather than comparing the full flags integer to one value.
 ``mask`` excludes pixels from measurements; ``pixel_flags`` conveys FrameData
 pixel-quality information to the resulting source flags. They serve different
-purposes and should both be supplied when required.
+purposes and should both be supplied when required. The defined
+``NEARBY_SOURCES`` and ``NEARBY_SOURCES_ANNULUS`` bits are not currently set by
+an automatic neighbor-contamination check. Inspect crowded apertures separately.
+The returned flux error comes from the supplied background/Poisson pixel-error
+model; uncertainty in the estimated annulus sky is not separately added.
 
 Aperture fluxes are instrumental measurements. This module does not fit a
 photometric zero point, extinction, color transformation, or a PSF photometry
@@ -105,3 +109,11 @@ Photometry API
 
 .. autoclass:: astropop.photometry.aperture.PhotometryFlags
     :members:
+    :exclude-members: dtype
+
+.. currentmodule:: None
+
+.. py:attribute:: astropop.photometry.aperture.PhotometryFlags.dtype
+    :value: numpy.uint16
+
+    Unsigned 16-bit storage type used for photometry flags.

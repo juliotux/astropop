@@ -1,5 +1,5 @@
 Internal extension interfaces
-============================
+=============================
 
 The bases below explain the implementation hierarchy referenced by the public
 API. They are internal extension points, not additional user-facing reduction
@@ -17,6 +17,6 @@ Online catalogs
 .. autoclass:: astropop.catalogs._sources_catalog._OnlineSourcesCatalog
 
 Dual-beam polarimetry
---------------------
+---------------------
 
 .. autoclass:: astropop.polarimetry._DualBeamPolarimetry
