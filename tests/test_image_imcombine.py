@@ -2,6 +2,10 @@
 # flake8: noqa: F403, F405
 
 import os
+import json
+import subprocess
+import sys
+import textwrap
 import numpy as np
 import pytest
 
@@ -12,6 +16,63 @@ from astropop.framedata import FrameData, PixelMaskFlags
 from astropop.image.imcombine import imcombine, _sigma_clip, \
                                      _minmax_clip, ImCombiner
 from astropop.testing import *
+
+
+class TestCombinerMemory:
+    @pytest.mark.parametrize('dtype', ['float32', 'float64'])
+    def test_median_peak_allocations(self, dtype):
+        # Isolate tracing from pytest/plugins and any already-running tracer.
+        # Imports and caller-owned frames are prepared before measurement;
+        # loading internal copies, combining, errors and cleanup are measured.
+        script = textwrap.dedent('''
+            import gc
+            import json
+            import logging
+            import sys
+            import tracemalloc
+            import numpy as np
+            from astropop.framedata import FrameData
+            from astropop.image import imcombine
+            from astropop.logger import logger
+
+            logger.setLevel(logging.ERROR)
+            dtype = np.dtype(sys.argv[1])
+            shape = (128, 128)
+            frames = [FrameData(np.full(shape, i, dtype=dtype), dtype=dtype,
+                                uncertainty=np.ones(shape, dtype=dtype))
+                      for i in range(128)]
+            # Exercise mask handling while retaining the same known median
+            # at every output pixel (the two removed values are symmetric).
+            frames[0].mask_pixels((0, 0))
+            frames[-1].mask_pixels((0, 0))
+            cube_bytes = sum(frame.data.nbytes for frame in frames)
+            gc.collect()
+            tracemalloc.start()
+            # Fail explicitly if NumPy allocations are invisible to tracing.
+            probe = np.empty(2**20, dtype=np.uint8)
+            assert tracemalloc.get_traced_memory()[1] >= probe.nbytes
+            del probe
+            tracemalloc.reset_peak()
+            baseline = tracemalloc.get_traced_memory()[0]
+            result = imcombine(frames, method='median', dtype=dtype,
+                               memory_limit=64 * 2**20)
+            peak = tracemalloc.get_traced_memory()[1] - baseline
+            tracemalloc.stop()
+            np.testing.assert_array_equal(result.data, 63.5)
+            assert result.uncertainty is not None
+            assert not result.mask.any()
+            print(json.dumps(dict(peak=peak, cube_bytes=cube_bytes)))
+        ''')
+        process = subprocess.run([sys.executable, '-c', script, dtype],
+                                 capture_output=True, text=True, timeout=120)
+        assert process.returncode == 0, process.stdout + process.stderr
+        measured = json.loads(process.stdout)
+        # Allow four nominal cubes for owned input copies/flags, the chunk,
+        # validity masks, outputs and bounded statistics scratch, with margin
+        # for Python objects and NumPy/platform variation. A full-stack median
+        # workspace exceeded this bound in the former implementation. This is
+        # an allocation regression bound, not an RSS or memory_limit promise.
+        assert measured['peak'] < 4 * measured['cube_bytes'], measured
 
 
 class Test_MinMaxClip():
