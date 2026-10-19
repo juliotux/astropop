@@ -1,8 +1,8 @@
 .. include:: references.txt
 
-**************
-Data structues
-**************
+***************
+Data structures
+***************
 
 .. toctree::
     :maxdepth: 1

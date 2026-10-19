@@ -1,42 +1,49 @@
-*************************
-Astropop Documentation
-*************************
+Astropop documentation
+======================
 
-.. warning::
-    Documentation outdated. Do not use it. We are rewriting it!
+Astropop is a Python library for astronomical image reduction, with tools for
+photometry, polarimetry, astrometry, and catalog matching. Combine its functions
+in scripts tailored to your detector and instrument; the library does not choose
+a universal reduction recipe.
 
-.. TODO:: Insert detailed install instructions here
-
-***************
-For Users
-***************
-
-The users documentation, focused on the modules technical details, API usage and examples can be found in our user guide:
+Getting started
+---------------
 
 .. toctree::
     :maxdepth: 1
 
-    user_guide.rst
+    installation
+    user_guide
 
-For end users that just want to reduce their data using ASTROPOP, you can follow our reduction examples on this documentations:
+The user guide describes the current library interfaces and their numerical,
+unit, mask, and uncertainty conventions. Start with FrameData, then choose the
+reduction and utility chapters needed for your workflow.
+
+Worked notebooks
+----------------
+
+These notebooks illustrate complete workflows. They are stored examples and
+are not executed during documentation builds. Adapt filenames, external
+services, and instrument parameters to your observations.
 
 .. toctree::
     :maxdepth: 1
 
-    ipynb/diy_reduction_script.ipynb
+    ipynb/diy_reduction_script
+    ipynb/astrometry_example
+    ipynb/online_catalogs
 
-
-***************
-Developer Docs
-***************
+Developer documentation
+-----------------------
 
 .. toctree::
     :maxdepth: 1
 
     dev/pixel_convention
+    dev/testing
 
-***************
-API
-***************
+API reference
+-------------
 
-* :ref:`modindex`
+Each guide ends with the corresponding module's API reference. The
+:ref:`modindex` and :ref:`genindex` provide entry points by module and symbol.
