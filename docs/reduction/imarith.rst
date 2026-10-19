@@ -36,13 +36,21 @@ combination. The same dtype applies to both nominal values and uncertainties::
     >>> combined.uncertainty.dtype.name
     'float32'
 
-``memory_limit`` sizes the rejection and combination chunks. Input copies,
+Each chunk uses a shared Boolean validity mask for nominal values and
+uncertainties. Rejection updates this mask without overwriting the chunk's
+pixel or uncertainty arrays. Median selection and scatter statistics process
+small blocks of output pixels with contiguous samples, bounding their additional
+workspace. Mean and median estimate uncertainty from the accepted
+sample scatter, so they do not copy individual input uncertainty arrays.
+
+``memory_limit`` sizes the image chunks and statistics work blocks. Input copies,
 output arrays and additional temporary arrays are outside this budget, so it
 does not cap total process memory. For large collections,
 ``use_disk_cache=True`` explicitly places internal image copies in
 memory-mapped temporary files. It does not release caller-owned input frames.
 
 The current rejection methods are:
+
 - ``minmax_clip``
 - ``sigma_clip``
 
