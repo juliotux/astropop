@@ -256,10 +256,10 @@ class ImCombiner:
           Input copies, output arrays and some temporaries are additional.
           Default: 1e9 (1GB)
         dtype: `~numpy.dtype` (optional)
-          Integer or floating-point dtype for all pixel working arrays,
-          accumulators, uncertainties and the final result.
-          Accepts NumPy types, dtype objects and dtype strings.
-          Integer arithmetic wraps on overflow and truncates fractions.
+          Real numeric dtype used consistently for pixel working arrays,
+          reduction accumulators, uncertainty calculations and the result.
+          Accepts NumPy integer and floating-point types, dtype objects and
+          dtype strings. Controls the memory required per pixel.
           Default: `~numpy.float64`
         tmp_dir: `str` (optional)
           Directory to store temporary files used in the combining. If None,
@@ -748,15 +748,11 @@ def imcombine(frames, method='median', memory_limit=1e9, dtype=np.float64, **kwa
         Input copies, output arrays and some temporary arrays are additional;
         this is not a limit on total process memory. Default: 1e9.
     dtype: numpy dtype or str (optional)
-        Integer or floating-point dtype for pixel working arrays, reduction
-        accumulators, uncertainties and output. Accepts NumPy types, dtype
-        objects and strings such as ``'float32'`` or ``'int16'``.
-        Default: ``numpy.float64``. Integer operations wrap on overflow;
-        divisions, roots and fractional constants truncate. Fully rejected
-        integer pixels contain zero and are masked when flags are enabled.
-        Integer input pixels must be finite, and the image count must fit the
-        dtype. Overflow that produces a negative variance raises ValueError.
-        Use a wider dtype for larger ranges.
+        Real numeric dtype used consistently for pixel working arrays,
+        reduction accumulators, uncertainty calculations and output arrays.
+        Accepts NumPy integer and floating-point types, dtype objects and
+        strings such as ``'int16'`` or ``'float32'``. Controls the memory
+        required per pixel. Default: ``numpy.float64``.
     **kwargs:
         sigma_clip: float or tuple (optional)
             Threshold of sigma clipping rejection. If `None`, it disables the
