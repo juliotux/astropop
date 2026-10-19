@@ -1353,3 +1353,74 @@ class TestPromotedIntegerReductions:
         result = imcombine(images, method=method, dtype=dtype)
         np.testing.assert_array_equal(result.data, value)
         np.testing.assert_array_equal(result.uncertainty, 0)
+
+
+class TestRejectionFraction:
+    @pytest.mark.parametrize('filters', [dict(minmax_clip=(None, 10)),
+                                         dict(sigma_clip=3, sigma_dev_func='mad_std'),
+                                         dict(minmax_clip=(None, 10), sigma_clip=3,
+                                              sigma_dev_func='mad_std')])
+    @pytest.mark.parametrize('method', ['mean', 'median', 'sum'])
+    @pytest.mark.parametrize('budget', [128, 10**9])
+    @pytest.mark.parametrize('disk_cache', [False, True])
+    @pytest.mark.parametrize('disabled', [False, True])
+    def test_fraction_pools_only_new_rejections(self, monkeypatch, tmp_path,
+                                               filters, method, budget,
+                                               disk_cache, disabled, caplog):
+        from astropop.config import AstropopConfig as conf
+        frames = [FrameData(np.full((2, 3), value, dtype=float), uncertainty=1)
+                  for value in (1, 2, 3, 100)]
+        frames[0].mask_pixels((0, 0))
+        frames[1].data[0, 2] = np.nan
+        monkeypatch.setattr(conf, 'FRAMEDATA_DISABLE_FLAGS', disabled)
+        monkeypatch.setattr(conf, 'FRAMEDATA_DISABLE_UNCERTAINTY', disabled)
+        with caplog.at_level('INFO', logger='astropop'):
+            result = imcombine(frames, method=method, memory_limit=budget,
+                               use_disk_cache=disk_cache, tmp_dir=str(tmp_path/'cache'),
+                               **filters)
+        # Six 100s are rejected. Of 24 inputs, one is NaN and one is masked
+        # only when flags are enabled. Neither input exclusion is a rejection.
+        eligible = 23 if disabled else 22
+        summaries = [r.getMessage() for r in caplog.records
+                     if r.getMessage().startswith('Combination filters rejected ')]
+        assert summaries == [f'Combination filters rejected 6 of {eligible} '
+                             f'initially valid samples ({100*6/eligible:.2f}%).']
+        if disabled:
+            assert result.flags is result.uncertainty is None
+        assert not list(tmp_path.glob('cache/*'))
+
+    def test_no_filter_has_no_rejection_summary(self, caplog):
+        with caplog.at_level('INFO', logger='astropop'):
+            imcombine([np.ones((2, 3))])
+        assert 'Combination filters rejected' not in caplog.text
+
+    @pytest.mark.parametrize('value, fraction', [(1, 0.0), (100, 1.0), (np.nan, 0.0)])
+    def test_zero_all_and_empty(self, value, fraction, caplog):
+        with caplog.at_level('INFO', logger='astropop'):
+            imcombine([np.full((2, 3), value)], minmax_clip=(0, 10))
+        eligible = 0 if np.isnan(value) else 6
+        rejected = eligible if value == 100 else 0
+        assert (f'Combination filters rejected {rejected} of {eligible} '
+                f'initially valid samples ({100*fraction:.2f}%).') in caplog.text
+
+    def test_weighted_across_unequal_chunks(self, monkeypatch, caplog):
+        from astropop.image.imcombine import ImCombiner
+        frames = [FrameData(np.ones((2, 3))) for _ in range(2)]
+        frames[0].data[:, 0] = 100
+        combiner = ImCombiner()
+        # The first tile has 2/4 rejections; the second has 0/8. Their simple
+        # average (1/4) is wrong: count samples globally to obtain 2/12.
+        monkeypatch.setattr(combiner, '_chunk_slices', lambda errors: iter([
+            (slice(0, 2), slice(0, 1)), (slice(0, 2), slice(1, 3))]))
+        combiner.set_minmax_clip(None, 10)
+        with caplog.at_level('INFO', logger='astropop'):
+            combiner.combine(frames, 'mean')
+        assert ('Combination filters rejected 2 of 12 initially valid '
+                'samples (16.67%).') in caplog.text
+        # Counts are local to each call, including reuse after a previous run.
+        caplog.clear()
+        combiner.set_minmax_clip(None, 1000)
+        with caplog.at_level('INFO', logger='astropop'):
+            combiner.combine(frames, 'mean')
+        assert ('Combination filters rejected 0 of 12 initially valid '
+                'samples (0.00%).') in caplog.text

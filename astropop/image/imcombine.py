@@ -565,9 +565,16 @@ class ImCombiner:
             mask = (None if conf.FRAMEDATA_DISABLE_FLAGS
                     else np.empty(self._shape, dtype=bool))
 
+            filtering = self._sigma_clip is not None or self._minmax is not None
+            eligible_samples = rejected_samples = 0
             for self._buffer, self._unct_bf, slc in self._chunk_yielder(method):
+                if filtering:
+                    candidates = np.count_nonzero(self._valid)
                 # Both rejection rules use the original tile values.
                 self._apply_rejection()
+                if filtering:
+                    eligible_samples += candidates
+                    rejected_samples += candidates - np.count_nonzero(self._valid)
 
                 # combine the images and compute the uncertainty
                 data[slc], chunk_uncertainty, chunk_mask = self._combine(method, **kwargs)
@@ -586,6 +593,11 @@ class ImCombiner:
                                          selected_keys=self._header_merge_keys)
             combined.meta['HIERARCH astropop imcombine nimages'] = n
             combined.meta['HIERARCH astropop imcombine method'] = method
+            if filtering:
+                fraction = rejected_samples / eligible_samples if eligible_samples else 0.0
+                logger.info('Combination filters rejected %i of %i initially valid '
+                            'samples (%.2f%%).', rejected_samples, eligible_samples,
+                            100*fraction)
 
             return combined
         finally:
