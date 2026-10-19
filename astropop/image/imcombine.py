@@ -352,7 +352,7 @@ class ImCombiner:
                 ic = FrameData(np.array(source.data, dtype=self._dtype, copy=True),
                                unit=source.unit, dtype=self._dtype,
                                flags=source.flags,
-                               uncertainty=(self._get_uncertainty(source)
+                               uncertainty=(source.uncertainty
                                             if method in (None, 'sum') else None))
                 # The source header is already normalized by FrameData.
                 ic._meta = source.header.copy()
@@ -387,11 +387,6 @@ class ImCombiner:
                                  "the others")
         self._shape = base_shape
         self._unit = base_unit
-
-    @_optional('IMARITH_SKIP_UNCERTAINTY')
-    def _get_uncertainty(self, frame):
-        """Read an input uncertainty only when propagation is enabled."""
-        return frame.uncertainty
 
     def _block_pixels(self):
         """Bound reduction workspace independently of the image tile size."""
@@ -454,8 +449,8 @@ class ImCombiner:
         # median and sums with missing errors estimate uncertainty from data
         # scatter instead. Disabled propagation also makes the getter return
         # None, avoiding an uncertainty stack altogether.
-        propagate = method == 'sum' and all(self._get_uncertainty(i) is not None
-                                            for i in self._images)
+        propagate = method == 'sum' and all(i.uncertainty is not None
+                                          for i in self._images)
         if method == 'sum' and not propagate:
             logger.debug('One or more frames have empty uncertainty. '
                          'Some features are disabled.')
@@ -481,7 +476,7 @@ class ImCombiner:
         if self._minmax is not None:
             self._valid &= ~_minmax_clip(self._buffer, *self._minmax)
 
-    @_optional('IMARITH_SKIP_UNCERTAINTY', 'FRAMEDATA_DISABLE_UNCERTAINTY')
+    @_optional('FRAMEDATA_DISABLE_UNCERTAINTY')
     def _combine_uncertainty(self, method, count):
         """Compute errors separately, using the nominal values' validity."""
         if method == 'sum' and self._unct_bf is not None:
@@ -664,9 +659,8 @@ def imcombine(frames, method='median', memory_limit=1e9, dtype=np.float64, **kwa
     by N/n. Rejected errors do not contribute; NaN input errors contribute zero.
     Pixels with no accepted samples are masked when flag storage is enabled.
 
-    AstropopConfig.IMARITH_SKIP_UNCERTAINTY or FRAMEDATA_DISABLE_UNCERTAINTY
-    skips uncertainty calculations and output storage. FRAMEDATA_DISABLE_FLAGS
-    hides input masks and omits output flags; internal rejection still applies.
+    AstropopConfig.FRAMEDATA_DISABLE_UNCERTAINTY skips uncertainty calculations
+    and output storage. FRAMEDATA_DISABLE_FLAGS hides input masks and omits output flags; internal rejection still applies.
     Images must already be aligned; WCS is not propagated to the result.
 
     See Also

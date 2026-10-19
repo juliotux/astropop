@@ -69,7 +69,7 @@ class ImArith:
             raise TypeError('Nominal values must be real numbers and not None.')
         return u.Quantity(np.asarray(value, dtype=float), unit, copy=False)
 
-    @_optional('IMARITH_SKIP_UNCERTAINTY', 'FRAMEDATA_DISABLE_UNCERTAINTY')
+    @_optional('FRAMEDATA_DISABLE_UNCERTAINTY')
     def _read_uncertainty(self, source, unit):
         """Extract standard deviations in the normalized operand unit."""
         if isinstance(source, FrameData):
@@ -124,7 +124,7 @@ class ImArith:
             raise ValueError('Power operation requires a dimensionless scalar exponent')
         return value1.unit ** value2.value
 
-    @_optional('IMARITH_SKIP_UNCERTAINTY', 'FRAMEDATA_DISABLE_UNCERTAINTY')
+    @_optional('FRAMEDATA_DISABLE_UNCERTAINTY')
     def _propagate_uncertainty(self, result, first, second, operation):
         """Reuse the derivative formulas used by QFloat without recalculating data."""
         value1, uncertainty1 = first
@@ -261,11 +261,10 @@ def imarith(operand1, operand2, operation, inplace=False,
     to standard deviations. Convert CCDData with read_framedata first to retain
     its mask and metadata.
 
-    The process-wide AstropopConfig.IMARITH_SKIP_UNCERTAINTY and
-    AstropopConfig.FRAMEDATA_DISABLE_UNCERTAINTY switches skip extraction and
-    propagation. The result then has uncertainty=None, including an in-place
-    result. FRAMEDATA_DISABLE_FLAGS omits output flags and masks. These settings
-    are evaluated at call time. Non-inplace calls leave source arrays unchanged.
+    The process-wide AstropopConfig.FRAMEDATA_DISABLE_UNCERTAINTY switch skips
+    extraction and propagation. The result then has uncertainty=None, including
+    an in-place result. FRAMEDATA_DISABLE_FLAGS omits output flags and masks.
+    These settings are evaluated at call time. Non-inplace calls leave source arrays unchanged.
     Images are not aligned, and WCS is not propagated to a new result.
 
     See Also

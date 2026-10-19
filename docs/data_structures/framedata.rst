@@ -176,10 +176,6 @@ For reductions that do not need uncertainties or masks, configure
       - Ignore mask and flag inputs and assignments. New frames and copies
         have no flags or mask arrays. Flag and mask getters return ``None``;
         masking methods do not store flags.
-    * - ``IMARITH_SKIP_UNCERTAINTY``
-      - Skip uncertainty propagation in ``imarith`` and uncertainty estimation
-        in ``imcombine``. The result has ``uncertainty=None``; input frames keep
-        their stored uncertainties.
 
 For example, temporarily disable uncertainty storage::
 
@@ -220,17 +216,16 @@ Internal rejection masks are still used while combining, even when output flag
 storage is disabled.
 
 In-place arithmetic replaces the first frame's uncertainty with ``None`` when
-propagation is skipped, because that frame is also the result. The skip switch
-does not disable uncertainty interpolation during registration or slicing during
-trimming; use the storage-disable switch to omit those arrays as well.
+uncertainty storage is disabled, because that frame is also the result. The
+same setting also omits uncertainty interpolation during registration and
+slicing during trimming.
 
 Combination avoids uncertainty working copies, chunks, result arrays and
-error-only standard-deviation calculations when propagation is skipped. A
-non-FrameData input adapter can still read an uncertainty while loading when
-only ``IMARITH_SKIP_UNCERTAINTY`` is set; disable uncertainty storage before
-loading to avoid that conversion too. Rejection uses its own data buffers and
-continues to operate. With propagation enabled, rejected samples are excluded
-from the summed uncertainties as well as from the nominal data.
+error-only standard-deviation calculations when uncertainty storage is disabled.
+Input adapters also skip uncertainty conversions that would allocate arrays.
+Rejection uses its own data buffers and continues to operate. With propagation
+enabled, rejected samples are excluded from the summed uncertainties as well as
+from the nominal data.
 
 For a frame containing :math:`P` pixels, stored data require
 ``P * frame.dtype.itemsize`` bytes, flags require another ``P`` bytes when

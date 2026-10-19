@@ -43,8 +43,7 @@ class Test_ImArith:
         return cls(data, uncertainty=400., unit='cm')
 
     @pytest.mark.parametrize('entry', ['function', 'class'])
-    @pytest.mark.parametrize('option', [None, 'IMARITH_SKIP_UNCERTAINTY',
-                                       'FRAMEDATA_DISABLE_UNCERTAINTY'])
+    @pytest.mark.parametrize('option', [None, 'FRAMEDATA_DISABLE_UNCERTAINTY'])
     @pytest.mark.parametrize('kind', ['frame', 'subclass', 'quantity', 'qfloat',
                                      'ccd_std', 'ccd_var', 'ccd_inv', 'ccd_none'])
     @pytest.mark.parametrize('reverse', [False, True])
@@ -108,7 +107,7 @@ class Test_ImArith:
         other = QFloat(2, 4, 'm')
         np.testing.assert_array_equal(arithmetic.run(frame, other, '+').uncertainty, 5)
         with monkeypatch.context() as patch:
-            patch.setattr(conf, 'IMARITH_SKIP_UNCERTAINTY', True)
+            patch.setattr(conf, 'FRAMEDATA_DISABLE_UNCERTAINTY', True)
             patch.setattr(conf, 'FRAMEDATA_DISABLE_FLAGS', True)
             result = arithmetic.run(frame, other, '+')
             np.testing.assert_array_equal(result.data, 6)
@@ -117,8 +116,7 @@ class Test_ImArith:
         np.testing.assert_array_equal(frame.uncertainty, 3)
 
     @pytest.mark.parametrize('entry', ['function', 'class'])
-    @pytest.mark.parametrize('option', [None, 'IMARITH_SKIP_UNCERTAINTY',
-                                       'FRAMEDATA_DISABLE_UNCERTAINTY'])
+    @pytest.mark.parametrize('option', [None, 'FRAMEDATA_DISABLE_UNCERTAINTY'])
     def test_broadcasting_with_exact_operand(self, monkeypatch, entry, option):
         first = FrameData([[4.], [9.]], uncertainty=[[3.], [4.]], unit='m')
         second = np.array([[100., 200., 300.]]) * units.cm
@@ -135,8 +133,7 @@ class Test_ImArith:
         np.testing.assert_array_equal(second.value, [[100, 200, 300]])
 
     @pytest.mark.parametrize('entry', ['function', 'class'])
-    @pytest.mark.parametrize('option', [None, 'IMARITH_SKIP_UNCERTAINTY',
-                                       'FRAMEDATA_DISABLE_UNCERTAINTY'])
+    @pytest.mark.parametrize('option', [None, 'FRAMEDATA_DISABLE_UNCERTAINTY'])
     @pytest.mark.parametrize('other', [units.m, 'm'])
     def test_unit_operands(self, monkeypatch, entry, option, other):
         frame = FrameData(np.full((2, 3), 4.), uncertainty=3., unit='m')
@@ -151,8 +148,7 @@ class Test_ImArith:
             np.testing.assert_array_equal(result.uncertainty, 3)
 
     @pytest.mark.parametrize('entry', ['function', 'class'])
-    @pytest.mark.parametrize('option', [None, 'IMARITH_SKIP_UNCERTAINTY',
-                                       'FRAMEDATA_DISABLE_UNCERTAINTY'])
+    @pytest.mark.parametrize('option', [None, 'FRAMEDATA_DISABLE_UNCERTAINTY'])
     @pytest.mark.parametrize('other', [None, [[1, None]], [[1j]], np.array([])])
     def test_invalid_nominal_values(self, monkeypatch, entry, option, other):
         if option:
@@ -160,8 +156,7 @@ class Test_ImArith:
         with pytest.raises(TypeError):
             self.run(entry, FrameData(np.ones((2, 3))), other, '+')
 
-    @pytest.mark.parametrize('option', [None, 'IMARITH_SKIP_UNCERTAINTY',
-                                       'FRAMEDATA_DISABLE_UNCERTAINTY'])
+    @pytest.mark.parametrize('option', [None, 'FRAMEDATA_DISABLE_UNCERTAINTY'])
     def test_unsupported_errors_are_ignored_only_when_disabled(self, monkeypatch, option):
         source = CCDData(np.ones((2, 3)), unit='m',
                          uncertainty=UnknownUncertainty(np.ones((2, 3))))

@@ -34,17 +34,13 @@ class AstropopConfig:
     ----------
     FRAMEDATA_DISABLE_UNCERTAINTY : bool
         Ignore FrameData uncertainty inputs and assignments, omit new arrays,
-        and return None from uncertainty getters even on existing frames.
+        return None from uncertainty getters even on existing frames, and skip
+        uncertainty extraction, propagation and estimation in image reductions.
         Default is False.
     FRAMEDATA_DISABLE_FLAGS : bool
         Ignore FrameData flag and mask inputs and assignments, omit new arrays,
         and return None from flag and mask getters even on existing frames.
         Default is False.
-    IMARITH_SKIP_UNCERTAINTY : bool
-        Skip uncertainty propagation and estimation in imarith and imcombine.
-        Existing input uncertainties remain stored; results have no uncertainty.
-        Default is False.
     """
-    IMARITH_SKIP_UNCERTAINTY = False
     FRAMEDATA_DISABLE_UNCERTAINTY = False
     FRAMEDATA_DISABLE_FLAGS = False

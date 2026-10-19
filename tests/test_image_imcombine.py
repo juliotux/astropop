@@ -818,7 +818,7 @@ class Test_ImCombiner_Combine():
         from astropop.config import AstropopConfig
         images = [FrameData(np.full((3, 4), v), uncertainty=e)
                   for v, e in [(1, 3), (4, 4), (100, 100)]]
-        monkeypatch.setattr(AstropopConfig, 'IMARITH_SKIP_UNCERTAINTY', skip)
+        monkeypatch.setattr(AstropopConfig, 'FRAMEDATA_DISABLE_UNCERTAINTY', skip)
         combiner = ImCombiner(dtype='int16', max_memory=64)
         combiner.set_minmax_clip(0, 10)
         result = combiner.combine(images, method)
@@ -828,7 +828,7 @@ class Test_ImCombiner_Combine():
             assert result.uncertainty is None
         else:
             np.testing.assert_array_equal(result.uncertainty, 5 if method == 'sum' else 1)
-        assert images[-1].uncertainty[0, 0] == 100
+        assert images[-1]._unct[0, 0] == 100
 
     def test_integer_sigma_clipping(self):
         images = [np.full((2, 2), value) for value in (1, 2, 3, 100)]
@@ -896,8 +896,7 @@ class Test_ImCombiner_Combine():
         result = imcombine([np.ones((2, 3), dtype=np.float32)], method='sum')
         assert result.data.dtype == result.uncertainty.dtype == np.dtype('float64')
 
-    @pytest.mark.parametrize('option', ['IMARITH_SKIP_UNCERTAINTY',
-                                       'FRAMEDATA_DISABLE_UNCERTAINTY'])
+    @pytest.mark.parametrize('option', ['FRAMEDATA_DISABLE_UNCERTAINTY'])
     def test_float32_with_disabled_errors(self, monkeypatch, option):
         from astropop.config import AstropopConfig
         images = [FrameData(np.full((3, 4), value), uncertainty=1) for value in (1, 3)]
@@ -1132,7 +1131,7 @@ class TestRejectedUncertainties:
 
         frames = [FrameData(np.full((3, 4), value), uncertainty=error)
                   for value, error in [(1, 3), (2, 4), (100, 1000)]]
-        monkeypatch.setattr(AstropopConfig, 'IMARITH_SKIP_UNCERTAINTY', skip)
+        monkeypatch.setattr(AstropopConfig, 'FRAMEDATA_DISABLE_UNCERTAINTY', skip)
         combiner = ImCombiner(dtype=dtype)
         combiner.set_minmax_clip(0, 10)
         result = combiner.combine(frames, 'sum', sum_normalize=normalize)
@@ -1143,7 +1142,7 @@ class TestRejectedUncertainties:
             assert result.uncertainty is None
         else:
             np.testing.assert_allclose(result.uncertainty, 5*factor)
-        np.testing.assert_array_equal(frames[-1].uncertainty, 1000)
+        np.testing.assert_array_equal(frames[-1]._unct, 1000)
 
 
 class TestMaskedReductions:

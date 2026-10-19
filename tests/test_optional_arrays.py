@@ -71,7 +71,7 @@ class TestOptionalArrays:
         # Floor division and remainder intentionally retain QFloat's existing
         # raw-nominal conventions; changing their unit policy is separate work.
         frame = FrameData(np.full((2, 3), 2), unit='m', uncertainty=0.1)
-        monkeypatch.setattr(conf, 'IMARITH_SKIP_UNCERTAINTY', True)
+        monkeypatch.setattr(conf, 'FRAMEDATA_DISABLE_UNCERTAINTY', True)
         result = imarith(frame, 50*u.cm, operation)
         np.testing.assert_allclose(result.data, expected)
         assert result.unit == unit
@@ -79,12 +79,12 @@ class TestOptionalArrays:
     @pytest.mark.parametrize('exponent', [np.array([2, 2]), np.array(2),
                                          QFloat(np.array(2)), 2*u.m])
     def test_skipped_power_keeps_exponent_validation(self, monkeypatch, exponent):
-        monkeypatch.setattr(conf, 'IMARITH_SKIP_UNCERTAINTY', True)
+        monkeypatch.setattr(conf, 'FRAMEDATA_DISABLE_UNCERTAINTY', True)
         with pytest.raises(ValueError):
             imarith(FrameData(np.ones((2, 2))), exponent, '**')
 
     def test_skipped_integer_inputs_do_not_overflow(self, monkeypatch):
-        monkeypatch.setattr(conf, 'IMARITH_SKIP_UNCERTAINTY', True)
+        monkeypatch.setattr(conf, 'FRAMEDATA_DISABLE_UNCERTAINTY', True)
         result = imarith(np.array([[50_000]], dtype=np.int32), 2, '**')
         np.testing.assert_allclose(result.data, 2_500_000_000)
 
@@ -107,8 +107,7 @@ class TestOptionalArrays:
             np.testing.assert_array_equal(frame.data, 4.5)
             np.testing.assert_array_equal(frame.uncertainty, 0.3)
 
-    @pytest.mark.parametrize('option', [None, 'IMARITH_SKIP_UNCERTAINTY',
-                                       'FRAMEDATA_DISABLE_UNCERTAINTY'])
+    @pytest.mark.parametrize('option', [None, 'FRAMEDATA_DISABLE_UNCERTAINTY'])
     @pytest.mark.parametrize('operation, expected, unit, uncertainty', [
         ('+', 6, u.m, 5), ('-', 2, u.m, 5), ('*', 8, u.m**2, np.sqrt(292)),
         ('/', 2, u.dimensionless_unscaled, np.sqrt(18.25)),
@@ -146,14 +145,14 @@ class TestOptionalArrays:
             assert result.uncertainty is None
 
     def test_skipped_arithmetic_rejects_none(self, monkeypatch):
-        monkeypatch.setattr(conf, 'IMARITH_SKIP_UNCERTAINTY', True)
+        monkeypatch.setattr(conf, 'FRAMEDATA_DISABLE_UNCERTAINTY', True)
         with pytest.raises(TypeError):
             imarith(FrameData(np.ones((2, 2))), None, '+')
 
     @pytest.mark.parametrize('operation, expected', [('//', 2), ('%', 0)])
     def test_skipped_scalar_arithmetic_without_optional_arrays(self, monkeypatch,
                                                                operation, expected):
-        monkeypatch.setattr(conf, 'IMARITH_SKIP_UNCERTAINTY', True)
+        monkeypatch.setattr(conf, 'FRAMEDATA_DISABLE_UNCERTAINTY', True)
         monkeypatch.setattr(conf, 'FRAMEDATA_DISABLE_FLAGS', True)
         result = imarith(4, 2, operation)
         np.testing.assert_allclose(result.data, expected)
@@ -183,8 +182,7 @@ class TestOptionalArrays:
             np.testing.assert_array_equal(moving._unct, 1)
 
     @pytest.mark.parametrize('kind', ['frame', 'qfloat', 'ccd'])
-    @pytest.mark.parametrize('option', ['IMARITH_SKIP_UNCERTAINTY',
-                                       'FRAMEDATA_DISABLE_UNCERTAINTY'])
+    @pytest.mark.parametrize('option', ['FRAMEDATA_DISABLE_UNCERTAINTY'])
     def test_arithmetic_never_reads_skipped_uncertainty(self, monkeypatch,
                                                        caplog, kind, option):
         data = np.full((2, 3), 4.0)
@@ -211,7 +209,7 @@ class TestOptionalArrays:
     def test_arithmetic_failure_removes_log_handler(self, monkeypatch):
         from astropop.logger import logger
         handlers = list(logger.handlers)
-        monkeypatch.setattr(conf, 'IMARITH_SKIP_UNCERTAINTY', True)
+        monkeypatch.setattr(conf, 'FRAMEDATA_DISABLE_UNCERTAINTY', True)
         with pytest.raises(u.UnitsError):
             imarith(FrameData(np.ones((2, 3)), unit='m'), 1*u.s, '+')
         assert logger.handlers == handlers
@@ -220,23 +218,14 @@ class TestOptionalArrays:
         frames = [FrameData(np.full((3, 4), value), uncertainty=1)
                   for value in (1, 2, 3)]
 
-        monkeypatch.setattr(conf, 'IMARITH_SKIP_UNCERTAINTY', True)
+        monkeypatch.setattr(conf, 'FRAMEDATA_DISABLE_UNCERTAINTY', True)
         monkeypatch.setattr(conf, 'FRAMEDATA_DISABLE_FLAGS', True)
         # Keep the real flag getter: reading a disabled property is valid,
         # but using its hidden storage must never happen.
         for frame in frames:
             frame._flags = self.UnreadableArray()
-        descriptor = FrameData.uncertainty
-
-        # Skipping propagation must bypass extraction even while uncertainty
-        # storage itself remains enabled.
-        def unreadable(frame):
-            if any(frame is source for source in frames):
-                pytest.fail('Read source uncertainties while propagation was skipped')
-            return descriptor.fget(frame)
-
-        monkeypatch.setattr(FrameData, 'uncertainty',
-                            property(unreadable, descriptor.fset))
+            frame._unct = self.UnreadableArray()
+        # Real getters return None without touching hidden arrays.
         result = imcombine(frames, method='sum')
         np.testing.assert_array_equal(result.data, 6)
         assert result._unct is result._flags is None
@@ -304,7 +293,10 @@ class TestOptionalArrays:
             monkeypatch.setattr(CCDData, 'mask', property(unreadable))
         elif kind == 'qfloat':
             source = QFloat(data, data, u.adu)
-            monkeypatch.setattr(QFloat, 'uncertainty', property(unreadable))
+            # Reading QFloat's existing array does not allocate it. FrameData
+            # must discard that input before shape, unit or array conversion.
+            monkeypatch.setattr(QFloat, 'uncertainty',
+                                property(lambda source: self.UnreadableArray()))
         else:
             from astropy.io import fits
             source = FrameData(data, uncertainty=1).to_hdu()
@@ -406,7 +398,7 @@ class TestOptionalArrays:
         assert reread.flags is reread.uncertainty is None
         np.testing.assert_array_equal(reread.data, original.data)
 
-    @pytest.mark.parametrize('option', ['IMARITH_SKIP_UNCERTAINTY', 'FRAMEDATA_DISABLE_UNCERTAINTY'])
+    @pytest.mark.parametrize('option', ['FRAMEDATA_DISABLE_UNCERTAINTY'])
     @pytest.mark.parametrize('operation', ['+', '-', '*', '/', '//', '%', '**'])
     @pytest.mark.parametrize('inplace', [False, True])
     def test_arithmetic_without_error_calculations(self, monkeypatch, option, operation, inplace):
@@ -431,7 +423,7 @@ class TestOptionalArrays:
 
     @pytest.mark.parametrize('kind', ['quantity', 'frame', 'ccd', 'qfloat'])
     def test_skip_arithmetic_units(self, monkeypatch, kind):
-        monkeypatch.setattr(conf, 'IMARITH_SKIP_UNCERTAINTY', True)
+        monkeypatch.setattr(conf, 'FRAMEDATA_DISABLE_UNCERTAINTY', True)
         first = FrameData(np.full((2, 3), 2), unit='m', uncertainty=0.2)
         values = np.full((2, 3), 100)
         second = {'quantity': values*u.cm,
@@ -447,7 +439,7 @@ class TestOptionalArrays:
 
     @pytest.mark.parametrize('disable_flags', [False, True])
     @pytest.mark.parametrize('method', ['sum', 'mean', 'median'])
-    @pytest.mark.parametrize('option', ['IMARITH_SKIP_UNCERTAINTY', 'FRAMEDATA_DISABLE_UNCERTAINTY'])
+    @pytest.mark.parametrize('option', ['FRAMEDATA_DISABLE_UNCERTAINTY'])
     @pytest.mark.parametrize('disk_cache', [False, True])
     def test_combine_without_uncertainty(self, monkeypatch, tmp_path, method, option,
                                          disable_flags, disk_cache):
@@ -476,7 +468,7 @@ class TestOptionalArrays:
 
     @pytest.mark.parametrize('skip', [False, True])
     def test_combine_failure_releases_buffers(self, monkeypatch, tmp_path, skip):
-        monkeypatch.setattr(conf, 'IMARITH_SKIP_UNCERTAINTY', skip)
+        monkeypatch.setattr(conf, 'FRAMEDATA_DISABLE_UNCERTAINTY', skip)
         comb = ImCombiner(use_disk_cache=True, tmp_dir=str(tmp_path))
         with pytest.raises(ValueError, match='shape'):
             comb.combine([FrameData(np.ones((3, 4))),
@@ -491,7 +483,7 @@ class TestOptionalArrays:
     def test_skip_uncertainty_keeps_rejection(self, monkeypatch):
         frames = [FrameData(np.full((3, 4), value), uncertainty=1)
                   for value in [1, 1, 1, 1, 100]]
-        monkeypatch.setattr(conf, 'IMARITH_SKIP_UNCERTAINTY', True)
+        monkeypatch.setattr(conf, 'FRAMEDATA_DISABLE_UNCERTAINTY', True)
         combiner = ImCombiner()
         combiner.set_minmax_clip(0, 5)
         result = combiner.combine(frames, method='mean')
