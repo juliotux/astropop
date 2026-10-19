@@ -1,54 +1,64 @@
-Notes About Pixel Convention
-============================
+Pixel and coordinate conventions
+================================
 
-Numpy/Python
-------------
+Arrays and source positions
+---------------------------
 
-See https://docs.scipy.org/doc/numpy/reference/arrays.indexing.html
+NumPy images have shape ``(n_rows, n_columns)`` and are indexed ``data[y, x]``.
+Rows correspond to y; columns correspond to x. Astropop source detections,
+aperture positions, and WCS pixel coordinates use ``(x, y)`` ordering. Both
+axes start at zero at the center of the first pixel. Its boundaries are at
+``-0.5`` and ``+0.5``; an integer array index selects that pixel's value, not a
+geometric corner::
 
+    >>> import numpy as np
+    >>> image = np.zeros((3, 5))
+    >>> x, y = 4, 2
+    >>> image[y, x] = 1
+    >>> assert image.shape == (3, 5) and image[2, 4] == 1
 
-Matplotlib
-----------
+``np.indices`` returns ``(y_grid, x_grid)``. Astropop's ``iraf_indices`` helper
+instead returns ``(x_grid, y_grid)``, despite using the same zero-based centers.
+Python slices remain stop-exclusive, so ``data[1:3, 2:5]`` selects two rows and
+three columns.
 
+Display orientation
+-------------------
 
-Astropy's WCS/Photutils/Cotout2D/etc
-------------------------------------
+Matplotlib's ``imshow`` defaults to an upper origin, displaying row zero at
+the top. Use ``origin='lower'`` to display increasing y upward. This changes
+only the display; it does not flip or reorder image data. Astropy's FITS
+reader does not automatically flip an image vertically. Do not insert an extra
+array flip merely because a file is FITS.
 
-.. todo:: Check this informations carefully 
+WCS origins
+-----------
 
-``Astropy.wcs.WCS`` use the standard FITS-WCS pixel convention, as described
-better in Astropy WCS Docs [#]_. It uses a 0-based index counter, where the
-coordinate ``(0, 0)`` is the *center* of the first *bottom-left* pixel. This means
-that the fisrt pixel goes from ``-0.5`` to ``+0.5``, and not ``0.0`` to ``1.0``
-like Python/Numpy do.
+Astropy's high-level ``pixel_to_world`` and ``world_to_pixel`` interfaces use
+zero-based ``(x, y)`` pixel centers. The lower-level ``all_pix2world`` and
+``all_world2pix`` methods require an explicit origin: ``0`` means zero-based
+coordinates, while ``1`` means FITS one-based coordinates. FITS header
+``CRPIX`` values use the one-based convention::
 
-However, FITS store the bottom-left pixel first in the file and, when Astropy
-(and other FITS loaders) read the image, it automatically flips the image vertically.
-This means that, for plotting FITS images, Matplotlib need to be set with ``origin='lower'``.
+    >>> from astropy.wcs import WCS
+    >>> wcs = WCS(naxis=2)
+    >>> wcs.wcs.crpix = [1, 1]
+    >>> wcs.wcs.crval = [0, 0]
+    >>> wcs.wcs.cdelt = [1, 1]
+    >>> zero_based = wcs.all_pix2world([[0, 0]], 0)
+    >>> fits_based = wcs.all_pix2world([[1, 1]], 1)
+    >>> np.testing.assert_allclose(zero_based, fits_based)
 
-For a coordinate propose, however, no flip need to be done. ``(0, 0)`` will correspond
-correctly to the center of first array element.
+Photutils aperture positions also use zero-based ``(x, y)`` centers. Convert
+one-based external source lists explicitly; do not infer their origin from
+a column's name alone.
 
-Photutils uses this convention too. So, a source identified in ``(x.xx, y.yy)``
-coordinate by photutils, will have its coordinates determined corectly by the WCS.
+Registration windows and cropping
+--------------------------------
 
-Cotout2D class also seems to match this convention.
-
-
-SEP/SExtractor
---------------
-
-SEP uses the same SExtractor convention, that matches the standard pixel convention.
-The convention is ``(x, y) = (0, 0)`` to the *center* of the first *bottom-left* pixel [#]_.
-
-
-Astropop
---------
-
-
-References
-----------
-
-.. [#] https://docs.astropy.org/en/stable/wcs/wcsapi.html#pixel-conventions-and-definitions
-
-.. [#] https://sep.readthedocs.io/en/v1.0.x/api/sep.sum_circle.html#sep.sum_circle
+Registration windows use ``(row_slice, column_slice)`` ordering. Estimated
+transforms must be expressed in full-image coordinates before applying them
+to a full image or catalog; the registration implementation handles the window
+origin. See :doc:`../reduction/registering` for the transform and shift sign
+conventions. A crop changes the coordinate origin, so crop coordinates and WCS
+together rather than applying a full-image WCS to unadjusted cutout positions.

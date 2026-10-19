@@ -45,9 +45,9 @@ class TempDir:
         The directory name to be created.
     delete_on_remove : bool, optional
         If True, the directory will be deleted when removed from the manager.
-    is_full_path : bool, optional
-        If True, the dirname is already a full path. Else, a cache folder will
-        be prepended.
+    parent : TempDir or None, optional
+        Parent manager for a relative basename. With None, relative names use
+        BaseTempDir and absolute names create top-level managed directories.
     """
 
     __slots__ = ['dirname', 'parent', 'managed', 'delete_on_remove']
@@ -87,6 +87,7 @@ class TempDir:
 
     @property
     def full_path(self):
+        """Absolute directory path, resolving a relative name through its parent."""
         if self.parent is None:
             return self.dirname
         return os.path.join(self.parent.full_path, self.dirname)
@@ -99,7 +100,7 @@ class TempDir:
         basename: str
             Base name of the file to be created.
         delete_on_remove: bool
-            Keep the file after the program exits.
+            Allow deletion on removal or shutdown when True. False retains it.
 
         Returns
         -------
@@ -119,7 +120,7 @@ class TempDir:
         basename: str
             Base name of the file or folder to be created.
         delete_on_remove: bool
-            Keep the file after the program exits.
+            Allow deletion on removal or shutdown when True. False retains it.
 
         Returns
         -------
@@ -220,10 +221,12 @@ class TempFile:
 
     @property
     def full_path(self):
+        """File path within the managed parent directory."""
         return os.path.join(self.parent.full_path, self.filename)
 
     @property
     def is_removable(self):
+        """Whether the current policy permits deleting this file."""
         return self.delete_on_remove
 
     def delete(self):
@@ -239,10 +242,16 @@ class TempFile:
             logger.warning('File %s marked to be kept.', self.full_path)
 
     def open(self, mode='w'):
+        """Open the managed path in mode and retain its file object for closing.
+
+        Returns the built-in file object; the default mode truncates existing
+        contents. Opening does not change the deletion policy.
+        """
         self.file = open(self.full_path, mode)
         return self.file
 
     def close(self):
+        """Close the retained file object without deleting its path."""
         if self.file is not None:
             self.file.close()
         self.file = None

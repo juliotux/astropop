@@ -7,7 +7,7 @@ __all__ = ['hasher']
 
 
 def hasher(string, size=8):
-    """Simple function to generate a SHA1 hash of a string.
+    """Simple function to generate a SHA-256 hash of a string.
 
     Parameters:
         - string : string or bytes

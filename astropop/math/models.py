@@ -24,6 +24,7 @@ class MoffatEquations:
 
     @staticmethod
     def fwhm(width, power):
+        """Full width at half maximum in the model coordinate units."""
         """Get FWHM based on Moffat width."""
         return 2*width*np.sqrt(2**(1/power) - 1)
 
@@ -120,11 +121,13 @@ class PSFMoffat2D(Fittable2DModel):
 
     @staticmethod
     def evaluate(x, y, x_0, y_0, flux, width, power, sky):
+        """Evaluate the normalized profile and additive sky at the supplied coordinates."""
         return MoffatEquations.model_2d(x, y, x_0, y_0, width=width,
                                         power=power, flux=flux, sky=sky)
 
     @property
     def fwhm(self):
+        """Full width at half maximum in the model coordinate units."""
         return MoffatEquations.fwhm(width=self.width,
                                     power=self.power)
 
@@ -143,11 +146,13 @@ class PSFMoffat1D(Fittable1DModel):
 
     @staticmethod
     def evaluate(x, x_0, flux, width, power, sky):
+        """Evaluate the normalized profile and additive sky at the supplied coordinates."""
         return MoffatEquations.model_1d(x, x0=x_0, width=width, power=power,
                                         flux=flux, sky=sky)
 
     @property
     def fwhm(self):
+        """Full width at half maximum in the model coordinate units."""
         return MoffatEquations.fwhm(width=self.width,
                                     power=self.power)
 
@@ -165,11 +170,13 @@ class PSFMoffatRadial(Fittable1DModel):
 
     @staticmethod
     def evaluate(x, flux, width, power, sky):
+        """Evaluate the normalized profile and additive sky at the supplied coordinates."""
         return MoffatEquations.model_radial(x, width=width, power=power,
                                             flux=flux, sky=sky)
 
     @property
     def fwhm(self):
+        """Full width at half maximum in the model coordinate units."""
         return MoffatEquations.fwhm(width=self.width,
                                     power=self.power)
 
@@ -189,6 +196,7 @@ class GaussianEquations:
 
     @staticmethod
     def fwhm(sigma):
+        """Full width at half maximum in the model coordinate units."""
         """Get FWHM based on Gaussian width."""
         return sigma/gaussian_fwhm_to_sigma
 
@@ -287,12 +295,14 @@ class PSFGaussian2D(Fittable2DModel):
 
     @staticmethod
     def evaluate(x, y, x_0, y_0, flux, sigma_x, sigma_y, theta, sky):
+        """Evaluate the normalized profile and additive sky at the supplied coordinates."""
         return GaussianEquations.model_2d(x, y, x0=x_0, y0=y_0,
                                           sigma_x=sigma_x, sigma_y=sigma_y,
                                           theta=theta, flux=flux, sky=sky)
 
     @property
     def fwhm(self):
+        """Full width at half maximum in the model coordinate units."""
         """Mean FWHM of the Gaussian in X and Y."""
         return np.mean([GaussianEquations.fwhm(sigma=self.sigma_x),
                         GaussianEquations.fwhm(sigma=self.sigma_y)])
@@ -311,11 +321,13 @@ class PSFGaussian1D(Fittable1DModel):
 
     @staticmethod
     def evaluate(x, x_0, flux, sigma, sky):
+        """Evaluate the normalized profile and additive sky at the supplied coordinates."""
         return GaussianEquations.model_1d(x, x0=x_0, sigma=sigma,
                                           flux=flux, sky=sky)
 
     @property
     def fwhm(self):
+        """Full width at half maximum in the model coordinate units."""
         return GaussianEquations.fwhm(sigma=self.sigma)
 
 
@@ -331,9 +343,11 @@ class PSFGaussianRadial(Fittable1DModel):
 
     @staticmethod
     def evaluate(x, flux, sigma, sky):
+        """Evaluate the normalized profile and additive sky at the supplied coordinates."""
         return GaussianEquations.model_radial(x, sigma=sigma, flux=flux,
                                               sky=sky)
 
     @property
     def fwhm(self):
+        """Full width at half maximum in the model coordinate units."""
         return GaussianEquations.fwhm(sigma=self.sigma)
