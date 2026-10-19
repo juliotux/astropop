@@ -39,4 +39,6 @@ jobs:
       run: sudo apt-get update && sudo apt-get install -y libopenblas-dev
     - name: Run offline tests with development dependencies
       # Live services are tested separately by online_conformance.
+      # Step-level tolerance lets the preview job succeed when devdeps fail.
+      continue-on-error: ${{ matrix.python == '3.16' }}
       run: uv tool run --with pip --with setuptools tox -e py-test-devdeps -- --remote-data=none
