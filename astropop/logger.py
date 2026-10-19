@@ -55,7 +55,7 @@ def log_to_list(logger, log_list=None, full_record=False):
     Parameters
     ----------
     logger : `logging.Logger`
-        `Logger` instance where handler will be added.
+        `~logging.Logger` instance where handler will be added.
     log_list : list or None, optional
         List to store log records.
     full_record : bool, optional

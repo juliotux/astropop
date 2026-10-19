@@ -1,11 +1,11 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
-"""Put a `unit` property in classes."""
+"""Put a ``unit`` property in classes."""
 
 from astropy import units
 
 
 def unit_property(cls):
-    """Add a `unit` property to a class."""
+    """Add a ``unit`` property to a class."""
     def _unit_getter(obj):
         if obj._unit is None:
             return units.dimensionless_unscaled

@@ -46,7 +46,7 @@ def convert_to_qfloat(value):
 
     Notes
     -----
-    - The `unit` is extracted from a `unit` attribute in the number.
+    - The ``unit`` is extracted from a ``unit`` attribute in the number.
       If this attribute is not present, the number is considered dimensionless.
     - Compilant classes now are:
         * Python standard numbers;
@@ -174,7 +174,7 @@ def equal_within_errors(qf1, qf2):
 
     Parameters
     ----------
-    qf1, qf2: `~astropop.math.QFloat`, `float` or `np.ndarray`
+    qf1, qf2: `~astropop.math.physical.QFloat`, `float` or `np.ndarray`
         QFloats to compare.
 
     Returns
@@ -212,7 +212,7 @@ def qfloat(value, uncertainty=None, unit=None):
         Nominal value(s) of the quantity.
     uncertainty : number, array_like or `None` (optional)
         Uncertainty value of the quantity. If `None`, the quantity will be
-        considered with no errors. Must match `value` shape.
+        considered with no errors. Must match ``value`` shape.
     unit: `~astropy.units.Unit` or string (optional)
         The data unit. Must be `~astropy.units.Unit` compliant.
 
@@ -231,12 +231,12 @@ class QFloat():
 
     Parameters
     ----------
-    value : number, `~astropop.math.QFloat` or array_like
+    value : number, `~astropop.math.physical.QFloat` or array_like
         Nominal value(s) of the quantity. Must be a real number, array of real
         numbers or a QFloat.
     uncertainty : number, array_like or `None` (optional)
         Uncertainty value of the quantity. If `None`, the quantity will be
-        considered with no errors. Must match `value` shape.
+        considered with no errors. Must match ``value`` shape.
     unit : `~astropy.units.Unit` or string (optional)
         The data unit. Must be `~astropy.units.Unit` compliant.
 
@@ -374,7 +374,7 @@ class QFloat():
             Nominal value(s) of the quantity.
         uncertainty : number, array_like or `None` (optional)
             Uncertainty value of the quantity. If `None`, the quantity will be
-            considered with no errors. Must match `value` shape.
+            considered with no errors. Must match ``value`` shape.
         unit : `~astropy.units.Unit` or string (optional)
             The data unit. Must be `~astropy.units.Unit` compliant.
         """
@@ -469,7 +469,7 @@ class QFloat():
 
         Returns
         -------
-        result : `~astropop.math.QFloat`
+        result : `~astropop.math.physical.QFloat`
             Results of the ufunc, with the unit and uncertainty.
         """
         # Only call supported now

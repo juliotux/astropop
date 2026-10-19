@@ -16,22 +16,22 @@ def mask_from_flags(values, flags_to_mask, allowed_flags_class=None):
     elements that match any of the given flags will be masked.
 
     The comparison is performed using bitwise operations and the flags
-    must be `IntFlag` instances and its values must be powers of 2.
+    must be `~enum.IntFlag` instances and its values must be powers of 2.
 
     Parameters
     ----------
     values: `~numpy.ndarray`
         Array continaing the values to be evaluated.
-    flags_to_mask : list of `Flag` or `Flag`
+    flags_to_mask : list of `~enum.Flag` or `~enum.Flag`
         List of flags to be masked.
-    allowed_flags_class : `Flag` or `None`
+    allowed_flags_class : `~enum.Flag` or `None`
         If not `None`, only flags from this class will be allowed. If `None`,
         any flag will be allowed.
 
     Returns
     -------
     mask : `~numpy.ndarray`
-        Boolean mask with the same shape as `values` where all the pixels or
+        Boolean mask with the same shape as ``values`` where all the pixels or
         elements that match any of the given flags will be masked.
     """
     flag = 0

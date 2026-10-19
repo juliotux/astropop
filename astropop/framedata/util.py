@@ -38,7 +38,7 @@ def read_framedata(obj, copy=False, **kwargs):
 
     Returns
     -------
-    frame : `FrameData`
+    frame : `~astropop.framedata.FrameData`
         Loaded image. Optional uncertainty and flag storage follows the
         current configuration when constructing or copying a frame.
 

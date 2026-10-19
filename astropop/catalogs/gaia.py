@@ -61,7 +61,7 @@ def _gaia_query_timeout(client, timeout=300):
 class GaiaDR3SourcesCatalog(_OnlineSourcesCatalog):
     """Sources catalog from Gaia-DR3 catalog.
 
-    This class just wraps around `~astroquery.gaia.Gaia` class.
+    This class just wraps around ``astroquery.gaia.Gaia`` class.
 
     Parameters
     ----------

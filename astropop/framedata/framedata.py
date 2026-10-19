@@ -198,7 +198,7 @@ class FrameData:
         cache is created by default. Use a dedicated directory: cache cleanup
         removes the directory and its contents.
     cache_filename : string, `~pathlib.Path` or `None` (optional)
-        Base file name to store the cached `FrameData`.
+        Base file name to store the cached `~astropop.framedata.FrameData`.
     origin_filename : string, `~pathlib.Path` or `None` (optional)
         Original file name of the data, available as ``origin_filename``.
     use_memmap_backend : `bool` (optional)
@@ -328,12 +328,12 @@ class FrameData:
 
     @property
     def shape(self):
-        """Get the data shape following numpy. `FrameData.data.shape`."""
+        """Get the data shape following numpy. ``FrameData.data.shape``."""
         return self._data.shape
 
     @property
     def dtype(self):
-        """Get the dta type of the data. `FrameData.data.dtype`."""
+        """Get the dta type of the data. ``FrameData.data.dtype``."""
         return self._data.dtype
 
     def astype(self, dtype):
@@ -342,7 +342,7 @@ class FrameData:
 
     @property
     def size(self):
-        """Get the size of the data. `FrameData.data.size`."""
+        """Get the size of the data. ``FrameData.data.size``."""
         return self._data.size
 
     @property

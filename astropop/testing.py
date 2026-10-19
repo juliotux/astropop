@@ -101,7 +101,7 @@ def assert_not_equal(a, b, msg=None):
 
 @func_wrapper
 def assert_is(a, b, msg=None):
-    """Raise assertion error if `a is b`."""
+    """Raise assertion error if ``a is b``."""
     if a is not b:
         msg = msg or f"{a} is not {b}."
         raise AssertionError(msg)
@@ -109,7 +109,7 @@ def assert_is(a, b, msg=None):
 
 @func_wrapper
 def assert_is_not(a, b, msg=None):
-    """Raise assertion error if `a is not b`."""
+    """Raise assertion error if ``a is not b``."""
     if a is b:
         msg = msg or f"{a} is {b}."
         raise AssertionError(msg)
@@ -117,7 +117,7 @@ def assert_is_not(a, b, msg=None):
 
 @func_wrapper
 def assert_is_none(a, msg=None):
-    """Raise assertion error if `a is not None`."""
+    """Raise assertion error if ``a is not None``."""
     if a is not None:
         msg = msg or f"{a} is not None."
         raise AssertionError(msg)
@@ -125,7 +125,7 @@ def assert_is_none(a, msg=None):
 
 @func_wrapper
 def assert_is_not_none(a, msg=None):
-    """Raise assertion error if `a is None`."""
+    """Raise assertion error if ``a is None``."""
     if a is None:
         msg = msg or f"{a} is None."
         raise AssertionError(msg)
@@ -133,7 +133,7 @@ def assert_is_not_none(a, msg=None):
 
 @func_wrapper
 def assert_in(a, b, msg=None):
-    """Raise assertion error if `a not in b`."""
+    """Raise assertion error if ``a not in b``."""
     if a not in b:
         msg = msg or f"{a} is not in {b}."
         raise AssertionError(msg)
@@ -141,7 +141,7 @@ def assert_in(a, b, msg=None):
 
 @func_wrapper
 def assert_not_in(a, b, msg=None):
-    """Raise assertion error if `a in b`."""
+    """Raise assertion error if ``a in b``."""
     if a in b:
         msg = msg or f"{a} is in {b}."
         raise AssertionError(msg)
@@ -149,7 +149,7 @@ def assert_not_in(a, b, msg=None):
 
 @func_wrapper
 def assert_is_instance(a, b, msg=None):
-    """Raise assertion error if not `isinstance(a, b)`."""
+    """Raise assertion error if not ``isinstance(a, b)``."""
     if not isinstance(a, b):
         msg = msg or f"{a} is not instance of {b}."
         raise AssertionError(msg)
@@ -157,7 +157,7 @@ def assert_is_instance(a, b, msg=None):
 
 @func_wrapper
 def assert_is_not_instance(a, b, msg=None):
-    """Raise assertion error if `isinstance(a, b)`."""
+    """Raise assertion error if ``isinstance(a, b)``."""
     if isinstance(a, b):
         msg = msg or f"{a} is instance of {b}."
         raise AssertionError(msg)
