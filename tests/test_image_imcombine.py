@@ -2,17 +2,81 @@
 # flake8: noqa: F403, F405
 
 import os
+import json
+import subprocess
+import sys
+import textwrap
+import warnings
 import numpy as np
 import pytest
 
 from astropy.io import fits
 
 from astropy.utils import NumpyRNGContext
-from astropop.framedata import FrameData
-from astropop.logger import logger, log_to_list
+from astropop.framedata import FrameData, PixelMaskFlags
 from astropop.image.imcombine import imcombine, _sigma_clip, \
                                      _minmax_clip, ImCombiner
 from astropop.testing import *
+
+
+class TestCombinerMemory:
+    @pytest.mark.parametrize('dtype', ['uint16', 'float32', 'float64'])
+    def test_median_peak_allocations(self, dtype):
+        # Isolate tracing from pytest/plugins and any already-running tracer.
+        # Imports and caller-owned frames are prepared before measurement;
+        # loading internal copies, combining, errors and cleanup are measured.
+        script = textwrap.dedent('''
+            import gc
+            import json
+            import logging
+            import sys
+            import tracemalloc
+            import numpy as np
+            from astropop.framedata import FrameData
+            from astropop.image import imcombine
+            from astropop.logger import logger
+
+            logger.setLevel(logging.ERROR)
+            dtype = np.dtype(sys.argv[1])
+            shape = (128, 128)
+            frames = [FrameData(np.full(shape, i, dtype=dtype), dtype=dtype,
+                                uncertainty=np.ones(shape, dtype=dtype))
+                      for i in range(128)]
+            # Exercise mask handling while retaining the same known median
+            # at every output pixel (the two removed values are symmetric).
+            frames[0].mask_pixels((0, 0))
+            frames[-1].mask_pixels((0, 0))
+            cube_bytes = sum(frame.data.nbytes for frame in frames)
+            gc.collect()
+            tracemalloc.start()
+            # Fail explicitly if NumPy allocations are invisible to tracing.
+            probe = np.empty(2**20, dtype=np.uint8)
+            assert tracemalloc.get_traced_memory()[1] >= probe.nbytes
+            del probe
+            tracemalloc.reset_peak()
+            baseline = tracemalloc.get_traced_memory()[0]
+            result = imcombine(frames, method='median', dtype=dtype,
+                               memory_limit=64 * 2**20)
+            peak = tracemalloc.get_traced_memory()[1] - baseline
+            tracemalloc.stop()
+            np.testing.assert_array_equal(result.data, 63 if dtype.kind in 'iu' else 63.5)
+            assert result.uncertainty is not None
+            assert not result.mask.any()
+            print(json.dumps(dict(peak=peak, cube_bytes=cube_bytes)))
+        ''')
+        process = subprocess.run([sys.executable, '-c', script, dtype],
+                                 capture_output=True, text=True, timeout=120)
+        assert process.returncode == 0, process.stdout + process.stderr
+        measured = json.loads(process.stdout)
+        # Allow four nominal cubes for owned input copies/flags, the chunk,
+        # validity masks, outputs and bounded statistics scratch, with margin
+        # for Python objects and NumPy/platform variation. A full-stack median
+        # workspace exceeded this bound in the former implementation. This is
+        # an allocation regression bound, not an RSS or memory_limit promise.
+        # Two-byte pixels need more relative room for flags and promoted
+        # statistics blocks; a full float64 sample cube still exceeds it.
+        allowance = 6 if dtype == 'uint16' else 4
+        assert measured['peak'] < allowance * measured['cube_bytes'], measured
 
 
 class Test_MinMaxClip():
@@ -204,6 +268,16 @@ class Test_SigmaClip():
 
 
 class Test_ImCombineConformance():
+    @pytest.mark.parametrize('dtype', ['float32', np.dtype('float32'), np.float32])
+    def test_dtype_specification(self, dtype):
+        combiner = ImCombiner(dtype=dtype)
+        assert combiner._dtype == np.dtype('float32')
+
+    @pytest.mark.parametrize('dtype', [np.dtype('complex64'), bool, 'invalid'])
+    def test_invalid_dtype_specification(self, dtype):
+        with pytest.raises(ValueError, match='Only integer or float dtypes'):
+            ImCombiner(dtype=dtype)
+
     def test_class_creation(self):
         # defaults
         c = ImCombiner()
@@ -221,15 +295,7 @@ class Test_ImCombineConformance():
         assert_equal(f._dtype, np.float32)
 
     def test_creation_error_dtype(self):
-        msg = "Only float dtypes are allowed in ImCombiner."
-        with pytest.raises(ValueError, match=msg):
-            ImCombiner(dtype=np.int_)
-        with pytest.raises(ValueError, match=msg):
-            ImCombiner(dtype=np.int16)
-
-        with pytest.raises(ValueError, match=msg):
-            ImCombiner(dtype=np.int32)
-
+        msg = "Only integer or float dtypes are allowed in ImCombiner."
         with pytest.raises(ValueError, match=msg):
             ImCombiner(dtype=np.complex64)
 
@@ -240,9 +306,8 @@ class Test_ImCombineConformance():
         c = ImCombiner(dtype=float)
         assert_equal(c._dtype, float)
 
-        msg = "Only float dtypes are allowed in ImCombiner."
-        with pytest.raises(ValueError, match=msg):
-            ImCombiner(dtype=int)
+        msg = "Only integer or float dtypes are allowed in ImCombiner."
+        assert_equal(ImCombiner(dtype=int)._dtype, np.dtype(int))
 
         with pytest.raises(ValueError, match=msg):
             ImCombiner(dtype=complex)
@@ -399,215 +464,109 @@ class Test_ImCombineConformance():
             comb.combine(li, method='hulk-smash')
 
 
-class Test_ImCombiner_ChunkYielder():
-    @pytest.mark.parametrize('method', ['mean', 'median', 'sum'])
-    def test_chunk_yielder_f64(self, method):
-        n = 100
-        d = np.random.random((100, 100)).astype(np.float64)
-        li = [FrameData(d, unit='adu') for i in range(n)]
-        # data size = 8 000 000 = 8 bytes * 100 * 100 * 100
-        # total size = 8M
+class Test_ImCombiner_ChunkYielder:
+    @pytest.mark.parametrize('dtype', ['int16', 'float32', 'float64'])
+    @pytest.mark.parametrize('method', ['sum', 'mean', 'median'])
+    @pytest.mark.parametrize('with_errors', [False, True])
+    def test_chunks_cover_image_with_bounded_buffers(self, dtype, method, with_errors):
+        # Seven 13x17 images provide 221 output pixels. Half of the 4096-byte
+        # budget (2048 bytes) is available for the stacked tile and results;
+        # the other half is reserved for statistics work blocks.
+        #
+        # On 64-bit NumPy, the estimate per output pixel is:
+        #   7 * (itemsize * (1 + propagated_errors) + 1 validity byte)
+        #   + 4 * (8-byte index + itemsize).
+        # Only sum propagates individual input errors; mean/median use scatter.
+        #
+        # dtype    errors  bytes/pixel  pixel limit  target chunks  actual
+        # int16    no           61          33              7          13
+        # int16    yes          75          27              9          13
+        # float32  no           83          24             10          13
+        # float32  yes         111          18             13          13
+        # float64  no          127          16             14          39
+        # float64  yes         183          11             21          39
+        #
+        # Targets are ceil(221 / pixel_limit). Slicing uses whole rows first:
+        # int16/float32 yield 13 tiles of 1x17 pixels. float64 also divides
+        # columns into widths 8, 8, 1, yielding 13 * 3 = 39 tiles.
+        data = np.arange(13 * 17).reshape(13, 17)
+        mask = np.zeros(data.shape, dtype=bool)
+        mask[3:5, 4:7] = True
+        frames = [FrameData(data, mask=mask, uncertainty=2 if with_errors else None)
+                  for _ in range(7)]
+        comb = ImCombiner(dtype=dtype, max_memory=4096)
+        comb._load_images(frames)
+        visits = np.zeros(data.shape, dtype=int)
+        chunks = 0
+        for chunk, errors, slc in comb._chunk_yielder(method):
+            chunks += 1
+            visits[slc] += 1
+            assert chunk.dtype == np.dtype(dtype)
+            np.testing.assert_array_equal(chunk, np.broadcast_to(data[slc], chunk.shape))
+            np.testing.assert_array_equal(comb._valid, np.broadcast_to(~mask[slc], chunk.shape))
+            allocated = chunk.nbytes + comb._valid.nbytes
+            if method == 'sum' and with_errors:
+                assert errors.dtype == chunk.dtype
+                np.testing.assert_array_equal(errors, 2)
+                allocated += errors.nbytes
+            else:
+                assert errors is None
+            assert allocated <= 4096 // 2
+        np.testing.assert_array_equal(visits, 1)
+        assert chunks > 1
+        if np.dtype(np.intp).itemsize == 8:
+            assert chunks == (39 if dtype == 'float64' else 13)
+        comb._clear()
 
-        comb = ImCombiner(max_memory=1e6, dtype=np.float64)
-        comb._load_images(li)
-
-        logs = []
-        _lh = log_to_list(logger, logs, False)
-        _level = logger.getEffectiveLevel()
-        logger.setLevel('DEBUG')
-
-        if method == 'median':
-            # for median, tot_size=8M*4.5=36M
-            # n_chunks=36M/1M=36
-            # xstep = 100/36 = 2.777 => 2
-            # so n_chunks=100/2 = 50
-            nchunk = 50
-            shape = [(n, 2, 100)]
-        elif method in ['mean', 'sum']:
-            # for mean and sum, tot_size=8M*3=24M
-            # n_chunks=24M/1M=24
-            # xstep = 100/24 = 4.166 => 4
-            # so n_chunks=100/4 = 25
-            nchunk = 25
-            shape = [(n, 4, 100)]
-
-        i = 0
-        for chunk, unct, slc in comb._chunk_yielder(method=method):
-            i += 1
-            assert_in(chunk.shape, shape)
-            assert_equal(chunk[0], d[slc])
-            assert_is_none(unct)
-            assert_is_instance(chunk, np.ndarray)
-        assert_equal(i, nchunk)
-        assert_in(f'Splitting the images into {nchunk} chunks.', logs)
-        logs.clear()
-
-        # this should not split into chunks
+    def test_large_budget_yields_one_chunk(self):
+        # 7 * (8 data bytes + 1 validity byte) + 4 * (8 + 8) = 127
+        # estimated bytes/pixel. All 221 pixels need only 28,067 bytes,
+        # comfortably below the 50,000,000-byte tile allowance: one chunk.
         comb = ImCombiner(max_memory=1e8)
-        comb._load_images(li)
+        comb._load_images([FrameData(np.ones((13, 17))) for _ in range(7)])
+        chunks = 0
+        for data, uncertainty, slc in comb._chunk_yielder('median'):
+            chunks += 1
+            assert data.shape == (7, 13, 17)
+            assert uncertainty is None
+            np.testing.assert_array_equal(comb._valid, True)
+        assert chunks == 1
+        comb._clear()
 
-        i = 0
-        for chunk, unct, slc in comb._chunk_yielder(method=method):
-            i += 1
-            assert_equal(chunk.shape, (n, 100, 100))
-            assert_equal(chunk[0], d)
-            assert_is_none(unct)
-            assert_is_instance(chunk, np.ndarray)
-        assert_equal(i, 1)
+    def test_read_chunk_does_not_build_full_frame_masks(self, monkeypatch):
+        # One float64 image costs an estimated 73 bytes/pixel. The 500-byte
+        # allowance fits 6 pixels: ceil(323/6) = 54 target chunks. Row-first
+        # slicing produces 17 rows * 5 column tiles (4,4,4,4,3) = 85 chunks.
+        data = np.arange(17 * 19).reshape(17, 19).astype(float)
+        data[2, 3] = np.nan
+        frame = FrameData(data, mask=np.indices(data.shape)[0] > 12)
+        # Status bits other than MASKED must remain accepted.
+        frame.add_flags(PixelMaskFlags.SATURATED, (0, 0))
+        comb = ImCombiner(max_memory=1000)
+        comb._load_images([frame])
+        def full_mask(frame):
+            pytest.fail('Constructed a full-frame mask while reading a tile')
+        monkeypatch.setattr(FrameData, 'mask', property(full_mask))
+        for chunk, errors, slc in comb._chunk_yielder('mean'):
+            expected = ~np.isnan(data[slc]) & (np.indices(data.shape)[0][slc] <= 12)
+            np.testing.assert_array_equal(comb._valid[0], expected)
+            np.testing.assert_array_equal(chunk[0], data[slc])
+        comb._clear()
 
-    @pytest.mark.parametrize('method', ['mean', 'median', 'sum'])
-    def test_chunk_yielder_f32(self, method):
-        # using float32, the number of chunks are almost halved
-        n = 100
-        d = np.random.random((100, 100)).astype(np.float64)
-        li = [FrameData(d, unit='adu') for i in range(n)]
-        # data size = 4 000 000 = 4 bytes * 100 * 100 * 100
-        # total size = 4 000 000 = 4M
-
-        comb = ImCombiner(max_memory=1e6, dtype=np.float32)
-        comb._load_images(li)
-
-        logs = []
-        _lh = log_to_list(logger, logs, False)
-        _level = logger.getEffectiveLevel()
-        logger.setLevel('DEBUG')
-
-        if method == 'median':
-            # for median, tot_size=4M*4.5=18M
-            # n_chunks=18M/1M=18
-            # xstep = 100/18 = 5.55 => 5
-            # so n_chunks=100/5=20
-            nchunk = 20
-            shape = [(n, 5, 100)]
-        elif method in ['mean', 'sum']:
-            # for mean and sum, tot_size=4*3=12M
-            # n_chunks=12M/1M=12
-            # xstep = 100/12 = 8.33 => 8
-            # so n_chunks=100/8 = 13
-            nchunk = 13
-            shape = [(n, 8, 100), (n, 4, 100)]
-
-        i = 0
-        for chunk, unct, slc in comb._chunk_yielder(method=method):
-            i += 1
-            assert_in(chunk.shape, shape)
-            assert_almost_equal(chunk[0], d[slc], decimal=5)
-            assert_is_none(unct)
-            assert_is_instance(chunk, np.ndarray)
-        assert_equal(i, nchunk)
-        assert_in(f'Splitting the images into {nchunk} chunks.', logs)
-        logs.clear()
-
-        # this should not split into chunks
-        comb = ImCombiner(max_memory=1e8)
-        comb._load_images(li)
-
-        i = 0
-        for chunk, unct, slc in comb._chunk_yielder(method=method):
-            i += 1
-            assert_equal(chunk.shape, (n, 100, 100))
-            assert_almost_equal(chunk[0], d, decimal=5)
-            assert_is_none(unct)
-            assert_is_instance(chunk, np.ndarray)
-        assert_equal(i, 1)
-        logs.clear()
-
-    def test_chunk_yielder_ysplit(self):
-        # using float32, the number of chunks are almost halved
-        n = 100
-        d = np.random.random((100, 100)).astype(np.float64)
-        li = [FrameData(d, unit='adu') for i in range(n)]
-        # data size = 4 000 000 = 4 bytes * 100 * 100 * 100
-        # total size = 4 000 000 = 4M
-
-        logs = []
-        lh = log_to_list(logger, logs, False)
-        level = logger.getEffectiveLevel()
-        logger.setLevel('DEBUG')
-
-        # this should split in 200 chunks!
-        # total_size = 4.5*4M = 18M
-        # num_chunks = 18M/0.1M = 180
-        # x_step = 100/180 = 0.55 => 1
-        # y_step = 50
-        comb = ImCombiner(max_memory=1e5, dtype=np.float32)
-        comb._load_images(li)
-        i = 0
-        for chunk, unct, slc in comb._chunk_yielder(method='median'):
-            i += 1
-            for k in chunk:
-                assert_equal(k.shape, (1, 50))
-                assert_almost_equal(k, d[slc])
-                assert_is_none(unct)
-                assert_is_instance(k, np.ndarray)
-        assert_equal(i, 200)
-        assert_in('Splitting the images into 200 chunks.', logs)
-        logs.clear()
-
-        logger.setLevel(level)
-        logger.removeHandler(lh)
-
-    def test_chunk_yielder_uncertainty(self):
-        n = 100
-        d = np.random.random((100, 100)).astype(np.float64)
-        u = np.random.random((100, 100)).astype(np.float64)
-        li = [FrameData(d, uncertainty=u, unit='adu') for i in range(n)]
-
-        # simple sum with uncertainties
-        comb = ImCombiner(max_memory=2e6, dtype=np.float64)
-        comb._load_images(li)
-        i = 0
-        for chunk, unct, slc in comb._chunk_yielder(method='sum'):
-            i += 1
-            for k, un in zip(chunk, unct):
-                assert_in(k.shape, ((8, 100), (4, 100)))
-                assert_almost_equal(k, d[slc])
-                assert_almost_equal(un, u[slc])
-                assert_is_instance(un, np.ndarray)
-        assert_equal(i, 13)
-
-        # if a single uncertainty is empty, disable it
-        logs = []
-        lh = log_to_list(logger, logs, False)
-        level = logger.getEffectiveLevel()
-        logger.setLevel('DEBUG')
-
-        li[5].uncertainty = None
-        comb = ImCombiner(max_memory=2e6, dtype=np.float64)
-        comb._load_images(li)
-        i = 0
-        for chunk, unct, slc in comb._chunk_yielder(method='sum'):
-            i += 1
-            for k in chunk:
-                assert_in(k.shape, ((8, 100), (4, 100)))
-                assert_almost_equal(k, d[slc])
-                assert_equal(unct, None)
-        assert_equal(i, 13)
-        assert_in('One or more frames have empty uncertainty. '
-                  'Some features are disabled.',
-                  logs)
-        logs.clear()
-        logger.setLevel(level)
-        logger.removeHandler(lh)
-
-    def test_chunk_yielder_mask_nan(self):
-        n = 100
-        d = np.random.random((100, 100)).astype(np.float64)
-        m = np.zeros((100, 100), dtype=bool)
-        # all these pixels should be masked at the end
-        m[90:] = True
-        m[50:60, 50:60] = True
-        m[1, 1] = True
-        li = [FrameData(d, mask=m, unit='adu') for i in range(n)]
-
-        d_masked = d.copy()
-        d_masked[m] = np.nan
-
-        comb = ImCombiner(max_memory=2e6, dtype=np.float64)
-        comb._load_images(li)
-        for chunk, unct, slc in comb._chunk_yielder(method='sum'):
-            for k in chunk:
-                assert_equal(np.isnan(k), m[slc])
+    def test_previous_chunk_is_released_before_next_allocation(self):
+        import weakref
+        # 500 / 127 fits 3 pixels. For 17x19 images this gives 108 target
+        # chunks, then 17 rows * 10 column tiles (nine widths of 2, then 1)
+        # = 170 actual chunks. Each previous tile must die before the next.
+        comb = ImCombiner(max_memory=1000)
+        comb._load_images([FrameData(np.ones((17, 19))) for _ in range(7)])
+        previous = None
+        for chunk, errors, slc in comb._chunk_yielder('median'):
+            if previous is not None:
+                assert previous() is None
+            previous = weakref.ref(chunk)
+            del chunk
+        comb._clear()
 
 
 class Test_ImCombiner_LoadImages():
@@ -728,10 +687,11 @@ class Test_ImCombiner_Rejection():
         comb._buffer = data
         # with these limits, only the outliers must be masked
         comb.set_minmax_clip(_min, _max)
+        comb._valid = None
         comb._apply_rejection()
         # original mask must be kept
-        _sr = np.sum(np.isnan(comb._buffer))
-        assert_equal(np.isnan(comb._buffer), expect)
+        _sr = np.sum(~comb._valid)
+        assert_equal(~comb._valid, expect)
 
     def test_apply_sigmaclip(self):
         data = np.array([1, -1, 1, -1, 65000], dtype=np.float32)
@@ -741,23 +701,26 @@ class Test_ImCombiner_Rejection():
         comb._buffer = data.copy()
         comb.set_sigma_clip(1)
         expect = [0, 0, 0, 0, 1]
+        comb._valid = None
         comb._apply_rejection()
-        assert_equal(np.isnan(comb._buffer), expect)
+        assert_equal(~comb._valid, expect)
 
         # if threshold=3, 65000 must be masked too using mad_std.
         comb._buffer = data.copy()
         comb.set_sigma_clip(3)
         expect = [0, 0, 0, 0, 1]
+        comb._valid = None
         comb._apply_rejection()
-        assert_equal(np.isnan(comb._buffer), expect)
+        assert_equal(~comb._valid, expect)
 
         # if threshold=3 and a mask, the mask must be preserved.
         comb._buffer = data.copy()
         comb._buffer[1] = np.nan
         comb.set_sigma_clip(3)
         expect = [0, 1, 0, 0, 1]
+        comb._valid = None
         comb._apply_rejection()
-        assert_equal(np.isnan(comb._buffer), expect)
+        assert_equal(~comb._valid, expect)
 
     def test_apply_sigmaclip_only_lower(self):
         data = np.array([1, -1, 1, -1, 65000], dtype=np.float32)
@@ -767,8 +730,9 @@ class Test_ImCombiner_Rejection():
         comb._buffer = data.copy()
         comb.set_sigma_clip((1, None))
         expect = [0, 0, 0, 0, 0]
+        comb._valid = None
         comb._apply_rejection()
-        assert_equal(np.isnan(comb._buffer), expect)
+        assert_equal(~comb._valid, expect)
 
     def test_apply_sigmaclip_only_higher(self):
         data = np.array([1, -1, 1, -1, -65000], dtype=np.float32)
@@ -778,11 +742,174 @@ class Test_ImCombiner_Rejection():
         comb._buffer = data.copy()
         comb.set_sigma_clip((None, 1))
         expect = [0, 0, 0, 0, 0]
+        comb._valid = None
         comb._apply_rejection()
-        assert_equal(np.isnan(comb._buffer), expect)
+        assert_equal(~comb._valid, expect)
 
 
 class Test_ImCombiner_Combine():
+    @pytest.mark.parametrize('entry', ['class', 'function'])
+    @pytest.mark.parametrize('disk_cache', [False, True])
+    @pytest.mark.parametrize('method', ['sum', 'median', 'mean'])
+    @pytest.mark.parametrize('dtype', ['int16', np.int32, np.dtype('uint16'), '>i2'])
+    def test_integer_computation(self, tmp_path, entry, disk_cache, method, dtype):
+        images = [FrameData([[value, 50], [value, value]], uncertainty=error,
+                            unit='adu', mask=[[False, True], [False, False]])
+                  for value, error in [(1.9, 3.9), (4.9, 4.9)]]
+        kwargs = dict(dtype=dtype, use_disk_cache=disk_cache,
+                      tmp_dir=str(tmp_path / 'cache'))
+        if entry == 'class':
+            result = ImCombiner(**kwargs).combine(images, method)
+        else:
+            result = imcombine(images, method=method, **kwargs)
+        # Pixels and errors are converted before any reduction: [1, 4],
+        # [3, 4]. Integer mean is 2; integer population std is 1.
+        assert result.dtype == np.dtype(dtype)
+        # FrameData uncertainty setters normalize byte order for memmaps.
+        assert result.uncertainty.dtype == np.dtype(dtype).newbyteorder('=')
+        expected = 5 if method == 'sum' else 2
+        error = 5 if method == 'sum' else 1
+        np.testing.assert_array_equal(result.data, [[expected, 0], [expected, expected]])
+        np.testing.assert_array_equal(result.uncertainty, [[error, 0], [error, error]])
+        np.testing.assert_array_equal(result.mask, [[False, True], [False, False]])
+        assert result.unit == images[0].unit
+        for frame, value in zip(images, (1.9, 4.9)):
+            assert frame.data[0, 0] == value
+        assert not list((tmp_path / 'cache').glob('*.npy'))
+
+    @pytest.mark.parametrize('method', ['mean', 'median'])
+    def test_integer_accumulators_promote(self, method):
+        images = [np.full((2, 2), 30000, dtype='int16') for _ in range(2)]
+        result = imcombine(images, method=method, dtype='int16')
+        # The intermediate 60000 must not wrap before division by two.
+        np.testing.assert_array_equal(result.data, 30000)
+        assert result.dtype == np.dtype('int16')
+
+    @pytest.mark.parametrize('method', ['mean', 'median'])
+    def test_integer_negative_fraction_truncates_towards_zero(self, method):
+        result = imcombine([np.full((2, 2), n) for n in (-1, -4)],
+                           method=method, dtype='int16')
+        np.testing.assert_array_equal(result.data, -2)
+
+    def test_integer_uncertainty_promotes_before_squaring(self):
+        images = [FrameData([[1]], uncertainty=200) for _ in range(2)]
+        result = imcombine(images, method='sum', dtype='int16')
+        np.testing.assert_array_equal(result.uncertainty, [[282]])
+
+    @pytest.mark.parametrize('dtype, error', [('int16', 181), ('uint16', 255),
+                                             ('int32', 46340), ('uint32', 65535),
+                                             ('int64', 3037000499), ('uint64', 4294967295)])
+    def test_integer_root_at_large_exact_squares(self, dtype, error):
+        result = imcombine([FrameData([[1]], uncertainty=error)],
+                           method='sum', dtype=dtype)
+        np.testing.assert_array_equal(result.uncertainty, [[error]])
+        assert result.uncertainty.dtype == np.dtype(dtype)
+
+    def test_integer_output_cast_follows_numpy(self):
+        values = np.full((2, 2, 2), 30000, dtype='int16')
+        result = imcombine(list(values), method='sum', dtype='int16', sum_normalize=False)
+        np.testing.assert_array_equal(result.data, np.sum(values, axis=0).astype('int16'))
+
+    @pytest.mark.parametrize('invalid', [np.nan, np.inf])
+    def test_integer_nonfinite_input_raises(self, invalid):
+        with pytest.raises(ValueError, match='finite input pixels'):
+            imcombine([np.full((2, 2), invalid)], dtype='int16')
+
+    @pytest.mark.parametrize('method', ['mean', 'median', 'sum'])
+    @pytest.mark.parametrize('skip', [False, True])
+    def test_integer_rejection(self, monkeypatch, method, skip):
+        from astropop.config import AstropopConfig
+        images = [FrameData(np.full((3, 4), v), uncertainty=e)
+                  for v, e in [(1, 3), (4, 4), (100, 100)]]
+        monkeypatch.setattr(AstropopConfig, 'FRAMEDATA_DISABLE_UNCERTAINTY', skip)
+        combiner = ImCombiner(dtype='int16', max_memory=64)
+        combiner.set_minmax_clip(0, 10)
+        result = combiner.combine(images, method)
+        # Normalize in promoted arithmetic, then truncate only the output.
+        np.testing.assert_array_equal(result.data, 7 if method == 'sum' else 2)
+        if skip:
+            assert result.uncertainty is None
+        else:
+            np.testing.assert_array_equal(result.uncertainty, 7 if method == 'sum' else 1)
+        assert images[-1]._unct[0, 0] == 100
+
+    def test_integer_sigma_clipping(self):
+        images = [np.full((2, 2), value) for value in (1, 2, 3, 100)]
+        result = imcombine(images, method='mean', dtype='int16', sigma_clip=3,
+                           sigma_dev_func='mad_std')
+        np.testing.assert_array_equal(result.data, 2)
+
+    @pytest.mark.parametrize('dtype', ['int16', 'float32', 'float64'])
+    def test_clipping_callback_cannot_modify_pixels(self, dtype):
+        def center(data, axis):
+            data[:] = 999
+            return np.full(data.shape[1:], 2, dtype=data.dtype)
+
+        images = [np.full((2, 2), value) for value in (1, 2, 3)]
+        result = imcombine(images, method='mean', dtype=dtype, sigma_clip=3,
+                           sigma_cen_func=center, sigma_dev_func='mad_std')
+        np.testing.assert_array_equal(result.data, 2)
+
+    @pytest.mark.parametrize('dtype, value', [('int64', 2**53 + 1),
+                                             ('uint64', 2**63)])
+    def test_integer_reductions_follow_numpy_precision(self, dtype, value):
+        data = np.full((1, 2, 2), value, dtype=dtype)
+        result = imcombine(list(data), dtype=dtype, method='mean')
+        expected = np.mean(data, axis=0).astype(dtype)
+        np.testing.assert_array_equal(result.data, expected)
+
+    def test_integer_image_count_uses_bookkeeping_dtype(self):
+        result = imcombine([np.ones((1, 1))] * 128, dtype='int8', method='mean')
+        np.testing.assert_array_equal(result.data, 1)
+
+    @pytest.mark.parametrize('entry', ['class', 'function'])
+    @pytest.mark.parametrize('disk_cache', [False, True])
+    @pytest.mark.parametrize('method', ['sum', 'median', 'mean'])
+    @pytest.mark.parametrize('dtype', [np.float16, np.float32, np.float64,
+                                      'float32', np.dtype('float32')])
+    def test_combination_preserves_dtype(self, tmp_path, entry, disk_cache, method, dtype):
+        images = [FrameData(np.full((3, 4), value), unit='adu', uncertainty=error)
+                  for value, error in [(1, 3), (3, 4)]]
+        if entry == 'class':
+            result = ImCombiner(dtype=dtype, use_disk_cache=disk_cache,
+                                tmp_dir=str(tmp_path)).combine(images, method)
+        else:
+            # Keep the existing positional method and memory-limit arguments.
+            result = imcombine(images, method, 1e6, dtype=dtype,
+                               use_disk_cache=disk_cache, tmp_dir=str(tmp_path))
+        expected_dtype = np.dtype(dtype)
+        assert result.data.dtype == result.uncertainty.dtype == expected_dtype
+        assert result.data.nbytes == 12 * expected_dtype.itemsize
+        np.testing.assert_array_equal(result.data, 4 if method == 'sum' else 2)
+        if method == 'sum':
+            np.testing.assert_array_equal(result.uncertainty, 5)
+        else:
+            # Population scatter of [1, 3], divided by sqrt(2).
+            expected = np.asarray(1 / np.sqrt(2), dtype=expected_dtype)
+            np.testing.assert_allclose(result.uncertainty, expected,
+                                       rtol=np.finfo(expected_dtype).eps)
+        assert result.unit == images[0].unit
+        np.testing.assert_array_equal(result.mask, False)
+        for image, value, error in zip(images, (1, 3), (3, 4)):
+            np.testing.assert_array_equal(image.data, value)
+            np.testing.assert_array_equal(image.uncertainty, error)
+            assert image.dtype == np.dtype('float64')
+        assert not tmp_path.exists() or not list(tmp_path.iterdir())
+
+    def test_default_dtype_remains_float64(self):
+        result = imcombine([np.ones((2, 3), dtype=np.float32)], method='sum')
+        assert result.data.dtype == result.uncertainty.dtype == np.dtype('float64')
+
+    @pytest.mark.parametrize('option', ['FRAMEDATA_DISABLE_UNCERTAINTY'])
+    def test_float32_with_disabled_errors(self, monkeypatch, option):
+        from astropop.config import AstropopConfig
+        images = [FrameData(np.full((3, 4), value), uncertainty=1) for value in (1, 3)]
+        monkeypatch.setattr(AstropopConfig, option, True)
+        result = imcombine(images, method='mean', dtype='float32')
+        assert result.dtype == np.dtype('float32')
+        assert result.uncertainty is None
+        np.testing.assert_array_equal(result.data, 2)
+
     @pytest.mark.parametrize('method', ['sum', 'median', 'mean'])
     def test_combine_mask_median(self, method):
         # Just check if mask combining works.
@@ -996,3 +1123,304 @@ class Test_ImCombiner_HeaderMerging():
                         merge_header_keys=keys)
         for k, v in expect.items():
             assert_equal(res.meta[k], v)
+
+
+class TestRejectedUncertainties:
+    @pytest.mark.parametrize('skip', [False, True])
+    @pytest.mark.parametrize('normalize', [False, True])
+    @pytest.mark.parametrize('dtype', [np.float32, np.float64])
+    def test_rejected_samples_do_not_contribute_uncertainty(self, monkeypatch,
+                                                          skip, normalize, dtype):
+        from astropop.config import AstropopConfig
+
+        frames = [FrameData(np.full((3, 4), value), uncertainty=error)
+                  for value, error in [(1, 3), (2, 4), (100, 1000)]]
+        monkeypatch.setattr(AstropopConfig, 'FRAMEDATA_DISABLE_UNCERTAINTY', skip)
+        combiner = ImCombiner(dtype=dtype)
+        combiner.set_minmax_clip(0, 10)
+        result = combiner.combine(frames, 'sum', sum_normalize=normalize)
+        factor = 1.5 if normalize else 1
+        assert result.dtype == np.dtype(dtype)
+        np.testing.assert_allclose(result.data, 3*factor)
+        if skip:
+            assert result.uncertainty is None
+        else:
+            np.testing.assert_allclose(result.uncertainty, 5*factor)
+        np.testing.assert_array_equal(frames[-1]._unct, 1000)
+
+
+class TestMaskedReductions:
+    @staticmethod
+    def _median_oracle(data, valid):
+        result = np.empty(data.shape[1:], dtype=np.result_type(data.dtype, float))
+        for pixel in np.ndindex(result.shape):
+            values = sorted(v.item() for v, keep in
+                            zip(data[(slice(None),) + pixel], valid[(slice(None),) + pixel]) if keep)
+            if not values:
+                result[pixel] = np.nan if data.dtype.kind == 'f' else 0
+            elif len(values) % 2:
+                result[pixel] = np.median(np.array(values, dtype=data.dtype))
+            else:
+                lower, upper = values[len(values) // 2 - 1:len(values) // 2 + 1]
+                result[pixel] = np.mean(np.array([lower, upper], dtype=data.dtype))
+        return result
+
+    @pytest.mark.parametrize('dtype', ['float16', 'float32', 'float64', 'int8',
+                                      'uint8', 'int16', 'uint16', 'int32',
+                                      'int64', 'uint64', '>i2', '>f4'])
+    @pytest.mark.parametrize('samples', [1, 2, 7, 8])
+    @pytest.mark.parametrize('block_pixels', [1, 4, 1024])
+    def test_median_matches_scalar_oracle(self, dtype, samples, block_pixels):
+        from astropop.image._combine import _masked_median
+        rng = np.random.default_rng(301018)
+        dt = np.dtype(dtype)
+        data = rng.integers(0, 30, (samples, 3, 5)).astype(dt)
+        if dt.kind in 'iu':
+            data[:, 0, 1] = np.iinfo(dt).max
+        else:
+            data[0, 0, 1] = np.nan
+        valid = rng.random(data.shape) > 0.3
+        valid[:, 0, 0] = False
+        valid[:, 0, 1] = True
+        valid &= ~np.isnan(data)
+        original, original_valid = data.copy(), valid.copy()
+        result = _masked_median(data, valid, block_pixels=block_pixels)
+        np.testing.assert_array_equal(result, self._median_oracle(data, valid))
+        np.testing.assert_array_equal(data, original)
+        np.testing.assert_array_equal(valid, original_valid)
+
+    @pytest.mark.parametrize('dtype', ['float32', 'float64'])
+    @pytest.mark.parametrize('method', ['mean', 'sum', 'std', 'mad_std'])
+    def test_masked_statistics_match_independent_functions(self, dtype, method):
+        from astropy.stats import mad_std
+        from astropop.image._combine import _reduce
+        rng = np.random.default_rng(123)
+        data = rng.normal(100, 4, (31, 4, 5)).astype(dtype)
+        valid = rng.random(data.shape) > 0.2
+        valid[0] = True
+        # Compare promoted calculations with an independent float64 reference.
+        filled = data.astype(np.float64)
+        filled[~valid] = np.nan
+        if method == 'mad_std':
+            expected = mad_std(filled, axis=0, ignore_nan=True)
+        else:
+            expected = getattr(np, 'nan' + method)(filled, axis=0)
+        result = _reduce(data, valid, method, block_pixels=3)
+        np.testing.assert_allclose(result, expected, rtol=5 * np.finfo(dtype).eps)
+
+    def test_median_work_blocks_are_bounded(self, monkeypatch):
+        import astropop.image._combine as module
+        middle = module._middle_values
+        sizes = []
+        def record(work, accepted, count):
+            sizes.append(len(work))
+            assert work.flags.c_contiguous
+            return middle(work, accepted, count)
+        monkeypatch.setattr(module, '_middle_values', record)
+        data = np.arange(300 * 17 * 19, dtype='float32').reshape(300, 17, 19)
+        result = module._masked_median(data, np.ones(data.shape, dtype=bool), block_pixels=13)
+        np.testing.assert_array_equal(result, np.median(data, axis=0))
+        assert len(sizes) > 1 and max(sizes) <= 13
+
+
+class TestCombinerSharedMask:
+    @pytest.mark.parametrize('dtype', ['int16', 'float32', 'float64'])
+    @pytest.mark.parametrize('method', ['sum', 'mean', 'median'])
+    @pytest.mark.parametrize('normalize', [True, False])
+    def test_fully_rejected_pixels_are_masked(self, dtype, method, normalize):
+        frames = [FrameData([[1, 2]], uncertainty=3, mask=[[True, False]]) for _ in range(3)]
+        result = imcombine(frames, dtype=dtype, method=method, sum_normalize=normalize)
+        np.testing.assert_array_equal(result.mask, [[True, False]])
+        if np.dtype(dtype).kind == 'f':
+            assert np.isnan(result.data[0, 0])
+            assert np.isnan(result.uncertainty[0, 0])
+        else:
+            assert result.data[0, 0] == result.uncertainty[0, 0] == 0
+
+    @pytest.mark.parametrize('method', ['mean', 'median'])
+    def test_scatter_methods_do_not_read_source_uncertainty(self, monkeypatch, method):
+        frames = [FrameData([[value]], uncertainty=1000) for value in (1, 3)]
+        prop = FrameData.uncertainty
+        def read(frame):
+            if any(frame is source for source in frames):
+                pytest.fail('Read source uncertainties for a scatter estimator')
+            return prop.fget(frame)
+        monkeypatch.setattr(FrameData, 'uncertainty', property(read, prop.fset))
+        result = imcombine(frames, method=method)
+        np.testing.assert_array_equal(result.data, [[2]])
+        np.testing.assert_allclose(result.uncertainty, [[1 / np.sqrt(2)]])
+
+    @pytest.mark.parametrize('dtype', ['int16', 'float32', 'float64'])
+    def test_public_minmax_uses_shared_data_and_error_mask(self, dtype):
+        frames = [FrameData([[v]], uncertainty=e) for v, e in [(1, 3), (4, 4), (100, 1000)]]
+        result = imcombine(frames, method='sum', dtype=dtype,
+                           minmax_clip=(0, 10), sum_normalize=False)
+        np.testing.assert_array_equal(result.data, [[5]])
+        np.testing.assert_array_equal(result.uncertainty, [[5]])
+        assert frames[-1].uncertainty[0, 0] == 1000
+
+    @pytest.mark.parametrize('dtype', ['float32', 'float64'])
+    def test_missing_error_samples_keep_existing_quadrature_behavior(self, dtype):
+        frames = [FrameData([[1]], uncertainty=[[np.nan]]),
+                  FrameData([[2]], uncertainty=3)]
+        result = imcombine(frames, method='sum', dtype=dtype)
+        np.testing.assert_array_equal(result.data, [[3]])
+        np.testing.assert_array_equal(result.uncertainty, [[3]])
+
+    @pytest.mark.parametrize('budget', [0, -1, np.nan, np.inf])
+    def test_invalid_memory_budget(self, budget):
+        with pytest.raises(ValueError, match='finite and positive'):
+            ImCombiner(max_memory=budget)
+
+
+class TestMaskedScatterEdges:
+    @pytest.mark.parametrize('dtype', ['float32', 'float64'])
+    def test_rejected_extremes_do_not_overflow_scatter(self, dtype):
+        from astropop.image._combine import _reduce
+        data = np.array([[[1]], [[3]], [[np.finfo(dtype).max]]], dtype=dtype)
+        valid = np.array([[[True]], [[True]], [[False]]])
+        with np.errstate(over='raise', invalid='raise'):
+            result = _reduce(data, valid, 'std', block_pixels=1)
+        np.testing.assert_array_equal(result, [[1]])
+
+    @pytest.mark.parametrize('dtype', ['float32', 'float64'])
+    def test_mad_ignores_nan_residuals_from_infinities(self, dtype):
+        from astropy.stats import mad_std
+        from astropop.image._combine import _reduce
+        data = np.array([[[1, np.inf, np.inf]], [[2, np.inf, 3]]], dtype=dtype)
+        with np.errstate(invalid='ignore'):
+            # Astropy's NumPy backend warns on all-NaN residuals, whereas its
+            # optional Bottleneck backend can return NaN silently. Compare the
+            # numerical result without requiring either backend's warning.
+            with warnings.catch_warnings():
+                warnings.filterwarnings('ignore', message='All-NaN slice',
+                                        category=RuntimeWarning)
+                expected = mad_std(data, axis=0, ignore_nan=True)
+            result = _reduce(data, np.ones(data.shape, dtype=bool), 'mad_std', block_pixels=1)
+        np.testing.assert_allclose(result, expected, equal_nan=True)
+
+
+class TestPromotedIntegerReductions:
+    @pytest.mark.parametrize('disk_cache', [False, True])
+    @pytest.mark.parametrize('budget', [256, 65536])
+    def test_uint16_bias_mean(self, tmp_path, disk_cache, budget):
+        frames = [FrameData(np.full((3, 4), 1000, dtype=np.uint16), dtype='uint16')
+                  for _ in range(150)]
+        result = imcombine(frames, method='mean', dtype='uint16',
+                           memory_limit=budget, use_disk_cache=disk_cache,
+                           tmp_dir=str(tmp_path/'cache'))
+        np.testing.assert_array_equal(result.data, 1000)
+        np.testing.assert_array_equal(result.uncertainty, 0)
+        assert result.dtype == result.uncertainty.dtype == np.dtype('uint16')
+        assert all(frame.dtype == np.dtype('uint16') for frame in frames)
+        assert not list(tmp_path.glob('cache/*'))
+
+    @pytest.mark.parametrize('method', ['mean', 'median'])
+    def test_mean_and_scatter_agree_with_float_reference(self, method):
+        rng = np.random.default_rng(20261019)
+        data = rng.integers(900, 1100, (150, 3, 4), dtype=np.uint16)
+        frames = [FrameData(image, dtype='uint16') for image in data]
+        result = imcombine(frames, method=method, dtype='uint16')
+        expected = getattr(np, method)(data.astype(np.float64), axis=0)
+        expected_error = np.std(data.astype(np.float64), axis=0)/np.sqrt(len(data))
+        np.testing.assert_array_equal(result.data, expected.astype('uint16'))
+        np.testing.assert_array_equal(result.uncertainty, expected_error.astype('uint16'))
+        for frame, original in zip(frames, data):
+            np.testing.assert_array_equal(frame.data, original)
+
+    @pytest.mark.parametrize('method', ['mean', 'median'])
+    def test_uint16_high_median_values(self, method):
+        result = imcombine([np.full((2, 2), 60000, dtype='uint16')]*2,
+                           method=method, dtype='uint16')
+        np.testing.assert_array_equal(result.data, 60000)
+        np.testing.assert_array_equal(result.uncertainty, 0)
+
+    @pytest.mark.parametrize('deviation', ['std', 'mad_std'])
+    def test_unsigned_clipping_matches_astropy(self, deviation):
+        from astropy.stats import sigma_clip
+        data = np.array([0, 1, 1, 2, 1000], dtype='uint16')[:, None, None]
+        expected = sigma_clip(data.astype(float), sigma=2.5, cenfunc='median',
+                              stdfunc=deviation, axis=0, maxiters=1)
+        result = imcombine(list(data), method='mean', dtype='uint16',
+                           sigma_clip=2.5, sigma_dev_func=deviation)
+        np.testing.assert_array_equal(result.data, expected.mean(axis=0).astype('uint16'))
+
+    @pytest.mark.parametrize('dtype, value', [('int64', 2**62),
+                                             ('uint64', 2**63)])
+    @pytest.mark.parametrize('method', ['mean', 'median'])
+    def test_representable_large_integer_values(self, dtype, value, method):
+        images = [np.full((2, 2), value, dtype=dtype)]*2
+        result = imcombine(images, method=method, dtype=dtype)
+        np.testing.assert_array_equal(result.data, value)
+        np.testing.assert_array_equal(result.uncertainty, 0)
+
+
+class TestRejectionFraction:
+    @pytest.mark.parametrize('filters', [dict(minmax_clip=(None, 10)),
+                                         dict(sigma_clip=3, sigma_dev_func='mad_std'),
+                                         dict(minmax_clip=(None, 10), sigma_clip=3,
+                                              sigma_dev_func='mad_std')])
+    @pytest.mark.parametrize('method', ['mean', 'median', 'sum'])
+    @pytest.mark.parametrize('budget', [128, 10**9])
+    @pytest.mark.parametrize('disk_cache', [False, True])
+    @pytest.mark.parametrize('disabled', [False, True])
+    def test_fraction_pools_only_new_rejections(self, monkeypatch, tmp_path,
+                                               filters, method, budget,
+                                               disk_cache, disabled, caplog):
+        from astropop.config import AstropopConfig as conf
+        frames = [FrameData(np.full((2, 3), value, dtype=float), uncertainty=1)
+                  for value in (1, 2, 3, 100)]
+        frames[0].mask_pixels((0, 0))
+        frames[1].data[0, 2] = np.nan
+        monkeypatch.setattr(conf, 'FRAMEDATA_DISABLE_FLAGS', disabled)
+        monkeypatch.setattr(conf, 'FRAMEDATA_DISABLE_UNCERTAINTY', disabled)
+        with caplog.at_level('INFO', logger='astropop'):
+            result = imcombine(frames, method=method, memory_limit=budget,
+                               use_disk_cache=disk_cache, tmp_dir=str(tmp_path/'cache'),
+                               **filters)
+        # Six 100s are rejected. Of 24 inputs, one is NaN and one is masked
+        # only when flags are enabled. Neither input exclusion is a rejection.
+        eligible = 23 if disabled else 22
+        summaries = [r.getMessage() for r in caplog.records
+                     if r.getMessage().startswith('Combination filters rejected ')]
+        assert summaries == [f'Combination filters rejected 6 of {eligible} '
+                             f'initially valid samples ({100*6/eligible:.2f}%).']
+        if disabled:
+            assert result.flags is result.uncertainty is None
+        assert not list(tmp_path.glob('cache/*'))
+
+    def test_no_filter_has_no_rejection_summary(self, caplog):
+        with caplog.at_level('INFO', logger='astropop'):
+            imcombine([np.ones((2, 3))])
+        assert 'Combination filters rejected' not in caplog.text
+
+    @pytest.mark.parametrize('value, fraction', [(1, 0.0), (100, 1.0), (np.nan, 0.0)])
+    def test_zero_all_and_empty(self, value, fraction, caplog):
+        with caplog.at_level('INFO', logger='astropop'):
+            imcombine([np.full((2, 3), value)], minmax_clip=(0, 10))
+        eligible = 0 if np.isnan(value) else 6
+        rejected = eligible if value == 100 else 0
+        assert (f'Combination filters rejected {rejected} of {eligible} '
+                f'initially valid samples ({100*fraction:.2f}%).') in caplog.text
+
+    def test_weighted_across_unequal_chunks(self, monkeypatch, caplog):
+        from astropop.image.imcombine import ImCombiner
+        frames = [FrameData(np.ones((2, 3))) for _ in range(2)]
+        frames[0].data[:, 0] = 100
+        combiner = ImCombiner()
+        # The first tile has 2/4 rejections; the second has 0/8. Their simple
+        # average (1/4) is wrong: count samples globally to obtain 2/12.
+        monkeypatch.setattr(combiner, '_chunk_slices', lambda errors: iter([
+            (slice(0, 2), slice(0, 1)), (slice(0, 2), slice(1, 3))]))
+        combiner.set_minmax_clip(None, 10)
+        with caplog.at_level('INFO', logger='astropop'):
+            combiner.combine(frames, 'mean')
+        assert ('Combination filters rejected 2 of 12 initially valid '
+                'samples (16.67%).') in caplog.text
+        # Counts are local to each call, including reuse after a previous run.
+        caplog.clear()
+        combiner.set_minmax_clip(None, 1000)
+        with caplog.at_level('INFO', logger='astropop'):
+            combiner.combine(frames, 'mean')
+        assert ('Combination filters rejected 0 of 12 initially valid '
+                'samples (0.00%).') in caplog.text
