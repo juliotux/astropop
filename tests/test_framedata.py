@@ -311,13 +311,39 @@ class TestFrameDataCreationData:
         framedata = FrameData(np.zeros([2, 2]), unit="electron")
         assert_is(framedata.unit, u.electron)
 
-    def test_frame_init_invalid_dtype(self):
-        with pytest.raises(ValueError, match='float'):
-            FrameData(np.zeros([2, 2]), dtype='i4')
+    @pytest.mark.parametrize('dtype', ['complex64', bool, object])
+    def test_frame_init_invalid_dtype(self, dtype):
+        with pytest.raises(ValueError, match='integer or float'):
+            FrameData(np.zeros([2, 2]), dtype=dtype)
 
     def test_frame_init_dtype_defaults_f8(self):
         framedata = FrameData(np.zeros([2, 2]))
         assert_is(framedata.dtype, np.dtype('f8'))
+
+    @pytest.mark.parametrize('dtype', ['int16', 'uint16', 'int32'])
+    @pytest.mark.parametrize('uncertainty', [1.75, [[1.75, 2.75]]])
+    def test_integer_data_and_uncertainty(self, dtype, uncertainty):
+        frame = FrameData([[10.9, 20.9]], dtype=dtype, uncertainty=uncertainty,
+                         unit='adu', mask=[[False, True]])
+        assert frame.dtype == frame.uncertainty.dtype == np.dtype(dtype)
+        np.testing.assert_array_equal(frame.data, [[10, 20]])
+        expected = [[1, 1]] if np.isscalar(uncertainty) else [[1, 2]]
+        np.testing.assert_array_equal(frame.uncertainty, expected)
+        np.testing.assert_array_equal(frame.get_uncertainty(), expected)
+        np.testing.assert_array_equal(frame.mask, [[False, True]])
+        copied = frame.copy()
+        assert copied.dtype == copied.uncertainty.dtype == np.dtype(dtype)
+        copied.data[0, 0] = 5
+        assert frame.data[0, 0] == 10
+        np.testing.assert_array_equal(frame.get_masked_data(), [[10, np.nan]])
+        np.testing.assert_array_equal(frame.get_masked_data(fill_value=0), [[10, 0]])
+
+    @pytest.mark.parametrize('invalid', [np.nan, np.inf])
+    def test_integer_nonfinite_values(self, invalid):
+        with pytest.raises(ValueError, match='finite input pixels'):
+            FrameData([[invalid]], dtype='int16')
+        with pytest.raises(ValueError, match='finite values'):
+            FrameData([[1]], dtype='int16', uncertainty=invalid)
 
 
 class TestFrameDataMemMap:

@@ -176,7 +176,8 @@ class FrameData:
     unit : `~astropy.units.Unit` or string (optional)
         The data unit. Must be `~astropy.units.Unit` compliant.
     dtype : string or `~numpy.dtype` (optional)
-        Floating-point dtype of the data. Default: float64.
+        Integer or floating-point dtype of the data. Default: float64.
+        Integer uncertainties use the same dtype and truncate fractions.
     uncertainty : float, array_like or `None` (optional)
         Standard deviation in the data unit. Scalars are expanded to the
         image shape; arrays must match it. Default: None.
@@ -239,10 +240,12 @@ class FrameData:
             raise ValueError('Data must be 2D array.')
         if dtype is not None:
             dtype = np.dtype(dtype)
-            if dtype.kind != 'f':
-                raise ValueError('Data dtype must be float.')
+            if dtype.kind not in 'iuf':
+                raise ValueError('Data dtype must be integer or float.')
         else:
             dtype = np.dtype('f8')
+        if dtype.kind in 'iu' and not np.all(np.isfinite(data)):
+            raise ValueError('Integer data require finite input pixels.')
 
         # Disabled arrays must not be validated, converted, or allocated.
         if conf.FRAMEDATA_DISABLE_UNCERTAINTY:
@@ -407,10 +410,12 @@ class FrameData:
         self._data = reset_memmap_array(self._data, value)
 
     def get_masked_data(self, fill_value=np.nan):
-        """Return a copy of the data with masked pixels as `fill_value`."""
+        """Copy data with masked pixels filled; nonfinite fills promote ints."""
         d = self.data.copy()
         mask = self.mask
         if mask is not None:
+            if self.dtype.kind in 'iu' and not np.isfinite(fill_value):
+                d = d.astype(float)
             d[mask] = fill_value
         return d
 
@@ -426,8 +431,12 @@ class FrameData:
             self._unct = delete_array_memmap(self._unct, read=False, remove=True)
             return
 
-        # Put is valid containers
-        if np.isscalar(value):
+        if self.dtype.kind in 'iu':
+            value = uncertainty_unit_consistency(self.unit, value)
+            if not np.all(np.isfinite(value)):
+                raise ValueError('Integer uncertainties require finite values.')
+            value = np.asarray(value, dtype=self.dtype)
+        elif np.isscalar(value):
             value = float(value)
         else:
             value = np.asarray(value, dtype=self.dtype)

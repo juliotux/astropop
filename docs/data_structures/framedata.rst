@@ -13,9 +13,10 @@ Creating and copying frames
 ---------------------------
 
 Provide a two-dimensional array or nested sequence. Data are stored as
-``float64`` by default; use ``dtype`` to choose another floating-point type.
-The constructor requires a floating-point dtype. A scalar uncertainty is expanded to the
-image shape::
+``float64`` by default; use ``dtype`` to choose another integer or
+floating-point type. Integer frames also store their uncertainties as integers,
+truncating fractional values. A scalar uncertainty is expanded to the image
+shape::
 
     >>> import numpy as np
     >>> from astropop.framedata import FrameData, PixelMaskFlags, read_framedata
@@ -30,8 +31,8 @@ A |Quantity| supplies its own unit. A conflicting explicit ``unit`` raises an
 error. Without either, the data are dimensionless. Access the numerical array
 through ``frame.data`` and its unit through ``frame.unit``.
 
-Construction can share a supplied floating-point array. Use ``copy()`` for an
-independent frame, or ``astype()`` to copy while changing floating-point dtype.
+Construction can share a supplied array of the selected dtype. Use ``copy()``
+for an independent frame, or ``astype()`` to copy while changing dtype.
 Copies include metadata and any arrays enabled by the current configuration::
 
     >>> duplicate = frame.copy()
@@ -39,6 +40,11 @@ Copies include metadata and any arrays enabled by the current configuration::
     >>> assert frame.data[0, 0] == 10
     >>> converted = frame.astype('float64')
     >>> assert converted.dtype == np.dtype('float64')
+
+Integer frames require finite data and uncertainties. Masks remain separate
+from the pixels. ``get_masked_data()`` returns a floating-point copy when a
+nonfinite fill such as the default NaN is requested; a finite integer fill
+keeps the integer dtype.
 
 ``read_framedata(frame)`` returns the same object. Use
 ``read_framedata(frame, copy=True)`` to request a copy. ``check_framedata`` is an
