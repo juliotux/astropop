@@ -214,9 +214,13 @@ def flat_correct(image, master_flat, min_value=None, norm_value=None,
         Image to perform the flat field correction. `~astropy.units.Quantity`,
         numerical values and `~astropy.nddata.CCDData` are also suported.
     master_flat : `~astropop.framedata.FrameData` compatible
-        Master flat field image to be subtracted from the ``image``.
+        Master flat field image used as the divisor of the ``image``.
     min_value : float, optional
+        Replace smaller master-flat data values by this bound before
+        normalization. None leaves values unchanged; this does not mask them.
     norm_value : float, optional
+        Divide the master flat by this explicit value before correcting the
+        image. None performs no normalization.
     inplace : bool, optional
         If True, the operations will be performed inplace in the `image`.
 

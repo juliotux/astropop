@@ -165,20 +165,22 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto',
                         gain=1.0, bkg_error=None, mask=None,
                         bkg_method='mmm', bkg_sigma_clip=3.0,
                         pixel_flags=None, box_size=11):
-    """Perform aperture photometry using sep. Output units (ADU or e-) will
-    be the considered the same as input.
+    """Perform circular-aperture photometry using Photutils.
 
-    This method just wraps the `~photutils.ApertureStats` method
+    Data are divided by gain before measurement. Returned fluxes are on this
+    divided-data scale; use gain=1 to preserve the input numerical scale.
+
+    This method just wraps the `~photutils.aperture.ApertureStats` method
     from photutils, assuming standard arguments and performing extra steps:
 
     - Calculate the total error (bkg+poisson) from input data, based on data
       and bkg_error.
     - It assumes the `'exact'` method of subpixel sampling.
     - Compute an optimal aperture radius, considering only the gaussian
-      background-only error. This radius is defined as r=0.6731*GFWHM.
+      background-only error. This radius is defined as r=0.6371*GFWHM.
     - Use sigma clipping for annulus background calculation.
     - Perform photometry flags generation. See
-      `~astropop.photometry.PhotometryFlags`.
+      `~astropop.photometry.aperture.PhotometryFlags`.
     - Sources recentering using `~photutils.centroids` methods. Only performed
       if `recenter_limit` is not None.
 
@@ -193,7 +195,7 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto',
     r : float, `'auto'` (optional)
         Aperture radius, in pixels. If 'auto', the value will be estimated
         based in the median gaussian FWHM of the sources in the image
-        (r=0.6731*GFWHM).
+        (r=0.6371*GFWHM).
         Default: 'auto'
     r_ann : array_like([float, float]), `'auto'` `None` (optional)
         Annulus radii (r_in, r_out) for local background extraction in pixels.
@@ -212,18 +214,21 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto',
         for more information.
         Default: 'com'
     gain : float (optional)
-        Gain to correctly calculate the error.
+        Divide data by this value before measurement and use it as the
+        effective gain for the Poisson error calculation. Returned fluxes
+        are not multiplied back by gain.
         Default: 1.0
     bkg_error : float or `~numpy.ndarray` (optional)
         1-sigma gaussian error of the background-only error of input data.
-        If None, zero will be used.
+        Passed to the error calculation without division by gain; express
+        it on the divided-data scale. If None, zero will be used.
         Default: `None`
     mask : `~numpy.ndarray` (optional)
         Mask badpixels and problematic ccd areas.
         Default: `None`
     pixel_flags : `~numpy.ndarray` (optional)
         Array with flags for each pixel. If None, no flags will be used.
-        Flags must follow the `~astropop.frametada.PixelMaskFlags` standard.
+        Flags must follow the `~astropop.framedata.PixelMaskFlags` standard.
         Default: `None`
     bkg_method : 'mmm', 'mode', 'median' or 'mean' (optional)
         Algorith to calculate the background value. `'mode'` or `'mmm'`
@@ -232,10 +237,9 @@ def aperture_photometry(data, x, y, r='auto', r_ann='auto',
         just compute these values in the annulus. All algorithms can use sigma
         clipping if ``bkg_sigma_clip`` is not None.
         Default: 'mmm'
-    bkg_sigma_clip : float, tuple(float, float) or `None` (optional)
-        Sigma clipping values for background calculation. If a tuple is
-        provided, the first value will be used as lower sigma and the second
-        as upper sigma. Only used if ``sky_algorithm='sigmaclip'``.
+    bkg_sigma_clip : float or `None` (optional)
+        Symmetric sigma threshold for annulus background clipping. None
+        disables clipping. Used when an annulus is requested.
         Default: 3.0
     box_size : int (optional)
         Box size for median FWHM computation. Default is 11.
