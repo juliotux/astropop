@@ -453,8 +453,9 @@ class TestOptionalArrays:
         frames[0].mask_pixels((0, 0))
         expected = imcombine(frames, method=method)
         monkeypatch.setattr(conf, option, True)
-        module = importlib.import_module('astropop.image.imcombine')
-        monkeypatch.setitem(module._funcs, 'std', lambda *a, **k: pytest.fail('Uncertainty std calculated'))
+        module = importlib.import_module('astropop.image._combine')
+        monkeypatch.setattr(module, '_masked_std',
+                            lambda *a, **k: pytest.fail('Uncertainty std calculated'))
         comb = ImCombiner(max_memory=200, use_disk_cache=disk_cache, tmp_dir=str(tmp_path))
         comb._load_images(frames)
         assert all(f.uncertainty is None for f in comb._images)

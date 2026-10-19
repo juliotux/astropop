@@ -8,8 +8,7 @@ import pytest
 from astropy.io import fits
 
 from astropy.utils import NumpyRNGContext
-from astropop.framedata import FrameData
-from astropop.logger import logger, log_to_list
+from astropop.framedata import FrameData, PixelMaskFlags
 from astropop.image.imcombine import imcombine, _sigma_clip, \
                                      _minmax_clip, ImCombiner
 from astropop.testing import *
@@ -400,215 +399,109 @@ class Test_ImCombineConformance():
             comb.combine(li, method='hulk-smash')
 
 
-class Test_ImCombiner_ChunkYielder():
-    @pytest.mark.parametrize('method', ['mean', 'median', 'sum'])
-    def test_chunk_yielder_f64(self, method):
-        n = 100
-        d = np.random.random((100, 100)).astype(np.float64)
-        li = [FrameData(d, unit='adu') for i in range(n)]
-        # data size = 8 000 000 = 8 bytes * 100 * 100 * 100
-        # total size = 8M
+class Test_ImCombiner_ChunkYielder:
+    @pytest.mark.parametrize('dtype', ['int16', 'float32', 'float64'])
+    @pytest.mark.parametrize('method', ['sum', 'mean', 'median'])
+    @pytest.mark.parametrize('with_errors', [False, True])
+    def test_chunks_cover_image_with_bounded_buffers(self, dtype, method, with_errors):
+        # Seven 13x17 images provide 221 output pixels. Half of the 4096-byte
+        # budget (2048 bytes) is available for the stacked tile and results;
+        # the other half is reserved for statistics work blocks.
+        #
+        # On 64-bit NumPy, the estimate per output pixel is:
+        #   7 * (itemsize * (1 + propagated_errors) + 1 validity byte)
+        #   + 4 * (8-byte index + itemsize).
+        # Only sum propagates individual input errors; mean/median use scatter.
+        #
+        # dtype    errors  bytes/pixel  pixel limit  target chunks  actual
+        # int16    no           61          33              7          13
+        # int16    yes          75          27              9          13
+        # float32  no           83          24             10          13
+        # float32  yes         111          18             13          13
+        # float64  no          127          16             14          39
+        # float64  yes         183          11             21          39
+        #
+        # Targets are ceil(221 / pixel_limit). Slicing uses whole rows first:
+        # int16/float32 yield 13 tiles of 1x17 pixels. float64 also divides
+        # columns into widths 8, 8, 1, yielding 13 * 3 = 39 tiles.
+        data = np.arange(13 * 17).reshape(13, 17)
+        mask = np.zeros(data.shape, dtype=bool)
+        mask[3:5, 4:7] = True
+        frames = [FrameData(data, mask=mask, uncertainty=2 if with_errors else None)
+                  for _ in range(7)]
+        comb = ImCombiner(dtype=dtype, max_memory=4096)
+        comb._load_images(frames)
+        visits = np.zeros(data.shape, dtype=int)
+        chunks = 0
+        for chunk, errors, slc in comb._chunk_yielder(method):
+            chunks += 1
+            visits[slc] += 1
+            assert chunk.dtype == np.dtype(dtype)
+            np.testing.assert_array_equal(chunk, np.broadcast_to(data[slc], chunk.shape))
+            np.testing.assert_array_equal(comb._valid, np.broadcast_to(~mask[slc], chunk.shape))
+            allocated = chunk.nbytes + comb._valid.nbytes
+            if method == 'sum' and with_errors:
+                assert errors.dtype == chunk.dtype
+                np.testing.assert_array_equal(errors, 2)
+                allocated += errors.nbytes
+            else:
+                assert errors is None
+            assert allocated <= 4096 // 2
+        np.testing.assert_array_equal(visits, 1)
+        assert chunks > 1
+        if np.dtype(np.intp).itemsize == 8:
+            assert chunks == (39 if dtype == 'float64' else 13)
+        comb._clear()
 
-        comb = ImCombiner(max_memory=1e6, dtype=np.float64)
-        comb._load_images(li)
-
-        logs = []
-        _lh = log_to_list(logger, logs, False)
-        _level = logger.getEffectiveLevel()
-        logger.setLevel('DEBUG')
-
-        if method == 'median':
-            # for median, tot_size=8M*4.5=36M
-            # n_chunks=36M/1M=36
-            # xstep = 100/36 = 2.777 => 2
-            # so n_chunks=100/2 = 50
-            nchunk = 50
-            shape = [(n, 2, 100)]
-        elif method in ['mean', 'sum']:
-            # for mean and sum, tot_size=8M*3=24M
-            # n_chunks=24M/1M=24
-            # xstep = 100/24 = 4.166 => 4
-            # so n_chunks=100/4 = 25
-            nchunk = 25
-            shape = [(n, 4, 100)]
-
-        i = 0
-        for chunk, unct, slc in comb._chunk_yielder(method=method):
-            i += 1
-            assert_in(chunk.shape, shape)
-            assert_equal(chunk[0], d[slc])
-            assert_is_none(unct)
-            assert_is_instance(chunk, np.ndarray)
-        assert_equal(i, nchunk)
-        assert_in(f'Splitting the images into {nchunk} chunks.', logs)
-        logs.clear()
-
-        # this should not split into chunks
+    def test_large_budget_yields_one_chunk(self):
+        # 7 * (8 data bytes + 1 validity byte) + 4 * (8 + 8) = 127
+        # estimated bytes/pixel. All 221 pixels need only 28,067 bytes,
+        # comfortably below the 50,000,000-byte tile allowance: one chunk.
         comb = ImCombiner(max_memory=1e8)
-        comb._load_images(li)
+        comb._load_images([FrameData(np.ones((13, 17))) for _ in range(7)])
+        chunks = 0
+        for data, uncertainty, slc in comb._chunk_yielder('median'):
+            chunks += 1
+            assert data.shape == (7, 13, 17)
+            assert uncertainty is None
+            np.testing.assert_array_equal(comb._valid, True)
+        assert chunks == 1
+        comb._clear()
 
-        i = 0
-        for chunk, unct, slc in comb._chunk_yielder(method=method):
-            i += 1
-            assert_equal(chunk.shape, (n, 100, 100))
-            assert_equal(chunk[0], d)
-            assert_is_none(unct)
-            assert_is_instance(chunk, np.ndarray)
-        assert_equal(i, 1)
+    def test_read_chunk_does_not_build_full_frame_masks(self, monkeypatch):
+        # One float64 image costs an estimated 73 bytes/pixel. The 500-byte
+        # allowance fits 6 pixels: ceil(323/6) = 54 target chunks. Row-first
+        # slicing produces 17 rows * 5 column tiles (4,4,4,4,3) = 85 chunks.
+        data = np.arange(17 * 19).reshape(17, 19).astype(float)
+        data[2, 3] = np.nan
+        frame = FrameData(data, mask=np.indices(data.shape)[0] > 12)
+        # Status bits other than MASKED must remain accepted.
+        frame.add_flags(PixelMaskFlags.SATURATED, (0, 0))
+        comb = ImCombiner(max_memory=1000)
+        comb._load_images([frame])
+        def full_mask(frame):
+            pytest.fail('Constructed a full-frame mask while reading a tile')
+        monkeypatch.setattr(FrameData, 'mask', property(full_mask))
+        for chunk, errors, slc in comb._chunk_yielder('mean'):
+            expected = ~np.isnan(data[slc]) & (np.indices(data.shape)[0][slc] <= 12)
+            np.testing.assert_array_equal(comb._valid[0], expected)
+            np.testing.assert_array_equal(chunk[0], data[slc])
+        comb._clear()
 
-    @pytest.mark.parametrize('method', ['mean', 'median', 'sum'])
-    def test_chunk_yielder_f32(self, method):
-        # using float32, the number of chunks are almost halved
-        n = 100
-        d = np.random.random((100, 100)).astype(np.float64)
-        li = [FrameData(d, unit='adu') for i in range(n)]
-        # data size = 4 000 000 = 4 bytes * 100 * 100 * 100
-        # total size = 4 000 000 = 4M
-
-        comb = ImCombiner(max_memory=1e6, dtype=np.float32)
-        comb._load_images(li)
-
-        logs = []
-        _lh = log_to_list(logger, logs, False)
-        _level = logger.getEffectiveLevel()
-        logger.setLevel('DEBUG')
-
-        if method == 'median':
-            # for median, tot_size=4M*4.5=18M
-            # n_chunks=18M/1M=18
-            # xstep = 100/18 = 5.55 => 5
-            # so n_chunks=100/5=20
-            nchunk = 20
-            shape = [(n, 5, 100)]
-        elif method in ['mean', 'sum']:
-            # for mean and sum, tot_size=4*3=12M
-            # n_chunks=12M/1M=12
-            # xstep = 100/12 = 8.33 => 8
-            # so n_chunks=100/8 = 13
-            nchunk = 13
-            shape = [(n, 8, 100), (n, 4, 100)]
-
-        i = 0
-        for chunk, unct, slc in comb._chunk_yielder(method=method):
-            i += 1
-            assert_in(chunk.shape, shape)
-            assert_almost_equal(chunk[0], d[slc], decimal=5)
-            assert_is_none(unct)
-            assert_is_instance(chunk, np.ndarray)
-        assert_equal(i, nchunk)
-        assert_in(f'Splitting the images into {nchunk} chunks.', logs)
-        logs.clear()
-
-        # this should not split into chunks
-        comb = ImCombiner(max_memory=1e8)
-        comb._load_images(li)
-
-        i = 0
-        for chunk, unct, slc in comb._chunk_yielder(method=method):
-            i += 1
-            assert_equal(chunk.shape, (n, 100, 100))
-            assert_almost_equal(chunk[0], d, decimal=5)
-            assert_is_none(unct)
-            assert_is_instance(chunk, np.ndarray)
-        assert_equal(i, 1)
-        logs.clear()
-
-    def test_chunk_yielder_ysplit(self):
-        # using float32, the number of chunks are almost halved
-        n = 100
-        d = np.random.random((100, 100)).astype(np.float64)
-        li = [FrameData(d, unit='adu') for i in range(n)]
-        # data size = 4 000 000 = 4 bytes * 100 * 100 * 100
-        # total size = 4 000 000 = 4M
-
-        logs = []
-        lh = log_to_list(logger, logs, False)
-        level = logger.getEffectiveLevel()
-        logger.setLevel('DEBUG')
-
-        # this should split in 200 chunks!
-        # total_size = 4.5*4M = 18M
-        # num_chunks = 18M/0.1M = 180
-        # x_step = 100/180 = 0.55 => 1
-        # y_step = 50
-        comb = ImCombiner(max_memory=1e5, dtype=np.float32)
-        comb._load_images(li)
-        i = 0
-        for chunk, unct, slc in comb._chunk_yielder(method='median'):
-            i += 1
-            for k in chunk:
-                assert_equal(k.shape, (1, 50))
-                assert_almost_equal(k, d[slc])
-                assert_is_none(unct)
-                assert_is_instance(k, np.ndarray)
-        assert_equal(i, 200)
-        assert_in('Splitting the images into 200 chunks.', logs)
-        logs.clear()
-
-        logger.setLevel(level)
-        logger.removeHandler(lh)
-
-    def test_chunk_yielder_uncertainty(self):
-        n = 100
-        d = np.random.random((100, 100)).astype(np.float64)
-        u = np.random.random((100, 100)).astype(np.float64)
-        li = [FrameData(d, uncertainty=u, unit='adu') for i in range(n)]
-
-        # simple sum with uncertainties
-        comb = ImCombiner(max_memory=2e6, dtype=np.float64)
-        comb._load_images(li)
-        i = 0
-        for chunk, unct, slc in comb._chunk_yielder(method='sum'):
-            i += 1
-            for k, un in zip(chunk, unct):
-                assert_in(k.shape, ((8, 100), (4, 100)))
-                assert_almost_equal(k, d[slc])
-                assert_almost_equal(un, u[slc])
-                assert_is_instance(un, np.ndarray)
-        assert_equal(i, 13)
-
-        # if a single uncertainty is empty, disable it
-        logs = []
-        lh = log_to_list(logger, logs, False)
-        level = logger.getEffectiveLevel()
-        logger.setLevel('DEBUG')
-
-        li[5].uncertainty = None
-        comb = ImCombiner(max_memory=2e6, dtype=np.float64)
-        comb._load_images(li)
-        i = 0
-        for chunk, unct, slc in comb._chunk_yielder(method='sum'):
-            i += 1
-            for k in chunk:
-                assert_in(k.shape, ((8, 100), (4, 100)))
-                assert_almost_equal(k, d[slc])
-                assert_equal(unct, None)
-        assert_equal(i, 13)
-        assert_in('One or more frames have empty uncertainty. '
-                  'Some features are disabled.',
-                  logs)
-        logs.clear()
-        logger.setLevel(level)
-        logger.removeHandler(lh)
-
-    def test_chunk_yielder_mask_nan(self):
-        n = 100
-        d = np.random.random((100, 100)).astype(np.float64)
-        m = np.zeros((100, 100), dtype=bool)
-        # all these pixels should be masked at the end
-        m[90:] = True
-        m[50:60, 50:60] = True
-        m[1, 1] = True
-        li = [FrameData(d, mask=m, unit='adu') for i in range(n)]
-
-        d_masked = d.copy()
-        d_masked[m] = np.nan
-
-        comb = ImCombiner(max_memory=2e6, dtype=np.float64)
-        comb._load_images(li)
-        for chunk, unct, slc in comb._chunk_yielder(method='sum'):
-            for k in chunk:
-                assert_equal(np.isnan(k), m[slc])
+    def test_previous_chunk_is_released_before_next_allocation(self):
+        import weakref
+        # 500 / 127 fits 3 pixels. For 17x19 images this gives 108 target
+        # chunks, then 17 rows * 10 column tiles (nine widths of 2, then 1)
+        # = 170 actual chunks. Each previous tile must die before the next.
+        comb = ImCombiner(max_memory=1000)
+        comb._load_images([FrameData(np.ones((17, 19))) for _ in range(7)])
+        previous = None
+        for chunk, errors, slc in comb._chunk_yielder('median'):
+            if previous is not None:
+                assert previous() is None
+            previous = weakref.ref(chunk)
+            del chunk
+        comb._clear()
 
 
 class Test_ImCombiner_LoadImages():
@@ -729,10 +622,11 @@ class Test_ImCombiner_Rejection():
         comb._buffer = data
         # with these limits, only the outliers must be masked
         comb.set_minmax_clip(_min, _max)
+        comb._valid = None
         comb._apply_rejection()
         # original mask must be kept
-        _sr = np.sum(np.isnan(comb._buffer))
-        assert_equal(np.isnan(comb._buffer), expect)
+        _sr = np.sum(~comb._valid)
+        assert_equal(~comb._valid, expect)
 
     def test_apply_sigmaclip(self):
         data = np.array([1, -1, 1, -1, 65000], dtype=np.float32)
@@ -742,23 +636,26 @@ class Test_ImCombiner_Rejection():
         comb._buffer = data.copy()
         comb.set_sigma_clip(1)
         expect = [0, 0, 0, 0, 1]
+        comb._valid = None
         comb._apply_rejection()
-        assert_equal(np.isnan(comb._buffer), expect)
+        assert_equal(~comb._valid, expect)
 
         # if threshold=3, 65000 must be masked too using mad_std.
         comb._buffer = data.copy()
         comb.set_sigma_clip(3)
         expect = [0, 0, 0, 0, 1]
+        comb._valid = None
         comb._apply_rejection()
-        assert_equal(np.isnan(comb._buffer), expect)
+        assert_equal(~comb._valid, expect)
 
         # if threshold=3 and a mask, the mask must be preserved.
         comb._buffer = data.copy()
         comb._buffer[1] = np.nan
         comb.set_sigma_clip(3)
         expect = [0, 1, 0, 0, 1]
+        comb._valid = None
         comb._apply_rejection()
-        assert_equal(np.isnan(comb._buffer), expect)
+        assert_equal(~comb._valid, expect)
 
     def test_apply_sigmaclip_only_lower(self):
         data = np.array([1, -1, 1, -1, 65000], dtype=np.float32)
@@ -768,8 +665,9 @@ class Test_ImCombiner_Rejection():
         comb._buffer = data.copy()
         comb.set_sigma_clip((1, None))
         expect = [0, 0, 0, 0, 0]
+        comb._valid = None
         comb._apply_rejection()
-        assert_equal(np.isnan(comb._buffer), expect)
+        assert_equal(~comb._valid, expect)
 
     def test_apply_sigmaclip_only_higher(self):
         data = np.array([1, -1, 1, -1, -65000], dtype=np.float32)
@@ -779,8 +677,9 @@ class Test_ImCombiner_Rejection():
         comb._buffer = data.copy()
         comb.set_sigma_clip((None, 1))
         expect = [0, 0, 0, 0, 0]
+        comb._valid = None
         comb._apply_rejection()
-        assert_equal(np.isnan(comb._buffer), expect)
+        assert_equal(~comb._valid, expect)
 
 
 class Test_ImCombiner_Combine():
@@ -875,13 +774,14 @@ class Test_ImCombiner_Combine():
                            sigma_dev_func='mad_std')
         np.testing.assert_array_equal(result.data, 2)
 
-    def test_integer_clipping_callback_cannot_modify_pixels(self):
+    @pytest.mark.parametrize('dtype', ['int16', 'float32', 'float64'])
+    def test_clipping_callback_cannot_modify_pixels(self, dtype):
         def center(data, axis):
             data[:] = 999
             return np.full(data.shape[1:], 2, dtype=data.dtype)
 
         images = [np.full((2, 2), value) for value in (1, 2, 3)]
-        result = imcombine(images, method='mean', dtype='int16', sigma_clip=3,
+        result = imcombine(images, method='mean', dtype=dtype, sigma_clip=3,
                            sigma_cen_func=center, sigma_dev_func='mad_std')
         np.testing.assert_array_equal(result.data, 2)
 
@@ -1265,6 +1165,56 @@ class TestMaskedReductions:
         result = module._masked_median(data, np.ones(data.shape, dtype=bool), block_pixels=13)
         np.testing.assert_array_equal(result, np.median(data, axis=0))
         assert len(sizes) > 1 and max(sizes) <= 13
+
+
+class TestCombinerSharedMask:
+    @pytest.mark.parametrize('dtype', ['int16', 'float32', 'float64'])
+    @pytest.mark.parametrize('method', ['sum', 'mean', 'median'])
+    @pytest.mark.parametrize('normalize', [True, False])
+    def test_fully_rejected_pixels_are_masked(self, dtype, method, normalize):
+        frames = [FrameData([[1, 2]], uncertainty=3, mask=[[True, False]]) for _ in range(3)]
+        result = imcombine(frames, dtype=dtype, method=method, sum_normalize=normalize)
+        np.testing.assert_array_equal(result.mask, [[True, False]])
+        if np.dtype(dtype).kind == 'f':
+            assert np.isnan(result.data[0, 0])
+            assert np.isnan(result.uncertainty[0, 0])
+        else:
+            assert result.data[0, 0] == result.uncertainty[0, 0] == 0
+
+    @pytest.mark.parametrize('method', ['mean', 'median'])
+    def test_scatter_methods_do_not_read_source_uncertainty(self, monkeypatch, method):
+        frames = [FrameData([[value]], uncertainty=1000) for value in (1, 3)]
+        prop = FrameData.uncertainty
+        def read(frame):
+            if any(frame is source for source in frames):
+                pytest.fail('Read source uncertainties for a scatter estimator')
+            return prop.fget(frame)
+        monkeypatch.setattr(FrameData, 'uncertainty', property(read, prop.fset))
+        result = imcombine(frames, method=method)
+        np.testing.assert_array_equal(result.data, [[2]])
+        np.testing.assert_allclose(result.uncertainty, [[1 / np.sqrt(2)]])
+
+    @pytest.mark.parametrize('dtype', ['int16', 'float32', 'float64'])
+    def test_public_minmax_uses_shared_data_and_error_mask(self, dtype):
+        frames = [FrameData([[v]], uncertainty=e) for v, e in [(1, 3), (4, 4), (100, 1000)]]
+        result = imcombine(frames, method='sum', dtype=dtype,
+                           minmax_clip=(0, 10), sum_normalize=False)
+        np.testing.assert_array_equal(result.data, [[5]])
+        np.testing.assert_array_equal(result.uncertainty, [[5]])
+        assert frames[-1].uncertainty[0, 0] == 1000
+
+    @pytest.mark.parametrize('dtype', ['float32', 'float64'])
+    def test_missing_error_samples_keep_existing_quadrature_behavior(self, dtype):
+        frames = [FrameData([[1]], uncertainty=[[np.nan]]),
+                  FrameData([[2]], uncertainty=3)]
+        result = imcombine(frames, method='sum', dtype=dtype)
+        np.testing.assert_array_equal(result.data, [[3]])
+        np.testing.assert_array_equal(result.uncertainty, [[3]])
+
+    @pytest.mark.parametrize('budget', [0, -1, np.nan, np.inf])
+    def test_invalid_memory_budget(self, budget):
+        with pytest.raises(ValueError, match='finite and positive'):
+            ImCombiner(max_memory=budget)
 
 
 class TestMaskedScatterEdges:

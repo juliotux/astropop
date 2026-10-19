@@ -1,110 +1,22 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 """Stack and combine astronomical images in FrameData."""
 
-import functools
 from tempfile import mkdtemp
 import numpy as np
-from astropy.stats import mad_std
 
-from ..framedata import FrameData, check_framedata
+from ..framedata import FrameData, PixelMaskFlags, check_framedata
 from ..py_utils import check_number
 from ..config import AstropopConfig as conf, _optional
 from ..logger import logger
 from ._tools import merge_header
-
-
-# bottleneck has faster median
-try:
-    import bottleneck as bn
-    _funcs = {
-        'median': bn.nanmedian,
-        'mean': bn.nanmean,
-        'sum': bn.nansum,
-        'std': bn.nanstd
-    }
-except ImportError:
-    _funcs = {
-        'median': np.nanmedian,
-        'mean': np.nanmean,
-        'sum': np.nansum,
-        'std': np.nanstd
-    }
+from ._combine import _divide, _sqrt, _reduce, _statistic
 
 
 __all__ = ['imcombine', 'ImCombiner']
 
 
-_funcs['mad_std'] = functools.partial(mad_std, ignore_nan=True)
-
-
-def _integer_divide(data, divisor):
-    """Divide integer pixels in place, truncating towards zero."""
-    divisor = np.asarray(divisor, dtype=data.dtype)
-    remainder = np.remainder(data, divisor)
-    negative = data < 0
-    np.floor_divide(data, divisor, out=data, casting='unsafe')
-    data[negative & (remainder != 0)] += 1
-    return data
-
-
-def _integer_sqrt(data):
-    """Integer square root without floating-point working arrays."""
-    if np.any(data < 0):
-        raise ValueError('Integer overflow produced a negative variance; '
-                         'choose a wider dtype.')
-    # Restoring square root, processing two bits per iteration. All working
-    # values retain the requested integer dtype, including its signedness.
-    remainder = data.copy()
-    root = np.zeros_like(remainder)
-    for shift in range((data.dtype.itemsize * 8 - 1) // 2 * 2, -1, -2):
-        bit = remainder.dtype.type(1 << shift)
-        trial = root + bit
-        accept = remainder >= trial
-        remainder[accept] -= trial[accept]
-        root >>= 1
-        root[accept] += bit
-    return root
-
-
-def _integer_reduce(data, mask, method):
-    """Reduce integer pixels without promoting pixel accumulators.
-
-    Counts and selection indices use NumPy's index dtype. Pixel arithmetic
-    wraps in the selected dtype, and integer divisions truncate towards zero.
-    Fully rejected pixels have the placeholder value zero.
-    """
-    count = np.count_nonzero(~mask, axis=0)
-    divisor = np.maximum(count, 1)
-    if method in ('sum', 'mean'):
-        result = np.sum(data, where=~mask, axis=0, dtype=data.dtype.type)
-        return _integer_divide(result, divisor) if method == 'mean' else result
-    if method == 'median':
-        ordered = np.sort(np.where(mask, np.iinfo(data.dtype).max, data), axis=0)
-        lower = np.maximum(count - 1, 0) // 2
-        upper = count // 2
-        low = np.take_along_axis(ordered, lower[None], axis=0)[0]
-        high = np.take_along_axis(ordered, upper[None], axis=0)[0]
-        # Only even samples need addition; a one-sample median must not wrap.
-        even = (count % 2 == 0) & (count > 0)
-        low[even] = _integer_divide(low[even] + high[even], 2)
-        low[count == 0] = 0
-        return low
-    center = _integer_reduce(data, mask, 'mean' if method == 'std' else 'median')
-    delta = np.subtract(data, center, dtype=data.dtype.type)
-    if method == 'std':
-        np.square(delta, out=delta)
-        variance = _integer_reduce(delta, mask, 'mean')
-        return _integer_sqrt(variance)
-    if method == 'mad_std':
-        # MAD's Gaussian scale factor (1.4826...) becomes 1 in integer
-        # arithmetic, just as any other fractional constant is truncated.
-        np.absolute(delta, out=delta)
-        return _integer_reduce(delta, mask, 'median')
-    raise ValueError(f'{method} is not an integer reduction method.')
-
-
 def _sigma_clip(data, threshold=3, cen_func='median', dev_func='mad_std',
-                axis=None):
+                axis=None, valid=None, block_pixels=1024):
     """Create a mask of the sigma clipped pixels.
 
     This function will not change the array, instead, just output a
@@ -125,39 +37,36 @@ def _sigma_clip(data, threshold=3, cen_func='median', dev_func='mad_std',
     dev_func: callable or {'std', 'mad_std'} (optional)
         Function to compute the base deviation value used for sigma clipping.
         Default: 'mad_std'
-    axis: int
-        The axis to perform the clipping and masking.
+    axis: int or None
+        Axis along which to calculate clipping statistics.
+    valid: array_like or None
+        Boolean mask whose True entries identify accepted input samples.
+        If None, input NaNs are excluded.
+    block_pixels: int
+        Maximum output pixels per statistics work block. Default: 1024.
 
     Returns
     -------
     mask: `~numpy.ndarray`
         Array with the same shape of `data` containing the mask for elements.
     """
-    data = np.array(data)
-
+    data = np.asarray(data)
+    if valid is None:
+        valid = ~np.isnan(data)
     if check_number(threshold):
-        slow = threshold
-        shigh = threshold
+        slow, shigh = threshold, threshold
     elif not np.isscalar(threshold):
         slow, shigh = threshold
     else:
-        raise TypeError(f'Sigma clipping threshold {threshold} not'
-                        ' recognized.')
+        raise TypeError(f'Sigma clipping threshold {threshold} not recognized.')
 
-    if not callable(cen_func):
-        cen_func = _funcs[cen_func]
-    if not callable(dev_func):
-        dev_func = _funcs[dev_func]
-
-    cen = cen_func(data, axis=axis)
-    dev = dev_func(data, axis=axis)
-
-    # also mask nans and infs
+    cen = _statistic(data, valid, cen_func, axis, block_pixels)
+    dev = _statistic(data, valid, dev_func, axis, block_pixels)
     mask = ~np.isfinite(data)
     if slow is not None:
-        mask |= data < cen-(slow*dev)
+        mask |= data < cen - data.dtype.type(slow) * dev
     if shigh is not None:
-        mask |= data > cen+(shigh*dev)
+        mask |= data > cen + data.dtype.type(shigh) * dev
 
     logger.debug('Rejected %i pixels by sigmaclip method.',
                  np.sum(mask))
@@ -186,15 +95,12 @@ def _minmax_clip(data, min_clip=None, max_clip=None):
     mask: `~numpy.ndarray`
         Array with the same shape of `data` containing the mask for elements.
     """
-    data = np.array(data)
-    # masking nan and infinity
+    data = np.asarray(data)
     mask = ~np.isfinite(data)
-
     if min_clip is not None:
-        mask[np.where(data < min_clip)] = True
-
+        mask |= data < data.dtype.type(min_clip)
     if max_clip is not None:
-        mask[np.where(data > max_clip)] = True
+        mask |= data > data.dtype.type(max_clip)
 
     logger.debug('Rejected %i pixels by minmax method.',
                  np.sum(mask))
@@ -234,7 +140,7 @@ class ImCombiner:
     _max_memory = 1e8  # max memory to be used by the combiner
     _buffer = None  # Temporary buffer to store the image
     _unct_bf = None  # Temporary buffer to store the uncertainties
-    _rejected = None  # Separate validity mask for integer working arrays
+    _valid = None  # True for accepted samples, shared by data and errors
     _disk_cache = False  # Enable disk caching for _images
     _images = None  # List containing the loaded images
     _methods = {'median', 'mean', 'sum'}
@@ -282,8 +188,10 @@ class ImCombiner:
             raise ValueError('Only integer or float dtypes are allowed in ImCombiner.') from None
         if dtype.kind not in 'iuf':
             raise ValueError('Only integer or float dtypes are allowed in ImCombiner.')
+        if not check_number(max_memory) or not np.isfinite(max_memory) or max_memory <= 0:
+            raise ValueError('max_memory must be finite and positive.')
         self._tmpdir = tmp_dir
-        if self._tmpdir is None:
+        if self._tmpdir is None and use_disk_cache:
             self._tmpdir = mkdtemp(prefix='astropop')
         self._dtype = dtype
         self._max_memory = max_memory
@@ -356,6 +264,7 @@ class ImCombiner:
         # disable
         if low is None and high is None:
             self._minmax = None
+            return
 
         for i in (low, high):
             if not check_number(i) and i is not None:
@@ -408,7 +317,7 @@ class ImCombiner:
         """Clear buffer and images."""
         self._buffer = None
         self._unct_bf = None
-        self._rejected = None
+        self._valid = None
         # ensure cleaning of tmp files and free memory
         for i in self._images:
             # Release arrays without loading memory maps back into RAM.
@@ -419,7 +328,7 @@ class ImCombiner:
         self._shape = None
         self._unit = None
 
-    def _load_images(self, image_list):
+    def _load_images(self, image_list, method=None):
         """Read images to FrameData and enable memmap."""
         # clear the buffers before load images.
         self._clear()
@@ -440,7 +349,8 @@ class ImCombiner:
                                unit=source.unit, dtype=self._dtype,
                                flags=(None if conf.FRAMEDATA_DISABLE_FLAGS
                                       else source.flags),
-                               uncertainty=self._get_uncertainty(source))
+                               uncertainty=(self._get_uncertainty(source)
+                                            if method in (None, 'sum') else None))
                 # The source header is already normalized by FrameData.
                 ic._meta = source.header.copy()
 
@@ -480,172 +390,100 @@ class ImCombiner:
         """Read an input uncertainty only when propagation is enabled."""
         return frame.uncertainty
 
+    def _block_pixels(self):
+        """Bound reduction workspace independently of the image tile size."""
+        per_pixel = len(self._images) * (self._dtype.itemsize + 1) + 128
+        return max(1, min(1024, int(self._max_memory // (2 * per_pixel))))
+
+    def _chunk_slices(self, propagate_errors):
+        """Reserve half the workspace budget for stack data and validity."""
+        n = len(self._images)
+        shape = self._images[0].shape
+        per_pixel = n * (self._dtype.itemsize * (1 + propagate_errors) + 1)
+        # Counts and pixel results coexist with the sample stack.
+        per_pixel += 4 * (np.dtype(np.intp).itemsize + self._dtype.itemsize)
+        pixels = max(1, int(self._max_memory // (2 * per_pixel)))
+        n_chunks = max(1, int(np.ceil(np.prod(shape) / pixels)))
+        return _yield_slices(shape, n_chunks)
+
+    def _read_chunk(self, slc, propagate_errors):
+        """Copy a tile and read flag bits only for that tile."""
+        shape = (len(self._images), *(s.stop - s.start for s in slc))
+        data = np.empty(shape, dtype=self._dtype)
+        self._valid = np.empty(shape, dtype=bool)
+        uncertainty = np.empty_like(data) if propagate_errors else None
+        for index, frame in enumerate(self._images):
+            data[index] = frame.data[slc]
+            np.isnan(data[index], out=self._valid[index])
+            np.logical_not(self._valid[index], out=self._valid[index])
+            flags = None if conf.FRAMEDATA_DISABLE_FLAGS else frame.flags
+            if flags is not None:
+                self._valid[index] &= (flags[slc] & PixelMaskFlags.MASKED.value) == 0
+            if propagate_errors:
+                uncertainty[index] = frame.uncertainty[slc]
+                # A missing error sample contributed zero to the old nansum.
+                np.copyto(uncertainty[index], 0, where=np.isnan(uncertainty[index]))
+        return data, uncertainty
+
     def _chunk_yielder(self, method):
-        """Split the data in chuncks according to the method."""
-        # sum needs uncertainties, others ignore it
-        unct = method == 'sum' and all(self._get_uncertainty(i) is not None
-                                      for i in self._images)
-        if method == 'sum' and not unct:
+        """Yield owned data/error tiles and maintain their shared mask."""
+        propagate = method == 'sum' and all(self._get_uncertainty(i) is not None
+                                            for i in self._images)
+        if method == 'sum' and not propagate:
             logger.debug('One or more frames have empty uncertainty. '
                          'Some features are disabled.')
-
-        # flags and uncertainty are ignored
-        shape = self._images[0].shape
-        tot_size = self._images[0].data.nbytes
-        tot_size *= len(self._images)
-        # uncertainty is ignored
-
-        # adjust memory usage for numpy and bottleneck, based on ccdproc
-        if method == 'median':
-            tot_size *= 4.5
-        else:
-            tot_size *= 3
-
-        n_chunks = np.ceil(tot_size/self._max_memory)
-        slices = list(_yield_slices(shape, n_chunks))
-        if n_chunks > 1:
-            logger.debug('Splitting the images into %i chunks.', len(slices))
-
-        for slc_y, slc_x in slices:
-            buff_shp = (len(self._images),
-                        slc_y.stop-slc_y.start,
-                        slc_x.stop-slc_x.start)
-            integer = self._dtype.kind in 'iu'
-            fill = 0 if integer else np.nan
-            buffer = np.full(buff_shp, fill_value=fill, dtype=self._dtype)
-            self._rejected = np.zeros(buff_shp, dtype=bool) if integer else None
-            if unct:
-                unct_buffer = np.full(buff_shp, fill_value=fill,
-                                      dtype=self._dtype)
-            else:
-                unct_buffer = None
-
-            for i, frame in enumerate(self._images):
-                buffer[i] = frame.data[slc_y, slc_x]
-                mask = frame.mask
-                if mask is not None:
-                    if integer:
-                        self._rejected[i] = mask[slc_y, slc_x]
-                    else:
-                        buffer[i][mask[slc_y, slc_x]] = np.nan
-                if unct:
-                    unct_buffer[i] = frame.uncertainty[slc_y, slc_x]
-                    if mask is not None and not integer:
-                        unct_buffer[i][mask[slc_y, slc_x]] = np.nan
-
-            yield buffer, unct_buffer, (slc_y, slc_x)
+        for slc in self._chunk_slices(propagate):
+            data, uncertainty = self._read_chunk(slc, propagate)
+            yield data, uncertainty, slc
+            # Clear both generator and consumer references before allocation.
+            self._buffer = self._unct_bf = self._valid = None
+            del data, uncertainty
 
     def _apply_rejection(self):
-        if self._rejected is not None:
-            self._apply_integer_rejection()
-            return
-        mask = np.zeros(self._buffer[0].shape)
+        """Update validity without replacing pixels or errors with sentinels."""
+        if self._valid is None:
+            self._valid = ~np.isnan(self._buffer)
         if self._sigma_clip is not None:
-            mask = _sigma_clip(self._buffer,
-                               threshold=self._sigma_clip,
-                               cen_func=self._sigma_cen_func,
-                               dev_func=self._sigma_dev_func,
-                               axis=0)
-
+            rejected = _sigma_clip(self._buffer, self._sigma_clip,
+                                   self._sigma_cen_func, self._sigma_dev_func,
+                                   axis=0, valid=self._valid,
+                                   block_pixels=self._block_pixels())
+            self._valid &= ~rejected
         if self._minmax is not None:
-            _min, _max = self._minmax
-            mask = np.logical_or(_minmax_clip(self._buffer, _min, _max),
-                                 mask)
-
-        mask = np.logical_or(np.isnan(self._buffer), mask)
-        self._buffer[mask] = np.nan
-        if self._unct_bf is not None:
-            self._unct_bf[mask] = np.nan
-
-    def _apply_integer_rejection(self):
-        """Apply rejection using integer statistics and a separate mask."""
-        mask = self._rejected.copy()
-        if self._sigma_clip is not None:
-            def statistic(func):
-                if callable(func):
-                    # A custom callback receives masked integer data and must
-                    # respect the selected dtype in its own calculations.
-                    return np.asarray(func(np.ma.array(self._buffer, mask=mask,
-                                                       copy=True),
-                                           axis=0), dtype=self._dtype)
-                return _integer_reduce(self._buffer, mask, func)
-
-            center = statistic(self._sigma_cen_func)
-            deviation = statistic(self._sigma_dev_func)
-            limits = self._sigma_clip
-            low, high = (limits, limits) if np.isscalar(limits) else limits
-            if low is not None:
-                bound = center - self._dtype.type(low) * deviation
-                self._rejected |= self._buffer < bound
-            if high is not None:
-                bound = center + self._dtype.type(high) * deviation
-                self._rejected |= self._buffer > bound
-        if self._minmax is not None:
-            limits = [None if limit is None else self._dtype.type(limit)
-                      for limit in self._minmax]
-            self._rejected |= _minmax_clip(self._buffer, *limits)
+            self._valid &= ~_minmax_clip(self._buffer, *self._minmax)
 
     @_optional('IMARITH_SKIP_UNCERTAINTY', 'FRAMEDATA_DISABLE_UNCERTAINTY')
-    def _combine_uncertainty(self, method, n_no_mask):
-        """Estimate uncertainties for a chunk before sum normalization."""
-        if self._rejected is not None:
-            return self._combine_integer_uncertainty(method, n_no_mask)
-        if method == 'sum':
-            if self._unct_bf is None:
-                logger.info('Data with no uncertainties. Using the std dev'
-                            ' approximation to compute the sum uncertainty.')
-                # we consider, here, that the deviation in each pixel (x, y) is
-                # the error of each image in that position. So
-                # unct = stddev*sqrt(n)
-                unct = _funcs['std'](self._buffer, axis=0)*np.sqrt(n_no_mask)
-            else:
-                # direct propagate the errors in the sum
-                # unct = sqrt(sigma1^2 + ) for i in sigma2^2 + ...)
-                unct = _funcs['sum'](np.square(self._unct_bf), axis=0)
-                unct = np.sqrt(unct)
-
-        elif method in ('median', 'mean'):
-            # uncertainty = sigma/sqrt(n)
-            unct = _funcs['std'](self._buffer, axis=0)
-            unct /= np.sqrt(n_no_mask)
-
-        return unct
-
-    def _combine_integer_uncertainty(self, method, count):
-        """Propagate errors using integer accumulators and integer roots."""
+    def _combine_uncertainty(self, method, count):
+        """Compute errors separately, using the nominal values' validity."""
         if method == 'sum' and self._unct_bf is not None:
-            squared = np.square(self._unct_bf, dtype=self._dtype.type)
-            variance = _integer_reduce(squared, self._rejected, 'sum')
-            return _integer_sqrt(variance)
-        uncertainty = _integer_reduce(self._buffer, self._rejected, 'std')
-        root_count = _integer_sqrt(np.asarray(count, dtype=self._dtype))
+            np.square(self._unct_bf, out=self._unct_bf, where=self._valid)
+            return _sqrt(_reduce(self._unct_bf, self._valid, 'sum', count))
+        uncertainty = _reduce(self._buffer, self._valid, 'std', count,
+                              self._block_pixels())
+        root_count = _sqrt(np.asarray(count, dtype=self._dtype))
         if method == 'sum':
             uncertainty *= root_count
         else:
-            _integer_divide(uncertainty, np.maximum(root_count, 1))
+            _divide(uncertainty, np.maximum(root_count, 1))
         return uncertainty
 
     def _combine(self, method, **kwargs):
-        """Combine nominal values and optionally compute uncertainties."""
-        # Counts and normalization also affect nominal data when errors are off.
-        n = float(len(self._buffer))
-        if self._rejected is None:
-            n_no_mask = n - np.sum(np.isnan(self._buffer), axis=0)
-            data = _funcs[method](self._buffer, axis=0)
-        else:
-            n_no_mask = np.count_nonzero(~self._rejected, axis=0)
-            data = _integer_reduce(self._buffer, self._rejected, method)
-        unct = self._combine_uncertainty(method, n_no_mask)
+        """Coordinate nominal reduction, optional errors and normalization."""
+        count = np.count_nonzero(self._valid, axis=0)
+        data = _reduce(self._buffer, self._valid, method, count, self._block_pixels())
+        uncertainty = self._combine_uncertainty(method, count)
         if method == 'sum' and kwargs.get('sum_normalize', True):
-            if self._rejected is None:
-                norm = n/n_no_mask
-            else:
-                norm = np.full(data.shape, n, dtype=self._dtype)
-                _integer_divide(norm, np.maximum(n_no_mask, 1))
+            norm = np.full(data.shape, len(self._buffer), dtype=self._dtype)
+            _divide(norm, np.maximum(count, 1))
             data *= norm
-            if unct is not None:
-                unct *= norm
-        return data, unct
+            if uncertainty is not None:
+                uncertainty *= norm
+        empty = count == 0
+        fill = np.nan if self._dtype.kind == 'f' else 0
+        data[empty] = fill
+        if uncertainty is not None:
+            uncertainty[empty] = fill
+        return data, uncertainty, empty | np.isnan(data)
 
     def combine(self, image_list, method, **kwargs):
         """Perform the image combining.
@@ -687,34 +525,30 @@ class ImCombiner:
 
         try:
             # first of all, load the images to FrameData and check the consistency
-            self._load_images(image_list)
+            self._load_images(image_list, method)
             self._check_consistency()
 
             logger.info('Combining %i images with %s method.',
                         len(self._images), method)
 
             # temp combined data, mask and uncertainty
-            data = np.zeros(self._shape, dtype=self._dtype)
-            if self._dtype.kind == 'f':
-                data.fill(np.nan)
+            data = np.empty(self._shape, dtype=self._dtype)
             unct = None
             mask = (None if conf.FRAMEDATA_DISABLE_FLAGS
-                    else np.zeros(self._shape, dtype=bool))
+                    else np.empty(self._shape, dtype=bool))
 
             for self._buffer, self._unct_bf, slc in self._chunk_yielder(method):
-                # perform the masking: first with minmax, after sigma_clip
-                # the clippings interfere in each other.
+                # Both rejection rules use the original tile values.
                 self._apply_rejection()
 
                 # combine the images and compute the uncertainty
-                data[slc], chunk_uncertainty = self._combine(method, **kwargs)
+                data[slc], chunk_uncertainty, chunk_mask = self._combine(method, **kwargs)
                 if chunk_uncertainty is not None:
                     if unct is None:
                         unct = np.empty(self._shape, dtype=self._dtype)
                     unct[slc] = chunk_uncertainty
                 if mask is not None:
-                    mask[slc] = (np.isnan(data[slc]) if self._rejected is None
-                                 else np.all(self._rejected, axis=0))
+                    mask[slc] = chunk_mask
 
             n = len(self._images)
             combined = FrameData(data, unit=self._unit, dtype=self._dtype,
@@ -800,11 +634,12 @@ def imcombine(frames, method='median', memory_limit=1e9, dtype=np.float64, **kwa
     - To disable a low or high clipping, use tuple with None. For example,
       using `sigma_clip=(None, 2)`, the lower clipping will be disabled.
     - The center function names are:
-      - 'median': `~numpy.nanmedian`
-      - 'mean': `~numpy.nanmean`
-    - The standard deviation funcion names are:
-      - 'std': `~numpy.nanstd`
-      - 'mad_std': `~astropy.stats.funcs.mad_std`
+      - 'median': median of the accepted samples
+      - 'mean': mean of the accepted samples
+    - The deviation function names are:
+      - 'std': population standard deviation of the accepted samples
+      - 'mad_std': Gaussian-scaled median absolute deviation
+    - Built-in statistics use the selected dtype and a shared validity mask.
     """
     # Sanitize kwargs and create combiner
     kargs = {'dtype': dtype,
@@ -819,7 +654,8 @@ def imcombine(frames, method='median', memory_limit=1e9, dtype=np.float64, **kwa
         combiner.set_sigma_clip(sc, sigma_cen_func, sigma_dev_func)
 
     mm = kwargs.pop('minmax_clip', None)
-    combiner.set_minmax_clip(mm)
+    if mm is not None:
+        combiner.set_minmax_clip(*mm)
 
     merge_header = kwargs.pop('merge_header', 'no_merge')
     header_keys = kwargs.pop('merge_header_keys', None)
