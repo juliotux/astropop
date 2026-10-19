@@ -80,10 +80,10 @@ pixels from arithmetic. Disabling flag storage omits output flags and masks::
     >>> assert masked_result.mask[0, 0]
     >>> assert masked_result.data[0, 0] == 20
 
-Header merging accepts ``'only_equal'`` (default), ``'first'``,
-``'selected_keys'``, or ``'no_merge'``. These keep equal keys from both headers,
-copy the first header, select named keys, or create an empty header,
-respectively. Selection uses the first occurrence of each key::
+For header merging, ``'only_equal'`` (default) keeps keys present with equal
+values in both headers. ``'first'`` copies the first operand's header.
+``'selected_keys'`` keeps keys named in ``selected_keys``, taking each key's
+first occurrence. ``'no_merge'`` returns an empty header::
 
     >>> selected = imarith(image, 2, '*', merge_headers='selected_keys',
     ...                   selected_keys=['OBJECT'])
@@ -263,9 +263,10 @@ directory is created automatically when disk caching is enabled.
 Headers and reusable configuration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-``merge_header`` accepts ``'no_merge'`` (default), ``'first'``, ``'only_equal'``,
-or ``'selected_keys'``. For selected keys, pass ``merge_header_keys``. The
-selection keeps the first occurrence of each requested key. The output always
+For ``merge_header``, ``'no_merge'`` (default) starts with an empty header.
+``'first'`` copies the first input header. ``'only_equal'`` keeps keys present
+with equal values in every input header. ``'selected_keys'`` keeps keys named
+in ``merge_header_keys``, taking each key's first occurrence. The output always
 records ``HIERARCH astropop imcombine nimages`` and
 ``HIERARCH astropop imcombine method``::
 

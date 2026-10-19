@@ -152,9 +152,13 @@ class ImCombiner:
         remain allocated. Default: False.
     **kwargs
         merge_header : {'no_merge', 'first', 'only_equal', 'selected_keys'}, optional
-            Header merge strategy. Default: 'no_merge'.
+            ``'no_merge'`` starts with an empty header. ``'first'`` copies the
+            first input header. ``'only_equal'`` keeps keys present with equal values
+            in every input header. ``'selected_keys'`` keeps the requested keys,
+            taking each key's first occurrence.
+            Default: ``'no_merge'``.
         merge_header_keys : list of str, optional
-            Keywords to retain with merge_header='selected_keys'.
+            Keys required by ``merge_header='selected_keys'``.
 
     Notes
     -----
@@ -296,8 +300,10 @@ class ImCombiner:
         Parameters
         ----------
         strategy : {'no_merge', 'first', 'only_equal', 'selected_keys'}
-            Start with an empty header, copy the first header, retain only keys
-            equal in every header, or select named keys by first occurrence.
+            ``'no_merge'`` starts with an empty header. ``'first'`` copies the
+            first input header. ``'only_equal'`` keeps keys present with equal values
+            in every input header. ``'selected_keys'`` keeps the requested keys,
+            taking each key's first occurrence.
         keys : list of str or None, optional
             Required for 'selected_keys'; ignored by other strategies.
             Default: None.
@@ -624,8 +630,11 @@ def imcombine(frames, method='median', memory_limit=1e9, dtype=np.float64, **kwa
             by accepted sample count at each pixel. False returns the raw sum.
             Default: True.
         merge_header : {'no_merge', 'first', 'only_equal', 'selected_keys'}, optional
-            Header strategy: empty header, first header, equal keys, or selected
-            keys by first occurrence. Default: 'no_merge'.
+            ``'no_merge'`` starts with an empty header. ``'first'`` copies the
+            first input header. ``'only_equal'`` keeps keys present with equal values
+            in every input header. ``'selected_keys'`` keeps the requested keys,
+            taking each key's first occurrence.
+            Default: ``'no_merge'``.
         merge_header_keys : list of str, optional
             Keys for merge_header='selected_keys'. Default: None.
         use_disk_cache : bool, optional

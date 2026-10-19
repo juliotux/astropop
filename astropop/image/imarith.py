@@ -26,9 +26,16 @@ class ImArith:
     Parameters
     ----------
     merge_flags : {'or', 'and', 'no_merge'}, optional
-        Strategy for merging FrameData pixel flags. Default: 'or'.
+        ``'or'`` (default) combines FrameData flag bits by bitwise OR.
+        ``'and'`` keeps only bits present in both operands.
+        ``'no_merge'`` returns zero flags. Missing flags count as zero.
+        Masked pixels still participate in arithmetic; flags mark the result.
     merge_headers : {'only_equal', 'first', 'selected_keys', 'no_merge'}, optional
-        Strategy for merging FrameData headers. Default: 'only_equal'.
+        ``'only_equal'`` (default) keeps keys present with equal values in both
+        headers. ``'first'`` copies the first operand's header.
+        ``'selected_keys'`` keeps keys named in selected_keys, taking each key's
+        first occurrence. ``'no_merge'`` returns an empty header.
+        Only FrameData operands contribute headers.
     selected_keys : list of str, optional
         Header keys to keep with the 'selected_keys' strategy.
 
@@ -231,13 +238,16 @@ def imarith(operand1, operand2, operation, inplace=False,
         Update and return operand1 when it is a FrameData. Otherwise return a
         new FrameData. Default: False.
     merge_flags : {'or', 'and', 'no_merge'}, optional
-        Merge FrameData flag bits by bitwise OR (default), bitwise AND, or
-        return zero flags. Missing flags count as zero. Masked pixels still
-        participate in arithmetic; flags mark the result.
+        ``'or'`` (default) combines FrameData flag bits by bitwise OR.
+        ``'and'`` keeps only bits present in both operands.
+        ``'no_merge'`` returns zero flags. Missing flags count as zero.
+        Masked pixels still participate in arithmetic; flags mark the result.
     merge_headers : {'only_equal', 'first', 'selected_keys', 'no_merge'}, optional
-        Keep header keys equal in both operands (default), copy the first
-        header, select named keys by first occurrence, or use an empty header.
-        Only FrameData operands contribute headers and flags.
+        ``'only_equal'`` (default) keeps keys present with equal values in both
+        headers. ``'first'`` copies the first operand's header.
+        ``'selected_keys'`` keeps keys named in selected_keys, taking each key's
+        first occurrence. ``'no_merge'`` returns an empty header.
+        Only FrameData operands contribute headers.
     **kwargs
         selected_keys : list of str, optional
             Keys to retain with merge_headers='selected_keys'.
