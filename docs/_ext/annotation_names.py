@@ -33,6 +33,7 @@ def format_signature(
             aliases[key] = value.__module__ + '.' + value.__qualname__
 
     def qualify(match: re.Match[str]) -> str:
+        """Expand an imported name using the documented object's namespace."""
         token = match.group()
         if token in aliases:
             return aliases[token]
@@ -40,6 +41,7 @@ def format_signature(
         return aliases.get(head, head) + dot + tail
 
     def format_annotation(text: str | None) -> str | None:
+        """Resolve annotation names while preserving quoted values and defaults."""
         if text is None:
             return None
         text = re.sub(r"TypeAliasForwardRef\(['\"]([^'\"]+)['\"]\)", r'\1', text)
@@ -77,6 +79,7 @@ def resolve_alias(
 
 
 def setup(app: Sphinx) -> dict[str, bool]:
+    """Register signature formatting and type-alias reference resolution."""
     app.setup_extension('sphinx.ext.autodoc')
     app.connect('autodoc-process-signature', format_signature, priority=800)
     app.connect('missing-reference', resolve_alias, priority=800)

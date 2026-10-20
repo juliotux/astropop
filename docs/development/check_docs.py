@@ -11,15 +11,20 @@ from pathlib import Path
 
 
 class Anchors(HTMLParser):
+    """Collect HTML IDs for retained documentation-link checks."""
+
     def __init__(self):
+        """Initialize the HTML parser with an empty set of anchor IDs."""
         super().__init__()
         self.ids = set()
 
     def handle_starttag(self, tag, attrs):
+        """Record IDs from a start tag, ignoring its other attributes."""
         self.ids.update(value for key, value in attrs if key == 'id')
 
 
 def check_urls(html):
+    """Verify retained pages and anchors, exiting with all missing targets."""
     manifest = json.loads(Path(__file__).with_name('urls.json').read_text())
     failures = []
     for name, contract in manifest['pages'].items():
@@ -38,6 +43,7 @@ def check_urls(html):
 
 
 def example_inventory():
+    """Print a JSON inventory of authored examples and their validation modes."""
     docs = Path(__file__).resolve().parents[1]
     examples = []
     for path in sorted(docs.rglob('*.rst')):
@@ -74,6 +80,10 @@ def example_inventory():
 
 
 def check_notebooks():
+    """Validate notebook schemas, compile code and reject stored error outputs.
+
+    IPython syntax is transformed before compilation; cells are not executed.
+    """
     import nbformat
     from IPython.core.inputtransformer2 import TransformerManager
 
