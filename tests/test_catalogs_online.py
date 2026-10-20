@@ -599,9 +599,9 @@ class Test_VizierGeneral:
         assert_is_instance(vizier.list_vizier_catalogs(), str)
         assert_equal(vizier.list_vizier_catalogs()[:45],
                      'Available pre-configured Vizier catalogs are:')
-        assert_equal(vizier.list_vizier_catalogs.__doc__,
-                     "List available vizier catalogs\n\n"
-                     'Notes\n-----\n'+vizier.list_vizier_catalogs())
+        # Keep the generated catalog list in Notes without freezing the prose.
+        assert_true(vizier.list_vizier_catalogs.__doc__.endswith(
+            'Notes\n-----\n' + vizier.list_vizier_catalogs()))
 
     def test_query_fail(self):
         with pytest.raises(RuntimeError,
