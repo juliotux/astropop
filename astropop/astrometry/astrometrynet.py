@@ -48,7 +48,7 @@ class SolveFieldCommand:
 
     Parameters
     ----------
-    command : str or SolveFieldCommand, optional
+    command
         Existing executable path, defaulting to solve-field found on PATH.
         An existing wrapper can be copied to reuse its cached version.
 
@@ -405,9 +405,9 @@ class AstrometricSolution():
 
     Parameters
     ----------
-    header: `~astropy.io.fits.Header` (optional)
+    header
         Astrometric solved fits header. WCS will be extrated from it.
-    correspondences: `~astropy.table.Table` (optional)
+    correspondences
         A table containing the matched correspondences between the (x, y)
         positions and the matched (ra, dec) catalog coordinates.
     """
@@ -466,15 +466,15 @@ class AstrometrySolver():
 
     Parameters
     ----------
-    solve_field : str, optional
+    solve_field
         Existing solve-field executable path. The default is found on PATH.
         Astrometry.net version 0.95 or newer is required.
-    defaults : dict, optional
+    defaults
         Default solve-field options, using names without leading dashes.
         These update the initial no-plots and overwrite flag options. Per-call
         options supplied to solve_field override the defaults. See
         `~astropop.astrometry.astrometrynet.get_options_help` for supported keys.
-    keep_files : bool, optional
+    keep_files
         Keep auxiliary solver products instead of removing them after solving.
         Default is False.
 
@@ -513,10 +513,10 @@ class AstrometrySolver():
 
         Parameters
         ----------
-        filename : str
+        filename
             Name of the file to be solved. Can be a fits image or a xyls
             sources file.
-        options : `dict` (optional)
+        options
             Dictionary of ``solve-field`` options. See
             `~astropop.astrometry.astrometrynet.get_options_help` for all
             available options. The most useful are:
@@ -524,15 +524,15 @@ class AstrometrySolver():
             - radius: maximum search radius
             - scale: pixel scale in arcsec/pixel
             - tweak-order: SIP order to fit
-        output_dir : str
+        output_dir
             Directory to output all solved files.
-        **kwargs :
+        **kwargs
             Additional keyword arguments to be passed to
             `~astropop.py_utils.run_command`.
 
         Returns
         -------
-        solution : `~astropop.astrometry.AstrometricSolution`
+        solution
             Astrometric solution class containing the solved header,
             the `~astropy.wcs.WCS` solved class and the correspondence table
             between the sources and the catalog.
@@ -673,19 +673,19 @@ def create_xyls(
 
     Parameters
     ----------
-    fname: str
+    fname
         The path to save the .xyls file.
-    x: array_like
+    x
         X coordinates of the sources.
-    y: array_like
+    y
         Y coordinates of the sources.
-    flux: array_like
+    flux
         Estimated flux of the sources.
-    imagew: float or int
+    imagew
         Width of the original image. ``IMAGEW`` header field of .xyls
-    imageh: float or int
+    imageh
         Height of the original image. ``IMAGEH`` header field of .xyls
-    dtype: `~numpy.dtype`, optional
+    dtype
         Data type of the fields. Default: 'f8'
     """
     head = {'IMAGEW': imagew,
@@ -715,20 +715,20 @@ def solve_astrometry_xy(
 
     Parameters
     ----------
-    x: array-like
+    x
         x positions of the sources in the image.
-    y: array-like
+    y
         y positions of the sources in the image.
-    flux: array_like
+    flux
         Estimated fluxes of the sources. A higher value indicates a brighter
         star.
-    width: int
+    width
         Image width.
-    height: int
+    height
         Image height.
-    image_header: `~astropy.fits.Header` (optional)
+    image_header
         Original image header.
-    options: dict
+    options
         Dictionary of ``solve-field`` options. See
         `~astropop.astrometry.astrometrynet.get_options_help` for all
         available options. The most useful are:
@@ -737,12 +737,12 @@ def solve_astrometry_xy(
         - scale: pixel scale in arcsec/pixel
         - tweak-order: SIP order to fit
         - index-dir: path to index files
-    command: str
+    command
         Full path of astrometry.net ``solve-field`` command.
 
     Returns
     -------
-    `~astropop.astrometry.AstrometricSolution`
+    result
         Astrometric solution ot the field.
     """
     options = options or {}
@@ -769,9 +769,9 @@ def solve_astrometry_framedata(
 
     Parameters
     ----------
-    frame: `~astropop.framedata.FrameData`
+    frame
         Image to be solved.
-    options: dict
+    options
         Dictionary of ``solve-field`` options. See
         `~astropop.astrometry.astrometrynet.get_options_help` for all
         available options. The most useful are:
@@ -780,12 +780,12 @@ def solve_astrometry_framedata(
         - scale: pixel scale in arcsec/pixel
         - tweak-order: SIP order to fit
         - index-dir: path to index files
-    command: str
+    command
         Full path of astrometry.net ``solve-field`` command.
 
     Returns
     -------
-    `~astropop.astrometry.AstrometricSolution`
+    result
         Astrometric solution ot the field.
     """
     f = NamedTemporaryFile(suffix='.fits')
@@ -805,9 +805,9 @@ def solve_astrometry_image(
 
     Parameters
     ----------
-    filename: str
+    filename
         Path to the image to solve.
-    options: dict
+    options
         Dictionary of ``solve-field`` options. See
         `~astropop.astrometry.astrometrynet.get_options_help` for all
         available options. The most useful are:
@@ -816,12 +816,12 @@ def solve_astrometry_image(
         - scale: pixel scale in arcsec/pixel
         - tweak-order: SIP order to fit
         - index-dir: path to index files
-    command: str
+    command
         Full path of astrometry.net ``solve-field`` command.
 
     Returns
     -------
-    `~astropop.astrometry.AstrometricSolution`
+    result
         Astrometric solution ot the field.
     """
     options = options or {}
@@ -839,9 +839,9 @@ def solve_astrometry_hdu(
 
     Parameters
     ----------
-    hdu: `astropy.io.fits.ImageHDU`
+    hdu
         FITS hdu containing the image to solve.
-    options: dict
+    options
         Dictionary of ``solve-field`` options. See
         `~astropop.astrometry.astrometrynet.get_options_help` for all
         available options. The most useful are:
@@ -850,12 +850,12 @@ def solve_astrometry_hdu(
         - scale: pixel scale in arcsec/pixel
         - tweak-order: SIP order to fit
         - index-dir: path to index files
-    command: str
+    command
         Full path of astrometry.net ``solve-field`` command.
 
     Returns
     -------
-    `~astropop.astrometry.AstrometricSolution`
+    result
         Astrometric solution ot the field.
     """
     options = options or {}
