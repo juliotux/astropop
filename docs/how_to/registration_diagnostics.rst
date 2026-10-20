@@ -66,6 +66,23 @@ number. For a middle reference, expected drift is relative to that middle frame,
 not the first frame. For rotation/scale use the full transform rather than
 subtracting a translation alone.
 
+Inspect which region the transform aligns
+-----------------------------------------
+
+.. plot:: _ext/guide_figures.py plot_registration
+    :include-source: False
+    :alt: Reference image with a central window, and central and edge residuals for full-image and windowed registration against the middle frame.
+    :caption: The cyan box selects the faint central stars. Full-image correlation follows the bright stationary feature, while windowed correlation follows the central drift. Both residual curves are relative to frame 1.
+
+The reference image uses a logarithmic intensity stretch to reveal the faint
+central stars; correlation still operates on the original pixel values.
+The reference frame has zero residual for both methods by construction. Compare
+the other frames: the full-image estimate leaves the central stars displaced,
+while the central window leaves the conflicting edge feature displaced. This
+illustrates why one good central alignment is insufficient to claim alignment
+across a distorted field. The stationary feature here is deliberately artificial;
+these curves are not a measurement of any camera's optical distortion.
+
 The example raises on failed registration. If using ``skip_failure=True``, inspect
 the per-frame registration metadata and masks; do not convert failed shifts to
 zero or connect them through a residual plot as successful estimates. Review

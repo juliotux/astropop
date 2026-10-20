@@ -75,6 +75,42 @@ excluded samples. They receive a protected copy representing excluded values
 as NaNs for floating-point data or as a mask for integer data. Custom
 statistics can allocate more workspace than the built-in blocked reductions.
 
+Inspect a transient in a noisy stack
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A fixed seed makes this small bias example reproducible. Nine exposures share
+an injected level of 1000 ADU with 3 ADU Gaussian noise. One sample receives a
+600 ADU event; the other exposures retain an ordinary value at that pixel::
+
+    >>> rng = np.random.default_rng(42)
+    >>> pixels = rng.normal(1000, 3, (9, 48, 48))
+    >>> pixels[0, 24, 24] += 600
+    >>> bias_frames = [FrameData(image, unit='adu') for image in pixels]
+    >>> estimates = {
+    ...     'Mean': imcombine(bias_frames, method='mean'),
+    ...     'Median': imcombine(bias_frames, method='median'),
+    ...     'Clipped mean': imcombine(bias_frames, method='mean', sigma_clip=4,
+    ...                               sigma_dev_func='mad_std'),
+    ... }
+    >>> for name, image in estimates.items():
+    ...     print(f'{name}: {image.data[24, 24]:.1f} ADU')
+    Mean: 1067.1 ADU
+    Median: 1001.6 ADU
+    Clipped mean: 1000.8 ADU
+
+.. plot:: _ext/guide_figures.py plot_combination
+    :include-source: False
+    :alt: Nine samples at a contaminated pixel with three combination estimates, followed by histograms of residuals from the injected bias level.
+    :caption: Left: the event biases the ordinary mean at one pixel. Right: residual histograms across the output images; logarithmic counts and compressed horizontal tails keep both the central distribution and the mean's single affected pixel visible.
+
+The median and clipped mean stay near the injected level at the affected pixel.
+Their values need not equal exactly 1000 ADU because only a few noisy samples
+are available. Clipping can also reject legitimate noise samples, especially
+when few exposures give an unstable deviation estimate. Choose thresholds using
+representative observations; a narrower histogram alone does not demonstrate
+better calibration or justify the supplied uncertainty model. Registration
+errors, variable sources and detector defects need separate treatment.
+
 Combination and uncertainties
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

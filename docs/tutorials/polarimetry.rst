@@ -51,6 +51,34 @@ angle of the ``(q, u)`` vector, reported modulo 180 degrees. The quantities
 ``q``, ``u`` and ``p`` are fractions internally; multiply by 100 when
 displaying percentages.
 
+Inspect modulation and residuals
+---------------------------------
+
+The upper panel shows the normalized ordinary-minus-extraordinary beam signal,
+with the supplied beam uncertainties propagated to each point. The curve is
+computed from the recovered Stokes parameters. Half-wave modulation repeats
+every 90 degrees of retarder rotation; this is why several distinct retarder
+positions constrain the same linear polarization. When evaluating
+``result.model`` yourself, supply angles with units; the fitted zero angle also
+carries an angular unit::
+
+    >>> from astropy import units as u
+    >>> predicted = result.model(psi * u.deg)
+    >>> residual = result.zi.nominal - predicted.nominal
+    >>> print(f'Largest modulation residual: {np.max(np.abs(residual)):.3f}')
+    Largest modulation residual: 0.000
+
+.. plot:: _ext/guide_figures.py plot_polarimetry
+    :include-source: False
+    :alt: Half-wave beam modulation with measurement error bars and a fitted curve; residuals are zero for the noiseless example.
+    :caption: Recovered modulation and residuals for the eight beam pairs above. Error bars describe the supplied measurement model, not scatter injected into the nominal fluxes.
+
+The residual panel is flat because these nominal fluxes lie exactly on the
+model. On observations, look for outliers, angle-dependent structure or unequal
+noise between positions. A flat residual in this idealized example does not
+validate an instrument's normalization or establish the accuracy of the fitted
+uncertainties.
+
 Choose the normalization and angle coverage
 -------------------------------------------
 
