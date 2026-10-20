@@ -48,32 +48,32 @@ def background(
 
     Parameters
     ----------
-    data: array_like
+    data
         2D array containing the image to extract the background.
-    box_size: `int` (optional)
+    box_size
         Size of background boxes in pixels.
         Default: 64
-    filter_size: `int` (optional)
+    filter_size
         Filter size in boxes unit.
         Default: 3
-    mask: array_like (optional)
+    mask
         Boolean mask where 1 pixels are masked out in the background
         calculation.
         Default: `None`
-    sigma_clip: `float` or `tuple` (optional)
+    sigma_clip
         Sigma clipping value. If a tuple is given, the first value is the
         lower sigma and the second is the upper sigma.
-    bkg_method: ``'mode'``, ``'mean'``, ``'median'`` (optional)
+    bkg_method
         Method to calculate the background. By ``'mode'`` it uses the
         `~photutils.background.SExtractorBackground` algorithm. ``'mean'`` and
         ``'median'`` uses `~photutils.background.MeanBackground` and
         `~photutils.background.MedianBackground` respectively.
         Default: ``'mode'``
-    rms_method: ``'std'``, ``'mad_std'`` (optional)
+    rms_method
         Method to calculate the rms. ``'std'`` uses the standard deviation
         and ``'mad_std'`` uses the median absolute deviation.
         Default: ``'std'``
-    global_bkg: `bool`
+    global_bkg
         If True, the algorithm returns a single value for background and rms,
         else, a 2D image with local values will be returned. The global value
         is computed as the median of the 2D local values.
@@ -81,9 +81,9 @@ def background(
 
     Returns
     -------
-    background: `float` or `~numpy.ndarray`
+    background
         Background value or image.
-    rms: `float` or `~numpy.ndarray`
+    rms
         RMS value or image.
     """
     data = np.array(data)

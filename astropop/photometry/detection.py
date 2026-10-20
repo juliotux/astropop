@@ -36,35 +36,35 @@ def segfind(
 
     Parameters
     ----------
-    data: array_like
+    data
         2D array containing the image to extract the sources.
-    threshold: `int` or `float`
+    threshold
         Minumim number of standard deviations above the background level where
         the algorithm will start to consider the sources.
-    background: `float` or `~numpy.ndarray`
+    background
         Background level estimation. Can be a single global value, or a 2D
         array with by-pixel values.
-    noise: `float` or `~numpy.ndarray`
+    noise
         RMS or any other noise estimation to use in the detection. Can be a
         single global value, or a 2D array with by-pixel values.
-    mask: array_like (optional)
+    mask
         Boolean mask where 1 pixels are masked out in the background
         calculation.
         Default: `None`
-    fwhm: `float` (optional)
+    fwhm
         FWHM to generate the convolution kernel. If `None`, no convolution
         will be performed.
         Default: `None`
-    npix: `int` (optional)
+    npix
         Minimum number of connected pixels to consider a source.
         Default: ``5``
-    deblend: `bool` (optional)
+    deblend
         If `True`, the algorithm will try to deblend the sources.
         Default: `True`
 
     Returns
     -------
-    sources: `astropy.table.Table`
+    sources
         Table with the sources found. The table will contain the following
         columns:
 
@@ -190,38 +190,38 @@ def daofind(
 
     Parameters
     ----------
-    data: array_like
+    data
         2D array containing the image to extract the sources.
-    threshold: `int` or `float`
+    threshold
         Minumim number of standard deviations above the background level where
         the algorithm will start to consider the sources.
-    background: `float` or `~numpy.ndarray`
+    background
         Background level estimation. Can be a single global value, or a 2D
         array with by-pixel values.
-    noise: `float` or `~numpy.ndarray`
+    noise
         RMS or any other noise estimation to use in the detection. Can be a
         single global value, or a 2D array with by-pixel values. Due to
         limitations of photutils, if a 2D array is provided, it will be
         converted to a scalar using the median.
-    fwhm: `float`
+    fwhm
         Full width at half maximum: to be used in the convolve filter.
-    sharp_limit: array_like or `None` (optional)
+    sharp_limit
         Low and high cutoff for the sharpness statistic. `None` will disable
         the sharpness filtering.
         Default: (0.2, 1.0)
-    round_limit : array_like or `None` (optional)
+    round_limit
         Low and high cutoff for the roundness statistic. `None` will disable
         the roundness filtering.
         Default: (-1.0,1.0)
-    mask: array_like (optional)
+    mask
         Boolean mask where 1 pixels are masked out in the background
         calculation.
         Default: `None`
-    exclude_border: `bool` (optional)
+    exclude_border
         If `True`, sources found within half the size of the convolution
         kernel from the image borders are excluded.
         Default: `True`
-    positions: array_like (optional)
+    positions
         List of (x, y) positions where to look for sources. If provided, the
         source finding step will be ignored and the centroids will be refined
         and filtered.
@@ -229,7 +229,7 @@ def daofind(
 
     Returns
     -------
-    sources: `astropy.table.Table`
+    sources
         Table with the sources found. The table will contain the following
         columns:
 
@@ -327,43 +327,43 @@ def starfind(
 
     Parameters
     ----------
-    data: array_like
+    data
         2D array containing the image to extract the sources.
-    threshold: `int` or `float`
+    threshold
         Minumim number of standard deviations above the background level where
         the algorithm will start to consider the sources.
-    background: `float` or `~numpy.ndarray`
+    background
         Background level estimation. Can be a single global value, or a 2D
         array with by-pixel values.
-    noise: `float` or `~numpy.ndarray`
+    noise
         RMS or any other noise estimation to use in the detection. Can be a
         single global value, or a 2D array with by-pixel values. Due to
         limitations of photutils, if a 2D array is provided, it will be
         converted to a scalar using the median.
-    fwhm: `float` (optional)
+    fwhm
         Initial guess of the FWHM to be used in the convolve filter. No need to
         be precise. Will be recomputed in the function.
         Default: `None`
-    sharp_limit: array_like or `None` (optional)
+    sharp_limit
         Low and high cutoff for the sharpness statistic. `None` will disable
         the sharpness filtering.
         Default: (0.2, 1.0)
-    round_limit : array_like or `None` (optional)
+    round_limit
         Low and high cutoff for the roundness statistic. `None` will disable
         the roundness filtering.
         Default: (-1.0,1.0)
-    mask: array_like (optional)
+    mask
         Boolean mask where 1 pixels are masked out in the background
         calculation.
         Default: `None`
-    exclude_border: `bool` (optional)
+    exclude_border
         If `True`, sources found within half the size of the convolution
         kernel from the image borders are excluded.
         Default: `True`
 
     Returns
     -------
-    sources: `astropy.table.Table`
+    sources
         Table with the sources found. The table will contain the following
         columns:
 
@@ -424,18 +424,18 @@ def _fwhm_loop(
     """
     Parameters
     ----------
-    model: `str`
+    model
         Choose a Gaussian or Moffat model.
-    data: array_like
+    data
         2D array containing the image to extract the source.
-    x, y: array_like
+    x, y
         x and y indexes ofthe pixels in the image.
-    xc, yc: array_like
+    xc, yc
         x and y initial guess positions of the source.
 
     Returns
     -------
-    fwhm: `float`
+    fwhm
         FWHM of the source.
 
     Notes
@@ -477,23 +477,23 @@ def median_fwhm(
 
     Parameters
     ----------
-    data: array_like
+    data
         2D array containing the image to extract the source.
-    x, y: array_like
+    x, y
         x, y centroid position.
-    box_size: `int` (optional)
+    box_size
         Size of the box, in pixels, to fit the model.
         Default: 25
-    model: {`gaussian`, `moffat`}
+    model
         Choose a Gaussian or Moffat model.
         Default: ``gaussian``
-    min_fwhm: float
+    min_fwhm
         Minimum value for FWHM.
         Default: 3.0
 
     Returns
     -------
-    fwhm : float
+    fwhm
         Median fitted source FWHM in pixels. Nonfinite fits are ignored by
         the median. If the median is nonfinite or below ``min_fwhm``, returns
         ``min_fwhm``. Empty or all-invalid fits may emit a NumPy warning.

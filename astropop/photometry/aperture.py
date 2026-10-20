@@ -234,65 +234,65 @@ def aperture_photometry(
 
     Parameters
     ----------
-    data : `~numpy.ndarray`
+    data
         2D image data for photometry
-    x, y : array_like
+    x, y
         Positions of the sources
-    r : float, ``'auto'`` (optional)
+    r
         Aperture radius, in pixels. If 'auto', the value will be estimated
         based in the median gaussian FWHM of the sources in the image
         (r=0.6371*GFWHM).
         Default: 'auto'
-    r_ann : array_like([float, float]), ``'auto'`` `None` (optional)
+    r_ann
         Annulus radii (r_in, r_out) for local background extraction in pixels.
         If 'auto', the annulus will be set based on aperture as (4*r, 6*r).
         If None, no local background subtraction will be performed.
         Default: 'auto'
-    recenter_limit : float (optional)
+    recenter_limit
         Maximum distance allowed to recenter the apertures. If None, no
         recentering will be performed.
         Default: `None`
-    recenter_method : 'com', 'gaussian' or 'quadratic' (optional)
+    recenter_method
         Algorithm to recenter the apertures. If None, no recentering will be
         performed. ``'com'`` method will use the center of mass of the aperture,
         ``'gaussian'`` will use a gaussian fit to the aperture and ``'quadratic'``
         will use a quadratic fit to the aperture. See `~photutils.centroids`
         for more information.
         Default: 'com'
-    gain : float (optional)
+    gain
         Divide data by this value before measurement and use it as the
         effective gain for the Poisson error calculation. Returned fluxes
         are not multiplied back by gain.
         Default: 1.0
-    bkg_error : float or `~numpy.ndarray` (optional)
+    bkg_error
         1-sigma gaussian error of the background-only error of input data.
         Passed to the error calculation without division by gain; express
         it on the divided-data scale. If None, zero will be used.
         Default: `None`
-    mask : `~numpy.ndarray` (optional)
+    mask
         Mask badpixels and problematic ccd areas.
         Default: `None`
-    pixel_flags : `~numpy.ndarray` (optional)
+    pixel_flags
         Array with flags for each pixel. If None, no flags will be used.
         Flags must follow the `~astropop.framedata.PixelMaskFlags` standard.
         Default: `None`
-    bkg_method : 'mmm', 'mode', 'median' or 'mean' (optional)
+    bkg_method
         Algorith to calculate the background value. ``'mode'`` or ``'mmm'``
         (mean, median, mode) are computed as (3*median - 2*mean) and
         should be better for populated fields. ``'median'`` and ``'mean'``
         just compute these values in the annulus. All algorithms can use sigma
         clipping if ``bkg_sigma_clip`` is not None.
         Default: 'mmm'
-    bkg_sigma_clip : float or `None` (optional)
+    bkg_sigma_clip
         Symmetric sigma threshold for annulus background clipping. None
         disables clipping. Used when an annulus is requested.
         Default: 3.0
-    box_size : int (optional)
+    box_size
         Box size for median FWHM computation. Default is 11.
 
     Returns
     -------
-    res_ap : `~astropy.table.Table`
+    res_ap
         Table containing all aperture photometry informations.
 
         - ``x``, ``y``: centroids of the sources. If recentering is performed,
