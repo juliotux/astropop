@@ -42,6 +42,34 @@ def check_urls(html):
     print(f"Verified {len(manifest['pages'])} retained page URLs and anchors")
 
 
+_DIRECTIVE_MODES = {
+    '.. code-block:: text': 'stored console transcript; not executed',
+    '.. catalog-help::': 'local catalog help; rendered without online queries',
+    '.. tutorial-notebook::': 'generated RST companion; execute with development/run_tutorials.py',
+    '.. tutorial-data::': 'generated local FITS download; no online queries',
+    '.. plot::': 'Sphinx plot execution',
+    '.. code-block:: python': 'static recipe; not executed',
+}
+
+
+def example_validation(lines: list[str], index: int) -> str | None:
+    """Classify an example's opening line without counting continuation prompts."""
+    stripped = lines[index].strip()
+    if stripped.startswith('>>>'):
+        if index and lines[index - 1].strip().startswith(('>>>', '...')):
+            return None
+        return 'pytest example'
+    for prefix, mode in _DIRECTIVE_MODES.items():
+        if stripped.startswith(prefix):
+            return mode
+    if stripped.endswith('::') and not stripped.startswith('..'):
+        following = next((text.strip() for text in lines[index + 1:]
+                          if text.strip()), '')
+        if not following.startswith('>>>'):
+            return 'static literal recipe; not executed'
+    return None
+
+
 def example_inventory():
     """Print a JSON inventory of authored examples and their validation modes."""
     docs = Path(__file__).resolve().parents[1]
@@ -50,30 +78,8 @@ def example_inventory():
         if any(part in ('api', '_build') for part in path.relative_to(docs).parts):
             continue
         lines = path.read_text().splitlines()
-        for index, line in enumerate(lines):
-            stripped = line.strip()
-            mode = None
-            if stripped.startswith('>>>'):
-                if index and lines[index - 1].strip().startswith(('>>>', '...')):
-                    continue
-                mode = 'pytest example'
-            elif stripped.startswith('.. code-block:: text'):
-                mode = 'stored console transcript; not executed'
-            elif stripped.startswith('.. catalog-help::'):
-                mode = 'local catalog help; rendered without online queries'
-            elif stripped.startswith('.. tutorial-notebook::'):
-                mode = 'generated RST companion; execute with development/run_tutorials.py'
-            elif stripped.startswith('.. tutorial-data::'):
-                mode = 'generated local FITS download; no online queries'
-            elif stripped.startswith('.. plot::'):
-                mode = 'Sphinx plot execution'
-            elif stripped.startswith('.. code-block:: python'):
-                mode = 'static recipe; not executed'
-            elif stripped.endswith('::') and not stripped.startswith('..'):
-                following = next((text.strip() for text in lines[index + 1:]
-                                  if text.strip()), '')
-                if not following.startswith('>>>'):
-                    mode = 'static literal recipe; not executed'
+        for index in range(len(lines)):
+            mode = example_validation(lines, index)
             if mode:
                 examples.append({'page': str(path.relative_to(docs)),
                                  'line': index + 1, 'validation': mode})

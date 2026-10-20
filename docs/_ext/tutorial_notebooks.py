@@ -95,6 +95,73 @@ def markdown(text: str) -> str:
     return '\n'.join(converted).strip()
 
 
+def indented_block(lines: list[str], start: int) -> tuple[list[str], int]:
+    """Read an indented RST body, including blank lines, and return its end."""
+    end = start
+    while end < len(lines) and (lines[end].startswith('    ') or lines[end] == ''):
+        end += 1
+    return lines[start:end], end
+
+
+def example_cells(block: list[str]) -> list[NotebookNode]:
+    """Convert prompted examples to code and a separate expected-output cell."""
+    import nbformat as nbf
+
+    examples = doctest.DocTestParser().get_examples('\n'.join(block))
+    code = '\n'.join(example.source.rstrip() for example in examples)
+    expected = ''.join(example.want for example in examples).replace('<BLANKLINE>', '')
+    cells = [nbf.v4.new_code_cell(code)]
+    if expected:
+        cells.append(nbf.v4.new_markdown_cell('Expected output:\n\n```text\n' + expected.rstrip() + '\n```'))
+    return cells
+
+
+def plot_code(args: list[str], body: list[str]) -> str:
+    """Resolve a plot directive to a call using the notebook's live variables."""
+    if not args:
+        return '\n'.join(body).strip()
+    module = Path(args[0]).stem
+    function = args[1]
+    if module == 'workflow_figures':
+        from workflow_figures import NOTEBOOK_PLOTS
+        call = NOTEBOOK_PLOTS[function]
+        return f'from workflow_figures import {call.partition("(")[0]}\n{call}'
+    if function == 'plot_polarimetry':
+        return 'from guide_figures import plot_polarimetry\nplot_polarimetry(psi, result)'
+    return f'from {module} import {function}\n{function}()'
+
+
+def plot_cells(directive: str, block: list[str]) -> list[NotebookNode]:
+    """Convert a plot body and its options to hidden code and a visible caption."""
+    import nbformat as nbf
+
+    args = directive.partition('::')[2].strip().split()
+    options: dict[str, str] = {}
+    body = []
+    for line in block:
+        part = line[4:] if line.startswith('    ') else ''
+        if part.startswith(':'):
+            key, _, value = part[1:].partition(':')
+            options[key] = value.strip()
+        else:
+            body.append(part)
+    code = plot_code(args, body) + '\nimport matplotlib.pyplot as plt\nplt.show()'
+    cells = [nbf.v4.new_code_cell(code, metadata={
+        'tags': ['hide-input'], 'jupyter': {'source_hidden': True}})]
+    if options.get('caption'):
+        cells.append(nbf.v4.new_markdown_cell(options['caption']))
+    return cells
+
+
+def recipe_text(directive: str, block: list[str]) -> list[str]:
+    """Render a static recipe, replacing the data path supplied by notebook setup."""
+    language = directive.partition('::')[2].strip()
+    text = '\n'.join(line[4:] if line.startswith('    ') else '' for line in block).strip()
+    if text == "data = Path('data')":
+        return ['The hidden setup cell locates the bundled data automatically.']
+    return ['```' + language, text, '```', '']
+
+
 def build_notebook(page: Path) -> NotebookNode:
     """Convert narrative, prompted examples and plots without duplicating calculations."""
     import nbformat as nbf
@@ -119,61 +186,17 @@ def build_notebook(page: Path) -> NotebookNode:
             continue
         if line.lstrip().startswith('>>>'):
             flush()
-            block = []
-            while i < len(lines) and (lines[i].startswith('    ') or lines[i] == ''):
-                block.append(lines[i])
-                i += 1
-            examples = doctest.DocTestParser().get_examples('\n'.join(block))
-            code = '\n'.join(example.source.rstrip() for example in examples)
-            expected = ''.join(example.want for example in examples).replace('<BLANKLINE>', '')
-            cells.append(nbf.v4.new_code_cell(code))
-            if expected:
-                cells.append(nbf.v4.new_markdown_cell('Expected output:\n\n```text\n' + expected.rstrip() + '\n```'))
+            block, i = indented_block(lines, i)
+            cells.extend(example_cells(block))
             continue
         if line.startswith('.. plot::'):
             flush()
-            args = line.partition('::')[2].strip().split()
-            options: dict[str, str] = {}
-            body = []
-            i += 1
-            while i < len(lines) and (lines[i].startswith('    ') or lines[i] == ''):
-                part = lines[i][4:] if lines[i].startswith('    ') else ''
-                if part.startswith(':'):
-                    key, _, value = part[1:].partition(':')
-                    options[key] = value.strip()
-                else:
-                    body.append(part)
-                i += 1
-            if args:
-                module = Path(args[0]).stem
-                function = args[1]
-                if module == 'workflow_figures':
-                    from workflow_figures import NOTEBOOK_PLOTS
-                    call = NOTEBOOK_PLOTS[function]
-                    code = f'from workflow_figures import {call.partition("(")[0]}\n{call}'
-                elif function == 'plot_polarimetry':
-                    code = 'from guide_figures import plot_polarimetry\nplot_polarimetry(psi, result)'
-                else:
-                    code = f'from {module} import {function}\n{function}()'
-            else:
-                code = '\n'.join(body).strip()
-            code += '\nimport matplotlib.pyplot as plt\nplt.show()'
-            cells.append(nbf.v4.new_code_cell(code, metadata={
-                'tags': ['hide-input'], 'jupyter': {'source_hidden': True}}))
-            if options.get('caption'):
-                cells.append(nbf.v4.new_markdown_cell(options['caption']))
+            block, i = indented_block(lines, i + 1)
+            cells.extend(plot_cells(line, block))
             continue
         if line.startswith('.. code-block::'):
-            language = line.partition('::')[2].strip()
-            block = []
-            i += 1
-            while i < len(lines) and (lines[i].startswith('    ') or lines[i] == ''):
-                block.append(lines[i][4:] if lines[i].startswith('    ') else '')
-                i += 1
-            if '\n'.join(block).strip() == "data = Path('data')":
-                narrative.append('The hidden setup cell locates the bundled data automatically.')
-            else:
-                narrative.extend(['```' + language, '\n'.join(block).strip(), '```', ''])
+            block, i = indented_block(lines, i + 1)
+            narrative.extend(recipe_text(line, block))
             continue
         narrative.append(line)
         i += 1
