@@ -51,18 +51,30 @@ and expected results and use local temporary data.
   such as ``plot:: _ext/guide_figures.py plot_registration``. The
   ``guide_figures`` extension records that helper as a source dependency so
   edits to it invalidate the corresponding pages.
-* CCD and photometry tutorial fixtures use hidden ``doctest`` blocks for
-  temporary data setup and cleanup only. Pytest executes those blocks;
-  HTML hides them. Show meaningful evaluated results or formatted ``print``
-  output in the visible workflow so doctests check what readers see. Avoid
-  assertions, ``np.testing`` calls and ``pytest.raises`` in documentation
-  examples; keep implementation checks in the test suite. ``tutorial-data``
-  generates a downloadable archive in the build directory using the same
-  seeded generator.
-  Plots run the same fixture and reduction functions, rather than loading
-  external observations. The generator is pure scientific Python on import;
-  Sphinx imports stay in its ``setup`` function so ordinary CI needs no
-  documentation dependencies.
+* Tutorial RST pages are the maintained numerical source. Hidden ``doctest``
+  blocks only prepare temporary data and clean it up; visible examples print
+  meaningful results for doctests to verify. Keep assertions and testing
+  helpers in the test suite, rather than inside learning workflows.
+* ``tutorial-data`` generates the shared offline archive in the build directory.
+  It contains raw observations, local standards, reference products and nine
+  notebook companions. ``tutorial-notebook:: page_name`` links the corresponding
+  generated notebook. Edit the RST, not a second notebook copy.
+* ``tutorial_notebooks.py`` converts prompted examples, expected console output,
+  prose and plot directives. Setup cells locate the extracted bundle and set
+  optional-array configuration before loading frames. Notebook figures use the
+  current cell results. Sphinx figure wrappers replay the same visible RST
+  calculations in temporary directories rather than duplicating the reduction.
+* Run ``python docs/development/run_tutorials.py --output /tmp/tutorial-review``
+  from the repository root with the docs/test dependencies installed. It executes
+  all nine notebooks with fresh kernels, both sequentially using preceding
+  products and independently using the supplied references. Executed notebooks
+  and figures remain under that dedicated output directory. ``--mode sequence``
+  or ``--mode independent`` selects one run for focused debugging.
+* These helpers import Sphinx/Docutils only inside extension setup code.
+  Ordinary test collection ignores ``_ext`` and ``_build`` so it does not need
+  documentation dependencies or collect copies from generated bundles. Keep
+  seeded data creation offline and bounded; input truth is for final recovery
+  diagnostics, never a substitute for estimating a result from measurements.
 * Catalog help is rendered from bundled YAML configuration using
   ``catalog-help``; it does not construct a catalog or query a remote service.
 * Stored notebooks are rendered with ``nbsphinx_execute='never'``. The CCD

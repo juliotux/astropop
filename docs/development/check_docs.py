@@ -61,6 +61,8 @@ def example_inventory():
                 mode = 'stored console transcript; not executed'
             elif stripped.startswith('.. catalog-help::'):
                 mode = 'local catalog help; rendered without online queries'
+            elif stripped.startswith('.. tutorial-notebook::'):
+                mode = 'generated RST companion; execute with development/run_tutorials.py'
             elif stripped.startswith('.. tutorial-data::'):
                 mode = 'generated local FITS download; no online queries'
             elif stripped.startswith('.. plot::'):
