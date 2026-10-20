@@ -220,9 +220,34 @@ sum and its corresponding uncertainty::
     >>> np.testing.assert_allclose(raw.data, 10)
     >>> np.testing.assert_allclose(raw.uncertainty, 2)
 
-Both uncertainty-disable settings described above also apply to combination.
-They avoid uncertainty buffers, result arrays, and error-only scatter
-calculations. Clipping still computes any statistics needed for rejection.
+``AstropopConfig.FRAMEDATA_DISABLE_UNCERTAINTY`` also applies to combination.
+Set it before loading or creating frames to avoid input uncertainty storage,
+combination uncertainty buffers, output uncertainty arrays, and error-only
+scatter calculations. Clipping still computes statistics needed for rejection.
+``FRAMEDATA_DISABLE_FLAGS`` independently disables flag and mask storage; it
+does not disable uncertainty calculations::
+
+    >>> from astropop.config import AstropopConfig as conf
+    >>> previous_uncertainty = conf.FRAMEDATA_DISABLE_UNCERTAINTY
+    >>> previous_flags = conf.FRAMEDATA_DISABLE_FLAGS
+    >>> try:
+    ...     conf.FRAMEDATA_DISABLE_UNCERTAINTY = True
+    ...     conf.FRAMEDATA_DISABLE_FLAGS = True
+    ...     inputs = [FrameData([[2.0]], uncertainty=1),
+    ...               FrameData([[4.0]], uncertainty=1)]
+    ...     combined = imcombine(inputs, method='mean')
+    ...     np.testing.assert_allclose(combined.data, 3)
+    ...     assert combined.uncertainty is None
+    ...     assert combined.flags is None and combined.mask is None
+    ...     conf.FRAMEDATA_DISABLE_UNCERTAINTY = False
+    ...     conf.FRAMEDATA_DISABLE_FLAGS = False
+    ...     enabled = imcombine([FrameData([[2.0]]), FrameData([[4.0]])],
+    ...                         method='mean')
+    ...     np.testing.assert_allclose(enabled.data, 3)
+    ...     assert enabled.uncertainty is not None and enabled.flags is not None
+    ... finally:
+    ...     conf.FRAMEDATA_DISABLE_UNCERTAINTY = previous_uncertainty
+    ...     conf.FRAMEDATA_DISABLE_FLAGS = previous_flags
 
 Dtype and memory use
 ^^^^^^^^^^^^^^^^^^^^
