@@ -46,6 +46,7 @@ def _deriv_mod_1(x: _NumberArray, y: _NumberArray) -> _NumberArray:
 
 @np.vectorize
 def _deriv_copysign(x: _NumberArray, y: _NumberArray) -> _NumberArray:
+    """Differentiate copysign with respect to its magnitude argument."""
     if x >= 0:
         return np.copysign(1, y)
     return -np.copysign(1, y)

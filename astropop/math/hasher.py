@@ -1,6 +1,7 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
 
+"""Generate short identifiers from SHA-256 hashes."""
 from __future__ import annotations
 
 import hashlib

@@ -41,6 +41,7 @@ def _implements_array_func(
 ) -> _t.Callable[[_F], _F]:
     """Register an __array_function__ implementation for QFloat objects."""
     def decorator_array_func(func: _F) -> _F:
+        """Register the callable for the selected NumPy array function and return it."""
         HANDLED_AFUNCS[numpy_function] = func
         return func
     return decorator_array_func
@@ -49,6 +50,7 @@ def _implements_array_func(
 def _implements_ufunc(numpy_ufunc: np.ufunc) -> _t.Callable[[_F], _F]:
     """Register an ufunc implementation for QFloat objects."""
     def decorator_ufunc(func: _F) -> _F:
+        """Register the callable for the selected NumPy ufunc and return it."""
         HANDLED_UFUNCS[numpy_ufunc] = func
         return func
     return decorator_ufunc
@@ -102,6 +104,7 @@ def convert_to_qfloat(value: _QuantityInput) -> QFloat:
 def require_qfloat(func: _t.Callable[..., _R]) -> _t.Callable[..., _R]:
     """Require qfloat as argument decorator."""
     def decorator(self: QFloat, *others: _QuantityInput) -> _R:
+        """Convert the other operands to QFloat before invoking the wrapped method."""
         others = [convert_to_qfloat(i) for i in others]
         return func(self, *others)
     return decorator
@@ -154,11 +157,13 @@ class _FormaterElement:
     __slots__ = ('_value', '_std', '_sig_digits')
 
     def __init__(self, value: float, std: float, sig_digits: int) -> None:
+        """Retain one nominal value, its uncertainty and the display precision."""
         self._value = value
         self._std = std
         self._sig_digits = sig_digits
 
     def __repr__(self) -> str:
+        """Format the retained value and uncertainty at the selected precision."""
         return _format_qfloat(self._value, self._std, self._sig_digits)
 
 
@@ -186,6 +191,7 @@ def same_unit(
         qf: QFloat,
         unit: _UnitLike,
     ) -> QFloat:
+        """Apply a unit converter to nominal values and uncertainties when needed."""
         if converter is None:
             return qf
         nom = converter(qf.nominal)
@@ -293,10 +299,12 @@ class QFloat():
     if _t.TYPE_CHECKING:
         @property
         def unit(self) -> units.UnitBase:
+            """Return the physical unit, using dimensionless units when none was stored."""
             ...
 
         @unit.setter
         def unit(self, value: _UnitLike) -> None:
+            """Normalize and replace the unit without converting nominal values or errors."""
             ...
 
     _nominal = None
@@ -310,6 +318,7 @@ class QFloat():
         uncertainty: _npt.ArrayLike | None=None,
         unit: _UnitLike=None,
     ) -> None:
+        """Normalize nominal values, initialize standard uncertainties and assign the unit."""
         value, uncertainty, unit = self._check_inputs(value, uncertainty, unit)
         self._nominal = value
         self._set_uncert(uncertainty)
@@ -321,6 +330,11 @@ class QFloat():
         uncertainty: _npt.ArrayLike | None=None,
         unit: _UnitLike=None,
     ) -> tuple[_NumberArray, _NumberArray | None, _UnitLike]:
+        """Normalize real nominal values and extract an existing QFloat's components.
+
+        Explicit uncertainty or unit overrides are rejected for QFloat inputs.
+        Nonscalar nominal values are copied to floating-point arrays.
+        """
         if isinstance(value, QFloat):
             qf = value
             value = value.nominal
@@ -344,6 +358,11 @@ class QFloat():
         return value, uncertainty, unit
 
     def _set_uncert(self, value: _npt.ArrayLike | None) -> None:
+        """Store absolute uncertainties matching the nominal shape.
+
+        None creates zero uncertainties. None entries in an uncertainty array
+        are replaced by zero; mismatched shapes raise ValueError.
+        """
         if value is None:
             if not np.isscalar(self._nominal):
                 self._uncert = np.zeros_like(self._nominal)
@@ -366,6 +385,11 @@ class QFloat():
                 self._uncert = float(abs(value))
 
     def _set_nominal(self, value: _npt.ArrayLike) -> None:
+        """Replace nominal values and reset their uncertainties.
+
+        A tuple can supply value and uncertainty, optionally followed by a unit.
+        Without a supplied unit the current unit is retained.
+        """
         uncertainty = None
         unit = None
         if isinstance(value, tuple):
@@ -386,6 +410,7 @@ class QFloat():
 
     @uncertainty.setter
     def uncertainty(self, value: _npt.ArrayLike | None) -> None:
+        """Replace standard uncertainties after checking shape and taking absolute values."""
         self._set_uncert(value)
 
     @property
@@ -395,6 +420,7 @@ class QFloat():
 
     @nominal.setter
     def nominal(self, value: _npt.ArrayLike) -> None:
+        """Replace nominal values, accepting optional uncertainty and unit tuple entries."""
         self._set_nominal(value)
 
     @property
@@ -404,6 +430,7 @@ class QFloat():
 
     @std_dev.setter
     def std_dev(self, value: _npt.ArrayLike | None) -> None:
+        """Assign standard uncertainties through the uncertainty property."""
         self.uncertainty = value
 
     @property
@@ -423,6 +450,7 @@ class QFloat():
 
     @sig_digits.setter
     def sig_digits(self, value: int) -> None:
+        """Set display precision by converting a real value to an integer."""
         if not np.isreal(value):
             raise TypeError('sig_digits must be a real number.')
         self._sig_digits = int(value)
@@ -477,10 +505,12 @@ class QFloat():
         return self.nominal
 
     def __repr__(self) -> str:
+        """Identify the quantity by its address and formatted value with uncertainty."""
         i = hex(id(self))
         return f'<QFloat at {i}>\n{self.__str__()}'
 
     def __str__(self) -> str:
+        """Format nominal values and uncertainties with the selected precision and unit."""
         if np.isscalar(self.nominal):
             s = _format_qfloat(self.nominal, self.uncertainty, self.sig_digits)
         else:
@@ -514,6 +544,7 @@ class QFloat():
         self._uncert[index] = value.uncertainty
 
     def __len__(self) -> int:
+        """Return the leading nominal-array length; scalar quantities raise TypeError."""
         return len(self.nominal)
 
     def __array_ufunc__(
@@ -590,6 +621,11 @@ class QFloat():
         return HANDLED_AFUNCS[func](*args, **kwargs)
 
     def __eq__(self, other: object) -> bool | _npt.NDArray[np.bool_]:
+        """Test exact equality of all nominal values and uncertainties after unit conversion.
+
+        Return False for incompatible units or objects that cannot be converted.
+        This compares the complete quantity rather than returning an elementwise mask.
+        """
         try:
             this, other = same_unit(self, other, self.__eq__)
         except Exception:
@@ -603,25 +639,30 @@ class QFloat():
         return True
 
     def __ne__(self, other: object) -> bool | _npt.NDArray[np.bool_]:
+        """Negate exact whole-quantity equality, including uncertainties and unit conversion."""
         return not self == other
 
     @require_qfloat
     def __gt__(self, other: _QuantityInput) -> bool | _npt.NDArray[np.bool_]:
+        """Compare nominal values elementwise after converting to compatible units."""
         this, other = same_unit(self, other, self.__gt__)
         return this.nominal > other.nominal
 
     @require_qfloat
     def __ge__(self, other: _QuantityInput) -> bool | _npt.NDArray[np.bool_]:
+        """Test nominal values for greater-than-or-equal after unit conversion."""
         this, other = same_unit(self, other, self.__lt__)
         return this.nominal >= other.nominal
 
     @require_qfloat
     def __lt__(self, other: _QuantityInput) -> bool | _npt.NDArray[np.bool_]:
+        """Compare nominal values elementwise after converting to compatible units."""
         this, other = same_unit(self, other, self.__lt__)
         return this.nominal < other.nominal
 
     @require_qfloat
     def __le__(self, other: _QuantityInput) -> bool | _npt.NDArray[np.bool_]:
+        """Test nominal values for less-than-or-equal after unit conversion."""
         this, other = same_unit(self, other, self.__lt__)
         return this.nominal <= other.nominal
 
@@ -630,12 +671,14 @@ class QFloat():
         return self.to(other)
 
     def __ilshift__(self, other: _UnitLike) -> _t.Self:
+        """Convert the nominal values and uncertainties to another unit in place."""
         res = self << other
         self.reset(res.nominal, res.uncertainty, res.unit)
         return self
 
     @require_qfloat
     def __add__(self, other: _QuantityInput) -> QFloat:
+        """Add quantities, converting compatible units and propagating independent errors."""
         qf1, qf2 = same_unit(self, other, self.__add__)
         sum_n = qf1.nominal + qf2.nominal
         sum_s = propagate_2('add', sum_n,
@@ -645,16 +688,19 @@ class QFloat():
 
     @require_qfloat
     def __iadd__(self, other: _QuantityInput) -> _t.Self:
+        """Add in place, converting units and updating nominal values and errors."""
         res = self.__add__(other)
         self.reset(res.nominal, res.uncertainty, res.unit)
         return self
 
     @require_qfloat
     def __radd__(self, other: _QuantityInput) -> QFloat:
+        """Add the other operand to this quantity with compatible-unit conversion."""
         return other.__add__(self)
 
     @require_qfloat
     def __sub__(self, other: _QuantityInput) -> QFloat:
+        """Subtract quantities, converting compatible units and propagating independent errors."""
         qf1, qf2 = same_unit(self, other, self.__add__)
         sub_n = qf1.nominal - qf2.nominal
         sub_s = propagate_2('add', sub_n,
@@ -664,16 +710,19 @@ class QFloat():
 
     @require_qfloat
     def __isub__(self, other: _QuantityInput) -> _t.Self:
+        """Subtract in place, converting units and updating nominal values and errors."""
         res = self.__sub__(other)
         self.reset(res.nominal, res.uncertainty, res.unit)
         return self
 
     @require_qfloat
     def __rsub__(self, other: _QuantityInput) -> QFloat:
+        """Subtract this quantity from the other operand with compatible-unit conversion."""
         return -self.__sub__(other)
 
     @require_qfloat
     def __mul__(self, other: _QuantityInput) -> QFloat:
+        """Multiply quantities, combining units and propagating independent errors."""
         unit = self.unit * other.unit
         qf1, qf2 = self, other
         mul_n = qf1.nominal * qf2.nominal
@@ -684,16 +733,19 @@ class QFloat():
 
     @require_qfloat
     def __imul__(self, other: _QuantityInput) -> _t.Self:
+        """Multiply in place, updating nominal values, uncertainties and unit."""
         res = self.__mul__(other)
         self.reset(res.nominal, res.uncertainty, res.unit)
         return self
 
     @require_qfloat
     def __rmul__(self, other: _QuantityInput) -> QFloat:
+        """Multiply the other operand by this quantity, combining units and errors."""
         return self.__mul__(other)
 
     @require_qfloat
     def __truediv__(self, other: _QuantityInput) -> QFloat:
+        """Divide quantities, combining units and propagating independent errors."""
         unit = self.unit / other.unit
         qf1, qf2 = self, other
         div_n = qf1.nominal / qf2.nominal
@@ -704,16 +756,19 @@ class QFloat():
 
     @require_qfloat
     def __itruediv__(self, other: _QuantityInput) -> _t.Self:
+        """Divide in place, updating nominal values, uncertainties and unit."""
         res = self.__truediv__(other)
         self.reset(res.nominal, res.uncertainty, res.unit)
         return self
 
     @require_qfloat
     def __rtruediv__(self, other: _QuantityInput) -> QFloat:
+        """Divide the other operand by this quantity, combining units and errors."""
         return other.__truediv__(self)
 
     @require_qfloat
     def __floordiv__(self, other: _QuantityInput) -> QFloat:
+        """Floor-divide quantities, using raw nominal values and the quotient unit."""
         unit = self.unit / other.unit
         qf1, qf2 = self, other
         div_n = qf1.nominal // qf2.nominal
@@ -724,17 +779,20 @@ class QFloat():
 
     @require_qfloat
     def __ifloordiv__(self, other: _QuantityInput) -> _t.Self:
+        """Floor-divide in place, updating nominal values, uncertainties and unit."""
         res = self.__floordiv__(other)
         self.reset(res.nominal, res.uncertainty, res.unit)
         return self
 
     @require_qfloat
     def __rfloordiv__(self, other: _QuantityInput) -> QFloat:
+        """Floor-divide the other operand by this quantity using raw nominal values."""
         # As the argument always enter here as a qfloat...
         return other.__floordiv__(self)
 
     @require_qfloat
     def __mod__(self, other: _QuantityInput) -> QFloat:
+        """Take the remainder of quantities, using raw nominal values and retaining the first unit."""
         qf1, qf2 = self, other
         mod_n = qf1.nominal % qf2.nominal
         mod_s = propagate_2('mod', mod_n,
@@ -744,16 +802,23 @@ class QFloat():
 
     @require_qfloat
     def __imod__(self, other: _QuantityInput) -> _t.Self:
+        """Take the remainder in place, updating nominal values and uncertainties."""
         res = self.__mod__(other)
         self.reset(res.nominal, res.uncertainty, res.unit)
         return self
 
     @require_qfloat
     def __rmod__(self, other: _QuantityInput) -> QFloat:
+        """Take the other operand modulo this quantity using raw nominal values."""
         return other.__mod__(self)
 
     @require_qfloat
     def __pow__(self, other: _QuantityInput) -> QFloat:
+        """Raise the quantity to a dimensionless scalar power and propagate uncertainty.
+
+        The exponent may carry uncertainty, but must be scalar and dimensionless.
+        The result unit is the input unit raised to the nominal exponent.
+        """
         # Important: different from normal arrays, QFloat cannot be raises
         # to an array due to inconsistencies in unit. Each element could
         # have it's own unit.
@@ -770,32 +835,39 @@ class QFloat():
 
     @require_qfloat
     def __ipow__(self, other: _QuantityInput) -> _t.Self:
+        """Apply exponentiation in place, replacing nominal values, uncertainties and unit."""
         res = self.__pow__(other)
         self.reset(res.nominal, res.uncertainty, res.unit)
         return self
 
     @require_qfloat
     def __rpow__(self, other: _QuantityInput) -> QFloat:
+        """Raise the other operand to this dimensionless scalar exponent."""
         return other.__pow__(self)
 
     @require_qfloat
     def __neg__(self) -> QFloat:
+        """Negate nominal values while preserving standard uncertainties and the unit."""
         return QFloat(-self.nominal, self.uncertainty, self.unit)
 
     @require_qfloat
     def __pos__(self) -> QFloat:
+        """Return a quantity with the same nominal values, uncertainties and unit."""
         return QFloat(self.nominal, self.uncertainty, self.unit)
 
     @require_qfloat
     def __abs__(self) -> QFloat:
+        """Take absolute nominal values while preserving uncertainties and the unit."""
         return QFloat(np.abs(self.nominal), self.uncertainty, self.unit)
 
     @require_qfloat
     def __int__(self) -> int:
+        """Convert the scalar nominal value to int, discarding its unit and uncertainty."""
         return int(self.nominal)
 
     @require_qfloat
     def __float__(self) -> float:
+        """Convert the scalar nominal value to float, discarding its unit and uncertainty."""
         return float(self.nominal)
 
 
@@ -814,6 +886,7 @@ def _qfloat_shape(qf: QFloat) -> tuple[int, ...]:
 
 @_implements_array_func(np.size)
 def _qfloat_size(qf: QFloat) -> int:
+    """Return the total number of nominal elements for NumPy size dispatch."""
     return qf.size
 
 
@@ -824,6 +897,7 @@ def _qfloat_clip(
     a_max: _npt.ArrayLike | None,
     **kwargs: _t.Any,
 ) -> QFloat:
+    """Clip nominal values while retaining the original uncertainties and unit."""
     # we mantain the original errors
     nominal = np.clip(qf.nominal, a_min, a_max)
     return QFloat(nominal, qf.std_dev, qf.unit)
@@ -841,6 +915,7 @@ def _array_func_simple_wrapper(numpy_func: _t.Callable[..., _t.Any]) -> None:
     - Only for one array ate once.
     """
     def wrapper(qf: QFloat, *args: _t.Any, **kwargs: _t.Any) -> QFloat:
+        """Apply the same array transformation to nominal values and uncertainties."""
         nominal = numpy_func(qf.nominal, *args, **kwargs)
         std = numpy_func(qf.uncertainty, *args, **kwargs)
         return QFloat(nominal, std, qf.unit)
@@ -980,6 +1055,7 @@ def _qfloat_nanvar(qf: QFloat, axis: _Axis=None) -> _NumberArray:
 def _implements_ufunc_on_nominal(func: np.ufunc) -> None:
     """Wraps ufuncs only on the nominal value and don't return QFloat."""
     def wrapper(qf: QFloat, *args: _t.Any, **kwargs: _t.Any) -> _NumberArray:
+        """Apply the ufunc to nominal values and return its ordinary NumPy result."""
         return func(qf.nominal, *args, **kwargs)
     _implements_ufunc(func)(wrapper)
 
@@ -1048,11 +1124,14 @@ def _qfloat_radians(qf: QFloat, *args: _t.Any, **kwargs: _t.Any) -> QFloat:
 @_implements_ufunc(np.degrees)
 @_implements_ufunc(np.rad2deg)
 def _qfloat_degrees(qf: QFloat, *args: _t.Any, **kwargs: _t.Any) -> QFloat:
+    """Convert angular nominal values and uncertainties to degrees."""
     return qf.to(units.degree)
 
 
 def _trigonometric_simple_wrapper(numpy_ufunc: np.ufunc) -> None:
+    """Register an angular ufunc with derivative-based uncertainty propagation."""
     def trig_wrapper(qf: QFloat, *args: _t.Any, **kwargs: _t.Any) -> QFloat:
+        """Evaluate an angle in radians and return dimensionless values with errors."""
         # check if qf is angle
         if qf.unit not in (units.degree, units.radian):
             raise UnitsError('qfloat unit is not degree or radian.')
@@ -1069,7 +1148,9 @@ def _trigonometric_simple_wrapper(numpy_ufunc: np.ufunc) -> None:
 
 
 def _inverse_trigonometric_simple_wrapper(numpy_ufunc: np.ufunc) -> None:
+    """Register an inverse angular ufunc for dimensionless inputs."""
     def inv_wrapper(qf: QFloat, *args: _t.Any, **kwargs: _t.Any) -> QFloat:
+        """Evaluate a dimensionless input and return radians with propagated errors."""
         if qf.unit != units.dimensionless_unscaled:
             raise UnitsError('inverse trigonometric functions require '
                              'dimensionless unscaled variables.')
@@ -1137,6 +1218,7 @@ def _general_ufunc_wrapper(numpy_ufunc: np.ufunc) -> None:
     true_func = _ufunc_translate[ufunc_name]
 
     def ufunc_wrapper(*inputs: QFloat) -> QFloat | tuple[QFloat, QFloat]:
+        """Dispatch converted operands to the corresponding QFloat arithmetic method."""
         return true_func(*inputs)
     _implements_ufunc(numpy_ufunc)(ufunc_wrapper)
 
@@ -1168,16 +1250,19 @@ def _qfloat_copysign(qf1: QFloat, qf2: QFloat) -> QFloat:
 
 @_implements_ufunc(np.square)
 def _qfloat_square(qf: QFloat) -> QFloat:
+    """Square the quantity through QFloat multiplication and error propagation."""
     return qf * qf
 
 
 @_implements_ufunc(np.sqrt)
 def _qfloat_sqrt(qf: QFloat) -> QFloat:
+    """Take the square root through QFloat exponentiation and error propagation."""
     return qf**0.5
 
 
 @_implements_ufunc(np.hypot)
 def _qfloat_hypot(qf1: QFloat, qf2: QFloat) -> QFloat:
+    """Compute a hypotenuse in the first operand unit with independent-error propagation."""
     qf2 = qf2.to(qf1.unit)
     nominal = np.hypot(qf1.nominal, qf2.nominal)
     std = propagate_2('hypot', nominal, qf1.nominal, qf2.nominal,
