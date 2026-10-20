@@ -1,17 +1,32 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 """Put a ``unit`` property in classes."""
 
+from __future__ import annotations
+
+import typing as _t
+
+
+
 from astropy import units
 
+_C = _t.TypeVar('_C', bound=type)
 
-def unit_property(cls):
+
+class _UnitContainer(_t.Protocol):
+    _unit: units.UnitBase | None
+
+
+def unit_property(cls) -> _C:
     """Add a ``unit`` property to a class."""
-    def _unit_getter(obj):
+    def _unit_getter(obj: _UnitContainer) -> units.UnitBase:
         if obj._unit is None:
             return units.dimensionless_unscaled
         return obj._unit
 
-    def _unit_setter(obj, value):
+    def _unit_setter(
+        obj: _UnitContainer,
+        value: str | units.UnitBase | units.Quantity | None,
+    ) -> None:
         if value is None or units.Unit(value) == units.dimensionless_unscaled:
             obj._unit = None
         else:

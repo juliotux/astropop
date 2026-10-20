@@ -1,19 +1,29 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 """Global configuration parameters for astropop."""
 
+from __future__ import annotations
+
+import typing as _t
+
+
 from functools import wraps as _wraps
 
+_P = _t.ParamSpec('_P')
+_R = _t.TypeVar('_R')
 
-def _optional(*disable_options):
+
+def _optional(
+    *disable_options: str,
+) -> _t.Callable[[_t.Callable[_P, _R]], _t.Callable[_P, _R | None]]:
     """Return None without calling a function when any setting is enabled.
 
     Settings are attribute names on `AstropopConfig`, evaluated at call time.
     For a property, decorate its getter below ``@property`` so its setter
     remains available. The wrapped function's arguments and metadata are kept.
     """
-    def decorate(func):
+    def decorate(func: _t.Callable[_P, _R]) -> _t.Callable[_P, _R | None]:
         @_wraps(func)
-        def optional(*args, **kwargs):
+        def optional(*args: _P.args, **kwargs: _P.kwargs) -> _R | None:
             if any(getattr(AstropopConfig, name) for name in disable_options):
                 return None
             return func(*args, **kwargs)

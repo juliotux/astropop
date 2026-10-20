@@ -8,9 +8,17 @@ Notes
 - Lots of functions imported directly from numpy.testing
 """
 
+from __future__ import annotations
+
+import typing as _t
+import os as _os
+
+
 from os.path import exists
 import numpy as np
 from numpy import testing as npt
+
+_F = _t.TypeVar('_F', bound=_t.Callable[..., object])
 
 
 __all__ = ['assert_equal', 'assert_not_equal', 'assert_almost_equal',
@@ -26,7 +34,7 @@ __all__ = ['assert_equal', 'assert_not_equal', 'assert_almost_equal',
            'assert_path_exists', 'assert_path_not_exists']
 
 
-def func_wrapper(func):
+def func_wrapper(func: _F) -> _F:
     """Warp the function, if needed. Now, its dummy."""
     # The idea here is to, in future, continue the tests and log all
     # failures at once. Like pytest_check.
@@ -44,7 +52,7 @@ assert_not_warnings = func_wrapper(npt.assert_no_warnings)
 
 
 @func_wrapper
-def assert_true(a, msg=None):
+def assert_true(a: object, msg: str | None=None) -> None:
     """Raise assertion error if a is not True."""
     if not a:
         msg = msg or f"{a} is not True."
@@ -52,7 +60,7 @@ def assert_true(a, msg=None):
 
 
 @func_wrapper
-def assert_false(a, msg=None):
+def assert_false(a: object, msg: str | None=None) -> None:
     """Raise assertion error if condition is not False."""
     if a:
         msg = msg or f"{a} is not False."
@@ -60,7 +68,7 @@ def assert_false(a, msg=None):
 
 
 @func_wrapper
-def assert_equal(a, b, msg=None):
+def assert_equal(a: object, b: object, msg: str | None=None) -> None:
     """Check if two objects are equal. Arrays supported."""
     if not np.isscalar(a) or not np.isscalar(b):
         if msg is None:
@@ -73,7 +81,12 @@ def assert_equal(a, b, msg=None):
 
 
 @func_wrapper
-def assert_almost_equal(a, b, decimal=6, msg=None):
+def assert_almost_equal(
+    a: object,
+    b: object,
+    decimal: int=6,
+    msg: str | None=None,
+) -> None:
     """Check if two objects are almost equal. Arrays supported."""
     if not np.isscalar(a) or not np.isscalar(b):
         if msg is None:
@@ -88,7 +101,7 @@ def assert_almost_equal(a, b, decimal=6, msg=None):
 
 
 @func_wrapper
-def assert_not_equal(a, b, msg=None):
+def assert_not_equal(a: object, b: object, msg: str | None=None) -> None:
     """Raise assertion error if values are equal."""
     try:
         npt.assert_equal(a, b)
@@ -100,7 +113,7 @@ def assert_not_equal(a, b, msg=None):
 
 
 @func_wrapper
-def assert_is(a, b, msg=None):
+def assert_is(a: object, b: object, msg: str | None=None) -> None:
     """Raise assertion error if ``a is b``."""
     if a is not b:
         msg = msg or f"{a} is not {b}."
@@ -108,7 +121,7 @@ def assert_is(a, b, msg=None):
 
 
 @func_wrapper
-def assert_is_not(a, b, msg=None):
+def assert_is_not(a: object, b: object, msg: str | None=None) -> None:
     """Raise assertion error if ``a is not b``."""
     if a is b:
         msg = msg or f"{a} is {b}."
@@ -116,7 +129,7 @@ def assert_is_not(a, b, msg=None):
 
 
 @func_wrapper
-def assert_is_none(a, msg=None):
+def assert_is_none(a: object, msg: str | None=None) -> None:
     """Raise assertion error if ``a is not None``."""
     if a is not None:
         msg = msg or f"{a} is not None."
@@ -124,7 +137,7 @@ def assert_is_none(a, msg=None):
 
 
 @func_wrapper
-def assert_is_not_none(a, msg=None):
+def assert_is_not_none(a: object, msg: str | None=None) -> None:
     """Raise assertion error if ``a is None``."""
     if a is None:
         msg = msg or f"{a} is None."
@@ -132,7 +145,7 @@ def assert_is_not_none(a, msg=None):
 
 
 @func_wrapper
-def assert_in(a, b, msg=None):
+def assert_in(a: object, b: object, msg: str | None=None) -> None:
     """Raise assertion error if ``a not in b``."""
     if a not in b:
         msg = msg or f"{a} is not in {b}."
@@ -140,7 +153,7 @@ def assert_in(a, b, msg=None):
 
 
 @func_wrapper
-def assert_not_in(a, b, msg=None):
+def assert_not_in(a: object, b: object, msg: str | None=None) -> None:
     """Raise assertion error if ``a in b``."""
     if a in b:
         msg = msg or f"{a} is in {b}."
@@ -148,7 +161,11 @@ def assert_not_in(a, b, msg=None):
 
 
 @func_wrapper
-def assert_is_instance(a, b, msg=None):
+def assert_is_instance(
+    a: object,
+    b: type | tuple[type, ...],
+    msg: str | None=None,
+) -> None:
     """Raise assertion error if not ``isinstance(a, b)``."""
     if not isinstance(a, b):
         msg = msg or f"{a} is not instance of {b}."
@@ -156,7 +173,11 @@ def assert_is_instance(a, b, msg=None):
 
 
 @func_wrapper
-def assert_is_not_instance(a, b, msg=None):
+def assert_is_not_instance(
+    a: object,
+    b: type | tuple[type, ...],
+    msg: str | None=None,
+) -> None:
     """Raise assertion error if ``isinstance(a, b)``."""
     if isinstance(a, b):
         msg = msg or f"{a} is instance of {b}."
@@ -164,7 +185,7 @@ def assert_is_not_instance(a, b, msg=None):
 
 
 @func_wrapper
-def assert_greater(a, b, msg=None):
+def assert_greater(a: object, b: object, msg: str | None=None) -> None:
     """Raise assertion error if a is not greater then b."""
     if not a > b:
         msg = msg or f"{a} is not greater than {b}."
@@ -172,7 +193,7 @@ def assert_greater(a, b, msg=None):
 
 
 @func_wrapper
-def assert_greater_equal(a, b, msg=None):
+def assert_greater_equal(a: object, b: object, msg: str | None=None) -> None:
     """Raise assertion error if a is not greater or equal then b."""
     if not a >= b:
         msg = msg or f"{a} is not greater or equal than {b}."
@@ -180,7 +201,7 @@ def assert_greater_equal(a, b, msg=None):
 
 
 @func_wrapper
-def assert_less(a, b, msg=None):
+def assert_less(a: object, b: object, msg: str | None=None) -> None:
     """Raise assertion error if a is not less b."""
     if not a < b:
         msg = msg or f"{a} is not less than {b}."
@@ -188,7 +209,7 @@ def assert_less(a, b, msg=None):
 
 
 @func_wrapper
-def assert_less_equal(a, b, msg=None):
+def assert_less_equal(a: object, b: object, msg: str | None=None) -> None:
     """Raise assertion error if a is not less or equal then b."""
     if not a <= b:
         msg = msg or f"{a} is not less or equal than {b}."
@@ -196,7 +217,7 @@ def assert_less_equal(a, b, msg=None):
 
 
 @func_wrapper
-def assert_path_exists(a, msg=None):
+def assert_path_exists(a: str | _os.PathLike[str], msg: str | None=None) -> None:
     """Raise assertion error if path a do not exists."""
     if not exists(a):
         msg = msg or f"{a} do not exists."
@@ -204,7 +225,7 @@ def assert_path_exists(a, msg=None):
 
 
 @func_wrapper
-def assert_path_not_exists(a, msg=None):
+def assert_path_not_exists(a: str | _os.PathLike[str], msg: str | None=None) -> None:
     """Raise assertion error if path a do exists."""
     if exists(a):
         msg = msg or f"{a} do exists."

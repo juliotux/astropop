@@ -1,6 +1,12 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 """Small python addons to be used in astropop."""
 
+from __future__ import annotations
+
+import typing as _t
+import logging as _logging
+
+
 from os import linesep
 import subprocess
 import asyncio
@@ -12,11 +18,13 @@ import numpy as np
 
 from .logger import logger, resolve_level_string
 
+_T = _t.TypeVar('_T')
+
 __all__ = ['string_fix', 'batch_key_replace', 'check_number',
            'broadcast', 'run_command']
 
 
-def string_fix(string, encode='utf-8'):
+def string_fix(string: object, encode: str='utf-8') -> str:
     """
     Fix the byte<->string problem in python 3.
 
@@ -45,7 +53,7 @@ def string_fix(string, encode='utf-8'):
     return string
 
 
-def check_number(value):
+def check_number(value: object) -> bool:
     """Check if a value passed is a scalar number.
 
     Parameters
@@ -65,29 +73,29 @@ def check_number(value):
     return False
 
 
-class _scalar_iterator:
+class _scalar_iterator(_t.Generic[_T]):
     """Iterator for scalar values."""
-    def __init__(self, value, length):
+    def __init__(self, value: _T, length: int) -> None:
         self.value = value
         self.length = length
 
-    def __iter__(self):
+    def __iter__(self) -> _t.Iterator[_T]:
         for i in range(self.length):
             yield self.value
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: int) -> _T:
         if index >= self.length or index < 0:
             raise IndexError
         return self.value
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.length
 
 
 class broadcast:
     """Broadcast values to the list size. Alternative to `~numpy.broadcast`."""
 
-    def __init__(self, *args):
+    def __init__(self, *args: object) -> None:
         """Initialize the broadcast object."""
         if len(args) == 0:
             raise ValueError("Empty broadcast")
@@ -104,13 +112,13 @@ class broadcast:
         self.args = [a if lengths[i] >= 0 else _scalar_iterator(a, self.length)
                      for i, a in enumerate(args)]
 
-    def __iter__(self):
+    def __iter__(self) -> _t.Iterator[tuple[object, ...]]:
         """Return the iterator."""
         for i in zip(*self.iters):
             yield i
 
     @staticmethod
-    def _get_length(value):
+    def _get_length(value: object) -> int:
         """Get the length of iterable only values."""
         if value is None:
             return -1
@@ -119,16 +127,19 @@ class broadcast:
         return len(value)
 
     @property
-    def iters(self):
+    def iters(self) -> list[_t.Iterable[object]]:
         """Return the tuple containing the iterators."""
         return self.args
 
-    def __len__(self):
+    def __len__(self) -> int:
         """Return the length of the broadcast."""
         return self.length
 
 
-def batch_key_replace(dictionary, key=None):
+def batch_key_replace(
+    dictionary: _t.MutableMapping[str, _t.Any],
+    key: str | None=None,
+) -> None:
     """Scan and replace {key} values in a dict by dict['key'] value.
 
     Notes
@@ -164,7 +175,10 @@ def batch_key_replace(dictionary, key=None):
         return
 
 
-async def _read_stream(stream, callback):
+async def _read_stream(
+    stream: asyncio.StreamReader,
+    callback: _t.Callable[[bytes], object],
+) -> None:
     """Read stream buffers."""
     # TODO: when deprcate py37
     # while (line := await stream.readline()):
@@ -177,10 +191,17 @@ async def _read_stream(stream, callback):
             break
 
 
-async def _subprocess(args, stdout, stderr, stdout_loglevel, stderr_loglevel,
-                      logger, **kwargs):
+async def _subprocess(
+    args: _t.Sequence[str],
+    stdout: list[str],
+    stderr: list[str],
+    stdout_loglevel: int,
+    stderr_loglevel: int,
+    logger: _logging.Logger,
+    **kwargs: _t.Any,
+) -> subprocess.CompletedProcess[str]:
     """Execute subprocesses."""
-    def proccess_out(line, std_l, loglevel):
+    def proccess_out(line: bytes, std_l: list[str], loglevel: int) -> None:
         line = line.decode("utf-8").rstrip('\r\n')
         std_l.append(line)
         logger.log(loglevel, line)
@@ -223,7 +244,7 @@ async def _subprocess(args, stdout, stderr, stdout_loglevel, stderr_loglevel,
                                        stderr=linesep.join(stderr) + linesep)
 
 
-def _run_async_task(task):
+def _run_async_task(task: _t.Coroutine[object, object, _T]) -> _T:
     """Run async task and avoid problems with Jupyter."""
     try:
         loop = asyncio.get_running_loop()
@@ -244,8 +265,15 @@ def _run_async_task(task):
     return loop.run_until_complete(task)
 
 
-def run_command(args, stdout=None, stderr=None, stdout_loglevel='DEBUG',
-                stderr_loglevel='ERROR', logger=logger, **kwargs):
+def run_command(
+    args: str | _t.Sequence[str],
+    stdout: list[str] | None=None,
+    stderr: list[str] | None=None,
+    stdout_loglevel: str | int='DEBUG',
+    stderr_loglevel: str | int='ERROR',
+    logger: _logging.Logger=logger,
+    **kwargs: _t.Any,
+) -> tuple[subprocess.CompletedProcess[str], list[str], list[str]]:
     """Run a command in command line with logging.
 
     Parameters

@@ -1,5 +1,9 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
+
+from __future__ import annotations
+
+import typing as _t
 import logging
 
 
@@ -23,7 +27,11 @@ class ListHandler(logging.Handler):
     full_record : bool, optional
         Store the full Python log record instead of just the message.
     """
-    def __init__(self, log_list=None, full_record=False):
+    def __init__(
+        self,
+        log_list: list[_t.Any] | None=None,
+        full_record: bool=False,
+    ) -> None:
         logging.Handler.__init__(self)
         if log_list is None:
             log_list = []
@@ -31,17 +39,17 @@ class ListHandler(logging.Handler):
         self._full_record = full_record
 
     @property
-    def log_list(self):
+    def log_list(self) -> list[str | logging.LogRecord]:
         """List where records are being stored."""
         return self._log_list
 
     @property
-    def full_record(self):
+    def full_record(self) -> bool:
         """True if full records are being stored in list. False if only
         messages."""
         return self._full_record
 
-    def emit(self, record):
+    def emit(self, record: logging.LogRecord) -> None:
         """Append the log record to the list."""
         if self.full_record:
             self.log_list.append(record)
@@ -49,7 +57,11 @@ class ListHandler(logging.Handler):
             self.log_list.append(record.getMessage())
 
 
-def log_to_list(logger, log_list=None, full_record=False):
+def log_to_list(
+    logger: logging.Logger,
+    log_list: list[_t.Any] | None=None,
+    full_record: bool=False,
+) -> ListHandler:
     """Add a ListHandler and a log_list to a Logger.
 
     Parameters
@@ -70,7 +82,7 @@ def log_to_list(logger, log_list=None, full_record=False):
     return lh
 
 
-def resolve_level_string(value):
+def resolve_level_string(value: str | int) -> int:
     """Resolve the log level of a string."""
     try:
         # Handle already int values
