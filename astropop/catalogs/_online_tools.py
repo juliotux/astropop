@@ -1,6 +1,14 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 """Module to handle online catalog queries."""
 
+from __future__ import annotations
+
+import typing as _t
+import numpy.typing as _npt
+from astropy import units as _u
+from astropy.table import Table as _Table
+from astroquery.simbad.core import SimbadClass as _SimbadClass
+
 import numpy as np
 from astroquery.simbad import Simbad
 from astroquery.exceptions import TableParseError
@@ -10,11 +18,13 @@ from ..astrometry.coords_utils import guess_coordinates
 from ..py_utils import string_fix
 
 
+_R = _t.TypeVar('_R')
+
 MAX_PARALLEL_QUERY = 30
 MAX_RETRIES_TIMEOUT = 10
 
 
-def _timeout_retry(func, *args, **kwargs):
+def _timeout_retry(func: _t.Callable[..., _R], *args: _t.Any, **kwargs: _t.Any) -> _R:
     """Retry a function until MAX_RETRIES_TIMEOUT is reached."""
     tried = kwargs.pop('_____retires', 0)
     try:
@@ -27,7 +37,7 @@ def _timeout_retry(func, *args, **kwargs):
     return q
 
 
-def _fix_query_table(table):
+def _fix_query_table(table: _Table) -> _Table:
     """Fix bytes and objects columns to strings."""
     for i in table.columns:
         tdtype = table[i].dtype.char
@@ -37,7 +47,10 @@ def _fix_query_table(table):
     return table
 
 
-def get_center_radius(ra, dec):
+def get_center_radius(
+    ra: _npt.ArrayLike,
+    dec: _npt.ArrayLike,
+) -> tuple[float, float, float]:
     """Get the center of a list RA and DEC.
 
     Parameters
@@ -57,7 +70,10 @@ def get_center_radius(ra, dec):
     return center_ra, center_dec, radius
 
 
-def astroquery_skycoord(center, simbad=None):
+def astroquery_skycoord(
+    center: SkyCoord | str | bytes | _t.Sequence[float | str] | _npt.NDArray,
+    simbad: _SimbadClass | None=None,
+) -> SkyCoord:
     """Translate center coordinates to SkyCoord object.
 
     Notes
@@ -92,7 +108,7 @@ def astroquery_skycoord(center, simbad=None):
     raise ValueError(f'Center coordinates {center} not undertood.')
 
 
-def astroquery_radius(radius):
+def astroquery_radius(radius: float | str | bytes | Angle | _u.Quantity) -> Angle:
     """Convert several types of values to angle radius.
 
     Notes
@@ -112,7 +128,11 @@ def astroquery_radius(radius):
     return radius
 
 
-def astroquery_query(querier, *args, **kwargs):
+def astroquery_query(
+    querier: _t.Callable[..., _R],
+    *args: _t.Any,
+    **kwargs: _t.Any,
+) -> _R:
     """Query an region using astroquery."""
     query = _timeout_retry(querier, *args, **kwargs)
     if query is None:

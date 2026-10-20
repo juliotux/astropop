@@ -1,9 +1,16 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 """Query and match objects in Simbad database."""
 
+from __future__ import annotations
+
+import typing as _t
+import numpy.typing as _npt
+from astropy import units as _u
+from astropy.coordinates import Angle, SkyCoord
+from astropy.table import Table as _Table
+
 import numpy as np
 import warnings
-from astropy.coordinates import SkyCoord
 from astropy.table import Table
 from astroquery.simbad import Simbad
 from astropy import units as u
@@ -16,7 +23,7 @@ from ..py_utils import string_fix
 __all__ = ['simbad_query_id', 'SimbadSourcesCatalog', 'simbad']
 
 
-def _normalize_tap_result(query, filters):
+def _normalize_tap_result(query: _Table, filters: _t.Sequence[str]) -> _Table:
     """Pivot TAP flux rows into one legacy-shaped row per source.
 
     Keep filter names case-sensitive and preserve masked photometry as NaN.
@@ -50,7 +57,12 @@ def _normalize_tap_result(query, filters):
     return result
 
 
-def _simbad_query_id(ra, dec, limit_angle, name_order=None):
+def _simbad_query_id(
+    ra: float,
+    dec: float,
+    limit_angle: float | str | bytes | Angle | _u.Quantity,
+    name_order: _t.Sequence[str] | None=None,
+) -> str:
     """Query name ids for a star in Simbad. See simbad_query_id.
 
     Parameters
@@ -80,7 +92,7 @@ def _simbad_query_id(ra, dec, limit_angle, name_order=None):
 
     s = Simbad()
 
-    def _strip_spaces(name):
+    def _strip_spaces(name: str) -> str:
         name = name.strip('NAME')
         name = name.strip('* ')
         # remove excessive spaces
@@ -116,7 +128,12 @@ def _simbad_query_id(ra, dec, limit_angle, name_order=None):
     return ''
 
 
-def simbad_query_id(ra, dec, limit_angle, name_order=None):
+def simbad_query_id(
+    ra: _npt.ArrayLike,
+    dec: _npt.ArrayLike,
+    limit_angle: float | str | bytes | Angle | _u.Quantity,
+    name_order: _t.Sequence[str] | None=None,
+) -> str | list[str]:
     """Query name ids for a star in Simbad.
 
     Parameters
@@ -176,15 +193,20 @@ class SimbadSourcesCatalog(_OnlineSourcesCatalog):
     _available_filters = ['B', 'V', 'R', 'I', 'J', 'H', 'K',
                           'u', 'g', 'r', 'i', 'z']
 
-    def __init__(self, center, radius, band=None):
+    def __init__(
+        self,
+        center: SkyCoord | str | bytes | _t.Sequence[float | str] | _npt.NDArray,
+        radius: float | str | bytes | Angle | _u.Quantity,
+        band: str | _t.Sequence[str] | None=None,
+    ) -> None:
         # Just change the default behavior of band to None
         super(SimbadSourcesCatalog, self).__init__(center, radius, band)
 
-    def coordinates_bibcode(self):
+    def coordinates_bibcode(self) -> _npt.NDArray:
         """Return coordinate-reference bibcodes in the catalog's source order."""
         return np.array(self._query['COO_BIBCODE'])
 
-    def magnitudes_bibcode(self, band):
+    def magnitudes_bibcode(self, band: str) -> _npt.NDArray:
         """Return photometry-reference bibcodes for a queried, case-sensitive band.
 
         The band must be available in this catalog. Returned strings follow
@@ -193,7 +215,7 @@ class SimbadSourcesCatalog(_OnlineSourcesCatalog):
         self._ensure_band(band)
         return np.array(self._query[f'FLUX_BIBCODE_{band}'])
 
-    def _setup_catalog(self):
+    def _setup_catalog(self) -> None:
         self._s = Simbad()
         self._tap = hasattr(type(self._s), 'tap')
         if self._tap:
@@ -207,7 +229,7 @@ class SimbadSourcesCatalog(_OnlineSourcesCatalog):
             for filt in self.filters:
                 self._s.add_votable_fields(f'fluxdata({filt})')
 
-    def _do_query(self):
+    def _do_query(self) -> None:
         # We query everything in J2000 and query propermotion too
         kwargs = {} if self._tap else {'epoch': 'J2000'}
         self._query = astroquery_query(self._s.query_region,

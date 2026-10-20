@@ -1,6 +1,15 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 """Base classes for astronomical catalogs queries."""
 
+from __future__ import annotations
+
+import typing as _t
+import numpy.typing as _npt
+from astropy import units as _u
+from astropy.time import Time as _Time
+from astropy.table import Column as _Column
+from .._typing import QuantityInput as _QuantityInput
+
 import copy
 import abc
 import numpy as np
@@ -60,8 +69,14 @@ class SourcesCatalog:
     _mags_table = None  # Store magnitudes with filter colname in QFloat format
     _query = None  # Query table
 
-    def __init__(self, *args, ids=None, mag=None,
-                 query_table=None, **kwargs):
+    def __init__(
+        self,
+        *args: _t.Any,
+        ids: _npt.ArrayLike | None=None,
+        mag: _t.Mapping[str, _QuantityInput] | None=None,
+        query_table: Table | None=None,
+        **kwargs: _t.Any,
+    ) -> None:
         self._base_table = Table()
         # initializate coords and skycoords using default kwargs.
         coords = SkyCoord(*args, **kwargs, copy=True)
@@ -89,7 +104,7 @@ class SourcesCatalog:
         for i in mag.keys():
             self._add_mags(i, mag[i])
 
-    def _add_mags(self, band, mag):
+    def _add_mags(self, band: str, mag: _QuantityInput) -> None:
         """Add a mag to the magnitude dict."""
         # initialize magnitude if not initializated.
         if self._mags_table is None:
@@ -104,7 +119,7 @@ class SourcesCatalog:
         self._mags_table[f'{band}'] = m.nominal
         self._mags_table[f'{band}_error'] = m.std_dev
 
-    def _ensure_band(self, band):
+    def _ensure_band(self, band: str) -> None:
         """Ensure there is a mags_table and band is in it."""
         if self._mags_table is None:
             raise ValueError('This SourcesCatalog has no photometic '
@@ -112,28 +127,28 @@ class SourcesCatalog:
         if band not in self.filters:
             raise ValueError(f'{band} not available.')
 
-    def sources_id(self):
+    def sources_id(self) -> _npt.NDArray:
         """Get the list of sources id in catalog."""
         return self._base_table['id'].value
 
-    def skycoord(self):
+    def skycoord(self) -> SkyCoord:
         """Get the sources coordinates in SkyCoord format."""
         return self.get_coordinates()
 
-    def ra_dec_list(self):
+    def ra_dec_list(self) -> _npt.NDArray:
         """Get the sources coordinates in [(ra, dec)] format."""
         sk = self.skycoord()
         return np.array(list(zip(sk.ra.degree, sk.dec.degree)))
 
-    def ra(self):
+    def ra(self) -> _npt.NDArray:
         """Get the sources right ascension in degrees."""
         return np.array(self.skycoord().ra.degree)
 
-    def dec(self):
+    def dec(self) -> _npt.NDArray:
         """Get the sources declination in degrees."""
         return np.array(self.skycoord().dec.degree)
 
-    def magnitude(self, band):
+    def magnitude(self, band: str) -> QFloat:
         """Get the sources magnitude in QFloat format.
 
         Parameters
@@ -151,7 +166,7 @@ class SourcesCatalog:
                       self._mags_table[f'{band}_error'],
                       'mag')
 
-    def mag_list(self, band):
+    def mag_list(self, band: str) -> _npt.NDArray:
         """Get the sources photometric mag in [(mag, mag_error)] format.
 
         Parameters
@@ -167,11 +182,11 @@ class SourcesCatalog:
         mags = self.magnitude(band)
         return np.array(list(zip(mags.nominal, mags.std_dev)))
 
-    def copy(self):
+    def copy(self) -> SourcesCatalog:
         """Copy the current catalog to a new instance."""
         return copy.copy(self)
 
-    def get_coordinates(self, obstime=None):
+    def get_coordinates(self, obstime: _Time | None=None) -> SkyCoord:
         """Get the skycoord positions from the catalog."""
         sk = self._base_table['coords']
         try:
@@ -179,7 +194,11 @@ class SourcesCatalog:
         except ValueError:
             return copy.copy(sk)
 
-    def _extract_coords(self, ncat, nulls=None):
+    def _extract_coords(
+        self,
+        ncat: SourcesCatalog,
+        nulls: _t.Sequence[int] | None=None,
+    ) -> dict[str, _u.Quantity]:
         """Extract coordinates in the form of a table.
 
         Nulls is a list of indexes to be set to a nan value.
@@ -208,7 +227,13 @@ class SourcesCatalog:
 
         return t
 
-    def match_objects(self, ra, dec, limit_angle, obstime=None):
+    def match_objects(
+        self,
+        ra: _npt.ArrayLike,
+        dec: _npt.ArrayLike,
+        limit_angle: float | str | bytes | Angle | _u.Quantity,
+        obstime: _Time | None=None,
+    ) -> SourcesCatalog:
         """Find catalog objects matching the given coordinates.
 
         The matching is performed by getting the nearest catalog object from
@@ -266,7 +291,10 @@ class SourcesCatalog:
         ncat._base_table['coords'] = SkyCoord(**coords, **extra)
         return ncat
 
-    def __getitem__(self, item):
+    def __getitem__(
+        self,
+        item: str | int | slice | _npt.ArrayLike,
+    ) -> SourcesCatalog | _Column:
         """Get items from the catalog.
 
         A new catalog with only the selected sources is returned.
@@ -291,10 +319,10 @@ class SourcesCatalog:
             nc._query = Table(self._query[item])
         return nc
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._base_table)
 
-    def table(self):
+    def table(self) -> Table:
         """This catalog in a `~astropy.table.Table` instance."""
         t = Table()
         t['id'] = self._base_table['id']
@@ -315,19 +343,19 @@ class SourcesCatalog:
         return t
 
     @property
-    def query_table(self):
+    def query_table(self) -> Table | None:
         """The query table."""
         if self._query is not None:
             return Table(self._query)
 
     @property
-    def query_colnames(self):
+    def query_colnames(self) -> list[str] | None:
         """Get column names from query"""
         if self._query is not None:
             return copy.copy(self._query.colnames)
 
     @property
-    def filters(self):
+    def filters(self) -> list[str] | None:
         """Get the list of all active available filters in the query."""
         if self._mags_table is not None:
             return [i for i in self._mags_table.keys() if '_error' not in i]
@@ -339,7 +367,12 @@ class _OnlineSourcesCatalog(SourcesCatalog, abc.ABC):
     _query = None
     _available_filters = None
 
-    def __init__(self, center, radius, band='all'):
+    def __init__(
+        self,
+        center: SkyCoord | str | bytes | _t.Sequence[float | str] | _npt.NDArray,
+        radius: float | str | bytes | Angle | _u.Quantity,
+        band: str | _t.Sequence[str] | None='all',
+    ) -> None:
         """Query the catalog and create the source catalog instance.
 
         Parameters
@@ -378,7 +411,7 @@ class _OnlineSourcesCatalog(SourcesCatalog, abc.ABC):
                     self._center, self._radius)
         self._do_query()
 
-    def _setup_filters(self, band):
+    def _setup_filters(self, band: str | _t.Sequence[str] | None) -> list[str]:
         """Setup and check available filters."""
         if self._available_filters is None and band not in (None, 'all'):
             raise ValueError('No filters available for this catalog.')
@@ -394,29 +427,29 @@ class _OnlineSourcesCatalog(SourcesCatalog, abc.ABC):
         return list(band)
 
     @abc.abstractmethod
-    def _setup_catalog(self):
+    def _setup_catalog(self) -> None:
         """If a catalog setup is needed."""
 
     @abc.abstractmethod
-    def _do_query(self):
+    def _do_query(self) -> None:
         """Query the catalog. Must end with the catalog initialization."""
 
     @property
-    def available_filters(self):
+    def available_filters(self) -> list[str] | None:
         """List available filters for the catalog."""
         return copy.copy(self._available_filters)
 
     @property
-    def center(self):
+    def center(self) -> SkyCoord:
         """Get the `~astropy.coordinates.SkyCoord` of the query center."""
         return SkyCoord(self._center)
 
     @property
-    def radius(self):
+    def radius(self) -> Angle:
         """Get the `~astropy.coordinates.Angle` of the earch angle limit."""
         return Angle(self._radius)
 
     @property
-    def filters(self):
+    def filters(self) -> list[str]:
         """Get the list of all active available filters in the query."""
         return list(self._filters)
