@@ -12,3 +12,5 @@ Start with :doc:`../installation` and the small example in
 
     ccd_reduction
     polarimetry
+    photometry
+    local_catalog_matching

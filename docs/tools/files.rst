@@ -212,6 +212,11 @@ The method `~astropop.file_collection.FitsFileGroup.filtered` receives a diction
 Grouping Files
 ^^^^^^^^^^^^^^
 
+Use the exact column names in ``ffg.summary.colnames`` for ``group_by``.
+Header keywords can appear lowercased in the database summary; grouping is
+case-sensitive. The local executable example is in
+:doc:`../how_to/file_collections`. Verbatim tables below are illustrative.
+
 If you want to not only generate a group of files from a single set of keyword valeus, but instead generate multiple groups of files that have the same values in a set of keywords, you can use the `~astropop.file_collection.FitsFileGroup.group_by` method. This method `yeilds <https://docs.python.org/3/reference/expressions.html#yield-expressions>`_ a new |FitsFileGroup| object for each group of files.
 
 .. Note::
@@ -234,7 +239,7 @@ If you want to not only generate a group of files from a single set of keyword v
   file5.fits      2.0    G     star2      2
   file6.fits      3.0    R     star3      2
 
-  In [29]: for group in ffg.group_by(['FILTER']):
+  In [29]: for group in ffg.group_by(['filter']):
       ...:     print(f'filter {group.values("FILTER")[0]}')
       ...:     print(f'images {len(group)}')
       ...:     print(group.summary)

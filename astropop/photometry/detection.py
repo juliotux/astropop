@@ -439,6 +439,19 @@ def median_fwhm(data, x, y, box_size=25, model='gaussian', min_fwhm=3.0):
     min_fwhm: float
         Minimum value for FWHM.
         Default: 3.0
+
+    Returns
+    -------
+    fwhm : float
+        Median fitted source FWHM in pixels. Nonfinite fits are ignored by
+        the median. If the median is nonfinite or below ``min_fwhm``, returns
+        ``min_fwhm``. Empty or all-invalid fits may emit a NumPy warning.
+
+    Raises
+    ------
+    ValueError
+        If ``model`` is neither ``'gaussian'`` nor ``'moffat'`` and a fit is
+        attempted.
     """
     indices = np.indices(data.shape)
     rects = [trim_array(data, box_size, (xi, yi), indices=indices)

@@ -236,7 +236,9 @@ class FitsFileGroup():
         Parameters
         ----------
         keywords : list
-            List of column names to be used to group the files.
+            List of exact column names from ``summary.colnames`` used to group
+            the files. Names are case-sensitive and may differ in case from
+            FITS header keywords (for example, ``filter``).
 
         Yields
         ------
