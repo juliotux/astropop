@@ -39,6 +39,15 @@ unpolarized source::
     ...     SLSDualBeamPolarimetry('invalid')
     >>> with pytest.raises(ValueError, match='cannot be used together'):
     ...     SLSDualBeamPolarimetry('halfwave', k=1., compute_k=True)
+    >>> with pytest.raises(ValueError, match='multiple of 22.5'):
+    ...     solver.compute(np.array([1.]), np.array([100.]), np.array([100.]))
+    >>> with pytest.raises(TypeError):
+    ...     solver.compute(np.array([]), np.array([]), np.array([]))
+
+The empty sequence currently fails during input conversion rather than returning
+a Stokes estimate. A nonempty sequence can still have insufficient independent
+angles: optimizer convergence alone does not establish a well-constrained fit.
+Inspect angular coverage and covariance/uncertainties as well as nominal values.
 
 The advanced guide covers ``compute_k=True`` for fitting normalization,
 quarter-wave circular polarization, zero offsets and convergence controls.

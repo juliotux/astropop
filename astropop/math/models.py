@@ -110,7 +110,33 @@ class MoffatEquations:
 
 
 class PSFMoffat2D(Fittable2DModel):
-    """2D Moffat PSF model, normalized."""
+    """2D Moffat profile with an additive constant sky.
+
+    Parameters
+    ----------
+    x_0, y_0 : float, optional
+        Profile center in coordinate units. Default is 0 for each
+        axis.
+    flux : float, optional
+        Integrated profile flux above sky on the infinite plane.
+        Default is 1.
+    width : float, optional
+        Positive core width in coordinate units. Default is 1.
+    power : float, optional
+        Wing power, greater than 1 for the normalization. Default is
+        1.5.
+    sky : float, optional
+        Additive background in output-value units. Default is 0.
+
+    Notes
+    -----
+    Calling the model evaluates numerical coordinates using Astropy model
+    broadcasting and returns numerical values of the corresponding shape.
+    It does not integrate over detector pixels or propagate FrameData quality
+    arrays or uncertainties. Use consistent coordinate and output scales.
+    Declared fit bounds do not replace checking physically valid parameters.
+    A finite sampled cutout need not sum to the flux parameter.
+    """
 
     x_0 = Parameter(default=0, description='X center')
     y_0 = Parameter(default=0, description='Y center')
@@ -138,7 +164,35 @@ class PSFMoffat2D(Fittable2DModel):
 
 
 class PSFMoffat1D(Fittable1DModel):
-    """1D Moffat PSF model, normalized."""
+    """1D Moffat profile with an additive constant sky.
+
+    Parameters
+    ----------
+    x_0 : float, optional
+        Profile center in coordinate units. Default is 0 for each
+        axis.
+    flux : float, optional
+        Amplitude coefficient, not the integral over a line or plane.
+        Default is 1.
+    width : float, optional
+        Positive core width in coordinate units. Default is 1.
+    power : float, optional
+        Wing power, greater than 1 for the normalization. Default is
+        1.5.
+    sky : float, optional
+        Additive background in output-value units. Default is 0.
+
+    Notes
+    -----
+    Calling the model evaluates numerical coordinates using Astropy model
+    broadcasting and returns numerical values of the corresponding shape.
+    It does not integrate over detector pixels or propagate FrameData quality
+    arrays or uncertainties. Use consistent coordinate and output scales.
+    Declared fit bounds do not replace checking physically valid parameters.
+    A finite sampled cutout need not sum to the flux parameter.
+    The historical amplitude is ``flux * 2 * (power - 1) / width**2``;
+    despite the parameter name, it is not a 1D integral normalization.
+    """
 
     x_0 = Parameter(default=0, description='X center')
     flux = Parameter(default=1, fixed=False, bounds=(0, None),
@@ -163,7 +217,32 @@ class PSFMoffat1D(Fittable1DModel):
 
 
 class PSFMoffatRadial(Fittable1DModel):
-    """Radial Moffat PSF model, normalized."""
+    """Radial Moffat profile with an additive constant sky.
+
+    Parameters
+    ----------
+    flux : float, optional
+        Amplitude coefficient, not the integral over a line or plane.
+        Default is 1.
+    width : float, optional
+        Positive core width in coordinate units. Default is 1.
+    power : float, optional
+        Wing power, greater than 1 for the normalization. Default is
+        1.5.
+    sky : float, optional
+        Additive background in output-value units. Default is 0.
+
+    Notes
+    -----
+    Calling the model evaluates numerical coordinates using Astropy model
+    broadcasting and returns numerical values of the corresponding shape.
+    It does not integrate over detector pixels or propagate FrameData quality
+    arrays or uncertainties. Use consistent coordinate and output scales.
+    Declared fit bounds do not replace checking physically valid parameters.
+    A finite sampled cutout need not sum to the flux parameter.
+    The historical amplitude is ``flux * 2 * (power - 1) / width**2``;
+    despite the parameter name, it is not a 1D integral normalization.
+    """
 
     flux = Parameter(default=1, fixed=False, bounds=(0, None),
                      description='Total integrated flux')
@@ -289,7 +368,32 @@ class GaussianEquations:
 
 
 class PSFGaussian2D(Fittable2DModel):
-    """2D Gaussian model, normalized."""
+    """2D Gaussian profile with an additive constant sky.
+
+    Parameters
+    ----------
+    x_0, y_0 : float, optional
+        Profile center in coordinate units. Default is 0 for each
+        axis.
+    flux : float, optional
+        Integrated profile flux above sky on the infinite plane.
+        Default is 1.
+    sigma_x, sigma_y : float, optional
+        Positive standard deviation in coordinate units. Default is 1.
+    theta : float, optional
+        Profile rotation in degrees. Default is 0.
+    sky : float, optional
+        Additive background in output-value units. Default is 0.
+
+    Notes
+    -----
+    Calling the model evaluates numerical coordinates using Astropy model
+    broadcasting and returns numerical values of the corresponding shape.
+    It does not integrate over detector pixels or propagate FrameData quality
+    arrays or uncertainties. Use consistent coordinate and output scales.
+    Declared fit bounds do not replace checking physically valid parameters.
+    A finite sampled cutout need not sum to the flux parameter.
+    """
     x_0 = Parameter(default=0, description='X center')
     y_0 = Parameter(default=0, description='Y center')
     flux = Parameter(default=1, fixed=False, bounds=(0, None),
@@ -318,7 +422,29 @@ class PSFGaussian2D(Fittable2DModel):
 
 
 class PSFGaussian1D(Fittable1DModel):
-    """1D Gaussian model, normalized."""
+    """1D Gaussian profile with an additive constant sky.
+
+    Parameters
+    ----------
+    x_0 : float, optional
+        Profile center in coordinate units. Default is 0 for each
+        axis.
+    flux : float, optional
+        Integral above sky on the infinite line. Default is 1.
+    sigma : float, optional
+        Positive standard deviation in coordinate units. Default is 1.
+    sky : float, optional
+        Additive background in output-value units. Default is 0.
+
+    Notes
+    -----
+    Calling the model evaluates numerical coordinates using Astropy model
+    broadcasting and returns numerical values of the corresponding shape.
+    It does not integrate over detector pixels or propagate FrameData quality
+    arrays or uncertainties. Use consistent coordinate and output scales.
+    Declared fit bounds do not replace checking physically valid parameters.
+    A finite sampled cutout need not sum to the flux parameter.
+    """
 
     x_0 = Parameter(default=0, description='X center')
     flux = Parameter(default=1, fixed=False, bounds=(0, None),
@@ -341,7 +467,27 @@ class PSFGaussian1D(Fittable1DModel):
 
 
 class PSFGaussianRadial(Fittable1DModel):
-    """Radial Gaussian model, normalized."""
+    """Radial Gaussian profile with an additive constant sky.
+
+    Parameters
+    ----------
+    flux : float, optional
+        Uses the 1D normalization, not an area-weighted radial
+        integral. Default is 1.
+    sigma : float, optional
+        Positive standard deviation in coordinate units. Default is 1.
+    sky : float, optional
+        Additive background in output-value units. Default is 0.
+
+    Notes
+    -----
+    Calling the model evaluates numerical coordinates using Astropy model
+    broadcasting and returns numerical values of the corresponding shape.
+    It does not integrate over detector pixels or propagate FrameData quality
+    arrays or uncertainties. Use consistent coordinate and output scales.
+    Declared fit bounds do not replace checking physically valid parameters.
+    A finite sampled cutout need not sum to the flux parameter.
+    """
 
     flux = Parameter(default=1, fixed=False, bounds=(0, None),
                      description='Total integrated flux')

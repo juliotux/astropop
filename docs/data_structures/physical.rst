@@ -114,7 +114,11 @@ The operations are performed with proper unit management and conversion (when ne
 .. math::
     \sigma_f = \sqrt{ \left(\frac{\partial f}{\partial x}\right)^2 \sigma_x^2 + \left(\frac{\partial f}{\partial y} \right)^2 \sigma_y^2 + \left(\frac{\partial f}{\partial z} \right)^2 \sigma_z^2 + \cdots}
 
-Note that, for this simplyfied version of the error propagation equation, all variables are assumed to be independent and errors uncorrelated. All the error propagation is done by |uncertainties|, that supports some error correlations. However, due to the way we have to handle the operations wrapping with units, it's expected that these correlated errors don't work well in our code.
+Astropop's derivative helpers implement this independent-input model. Covariance
+is not tracked, including when the same QFloat is used in both operands. The
+implementation is inspired by the ``uncertainties`` package but does not provide
+that package's correlation tracking. Statistical reductions use the separate
+scatter estimators described below.
 
 Supported Math Operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^
