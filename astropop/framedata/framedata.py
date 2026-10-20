@@ -4,6 +4,15 @@ We reimplemented and renamed astropy's frame to better handle disk memmap and
 an easier unit/uncertainty workflow
 """
 
+from __future__ import annotations
+
+import typing as _t
+import numpy.typing as _npt
+from .._typing import (NumberArray as _NumberArray, PathLike as _PathLike,
+                       UnitLike as _UnitLike, HeaderLike as _HeaderLike,
+                       Index as _Index)
+from astropy.nddata import CCDData as _CCDData
+
 # Important:
 
 import os
@@ -27,11 +36,20 @@ from .._unit_property import unit_property
 __all__ = ['FrameData', 'PixelMaskFlags']
 
 
-def shape_consistency(data=None, uncertainty=None, mask=None, flags=None):
+def shape_consistency(
+    data: _npt.ArrayLike | None=None,
+    uncertainty: _npt.ArrayLike | None=None,
+    mask: _npt.ArrayLike | None=None,
+    flags: _npt.ArrayLike | None=None,
+) -> tuple[_npt.ArrayLike | None, _npt.ArrayLike | None, _npt.ArrayLike | None, _npt.ArrayLike | None]:
     """Check shape consistency across `data`, `uncertaitny` and `mask`."""
     dshape = np.shape(data)
 
-    def _check(arr, name, replicate=False):
+    def _check(
+        arr: _npt.ArrayLike | None,
+        name: str,
+        replicate: bool=False,
+    ) -> _npt.ArrayLike | None:
         if arr is None:
             return
         if arr is not None and data is None:
@@ -55,7 +73,10 @@ def shape_consistency(data=None, uncertainty=None, mask=None, flags=None):
     return data, uncertainty, mask, flags
 
 
-def extract_units(data, unit):
+def extract_units(
+    data: _npt.ArrayLike | u.Quantity,
+    unit: _UnitLike,
+) -> u.UnitBase | None:
     """Extract and compare units if they are consistent."""
     if hasattr(data, 'unit'):
         dunit = u.Unit(data.unit)
@@ -78,7 +99,10 @@ def extract_units(data, unit):
     return dunit
 
 
-def uncertainty_unit_consistency(unit, uncertainty):
+def uncertainty_unit_consistency(
+    unit: _UnitLike,
+    uncertainty: _npt.ArrayLike | u.Quantity,
+) -> _npt.NDArray:
     """Check if an uncertainty can be set based on its unit.
 
     Parameters
@@ -105,7 +129,11 @@ def uncertainty_unit_consistency(unit, uncertainty):
     return u.Quantity(uncertainty, u_unit).to(unit).value
 
 
-def setup_filename(frame, cache_folder=None, filename=None):
+def setup_filename(
+    frame: FrameData,
+    cache_folder: str | TempDir | None=None,
+    filename: _PathLike | None=None,
+) -> str:
     """Handle filename and cache folder to a frame."""
     if not isinstance(frame, FrameData):
         raise ValueError('Only FrameData accepted.')
@@ -229,10 +257,20 @@ class FrameData:
     cache_filename = None
     memmap_objects = None
 
-    def __init__(self, data, unit=None, dtype=None, uncertainty=None,
-                 mask=None, flags=None, use_memmap_backend=False,
-                 cache_folder=None, cache_filename=None, origin_filename=None,
-                 **kwargs):
+    def __init__(
+        self,
+        data: _npt.ArrayLike | u.Quantity,
+        unit: _UnitLike=None,
+        dtype: _npt.DTypeLike | None=None,
+        uncertainty: _npt.ArrayLike | u.Quantity | None=None,
+        mask: _npt.ArrayLike | None=None,
+        flags: _npt.ArrayLike | None=None,
+        use_memmap_backend: bool=False,
+        cache_folder: str | TempDir | None=None,
+        cache_filename: _PathLike | None=None,
+        origin_filename: _PathLike | None=None,
+        **kwargs: _t.Any,
+    ) -> None:
         # setup names
         setup_filename(self, cache_folder, cache_filename)
         self._origin = origin_filename
@@ -292,7 +330,7 @@ class FrameData:
         self._meta_update(kwargs.pop('meta', None),
                           kwargs.pop('wcs', None))
 
-    def _meta_update(self, meta, wcs=None):
+    def _meta_update(self, meta: _HeaderLike | None, wcs: WCS | None=None) -> None:
         # simplify things by enforcing meta type
         if not isinstance(meta, (dict, fits.Header, type(None))):
             raise TypeError('meta must be a dict, Header or None.')
@@ -322,62 +360,62 @@ class FrameData:
         self._meta = header
 
     @property
-    def origin_filename(self):
+    def origin_filename(self) -> _PathLike | None:
         """Get the original filename of the data."""
         return self._origin
 
     @property
-    def shape(self):
+    def shape(self) -> tuple[int, int]:
         """Get the data shape following numpy. ``FrameData.data.shape``."""
         return self._data.shape
 
     @property
-    def dtype(self):
+    def dtype(self) -> np.dtype:
         """Get the dta type of the data. ``FrameData.data.dtype``."""
         return self._data.dtype
 
-    def astype(self, dtype):
+    def astype(self, dtype: _npt.DTypeLike) -> FrameData:
         """Return a copy of the current FrameData with new dtype in data."""
         return self.copy(dtype)
 
     @property
-    def size(self):
+    def size(self) -> int:
         """Get the size of the data. ``FrameData.data.size``."""
         return self._data.size
 
     @property
-    def wcs(self):
+    def wcs(self) -> WCS | None:
         """Get the World Coordinate System."""
         return self._wcs
 
     @wcs.setter
-    def wcs(self, value):
+    def wcs(self, value: WCS | None) -> None:
         if isinstance(value, WCS) or value is None:
             self._wcs = value
         else:
             raise TypeError('wcs setter value must be a WCS instance.')
 
     @property
-    def meta(self):
+    def meta(self) -> fits.Header:
         """Get the metadata (header) of the frame."""
         return self._meta
 
     @meta.setter
-    def meta(self, value):
+    def meta(self, value: _HeaderLike | None) -> None:
         self._meta_update(value)
 
     @property
-    def header(self):
+    def header(self) -> fits.Header:
         """Get the header (metadata) of the frame."""
         return self._meta
 
     @property
-    def history(self):
+    def history(self) -> list[str]:
         """Get the FrameData stored history."""
         return self._history
 
     @history.setter
-    def history(self, value):
+    def history(self, value: str | _t.Iterable[str]) -> None:
         if value is None:
             return
         if not np.isscalar(value):
@@ -386,12 +424,12 @@ class FrameData:
             self._history.append(value)
 
     @property
-    def comment(self):
+    def comment(self) -> list[str]:
         """Get the FrameData stored comments."""
         return self._comments
 
     @comment.setter
-    def comment(self, value):
+    def comment(self, value: str | _t.Iterable[str]) -> None:
         if value is None:
             return
         if not np.isscalar(value):
@@ -400,18 +438,18 @@ class FrameData:
             self._comments.append(value)
 
     @property
-    def data(self):
+    def data(self) -> _npt.NDArray:
         """Get the main data container."""
         return self._data
 
     @data.setter
-    def data(self, value):
+    def data(self, value: _npt.ArrayLike) -> None:
         if hasattr(value, 'unit'):
             dunit = extract_units(value, None)
             self.unit = dunit
         self._data = reset_memmap_array(self._data, value)
 
-    def get_masked_data(self, fill_value=np.nan):
+    def get_masked_data(self, fill_value: float | int=np.nan) -> _npt.NDArray:
         """Copy pixel values, replacing MASKED pixels with a fill value.
 
         Parameters
@@ -437,12 +475,12 @@ class FrameData:
 
     @property
     @_optional('FRAMEDATA_DISABLE_UNCERTAINTY')
-    def uncertainty(self):
+    def uncertainty(self) -> _npt.NDArray | None:
         """Get the uncertainty array, or None when absent or disabled."""
         return self._unct
 
     @uncertainty.setter
-    def uncertainty(self, value):
+    def uncertainty(self, value: _npt.ArrayLike | u.Quantity | None) -> None:
         if value is None or conf.FRAMEDATA_DISABLE_UNCERTAINTY:
             self._unct = delete_array_memmap(self._unct, read=False, remove=True)
             return
@@ -465,7 +503,7 @@ class FrameData:
         self._unct = reset_memmap_array(self._unct, value)
         self._update_memmaps()
 
-    def get_uncertainty(self, return_none=True):
+    def get_uncertainty(self, return_none: bool=True) -> _npt.NDArray | None:
         """Return a copy of the standard uncertainties or an explicit fallback.
 
         Parameters
@@ -489,12 +527,12 @@ class FrameData:
 
     @property
     @_optional('FRAMEDATA_DISABLE_FLAGS')
-    def flags(self):
+    def flags(self) -> _npt.NDArray[np.uint8] | None:
         """Get the flags array, or None when absent or disabled."""
         return self._flags
 
     @flags.setter
-    def flags(self, value):
+    def flags(self, value: _npt.ArrayLike | None) -> None:
         if value is None or conf.FRAMEDATA_DISABLE_FLAGS:
             self._flags = delete_array_memmap(self._flags, read=False, remove=True)
             return
@@ -512,7 +550,7 @@ class FrameData:
                                           dtype=PixelMaskFlags.dtype)
         self._update_memmaps()
 
-    def add_flags(self, flag, where):
+    def add_flags(self, flag: PixelMaskFlags, where: _Index) -> None:
         """Add a given flag to the pixels in the given positions.
 
         Parameters
@@ -532,11 +570,14 @@ class FrameData:
         self._flags[where] |= flag.value
 
     @property
-    def mask(self):
+    def mask(self) -> _npt.NDArray[np.bool_] | None:
         """Return masked pixels, or None when flags are absent or disabled."""
         return self.mask_flags(PixelMaskFlags.MASKED)
 
-    def mask_flags(self, flags):
+    def mask_flags(
+        self,
+        flags: PixelMaskFlags | _t.Sequence[PixelMaskFlags],
+    ) -> _npt.NDArray[np.bool_] | None:
         """Get a mask pixels with an specific flag.
 
         Parameters
@@ -554,7 +595,7 @@ class FrameData:
         return mask_from_flags(pixel_flags, flags,
                                allowed_flags_class=PixelMaskFlags)
 
-    def mask_pixels(self, pixels):
+    def mask_pixels(self, pixels: _Index) -> None:
         """Mask pixels.
 
         Parameters
@@ -566,7 +607,11 @@ class FrameData:
         """
         self.add_flags(PixelMaskFlags.MASKED, pixels)
 
-    def enable_memmap(self, cache_folder=None, filename=None):
+    def enable_memmap(
+        self,
+        cache_folder: str | TempDir | None=None,
+        filename: _PathLike | None=None,
+    ) -> None:
         """Enable array file memmapping.
 
         Parameters
@@ -590,14 +635,14 @@ class FrameData:
         self._memmapping = True
         self._update_memmaps()
 
-    def disable_memmap(self):
+    def disable_memmap(self) -> None:
         """Disable frame file memmapping (load to memory)."""
         self._data = delete_array_memmap(self._data, read=True, remove=True)
         self._flags = delete_array_memmap(self._flags, read=True, remove=True)
         self._unct = delete_array_memmap(self._unct, read=True, remove=True)
         self._memmapping = False
 
-    def _update_memmaps(self):
+    def _update_memmaps(self) -> None:
         """Update the memmap files."""
 
         if self._memmapping:
@@ -609,7 +654,7 @@ class FrameData:
                         self.cache_filename + f'.{suffix}.npy')
                     setattr(self, attr, create_array_memmap(str(filename), value))
 
-    def copy(self, dtype=None):
+    def copy(self, dtype: _npt.DTypeLike | None=None) -> FrameData:
         """Copy data, enabled optional arrays, metadata and WCS independently.
 
         Parameters
@@ -665,17 +710,17 @@ class FrameData:
 
         return nf
 
-    def __copy__(self):
+    def __copy__(self) -> FrameData:
         """Copy the current instance to a new one."""
         return self.copy()
 
-    def __deepcopy__(self, memo):
+    def __deepcopy__(self, memo: dict[int, object]) -> FrameData:
         """Copy arrays and metadata without sharing memory maps."""
         result = self.copy()
         memo[id(self)] = result
         return result
 
-    def __del__(self):
+    def __del__(self) -> None:
         if self.cache is not None:
             # Release mappings before deleting their files on Windows. There
             # is no need to copy the arrays when destroying the frame.
@@ -685,38 +730,38 @@ class FrameData:
                         array._mmap.close()
             self.cache.delete()
 
-    def median(self, **kwargs):
+    def median(self, **kwargs: _t.Any) -> _NumberArray | u.Quantity:
         """Compute and return the median of the data."""
         med = np.median(self._data, **kwargs)
         if self._unit is None:
             return med
         return med * self.unit
 
-    def mean(self, **kwargs):
+    def mean(self, **kwargs: _t.Any) -> _NumberArray | u.Quantity:
         """Compute and return the mean of the data."""
         if self._unit is None:
             return self._data.mean(**kwargs)
         return self._data.mean(**kwargs) * self.unit
 
-    def std(self, **kwargs):
+    def std(self, **kwargs: _t.Any) -> _NumberArray | u.Quantity:
         """Compute and return the std dev of the data."""
         if self._unit is None:
             return self._data.std(**kwargs)
         return self._data.std(**kwargs) * self.unit
 
-    def min(self):
+    def min(self) -> _NumberArray | u.Quantity:
         """Compute minimum value of the data."""
         if self._unit is None:
             return self._data.min()
         return self._data.min() * self.unit
 
-    def max(self):
+    def max(self) -> _NumberArray | u.Quantity:
         """Compute minimum value of the data."""
         if self._unit is None:
             return self._data.max()
         return self._data.max() * self.unit
 
-    def statistics(self):
+    def statistics(self) -> dict[str, _NumberArray | u.Quantity]:
         """Compute general statistics ofthe image."""
         return {'min': self.min(),
                 'max': self.max(),
@@ -724,7 +769,12 @@ class FrameData:
                 'median': self.median(),
                 'std': self.std()}
 
-    def to_hdu(self, wcs_relax=True, no_fits_standard_units=True, **kwargs):
+    def to_hdu(
+        self,
+        wcs_relax: bool | int=True,
+        no_fits_standard_units: bool=True,
+        **kwargs: _t.Any,
+    ) -> fits.HDUList:
         """Generate an HDUList from this FrameData.
 
         Parameters
@@ -757,7 +807,7 @@ class FrameData:
                        no_fits_standard_units=no_fits_standard_units,
                        **kwargs)
 
-    def to_ccddata(self):
+    def to_ccddata(self) -> _CCDData:
         """Convert this FrameData to CCDData.
 
         Returns
@@ -770,8 +820,13 @@ class FrameData:
         """
         return _to_ccddata(self)
 
-    def write(self, filename, overwrite=False, no_fits_standard_units=True,
-              **kwargs):
+    def write(
+        self,
+        filename: _PathLike,
+        overwrite: bool=False,
+        no_fits_standard_units: bool=True,
+        **kwargs: _t.Any,
+    ) -> None:
         """Write frame to a fits file.
 
         Parameters

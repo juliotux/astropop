@@ -1,6 +1,14 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 """Handle compatibility between FrameData and other data formats."""
 
+from __future__ import annotations
+
+import typing as _t
+from .._typing import (UnitLike as _UnitLike, PathLike as _PathLike,
+                       HeaderLike as _HeaderLike, ImageHDU as _ImageHDU)
+if _t.TYPE_CHECKING:
+    from .framedata import FrameData
+
 import itertools
 import warnings
 from os import PathLike
@@ -33,7 +41,7 @@ _PROTECTED_N = ["TFORM", "TSCAL", "TZERO", "TNULL", "TTYPE", "TUNIT", "TDISP",
                 "TDIM", "THEAP", "TBCOL"]
 
 
-def _remove_sip_keys(header, wcs):
+def _remove_sip_keys(header: fits.Header, wcs: WCS) -> fits.Header:
     """Remove the SIP keys. (Too complex fixing)."""
     kwd = '{}_{}_{}'
     pol = ['A', 'B', 'AP', 'BP']
@@ -49,7 +57,7 @@ def _remove_sip_keys(header, wcs):
     return header
 
 
-def extract_header_wcs(header):
+def extract_header_wcs(header: _HeaderLike) -> tuple[fits.Header, WCS | None]:
     """Get a header (or dict) and extract a WCS based on the keys.
 
     Parameters
@@ -101,7 +109,9 @@ def extract_header_wcs(header):
     return (header, wcs)
 
 
-def _normalize_and_strip_dict(meta):
+def _normalize_and_strip_dict(
+    meta: _HeaderLike | None,
+) -> tuple[fits.Header, list[str], list[str]]:
     """Normalize meta keys and remove the protected ones."""
     if meta is None:
         return fits.Header(), [], []
@@ -150,9 +160,15 @@ def _normalize_and_strip_dict(meta):
     return nmeta, history, comment
 
 
-def _extract_fits(obj, hdu=0, unit=None, hdu_uncertainty=_HDU_UNCERT,
-                  hdu_flags=_HDU_FLAGS, hdu_mask=_HDU_MASK,
-                  unit_key=_UNIT_KEY):
+def _extract_fits(
+    obj: _PathLike | fits.HDUList | _ImageHDU,
+    hdu: int | str | tuple[str, int]=0,
+    unit: _UnitLike=None,
+    hdu_uncertainty: str | int | None=_HDU_UNCERT,
+    hdu_flags: str | int | None=_HDU_FLAGS,
+    hdu_mask: str | int | None=_HDU_MASK,
+    unit_key: str=_UNIT_KEY,
+) -> dict[str, _t.Any]:
     """Extract data and meta from FITS files and HDUs."""
     if isinstance(obj, (str, bytes, PathLike)):
         hdul = fits.open(obj)
@@ -217,7 +233,7 @@ def _extract_fits(obj, hdu=0, unit=None, hdu_uncertainty=_HDU_UNCERT,
     return res
 
 
-def _extract_ccddata(ccd):
+def _extract_ccddata(ccd: CCDData) -> dict[str, _t.Any]:
     """Extract data and meta from CCDData objects."""
     res = {}
     for i in ('data', 'unit', 'meta'):
@@ -251,7 +267,7 @@ def _extract_ccddata(ccd):
     return res
 
 
-def _to_ccddata(frame):
+def _to_ccddata(frame: FrameData) -> CCDData:
     """Translate a FrameData to a CCDData."""
     data = np.array(frame.data)
     unit = frame.unit
@@ -268,8 +284,15 @@ def _to_ccddata(frame):
                    uncertainty=uncertainty, mask=mask)
 
 
-def _to_hdu(frame, hdu_uncertainty=_HDU_UNCERT, hdu_flags=_HDU_FLAGS,
-            hdu_mask=_HDU_MASK, unit_key=_UNIT_KEY, wcs_relax=True, **kwargs):
+def _to_hdu(
+    frame: FrameData,
+    hdu_uncertainty: str | None=_HDU_UNCERT,
+    hdu_flags: str | None=_HDU_FLAGS,
+    hdu_mask: str | None=_HDU_MASK,
+    unit_key: str=_UNIT_KEY,
+    wcs_relax: bool | int=True,
+    **kwargs: _t.Any,
+) -> fits.HDUList:
     """Translate a FrameData to an HDUList."""
     data = frame.data.copy()
 
@@ -315,7 +338,12 @@ def _to_hdu(frame, hdu_uncertainty=_HDU_UNCERT, hdu_flags=_HDU_FLAGS,
     return hdul
 
 
-def _write_fits(frame, filename, overwrite=True, **kwargs):
+def _write_fits(
+    frame: FrameData,
+    filename: _PathLike,
+    overwrite: bool=True,
+    **kwargs: _t.Any,
+) -> None:
     """Write a framedata to a fits file."""
     with warnings.catch_warnings():
         # silent hierarch warnings

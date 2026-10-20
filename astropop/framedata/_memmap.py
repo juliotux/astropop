@@ -1,6 +1,11 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 """Tools to handle memmaped arrays."""
 
+from __future__ import annotations
+
+import os as _os
+import numpy.typing as _npt
+
 import os
 import numpy as np
 
@@ -8,7 +13,11 @@ import numpy as np
 __all__ = ['create_array_memmap', 'delete_array_memmap', 'reset_memmap_array']
 
 
-def create_array_memmap(filename, data, dtype=None):
+def create_array_memmap(
+    filename: str | _os.PathLike[str] | None,
+    data: _npt.ArrayLike | None,
+    dtype: _npt.DTypeLike | None=None,
+) -> np.memmap | _npt.ArrayLike | None:
     """Create a memory map to an array data.
 
     Parameters
@@ -48,7 +57,11 @@ def create_array_memmap(filename, data, dtype=None):
     return memmap
 
 
-def delete_array_memmap(memmap, read=True, remove=False):
+def delete_array_memmap(
+    memmap: _npt.ArrayLike | None,
+    read: bool=True,
+    remove: bool=False,
+) -> _npt.ArrayLike | None:
     """Delete a memmap and read the data to a np.ndarray.
 
     Parameters
@@ -88,7 +101,11 @@ def delete_array_memmap(memmap, read=True, remove=False):
     return data
 
 
-def reset_memmap_array(array, data, dtype=None):
+def reset_memmap_array(
+    array: _npt.ArrayLike | None,
+    data: _npt.ArrayLike | None,
+    dtype: _npt.DTypeLike | None=None,
+) -> _npt.ArrayLike | None:
     """Reset a memmap array to a new data.
 
     Parameters

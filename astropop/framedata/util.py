@@ -1,6 +1,11 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 """Utilities for loading data as FrameData."""
 
+from __future__ import annotations
+
+import typing as _t
+from .._typing import ImageInput as _ImageInput
+
 import os
 import numpy as np
 from astropy.io import fits
@@ -18,7 +23,7 @@ _fits_kwargs = ['hdu', 'unit', 'hdu_uncertainty',
                 'hdu_mask', 'unit_key']
 
 
-def read_framedata(obj, copy=False, **kwargs):
+def read_framedata(obj: _ImageInput, copy: bool=False, **kwargs: _t.Any) -> FrameData:
     """Read an image into a FrameData container.
 
     Parameters
