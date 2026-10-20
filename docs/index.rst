@@ -8,18 +8,21 @@ photometry, polarimetry, astrometry, and catalog matching. Combine its functions
 in scripts tailored to your detector and instrument; the library does not choose
 a universal reduction recipe.
 
-Getting started
----------------
+Choose a reading path
+---------------------
 
 .. toctree::
     :maxdepth: 1
 
     installation
-    user_guide
+    tutorials/index
+    how_to/index
+    concepts/index
+    reference/index
+    development/index
 
-The user guide describes the current library interfaces and their numerical,
-unit, mask, and uncertainty conventions. Start with FrameData, then choose the
-reduction and utility chapters needed for your workflow.
+:doc:`user_guide` retains the original module-based guide navigation. Existing
+guide URLs remain available while topics acquire focused entry points.
 
 Worked notebooks
 ----------------
@@ -35,18 +38,13 @@ services, and instrument parameters to your observations.
     ipynb/astrometry_example
     ipynb/online_catalogs
 
-Developer documentation
------------------------
-
 .. toctree::
-    :maxdepth: 1
+    :hidden:
 
-    dev/pixel_convention
-    dev/testing
-    dev/internal_interfaces
+    user_guide
 
-API reference
--------------
+.. raw:: html
 
-Each guide ends with the corresponding module's API reference. The
-:ref:`modindex` and :ref:`genindex` provide entry points by module and symbol.
+    <span id="api-reference"></span>
+    <span id="developer-documentation"></span>
+    <span id="getting-started"></span>

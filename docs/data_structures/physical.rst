@@ -454,20 +454,13 @@ These comparisons can only be performed by same dimension measurements. If incom
 Physical Quantities API
 -----------------------
 
-.. automodapi:: astropop.math.physical
-    :skip: UnitsError
-    :no-inheritance-diagram:
+See :doc:`../reference/utilities` for the API reference.
 
-.. currentmodule:: None
+.. raw:: html
 
-.. py:data:: astropop.math.physical.units
-
-    Alias of :mod:`astropy.units`, available for constructing units and
-    quantities used by QFloat. This is not a separate unit registry.
-
-.. currentmodule:: None
-
-.. py:exception:: astropop.math.physical.UnitsError
-
-    Alias of :class:`astropy.units.UnitsError`, used for incompatible physical
-    units. It is the Astropy exception class, not a distinct Astropop subtype.
+    <span id="astropop-math-physical-module"></span>
+    <span id="astropop.math.physical.UnitsError"></span>
+    <span id="astropop.math.physical.units"></span>
+    <span id="classes"></span>
+    <span id="functions"></span>
+    <span id="module-astropop.math.physical"></span>

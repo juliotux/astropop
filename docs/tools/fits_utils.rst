@@ -42,15 +42,11 @@ its associated value.
 FITS utilities API
 ------------------
 
-.. automodapi:: astropop.fits_utils
-    :no-inheritance-diagram:
+See :doc:`../reference/utilities` for the API reference.
 
-.. autofunction:: astropop.fits_utils.string_to_header_key
+.. raw:: html
 
-.. currentmodule:: None
-
-.. py:data:: astropop.fits_utils.imhdus
-
-    Tuple of Astropy image-HDU classes suitable for ``isinstance`` checks,
-    as illustrated above. An HDU can belong to one of these classes and still
-    contain no image data.
+    <span id="astropop-fits-utils-module"></span>
+    <span id="astropop.fits_utils.imhdus"></span>
+    <span id="astropop.fits_utils.string_to_header_key"></span>
+    <span id="module-astropop.fits_utils"></span>

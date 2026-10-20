@@ -104,16 +104,12 @@ flags before using measurements.
 Photometry API
 --------------
 
-.. automodapi:: astropop.photometry
-    :no-inheritance-diagram:
+See :doc:`../reference/photometry` for the API reference.
 
-.. autoclass:: astropop.photometry.aperture.PhotometryFlags
-    :members:
-    :exclude-members: dtype
+.. raw:: html
 
-.. currentmodule:: None
-
-.. py:attribute:: astropop.photometry.aperture.PhotometryFlags.dtype
-    :value: numpy.uint16
-
-    Unsigned 16-bit storage type used for photometry flags.
+    <span id="astropop-photometry-package"></span>
+    <span id="astropop.photometry.aperture.PhotometryFlags"></span>
+    <span id="astropop.photometry.aperture.PhotometryFlags.dtype"></span>
+    <span id="functions"></span>
+    <span id="module-astropop.photometry"></span>

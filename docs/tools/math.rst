@@ -78,11 +78,16 @@ they are not uniqueness guarantees or a password-storage interface.
 Numerical API
 -------------
 
-.. automodapi:: astropop.math.array
-    :no-inheritance-diagram:
+See :doc:`../reference/utilities` for the API reference.
 
-.. automodapi:: astropop.math.models
-    :no-inheritance-diagram:
+.. raw:: html
 
-.. automodapi:: astropop.math.hasher
-    :no-inheritance-diagram:
+    <span id="astropop-math-array-module"></span>
+    <span id="astropop-math-hasher-module"></span>
+    <span id="astropop-math-models-module"></span>
+    <span id="classes"></span>
+    <span id="functions"></span>
+    <span id="id1"></span>
+    <span id="module-astropop.math.array"></span>
+    <span id="module-astropop.math.hasher"></span>
+    <span id="module-astropop.math.models"></span>

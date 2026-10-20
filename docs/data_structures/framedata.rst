@@ -351,8 +351,14 @@ The optional-storage settings above also apply when importing CCDData or FITS.
 FrameData API
 -------------
 
-.. automodapi:: astropop.framedata
-    :no-inheritance-diagram:
+See :doc:`../reference/framedata` for the API reference.
 
-.. automodapi:: astropop.config
-    :no-inheritance-diagram:
+.. raw:: html
+
+    <span id="astropop-config-module"></span>
+    <span id="astropop-framedata-package"></span>
+    <span id="classes"></span>
+    <span id="functions"></span>
+    <span id="id3"></span>
+    <span id="module-astropop.config"></span>
+    <span id="module-astropop.framedata"></span>

@@ -68,14 +68,12 @@ The default behavior is to use the ``MAIN_ID`` column as name. But you can choos
 
     This function is vectorized using `~numpy.vectorize`. So, each object will get an individual server query. So, even if this method is able to query more than one object, it is very slow and not recomended for high number of sources.
 
-.. automodapi:: astropop.catalogs.simbad
-    :skip: simbad
-    :no-inheritance-diagram:
-    :inherited-members:
+See :doc:`../../reference/catalogs` for the API reference.
 
-.. currentmodule:: None
+.. raw:: html
 
-.. py:data:: astropop.catalogs.simbad.simbad
-
-    Alias of :class:`~astropop.catalogs.simbad.SimbadSourcesCatalog`; accepts the same
-    constructor arguments and returns the same catalog type.
+    <span id="astropop-catalogs-simbad-module"></span>
+    <span id="astropop.catalogs.simbad.simbad"></span>
+    <span id="classes"></span>
+    <span id="functions"></span>
+    <span id="module-astropop.catalogs.simbad"></span>

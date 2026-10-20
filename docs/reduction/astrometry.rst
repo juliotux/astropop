@@ -246,16 +246,15 @@ The supported options can be print in the screen using `~astropop.astrometry.Ast
 Astrometry API
 --------------
 
-.. automodapi:: astropop.astrometry
-    :no-inheritance-diagram:
+See :doc:`../reference/astrometry` for the API reference.
 
-External command interface
---------------------------
+.. raw:: html
 
-The convenience solver functions use ``SolveFieldCommand`` to locate and invoke
-Astrometry.net. Supply a custom command path when ``solve-field`` is not on
-``PATH``. Constructing this wrapper checks the external executable; it is not
-required for using image arithmetic or a manually constructed WCS.
-
-.. autoclass:: astropop.astrometry.astrometrynet.SolveFieldCommand
-    :members:
+    <span id="astropop-astrometry-package"></span>
+    <span id="astropop.astrometry.astrometrynet.SolveFieldCommand"></span>
+    <span id="astropop.astrometry.astrometrynet.SolveFieldCommand.run"></span>
+    <span id="astropop.astrometry.astrometrynet.SolveFieldCommand.version"></span>
+    <span id="classes"></span>
+    <span id="external-command-interface"></span>
+    <span id="functions"></span>
+    <span id="module-astropop.astrometry"></span>

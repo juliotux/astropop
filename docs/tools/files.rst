@@ -336,5 +336,11 @@ There are also methods for iterating over the files from a |FitsFileGroup|. All 
 File Collection API
 -------------------
 
-.. automodapi:: astropop.file_collection
-    :no-inheritance-diagram:
+See :doc:`../reference/utilities` for the API reference.
+
+.. raw:: html
+
+    <span id="astropop-file-collection-module"></span>
+    <span id="classes"></span>
+    <span id="functions"></span>
+    <span id="module-astropop.file_collection"></span>

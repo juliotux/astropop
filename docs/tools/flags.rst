@@ -49,8 +49,13 @@ specify the intended method when calling these lower-level helpers.
 Flags and merge API
 -------------------
 
-.. automodapi:: astropop.flags
-    :no-inheritance-diagram:
+See :doc:`../reference/utilities` for the API reference.
 
-.. automodapi:: astropop.image._tools
-    :no-inheritance-diagram:
+.. raw:: html
+
+    <span id="astropop-flags-module"></span>
+    <span id="astropop-image-tools-module"></span>
+    <span id="functions"></span>
+    <span id="id1"></span>
+    <span id="module-astropop.flags"></span>
+    <span id="module-astropop.image._tools"></span>

@@ -59,20 +59,13 @@ For new tests, prefer ``pytest.warns`` or ``warnings.catch_warnings``.
 Testing helpers API
 -------------------
 
-.. automodapi:: astropop.testing
-    :skip: assert_warns, assert_not_warnings
-    :no-inheritance-diagram:
+See :doc:`../reference/utilities` for the API reference.
 
-.. currentmodule:: astropop.testing
+.. raw:: html
 
-.. py:function:: assert_warns(warning_class, *args, **kwargs)
-
-    Alias of :func:`numpy.testing.assert_warns`. Use it as a context manager to
-    require a warning, or pass a callable and its arguments to invoke it under
-    the warning check. The assertion fails if the requested warning does not
-    occur.
-
-.. py:function:: assert_not_warnings(*args, **kwargs)
-
-    Alias of :func:`numpy.testing.assert_no_warnings`. Use it as a context
-    manager or pass a callable and arguments to require warning-free execution.
+    <span id="astropop-testing-module"></span>
+    <span id="astropop.testing.assert_not_warnings"></span>
+    <span id="astropop.testing.assert_warns"></span>
+    <span id="functions"></span>
+    <span id="module-astropop.testing"></span>
+    <span id="notes"></span>

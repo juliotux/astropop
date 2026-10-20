@@ -104,14 +104,11 @@ Also, important variability and non-punctual flags are available as properties:
     gaia_sources.in_galaxy_candidates()
 
 
-.. automodapi:: astropop.catalogs.gaia
-    :skip: gaiadr3
-    :no-inheritance-diagram:
-    :inherited-members:
+See :doc:`../../reference/catalogs` for the API reference.
 
-.. currentmodule:: None
+.. raw:: html
 
-.. py:data:: astropop.catalogs.gaia.gaiadr3
-
-    Alias of :class:`~astropop.catalogs.gaia.GaiaDR3SourcesCatalog`; accepts the same
-    constructor arguments and returns the same catalog type.
+    <span id="astropop-catalogs-gaia-module"></span>
+    <span id="astropop.catalogs.gaia.gaiadr3"></span>
+    <span id="classes"></span>
+    <span id="module-astropop.catalogs.gaia"></span>

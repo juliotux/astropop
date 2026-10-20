@@ -87,5 +87,10 @@ reproducibility requires more than the stored correction keywords.
 CCD processing API
 ------------------
 
-.. automodapi:: astropop.image.processing
-    :no-inheritance-diagram:
+See :doc:`../reference/image` for the API reference.
+
+.. raw:: html
+
+    <span id="astropop-image-processing-module"></span>
+    <span id="functions"></span>
+    <span id="module-astropop.image.processing"></span>

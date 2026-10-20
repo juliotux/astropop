@@ -210,5 +210,10 @@ The |astroquery| package allows for querying online catalogs, but the |astropop|
    catalog/vizier.rst
    catalog/gaia.rst
 
-.. automodapi:: astropop.catalogs
-    :no-inheritance-diagram:
+See :doc:`../reference/catalogs` for the API reference.
+
+.. raw:: html
+
+    <span id="astropop-catalogs-package"></span>
+    <span id="classes"></span>
+    <span id="module-astropop.catalogs"></span>

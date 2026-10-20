@@ -40,6 +40,7 @@ And fits a equation for a given set o positions. There are two equations that ca
     :include-source: False
 
     import numpy as np
+  rng = np.random.default_rng(42)
     import matplotlib.pyplot as plt
     from astropop.polarimetry import halfwave_model
 
@@ -68,6 +69,7 @@ And fits a equation for a given set o positions. There are two equations that ca
     :include-source: False
 
     import numpy as np
+  rng = np.random.default_rng(42)
     import matplotlib.pyplot as plt
     from astropop.polarimetry import quarterwave_model
 
@@ -135,6 +137,7 @@ First of all, lets create the fake data to be used here for example.
 .. ipython:: python
 
   import numpy as np
+  rng = np.random.default_rng(42)
   from astropop.polarimetry import halfwave_model, quarterwave_model
   flux = 1e7  # total flux of the source, in electrons
   # retarder positions, in degrees
@@ -143,14 +146,14 @@ First of all, lets create the fake data to be used here for example.
   # half-wave plate with only linear polarization
   # q=0.05, u=-0.07
   z_i_half = halfwave_model(psi_i, 0.05, -0.07)
-  z_i_half = np.random.normal(loc=z_i_half, scale=0.005)  # add some noise
+  z_i_half = rng.normal(loc=z_i_half, scale=0.005)  # add some noise
   fo_half = flux*(1+z_i_half)/2  # ordinary beam fluxes
   fe_half = flux*(1-z_i_half)/2  # extraordinary beam fluxes
 
   # quarter-wave plate with linear and circular polarization
   # q=0.05, u=-0.07, v=0.08
   z_i_quarter = quarterwave_model(psi_i, 0.05, -0.07, 0.08)
-  z_i_quarter = np.random.normal(loc=z_i_quarter, scale=0.005)  # add some noise
+  z_i_quarter = rng.normal(loc=z_i_quarter, scale=0.005)  # add some noise
   fo_quarter = flux*(1+z_i_quarter)/2  # ordinary beam fluxes
   fe_quarter = flux*(1-z_i_quarter)/2  # extraordinary beam fluxes
 
@@ -160,6 +163,7 @@ First of all, lets create the fake data to be used here for example.
   :caption: Simulated data for the Stokes-Least-Squares polarimetry processing.
 
   import numpy as np
+  rng = np.random.default_rng(42)
   from astropop.polarimetry import halfwave_model, quarterwave_model
   flux = 1e7  # total flux of the source, in electrons
   # retarder positions, in degrees
@@ -172,7 +176,7 @@ First of all, lets create the fake data to be used here for example.
   # q=0.05, u=-0.07
   params_h = (0.05, -0.07)
   z_i_half = halfwave_model(psi_i, *params_h)
-  z_i_half = np.random.normal(loc=z_i_half, scale=0.005)
+  z_i_half = rng.normal(loc=z_i_half, scale=0.005)
   fo_half = flux*(1+z_i_half)/2  # ordinary beam fluxes
   fe_half = flux*(1-z_i_half)/2  # extraordinary beam fluxes
   lin_e_half = flux*(1-halfwave_model(lin, *params_h))/2
@@ -195,7 +199,7 @@ First of all, lets create the fake data to be used here for example.
   # q=0.05, u=-0.07, v=0.08
   params_q = (0.05, -0.07, 0.08)
   z_i_quarter = quarterwave_model(psi_i, *params_q)
-  z_i_quarter = np.random.normal(loc=z_i_quarter, scale=0.005)
+  z_i_quarter = rng.normal(loc=z_i_quarter, scale=0.005)
   fo_quarter = flux*(1+z_i_quarter)/2  # ordinary beam fluxes
   fe_quarter = flux*(1-z_i_quarter)/2  # extraordinary beam fluxes
   lin_e_quarter = flux*(1-quarterwave_model(lin, *params_q))/2
@@ -382,9 +386,9 @@ The `~astropop.polarimetry` module has some helper tools to help with this task.
   # random positions for the pairs
   # 80 pairs of sources in a image of 1024x1024 pixels
   # dx=25, dy=35
-  x = np.random.uniform(0, 1024, 80)
+  x = rng.uniform(0, 1024, 80)
   x = np.concatenate((x, x+25))  # x positions of the rouces
-  y = np.random.uniform(0, 1024, 80)
+  y = rng.uniform(0, 1024, 80)
   y = np.concatenate((y, y+35))  # y positions of the rouces
 
   # plot the sources
@@ -502,6 +506,11 @@ References
 Polarimetry API
 ---------------
 
-.. automodapi:: astropop.polarimetry
-  :no-inheritance-diagram:
-  :inherited-members:
+See :doc:`../reference/polarimetry` for the API reference.
+
+.. raw:: html
+
+    <span id="astropop-polarimetry-package"></span>
+    <span id="classes"></span>
+    <span id="functions"></span>
+    <span id="module-astropop.polarimetry"></span>

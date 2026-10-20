@@ -55,12 +55,12 @@ guarantees; applications control its lifetime.
 Logging API
 -----------
 
-.. automodapi:: astropop.logger
-    :no-inheritance-diagram:
+See :doc:`../reference/utilities` for the API reference.
 
-.. currentmodule:: None
+.. raw:: html
 
-.. py:data:: astropop.logger.logger
-
-    Shared standard-library Logger named ``astropop``. Its initial level is
-    ``INFO``; changing its level affects subsequent library log messages.
+    <span id="astropop-logger-module"></span>
+    <span id="astropop.logger.logger"></span>
+    <span id="classes"></span>
+    <span id="functions"></span>
+    <span id="module-astropop.logger"></span>

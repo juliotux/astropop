@@ -74,5 +74,11 @@ pipes and redirections are not interpreted as a user-supplied shell script.
 Python utilities API
 --------------------
 
-.. automodapi:: astropop.py_utils
-    :no-inheritance-diagram:
+See :doc:`../reference/utilities` for the API reference.
+
+.. raw:: html
+
+    <span id="astropop-py-utils-module"></span>
+    <span id="classes"></span>
+    <span id="functions"></span>
+    <span id="module-astropop.py_utils"></span>

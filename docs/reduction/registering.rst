@@ -221,5 +221,11 @@ shifts, masks, or metadata before using a batch in later reductions.
 Registering API
 ---------------
 
-.. automodapi:: astropop.image.register
-    :no-inheritance-diagram:
+See :doc:`../reference/image` for the API reference.
+
+.. raw:: html
+
+    <span id="astropop-image-register-module"></span>
+    <span id="classes"></span>
+    <span id="functions"></span>
+    <span id="module-astropop.image.register"></span>
