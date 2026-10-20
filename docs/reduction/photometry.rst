@@ -68,8 +68,13 @@ subtraction. Do not subtract the same background twice::
 
     >>> photometry = aperture_photometry(image, [64.], [64.], r=6.,
     ...                                  r_ann=(12., 18.), bkg_error=noise, gain=1.)
-    >>> print(f"Flux: {photometry['flux'][0]:.0f} +/- {photometry['flux_error'][0]:.0f}")
-    Flux: 12429 +/- 153
+    >>> flux, error = photometry['flux'][0], photometry['flux_error'][0]
+    >>> print(f'Flux: {flux:.0f}; relative error: {100 * error / flux:.0f}%')
+    Flux: 12429; relative error: 1%
+
+The displayed relative error is rounded; ``flux_error`` retains the computed
+value. Exact errors differ slightly between supported Photutils releases
+because their treatment of fractional boundary-pixel variance differs.
 
 ``bkg_method='mmm'`` and ``'mode'`` estimate local sky with
 ``3*median - 2*mean``; ``'median'`` and ``'mean'`` use those statistics directly.

@@ -91,15 +91,19 @@ finite, unflagged measurements::
     >>> len(selected)
     9
     >>> for row in selected[:3]:
-    ...     print(f"Flux: {row['flux']:.0f} +/- {row['flux_error']:.0f} ADU; flags: {row['flags']}")
-    Flux: 59738 +/- 297 ADU; flags: 0
-    Flux: 45040 +/- 273 ADU; flags: 0
-    Flux: 39937 +/- 266 ADU; flags: 0
+    ...     relative_error = 100 * row['flux_error'] / row['flux']
+    ...     print(f"Flux: {row['flux']:.0f} ADU; relative error: {relative_error:.1f}%; flags: {row['flags']}")
+    Flux: 59738 ADU; relative error: 0.5%; flags: 0
+    Flux: 45040 ADU; relative error: 0.6%; flags: 0
+    Flux: 39937 ADU; relative error: 0.7%; flags: 0
     >>> output.mkdir(exist_ok=True)
     >>> selected.write(output / 'instrumental.ecsv', format='ascii.ecsv', overwrite=True)
 
-The formal flux error includes the supplied background/Poisson model. It does
-not include every systematic, flat-field uncertainty, registration covariance,
+The displayed relative errors are rounded; the saved ``flux_error`` column
+retains the computed values. Exact errors differ slightly between supported
+Photutils releases because their fractional boundary-pixel variance weighting
+differs. The formal flux error includes the supplied background/Poisson model.
+It does not include every systematic, flat-field uncertainty, registration covariance,
 aperture correction or uncertainty in a photometric zero point. A small error
 bar therefore does not establish an accurate calibrated magnitude.
 
