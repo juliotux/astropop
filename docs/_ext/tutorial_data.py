@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta
 import os
 from pathlib import Path
 import shutil
-from tempfile import TemporaryDirectory
+from zipfile import ZIP_DEFLATED, ZipFile
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -17,12 +18,22 @@ if TYPE_CHECKING:
     from sphinx.application import Sphinx
 
 
-def generate_dataset(directory: Path) -> None:
+def generate_dataset(directory: Path, include_extras: bool = True) -> None:
     """Write seeded raw FITS exposures, source truth and reduced reference data.
 
     Counts are in ADU with a gain of one electron per ADU. Gaussian read noise
     is added to Poisson photoelectron counts. This is a teaching camera model,
     without dark current, saturation, overscan or instrumental photometric effects.
+
+    Parameters
+    ----------
+    directory
+        Dedicated output directory for the generated observations and references.
+        Existing generated filenames are overwritten.
+    include_extras
+        Add the timestamped variable-star sequence, local standards, approximate
+        pointing and solved reference image. Defaults to True; short CCD-only
+        examples omit these additional inputs.
     """
     from astropop.framedata import FrameData
 
@@ -47,7 +58,10 @@ def generate_dataset(directory: Path) -> None:
         """Store a raw exposure with detector and observation metadata."""
         header = fits.Header({'BUNIT': 'adu', 'IMAGETYP': kind,
                               'EXPTIME': exposure, 'GAIN': 1., 'RDNOISE': 4.,
-                              'FILTER': 'R'})
+                              'FILTER': 'R', 'DATE-OBS': '2025-01-01T00:00:00'})
+        index = int(name.rsplit('_', 1)[1].split('.')[0])
+        header['DATE-OBS'] = (datetime(2025, 1, 1) + timedelta(seconds=60 * index)).isoformat()
+        header['TIMESYS'] = 'UTC'
         fits.writeto(raw / name, pixels.astype('float32'), header, overwrite=True)
 
     for i in range(8):
@@ -66,6 +80,9 @@ def generate_dataset(directory: Path) -> None:
     FrameData(bias, unit='adu').write(directory / 'true_bias.fits', overwrite=True)
     FrameData(response).write(directory / 'true_flat.fits', overwrite=True)
     reduce_dataset(directory, directory / 'reference')
+    if include_extras:
+        from workflow_data import extend_dataset
+        extend_dataset(directory)
 
 
 def reduce_dataset(data: Path, output: Path) -> None:
@@ -91,6 +108,9 @@ def reduce_dataset(data: Path, output: Path) -> None:
                                      window=(slice(32, 224), slice(32, 224)))
     combined = imcombine(aligned, method='mean', sigma_clip=4,
                          sigma_dev_func='mad_std', dtype='float32')
+    combined.meta['EXPTIME'] = 30.
+    for index, frame in enumerate(calibrated):
+        frame.write(output / f'calibrated_{index:02d}.fits', overwrite=True)
     for name, image in [('master_bias', master_bias), ('master_flat', master_flat),
                         ('calibrated_first', calibrated[0]), ('combined', combined)]:
         image.write(output / f'{name}.fits', overwrite=True)
@@ -112,84 +132,46 @@ def measure_dataset(data: Path) -> tuple[Table, np.ndarray, np.ndarray]:
     return measured, sky, rms
 
 
-def plot_calibrations() -> None:
-    """Show the bias structure and normalized detector response used in reduction."""
-    import matplotlib.pyplot as plt
-
-    with TemporaryDirectory() as temporary:
-        data = Path(temporary)
-        generate_dataset(data)
-        fig, axes = plt.subplots(1, 2, figsize=(9, 4))
-        for axis, name, title in zip(axes, ['master_bias', 'master_flat'],
-                                     ['Master bias (ADU)', 'Normalized master flat']):
-            pixels = fits.getdata(data / 'reference' / f'{name}.fits', memmap=False)
-            image = axis.imshow(pixels, origin='lower', cmap='viridis')
-            axis.set(title=title, xlabel='x (pixel)', ylabel='y (pixel)')
-            fig.colorbar(image, ax=axis, shrink=0.8)
-        fig.tight_layout()
-
-
-def plot_reduction() -> None:
-    """Compare the same sky field in raw, calibrated and combined exposures."""
-    import matplotlib.pyplot as plt
-    from astropy.visualization import simple_norm
-
-    with TemporaryDirectory() as temporary:
-        data = Path(temporary)
-        generate_dataset(data)
-        names = ['raw/science_00.fits', 'reference/calibrated_first.fits', 'reference/combined.fits']
-        titles = ['Raw exposure', 'Bias and flat corrected', 'Registered, clipped mean']
-        fig, axes = plt.subplots(1, 3, figsize=(12, 4))
-        pixels = [fits.getdata(data / name, memmap=False) for name in names]
-        norm = simple_norm(pixels[2], 'asinh', percent=99.5)
-        for axis, image, title in zip(axes, pixels, titles):
-            axis.imshow(image, origin='lower', norm=norm, cmap='gray')
-            axis.set(title=title, xlabel='x (pixel)', ylabel='y (pixel)')
-        fig.tight_layout()
-
-
-def plot_photometry() -> None:
-    """Show the measured field with apertures and its estimated sky background."""
-    import matplotlib.pyplot as plt
-    from astropy.visualization import simple_norm
-    from matplotlib.patches import Circle
-
-    with TemporaryDirectory() as temporary:
-        data = Path(temporary)
-        generate_dataset(data)
-        measured, sky, rms = measure_dataset(data)
-        pixels = fits.getdata(data / 'reference' / 'combined.fits', memmap=False)
-        fig, axes = plt.subplots(1, 3, figsize=(14, 4))
-        axes[0].imshow(pixels, origin='lower', cmap='gray', norm=simple_norm(pixels, 'asinh', percent=99.5))
-        for row in measured:
-            for radius, color in [(6, 'cyan'), (9, 'orange'), (13, 'orange')]:
-                axes[0].add_patch(Circle((row['x'], row['y']), radius, fill=False, color=color, lw=0.7))
-        axes[0].set_title('Apertures and sky annuli')
-        image = axes[1].imshow(sky, origin='lower', cmap='viridis')
-        axes[1].set_title('Estimated sky (ADU)')
-        fig.colorbar(image, ax=axes[1], shrink=0.8)
-        truth = Table.read(data / 'sources.ecsv')
-        distance2 = ((measured['x'][:, None] - truth['x'])**2
-                     + (measured['y'][:, None] - truth['y'])**2)
-        injected = truth['flux'][np.argmin(distance2, axis=1)]
-        axes[2].errorbar(injected, 100 * (measured['flux'] / injected - 1),
-                         yerr=100 * measured['flux_error'] / injected, fmt='o')
-        axes[2].axhline(0, color='gray', linestyle='--')
-        axes[2].set(title='Flux recovery (simulation check)', xlabel='Injected flux (ADU)',
-                    ylabel='Flux difference (%)')
-        for axis in axes[:2]:
-            axis.set(xlabel='x (pixel)', ylabel='y (pixel)')
-        fig.tight_layout()
-
-
-def build_download(app: Sphinx) -> None:
-    """Prepare the shared downloadable dataset inside the build directory."""
-    folder = Path(app.doctreedir) / 'tutorial_assets'
+def build_bundle(folder: Path) -> Path:
+    """Write generated inputs and companions into a dedicated bundle directory."""
+    folder.mkdir(parents=True, exist_ok=True)
     data = folder / 'data'
     if data.exists():
         shutil.rmtree(data)
     generate_dataset(data)
-    shutil.make_archive(str(folder / 'ccd_tutorial'), 'zip', root_dir=folder, base_dir='data')
+    from tutorial_notebooks import build_notebooks, WORKFLOWS
+
+    source = Path(__file__).resolve().parents[1] / 'tutorials'
+    build_notebooks(source, folder / 'notebooks')
+    originals = folder / 'tutorial_sources'
+    originals.mkdir(exist_ok=True)
+    for page, _ in WORKFLOWS:
+        shutil.copyfile(source / f'{page}.rst', originals / f'{page}.rst')
+    helpers = ['tutorial_data.py', 'workflow_data.py', 'workflow_figures.py',
+               'guide_figures.py', 'tutorial_notebooks.py']
+    for name in helpers:
+        shutil.copyfile(Path(__file__).with_name(name), folder / name)
+    (folder / 'README.txt').write_text(
+        'Install astropop with its docs extra, then open notebooks/ in Jupyter.\n'
+        'Run from this extracted bundle; notebook setup locates data/ automatically.\n'
+        'Each numbered notebook is independent, using data/reference if earlier products\n'
+        'are absent. Running in order uses your preceding products in reduced/.\n'
+        'Tutorials overwrite named derived products, never the raw files.\n'
+        'Data and helper sources are synthetic, seeded and work offline.\n'
+        'Only the astrometry.net alternative requires an external solver/index.\n')
+    with ZipFile(folder / 'ccd_tutorial.zip', 'w', compression=ZIP_DEFLATED) as archive:
+        for directory in ['data', 'notebooks', 'tutorial_sources']:
+            for path in sorted((folder / directory).rglob('*')):
+                if path.is_file():
+                    archive.write(path, path.relative_to(folder))
+        for name in helpers + ['README.txt']:
+            archive.write(folder / name, name)
+    return folder / 'ccd_tutorial.zip'
+
+
+def build_download(app: Sphinx) -> None:
+    """Prepare the shared downloadable dataset inside the build directory."""
+    build_bundle(Path(app.doctreedir) / 'tutorial_assets')
 
 
 def setup(app: Sphinx) -> dict[str, bool]:
@@ -206,12 +188,34 @@ def setup(app: Sphinx) -> dict[str, bool]:
             archive = Path(self.env.doctreedir) / 'tutorial_assets' / 'ccd_tutorial.zip'
             self.env.note_dependency(__file__)
             target = os.path.relpath(archive, Path(self.env.doc2path(self.env.docname)).parent)
-            link = download_reference('', '', nodes.Text('Download the synthetic FITS dataset (ZIP)'),
+            link = download_reference('', '', nodes.Text('Download the shared tutorial data and notebooks (ZIP)'),
+                                      reftarget=target)
+            return [nodes.paragraph('', '', link)]
+
+    class TutorialNotebook(SphinxDirective):
+        """Link a generated notebook corresponding to the maintained RST source."""
+
+        required_arguments = 1
+
+        def run(self) -> list[nodes.Node]:
+            """Resolve the workflow name and expose its notebook as a download."""
+            from tutorial_notebooks import WORKFLOWS
+
+            names = dict(WORKFLOWS)
+            page = self.arguments[0]
+            if page not in names:
+                raise self.error(f'Unknown tutorial notebook: {page}')
+            notebook = (Path(self.env.doctreedir) / 'tutorial_assets' / 'notebooks'
+                        / f'{names[page]}.ipynb')
+            self.env.note_dependency(str(Path(__file__).with_name('tutorial_notebooks.py')))
+            target = os.path.relpath(notebook, Path(self.env.doc2path(self.env.docname)).parent)
+            link = download_reference('', '', nodes.Text('Download this tutorial notebook'),
                                       reftarget=target)
             return [nodes.paragraph('', '', link)]
 
     app.connect('builder-inited', build_download)
     app.add_directive('tutorial-data', TutorialData)
+    app.add_directive('tutorial-notebook', TutorialNotebook)
     return {'parallel_read_safe': True, 'parallel_write_safe': True}
 
 

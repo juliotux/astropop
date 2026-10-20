@@ -9,20 +9,23 @@ import numpy as np
 
 if TYPE_CHECKING:
     from matplotlib.figure import Figure
+    from astropop.polarimetry import StokesParameters
     from sphinx.application import Sphinx
 
 
-def plot_polarimetry() -> Figure:
+def plot_polarimetry(psi: np.ndarray | None = None,
+                     result: StokesParameters | None = None) -> Figure:
     """Plot the tutorial's half-wave modulation and its fitted residuals."""
     from astropy import units as u
     from astropop.polarimetry import SLSDualBeamPolarimetry
 
-    psi = np.arange(8) * 22.5
-    z = 0.03 * np.cos(np.deg2rad(4 * psi)) - 0.02 * np.sin(np.deg2rad(4 * psi))
-    ordinary = 10000 * (1 + z) / 2
-    extraordinary = 10000 * (1 - z) / 2
-    result = SLSDualBeamPolarimetry('halfwave', k=1., zero=0.).compute(
-        psi, ordinary, extraordinary, np.sqrt(ordinary), np.sqrt(extraordinary))
+    if psi is None or result is None:
+        psi = np.arange(8) * 22.5
+        z = 0.03 * np.cos(np.deg2rad(4 * psi)) - 0.02 * np.sin(np.deg2rad(4 * psi))
+        ordinary = 10000 * (1 + z) / 2
+        extraordinary = 10000 * (1 - z) / 2
+        result = SLSDualBeamPolarimetry('halfwave', k=1., zero=0.).compute(
+            psi, ordinary, extraordinary, np.sqrt(ordinary), np.sqrt(extraordinary))
     angles = np.linspace(0, 180, 361)
     fig, axes = plt.subplots(2, 1, figsize=(7.2, 5.2), sharex=True,
                              layout='constrained', height_ratios=[2, 1])

@@ -1,0 +1,126 @@
+Fit an astrometric solution from local references
+=================================================
+
+Fit a celestial WCS to measured centroids and a local sky catalog. This is an
+offline refinement with approximate pointing, not blind field identification.
+Seven reference stars constrain the fit; two others check it independently.
+
+.. tutorial-notebook:: astrometric_calibration
+
+.. tutorial-data::
+
+Extract the shared archive once. Its ``data/reference`` directory lets you
+start this stage independently; earlier stages save your own products in
+``reduced``. Run the notebook from the extracted bundle or set the data path
+when following this page::
+
+    >>> from pathlib import Path
+
+.. code-block:: python
+
+    data = Path('data')
+
+.. doctest::
+    :hide:
+
+    >>> from tempfile import TemporaryDirectory
+    >>> from tutorial_data import generate_dataset
+    >>> _temporary = TemporaryDirectory()
+    >>> data = Path(_temporary.name).resolve() / 'data'
+    >>> generate_dataset(data, include_extras=True)
+
+Associate detections with local reference stars
+-----------------------------------------------
+
+Use the instrumental source table from :doc:`photometry` when available, or its
+reference equivalent. The pointing file provides an approximate TAN projection,
+with a deliberate pixel offset. It is not the solution we are trying to recover::
+
+    >>> import numpy as np
+    >>> from astropy import units as u
+    >>> from astropy.coordinates import SkyCoord
+    >>> from astropy.io import fits
+    >>> from astropy.table import Table
+    >>> from astropy.wcs import WCS
+    >>> from astropy.wcs.utils import fit_wcs_from_points
+    >>> from astropop.framedata import read_framedata
+    >>> output = data.parent / 'reduced'
+    >>> inputs = output if (output / 'instrumental.ecsv').exists() else data / 'reference'
+    >>> measured = Table.read(inputs / 'instrumental.ecsv')
+    >>> standards = Table.read(data / 'standards.ecsv')
+    >>> reference = SkyCoord(standards['ra'], standards['dec'])
+    >>> rough = WCS(fits.getheader(data / 'pointing.fits'))
+    >>> x_guess, y_guess = rough.world_to_pixel(reference)
+    >>> distance2 = ((measured['x'][:, None] - x_guess)**2
+    ...              + (measured['y'][:, None] - y_guess)**2)
+    >>> nearest = np.argmin(distance2, axis=0)
+    >>> separation_pixels = np.sqrt(distance2[nearest, np.arange(len(reference))])
+    >>> usable = (separation_pixels < 8) & (measured['flags'][nearest] == 0)
+    >>> print(f'References within 8 pixels: {usable.sum()} / {len(reference)}')
+    References within 8 pixels: 9 / 9
+
+The tolerance is in detector pixels because this association starts from an
+approximate WCS. The references are isolated and uniquely associated here;
+independent nearest matches do not enforce a one-to-one assignment. Inspect the
+:doc:`local_catalog_matching` diagrams and resolve ambiguous matches on real
+fields. Use compatible coordinate frames and observation epochs before fitting.
+
+Fit and check the projection
+-----------------------------
+
+Use seven references distributed across the field. Keep the last two out of the
+fit so their residuals provide a separate check. Pixel positions use zero-based
+``(x, y)`` order, while image arrays use ``[y, x]``::
+
+    >>> fit_rows = usable & (np.arange(len(reference)) < 7)
+    >>> check_rows = usable & ~fit_rows
+    >>> x, y = measured['x'][nearest], measured['y'][nearest]
+    >>> solution = fit_wcs_from_points((x[fit_rows], y[fit_rows]), reference[fit_rows],
+    ...                                projection='TAN')
+    >>> recovered = solution.pixel_to_world(x, y)
+    >>> east, north = reference.spherical_offsets_to(recovered)
+    >>> radial = np.hypot(east.arcsec, north.arcsec)
+    >>> print(f'Fit stars: {fit_rows.sum()}; independent check stars: {check_rows.sum()}')
+    Fit stars: 7; independent check stars: 2
+    >>> print(f'Check-star RMS: {np.sqrt(np.mean(radial[check_rows]**2)):.3f} arcsec')
+    Check-star RMS: 0.004 arcsec
+
+.. plot:: _ext/workflow_figures.py plot_astrometry
+    :include-source: False
+    :alt: Reference positions across the image and east/north WCS residuals, distinguishing fit stars from withheld check stars.
+    :caption: Small fit residuals alone are insufficient; compare the withheld stars and look for spatial structure. This synthetic field follows a TAN projection without optical distortion.
+
+Astropy performs the TAN fit in this example; Astropop supplies image handling
+and the measured source table. A translation-only image registration is not an
+astrometric calibration. Real distortion may require another model and more
+reference stars. Two check stars are only a small diagnostic sample, not a
+complete validation of accuracy across a real field. The simulated reference
+positions are exact; real catalog errors and proper-motion uncertainty also
+limit an astrometric solution.
+
+Save the solved image and matched table
+----------------------------------------
+
+Choose the combined image you measured, attach the fitted WCS, and keep units,
+errors and masks in the FITS interchange::
+
+    >>> image_dir = output if (output / 'combined.fits').exists() else data / 'reference'
+    >>> image = read_framedata(image_dir / 'combined.fits')
+    >>> image.wcs = solution
+    >>> output.mkdir(exist_ok=True)
+    >>> image.write(output / 'astrometric.fits', overwrite=True)
+    >>> matched = Table({'id': standards['id'][usable], 'source_row': nearest[usable],
+    ...                  'residual_arcsec': radial[usable], 'used_in_fit': fit_rows[usable]})
+    >>> matched.write(output / 'astrometric_matches.ecsv', overwrite=True)
+    >>> print('Saved: astrometric.fits and astrometric_matches.ecsv')
+    Saved: astrometric.fits and astrometric_matches.ecsv
+
+For a field without approximate pointing or identified counterparts, the
+Astropop astrometry.net integration requires an installed solver and suitable
+local index files; see :doc:`../reduction/astrometry`. That external solver is
+not executed by this offline example. Continue with :doc:`photometric_calibration`.
+
+.. doctest::
+    :hide:
+
+    >>> _temporary.cleanup()

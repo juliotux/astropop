@@ -16,6 +16,7 @@ extensions = [
     'catalog_help',
     'tutorial_data',
     'guide_figures',
+    'workflow_figures',
     'sphinx.ext.doctest',
     'sphinx.ext.intersphinx',
     'sphinx.ext.extlinks',

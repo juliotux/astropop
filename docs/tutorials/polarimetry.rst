@@ -7,6 +7,13 @@ retarder, matched ordinary/extraordinary beams, unit beam normalization, and
 angles in degrees. Read the beam and angle definitions in
 :doc:`../reduction/polarimetry` before applying it to observations.
 
+.. tutorial-notebook:: polarimetry
+
+.. tutorial-data::
+
+The notebook uses the archive's plotting helper. Extract the shared bundle
+before opening it; the fit itself starts from the beam fluxes below.
+
 Prepare the beam measurements
 ------------------------------
 
@@ -78,6 +85,26 @@ model. On observations, look for outliers, angle-dependent structure or unequal
 noise between positions. A flat residual in this idealized example does not
 validate an instrument's normalization or establish the accuracy of the fitted
 uncertainties.
+
+Save the Stokes measurement
+-----------------------------
+
+Keep the polarization convention and angle units with the result::
+
+    >>> from pathlib import Path
+    >>> from astropy.table import Table
+    >>> output = Path('reduced')
+    >>> output.mkdir(exist_ok=True)
+    >>> stokes = Table({'q': [result.q.nominal], 'u': [result.u.nominal],
+    ...                 'p': [result.p.nominal], 'theta_deg': [result.theta.nominal],
+    ...                 'q_error': [result.q.uncertainty], 'u_error': [result.u.uncertainty],
+    ...                 'p_error': [result.p.uncertainty], 'theta_error_deg': [result.theta.uncertainty]})
+    >>> stokes['theta_deg'].unit = stokes['theta_error_deg'].unit = u.deg
+    >>> stokes.meta.update({'retarder': 'halfwave', 'beam_normalization': 1.,
+    ...                     'zero_angle_deg': 0., 'nominal_fluxes': 'noiseless example'})
+    >>> stokes.write(output / 'stokes.ecsv', overwrite=True)
+    >>> print(f'Saved Stokes measurements: {len(stokes)}')
+    Saved Stokes measurements: 1
 
 Choose the normalization and angle coverage
 -------------------------------------------

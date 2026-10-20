@@ -1,10 +1,12 @@
 Measure stars in a reduced CCD image
 ====================================
 
-Use the combined image from :doc:`ccd_reduction` to detect stars, inspect the
+Use the combined image from :doc:`science_reduction` to detect stars, inspect the
 background and measure local-sky-subtracted aperture fluxes. This tutorial uses
 the same synthetic field and runs offline. It measures instrumental fluxes;
 there is no reference-catalog zero point or transformation to calibrated magnitudes.
+
+.. tutorial-notebook:: photometry
 
 Load the image
 ---------------
@@ -30,14 +32,16 @@ in the visible measurement workflow.
     >>> from tutorial_data import generate_dataset
     >>> _temporary = TemporaryDirectory()
     >>> data = Path(_temporary.name).resolve() / 'data'
-    >>> generate_dataset(data)
+    >>> generate_dataset(data, include_extras=False)
 
 Read the calibrated FITS image, including its available mask and pixel flags::
 
     >>> import numpy as np
     >>> from astropop.framedata import read_framedata
     >>> from astropop.photometry import background, daofind, aperture_photometry
-    >>> image = read_framedata(data / 'reference' / 'combined.fits')
+    >>> output = data.parent / 'reduced'
+    >>> inputs = output if (output / 'combined.fits').exists() else data / 'reference'
+    >>> image = read_framedata(inputs / 'combined.fits')
 
 Estimate the sky and detect stars
 ----------------------------------
@@ -75,14 +79,6 @@ well would count the background correction twice. ``gain=1`` preserves the
 input numerical flux scale. In this API data are divided by ``gain``; changing
 it requires a matching change to the supplied background-noise scale.
 
-.. plot::
-    :include-source: False
-    :alt: Stellar apertures and sky annuli on the reduced field, the sky map, and measured flux residuals relative to injected values.
-    :caption: Detected stars with six-pixel apertures (cyan), sky annuli (orange), estimated background, and flux recovery against the injected stars.
-
-    from tutorial_data import plot_photometry
-    plot_photometry()
-
 Check and export the table
 ---------------------------
 
@@ -99,7 +95,8 @@ finite, unflagged measurements::
     Flux: 59738 +/- 297 ADU; flags: 0
     Flux: 45040 +/- 273 ADU; flags: 0
     Flux: 39937 +/- 266 ADU; flags: 0
-    >>> selected.write(data.parent / 'instrumental.ecsv', format='ascii.ecsv')
+    >>> output.mkdir(exist_ok=True)
+    >>> selected.write(output / 'instrumental.ecsv', format='ascii.ecsv', overwrite=True)
 
 The formal flux error includes the supplied background/Poisson model. It does
 not include every systematic, flat-field uncertainty, registration covariance,
@@ -137,7 +134,13 @@ The aperture contains most of the stellar light, but finite aperture size,
 background estimation, interpolation and noise prevent exact recovery. These
 numbers describe this seeded dataset; they are not accuracy guarantees for
 other observations. The isolated stars make nearest-neighbor matching suitable
-here; crowded fields need more care.
+here; crowded fields need more care. Continue with :doc:`astrometric_calibration`
+to attach sky coordinates, or :doc:`light_curve` to follow individual exposures.
+
+.. plot:: _ext/workflow_figures.py plot_photometry
+    :include-source: False
+    :alt: Stellar apertures and sky annuli on the reduced field, the sky map, and measured flux residuals relative to injected values.
+    :caption: Detected stars with six-pixel apertures (cyan), sky annuli (orange), estimated background, and flux recovery against the injected stars.
 
 .. doctest::
     :hide:

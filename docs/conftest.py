@@ -7,14 +7,16 @@ import pytest
 
 # pytest-doctestplus imports Python modules while collecting documentation.
 # These helpers require the docs extra; the Sphinx build validates them.
-collect_ignore = ['_ext']
+collect_ignore = ['_ext', '_build']
 
 
 @pytest.fixture(autouse=True)
-def tutorial_helpers(monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest) -> None:
+def tutorial_helpers(monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest,
+                     tmp_path: Path) -> None:
     """Provide tutorial helpers and restore optional-array settings after each page."""
     if request.node.path.parent.name != 'tutorials':
         return
+    monkeypatch.chdir(tmp_path)
     from astropop.config import AstropopConfig
 
     monkeypatch.syspath_prepend(str(Path(__file__).parent / '_ext'))
