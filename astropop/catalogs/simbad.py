@@ -93,6 +93,7 @@ def _simbad_query_id(
     s = Simbad()
 
     def _strip_spaces(name: str) -> str:
+        """Collapse repeated whitespace in a catalog identifier."""
         name = name.strip('NAME')
         name = name.strip('* ')
         # remove excessive spaces
@@ -199,6 +200,7 @@ class SimbadSourcesCatalog(_OnlineSourcesCatalog):
         radius: float | str | bytes | Angle | _u.Quantity,
         band: str | _t.Sequence[str] | None=None,
     ) -> None:
+        """Query the requested field, leaving photometry disabled by default."""
         # Just change the default behavior of band to None
         super(SimbadSourcesCatalog, self).__init__(center, radius, band)
 
@@ -216,6 +218,7 @@ class SimbadSourcesCatalog(_OnlineSourcesCatalog):
         return np.array(self._query[f'FLUX_BIBCODE_{band}'])
 
     def _setup_catalog(self) -> None:
+        """Configure unlimited SIMBAD results and the requested query fields."""
         self._s = Simbad()
         self._tap = hasattr(type(self._s), 'tap')
         if self._tap:
@@ -230,6 +233,11 @@ class SimbadSourcesCatalog(_OnlineSourcesCatalog):
                 self._s.add_votable_fields(f'fluxdata({filt})')
 
     def _do_query(self) -> None:
+        """Query SIMBAD and populate identifiers, coordinates and photometry.
+
+        Normalize TAP columns to the shared catalog schema and sort TAP results by
+        angular distance. Coordinates use ICRS at J2000 with proper motions.
+        """
         # We query everything in J2000 and query propermotion too
         kwargs = {} if self._tap else {'epoch': 'J2000'}
         self._query = astroquery_query(self._s.query_region,

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import typing as _t
+from inspect import cleandoc as _cleandoc
 from astropy.table import Table as _Table
 from ..math import QFloat
 from .._typing import PathLike as _PathLike
@@ -73,6 +74,7 @@ class VizierSourcesCatalog(_OnlineSourcesCatalog):
     """
 
     def __init__(self, config_file: _PathLike, *args: _t.Any, **kwargs: _t.Any) -> None:
+        """Load the YAML schema, configure VizieR and query the requested field."""
         self.name = path.splitext(path.basename(config_file))[0]
         with open(config_file, 'r') as f:
             self._conf = yaml.safe_load(f)
@@ -95,6 +97,7 @@ class VizierSourcesCatalog(_OnlineSourcesCatalog):
         return list(filters.keys())
 
     def _get_mag_columns(self) -> list[str]:
+        """Expand configured magnitude and error templates for every available band."""
         mag_conf = self._conf.get('magnitudes')
         mag_cols = []
         if mag_conf is not None:
@@ -183,10 +186,16 @@ class VizierSourcesCatalog(_OnlineSourcesCatalog):
                     return Time(query[i], format=ep['format'])
 
     def _setup_catalog(self) -> None:
+        """Configure the VizieR table and columns without a client-side row limit."""
         self._v = Vizier(catalog=self._table, columns=self._columns)
         self._v.ROW_LIMIT = -1
 
     def _do_query(self) -> None:
+        """Query VizieR and populate the catalog using its configured schema.
+
+        Rename configured column aliases before extracting identifiers, photometry,
+        coordinates and epoch. An empty table list raises RuntimeError.
+        """
         q = astroquery_query(self._v.query_region,
                              self._center,
                              radius=self._radius)
@@ -217,6 +226,14 @@ class VizierSourcesCatalog(_OnlineSourcesCatalog):
 
 
 def list_vizier_catalogs() -> str:
+    """Describe the bundled VizieR catalog configurations.
+
+    Returns
+    -------
+    catalogs
+        ReStructuredText containing catalog names, bibliographic references and
+        descriptions loaded from the local YAML files. No online query is made.
+    """
     root = path.join(path.dirname(__file__), 'vizier_catalogs')
     catalogs = 'Available pre-configured Vizier catalogs are:\n'
     for i in listdir(root):
@@ -228,15 +245,22 @@ def list_vizier_catalogs() -> str:
     return catalogs
 
 
-list_vizier_catalogs.__doc__ = "List available vizier catalogs\n\n"
-list_vizier_catalogs.__doc__ += "Notes\n-----\n" + list_vizier_catalogs()
+list_vizier_catalogs.__doc__ = (_cleandoc(list_vizier_catalogs.__doc__)
+                               + "\n\nNotes\n-----\n" + list_vizier_catalogs())
 
 
 def __getattr__(name: str) -> type[VizierSourcesCatalog]:
+    """Create a catalog subclass for a bundled configuration name.
+
+    The returned class binds the corresponding YAML file and exposes catalog
+    help without querying a field. Unknown names raise AttributeError.
+    """
     filename = path.join(path.dirname(__file__), f'vizier_catalogs/{name}.yml')
     if path.exists(filename):
         class NewViz(VizierSourcesCatalog):
+            """Bind a bundled YAML configuration to the VizieR catalog interface."""
             def __init__(self, *args: _t.Any, **kwargs: _t.Any) -> None:
+                """Query the configured catalog with the supplied field arguments."""
                 super(NewViz, self).__init__(filename, *args, **kwargs)
 
         with open(filename, 'r') as f:
@@ -247,6 +271,7 @@ def __getattr__(name: str) -> type[VizierSourcesCatalog]:
 
         # help function accessed before instance creation
         def help() -> str:
+            """Format the bound catalog description and available photometric bands."""
             return _print_help(name, conf, available_filters)
 
         NewViz.__doc__ = f"``{name}`` Vizier catalog."

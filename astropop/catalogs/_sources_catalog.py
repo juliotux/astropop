@@ -77,6 +77,12 @@ class SourcesCatalog:
         query_table: Table | None=None,
         **kwargs: _t.Any,
     ) -> None:
+        """Build coordinate and identifier columns and optional photometry.
+
+        Coordinate arguments are forwarded to SkyCoord with copying enabled.
+        Identifiers must form a one-dimensional array. Photometry is added by band;
+        an optional query table is retained as the underlying query result.
+        """
         self._base_table = Table()
         # initializate coords and skycoords using default kwargs.
         coords = SkyCoord(*args, **kwargs, copy=True)
@@ -320,6 +326,7 @@ class SourcesCatalog:
         return nc
 
     def __len__(self) -> int:
+        """Return the number of sources in the base catalog table."""
         return len(self._base_table)
 
     def table(self) -> Table:

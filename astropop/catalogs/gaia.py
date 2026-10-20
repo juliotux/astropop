@@ -50,6 +50,7 @@ def _gaia_query_timeout(client: _GaiaClass, timeout: float=300) -> _t.Iterator[N
     connections = []
 
     def get_connection(*args: _t.Any, **kwargs: _t.Any) -> _http.HTTPConnection:
+        """Open a connection with the remaining query budget as its timeout."""
         remaining = deadline - time.monotonic()
         if remaining <= 0:
             raise TimeoutError('Gaia query timed out.')
@@ -124,6 +125,7 @@ class GaiaDR3SourcesCatalog(_OnlineSourcesCatalog):
         *,
         query_mode: _t.Literal['async', 'sync']='async',
     ) -> None:
+        """Configure the Gaia client and immediately query the requested field."""
         if query_mode not in ('async', 'sync'):
             raise ValueError("query_mode must be 'async' or 'sync'.")
         self._query_mode = query_mode
@@ -132,6 +134,7 @@ class GaiaDR3SourcesCatalog(_OnlineSourcesCatalog):
         _OnlineSourcesCatalog.__init__(self, center, radius=radius, band=band)
 
     def _setup_catalog(self) -> None:
+        """Copy the Gaia client and select DR3 without a client-side row limit."""
         self._g = copy.deepcopy(Gaia)
         self._g.MAIN_GAIA_TABLE = 'gaiadr3.gaia_source'
         self._g.ROW_LIMIT = -1
@@ -255,6 +258,12 @@ class GaiaDR3SourcesCatalog(_OnlineSourcesCatalog):
         return result
 
     def _do_query(self) -> None:
+        """Query Gaia and populate source coordinates, IDs and requested bands.
+
+        The timeout budget spans retries and synchronous pages. Failures propagate
+        rather than returning a partially populated catalog. Coordinates include
+        proper motions and the reference epoch supplied by Gaia.
+        """
         # Keep the deadline outside astroquery_query: its timeout retries must
         # not each get a fresh five-minute budget. In sync mode this same budget
         # covers every page. An exception propagates instead of exposing a
