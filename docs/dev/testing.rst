@@ -47,7 +47,9 @@ Runnable reStructuredText examples are part of pytest collection. Run changed
 guides and build the HTML documentation::
 
     python -m pytest docs --remote-data=none
-    python -m sphinx -b html -a -n -W --keep-going docs docs/_build/html
+    python -m sphinx -b html -E -a -n -W --keep-going docs docs/_build/html
+    python docs/development/check_docs.py --html docs/_build/html
+    python docs/development/check_docs.py --notebooks
 
 The ``-a -n`` options check references while rewriting every page, including
 unchanged guides. Pandoc must be on ``PATH`` to render the stored notebooks.
@@ -55,3 +57,10 @@ Sphinx builds may also retrieve external reference inventories. Distinguish unre
 from local rendering or reference errors, and inspect the complete build log.
 Notebook examples should not introduce implicit live catalog requests during
 builds. Generated API pages and build output are ignored by Git.
+
+``tox -e build_docs`` runs these checks on Python 3.14, including offline
+prompted examples, stored-notebook schema/syntax checks and retained HTML URLs.
+CI uses the same tox environment. Read the Docs selects Python 3.14 and fails
+on Sphinx warnings; it renders stored notebooks without executing their external
+workflows. See :doc:`../development/documentation` for example classification
+and hosted preview review.

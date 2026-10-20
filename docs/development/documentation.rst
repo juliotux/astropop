@@ -67,3 +67,36 @@ Link between them, preserving critical scientific limitations beside operations.
 Do not claim speed, memory bounds or scientific validation without a specified
 measurement or test. Follow :doc:`../dev/testing` for strict build commands and
 ordinary versus live-service tests.
+
+Strict checks and pull-request previews
+---------------------------------------
+
+``tox -e build_docs`` uses Python 3.14 and installs both ``docs`` and ``test``
+extras. It checks stored-notebook schema/code syntax, runs local prompted
+examples with remote data disabled, builds every page with strict reference
+and warning checks, then verifies retained URLs and anchors. The GitHub docs
+job selects that environment. Read the Docs also selects Python 3.14 and
+``sphinx.fail_on_warning: true``; ``nitpicky=True`` in ``docs/conf.py`` checks
+object references on both hosts. Hosted builds do not execute the external
+notebook workflows. A rendering pass alone is not a scientific test.
+
+Review changes by opening ``docs/_build/html/index.html`` after a local build.
+For hosted previews, follow the Read the Docs status check on the pull request
+and verify the displayed commit before reviewing the new task/reference paths.
+Do not assume a preview exists just because the YAML file is present.
+
+The Read the Docs project administrator enables previews in **Settings → Pull
+request builds → Build pull requests for this project → Update**. Existing
+pull requests need another pushed commit to trigger their first preview after
+enablement. That project setting is not controlled by ``.readthedocs.yml`` and
+its enabled state has not been verified in this checkout. See the
+`official preview configuration guide
+<https://docs.readthedocs.com/platform/stable/guides/pull-requests.html>`_
+and `build configuration reference
+<https://docs.readthedocs.com/platform/stable/config-file/v2.html>`_.
+
+If strict builds fail, distinguish an unreachable external inventory from a
+missing local target and inspect the full log. Fix broken local references or
+examples; do not globally suppress warnings. Keep live catalog conformance in
+its dedicated test job. Rendered notebook pages must not silently replace a
+missing recorded response with a live request.

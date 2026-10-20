@@ -7,6 +7,9 @@ sys.path.insert(0, ap_dir)
 # Minimum version, enforced by sphinx
 needs_sphinx = '4.3.0'
 
+# Check missing object references in local and hosted builds alike.
+nitpicky = True
+
 extensions = [
     'sphinx.ext.intersphinx',
     'sphinx.ext.extlinks',

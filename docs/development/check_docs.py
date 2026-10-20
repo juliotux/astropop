@@ -59,6 +59,11 @@ def example_inventory():
                 mode = 'Sphinx plot execution'
             elif stripped.startswith('.. code-block:: python'):
                 mode = 'static recipe; not executed'
+            elif stripped.endswith('::') and not stripped.startswith('..'):
+                following = next((text.strip() for text in lines[index + 1:]
+                                  if text.strip()), '')
+                if not following.startswith('>>>'):
+                    mode = 'static literal recipe; not executed'
             if mode:
                 examples.append({'page': str(path.relative_to(docs)),
                                  'line': index + 1, 'validation': mode})
@@ -68,14 +73,40 @@ def example_inventory():
     print(json.dumps(examples, indent=2))
 
 
+def check_notebooks():
+    import nbformat
+    from IPython.core.inputtransformer2 import TransformerManager
+
+    docs = Path(__file__).resolve().parents[1]
+    notebooks = list((docs / 'ipynb').glob('*.ipynb'))
+    cells = 0
+    for path in notebooks:
+        notebook = nbformat.read(path, as_version=4)
+        nbformat.validate(notebook)
+        for index, cell in enumerate(notebook.cells):
+            if cell.cell_type != 'code':
+                continue
+            code = TransformerManager().transform_cell(cell.source)
+            compile(code, f'{path.name}:cell {index}', 'exec')
+            if any(output.output_type == 'error' for output in cell.outputs):
+                raise SystemExit(f'Stored error output: {path.name}:cell {index}')
+            cells += 1
+    print(f'Validated {len(notebooks)} notebook schemas and {cells} code cells; '
+          'not executed')
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--html', type=Path, help='Sphinx HTML output directory')
     parser.add_argument('--inventory', action='store_true', help='List validation modes')
+    parser.add_argument('--notebooks', action='store_true',
+                        help='Check schema, code syntax and stored errors; no execution')
     args = parser.parse_args()
     if args.html:
         check_urls(args.html)
     if args.inventory:
         example_inventory()
-    if not args.html and not args.inventory:
-        parser.error('Choose --html or --inventory')
+    if args.notebooks:
+        check_notebooks()
+    if not args.html and not args.inventory and not args.notebooks:
+        parser.error('Choose --html, --inventory or --notebooks')

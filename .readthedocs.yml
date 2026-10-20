@@ -7,10 +7,11 @@ build:
     - pandoc
     - graphviz
   tools:
-    python: "3.11"
+    python: "3.14"
 
 sphinx:
   configuration: docs/conf.py
+  fail_on_warning: true
 
 python:
   install:

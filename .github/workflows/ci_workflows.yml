@@ -58,6 +58,7 @@ jobs:
           - graphviz
       envs: |
         - linux: build_docs
+          python-version: '3.14'
 
   coverage:
     name: "Conda/Coverage/Astrometry.net"
