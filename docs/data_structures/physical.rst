@@ -4,8 +4,8 @@
 .. |QFloat.nominal| replace:: `~astropop.math.physical.QFloat.nominal`
 .. |QFloat.unit| replace:: `~astropop.math.physical.QFloat.unit`
 
-Physical Quantities and Uncertanties
-====================================
+Physical Quantities and Uncertainties
+=====================================
 
 Any physical measurement is not a simple number. It is a number, but have a physical unit and an uncertainty related to it.
 
@@ -161,7 +161,10 @@ Some `Numpy array functions <https://numpy.org/doc/1.19/reference/routines.array
     qf = QFloat(np.zeros((100, 100)), np.zeros((100, 100)))
     np.shape(qf)
 
-One big difference from our compatibility to default Numpy is that for some functions, Numpy return the view of the array, for bigger performance. Our method, however, just return copies of the |QFloat| with applied functions. The impact im performance is not so big and the memory usage will not be a problem, unless you use a very very large array.
+Array transformations returning a |QFloat| construct new nominal and uncertainty
+arrays. Do not assume NumPy's view-sharing behavior: both arrays contribute to
+allocation costs. Shape queries return ordinary shape information. Measure
+runtime and peak memory for your own array sizes before choosing a workflow.
 
 The current Numpy array functions supported for this class are:
 
@@ -191,10 +194,111 @@ The current Numpy array functions supported for this class are:
 - `~numpy.tile`
 - `~numpy.transpose`
 
+Statistical reductions
+^^^^^^^^^^^^^^^^^^^^^^
+
+The following reductions accept ``axis=None`` (all elements), an integer axis,
+or a tuple of axes. Their handlers accept only ``axis`` beyond the input;
+``dtype``, ``out``, ``keepdims``, ``where``, and ``ddof`` are not supported and
+raise ``TypeError``. Population standard deviation is used (``ddof=0``).
+
+.. list-table:: Reduction contracts
+    :header-rows: 1
+    :widths: 22 25 53
+
+    * - Function
+      - Output
+      - Uncertainty or interpretation
+    * - ``sum``
+      - QFloat in the input unit
+      - Quadrature sum of input standard deviations.
+    * - ``mean``
+      - QFloat in the input unit
+      - Population scatter of nominal values divided by the square root of
+        the number of elements; input uncertainties are ignored.
+    * - ``median``
+      - QFloat in the input unit
+      - NaN-ignoring population scatter divided by the square root of the
+        total number of elements. Input uncertainties are ignored; the
+        nominal median itself does not ignore NaNs.
+    * - ``nanmean``
+      - QFloat in the input unit
+      - NaN-ignoring scatter divided by
+        ``sqrt(nansum(nominal) / nanmean(nominal))``.
+    * - ``nanmedian``
+      - QFloat in the input unit
+      - NaN-ignoring scatter divided by
+        ``sqrt(nansum(nominal) / nanmedian(nominal))``.
+    * - ``std``, ``nanstd``
+      - Plain NumPy scalar or array
+      - Population scatter of nominal values; units and input uncertainties
+        are discarded. Interpret the numbers in the input unit.
+    * - ``var``, ``nanvar``
+      - Plain NumPy scalar or array
+      - Population variance of nominal values; units and input uncertainties
+        are discarded. Interpret the numbers in the squared input unit.
+
+The ``nanmedian`` denominator is not generally the number of finite samples.
+Both NaN-aware mean/median denominators can be invalid for zero or signed data;
+all-NaN slices also produce invalid results and NumPy warnings. These estimators
+are not substitutes for propagating measurement errors. ``nansum`` is not
+implemented for QFloat.
+
+These local examples check the formulas independently::
+
+    >>> import numpy as np
+    >>> from astropy import units as u
+    >>> from astropop.math import QFloat
+    >>> q = QFloat([[1, 3], [5, 7]], [[2, 2], [2, 2]], 'adu')
+    >>> total = np.sum(q, axis=0)
+    >>> np.testing.assert_allclose(total.nominal, [6, 10])
+    >>> np.testing.assert_allclose(total.uncertainty, np.sqrt([8, 8]))
+    >>> assert total.unit == u.adu
+    >>> for reduce in (np.mean, np.median):
+    ...     result = reduce(q, axis=1)
+    ...     np.testing.assert_allclose(result.nominal, [2, 6])
+    ...     np.testing.assert_allclose(result.uncertainty, 1 / np.sqrt(2))
+    ...     assert result.unit == u.adu
+    >>> missing = QFloat([1, 3, 8, np.nan], [100, 100, 100, 100], 'adu')
+    >>> scatter = np.sqrt(((1 - 4)**2 + (3 - 4)**2 + (8 - 4)**2) / 3)
+    >>> average = np.nanmean(missing)
+    >>> np.testing.assert_allclose(average.nominal, 4)
+    >>> np.testing.assert_allclose(average.uncertainty, scatter / np.sqrt(3))
+    >>> middle = np.nanmedian(missing)
+    >>> np.testing.assert_allclose(middle.nominal, 3)
+    >>> np.testing.assert_allclose(middle.uncertainty, scatter / np.sqrt(12 / 3))
+    >>> assert average.unit == middle.unit == u.adu
+    >>> for reduce in (np.std, np.nanstd):
+    ...     values = reduce(q, axis=0)
+    ...     assert isinstance(values, np.ndarray)
+    ...     np.testing.assert_allclose(values, [2, 2])
+    >>> for reduce in (np.var, np.nanvar):
+    ...     np.testing.assert_allclose(reduce(q, axis=0), [4, 4])
+    >>> import pytest
+    >>> with pytest.raises(TypeError):
+    ...     np.mean(q, keepdims=True)
+    >>> with pytest.raises(TypeError):
+    ...     np.std(q, ddof=1)
+
 Supported Numpy Universal Functions (UFuncs)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To simplify the way we perform some math operations, we also support some important `Numpy Universal Functions <https://numpy.org/doc/stable/reference/ufuncs.html>`_, also named |ufunc|. However, we had to simplify the implementation to get it running properly. So, the traditional ``kwargs`` passed to the |ufunc|, like ``out``, ``where`` and others are ignored in our implementation.
+QFloat supports the calls below through NumPy's ufunc interface. Only direct
+calls are implemented; methods such as ``np.add.reduce`` are unsupported.
+``out`` raises ``NotImplementedError``. Other keywords are forwarded to the
+individual handler, so support depends on that handler. Arithmetic handlers
+such as ``add`` accept no keywords: ``where`` and ``dtype`` raise ``TypeError``.
+Do not assume that all NumPy ufunc options work or are silently ignored::
+
+    >>> q = QFloat([1, 3], [0.1, 0.2], 'm')
+    >>> with pytest.raises(NotImplementedError):
+    ...     np.add(q, q, out=(q,))
+    >>> with pytest.raises(TypeError):
+    ...     np.add(q, q, where=[True, False])
+    >>> with pytest.raises(TypeError):
+    ...     np.add.reduce(q)
+
+Use ``np.sum(q)`` for the supported quadrature-error summation.
 
 The current supported ufuncs are:
 
