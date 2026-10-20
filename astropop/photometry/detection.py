@@ -1,6 +1,7 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
 
+"""Detect stellar sources and estimate their point-spread-function widths."""
 from __future__ import annotations
 
 import typing as _t
