@@ -66,6 +66,8 @@ docs = [
     "sphinx-book-theme",
     "numpydoc",
     "nbsphinx",
+    "nbclient",
+    "nbformat",
     "pandoc"
 ]
 
