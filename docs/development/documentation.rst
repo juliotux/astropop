@@ -51,6 +51,11 @@ and expected results and use local temporary data.
   such as ``plot:: _ext/guide_figures.py plot_registration``. The
   ``guide_figures`` extension records that helper as a source dependency so
   edits to it invalidate the corresponding pages.
+* Task-guide diagnostics live in ``_ext/task_figures.py``. They use small,
+  deterministic inputs and the public operations being explained. State in
+  each caption whether a WCS, noise model or calibration frame is supplied
+  rather than estimated. The helper is tracked as a source dependency, so
+  changing it rebuilds the task figures.
 * Tutorial RST pages are the maintained numerical source. Hidden ``doctest``
   blocks only prepare temporary data and clean it up; visible examples print
   meaningful results for doctests to verify. Keep assertions and testing
