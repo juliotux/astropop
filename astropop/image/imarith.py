@@ -67,6 +67,7 @@ class ImArith:
         merge_headers: _t.Literal['only_equal', 'first', 'selected_keys', 'no_merge']='only_equal',
         selected_keys: _t.Sequence[str] | None=None,
     ) -> None:
+        """Retain flag and header merge strategies for subsequent arithmetic calls."""
         self._flag_strategy = merge_flags
         self._header_strategy = merge_headers
         self._selected_keys = selected_keys

@@ -79,6 +79,7 @@ class _BaseRegister(abc.ABC):
     _name = None
 
     def __init__(self, window: _Window=None) -> None:
+        """Validate optional row and column slices with unit steps and store the window."""
         if window is not None:
             if (not isinstance(window, tuple) or len(window) != 2
                     or not all(isinstance(i, slice) for i in window)):
@@ -381,6 +382,7 @@ class CrossCorrelationRegister(_BaseRegister):
     _name = 'cross-correlation'
 
     def __init__(self, window: _Window=None, **kwargs: _t.Any) -> None:
+        """Configure phase correlation and require real-space data for a window."""
         super().__init__(window=window)
         if window is not None and kwargs.get('space', 'real').lower() != 'real':
             raise ValueError('window requires real-space image data.')
@@ -399,6 +401,11 @@ class CrossCorrelationRegister(_BaseRegister):
         mask1: _npt.ArrayLike | None=None,
         mask2: _npt.ArrayLike | None=None,
     ) -> _AffineTransform:
+        """Estimate the translation from phase correlation, ignoring supplied masks.
+
+        Convert the returned row/column displacement into an affine x/y transform
+        with the sign convention expected by the registration application step.
+        """
         if mask1 is not None or mask2 is not None:
             logger.debug("Masks are ignored in CrossCorrelationRegister.")
         # Masks are ignored by default
@@ -457,6 +464,7 @@ class AsterismRegister(_BaseRegister):
         window: _Window=None,
         **detection_kwargs: _t.Any,
     ) -> None:
+        """Configure source detection, control-point limits and the registration window."""
         super().__init__(window=window)
         try:
             import astroalign
@@ -479,6 +487,11 @@ class AsterismRegister(_BaseRegister):
         mask1: _npt.ArrayLike | None=None,
         mask2: _npt.ArrayLike | None=None,
     ) -> _AffineTransform:
+        """Detect bright sources and match asterisms to estimate a similarity transform.
+
+        Estimate background levels independently for the two images and retain the
+        brightest control points. Supplied pixel masks are currently ignored.
+        """
         if mask1 is not None or mask2 is not None:
             logger.debug("Masks are ignored in AsterismRegister.")
 

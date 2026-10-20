@@ -1,6 +1,7 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
 
+"""Calibrate images and apply pixel-level corrections to FrameData."""
 from __future__ import annotations
 
 import typing as _t
