@@ -23,6 +23,10 @@ To access an specific pre-defined catalog, just use ``vizier.<<catalog_name>>`` 
 
 All catalogs have the same input parameters, that are a field ``center``, a search ``radius`` and the list of photometric ``band`` to query. They are derived from the |VizierSourcesCatalog| class, configured with a pre-defined configuration file to operate with the specific catalog. The list of all available pre-defined catalogs can be obtained with `astropop.catalogs.vizier.list_vizier_catalogs` method. Each catalog has a ``help`` method that returns a description of the catalog and the list of available photometric bands.
 
+The help below is generated from the bundled configuration files during the
+documentation build. Displaying it does not make online queries. The Python
+blocks show how to print the same help in your own session.
+
 Currently available catalogs are:
 
 - ``vizier.allwise``
@@ -31,11 +35,15 @@ Currently available catalogs are:
 
       print(vizier.allwise.help())
 
+  .. catalog-help:: allwise
+
 - ``vizier.apass9``
 
   .. code-block:: python
 
       print(vizier.apass9.help())
+
+  .. catalog-help:: apass9
 
 - ``vizier.denis``
 
@@ -43,11 +51,15 @@ Currently available catalogs are:
 
       print(vizier.denis.help())
 
+  .. catalog-help:: denis
+
 - ``vizier.gsc242``
 
   .. code-block:: python
 
       print(vizier.gsc242.help())
+
+  .. catalog-help:: gsc242
 
 - ``vizier.hip``
 
@@ -55,11 +67,15 @@ Currently available catalogs are:
 
       print(vizier.hip.help())
 
+  .. catalog-help:: hip
+
 - ``vizier.twomass``
 
   .. code-block:: python
 
       print(vizier.twomass.help())
+
+  .. catalog-help:: twomass
 
 - ``vizier.tycho2``
 
@@ -67,11 +83,15 @@ Currently available catalogs are:
 
       print(vizier.tycho2.help())
 
+  .. catalog-help:: tycho2
+
 - ``vizier.ucac4``
 
   .. code-block:: python
 
       print(vizier.ucac4.help())
+
+  .. catalog-help:: ucac4
 
 - ``vizier.ucac5``
 
@@ -79,17 +99,23 @@ Currently available catalogs are:
 
       print(vizier.ucac5.help())
 
+  .. catalog-help:: ucac5
+
 - ``vizier.vsx``
 
   .. code-block:: python
 
       print(vizier.vsx.help())
 
+  .. catalog-help:: vsx
+
 - ``vizier.wise``
 
   .. code-block:: python
 
       print(vizier.wise.help())
+
+  .. catalog-help:: wise
 
 
 Configure a New Catalog

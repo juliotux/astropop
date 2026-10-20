@@ -57,10 +57,10 @@ def example_inventory():
                 if index and lines[index - 1].strip().startswith(('>>>', '...')):
                     continue
                 mode = 'pytest example'
-            elif stripped.startswith('.. ipython::'):
-                options = lines[index + 1:index + 5]
-                mode = ('stored transcript' if any(':verbatim:' in x for x in options)
-                        else 'Sphinx IPython execution')
+            elif stripped.startswith('.. code-block:: text'):
+                mode = 'stored console transcript; not executed'
+            elif stripped.startswith('.. catalog-help::'):
+                mode = 'local catalog help; rendered without online queries'
             elif stripped.startswith('.. plot::'):
                 mode = 'Sphinx plot execution'
             elif stripped.startswith('.. code-block:: python'):

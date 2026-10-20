@@ -31,17 +31,21 @@ maintaining a second list of line numbers::
 
     python docs/development/check_docs.py --inventory
 
-The inventory identifies pytest examples, Sphinx IPython execution, verbatim
-transcripts, plot execution, static recipes, and stored notebooks. A function
+The inventory identifies pytest examples, stored console transcripts, plot
+execution, static recipes, and stored notebooks. A function
 call appearing in a code block does not mean the build executes it. Literal
 ``::`` blocks without prompts are application recipes; adapt their filenames
 and input variables before running them. Core tutorials state their dependencies
 and expected results and use local temporary data.
 
 * Run prompted examples with ``python -m pytest docs --remote-data=none``.
-  This does not execute verbatim IPython transcripts or arbitrary code blocks.
-* Run executable IPython and plot directives by building Sphinx. Seed local
-  random generators for examples and plot data.
+  This does not execute stored console transcripts or arbitrary code blocks.
+* Use standard ``code-block:: python`` directives for recipes and
+  ``code-block:: text`` for recorded console output. These blocks are not
+  executed during the build. Run plot directives by building Sphinx, using
+  seeded random generators.
+* Catalog help is rendered from bundled YAML configuration using
+  ``catalog-help``; it does not construct a catalog or query a remote service.
 * Stored notebooks are rendered with ``nbsphinx_execute='never'``. The CCD
   notebook needs its external dataset, the astrometry notebook needs local
   solver/index installation and input files, and the online-catalog notebook

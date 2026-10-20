@@ -13,6 +13,7 @@ nitpicky = True
 
 extensions = [
     'annotation_names',
+    'catalog_help',
     'sphinx.ext.intersphinx',
     'sphinx.ext.extlinks',
     'sphinx.ext.todo',
@@ -20,8 +21,6 @@ extensions = [
     'sphinx_automodapi.automodapi',
     'numpydoc',
     'matplotlib.sphinxext.plot_directive',
-    'IPython.sphinxext.ipython_console_highlighting',
-    'IPython.sphinxext.ipython_directive',
     'nbsphinx',
 ]
 
