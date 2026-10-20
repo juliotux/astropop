@@ -1,108 +1,162 @@
-A first offline CCD reduction
-=============================
+Reduce a small CCD observing sequence
+=====================================
 
-This tutorial executes under pytest using NumPy, Astropy and Astropop. It creates
-small local FITS files in a temporary directory; no catalog, download, external
-solver or instrument data is required. The expected calibrated image is known
-exactly. This is a teaching dataset, not a detector noise simulation.
+Start from raw FITS files, build master calibrations, correct each science
+exposure, register the field and combine it. The supplied observations are
+synthetic, so this tutorial works offline and its results can be checked against
+known inputs. The data-generation code is hidden from the reduction walkthrough.
 
-Create the observations
------------------------
+Get the observations
+---------------------
 
-Our detector has a 100 ADU bias and a smooth sensitivity gradient. We create
-three biases, three uniformly illuminated flats, and two identical science
-exposures containing one Gaussian star on a constant sky. Uncertainty and flag
-storage must be enabled before construction (the defaults)::
+.. tutorial-data::
 
-    >>> import numpy as np
+Extract the archive in your working directory. It contains a ``data`` directory
+with eight bias frames, six flats and six science exposures in ``raw/``.
+``reference/`` contains reduced products for comparison and for the standalone
+photometry tutorial. ``sources.ecsv`` records the injected stars; it is for
+validation, not an input to the reduction. The optional
+:download:`dataset generator <../_ext/tutorial_data.py>` reproduces these files.
+
+The simulated detector has 256 by 256 pixels, a gain of one electron per ADU,
+4-electron read noise, a structured bias and a sensitivity gradient with a dust
+shadow. Science exposures contain nine stars, a sloping sky, Poisson noise,
+small pointing shifts and isolated bright pixel events near the image edge.
+Flat illumination varies between exposures. Dark current, overscan,
+nonlinearity and saturation are not simulated.
+
+Use the extracted directory when running the examples:
+
+.. code-block:: python
+
+    from pathlib import Path
+    data = Path('data')
+
+.. doctest::
+    :hide:
+
     >>> from pathlib import Path
     >>> from tempfile import TemporaryDirectory
+    >>> from tutorial_data import generate_dataset
+    >>> _temporary = TemporaryDirectory()
+    >>> data = Path(_temporary.name).resolve() / 'data'
+    >>> generate_dataset(data)
+
+Build the master bias and normalized flat
+------------------------------------------
+
+Keep uncertainties and flags enabled before loading frames (the default).
+Select calibration frames by their observing log and FITS metadata in a real
+sequence; the filenames here already separate the exposure types::
+
+    >>> import numpy as np
     >>> from astropy import units as u
-    >>> from astropop.framedata import FrameData, read_framedata
+    >>> from astropop.framedata import read_framedata
     >>> from astropop.image import imarith, imcombine
     >>> from astropop.image.processing import subtract_bias, flat_correct
-    >>> from astropop.photometry import aperture_photometry
-    >>> temporary = TemporaryDirectory()
-    >>> folder = Path(temporary.name)
-    >>> y, x = np.indices((32, 32))
-    >>> response = 0.9 + 0.2 * x / 31
-    >>> expected = 20 + 500 * np.exp(-((x - 16)**2 + (y - 16)**2) / (2 * 1.2**2))
-    >>> for i, offset in enumerate((-1., 0., 1.)):
-    ...     FrameData(np.full((32, 32), 100 + offset), unit='adu').write(
-    ...         folder / f'bias_{i}.fits')
-    ...     FrameData(100 + 1000 * response + offset, unit='adu').write(
-    ...         folder / f'flat_{i}.fits')
-    >>> for i in range(2):
-    ...     FrameData(100 + expected * response, unit='adu', uncertainty=2).write(
-    ...         folder / f'science_{i}.fits')
+    >>> bias_files = sorted((data / 'raw').glob('bias_*.fits'))
+    >>> flat_files = sorted((data / 'raw').glob('flat_*.fits'))
+    >>> science_files = sorted((data / 'raw').glob('science_*.fits'))
+    >>> len(bias_files), len(flat_files), len(science_files)
+    (8, 6, 6)
+    >>> master_bias = imcombine(bias_files, method='median', dtype='float32')
+    >>> normalized_flats = []
+    >>> for path in flat_files:
+    ...     flat = subtract_bias(read_framedata(path), master_bias)
+    ...     level = np.median(flat.data)
+    ...     normalized_flats.append(imarith(flat, level * u.adu, '/'))
+    >>> master_flat = imcombine(normalized_flats, method='median', dtype='float32')
+    >>> assert master_flat.unit == u.dimensionless_unscaled
 
-Build the calibrations
------------------------
+Bias subtraction precedes flat normalization. Normalize each flat separately
+because illumination changes between exposures. The median is suitable for this
+star-free simulated flat; real flats require inspection for stars, defects and
+illumination structure. The master flat should be near one, with no units.
 
-Combine biases with ``method='median'``. Bias-subtract flats before combining;
-normalizing by the illumination level gives a dimensionless response. In real
-data estimate that level from an appropriate unmasked region, with stars,
-vignetting and illumination gradients considered explicitly::
+.. plot::
+    :include-source: False
+    :caption: Master bias structure and normalized sensitivity from the supplied observations.
 
-    >>> master_bias = imcombine(sorted(folder.glob('bias_*.fits')), method='median')
-    >>> np.testing.assert_allclose(master_bias.data, 100)
-    >>> corrected_flats = [subtract_bias(read_framedata(p), master_bias)
-    ...                    for p in sorted(folder.glob('flat_*.fits'))]
-    >>> master_flat = imcombine(corrected_flats, method='median')
-    >>> normalized_flat = imarith(master_flat, 1000 * u.adu, '/')
-    >>> assert normalized_flat.unit == u.dimensionless_unscaled
-    >>> np.testing.assert_allclose(normalized_flat.data, response)
+    from tutorial_data import plot_calibrations
+    plot_calibrations()
 
-Calibrate and measure
-----------------------
+Calibrate individual science frames
+-----------------------------------
 
-Read one science frame at a time, subtract the bias, and divide by the normalized
-flat. Registration is unnecessary because this dataset has identical pointing.
-Real shifted observations need registration before combination::
+Estimate each raw frame's standard uncertainty from its signal and read noise,
+then subtract the bias and divide by the normalized flat::
 
-    >>> reduced = []
-    >>> for p in sorted(folder.glob('science_*.fits')):
-    ...     frame = flat_correct(subtract_bias(read_framedata(p), master_bias),
-    ...                          normalized_flat)
-    ...     np.testing.assert_allclose(frame.data, expected)
-    ...     assert frame.unit == u.adu
-    ...     reduced.append(frame)
-    >>> combined = imcombine(reduced, method='mean')
-    >>> np.testing.assert_allclose(combined.data, expected)
-    >>> np.testing.assert_allclose(combined.uncertainty, 0, atol=1e-12)
+    >>> calibrated = []
+    >>> for path in science_files:
+    ...     frame = read_framedata(path)
+    ...     signal = np.maximum(frame.data - master_bias.data, 0)
+    ...     frame.uncertainty = np.sqrt(signal + frame.meta['RDNOISE']**2)
+    ...     corrected = flat_correct(subtract_bias(frame, master_bias), master_flat)
+    ...     calibrated.append(corrected)
 
-The final zero uncertainty is the **scatter estimate of identical exposures**,
-not propagation of the science frames' nonzero errors. Mean and median combine
-estimate uncertainty from observed scatter. A propagated sum has a different
-contract; see :doc:`../how_to/image_combination` and
-:doc:`../concepts/uncertainties`.
+This expression uses the dataset's gain of one electron per ADU. Other gain
+values need conversion of both signal and read noise into a consistent unit.
+Calibration propagates the supplied errors, including the master-frame errors.
+Choose detector masks and dark/exposure scaling for your camera; these data do
+not require a dark subtraction. The convenience calibration functions clear
+flags, so follow :doc:`../how_to/quality_flags` when carrying detector defects
+through a real reduction.
 
-Measure a circular aperture and subtract the local sky using an annulus. Here
-``gain=1`` keeps the ADU numerical scale and ``bkg_error=2`` supplies a background
-standard deviation in that measurement scale::
+Register and reject isolated events
+-----------------------------------
 
-    >>> measured = aperture_photometry(combined.data, [16.], [16.], r=5.,
-    ...                                  r_ann=(9., 12.), bkg_error=2., gain=1.,
-    ...                                  mask=combined.mask,
-    ...                                  pixel_flags=combined.flags)
-    >>> total_star_flux = 2 * np.pi * 500 * 1.2**2
-    >>> assert abs(measured['flux'][0] / total_star_flux - 1) < 0.02
-    >>> assert measured['flux_error'][0] > 0
-    >>> combined.write(folder / 'combined.fits')
-    >>> measured.write(folder / 'photometry.ecsv', format='ascii.ecsv')
-    >>> restored = read_framedata(folder / 'combined.fits')
-    >>> np.testing.assert_allclose(restored.data, expected)
-    >>> assert (folder / 'photometry.ecsv').is_file()
-    >>> temporary.cleanup()
+The pointing changes between science exposures. Estimate translations from the
+central field, avoiding the injected edge events, then align the full images.
+The first exposure supplies the reference coordinates::
 
-The temporary products are deleted at the end. Replace the temporary directory
-with your output directory to retain them; writes refuse to overwrite existing
-files by default. Aperture fluxes still need your application's photometric
-calibration.
+    >>> from astropop.image.register import register_framedata_list
+    >>> aligned = register_framedata_list(
+    ...     calibrated, ref_image=0, upsample_factor=20,
+    ...     window=(slice(32, 224), slice(32, 224)))
+    >>> combined = imcombine(aligned, method='mean', sigma_clip=4,
+    ...                      sigma_dev_func='mad_std', dtype='float32')
+    >>> assert combined.unit == u.adu
+    >>> combined.dtype.name
+    'float32'
 
-For real observations choose dark/exposure scaling, bad-pixel handling, gain,
-saturation limits, flat normalization, and sky estimation for the detector.
-The calibration convenience functions clear flags; follow
-:doc:`../how_to/quality_flags` when preserving detector defects. Neither this
-example nor its exact numerical checks establish scientific validity for a
-particular camera.
+``sigma_clip=4`` rejects samples using the default median center and a
+``'mad_std'`` deviation estimate before averaging. Inspect the data when
+choosing a threshold: transient rejection and registration are different steps.
+Interpolation also correlates neighboring pixels. The combined uncertainty is
+estimated from accepted-sample scatter, rather than simply propagating the raw
+frame uncertainties; see :doc:`../how_to/image_combination`.
+
+.. plot::
+    :include-source: False
+    :caption: One raw exposure, its calibration, and the registered clipped mean, shown on a shared intensity scale.
+
+    from tutorial_data import plot_reduction
+    plot_reduction()
+
+Save and inspect the products
+------------------------------
+
+Write master calibrations and the combined image, keeping metadata and present
+uncertainty/flag extensions::
+
+    >>> output = data.parent / 'reduced'
+    >>> output.mkdir(exist_ok=True)
+    >>> master_bias.write(output / 'master_bias.fits')
+    >>> master_flat.write(output / 'master_flat.fits')
+    >>> combined.write(output / 'combined.fits')
+    >>> restored = read_framedata(output / 'combined.fits')
+    >>> np.testing.assert_allclose(restored.data, combined.data, equal_nan=True)
+
+Writes refuse to overwrite existing files by default. Keep the output directory
+when processing your observations. Compare sky structure, stellar shapes and
+alignment across the field before accepting the stack. Continue with
+:doc:`photometry` to turn the reduced image into instrumental measurements.
+
+.. doctest::
+    :hide:
+
+    >>> true_flat = read_framedata(data / 'true_flat.fits')
+    >>> assert np.median(np.abs(master_flat.data - true_flat.data)) < 0.01
+    >>> assert np.isfinite(combined.data[32:224, 32:224]).all()
+    >>> assert np.median(combined.uncertainty[32:224, 32:224]) > 0
+    >>> _temporary.cleanup()
