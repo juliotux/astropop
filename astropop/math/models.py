@@ -1,6 +1,11 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 """Math models designed for PSF."""
 
+from __future__ import annotations
+
+import numpy.typing as _npt
+from .._typing import NumberArray as _NumberArray
+
 import numpy as np
 from astropy.stats import gaussian_fwhm_to_sigma
 from astropy.modeling import Fittable1DModel, Fittable2DModel, Parameter
@@ -18,17 +23,23 @@ SQRT_TWO_PI = np.sqrt(TWO_PI)
 class MoffatEquations:
     """Moffat equations and utilities."""
     @staticmethod
-    def normalize(width, power):
+    def normalize(width: _npt.ArrayLike, power: _npt.ArrayLike) -> _NumberArray:
         """Normalization factor for 2D distribution."""
         return (power - 1)/(np.pi*width**2)
 
     @staticmethod
-    def fwhm(width, power):
+    def fwhm(width: _npt.ArrayLike, power: _npt.ArrayLike) -> _NumberArray:
         """Get FWHM based on Moffat width."""
         return 2*width*np.sqrt(2**(1/power) - 1)
 
     @staticmethod
-    def model_radial(r, width, power, flux, sky):
+    def model_radial(
+        r: _npt.ArrayLike,
+        width: _npt.ArrayLike,
+        power: _npt.ArrayLike,
+        flux: _npt.ArrayLike,
+        sky: _npt.ArrayLike,
+    ) -> _NumberArray:
         """Radial Moffat model.
 
         Parameters
@@ -54,7 +65,14 @@ class MoffatEquations:
         return sky + a*(1 + (r/width)**2)**(-power)
 
     @staticmethod
-    def model_1d(x, x0, width, power, flux, sky):
+    def model_1d(
+        x: _npt.ArrayLike,
+        x0: _npt.ArrayLike,
+        width: _npt.ArrayLike,
+        power: _npt.ArrayLike,
+        flux: _npt.ArrayLike,
+        sky: _npt.ArrayLike,
+    ) -> _NumberArray:
         """1D Moffat model.
 
         Parameters
@@ -81,7 +99,16 @@ class MoffatEquations:
         return sky + a*(1 + ((x - x0)/width)**2)**(-power)
 
     @staticmethod
-    def model_2d(x, y, x0, y0, width, power, flux, sky):
+    def model_2d(
+        x: _npt.ArrayLike,
+        y: _npt.ArrayLike,
+        x0: _npt.ArrayLike,
+        y0: _npt.ArrayLike,
+        width: _npt.ArrayLike,
+        power: _npt.ArrayLike,
+        flux: _npt.ArrayLike,
+        sky: _npt.ArrayLike,
+    ) -> _NumberArray:
         """2D Moffat model.
 
         Parameters
@@ -109,6 +136,8 @@ class MoffatEquations:
         return sky + a*(1 + r_sq/(width**2))**(-power)
 
 
+# Astropy interprets evaluate annotations as units. Use PEP 484 type comments
+# on those six methods to keep static types without changing unit handling.
 class PSFMoffat2D(Fittable2DModel):
     """2D Moffat profile with an additive constant sky.
 
@@ -152,12 +181,13 @@ class PSFMoffat2D(Fittable2DModel):
 
     @staticmethod
     def evaluate(x, y, x_0, y_0, flux, width, power, sky):
+        # type: (_npt.ArrayLike, _npt.ArrayLike, _npt.ArrayLike, _npt.ArrayLike, _npt.ArrayLike, _npt.ArrayLike, _npt.ArrayLike, _npt.ArrayLike) -> _NumberArray
         """Evaluate the normalized profile and additive sky at the supplied coordinates."""
         return MoffatEquations.model_2d(x, y, x_0, y_0, width=width,
                                         power=power, flux=flux, sky=sky)
 
     @property
-    def fwhm(self):
+    def fwhm(self) -> _NumberArray:
         """Full width at half maximum in the model coordinate units."""
         return MoffatEquations.fwhm(width=self.width,
                                     power=self.power)
@@ -205,12 +235,13 @@ class PSFMoffat1D(Fittable1DModel):
 
     @staticmethod
     def evaluate(x, x_0, flux, width, power, sky):
+        # type: (_npt.ArrayLike, _npt.ArrayLike, _npt.ArrayLike, _npt.ArrayLike, _npt.ArrayLike, _npt.ArrayLike) -> _NumberArray
         """Evaluate the normalized profile and additive sky at the supplied coordinates."""
         return MoffatEquations.model_1d(x, x0=x_0, width=width, power=power,
                                         flux=flux, sky=sky)
 
     @property
-    def fwhm(self):
+    def fwhm(self) -> _NumberArray:
         """Full width at half maximum in the model coordinate units."""
         return MoffatEquations.fwhm(width=self.width,
                                     power=self.power)
@@ -254,12 +285,13 @@ class PSFMoffatRadial(Fittable1DModel):
 
     @staticmethod
     def evaluate(x, flux, width, power, sky):
+        # type: (_npt.ArrayLike, _npt.ArrayLike, _npt.ArrayLike, _npt.ArrayLike, _npt.ArrayLike) -> _NumberArray
         """Evaluate the normalized profile and additive sky at the supplied coordinates."""
         return MoffatEquations.model_radial(x, width=width, power=power,
                                             flux=flux, sky=sky)
 
     @property
-    def fwhm(self):
+    def fwhm(self) -> _NumberArray:
         """Full width at half maximum in the model coordinate units."""
         return MoffatEquations.fwhm(width=self.width,
                                     power=self.power)
@@ -269,22 +301,27 @@ class GaussianEquations:
     """Gaussian equantions and utilities."""
 
     @staticmethod
-    def normalize_2d(sigmax, sigmay):
+    def normalize_2d(sigmax: _npt.ArrayLike, sigmay: _npt.ArrayLike) -> _NumberArray:
         """Normalization factor for 2D distribution."""
         return 1/(TWO_PI*sigmax*sigmay)
 
     @staticmethod
-    def normalize_1d(sigma):
+    def normalize_1d(sigma: _npt.ArrayLike) -> _NumberArray:
         """Normalization factor for 1D distribution."""
         return 1/(SQRT_TWO_PI*sigma)
 
     @staticmethod
-    def fwhm(sigma):
+    def fwhm(sigma: _npt.ArrayLike) -> _NumberArray:
         """Get FWHM based on Gaussian width."""
         return sigma/gaussian_fwhm_to_sigma
 
     @staticmethod
-    def model_radial(r, flux, sigma, sky):
+    def model_radial(
+        r: _npt.ArrayLike,
+        flux: _npt.ArrayLike,
+        sigma: _npt.ArrayLike,
+        sky: _npt.ArrayLike,
+    ) -> _NumberArray:
         """Radial Gaussian model.
 
         Parameters
@@ -306,7 +343,13 @@ class GaussianEquations:
         return sky + flux*np.exp(-0.5*(r**2)/(sigma**2))/(SQRT_TWO_PI*sigma)
 
     @staticmethod
-    def model_1d(x, x0, flux, sigma, sky):
+    def model_1d(
+        x: _npt.ArrayLike,
+        x0: _npt.ArrayLike,
+        flux: _npt.ArrayLike,
+        sigma: _npt.ArrayLike,
+        sky: _npt.ArrayLike,
+    ) -> _NumberArray:
         """1D Gaussian model.
 
         Parameters
@@ -331,7 +374,17 @@ class GaussianEquations:
         return sky + a*np.exp(-0.5*((x-x0)**2)/(sigma**2))
 
     @staticmethod
-    def model_2d(x, y, x0, y0, flux, sigma_x, sigma_y, theta, sky):
+    def model_2d(
+        x: _npt.ArrayLike,
+        y: _npt.ArrayLike,
+        x0: _npt.ArrayLike,
+        y0: _npt.ArrayLike,
+        flux: _npt.ArrayLike,
+        sigma_x: _npt.ArrayLike,
+        sigma_y: _npt.ArrayLike,
+        theta: _npt.ArrayLike,
+        sky: _npt.ArrayLike,
+    ) -> _NumberArray:
         """2D Gaussian model.
 
         Parameters
@@ -409,13 +462,14 @@ class PSFGaussian2D(Fittable2DModel):
 
     @staticmethod
     def evaluate(x, y, x_0, y_0, flux, sigma_x, sigma_y, theta, sky):
+        # type: (_npt.ArrayLike, _npt.ArrayLike, _npt.ArrayLike, _npt.ArrayLike, _npt.ArrayLike, _npt.ArrayLike, _npt.ArrayLike, _npt.ArrayLike, _npt.ArrayLike) -> _NumberArray
         """Evaluate the normalized profile and additive sky at the supplied coordinates."""
         return GaussianEquations.model_2d(x, y, x0=x_0, y0=y_0,
                                           sigma_x=sigma_x, sigma_y=sigma_y,
                                           theta=theta, flux=flux, sky=sky)
 
     @property
-    def fwhm(self):
+    def fwhm(self) -> _NumberArray:
         """Mean FWHM of the Gaussian in X and Y."""
         return np.mean([GaussianEquations.fwhm(sigma=self.sigma_x),
                         GaussianEquations.fwhm(sigma=self.sigma_y)])
@@ -456,12 +510,13 @@ class PSFGaussian1D(Fittable1DModel):
 
     @staticmethod
     def evaluate(x, x_0, flux, sigma, sky):
+        # type: (_npt.ArrayLike, _npt.ArrayLike, _npt.ArrayLike, _npt.ArrayLike, _npt.ArrayLike) -> _NumberArray
         """Evaluate the normalized profile and additive sky at the supplied coordinates."""
         return GaussianEquations.model_1d(x, x0=x_0, sigma=sigma,
                                           flux=flux, sky=sky)
 
     @property
-    def fwhm(self):
+    def fwhm(self) -> _NumberArray:
         """Full width at half maximum in the model coordinate units."""
         return GaussianEquations.fwhm(sigma=self.sigma)
 
@@ -498,11 +553,12 @@ class PSFGaussianRadial(Fittable1DModel):
 
     @staticmethod
     def evaluate(x, flux, sigma, sky):
+        # type: (_npt.ArrayLike, _npt.ArrayLike, _npt.ArrayLike, _npt.ArrayLike) -> _NumberArray
         """Evaluate the normalized profile and additive sky at the supplied coordinates."""
         return GaussianEquations.model_radial(x, sigma=sigma, flux=flux,
                                               sky=sky)
 
     @property
-    def fwhm(self):
+    def fwhm(self) -> _NumberArray:
         """Full width at half maximum in the model coordinate units."""
         return GaussianEquations.fwhm(sigma=self.sigma)

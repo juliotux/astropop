@@ -3,6 +3,10 @@
 Small module for simple matrix works. Possible deprecated in future.
 """
 
+from __future__ import annotations
+
+import numpy.typing as _npt
+
 
 import numpy as np
 
@@ -10,13 +14,25 @@ import numpy as np
 __all__ = ['xy2r', 'iraf_indices', 'trim_array', 'all_equal']
 
 
-def xy2r(x, y, data, xc, yc):
+def xy2r(
+    x: _npt.ArrayLike,
+    y: _npt.ArrayLike,
+    data: _npt.ArrayLike,
+    xc: float,
+    yc: float,
+) -> tuple[_npt.NDArray, _npt.NDArray]:
     """Convert (x, y) values to distance of a (xc, yc) position."""
     r = np.hypot((x-xc), (y-yc))
     return np.ravel(r), np.ravel(data)
 
 
-def trim_array(data, box_size, position, indices=None, origin=0):
+def trim_array(
+    data: _npt.NDArray,
+    box_size: int | float,
+    position: tuple[float, float],
+    indices: tuple[_npt.NDArray, _npt.NDArray] | _npt.NDArray | None=None,
+    origin: int=0,
+) -> tuple[_npt.NDArray, float, float] | tuple[_npt.NDArray, _npt.NDArray, _npt.NDArray]:
     """Trim a numpy array around a position."""
     x, y = position
     # Correct for 1-based indexing
@@ -40,12 +56,14 @@ def trim_array(data, box_size, position, indices=None, origin=0):
     return d, xi, yi
 
 
-def all_equal(data):
+def all_equal(data: _npt.NDArray) -> np.bool_:
     """Check if all elements of an array are equal."""
     return np.all(data == data.ravel()[0])
 
 
-def iraf_indices(data):
+def iraf_indices(
+    data: _npt.NDArray,
+) -> tuple[_npt.NDArray[np.int_], _npt.NDArray[np.int_]]:
     """Create (x, y) index arrays from a data matrix using IRAF convention.
 
     Iraf convention means (0, 0) on the center of bottom-left pixel.

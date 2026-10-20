@@ -1,5 +1,11 @@
 """Function derivatives for error propagation."""
 
+from __future__ import annotations
+
+import typing as _t
+import numpy.typing as _npt
+from .._typing import NumberArray as _NumberArray
+
 import sys
 import numpy as np
 import copy
@@ -12,7 +18,7 @@ STEP_SIZE = np.sqrt(sys.float_info.epsilon)
 
 
 @np.vectorize
-def _deriv_pow_0(x, y):
+def _deriv_pow_0(x: _NumberArray, y: _NumberArray) -> _NumberArray:
     """Partial derivative of x**y in x."""
     if y == 0:
         return 0.0
@@ -22,7 +28,7 @@ def _deriv_pow_0(x, y):
 
 
 @np.vectorize
-def _deriv_pow_1(x, y):
+def _deriv_pow_1(x: _NumberArray, y: _NumberArray) -> _NumberArray:
     """Partial derivative of x**y in y."""
     if x == 0 and y > 0:
         return 0.0
@@ -30,7 +36,7 @@ def _deriv_pow_1(x, y):
 
 
 @np.vectorize
-def _deriv_mod_1(x, y):
+def _deriv_mod_1(x: _NumberArray, y: _NumberArray) -> _NumberArray:
     """Partial derivative of x%y in y."""
     if x % y < STEP_SIZE:
         return np.inf
@@ -39,7 +45,7 @@ def _deriv_mod_1(x, y):
 
 
 @np.vectorize
-def _deriv_copysign(x, y):
+def _deriv_copysign(x: _NumberArray, y: _NumberArray) -> _NumberArray:
     if x >= 0:
         return np.copysign(1, y)
     return -np.copysign(1, y)
@@ -93,7 +99,12 @@ derivatives = {
 }
 
 
-def propagate_1(func, fx, x, sx):
+def propagate_1(
+    func: str,
+    fx: _npt.ArrayLike,
+    x: _npt.ArrayLike,
+    sx: _npt.ArrayLike,
+) -> _NumberArray:
     """Propagate errors using function derivatives.
 
     Parameters
@@ -131,7 +142,14 @@ def propagate_1(func, fx, x, sx):
             return np.full(shape, fill_value=np.nan)
 
 
-def propagate_2(func, fxy, x, y, sx, sy):
+def propagate_2(
+    func: str,
+    fxy: _npt.ArrayLike,
+    x: _npt.ArrayLike,
+    y: _npt.ArrayLike,
+    sx: _npt.ArrayLike,
+    sy: _npt.ArrayLike,
+) -> _NumberArray:
     """Propagate errors using function derivatives.
 
     Parameters
@@ -173,7 +191,11 @@ def propagate_2(func, fxy, x, y, sx, sy):
             return np.empty(shape).fill(np.nan)
 
 
-def numerical_derivative(func, arg_ref, step=STEP_SIZE):
+def numerical_derivative(
+    func: _t.Callable[..., _NumberArray],
+    arg_ref: int,
+    step: float=STEP_SIZE,
+) -> _t.Callable[..., _NumberArray]:
     """Create a function to compute a numerical derivative of func.
 
     Parameters
@@ -203,7 +225,7 @@ def numerical_derivative(func, arg_ref, step=STEP_SIZE):
     change_kwargs = isinstance(arg_ref, str)
 
     @np.vectorize
-    def derivative_wrapper(*args, **kwargs):
+    def derivative_wrapper(*args: _NumberArray, **kwargs: _t.Any) -> _NumberArray:
         """
         Partial derivative, calculated with the (-epsilon, +epsilon)
         method, which is more precise than the (0, +epsilon) method.

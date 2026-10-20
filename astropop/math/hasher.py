@@ -1,12 +1,15 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
+
+from __future__ import annotations
+
 import hashlib
 
 
 __all__ = ['hasher']
 
 
-def hasher(string, size=8):
+def hasher(string: object, size: int=8) -> str:
     """Return a truncated SHA-256 hexadecimal digest of a stringified value.
 
     Parameters
