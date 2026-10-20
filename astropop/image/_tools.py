@@ -25,20 +25,20 @@ def merge_header(
 
     Parameters
     ----------
-    headers: list of `astropy.io.fits.Header`
+    headers
         Headers to be merged.
-    method: {'only_equal', 'first', 'selected_keys', 'no_merge'}
+    method
         ``'only_equal'`` keeps keys present with equal values in all
         headers. ``'first'`` copies the first header. ``'selected_keys'`` keeps
         keys named in selected_keys, taking each key's first occurrence.
         ``'no_merge'`` returns an empty header.
-    selected_keys: list of str
+    selected_keys
         List of keywords to be merged. Used only if method is
         'selected_keys'.
 
     Returns
     -------
-    header: `dict`
+    header
         Merged header.
 
     Notes
@@ -100,16 +100,16 @@ def merge_flag(
 
     Parameters
     ----------
-    flags: list of `numpy.ndarray`
+    flags
         Flags to be merged.
-    method: {'or', 'and', 'no_merge'}
+    method
         ``'or'`` (default) combines flag bits by bitwise OR. ``'and'`` keeps
         only bits present in every input using bitwise AND. ``'no_merge'``
         returns zero flags with the first input's shape and dtype.
 
     Returns
     -------
-    flag: `numpy.ndarray`
+    flag
         Merged flag.
     """
     if method not in ['or', 'and', 'no_merge']:

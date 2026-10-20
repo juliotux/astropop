@@ -38,30 +38,30 @@ def _sigma_clip(
 
     Parameters
     ----------
-    data: array_like
+    data
         Data to be clipped. Can have any dimensionality.
-    threshold: int, float or tuple (optional)
+    threshold
         Threshold of sigma clipping. If a number is provided, it is applied
         for both low and high values. If a number is provided, it is
         interpreted as (sigma_low, sigma_high) values.
         Default: 3
-    cen_func: callable or {'mean', 'median'} (optional)
+    cen_func
         Function to compute the center value used for sigma clipping.
         Default: 'median'
-    dev_func: callable or {'std', 'mad_std'} (optional)
+    dev_func
         Function to compute the base deviation value used for sigma clipping.
         Default: 'mad_std'
-    axis: int or None
+    axis
         Axis along which to calculate clipping statistics.
-    valid: array_like or None
+    valid
         Boolean mask whose True entries identify accepted input samples.
         If None, input NaNs are excluded.
-    block_pixels: int
+    block_pixels
         Maximum output pixels per statistics work block. Default: 1024.
 
     Returns
     -------
-    mask: `~numpy.ndarray`
+    mask
         Array with the same shape of `data` containing the mask for elements.
     """
     data = np.asarray(data)
@@ -97,20 +97,20 @@ def _minmax_clip(
 
     Parameters
     ----------
-    data: array_like
+    data
         Data array to be cliped.
-    min_clip: `float`
+    min_clip
         Minimum value accepted in the array. Values lower then this will be
         masked. `None` will disable minimum clip.
         Default: `None`
-    max_clip: `float`
+    max_clip
         Maximum value accepted in the array. Values greater then this will be
         masked. `None` will disable maximum clip.
         Default: `None`
 
     Returns
     -------
-    mask: `~numpy.ndarray`
+    mask
         Array with the same shape of `data` containing the mask for elements.
     """
     data = np.asarray(data)
@@ -156,21 +156,21 @@ class ImCombiner:
 
     Parameters
     ----------
-    max_memory : int or float, optional
+    max_memory
         Positive, finite budget in bytes for combination chunks and statistics
         work blocks. Internal input copies, outputs and some temporaries require
         additional memory. Default: 1e9.
-    dtype : numpy dtype or str, optional
+    dtype
         Storage dtype for input copies, image-stack buffers and output arrays.
         NumPy controls arithmetic promotion in accumulators and bounded work
         blocks. Results are cast to this dtype only after reduction. Accepts
         NumPy integer and floating-point types, dtype objects and strings.
         Default: numpy.float64.
-    tmp_dir : str, optional
+    tmp_dir
         Dedicated disk-cache directory. Cleanup may remove the directory and
         its contents. If absent, create a temporary directory when disk caching
         is enabled.
-    use_disk_cache : bool, optional
+    use_disk_cache
         Store internal input copies in memory-mapped files. Caller-owned arrays
         remain allocated. Default: False.
     **kwargs
@@ -252,13 +252,13 @@ class ImCombiner:
 
         Parameters
         ----------
-        sigma_limits : float, tuple or None, optional
+        sigma_limits
             Number of deviations below and above the center. A scalar sets both
             limits; a pair sets (low, high), with None leaving a side open.
             None disables sigma rejection. Default: None.
-        center_func : callable or {'median', 'mean'}, optional
+        center_func
             Center estimator. Default: 'median'.
-        dev_func : callable or {'std', 'mad_std'}, optional
+        dev_func
             Population standard deviation or Gaussian-scaled median absolute
             deviation. Default: 'mad_std'. The imcombine convenience function
             instead defaults to 'std'.
@@ -302,10 +302,10 @@ class ImCombiner:
 
         Parameters
         ----------
-        min_value : number or None, optional
+        min_value
             Reject values below this bound. None disables the lower bound.
             Default: None.
-        max_value : number or None, optional
+        max_value
             Reject values above this bound. None disables the upper bound.
             Default: None.
 
@@ -340,12 +340,12 @@ class ImCombiner:
 
         Parameters
         ----------
-        strategy : {'no_merge', 'first', 'only_equal', 'selected_keys'}
+        strategy
             ``'no_merge'`` starts with an empty header. ``'first'`` copies the
             first input header. ``'only_equal'`` keeps keys present with equal values
             in every input header. ``'selected_keys'`` keeps the requested keys,
             taking each key's first occurrence.
-        keys : list of str or None, optional
+        keys
             Required for 'selected_keys'; ignored by other strategies.
             Default: None.
 
@@ -585,10 +585,10 @@ class ImCombiner:
 
         Parameters
         ----------
-        image_list : list or tuple
+        image_list
             Nonempty sequence of images accepted by read_framedata. All images
             must have the same shape and equal units. Source arrays are unchanged.
-        method : {'mean', 'median', 'sum'}
+        method
             Combination method. See imcombine for the uncertainty estimators.
         **kwargs
             sum_normalize : bool, optional
@@ -598,7 +598,7 @@ class ImCombiner:
 
         Returns
         -------
-        combined : `~astropop.framedata.FrameData`
+        combined
             Combined image in the configured dtype and input unit, with optional
             uncertainty and mask arrays.
 
@@ -678,19 +678,19 @@ def imcombine(
 
     Parameters
     ----------
-    frames : list or tuple
+    frames
         Nonempty sequence of images accepted by read_framedata, including
         FrameData, FITS paths or image HDUs, CCDData, Quantity, QFloat, and NumPy
         arrays. Images must have equal shapes and units; equivalent units are
         not converted automatically. Source arrays are not modified.
-    method : {'median', 'mean', 'sum'}, optional
+    method
         Combination method. Default: 'median'.
-    memory_limit : int or float, optional
+    memory_limit
         Positive, finite budget in bytes used to size combination chunks and
         statistics blocks. Internal input copies, output arrays and some
         temporaries are additional; this does not cap process memory.
         Default: 1e9.
-    dtype : numpy dtype or str, optional
+    dtype
         Storage dtype for input copies, image-stack buffers and output arrays.
         Temporary accumulators, clipping statistics and uncertainty calculations
         may promote to wider types; the full stack stays in the requested dtype.
@@ -733,7 +733,7 @@ def imcombine(
 
     Returns
     -------
-    result : `~astropop.framedata.FrameData`
+    result
         Combined data, optional standard uncertainties and output mask, in the
         selected dtype and input unit. The header records the image count and
         combination method, in addition to any merged keys.

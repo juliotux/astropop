@@ -31,18 +31,18 @@ class ImArith:
 
     Parameters
     ----------
-    merge_flags : {'or', 'and', 'no_merge'}, optional
+    merge_flags
         ``'or'`` (default) combines FrameData flag bits by bitwise OR.
         ``'and'`` keeps only bits present in both operands.
         ``'no_merge'`` returns zero flags. Missing flags count as zero.
         Masked pixels still participate in arithmetic; flags mark the result.
-    merge_headers : {'only_equal', 'first', 'selected_keys', 'no_merge'}, optional
+    merge_headers
         ``'only_equal'`` (default) keeps keys present with equal values in both
         headers. ``'first'`` copies the first operand's header.
         ``'selected_keys'`` keeps keys named in selected_keys, taking each key's
         first occurrence. ``'no_merge'`` returns an empty header.
         Only FrameData operands contribute headers.
-    selected_keys : list of str, optional
+    selected_keys
         Header keys to keep with the 'selected_keys' strategy.
 
     Notes
@@ -244,16 +244,16 @@ class ImArith:
 
         Parameters
         ----------
-        operand1, operand2 : FrameData, QFloat, Quantity, CCDData or array_like
+        operand1, operand2
             Operands. Numbers and units are also accepted.
-        operation : {'+', '-', '*', '/', '//', '**', '%'}
+        operation
             Arithmetic operation; powers require a dimensionless scalar.
-        inplace : bool, optional
+        inplace
             Update operand1 if it is FrameData. Default: False.
 
         Returns
         -------
-        FrameData
+        result
             Arithmetic result, with merged flags and headers. Non-inplace
             calls leave source data, uncertainties and flags unchanged.
         """
@@ -295,21 +295,21 @@ def imarith(
 
     Parameters
     ----------
-    operand1, operand2 : FrameData, QFloat, Quantity, CCDData or array_like
+    operand1, operand2
         Operands. Numbers, unit objects and unit strings are also accepted.
         A unit operand represents one of that unit. Numerical values are
         normalized to floating point and follow NumPy broadcasting rules.
-    operation : {'+', '-', '*', '/', '//', '**', '%'}
+    operation
         Arithmetic operation. Powers require a dimensionless scalar exponent.
-    inplace : bool, optional
+    inplace
         Update and return operand1 when it is a FrameData. Otherwise return a
         new FrameData. Default: False.
-    merge_flags : {'or', 'and', 'no_merge'}, optional
+    merge_flags
         ``'or'`` (default) combines FrameData flag bits by bitwise OR.
         ``'and'`` keeps only bits present in both operands.
         ``'no_merge'`` returns zero flags. Missing flags count as zero.
         Masked pixels still participate in arithmetic; flags mark the result.
-    merge_headers : {'only_equal', 'first', 'selected_keys', 'no_merge'}, optional
+    merge_headers
         ``'only_equal'`` (default) keeps keys present with equal values in both
         headers. ``'first'`` copies the first operand's header.
         ``'selected_keys'`` keeps keys named in selected_keys, taking each key's
@@ -321,7 +321,7 @@ def imarith(
 
     Returns
     -------
-    result : `~astropop.framedata.FrameData`
+    result
         Data and unit of the result, merged flags and header, and propagated
         standard uncertainties when enabled.
 

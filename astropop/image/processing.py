@@ -45,16 +45,16 @@ def cosmics_lacosmic(
 
     Parameters
     ----------
-    frame: `~astropop.framedata.FrameData` compatible
+    frame
         2D image to clean with LACosmic.
-    inplace: bool, optional
+    inplace
         If True, the operations will be performed inplace in the ``frame``.
     logger: `~logging.Logger`
         Python logger to log the actions.
 
     Returns
     -------
-    `~astropop.framedata.FrameData`
+    result
         New cosmic-rays corrected `~astropop.framedata.FrameData` instance if not ``inplace``,
         else the ``image`` `~astropop.framedata.FrameData` instance.
     """
@@ -92,17 +92,17 @@ def gain_correct(
 
     Parameters
     ----------
-    image : `~astropop.framedata.FrameData` compatible
+    image
         Values to perform the operation. `~astropy.units.Quantity`, numerical
         values and `~astropy.nddata.CCDData` are also suported.
-    gain : float, `~astropy.units.Quantity` or `~astropop.math.physical.QFloat`
+    gain
         Gain to be applied on the image numerical values.
-    inplace : bool, optional
+    inplace
         If True, the operations will be performed inplace in the ``image``.
 
     Returns
     -------
-    `~astropop.framedata.FrameData`:
+    result
         New gain corrected `~astropop.framedata.FrameData` instance if not ``inplace``, else the
         ``image`` `~astropop.framedata.FrameData` instance.
     """
@@ -136,17 +136,17 @@ def subtract_bias(
 
     Parameters
     ----------
-    image: `~astropop.framedata.FrameData` compatible
+    image
         Image to perform the bias correction. `~astropy.units.Quantity`,
         numerical values and `~astropy.nddata.CCDData` are also suported.
-    master_bias: `~astropop.framedata.FrameData` compatible
+    master_bias
         Master bias image to be subtracted from the ``image``.
-    inplace: bool, optional
+    inplace
         If True, the operations will be performed inplace in the ``image``.
 
     Returns
     -------
-    `~astropop.framedata.FrameData`:
+    result
         New bias corrrected `~astropop.framedata.FrameData` instance if ``inplace``, else the
         ``image`` `~astropop.framedata.FrameData` instance.
     """
@@ -187,21 +187,21 @@ def subtract_dark(
 
     Parameters
     ----------
-    image : `~astropop.framedata.FrameData` compatible
+    image
         Image to perform the dark correction. `~astropy.units.Quantity`,
         numerical values and `~astropy.nddata.CCDData` are also suported.
-    master_dark : `~astropop.framedata.FrameData` compatible
+    master_dark
         Master dark image to be subtracted from the ``image``.
-    dark_exposure : float
+    dark_exposure
         Exposure time of the Master dark.
-    image_exposure : float
+    image_exposure
         Exposure time of the ``image``.
-    inplace : bool, optional
+    inplace
         If True, the operations will be performed inplace in the ``image``.
 
     Returns
     -------
-    `~astropop.framedata.FrameData`:
+    result
         New dark corrrected `~astropop.framedata.FrameData` instance if ``inplace``, else the
         ``image`` `~astropop.framedata.FrameData` instance.
     """
@@ -238,23 +238,23 @@ def flat_correct(
 
     Parameters
     ----------
-    image : `~astropop.framedata.FrameData` compatible
+    image
         Image to perform the flat field correction. `~astropy.units.Quantity`,
         numerical values and `~astropy.nddata.CCDData` are also suported.
-    master_flat : `~astropop.framedata.FrameData` compatible
+    master_flat
         Master flat field image used as the divisor of the ``image``.
-    min_value : float, optional
+    min_value
         Replace smaller master-flat data values by this bound before
         normalization. None leaves values unchanged; this does not mask them.
-    norm_value : float, optional
+    norm_value
         Divide the master flat by this explicit value before correcting the
         image. None performs no normalization.
-    inplace : bool, optional
+    inplace
         If True, the operations will be performed inplace in the ``image``.
 
     Returns
     -------
-    `~astropop.framedata.FrameData`:
+    result
         New flat field corrected `~astropop.framedata.FrameData` instance if ``inplace``, else the
         ``image`` `~astropop.framedata.FrameData` instance.
     """
@@ -293,17 +293,17 @@ def trim_image(
 
     Parameters
     ----------
-    image : `~astropop.framedata.FrameData` compatible
+    image
         Image to be trimmed. `~astropy.units.Quantity`, numerical values and
         `~astropy.nddata.CCDData` are also suported.
-    x_slice, y_slice : `slice`
+    x_slice, y_slice
         Section to be trimmed in x and y axes.
-    inplace : bool, optional
+    inplace
         If True, the operations will be performed inplace in the ``image``.
 
     Returns
     -------
-    `~astropop.framedata.FrameData`:
+    result
         Trimmed `~astropop.framedata.FrameData` instance.
     """
     image = check_framedata(image, copy=False)
