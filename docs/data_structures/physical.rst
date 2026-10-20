@@ -21,7 +21,7 @@ The |QFloat| Class
 
 The |QFloat| class stores basically 3 variables: the nominal value, the uncertainty and the physical unit. To create this class, just pass these values in the class constructor and you can access it using the proper properties.
 
-.. ipython:: python
+.. code-block:: python
 
     from astropop.math import QFloat
     import numpy as np
@@ -34,7 +34,7 @@ The |QFloat| class stores basically 3 variables: the nominal value, the uncertai
 
 Note that, for the full representation of the quantity, the nominal and the uncertainty values are rounded to the first non-zero error decimal. Internally, the number is stored with all the computed decimal places and this rounding just appears in the string representation.
 
-.. ipython:: python
+.. code-block:: python
 
     qf = QFloat(1.0583225, 0.0031495756, 'cm')
     qf.nominal
@@ -43,7 +43,7 @@ Note that, for the full representation of the quantity, the nominal and the unce
 
 |QFloat| also can store arrays of data, using the exactly same behavior.
 
-.. ipython:: python
+.. code-block:: python
 
     qf = QFloat([1.0, 2.0, 3.0], [0.1, 0.2, 0.3], 'm/s')
     qf
@@ -52,23 +52,21 @@ During the creation, you can omit |QFloat.uncertainty| or |QFloat.unit| argument
 
 - |QFloat.unit|: setting `None` unit, or omiting it, the class automatically interpret it as |dimensionless_unscaled|. This means: a number without physical unit.
 
-.. ipython:: python
+.. code-block:: python
 
     qf_nounit = QFloat(1.0, 0.1)
     qf_nounit
 
 - |QFloat.uncertainty|: setting uncertainties as `None`, or omiting it, the code consider automatically the uncertainty as 0.0.
 
-.. ipython:: python
-    :okwarning:
+.. code-block:: python
 
     qf_nostd = QFloat(1.0, unit='m')
     qf_nostd
 
 You also can omit both, like converting a single dimensionless number to QFloat.
 
-.. ipython:: python
-    :okwarning:
+.. code-block:: python
 
     qf = QFloat(1.0)
     qf
@@ -78,7 +76,7 @@ Printing and String Representation
 
 By default, the |QFloat| shows the numbers rounded to the first significant digit of the uncertainty (rounded). This is done to make the representation more readable. But you can set the number of significant digits to show by setting the `~astropop.math.physical.QFloat.sig_digits` property.
 
-.. ipython:: python
+.. code-block:: python
 
     qf = QFloat(1.0583225, 0.0031495756, 'cm')
     print(qf)
@@ -94,7 +92,7 @@ Physical units are fully handled with `~astropy.units` module. But we don't use 
 
 Internal conversion of units for math operations are made automatically and don't need manual intervention. But manual conversions are also possible using the ``<<`` operator or `~astropop.math.physical.QFloat.to` function. Both perform the same operation: convert the actual |QFloat| to a new one, with the new unit. Both accept `~astropy.units.UnitBase` instance or string for conversion.
 
-.. ipython:: python
+.. code-block:: python
 
     from astropop.math import QFloat
     from astropy import units
@@ -129,7 +127,7 @@ are implemented for |QFloat|; matrix multiplication is not. This makes possible 
 
 As example, to sum two |QFloat|, you just need to use the ``+`` operator.
 
-.. ipython:: python
+.. code-block:: python
 
     qf1 = QFloat(1.0, 0.1, 'm')
     qf2 = QFloat(2.0, 0.1, 'm')
@@ -137,7 +135,7 @@ As example, to sum two |QFloat|, you just need to use the ``+`` operator.
 
 |astropop| handles all the needed units checking and conversions and the result is dimensionality correct. For example:
 
-.. ipython:: python
+.. code-block:: python
 
     qf1 = QFloat(60, 0.5, 'km')
     qf2 = QFloat(7000, 700, 'm')
@@ -147,8 +145,7 @@ As example, to sum two |QFloat|, you just need to use the ``+`` operator.
 
 Incorrect dimensionality in operations will raise |UnitsError|.
 
-.. ipython::
-    :verbatim:
+.. code-block:: text
 
     In [2]: qf1 = QFloat(3.0, 0.01, 'kg')
 
@@ -162,7 +159,7 @@ Supported Numpy Array Operations
 
 Some `Numpy array functions <https://numpy.org/doc/stable/reference/routines.array-manipulation.html>`_ are supported built-in by the |QFloat|, but not all of them. These functions are intended to perform array manipulations, like append, reshape, transpose, etc. With this compatibility you can use the Numpy functions directly with |QFloat| objects, like:
 
-.. ipython:: python
+.. code-block:: python
 
     qf = QFloat(np.zeros((100, 100)), np.zeros((100, 100)))
     np.shape(qf)
@@ -362,7 +359,7 @@ for hyperbolic functions.
 
 To avoid an additional module containing trigonometric functions inside |astropop|, these operations are performed using the |ufunc| described earlier. The main difference here is the unit checking performed by |astropop|.
 
-.. ipython:: python
+.. code-block:: python
 
     qf = QFloat(30, 0.1, 'deg')
     np.cos(qf)
@@ -372,7 +369,7 @@ For trionometric (and hyperbolic) functions, like `~numpy.sin` and `~numpy.sinh`
 
 For inverse trigonometric functions, like `~numpy.arcsin`, the inverse happens. The input must be a |dimensionless_unscaled| |QFloat|, and output will be in units of ``astropy.units.rad``.
 
-.. ipython:: python
+.. code-block:: python
 
     qf = QFloat(0.5, 0.01)
     np.arcsin(qf)
@@ -387,7 +384,7 @@ Equality
 
 We consider two numbers equal if they have the same nominal and standard deviation values in the same unit. This means, they are exactly equal in everything, meaning a more programing-like approach. Like:
 
-.. ipython:: python
+.. code-block:: python
 
     # 1.0+/-0.1 meters
     qf1 = QFloat(1.0, 0.1, 'm')
@@ -397,7 +394,7 @@ We consider two numbers equal if they have the same nominal and standard deviati
 
 So, the simple fact that two numers have different error bars imply that they are different.
 
-.. ipython:: python
+.. code-block:: python
 
     # 1.0+/-0.2 meters. Same number, with different error
     qf3 = QFloat(1.0, 0.2, 'm')
@@ -408,7 +405,7 @@ So, the simple fact that two numers have different error bars imply that they ar
 
 Of course, the different operator works in the exactly same way.
 
-.. ipython:: python
+.. code-block:: python
 
     qf1 != qf2
     qf1 != qf3
@@ -416,8 +413,7 @@ Of course, the different operator works in the exactly same way.
 
 When comparing numbers with same dimension units, the code automatically converts if to compare. But, if incompatible units (different dimensions) are compared, they automatically are considered different. In physical terms, 1 second is different from 1 meter.
 
-.. ipython:: python
-    :okwarning:
+.. code-block:: python
 
     # Same nominal values of qf1, but in seconds
     qf5 = (1.0, 0.1, 's')
@@ -436,7 +432,7 @@ In other words, these two numbers are equal if they intercept each other, consid
 
 So, for a proper physical check of equalities, use `~astropop.math.physical.equal_within_errors` instead of ``==`` operator. For example:
 
-.. ipython:: python
+.. code-block:: python
 
     from astropop.math.physical import QFloat, equal_within_errors
     qf1 = QFloat(1.1, 0.1, 'm')
@@ -448,7 +444,7 @@ Inequalities
 
 Inequality handling is more ambiguous then equality to define. To avoid a complex API and keep the things in a coherent way, we perform greater, greater or equal, smaller and smaller or equal operations just comparing the nominal values of the numbers. For example:
 
-.. ipython:: python
+.. code-block:: python
 
     qf1 = QFloat(1.1, 0.1, 'm')
     qf2 = QFloat(1.15, 0.05, 'm')
@@ -458,7 +454,7 @@ Inequality handling is more ambiguous then equality to define. To avoid a comple
 
 These comparisons ignore uncertainties but check and convert physical units. So:
 
-.. ipython:: python
+.. code-block:: python
 
     qf1 = QFloat(1.0, 0.1, 'm')
     qf2 = QFloat(50, 10, 'cm')

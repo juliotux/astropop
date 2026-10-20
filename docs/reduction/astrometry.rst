@@ -66,7 +66,7 @@ The `astrometry.net`_ outputs several files, including plots, but, considering t
 
 To manually build an |AstrometricSolution| container, you just need to pass the solved header and, optionally, the correspondences table.
 
-.. ipython:: python
+.. code-block:: python
 
     from astropop.astrometry import AstrometricSolution
     from astropy.utils.data import get_pkg_data_filename
@@ -88,8 +88,7 @@ Its job is to organize the inputs, options and configuration files, prepare and 
 
 To run the command, you must create a instance of |AstrometrySolver| and execute it using |solve_field| method. The |solve_field| method has, as main input, a ``filename`` that can be solved by ``solve-field`` `astrometry.net`_ command. There are several types accepted, like FITS files, common images (like .png, .jpg), and XYLS tables. For more information see the `astrometry.net solving documentation <http://astrometry.net/doc/readme.html#solving>`_.
 
-.. ipython::
-    :verbatim:
+.. code-block:: text
 
     # get the sample image
     In [2]: from astroquery.skyview import SkyView
@@ -147,8 +146,7 @@ To run the command, you must create a instance of |AstrometrySolver| and execute
 
 Using keyword arguments to be passed to |run_command| you can store ``stdout`` and ``stderr`` of ``solve-field`` in lists. Check the API from more details. Also, setting ``stdout_loglevel`` and ``stderr_loglevel`` you can print the live output of the code using `~logging` system.
 
-.. ipython::
-    :verbatim:
+.. code-block:: text
 
     In [2]: solver = AstrometrySolver()
 
@@ -229,7 +227,9 @@ The |astropop| `astrometry.net`_ wrapper don't support all ``solve-field`` comma
 Use only the supported command-line option names below. Configuration-file
 entries are not interchangeable with command-line options.
 
-The supported options can be print in the screen using `~astropop.astrometry.AstrometrySolver.print_options_help` or `~astropop.astrometry.astrometrynet.get_options_help` funtions. They are described bellow.
+Print the supported option names and descriptions with
+`~astropop.astrometry.AstrometrySolver.print_options_help` or
+`~astropop.astrometry.astrometrynet.get_options_help`:
 
 .. currentmodule:: None
 
@@ -238,7 +238,7 @@ The supported options can be print in the screen using `~astropop.astrometry.Ast
     Return a formatted string listing supported solve-field option names and
     descriptions. This inspects local metadata without invoking solve-field.
 
-.. ipython:: python
+.. code-block:: python
 
     from astropop.astrometry.astrometrynet import get_options_help
     print(get_options_help())

@@ -16,7 +16,7 @@ The |SourcesCatalog| class is created by providing almost the same arguments as 
 
 If you want to create a basic astrometric catalog without photometric data, simply pass a list of object ``ids`` and the appropriate astrometric information, as shown in the example provided.
 
-.. ipython:: python
+.. code-block:: python
 
     from astropop.catalogs import SourcesCatalog
     cat = SourcesCatalog(ids=['a', 'b', 'c'], ra=[1, 2, 3],
@@ -25,7 +25,7 @@ If you want to create a basic astrometric catalog without photometric data, simp
 
 For the additional magnitudes, a dictionary must be passed, with one list of magnitudes for each filter. The dictionary keys are the filter names, and the values are the corresponding lists of magnitudes. The example below shows how to create a catalog with three filters, ``'g'``, ``'r'``, and ``'i'``. These lists can be plain values for magnitudes without errors, or |QFloat| objects for magnitudes with errors. If errors are present, they will be extracted and stored in the ``*_error`` columns. If no errors are present, the ``*_error`` columns will be filled with zeros.
 
-.. ipython:: python
+.. code-block:: python
 
     cat = SourcesCatalog(ids=['a', 'b', 'c'], ra=[1, 2, 3],
                          dec=[4, 5, 6], unit='deg',
@@ -34,7 +34,7 @@ For the additional magnitudes, a dictionary must be passed, with one list of mag
                               'i': [7, 8, 9]})
     cat.table()
 
-.. ipython:: python
+.. code-block:: python
 
     from astropop.math import QFloat
     cat = SourcesCatalog(ids=['a', 'b', 'c'], ra=[1, 2, 3],
@@ -46,7 +46,7 @@ For the additional magnitudes, a dictionary must be passed, with one list of mag
 
 An optional table with additional informations can be passed as ``query_table`` argument. This table will be accessed only by ``query_table`` property and will also be filtered for cross-matching. However, it cannot be used for automatic extraction the default |SourcesCatalog| data.
 
-.. ipython:: python
+.. code-block:: python
 
     from astropy.table import Table
     cat = SourcesCatalog(ids=['a', 'b', 'c'], ra=[1, 2, 3],
@@ -67,7 +67,7 @@ Coordinates
 
 Coordinates can be accessed using the `~astropop.catalogs.SourcesCatalog.skycoord`, `~astropop.catalogs.SourcesCatalog.ra_dec_list` and `~astropop.catalogs.SourcesCatalog.get_coordinates` functions. The difference is that in the first a |SkyCoord| object is returned, while in the second a list of tuples is returned. The last function is useful to get coordinates in |SkyCoord| format with space motion applied.
 
-.. ipython:: python
+.. code-block:: python
 
     cat = SourcesCatalog(ids=['a', 'b', 'c'], ra=[1, 2, 3],
                          dec=[4, 5, 6], unit='deg')
@@ -77,7 +77,7 @@ Coordinates can be accessed using the `~astropop.catalogs.SourcesCatalog.skycoor
 
 You can also access separated arrays for RA and Dec coordinates using the `~astropop.catalogs.SourcesCatalog.ra` and `~astropop.catalogs.SourcesCatalog.dec` methods.
 
-.. ipython:: python
+.. code-block:: python
 
     cat.ra()
     cat.dec()
@@ -87,7 +87,7 @@ Source IDs
 
 Source IDs can be accessed using the `~astropop.catalogs.SourcesCatalog.sources_id` method.
 
-.. ipython:: python
+.. code-block:: python
 
     cat = SourcesCatalog(ids=['a', 'b', 'c'], ra=[1, 2, 3],
                          dec=[4, 5, 6], unit='deg')
@@ -98,8 +98,7 @@ Magnitudes
 
 Magnitudes can be either accessed using `~astropop.catalogs.SourcesCatalog.magnitude` or `~astropop.catalogs.SourcesCatalog.mag_list` functions. For both of them, the ``band`` argument must be passed to access the magnitudes in a given filter. The difference is that the first function returns a |QFloat| object, while the second returns a list of tuples containing (magnitude, error). If the ``band`` argument is not passed, an error is raised. Also, the filter must be available in the catalog.
 
-.. ipython:: python
-    :okwarning:
+.. code-block:: python
 
     cat = SourcesCatalog(ids=['a', 'b', 'c'], ra=[1, 2, 3],
                          dec=[4, 5, 6], unit='deg',
@@ -176,7 +175,7 @@ coordinates explicitly with ``get_coordinates(target_epoch)`` when inspecting
 propagated positions, rather than assuming the returned match coordinates are
 the input positions.
 
-.. ipython:: python
+.. code-block:: python
 
     cat = SourcesCatalog(ids=['a', 'b', 'c'], ra=[1, 2, 3],
                          dec=[4, 5, 6], unit='deg')
@@ -185,7 +184,7 @@ the input positions.
 
 Magnitudes and additional ``query_table`` informations are also filtered and returned in the exact same order of the ``ra`` and ``dec`` lists passed to the method.
 
-.. ipython:: python
+.. code-block:: python
 
     cat = SourcesCatalog(ids=['a', 'b', 'c'], ra=[1, 2, 3],
                          dec=[4, 5, 6], unit='deg',

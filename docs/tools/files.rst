@@ -20,8 +20,7 @@ Initializing a |FitsFileGroup|
 
 The |FitsFileGroup| class is initialized with a list of files, or a folder containing FITS files. If a folder is given, all FITS files in the folder are read. If a list of files is given, only those files are read. The class can also be initialized with a list of files and a folder, in which case, the files in the folder are read and the files in the list are added to the database.
 
-.. ipython::
-    :verbatim:
+.. code-block:: text
 
     In [1]: from astropop.file_collection import FitsFileGroup
 
@@ -36,37 +35,32 @@ Optional keywords also exist to improve the class behavior. The most important a
 
 * ``ext``: the extension number inside the FITS file to read the header. Default is 0. But if your important data is stored in secondary extensions, you can change this to read the header from there. Like, if your image is stored in the second extension, you can use ``ext=1``.
 
-  .. ipython::
-    :verbatim:
+  .. code-block:: text
 
     In [4]: ffg = FitsFileGroup(location='/path/to/data', ext=1)
 
 * ``database``: name of the file where the database will be stored in disk. If not given, the database will be stored in memory. If the file already exists, the database will be read from there. If you want to create a new database, you can delete the file before initializing the class.
 
-  .. ipython::
-    :verbatim:
+  .. code-block:: text
 
     In [5]: ffg = FitsFileGroup(location='/path/to/data', database='files.db')
 
 * ``compression``: if set to True, the reader will also try to find files in compressed format, like ``.fits.gz``. If set to False, which is the default, only uncompressed files will be read.
 
-  .. ipython::
-    :verbatim:
+  .. code-block:: text
 
     # can also read .fits.gz or .fits.zip files
     In [6]: ffg = FitsFileGroup(location='/path/to/data', compression=True)
 
 * ``glob_include``: If you want to read just some files, you can set them to ``glob_include``, using a `~glob.glob` pattern. For example, if you just want to read files which start with ``BIAS``, you can use ``glob_include='BIAS*'``. All files which match the pattern will be read, the other will be ignored.
 
-  .. ipython::
-    :verbatim:
+  .. code-block:: text
 
     In [7]: ffg = FitsFileGroup(location='/path/to/data', glob_include='BIAS*')
 
 * ``glob_exclude``: If you want to read all the files, except a few, you can set them to ``glob_exclude``, using a `~glob.glob` pattern. For example, if you want to read all files, except those which start with ``BIAS``, you can use ``glob_exclude='BIAS*'``.
 
-  .. ipython::
-    :verbatim:
+  .. code-block:: text
 
     In [8]: ffg = FitsFileGroup(location='/path/to/data', glob_exclude='BIAS*')
 
@@ -76,8 +70,7 @@ Files Summary and Header Keyword Values
 
 Once the files are read, all headers are stored internally in a database. But a |Table| containing all the headers can be accessed using the `~astropop.file_collection.FitsFileGroup.summary` attribute. This table is a copy of the internal database, so modifying it will not affect the database or the filegroup itself.
 
-.. ipython::
-    :verbatim:
+.. code-block:: text
 
     In [9]: ffg.summary
     Out[9]:
@@ -92,8 +85,7 @@ Once the files are read, all headers are stored internally in a database. But a 
 
 Also, a full list of the files can be accessed using the `~astropop.file_collection.FitsFileGroup.files` attribute.
 
-.. ipython::
-    :verbatim:
+.. code-block:: text
 
     In [10]: ffg.files
     Out[10]:
@@ -103,8 +95,7 @@ Also, a full list of the files can be accessed using the `~astropop.file_collect
 
 You can also get a list of the values of a given header keyword using the `~astropop.file_collection.FitsFileGroup.values` method. This method returns a list of the values of the given keyword, in the same order as the files in the `~astropop.file_collection.FitsFileGroup.files` attribute. If ``unique`` is set to True, only unique values are returned and the order is not guaranteed.
 
-.. ipython::
-    :verbatim:
+.. code-block:: text
 
     In [11]: ffg.values('FILTER')
     Out[11]: ['R', 'G', 'R']
@@ -120,8 +111,7 @@ Adding or removing files to the group is done using the `~astropop.file_collecti
 
 To add a file, use `~astropop.file_collection.FitsFileGroup.add_file`. Its only argument is ``file`` to set the file name. Prefer using full (absolute) paths for the file name in this function.
 
-.. ipython::
-    :verbatim:
+.. code-block:: text
 
     In [13]: ffg.add_file('/path/to/data/file4.fits')
 
@@ -134,8 +124,7 @@ To add a file, use `~astropop.file_collection.FitsFileGroup.add_file`. Its only 
 
 For remove a file, the `~astropop.file_collection.FitsFileGroup.remove_file` accepts a file name with absolute path, or a path relative to the filegroup location. Prefere using absolute paths for the file name in this function too.
 
-.. ipython::
-    :verbatim:
+.. code-block:: text
 
     In [15]: ffg.remove_file('/path/to/data/file4.fits')
 
@@ -157,8 +146,7 @@ Adding a Custom Column
 
 It is also possible to add a custom column to the database and use it to filter the files. However, as the |FitsFileGroup| is designed to do not change the files, this column/keyword will not be added to the headers in the files. To do this, use the `~astropop.file_collection.FitsFileGroup.add_column` method. This method accepts two arguments: ``name`` to set the column name and ``values`` to set the values of the column. The values must be a list with the same length as the number of files in the filegroup.
 
-.. ipython::
-    :verbatim:
+.. code-block:: text
 
     In [19]: ffg.add_column('CUSTOM', [1, 2, 3])
 
@@ -185,8 +173,7 @@ Filtering by Keyword Values
 
 The method `~astropop.file_collection.FitsFileGroup.filtered` receives a dictionary with the keywords and values to filter the files. So, a new |FitsFileGroup| will be created with only the matched files for all the keywords.
 
-.. ipython::
-    :verbatim:
+.. code-block:: text
 
     In [22]: ffg_filtered = ffg.filtered({'FILTER': 'R', 'EXPTIME': 1.0})
 
@@ -223,8 +210,7 @@ If you want to not only generate a group of files from a single set of keyword v
 
   Since it returns a generator, you must iterate over it to get the groups, like using ``for`` loop.
 
-.. ipython::
-  :verbatim:
+.. code-block:: text
 
   In [28]: ffg.summary
   Out[28]:
@@ -273,8 +259,7 @@ There are also methods for iterating over the files from a |FitsFileGroup|. All 
 
 - `~astropop.file_collection.FitsFileGroup.hdus`: Iterates over the files getting the selected hdu. Uses `~astropy.io.fits.open` and can accept any argument that `~astropy.io.fits.open` accepts.
 
-  .. ipython::
-    :verbatim:
+  .. code-block:: text
 
     In [30]: for hdu in ffg.hdus(ext=0):
         ...:     print(hdu)
@@ -285,8 +270,7 @@ There are also methods for iterating over the files from a |FitsFileGroup|. All 
 
 - `~astropop.file_collection.FitsFileGroup.data`: Iterates over the files getting the selected hdu and returning the data. Uses `~astropy.io.fits.getdata` and can accept any argument that `~astropy.io.fits.getdata` accepts.
 
-  .. ipython::
-    :verbatim:
+  .. code-block:: text
 
     In [31]: for data in ffg.data(ext=0):
         ...:     print(data)
@@ -303,8 +287,7 @@ There are also methods for iterating over the files from a |FitsFileGroup|. All 
 
 - `~astropop.file_collection.FitsFileGroup.headers`: Iterates over the files getting the selected hdu and returning the header. Uses `~astropy.io.fits.getheader` and can accept any argument that `~astropy.io.fits.getheader` accepts.
 
-  .. ipython::
-    :verbatim:
+  .. code-block:: text
 
     In [32]: for header in ffg.headers(ext=0):
         ...:     print(header['FILTER'])
@@ -315,8 +298,7 @@ There are also methods for iterating over the files from a |FitsFileGroup|. All 
 
 - `~astropop.file_collection.FitsFileGroup.framedata`: Iterate over the files generating |FrameData| objects from them. Use any argument that `~astropop.framedata.read_framedata` method.
 
-  .. ipython::
-    :verbatim:
+  .. code-block:: text
 
     In [33]: for fd in ffg.framedata():
         ...:     print(fd)
@@ -329,8 +311,7 @@ There are also methods for iterating over the files from a |FitsFileGroup|. All 
 
     If you want to to create a list of |FrameData| for a large number of files, you may fill all available memory. In this case, use ``use_memmap_backend=True`` that will create temporary `memmap <https://numpy.org/doc/stable/reference/generated/numpy.memmap.html>`_ files to store the data. By default, mapped files are created beneath Astropy's Astropop cache directory. You can change this using the ``cache_folder`` argument.
 
-    .. ipython::
-      :verbatim:
+    .. code-block:: text
 
       In [34]: list(ffg.framedata(use_memmap_backend=True))
       Out[34]:
