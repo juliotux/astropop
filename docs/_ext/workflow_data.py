@@ -44,6 +44,17 @@ def extend_dataset(data: Path) -> None:
     combined.wcs = fitted
     combined.write(data / 'reference' / 'astrometric.fits', overwrite=True)
 
+    angle = np.arange(8) * 22.5
+    modulation = 0.03 * np.cos(np.deg2rad(4 * angle)) - 0.02 * np.sin(np.deg2rad(4 * angle))
+    ordinary = 10000 * (1 + modulation) / 2
+    extraordinary = 10000 * (1 - modulation) / 2
+    beams = Table({'angle_deg': angle, 'ordinary': ordinary, 'extraordinary': extraordinary,
+                   'ordinary_error': np.sqrt(ordinary),
+                   'extraordinary_error': np.sqrt(extraordinary)})
+    beams.meta.update({'retarder': 'halfwave', 'normalization': 1., 'zero_deg': 0.,
+                       'nominal_measurements': 'noiseless; supplied Poisson error model'})
+    beams.write(data / 'polarimetry.ecsv', overwrite=True)
+
     series = data / 'time_series'
     (series / 'raw').mkdir(parents=True, exist_ok=True)
     finder = Table({'id': standards['id'][:4], 'role': ['target'] + ['comparison'] * 3,

@@ -2,7 +2,7 @@ Recover known half-wave Stokes parameters
 =========================================
 
 Recover linear polarization from eight pairs of illustrative beam fluxes.
-No files or online catalogs are required. The example assumes a half-wave
+The local beam table requires no online catalog. The example assumes a half-wave
 retarder, matched ordinary/extraordinary beams, unit beam normalization, and
 angles in degrees. Read the beam and angle definitions in
 :doc:`../reduction/polarimetry` before applying it to observations.
@@ -11,23 +11,42 @@ angles in degrees. Read the beam and angle definitions in
 
 .. tutorial-data::
 
-The notebook uses the archive's plotting helper. Extract the shared bundle
-before opening it; the fit itself starts from the beam fluxes below.
+Extract the shared archive and locate ``data/polarimetry.ecsv``. This is a
+separate beam-measurement sequence, not the ordinary imaging stack.
+The supplied nominal fluxes are noiseless and their errors follow an illustrative
+Poisson model. They do not represent an instrumental polarization calibration.
 
-Prepare the beam measurements
-------------------------------
+.. code-block:: python
 
-Create eight retarder positions with known normalized Stokes values
-``q=0.03`` and ``u=-0.02``. For half-wave data the normalized beam difference
-is ``q*cos(4*psi) + u*sin(4*psi)``::
+    from pathlib import Path
+    data = Path('data')
+
+.. doctest::
+    :hide:
+
+    >>> from pathlib import Path
+    >>> from tempfile import TemporaryDirectory
+    >>> from tutorial_data import generate_dataset
+    >>> _temporary = TemporaryDirectory()
+    >>> data = Path(_temporary.name).resolve() / 'data'
+    >>> generate_dataset(data)
+
+Read the beam measurements
+---------------------------
+
+Inspect paired ordinary/extraordinary fluxes and their retarder angles before
+fitting. These measurements have already been extracted with aperture photometry;
+beam identification and instrumental corrections must precede this step on
+observations::
 
     >>> import numpy as np
+    >>> from astropy.table import Table
     >>> from astropop.polarimetry import SLSDualBeamPolarimetry
-    >>> psi = np.arange(8) * 22.5
-    >>> q, u = 0.03, -0.02
-    >>> z = q * np.cos(np.deg2rad(4 * psi)) + u * np.sin(np.deg2rad(4 * psi))
-    >>> ordinary = 10000 * (1 + z) / 2
-    >>> extraordinary = 10000 * (1 - z) / 2
+    >>> beams = Table.read(data / 'polarimetry.ecsv')
+    >>> psi = np.array(beams['angle_deg'])
+    >>> ordinary, extraordinary = beams['ordinary'], beams['extraordinary']
+    >>> print(f'Beam pairs: {len(beams)}; angle spacing: {psi[1] - psi[0]:.1f} deg')
+    Beam pairs: 8; angle spacing: 22.5 deg
 
 Fit and inspect the polarization
 ---------------------------------
@@ -38,7 +57,7 @@ uncertainty for each beam measurement::
 
     >>> solver = SLSDualBeamPolarimetry('halfwave', k=1., zero=0.)
     >>> result = solver.compute(psi, ordinary, extraordinary,
-    ...                         np.sqrt(ordinary), np.sqrt(extraordinary))
+    ...                         beams['ordinary_error'], beams['extraordinary_error'])
     >>> print(f'q = {result.q.nominal:.3f}, u = {result.u.nominal:.3f}')
     q = 0.030, u = -0.020
     >>> print(f'Linear polarization: {100 * result.p.nominal:.2f}%')
@@ -52,7 +71,7 @@ instrument calibration are realistic. Inspect recovered Stokes uncertainties,
 beam fluxes, normalization and residuals versus retarder angle on actual data.
 Avoid saturated beams and incomplete or degenerate angle coverage.
 
-The fitted ``q`` and ``u`` recover the supplied modulation. The degree of
+The fitted ``q`` and ``u`` recover the injected fractions of 0.03 and -0.02. The degree of
 linear polarization is ``sqrt(q**2 + u**2)``; the position angle is half the
 angle of the ``(q, u)`` vector, reported modulo 180 degrees. The quantities
 ``q``, ``u`` and ``p`` are fractions internally; multiply by 100 when
@@ -75,7 +94,7 @@ carries an angular unit::
     >>> print(f'Largest modulation residual: {np.max(np.abs(residual)):.3f}')
     Largest modulation residual: 0.000
 
-.. plot:: _ext/guide_figures.py plot_polarimetry
+.. plot:: _ext/workflow_figures.py plot_polarimetry
     :include-source: False
     :alt: Half-wave beam modulation with measurement error bars and a fitted curve; residuals are zero for the noiseless example.
     :caption: Recovered modulation and residuals for the eight beam pairs above. Error bars describe the supplied measurement model, not scatter injected into the nominal fluxes.
@@ -93,7 +112,7 @@ Keep the polarization convention and angle units with the result::
 
     >>> from pathlib import Path
     >>> from astropy.table import Table
-    >>> output = Path('reduced')
+    >>> output = data.parent / 'reduced'
     >>> output.mkdir(exist_ok=True)
     >>> stokes = Table({'q': [result.q.nominal], 'u': [result.u.nominal],
     ...                 'p': [result.p.nominal], 'theta_deg': [result.theta.nominal],
@@ -122,3 +141,8 @@ quarter-wave circular polarization, zero offsets and convergence controls.
 Do not fit both normalization and zero blindly for purely linear quarter-wave
 data: those parameters can be degenerate. This tutorial does not implement a
 full instrumental-polarization calibration.
+
+.. doctest::
+    :hide:
+
+    >>> _temporary.cleanup()

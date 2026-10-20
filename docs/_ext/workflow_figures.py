@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from astropy import units as u
     from astropy.table import Table
     from astropop.framedata import FrameData
+    from astropop.polarimetry import StokesParameters
     from matplotlib.figure import Figure
     from sphinx.application import Sphinx
 
@@ -21,6 +22,7 @@ if TYPE_CHECKING:
 # replay those same examples in an isolated directory, without testing helpers.
 NOTEBOOK_PLOTS = {
     'plot_observations': 'draw_observations(frame)',
+    'plot_polarimetry': 'draw_polarimetry(psi, result)',
     'plot_bias': 'draw_bias(master_bias, first_bias)',
     'plot_flat': 'draw_flat(corrected, master_flat)',
     'plot_science': 'draw_science(calibrated[0], combined, science_files[0])',
@@ -42,8 +44,21 @@ def example(page: str) -> Iterator[dict[str, object]]:
     with TemporaryDirectory() as temporary:
         data = Path(temporary) / 'data'
         generate_dataset(data, include_extras=page in {
-            'light_curve', 'astrometric_calibration', 'photometric_calibration'})
+            'light_curve', 'astrometric_calibration', 'photometric_calibration', 'polarimetry'})
         yield execute_workflow(page, data)
+
+
+def draw_polarimetry(psi: np.ndarray, result: StokesParameters) -> Figure:
+    """Draw the recovered modulation from the currently loaded beam measurements."""
+    from guide_figures import plot_polarimetry
+
+    return plot_polarimetry(psi, result)
+
+
+def plot_polarimetry() -> Figure:
+    """Render beam-table reduction using the published calculations."""
+    with example('polarimetry') as ns:
+        return draw_polarimetry(ns['psi'], ns['result'])
 
 
 def draw_observations(frame: FrameData) -> Figure:
