@@ -65,10 +65,8 @@ docs = [
     "sphinx-astropy",
     "sphinx-book-theme",
     "numpydoc",
-    "nbsphinx",
     "nbclient",
-    "nbformat",
-    "pandoc"
+    "nbformat"
 ]
 
 [project.urls]

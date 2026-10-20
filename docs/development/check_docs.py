@@ -8,6 +8,7 @@ import argparse
 from html.parser import HTMLParser
 import json
 from pathlib import Path
+import sys
 
 
 class Anchors(HTMLParser):
@@ -83,35 +84,27 @@ def example_inventory():
             if mode:
                 examples.append({'page': str(path.relative_to(docs)),
                                  'line': index + 1, 'validation': mode})
-    for path in sorted((docs / 'ipynb').glob('*.ipynb')):
-        examples.append({'page': str(path.relative_to(docs)),
-                         'validation': 'stored notebook; external inputs; not executed'})
     print(json.dumps(examples, indent=2))
 
 
 def check_notebooks():
-    """Validate notebook schemas, compile code and reject stored error outputs.
-
-    IPython syntax is transformed before compilation; cells are not executed.
-    """
+    """Validate generated notebook schemas and Python syntax without execution."""
     import nbformat
-    from IPython.core.inputtransformer2 import TransformerManager
 
     docs = Path(__file__).resolve().parents[1]
-    notebooks = list((docs / 'ipynb').glob('*.ipynb'))
+    sys.path.insert(0, str(docs / '_ext'))
+    from tutorial_notebooks import WORKFLOWS, build_notebook
+
     cells = 0
-    for path in notebooks:
-        notebook = nbformat.read(path, as_version=4)
+    for page, name in WORKFLOWS:
+        notebook = build_notebook(docs / 'tutorials' / f'{page}.rst')
         nbformat.validate(notebook)
         for index, cell in enumerate(notebook.cells):
             if cell.cell_type != 'code':
                 continue
-            code = TransformerManager().transform_cell(cell.source)
-            compile(code, f'{path.name}:cell {index}', 'exec')
-            if any(output.output_type == 'error' for output in cell.outputs):
-                raise SystemExit(f'Stored error output: {path.name}:cell {index}')
+            compile(cell.source, f'{name}.ipynb:cell {index}', 'exec')
             cells += 1
-    print(f'Validated {len(notebooks)} notebook schemas and {cells} code cells; '
+    print(f'Validated {len(WORKFLOWS)} generated notebook schemas and {cells} code cells; '
           'not executed')
 
 
@@ -120,7 +113,7 @@ if __name__ == '__main__':
     parser.add_argument('--html', type=Path, help='Sphinx HTML output directory')
     parser.add_argument('--inventory', action='store_true', help='List validation modes')
     parser.add_argument('--notebooks', action='store_true',
-                        help='Check schema, code syntax and stored errors; no execution')
+                        help='Check generated notebook schemas and Python syntax; no execution')
     args = parser.parse_args()
     if args.html:
         check_urls(args.html)

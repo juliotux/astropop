@@ -54,7 +54,6 @@ jobs:
       cache-key: build_docs-astropy
       libraries: |
         apt:
-          - pandoc
           - graphviz
       envs: |
         - linux: build_docs

@@ -52,15 +52,17 @@ guides and build the HTML documentation::
     python docs/development/check_docs.py --notebooks
 
 The ``-a -n`` options check references while rewriting every page, including
-unchanged guides. Pandoc must be on ``PATH`` to render the stored notebooks.
-Sphinx builds may also retrieve external reference inventories. Distinguish unreachable services
+unchanged guides. Notebook checks validate generated companions, rather than
+maintaining a second copy of the tutorial code. Sphinx builds may also retrieve
+external reference inventories. Distinguish unreachable services
 from local rendering or reference errors, and inspect the complete build log.
 Notebook examples should not introduce implicit live catalog requests during
 builds. Generated API pages and build output are ignored by Git.
 
 ``tox -e build_docs`` runs these checks on Python 3.14, including offline
-prompted examples, stored-notebook schema/syntax checks and retained HTML URLs.
+prompted examples, generated-notebook schema/syntax checks and retained HTML URLs.
 CI uses the same tox environment. Read the Docs selects Python 3.14 and fails
-on Sphinx warnings; it renders stored notebooks without executing their external
-workflows. See :doc:`../development/documentation` for example classification
+on Sphinx warnings. The tox job also executes the nine offline notebook
+companions sequentially and independently. External solver and online-query
+recipes are not executed by builds. See :doc:`../development/documentation` for example classification
 and hosted preview review.

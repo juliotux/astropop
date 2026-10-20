@@ -32,7 +32,7 @@ maintaining a second list of line numbers::
     python docs/development/check_docs.py --inventory
 
 The inventory identifies pytest examples, stored console transcripts, plot
-execution, static recipes, and stored notebooks. A function
+execution, static recipes, and generated notebook companions. A function
 call appearing in a code block does not mean the build executes it. Literal
 ``::`` blocks without prompts are application recipes; adapt their filenames
 and input variables before running them. Core tutorials state their dependencies
@@ -77,12 +77,13 @@ and expected results and use local temporary data.
   diagnostics, never a substitute for estimating a result from measurements.
 * Catalog help is rendered from bundled YAML configuration using
   ``catalog-help``; it does not construct a catalog or query a remote service.
-* Stored notebooks are rendered with ``nbsphinx_execute='never'``. The CCD
-  notebook needs its external dataset, the astrometry notebook needs local
-  solver/index installation and input files, and the online-catalog notebook
-  needs available remote services. Schema validation and compilation do not
-  establish execution success. Refresh one deliberately in a clean kernel,
-  inspect every output and error, record inputs/environment, and review the diff.
+* The former worked notebooks have been consolidated into the CCD tutorials
+  and the Astrometry.net/online-catalog tutorials. Keep external recipes as
+  standard Python blocks, with prerequisites stated explicitly. Those calls
+  require user-supplied images and indexes or live services and do not execute
+  during documentation builds. Do not keep a second numerical notebook copy.
+  ``check_docs.py --notebooks`` checks the generated offline companions;
+  ``run_tutorials.py`` separately executes them.
 * Large-image timing/memory studies belong in the studies repository. They are
   benchmarks, not stable correctness assertions or routine documentation builds.
 
@@ -110,13 +111,15 @@ Strict checks and pull-request previews
 ---------------------------------------
 
 ``tox -e build_docs`` uses Python 3.14 and installs both ``docs`` and ``test``
-extras. It checks stored-notebook schema/code syntax, runs local prompted
+extras. It checks generated-notebook schema/code syntax, runs local prompted
 examples with remote data disabled, builds every page with strict reference
 and warning checks, then verifies retained URLs and anchors. The GitHub docs
 job selects that environment. Read the Docs also selects Python 3.14 and
 ``sphinx.fail_on_warning: true``; ``nitpicky=True`` in ``docs/conf.py`` checks
-object references on both hosts. Hosted builds do not execute the external
-notebook workflows. A rendering pass alone is not a scientific test.
+object references on both hosts. The tox job executes the nine offline
+companions in fresh kernels, sequentially and independently. External solver
+and online-query recipes are not executed. A rendering pass alone is not a
+scientific test.
 
 Review changes by opening ``docs/_build/html/index.html`` after a local build.
 For hosted previews, follow the Read the Docs status check on the pull request

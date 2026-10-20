@@ -25,17 +25,12 @@ extensions = [
     'sphinx_automodapi.automodapi',
     'numpydoc',
     'matplotlib.sphinxext.plot_directive',
-    'nbsphinx',
 ]
 
 extlinks = {
     'doi': ('https://dx.doi.org/%s', 'doi: %s'),
     'bibcode': ('https://ui.adsabs.harvard.edu/abs/%s', '%s')
 }
-
-nbsphinx_allow_errors = True
-nbsphinx_execute = 'never'
-nbsphinx_kernel_name = 'python3'
 
 plot_html_show_source_link = False
 plot_include_source = False
