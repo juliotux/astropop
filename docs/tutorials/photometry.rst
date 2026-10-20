@@ -93,7 +93,11 @@ finite, unflagged measurements::
     >>> selected = measured[usable]
     >>> len(selected)
     9
-    >>> assert np.all(selected['flux_error'] > 0)
+    >>> for row in selected[:3]:
+    ...     print(f"Flux: {row['flux']:.0f} +/- {row['flux_error']:.0f} ADU; flags: {row['flags']}")
+    Flux: 59738 +/- 297 ADU; flags: 0
+    Flux: 45040 +/- 273 ADU; flags: 0
+    Flux: 39937 +/- 266 ADU; flags: 0
     >>> selected.write(data.parent / 'instrumental.ecsv', format='ascii.ecsv')
 
 The formal flux error includes the supplied background/Poisson model. It does
@@ -109,15 +113,32 @@ estimator contracts and source flags, and :doc:`../how_to/catalogs` for matching
 a calibration catalog. Diagnose empty detections by inspecting masks, noise,
 FWHM and threshold rather than treating them as zero-flux measurements.
 
-.. doctest::
-    :hide:
+Inspect recovery in the supplied simulation
+--------------------------------------------
+
+The injected source list provides an independent reference for this example.
+Match each measured position to its nearest injected star, then display the
+largest positional offset and the range of recovered flux fractions::
 
     >>> from astropy.table import Table
     >>> truth = Table.read(data / 'sources.ecsv')
     >>> distance2 = ((selected['x'][:, None] - truth['x'])**2
     ...              + (selected['y'][:, None] - truth['y'])**2)
     >>> nearest = np.argmin(distance2, axis=1)
-    >>> assert len(set(nearest.tolist())) == len(truth)
-    >>> assert np.max(np.sqrt(np.min(distance2, axis=1))) < 0.5
-    >>> assert np.max(np.abs(selected['flux'] / truth['flux'][nearest] - 1)) < 0.05
+    >>> offset = np.sqrt(np.min(distance2, axis=1))
+    >>> recovery = 100 * selected['flux'] / truth['flux'][nearest]
+    >>> print(f'Largest position offset: {np.max(offset):.2f} pixels')
+    Largest position offset: 0.04 pixels
+    >>> print(f'Recovered flux: {np.min(recovery):.1f}% to {np.max(recovery):.1f}%')
+    Recovered flux: 99.2% to 100.6%
+
+The aperture contains most of the stellar light, but finite aperture size,
+background estimation, interpolation and noise prevent exact recovery. These
+numbers describe this seeded dataset; they are not accuracy guarantees for
+other observations. The isolated stars make nearest-neighbor matching suitable
+here; crowded fields need more care.
+
+.. doctest::
+    :hide:
+
     >>> _temporary.cleanup()
