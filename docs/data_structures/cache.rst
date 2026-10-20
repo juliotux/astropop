@@ -28,8 +28,10 @@ exit, including exception paths::
     ...         managed = directory.create_file('message.txt')
     ...         with managed.open('w') as stream:
     ...             _ = stream.write('example')
-    ...         assert Path(managed.full_path).read_text() == 'example'
-    ...     assert not Path(directory.full_path).exists()
+    ...         print('Path(managed.full_path).read_text():', Path(managed.full_path).read_text())
+    ...     print('Path(directory.full_path).exists():', Path(directory.full_path).exists())
+    Path(managed.full_path).read_text(): example
+    Path(directory.full_path).exists(): False
 
 Deletion policy
 ---------------

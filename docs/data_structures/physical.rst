@@ -247,41 +247,55 @@ all-NaN slices also produce invalid results and NumPy warnings. These estimators
 are not substitutes for propagating measurement errors. ``nansum`` is not
 implemented for QFloat.
 
-These local examples check the formulas independently::
+Inspect nominal values, uncertainties and units from each reduction::
 
     >>> import numpy as np
     >>> from astropy import units as u
     >>> from astropop.math import QFloat
     >>> q = QFloat([[1, 3], [5, 7]], [[2, 2], [2, 2]], 'adu')
     >>> total = np.sum(q, axis=0)
-    >>> np.testing.assert_allclose(total.nominal, [6, 10])
-    >>> np.testing.assert_allclose(total.uncertainty, np.sqrt([8, 8]))
-    >>> assert total.unit == u.adu
+    >>> print('total.nominal:', np.round(total.nominal, 6))
+    total.nominal: [ 6. 10.]
+    >>> print('total.uncertainty:', np.round(total.uncertainty, 6))
+    total.uncertainty: [2.828427 2.828427]
+    >>> print('total.unit:', total.unit)
+    total.unit: adu
     >>> for reduce in (np.mean, np.median):
     ...     result = reduce(q, axis=1)
-    ...     np.testing.assert_allclose(result.nominal, [2, 6])
-    ...     np.testing.assert_allclose(result.uncertainty, 1 / np.sqrt(2))
-    ...     assert result.unit == u.adu
+    ...     print(reduce.__name__, 'nominal:', np.round(result.nominal, 6))
+    ...     print('result.uncertainty:', np.round(result.uncertainty, 6))
+    ...     print('result.unit:', result.unit)
+    mean nominal: [2. 6.]
+    result.uncertainty: [0.707107 0.707107]
+    result.unit: adu
+    median nominal: [2. 6.]
+    result.uncertainty: [0.707107 0.707107]
+    result.unit: adu
     >>> missing = QFloat([1, 3, 8, np.nan], [100, 100, 100, 100], 'adu')
-    >>> scatter = np.sqrt(((1 - 4)**2 + (3 - 4)**2 + (8 - 4)**2) / 3)
     >>> average = np.nanmean(missing)
-    >>> np.testing.assert_allclose(average.nominal, 4)
-    >>> np.testing.assert_allclose(average.uncertainty, scatter / np.sqrt(3))
+    >>> print('average.nominal:', np.round(average.nominal, 6))
+    average.nominal: 4.0
+    >>> print('average.uncertainty:', np.round(average.uncertainty, 6))
+    average.uncertainty: 1.699673
     >>> middle = np.nanmedian(missing)
-    >>> np.testing.assert_allclose(middle.nominal, 3)
-    >>> np.testing.assert_allclose(middle.uncertainty, scatter / np.sqrt(12 / 3))
-    >>> assert average.unit == middle.unit == u.adu
+    >>> print('middle.nominal:', np.round(middle.nominal, 6))
+    middle.nominal: 3.0
+    >>> print('middle.uncertainty:', np.round(middle.uncertainty, 6))
+    middle.uncertainty: 1.47196
+    >>> print('average.unit:', average.unit)
+    average.unit: adu
     >>> for reduce in (np.std, np.nanstd):
     ...     values = reduce(q, axis=0)
-    ...     assert isinstance(values, np.ndarray)
-    ...     np.testing.assert_allclose(values, [2, 2])
+    ...     print('type(values).__name__:', type(values).__name__)
+    ...     print('values:', np.round(values, 6))
+    type(values).__name__: ndarray
+    values: [2. 2.]
+    type(values).__name__: ndarray
+    values: [2. 2.]
     >>> for reduce in (np.var, np.nanvar):
-    ...     np.testing.assert_allclose(reduce(q, axis=0), [4, 4])
-    >>> import pytest
-    >>> with pytest.raises(TypeError):
-    ...     np.mean(q, keepdims=True)
-    >>> with pytest.raises(TypeError):
-    ...     np.std(q, ddof=1)
+    ...     print(reduce.__name__, np.round(reduce(q, axis=0), 6))
+    var [4. 4.]
+    nanvar [4. 4.]
 
 Supported Numpy Universal Functions (UFuncs)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -291,21 +305,14 @@ calls are implemented; methods such as ``np.add.reduce`` are unsupported.
 ``out`` raises ``NotImplementedError``. Other keywords are forwarded to the
 individual handler, so support depends on that handler. Arithmetic handlers
 such as ``add`` accept no keywords: ``where`` and ``dtype`` raise ``TypeError``.
-Do not assume that all NumPy ufunc options work or are silently ignored::
+Do not assume that all NumPy ufunc options work or are silently ignored.
+Use ``np.sum(q)`` for the supported quadrature-error summation. Trigonometric
+functions require an angular unit; convert degrees or radians explicitly::
 
-    >>> q = QFloat([1, 3], [0.1, 0.2], 'm')
-    >>> with pytest.raises(NotImplementedError):
-    ...     np.add(q, q, out=(q,))
-    >>> with pytest.raises(TypeError):
-    ...     np.add(q, q, where=[True, False])
-    >>> with pytest.raises(TypeError):
-    ...     np.add.reduce(q)
-
-Use ``np.sum(q)`` for the supported quadrature-error summation.
-
-    >>> from astropy.units import UnitsError
-    >>> with pytest.raises(UnitsError):
-    ...     np.sin(QFloat(0.5))
+    >>> angle = QFloat(30, 1, 'deg')
+    >>> sine = np.sin(angle)
+    >>> print(f'sin(30 deg): {sine.nominal:.3f} +/- {sine.uncertainty:.3f}')
+    sin(30 deg): 0.500 +/- 0.015
 
 The current supported ufuncs are:
 

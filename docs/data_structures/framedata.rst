@@ -24,10 +24,15 @@ shape::
     >>> from astropop.framedata import FrameData, PixelMaskFlags, read_framedata
     >>> frame = FrameData([[10, 20], [30, 40]], unit='adu', uncertainty=0.5,
     ...                   dtype='float32', meta={'OBJECT': 'Example'})
-    >>> assert frame.shape == (2, 2)
-    >>> assert frame.size == 4
-    >>> assert frame.dtype == np.dtype('float32')
-    >>> np.testing.assert_array_equal(frame.uncertainty, np.full((2, 2), 0.5))
+    >>> print('frame.shape:', frame.shape)
+    frame.shape: (2, 2)
+    >>> print('frame.size:', frame.size)
+    frame.size: 4
+    >>> print('frame.dtype:', frame.dtype)
+    frame.dtype: float32
+    >>> print('frame.uncertainty:', np.round(frame.uncertainty, 6))
+    frame.uncertainty: [[0.5 0.5]
+     [0.5 0.5]]
 
 A |Quantity| supplies its own unit. A conflicting explicit ``unit`` raises an
 error. Without either, the data are dimensionless. Access the numerical array
@@ -41,9 +46,11 @@ Copies include metadata and any arrays enabled by the current configuration::
 
     >>> duplicate = frame.copy()
     >>> duplicate.data[0, 0] = 99
-    >>> assert frame.data[0, 0] == 10
+    >>> print('frame.data[0, 0]:', frame.data[0, 0])
+    frame.data[0, 0]: 10.0
     >>> converted = frame.astype('float64')
-    >>> assert converted.dtype == np.dtype('float64')
+    >>> print('converted.dtype:', converted.dtype)
+    converted.dtype: float64
 
 Integer frames require finite data and uncertainties. Masks remain separate
 from the pixels. ``get_masked_data()`` returns a floating-point copy when a
@@ -68,9 +75,14 @@ Use ``imarith`` for arithmetic with units and uncertainty propagation::
 
     >>> from astropop.image.imarith import imarith
     >>> scaled = imarith(frame, 2, '*')
-    >>> np.testing.assert_allclose(scaled.data, frame.data * 2)
-    >>> np.testing.assert_allclose(scaled.uncertainty, frame.uncertainty * 2)
-    >>> assert scaled.unit == frame.unit
+    >>> print('scaled.data:', np.round(scaled.data, 6))
+    scaled.data: [[20. 40.]
+     [60. 80.]]
+    >>> print('scaled.uncertainty:', np.round(scaled.uncertainty, 6))
+    scaled.uncertainty: [[1. 1.]
+     [1. 1.]]
+    >>> print('scaled.unit:', scaled.unit)
+    scaled.unit: adu
 
 FrameData does not overload Python arithmetic operators. Direct changes to
 ``frame.data`` do not propagate uncertainties. See
@@ -89,11 +101,13 @@ Pass a dictionary or FITS header as ``meta`` (or its constructor alias
 FITS header and support normal keyword access::
 
     >>> frame.header['EXPTIME'] = (30.0, 'Exposure time in seconds')
-    >>> assert frame.meta['EXPTIME'] == 30.0
+    >>> print("frame.meta['EXPTIME']:", frame.meta['EXPTIME'])
+    frame.meta['EXPTIME']: 30.0
     >>> frame.history = 'Created example image'
     >>> frame.history = ['Checked units', 'Checked uncertainty']
     >>> frame.comment = 'Demonstration frame'
-    >>> assert frame.history[-1] == 'Checked uncertainty'
+    >>> print('frame.history[-1]:', frame.history[-1])
+    frame.history[-1]: Checked uncertainty
 
 Structural FITS keywords are removed when metadata are loaded and regenerated
 on FITS output. HISTORY and COMMENT cards are held separately in
@@ -120,10 +134,15 @@ before assigning their numerical values::
     >>> from astropy import units as u
     >>> errors = (np.full((2, 2), 10) * u.cm).to_value(u.m)
     >>> measured = FrameData(np.ones((2, 2)), unit='m', uncertainty=errors)
-    >>> np.testing.assert_allclose(measured.get_uncertainty(), 0.1)
+    >>> print('measured.get_uncertainty():', np.round(measured.get_uncertainty(), 6))
+    measured.get_uncertainty(): [[0.1 0.1]
+     [0.1 0.1]]
     >>> no_errors = FrameData(np.ones((2, 2)))
-    >>> assert no_errors.get_uncertainty() is None
-    >>> np.testing.assert_array_equal(no_errors.get_uncertainty(False), 0)
+    >>> print('no_errors.get_uncertainty():', no_errors.get_uncertainty())
+    no_errors.get_uncertainty(): None
+    >>> print('no_errors.get_uncertainty(False):', np.round(no_errors.get_uncertainty(False), 6))
+    no_errors.get_uncertainty(False): [[0. 0.]
+     [0. 0.]]
 
 Absence means the uncertainty is not stored or calculated; it is not a
 measurement of zero error.
@@ -136,12 +155,16 @@ exclude it from operations that respect the mask::
 
     >>> frame.add_flags(PixelMaskFlags.SATURATED | PixelMaskFlags.MASKED,
     ...                 (0, 1))
-    >>> assert frame.mask[0, 1]
-    >>> assert frame.mask_flags(PixelMaskFlags.SATURATED)[0, 1]
+    >>> print('frame.mask[0, 1]:', frame.mask[0, 1])
+    frame.mask[0, 1]: True
+    >>> print('frame.mask_flags(PixelMaskFlags.SATURATED)[0, 1]:', frame.mask_flags(PixelMaskFlags.SATURATED)[0, 1])
+    frame.mask_flags(PixelMaskFlags.SATURATED)[0, 1]: True
     >>> frame.mask_pixels((1, 0))
     >>> masked_data = frame.get_masked_data()
-    >>> assert np.isnan(masked_data[0, 1])
-    >>> assert frame.data[0, 1] == 20
+    >>> print('Masked pixel:', masked_data[0, 1])
+    Masked pixel: nan
+    >>> print('frame.data[0, 1]:', frame.data[0, 1])
+    frame.data[0, 1]: 20.0
 
 ``mask_flags()`` selects pixels with any of the requested bits. ``frame.mask``
 is a derived Boolean array selecting MASKED pixels; modify flags or use
@@ -190,11 +213,13 @@ For example, set the option before creating any frames for the reduction::
     >>> try:
     ...     AstropopConfig.FRAMEDATA_DISABLE_UNCERTAINTY = True
     ...     minimal = FrameData(np.ones((100, 100)), uncertainty=0.5)
-    ...     assert minimal.uncertainty is None
+    ...     print('minimal.uncertainty:', minimal.uncertainty)
     ...     result = imarith(minimal, 2, '*')
-    ...     assert result.uncertainty is None
+    ...     print('result.uncertainty:', result.uncertainty)
     ... finally:
     ...     AstropopConfig.FRAMEDATA_DISABLE_UNCERTAINTY = previous
+    minimal.uncertainty: None
+    result.uncertainty: None
 
 These are process-wide class attributes, not per-frame settings. Changing them
 is not thread-local. The settings are checked on each getter or uncertainty
@@ -281,9 +306,13 @@ and units together::
     >>> from astropop.math.physical import QFloat
     >>> quantity_image = QFloat(np.ones((2, 2)), np.full((2, 2), 0.2), 'adu')
     >>> adapted = read_framedata(quantity_image, dtype='float32')
-    >>> assert adapted.dtype == np.dtype('float32')
-    >>> np.testing.assert_allclose(adapted.uncertainty, 0.2)
-    >>> assert adapted.unit == u.adu
+    >>> print('adapted.dtype:', adapted.dtype)
+    adapted.dtype: float32
+    >>> print('adapted.uncertainty:', np.round(adapted.uncertainty, 6))
+    adapted.uncertainty: [[0.2 0.2]
+     [0.2 0.2]]
+    >>> print('adapted.unit:', adapted.unit)
+    adapted.unit: adu
 
 Masked-array or Quantity masks are not inferred by the FrameData constructor.
 Pass a separate ``mask=`` array when loading numerical values that carry a
@@ -303,15 +332,23 @@ Missing uncertainty or mask arrays produce no corresponding extension::
     ...     filename = Path(directory) / 'example.fits'
     ...     frame.write(filename)
     ...     restored = read_framedata(filename)
-    ...     np.testing.assert_allclose(restored.data, frame.data)
-    ...     np.testing.assert_allclose(restored.uncertainty, frame.uncertainty)
-    ...     np.testing.assert_array_equal(restored.mask, frame.mask)
-    ...     assert restored.unit == frame.unit
-    ...     assert restored.header['OBJECT'] == 'Example'
+    ...     print('restored.data:', np.round(restored.data, 6))
+    ...     print('restored.uncertainty:', np.round(restored.uncertainty, 6))
+    ...     print('restored.mask:', restored.mask.tolist())
+    ...     print('restored.unit:', restored.unit)
+    ...     print("restored.header['OBJECT']:", restored.header['OBJECT'])
+    restored.data: [[10. 20.]
+     [30. 40.]]
+    restored.uncertainty: [[0.5 0.5]
+     [0.5 0.5]]
+    restored.mask: [[False, True], [True, False]]
+    restored.unit: adu
+    restored.header['OBJECT']: Example
     >>> with frame.to_hdu() as hdus:
-    ...     assert hdus[0].header['BUNIT'] == 'adu'
-    ...     assert 'UNCERT' in hdus
-    ...     assert 'MASK' in hdus
+    ...     print("hdus[0].header['BUNIT']:", hdus[0].header['BUNIT'])
+    ...     print('Extensions:', [hdu.name for hdu in hdus])
+    hdus[0].header['BUNIT']: adu
+    Extensions: ['PRIMARY', 'UNCERT', 'MASK']
 
 Existing files are protected unless ``overwrite=True`` is passed to
 ``write()``. Use ``hdu_uncertainty``, ``hdu_mask``, and ``unit_key`` to customize
@@ -337,9 +374,14 @@ Convert explicitly with ``to_ccddata()`` and ``read_framedata()``::
 
     >>> ccd = frame.to_ccddata()
     >>> restored_ccd = read_framedata(ccd)
-    >>> np.testing.assert_allclose(restored_ccd.data, frame.data)
-    >>> np.testing.assert_allclose(restored_ccd.uncertainty, frame.uncertainty)
-    >>> np.testing.assert_array_equal(restored_ccd.mask, frame.mask)
+    >>> print('restored_ccd.data:', np.round(restored_ccd.data, 6))
+    restored_ccd.data: [[10. 20.]
+     [30. 40.]]
+    >>> print('restored_ccd.uncertainty:', np.round(restored_ccd.uncertainty, 6))
+    restored_ccd.uncertainty: [[0.5 0.5]
+     [0.5 0.5]]
+    >>> print('restored_ccd.mask:', restored_ccd.mask.tolist())
+    restored_ccd.mask: [[False, True], [True, False]]
 
 CCDData output uses ``StdDevUncertainty`` when uncertainties are present and
 ``None`` otherwise. Import also accepts CCDData variance and inverse-variance

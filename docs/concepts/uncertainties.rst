@@ -54,8 +54,10 @@ pixel yields 1000 +/- sqrt(29) ADU. Dividing by a dimensionless flat of
     >>> bias = FrameData([[100.]], uncertainty=2, unit='adu')
     >>> flat = FrameData([[1.]], uncertainty=0.01)
     >>> calibrated = flat_correct(subtract_bias(science, bias), flat)
-    >>> np.testing.assert_allclose(calibrated.data, 1000)
-    >>> np.testing.assert_allclose(calibrated.uncertainty, np.sqrt(129))
+    >>> print('calibrated.data:', np.round(calibrated.data, 6))
+    calibrated.data: [[1000.]]
+    >>> print('calibrated.uncertainty:', np.round(calibrated.uncertainty, 6))
+    calibrated.uncertainty: [[11.357817]]
 
 Reusing that master bias or flat across exposures introduces shared errors that
 the independent-input model cannot track. More exposures do not necessarily
