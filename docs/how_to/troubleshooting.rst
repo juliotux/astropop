@@ -46,7 +46,7 @@ numerical tolerances just to make a failing check pass.
     * - Resident memory exceeds ``memory_limit``
       - Count caller-owned and internal images, optional arrays and outputs.
       - The limit covers work tiles, not the whole process. Use paths, smaller
-        storage dtype or disk caching. See :doc:`large_datasets`.
+        storage dtype or disk caching. See :ref:`imcombine-memory-planning`.
     * - Central registration succeeds but edge stars drift
       - Compare coordinate residuals at several field radii and inspect bright
         sources entering/leaving the window.

@@ -20,5 +20,5 @@ fresh interpreter state; configure each worker before it loads its frames.
 Pass the policy explicitly in a worker initializer rather than relying on the
 parent's class attributes being inherited.
 
-See :doc:`../how_to/large_datasets` for storage estimates and
+See :ref:`imcombine-memory-planning` for storage estimates and
 :doc:`../data_structures/framedata` for getters, setters and copy behavior.
