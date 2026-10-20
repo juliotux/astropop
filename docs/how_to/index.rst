@@ -23,3 +23,4 @@ application.
     registration_diagnostics
     catalogs
     file_collections
+    troubleshooting

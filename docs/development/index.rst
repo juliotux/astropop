@@ -11,3 +11,5 @@ than instrument-specific reduction recipes.
     ../dev/internal_interfaces
     ../tools/testing
     documentation
+    migration
+    citation
