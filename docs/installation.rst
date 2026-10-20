@@ -82,8 +82,8 @@ arithmetic operators on FrameData::
 
 Use ``read_framedata('image.fits')`` for existing files. Set optional-array
 configuration **before loading or creating frames** when memory savings are
-required; see :ref:`optional-frame-arrays`. Continue with :doc:`user_guide` for
-calibration, registration, combination, photometry, polarimetry, and catalogs.
+required; see :ref:`optional-frame-arrays`. Continue with :doc:`tutorials/index`
+for complete workflows or :doc:`how_to/index` for individual reduction tasks.
 
 Running checks and building the documentation
 ---------------------------------------------
@@ -93,9 +93,8 @@ From an editable checkout with the corresponding extras installed::
     python -m pytest tests docs --remote-data=none
     python -m sphinx -b html docs docs/_build/html
 
-Building notebook pages requires the Pandoc executable on ``PATH`` in addition
-to the Python documentation packages. The documentation build renders stored
-notebook examples without executing remote queries. The ordinary test command
+The documentation build generates notebook downloads from the tutorial pages;
+it does not execute remote-query recipes. The ordinary test command
 uses recorded catalog responses; live catalog conformance is a separate,
 explicit check described in :doc:`dev/testing`.
 

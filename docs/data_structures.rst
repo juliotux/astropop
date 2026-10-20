@@ -1,4 +1,4 @@
-.. include:: references.txt
+:orphan:
 
 ***************
 Data structures

@@ -18,6 +18,10 @@ application.
     ../tools/catalogs
     ../tools/files
     ../tools/fits_utils
+    ../reduction/pipelines
+    ../tools/logger
+    ../tools/math
+    ../tools/py_utils
     quality_flags
     registration_diagnostics
     catalogs
