@@ -39,19 +39,19 @@ def list_fits_files(
 
     Parameters
     ----------
-    location : str
+    location
         Main directory to look for the files. Files will be listed recursively.
-    fits_extensions : str or list, optional
+    fits_extensions
         FITS file name extension to be used. Default is None, wich means
         that the default extensions will be used, like '.fits' and '.fit'.
-    glob_include : str, optional
+    glob_include
         Glob pattern to include files. Default is None.
-    glob_exclude : str, optional
+    glob_exclude
         Glob pattern to exclude files. Default is None.
 
     Returns
     -------
-    list
+    result
         List of files found.
     """
     if fits_extensions is None:
@@ -93,18 +93,18 @@ class FitsFileGroup():
 
     Parameters
     ----------
-    location : str, optional
+    location
         Location of the fits files. If not specified, the files must be
         specified in the files parameter.
-    files : list, optional
+    files
         List of files to be included in the group. If not specified, the
         location parameter must be specified.
-    ext : int, optional
+    ext
         FITS extension to be used. Default is 0.
-    compression : bool, optional
+    compression
         If True, add compression file name extensions to the list of
         extensions to be searched. Default is False.
-    database : str, optional
+    database
         SQLite database to be used to store the information. Default is
         ':memory:', which means that the database will be stored in memory.
     glob_include : str, optional
@@ -244,14 +244,14 @@ class FitsFileGroup():
 
         Parameters
         ----------
-        keywords : dict
+        keywords
             Dictionary with the keywords to be used to filter the files.
             The keys are the column names and the values are the values
             to be used to filter the files.
 
         Returns
         -------
-        FitsFileGroup
+        result
             A new FitsFileGroup with only the files that match the
             keywords.
         """
@@ -270,14 +270,14 @@ class FitsFileGroup():
 
         Parameters
         ----------
-        keywords : list
+        keywords
             List of exact column names from ``summary.colnames`` used to group
             the files. Names are case-sensitive and may differ in case from
             FITS header keywords (for example, ``filter``).
 
         Yields
         ------
-        FitsFileGroup
+        item
             A new FitsFileGroup with only the files that match the
             keywords.
         """
@@ -322,14 +322,14 @@ class FitsFileGroup():
 
         Parameters
         ----------
-        keyword : str
+        keyword
             Name of the keyword to be used to filter the files.
-        unique : bool, optional
+        unique
             If unique, only unique values returned.
 
         Returns
         -------
-        list
+        result
             List of values for the keyword.
         """
         vals = self._table[keyword].values
@@ -342,9 +342,9 @@ class FitsFileGroup():
 
         Parameters
         ----------
-        name : str
+        name
             Name of the column.
-        values : list, optional
+        values
             List of values for the column. If None, the column is
             initialized with null values.
         """
@@ -355,7 +355,7 @@ class FitsFileGroup():
 
         Parameters
         ----------
-        file : str
+        file
             File name with absolute path or relative to the filegroup
             location.
         """
@@ -377,7 +377,7 @@ class FitsFileGroup():
 
         Parameters
         ----------
-        file : str or int
+        file
             If string, the file name with absolute path or relative to the
             filegroup location. If int, the index of the file.
         """
@@ -395,12 +395,12 @@ class FitsFileGroup():
 
         Parameters
         ----------
-        file : str or int
+        file
             If string, the file name. If int, the index of the file.
 
         Returns
         -------
-        path : str
+        path
             Full path of the file.
         """
         if isinstance(file, int):
@@ -414,12 +414,12 @@ class FitsFileGroup():
 
         Parameters
         ----------
-        file : str
+        file
             Full path of the file.
 
         Returns
         -------
-        path : str
+        path
             Relative path of the file.
         """
         if self._db_dir is not None:
