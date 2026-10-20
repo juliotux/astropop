@@ -52,13 +52,13 @@ def estimate_dxdy(
 
     Parameters
     ----------
-    x, y: array_like
+    x, y
         Arrays of x and y positions of the sources.
-    steps: list of int
+    steps
         Number of pixels, around the mode, to clip the histogram in each step.
-    bins: int
+    bins
         Number of bins to use in the histogram.
-    dist_limit: float
+    dist_limit
         Maximum distance between the pairs of sources to consider.
 
     Return
@@ -111,11 +111,11 @@ def match_pairs(
 
     Parameters
     ----------
-    x, y: array_like
+    x, y
         Arrays of x and y positions of the sources.
-    dx, dy: float
+    dx, dy
         Displacement between the ordinary and extraordinary beams.
-    tolerance: float
+    tolerance
         Tolerance for the matching.
 
     Return
@@ -155,11 +155,11 @@ def quarterwave_model(
 
     Parameters
     ----------
-    psi: array_like
+    psi
         Array of retarder positions in degrees.
-    q, u, v: float
+    q, u, v
         Stokes parameters
-    zero: float
+    zero
         Zero position of the retarder in degrees.
 
     Return
@@ -187,11 +187,11 @@ def halfwave_model(
 
     Parameters
     ----------
-    psi: array_like
+    psi
         Array of retarder positions in degrees.
-    q, u: float
+    q, u
         Stokes parameters
-    zero: float (optional)
+    zero
         Zero angle of the retarder position.
 
     Return
@@ -212,19 +212,19 @@ class StokesParameters:
 
     Parameters
     ----------
-    q, u, v: `~astropop.math.physical.QFloat`
+    q, u, v
         Stokes parameters.
-    retarder: str
+    retarder
         'quarterwave' or 'halfwave'
-    k: float
+    k
         Normalization constant used to compute zi.
-    zero: float
+    zero
         Zero position of the retarder in degrees.
-    zi: `~astropop.math.physical.QFloat`
+    zi
         Relative difference of fluxes between ordinary and extraordinary beams.
-    psi: array_like
+    psi
         Array of retarder positions in degrees.
-    flux: `~astropop.math.physical.QFloat` (optional)
+    flux
         Sum of ordinary and extraordinary counts in each retarder position.
     """
 
@@ -510,24 +510,24 @@ class _DualBeamPolarimetry(abc.ABC):
 
         Parameters
         ----------
-        psi : array_like
+        psi
             Retarder positions in degrees. Must be multiple of 22.5 degrees.
-        f_ord : array_like
+        f_ord
             Fluxes of ordinary beam. If `~astropop.math.physical.QFloat`, the errors
             will be considered in the parameters computation.
-        f_ext : array_like
+        f_ext
             Fluxes of extraordinary beam. If `~astropop.math.physical.QFloat`, the
             errors will be considered in the parameters computation.
-        f_ord_error : array_like, optional
+        f_ord_error
             Errors of the ordinary fluxes. Conflicts with the error of ``f_ord``
             if it is a `~astropop.math.physical.QFloat`.
-        f_ext_error : array_like, optional
+        f_ext_error
             Errors of the extraordinary fluxes. Conflicts with the error of
             ``f_ext`` if it is a `~astropop.math.physical.QFloat`.
 
         Returns
         -------
-        `~astropop.polarimetry.StokesParameters`:
+        result
             Instances containing the computed Stokes Parameters.
         """
         self._check_positions(psi)
@@ -559,31 +559,31 @@ class SLSDualBeamPolarimetry(_DualBeamPolarimetry):
 
     Parameters
     ----------
-    retarder: str
+    retarder
         Retarder type. Must be 'quarterwave' or 'halfwave'.
-    k: float (optional)
+    k
         Normalization factor. If None, it is estimated from the data.
         Default is None.
-    zero: float (optional)
+    zero
         Zero position of the retarder in degrees. Defult is None. If None,
         it will be estimated from the data on quarterwave retarders and will be
         zero for halfwave retarders.
-    compute_k: bool (optional)
+    compute_k
         Fit the normalization factor using the data. Default is False.
         Conflicts with ``k`` argument.
-    min_snr: float (optional)
+    min_snr
         Minimum signal-to-noise ratio. Points with lower SNR will be discarded.
         Default is None.
-    psi_deviation: float (optional)
+    psi_deviation
         Maximum deviation of the psi position from the sequence multiple
         of 22.5 degrees. Default is 0.1 degrees.
-    iter_tolerance: float (optional)
+    iter_tolerance
         When fitting the parameter for quarterwave retarders, the iteration
         stops when the difference between the previous and the current
         parameters is less than this tolerance. Default is 1e-5.
-    max_iters: int (optional)
+    max_iters
         Maximum number of iterations. Default is 100.
-    zero_range: list([float, float]) (optional)
+    zero_range
         Minimum and maximum acceptable values for the zero position, in
         degrees. Default is [0, 90].
 
