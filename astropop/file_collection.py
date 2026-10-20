@@ -1,5 +1,13 @@
 """Module to manage and classify fits files."""
 
+from __future__ import annotations
+
+import typing as _t
+import numpy.typing as _npt
+from astropy.table import Table
+from ._typing import PathLike as _PathLike, ImageHDU as _ImageHDU
+from .framedata import FrameData
+
 import os
 import fnmatch
 import glob
@@ -16,11 +24,17 @@ from .fits_utils import _fits_extensions, \
 from .framedata import check_framedata
 from .logger import logger
 
+_Extension = int | str | tuple[str, int]
+
 __all__ = ['FitsFileGroup', 'list_fits_files']
 
 
-def list_fits_files(location, fits_extensions=None,
-                    glob_include=None, glob_exclude=None):
+def list_fits_files(
+    location: _PathLike,
+    fits_extensions: _t.Sequence[str] | None=None,
+    glob_include: str | None=None,
+    glob_exclude: str | None=None,
+) -> list[str]:
     """List all fist files in a directory, if compressed or not.
 
     Parameters
@@ -105,8 +119,15 @@ class FitsFileGroup():
         False. Requires ``tqdm`` module. May not be compatible with every mod.
     """
 
-    def __init__(self, location=None, files=None, ext=0,
-                 compression=False, database=':memory:', **kwargs):
+    def __init__(
+        self,
+        location: _PathLike | None=None,
+        files: _t.Sequence[_PathLike] | None=None,
+        ext: _Extension=0,
+        compression: bool=False,
+        database: _PathLike=':memory:',
+        **kwargs: _t.Any,
+    ) -> None:
         self._ext = ext
         self._extensions = kwargs.pop('fits_ext', None)
         self._include = kwargs.pop('glob_include', None)
@@ -126,7 +147,12 @@ class FitsFileGroup():
 
         self._read_db(files, location, compression, kwargs.get('update', 0))
 
-    def _list_files(self, files, location, compression):
+    def _list_files(
+        self,
+        files: _t.Sequence[_PathLike] | None,
+        location: _PathLike | None,
+        compression: bool,
+    ) -> list[_PathLike]:
         extensions = self._extensions
         if extensions is None:
             if compression:
@@ -143,7 +169,13 @@ class FitsFileGroup():
             files = []
         return files
 
-    def _read_db(self, files, location, compression, update=False):
+    def _read_db(
+        self,
+        files: _t.Sequence[_PathLike] | None,
+        location: _PathLike | None,
+        compression: bool,
+        update: bool=False,
+    ) -> None:
         """Read the database and generate the summary if needed."""
         initialized = _metadata in self._db.table_names
         if location is not None:
@@ -173,21 +205,24 @@ class FitsFileGroup():
             self.update(files, location, compression)
 
     @property
-    def files(self):
+    def files(self) -> list[str]:
         """List files in the group."""
         return [self.full_path(i) for i in self.values(_files_col)]
 
     @property
-    def summary(self):
+    def summary(self) -> Table:
         """Get a readonly table with summary of the fits files."""
         return self._table.as_table()
 
     @property
-    def keys(self):
+    def keys(self) -> list[str]:
         """List the keywords of the headers table."""
         return self._table.column_names
 
-    def __copy__(self, indexes=None):
+    def __copy__(
+        self,
+        indexes: _t.Sequence[int] | _npt.NDArray | None=None,
+    ) -> FitsFileGroup:
         """Copy the current instance to a new object."""
         if indexes is None:
             db = self._db.copy()
@@ -200,11 +235,11 @@ class FitsFileGroup():
         nfg._read_db(None, None, None, False)
         return nfg
 
-    def __len__(self):
+    def __len__(self) -> int:
         """Get the number of files in the group."""
         return len(self._table)
 
-    def filtered(self, keywords):
+    def filtered(self, keywords: _t.Mapping[str, object]) -> FitsFileGroup:
         """Create a new FitsFileGroup with only filtered files.
 
         Parameters
@@ -230,7 +265,7 @@ class FitsFileGroup():
         indexes = np.array(indexes).ravel() - 1
         return self.__copy__(indexes)
 
-    def group_by(self, keywords):
+    def group_by(self, keywords: _t.Sequence[str]) -> _t.Iterator[FitsFileGroup]:
         """Create FitsFileGroups grouped by keywords.
 
         Parameters
@@ -257,7 +292,12 @@ class FitsFileGroup():
         for g in grouped.groups:
             yield self.__copy__(indexes=list(g[id_key]))
 
-    def update(self, files=None, location=None, compression=False):
+    def update(
+        self,
+        files: _t.Sequence[_PathLike] | None=None,
+        location: _PathLike | None=None,
+        compression: bool=False,
+    ) -> None:
         """Update the database with the current files."""
         if _headers in self._db.table_names:
             self._db.drop_table(_headers)
@@ -277,7 +317,7 @@ class FitsFileGroup():
                 # just log error instead of raise an exception
                 logger.error('Error reading file %s: %s', f, e)
 
-    def values(self, keyword, unique=False):
+    def values(self, keyword: str, unique: bool=False) -> list[_t.Any]:
         """Return the values of a keyword in the summary.
 
         Parameters
@@ -297,7 +337,7 @@ class FitsFileGroup():
             vals = list(set(vals))
         return vals
 
-    def add_column(self, name, values=None):
+    def add_column(self, name: str, values: _t.Sequence[object] | None=None) -> None:
         """Add a new column to the summary.
 
         Parameters
@@ -310,7 +350,7 @@ class FitsFileGroup():
         """
         self._table.add_column(name, data=values)
 
-    def add_file(self, file):
+    def add_file(self, file: _PathLike) -> None:
         """Add a new file to the group.
 
         Parameters
@@ -332,7 +372,7 @@ class FitsFileGroup():
 
         self._table.add_rows(hdr, add_columns=True)
 
-    def remove_file(self, file):
+    def remove_file(self, file: _PathLike) -> None:
         """Remove a file from the group.
 
         Parameters
@@ -350,7 +390,7 @@ class FitsFileGroup():
             index = self._table.index_of({_files_col: file})
         self._table.delete_row(index)
 
-    def full_path(self, file):
+    def full_path(self, file: str | int) -> str:
         """Get the full path of a file in the group.
 
         Parameters
@@ -369,7 +409,7 @@ class FitsFileGroup():
             return os.path.abspath(os.path.join(self._db_dir, file))
         return file
 
-    def relative_path(self, file):
+    def relative_path(self, file: _PathLike) -> str:
         """Get the relative path of a file.
 
         Parameters
@@ -386,7 +426,10 @@ class FitsFileGroup():
             return os.path.relpath(file, self._db_dir)
         return file
 
-    def __getitem__(self, item):
+    def __getitem__(
+        self,
+        item: str | int | slice | _npt.ArrayLike,
+    ) -> FitsFileGroup | list[_t.Any]:
         if isinstance(item, str):
             return self._table[item].values
 
@@ -402,11 +445,16 @@ class FitsFileGroup():
 
         raise KeyError(f'{item}')
 
-    def __setitem__(self, item, value):
+    def __setitem__(self, item: str, value: _t.Any) -> None:
         """Set the value of a keyword in the summary."""
         self._table[item] = value
 
-    def _intern_yelder(self, ext=None, ret_type=None, **kwargs):
+    def _intern_yelder(
+        self,
+        ext: _Extension | None=None,
+        ret_type: _t.Literal['header', 'data', 'hdu', 'framedata'] | None=None,
+        **kwargs: _t.Any,
+    ) -> _t.Iterator[fits.Header | _ImageHDU | _npt.NDArray | FrameData | None]:
         """Iterate over files."""
         ext = ext if ext is not None else self._ext
         for i in self.files:
@@ -422,18 +470,34 @@ class FitsFileGroup():
             if ret_type == 'framedata':
                 yield check_framedata(i, hdu=ext, **kwargs)
 
-    def hdus(self, ext=None, **kwargs):
+    def hdus(
+        self,
+        ext: _Extension | None=None,
+        **kwargs: _t.Any,
+    ) -> _t.Iterator[_ImageHDU]:
         """Read the files and iterate over their HDUs."""
         return self._intern_yelder(ext=ext, ret_type='hdu', **kwargs)
 
-    def headers(self, ext=None, **kwargs):
+    def headers(
+        self,
+        ext: _Extension | None=None,
+        **kwargs: _t.Any,
+    ) -> _t.Iterator[fits.Header]:
         """Read the files and iterate over their headers."""
         return self._intern_yelder(ext=ext, ret_type='header', **kwargs)
 
-    def data(self, ext=None, **kwargs):
+    def data(
+        self,
+        ext: _Extension | None=None,
+        **kwargs: _t.Any,
+    ) -> _t.Iterator[_npt.NDArray | None]:
         """Read the files and iterate over their data."""
         return self._intern_yelder(ext=ext, ret_type='data', **kwargs)
 
-    def framedata(self, ext=None, **kwargs):
+    def framedata(
+        self,
+        ext: _Extension | None=None,
+        **kwargs: _t.Any,
+    ) -> _t.Iterator[FrameData]:
         """Read the files and iterate over their data."""
         return self._intern_yelder(ext=ext, ret_type='framedata', **kwargs)
