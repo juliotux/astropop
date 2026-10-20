@@ -985,6 +985,36 @@
         "pst-page-navigation-heading-2",
         "pst-page-toc-nav"
       ]
+    },
+    "ipynb/diy_reduction_script.html": {
+      "role": "retained notebook URL",
+      "anchors": [
+        "Make-Your-Own-Reduction-Scrypt-(photometry)",
+        "Organize-Your-Data",
+        "Master-Calibration-Frames",
+        "Master-Bias",
+        "Master-Flat",
+        "Basic-CCD-Image-Processing",
+        "Align-and-Stack",
+        "Source-Detection-and-Photometry",
+        "Photometry-Calibration-with-Online-Catalogs"
+      ]
+    },
+    "ipynb/astrometry_example.html": {
+      "role": "retained notebook URL",
+      "anchors": [
+        "AstrometrySolver-class",
+        "solve_astrometry_xy",
+        "solve_astrometry_framedata",
+        "AstrometricSolution"
+      ]
+    },
+    "ipynb/online_catalogs.html": {
+      "role": "retained notebook URL",
+      "anchors": [
+        "Vizier",
+        "Simbad"
+      ]
     }
   }
 }

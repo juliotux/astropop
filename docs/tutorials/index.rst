@@ -45,6 +45,12 @@ Additional walkthroughs
 
     ccd_reduction
     local_catalog_matching
+    astrometry_net
+    online_catalogs
 
 :doc:`local_catalog_matching` explains search radii and unmatched positions
 before interpreting associations as astrometric or photometric calibration.
+The Astrometry.net and online-catalog tutorials develop the external workflows
+from the former worked notebooks. They require your own image/index files or
+live services, respectively; their external recipes are not run by offline
+doctests or included in the nine generated notebook companions.
