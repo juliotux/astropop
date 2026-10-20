@@ -24,7 +24,10 @@ by an already normalized flat. Replace the generated frames with
     >>> science = FrameData(np.full((8, 8), 1100.), unit='adu', uncertainty=5.)
     >>> normalized_flat = FrameData(np.ones((8, 8)), uncertainty=0.01)
     >>> reduced = flat_correct(subtract_bias(science, master_bias), normalized_flat)
-    >>> np.testing.assert_allclose(reduced.data, 1000.)
+    >>> print(f'Reduced image: {reduced.shape}, {reduced.unit}')
+    Reduced image: (8, 8), adu
+    >>> print(f'Pixel range: {reduced.data.min():.1f} to {reduced.data.max():.1f} ADU')
+    Pixel range: 1000.0 to 1000.0 ADU
 
 For a detector requiring dark correction, subtract the bias from dark frames
 before constructing a master dark, then supply explicit science/dark exposure

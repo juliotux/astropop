@@ -26,7 +26,11 @@ the headers::
     >>> dark = FrameData(np.full((4, 4), 10.), unit='adu', uncertainty=0.5)
     >>> corrected = subtract_bias(science, bias)
     >>> corrected = subtract_dark(corrected, dark, dark_exposure=10, image_exposure=20)
-    >>> np.testing.assert_allclose(corrected.data, 1080)
+    >>> print('corrected.data:', np.round(corrected.data, 6))
+    corrected.data: [[1080. 1080. 1080. 1080.]
+     [1080. 1080. 1080. 1080.]
+     [1080. 1080. 1080. 1080.]
+     [1080. 1080. 1080. 1080.]]
 
 ``flat_correct`` divides by a master flat. With ``min_value`` it first replaces
 smaller flat values by that lower bound; this is a clamp, not a mask. With
@@ -36,8 +40,13 @@ is copied before these changes::
 
     >>> flat = FrameData(np.full((4, 4), 2.))
     >>> calibrated = flat_correct(corrected, flat, norm_value=2.)
-    >>> np.testing.assert_allclose(calibrated.data, 1080)
-    >>> assert str(calibrated.unit) == 'adu'
+    >>> print('calibrated.data:', np.round(calibrated.data, 6))
+    calibrated.data: [[1080. 1080. 1080. 1080.]
+     [1080. 1080. 1080. 1080.]
+     [1080. 1080. 1080. 1080.]
+     [1080. 1080. 1080. 1080.]]
+    >>> print('str(calibrated.unit):', str(calibrated.unit))
+    str(calibrated.unit): adu
 
 Choose a dimensionless normalized flat to preserve the science unit. A flat
 with a physical unit changes the output unit according to division.

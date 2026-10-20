@@ -1,8 +1,8 @@
 Carry detector-quality information through reduction
 ====================================================
 
-This example executes locally under pytest with flag storage enabled (the
-default). It deliberately shows where current APIs lose quality information.
+Keep flag storage enabled (the default) to carry detector-quality information
+through reduction. This example shows where current APIs lose that information.
 The application chooses a policy: here a known detector defect must remain
 masked after calibration, while samples from other exposures may replace it.
 
@@ -21,11 +21,15 @@ pixels and, with ``merge_flags='or'``, carries the bits forward::
     >>> raw = FrameData([[110., 120.]], unit='adu')
     >>> bad_bits = F.MASKED | F.SATURATED
     >>> raw.add_flags(bad_bits, where=(0, 0))
-    >>> assert raw.flags[0, 0] == bad_bits.value
-    >>> assert raw.mask.tolist() == [[True, False]]
+    >>> print('raw.flags[0, 0]:', raw.flags[0, 0])
+    raw.flags[0, 0]: 18
+    >>> print('raw.mask.tolist():', raw.mask.tolist())
+    raw.mask.tolist(): [[True, False]]
     >>> arithmetic = imarith(raw, 10 * u.adu, '-', merge_flags='or')
-    >>> np.testing.assert_allclose(arithmetic.data, [[100., 110.]])
-    >>> np.testing.assert_array_equal(arithmetic.flags, raw.flags)
+    >>> print('arithmetic.data:', np.round(arithmetic.data, 6))
+    arithmetic.data: [[100. 110.]]
+    >>> print('arithmetic.flags:', arithmetic.flags.tolist())
+    arithmetic.flags: [[18, 0]]
 
 Restore the chosen detector policy after calibration
 ----------------------------------------------------
@@ -36,10 +40,13 @@ Save the detector-quality map and restore it explicitly after calibration::
     >>> detector_flags = raw.flags.copy()
     >>> bias = FrameData([[10., 10.]], unit='adu')
     >>> calibrated = subtract_bias(raw, bias)
-    >>> assert not calibrated.flags.any()
+    >>> print('calibrated.flags.any():', calibrated.flags.any())
+    calibrated.flags.any(): False
     >>> calibrated.flags = detector_flags
-    >>> np.testing.assert_array_equal(calibrated.flags, raw.flags)
-    >>> assert calibrated.mask.tolist() == [[True, False]]
+    >>> print('calibrated.flags:', calibrated.flags.tolist())
+    calibrated.flags: [[18, 0]]
+    >>> print('calibrated.mask.tolist():', calibrated.mask.tolist())
+    calibrated.mask.tolist(): [[True, False]]
 
 This policy assumes the calibration frame has no additional defects. If it does,
 combine the detector and calibration quality maps explicitly. Do not restore
@@ -53,9 +60,12 @@ the masked first sample but does not merge its reason bits into the output::
 
     >>> other = FrameData([[90., 110.]], unit='adu')
     >>> combined = imcombine([calibrated, other], method='mean')
-    >>> np.testing.assert_allclose(combined.data, [[90., 110.]])
-    >>> assert not combined.mask.any()
-    >>> assert not combined.flags.any()
+    >>> print('combined.data:', np.round(combined.data, 6))
+    combined.data: [[ 90. 110.]]
+    >>> print('combined.mask.any():', combined.mask.any())
+    combined.mask.any(): False
+    >>> print('combined.flags.any():', combined.flags.any())
+    combined.flags.any(): False
 
 If both samples are masked, the output pixel is masked. A FITS round trip
 preserves the Boolean mask, not the original reason bits. Import marks a
@@ -69,9 +79,12 @@ needed::
     ...     path = Path(directory) / 'quality.fits'
     ...     calibrated.write(path)
     ...     restored = read_framedata(path)
-    ...     np.testing.assert_array_equal(restored.mask, calibrated.mask)
-    ...     assert restored.flags[0, 0] == (F.MASKED | F.UNSPECIFIED).value
-    ...     assert not (restored.flags[0, 0] & F.SATURATED.value)
+    ...     print('restored.mask:', restored.mask.tolist())
+    ...     print('restored.flags[0, 0]:', restored.flags[0, 0])
+    ...     print('restored.flags[0, 0] & F.SATURATED.value:', restored.flags[0, 0] & F.SATURATED.value)
+    restored.mask: [[True, False]]
+    restored.flags[0, 0]: 130
+    restored.flags[0, 0] & F.SATURATED.value: 0
 
 See :doc:`../tools/flags` for bit decoding and :doc:`../data_structures/framedata`
 for the FITS interchange contract. If flag storage is disabled before frame

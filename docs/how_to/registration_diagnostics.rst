@@ -7,7 +7,7 @@ edge can make different regions favor different shifts. A window limits the
 pixels used to estimate a transform; the transform still applies to the full
 image. It does not remove optical distortion.
 
-This local pytest example uses three images and the **middle image** as reference.
+This example uses three images and the **middle image** as reference.
 Two central stars drift by a known translation. A much brighter stationary edge
 feature deliberately conflicts with them. This is an adversarial diagnostic,
 not a physical model of an instrument's distortion::
@@ -34,8 +34,14 @@ not a physical model of an instrument's distortion::
     ...                      for f in registered])
     >>> full_shift = measured_shifts(full)
     >>> window_shift = measured_shifts(windowed)
-    >>> np.testing.assert_allclose(full_shift, 0, atol=0.1)
-    >>> np.testing.assert_allclose(window_shift, drift, atol=0.1)
+    >>> print('full_shift:', np.round(full_shift, 1) + 0.0)  # Display signed zeros as zero.
+    full_shift: [[0. 0.]
+     [0. 0.]
+     [0. 0.]]
+    >>> print('window_shift:', np.round(window_shift, 6))
+    window_shift: [[-2. -1.]
+     [ 0.  0.]
+     [ 2.  1.]]
 
 Reported shifts describe the reference-to-moving transform in ``(x, y)`` order.
 For a pure translation, **subtract** those shifts from moving-image coordinates
@@ -45,9 +51,13 @@ to express them on the reference grid. Image arrays remain indexed ``[y, x]``::
     >>> observed[:, :2] += drift[:, None, :]
     >>> residual_full = observed - full_shift[:, None, :] - positions
     >>> residual_window = observed - window_shift[:, None, :] - positions
-    >>> np.testing.assert_allclose(residual_window[:, :2], 0, atol=0.1)
-    >>> assert np.linalg.norm(residual_full[0, 0]) > 2
-    >>> assert np.linalg.norm(residual_window[0, 2]) > 2
+    >>> central_offsets = np.linalg.norm(residual_window[:, :2], axis=2)
+    >>> print('Largest central residual per frame:', np.round(central_offsets.max(axis=1), 2))
+    Largest central residual per frame: [0. 0. 0.]
+    >>> print(f'Central residual with full image: {np.linalg.norm(residual_full[0, 0]):.2f} pixels')
+    Central residual with full image: 2.24 pixels
+    >>> print(f'Edge residual with window: {np.linalg.norm(residual_window[0, 2]):.2f} pixels')
+    Edge residual with window: 2.24 pixels
 
 Windowing recovers both central stars but leaves an edge residual here. In real
 observations centroid several isolated stars spanning the field before and

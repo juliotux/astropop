@@ -3,7 +3,7 @@
 Image combination
 =================
 
-This guide executes small local examples under pytest. Start with::
+Start with three small images to inspect combination values and units::
 
     >>> import numpy as np
     >>> from astropy import units as u
@@ -21,8 +21,11 @@ propagated to the combined frame::
     >>> images = [FrameData(np.full((2, 2), value), unit='adu')
     ...           for value in (1, 3, 5)]
     >>> combined = imcombine(images, method='mean', dtype='float32')
-    >>> np.testing.assert_allclose(combined.data, 3)
-    >>> assert combined.unit == u.adu
+    >>> print('combined.data:', np.round(combined.data, 6))
+    combined.data: [[3. 3.]
+     [3. 3.]]
+    >>> print('combined.unit:', combined.unit)
+    combined.unit: adu
     >>> combined.dtype.name
     'float32'
     >>> combined.uncertainty.dtype.name
@@ -54,10 +57,14 @@ are combined; minmax rejection does not change the sigma statistics::
 
     >>> stack = [FrameData(np.full((2, 2), value)) for value in (1, 2, 3, 100)]
     >>> clipped = imcombine(stack, method='mean', minmax_clip=(None, 10))
-    >>> np.testing.assert_allclose(clipped.data, 2)
+    >>> print('clipped.data:', np.round(clipped.data, 6))
+    clipped.data: [[2. 2.]
+     [2. 2.]]
     >>> robust = imcombine(stack, method='median', sigma_clip=3,
     ...                    sigma_cen_func='median', sigma_dev_func='mad_std')
-    >>> np.testing.assert_allclose(robust.data, 2)
+    >>> print('robust.data:', np.round(robust.data, 6))
+    robust.data: [[2. 2.]
+     [2. 2.]]
 
 ``sigma_cen_func`` accepts ``'median'`` or ``'mean'``. ``sigma_dev_func`` accepts
 ``'std'`` (population standard deviation) or ``'mad_std'`` (median absolute
@@ -118,10 +125,14 @@ sum and its corresponding uncertainty::
     >>> normalized = imcombine(pair, method='sum', minmax_clip=(None, 20))
     >>> raw = imcombine(pair, method='sum', minmax_clip=(None, 20),
     ...                 sum_normalize=False)
-    >>> np.testing.assert_allclose(normalized.data, 20)
-    >>> np.testing.assert_allclose(normalized.uncertainty, 4)
-    >>> np.testing.assert_allclose(raw.data, 10)
-    >>> np.testing.assert_allclose(raw.uncertainty, 2)
+    >>> print('normalized.data:', np.round(normalized.data, 6))
+    normalized.data: [[20.]]
+    >>> print('normalized.uncertainty:', np.round(normalized.uncertainty, 6))
+    normalized.uncertainty: [[4.]]
+    >>> print('raw.data:', np.round(raw.data, 6))
+    raw.data: [[10.]]
+    >>> print('raw.uncertainty:', np.round(raw.uncertainty, 6))
+    raw.uncertainty: [[2.]]
 
 ``AstropopConfig.FRAMEDATA_DISABLE_UNCERTAINTY`` also applies to combination.
 Set it before loading or creating frames to avoid input uncertainty storage,
@@ -139,18 +150,27 @@ does not disable uncertainty calculations::
     ...     inputs = [FrameData([[2.0]], uncertainty=1),
     ...               FrameData([[4.0]], uncertainty=1)]
     ...     combined = imcombine(inputs, method='mean')
-    ...     np.testing.assert_allclose(combined.data, 3)
-    ...     assert combined.uncertainty is None
-    ...     assert combined.flags is None and combined.mask is None
+    ...     print('combined.data:', np.round(combined.data, 6))
+    ...     print('combined.uncertainty:', combined.uncertainty)
+    ...     print('combined.flags:', combined.flags)
+    ...     print('combined.mask:', combined.mask)
     ...     conf.FRAMEDATA_DISABLE_UNCERTAINTY = False
     ...     conf.FRAMEDATA_DISABLE_FLAGS = False
     ...     enabled = imcombine([FrameData([[2.0]]), FrameData([[4.0]])],
     ...                         method='mean')
-    ...     np.testing.assert_allclose(enabled.data, 3)
-    ...     assert enabled.uncertainty is not None and enabled.flags is not None
+    ...     print('enabled.data:', np.round(enabled.data, 6))
+    ...     print('enabled.uncertainty:', enabled.uncertainty)
+    ...     print('enabled.flags:', enabled.flags)
     ... finally:
     ...     conf.FRAMEDATA_DISABLE_UNCERTAINTY = previous_uncertainty
     ...     conf.FRAMEDATA_DISABLE_FLAGS = previous_flags
+    combined.data: [[3.]]
+    combined.uncertainty: None
+    combined.flags: None
+    combined.mask: None
+    enabled.data: [[3.]]
+    enabled.uncertainty: [[0.70710678]]
+    enabled.flags: [[0]]
 
 Dtype and memory use
 ^^^^^^^^^^^^^^^^^^^^
@@ -196,7 +216,9 @@ hundreds of images, consider a smaller dtype and explicit disk caching::
     ...     cached = imcombine(images, method='median', dtype='float32',
     ...                        memory_limit=16 * 1024**2,
     ...                        use_disk_cache=True, tmp_dir=directory)
-    ...     np.testing.assert_allclose(cached.data, 3)
+    ...     print('cached.data:', np.round(cached.data, 6))
+    cached.data: [[3. 3.]
+     [3. 3.]]
 
 ``use_disk_cache=True`` stores internal image copies in memory-mapped temporary
 files, trading disk I/O for reduced resident input storage. Caller-owned frames
@@ -263,8 +285,10 @@ records ``HIERARCH astropop imcombine nimages`` and
     >>> image = FrameData([[10.0]], unit='adu', meta={'OBJECT': 'Example'})
     >>> preserved = imcombine([image, image], merge_header='selected_keys',
     ...                          merge_header_keys=['OBJECT'])
-    >>> assert preserved.header['OBJECT'] == 'Example'
-    >>> assert preserved.header['astropop imcombine nimages'] == 2
+    >>> print("preserved.header['OBJECT']:", preserved.header['OBJECT'])
+    preserved.header['OBJECT']: Example
+    >>> print("preserved.header['astropop imcombine nimages']:", preserved.header['astropop imcombine nimages'])
+    preserved.header['astropop imcombine nimages']: 2
 
 Use |ImCombiner| to retain settings for several combinations. Its constructor
 uses ``max_memory`` for the budget. Unlike the convenience function,
@@ -275,6 +299,8 @@ uses ``max_memory`` for the budget. Unlike the convenience function,
     >>> combiner.set_minmax_clip(min_value=0)
     >>> combiner.set_merge_header('first')
     >>> result = combiner.combine(images, method='median')
-    >>> np.testing.assert_allclose(result.data, 3)
+    >>> print('result.data:', np.round(result.data, 6))
+    result.data: [[3. 3.]
+     [3. 3.]]
 
 API reference: :doc:`../reference/image`.

@@ -15,10 +15,17 @@ one of that unit. NumPy broadcasting applies to the numerical operands::
     >>> image = FrameData(np.full((2, 2), 10.0), unit='adu', uncertainty=2.0,
     ...                   meta={'OBJECT': 'Example', 'EXPTIME': 30.0})
     >>> scaled = imarith(image, 2, '*')
-    >>> np.testing.assert_allclose(scaled.data, 20)
-    >>> np.testing.assert_allclose(scaled.uncertainty, 4)
-    >>> assert scaled.unit == image.unit
-    >>> assert scaled is not image
+    >>> print('scaled.data:', np.round(scaled.data, 6))
+    scaled.data: [[20. 20.]
+     [20. 20.]]
+    >>> print('scaled.uncertainty:', np.round(scaled.uncertainty, 6))
+    scaled.uncertainty: [[4. 4.]
+     [4. 4.]]
+    >>> print('scaled.unit:', scaled.unit)
+    scaled.unit: adu
+    >>> print('Input pixels:', image.data)
+    Input pixels: [[10. 10.]
+     [10. 10.]]
 
 Nominal calculations use floating-point values. This function has no ``dtype``
 option; use |imcombine| for combination with a selected working dtype. Neither
@@ -37,9 +44,14 @@ keeps the first operand's unit::
     >>> from astropy import units as u
     >>> lengths = FrameData(np.ones((2, 2)), unit='m', uncertainty=0.1)
     >>> added = imarith(lengths, 50 * u.cm, '+')
-    >>> np.testing.assert_allclose(added.data, 1.5)
-    >>> np.testing.assert_allclose(added.uncertainty, 0.1)
-    >>> assert added.unit == u.m
+    >>> print('added.data:', np.round(added.data, 6))
+    added.data: [[1.5 1.5]
+     [1.5 1.5]]
+    >>> print('added.uncertainty:', np.round(added.uncertainty, 6))
+    added.uncertainty: [[0.1 0.1]
+     [0.1 0.1]]
+    >>> print('added.unit:', added.unit)
+    added.unit: m
 
 Uncertainties are propagated with the derivative rules used by |QFloat|,
 assuming independent operands. For a result :math:`f(a,b)`, the variance is
@@ -75,8 +87,10 @@ pixels from arithmetic. Disabling flag storage omits output flags and masks::
 
     >>> image.mask_pixels((0, 0))
     >>> masked_result = imarith(image, 2, '*')
-    >>> assert masked_result.mask[0, 0]
-    >>> assert masked_result.data[0, 0] == 20
+    >>> print('masked_result.mask[0, 0]:', masked_result.mask[0, 0])
+    masked_result.mask[0, 0]: True
+    >>> print('masked_result.data[0, 0]:', masked_result.data[0, 0])
+    masked_result.data[0, 0]: 20.0
 
 For header merging, ``'only_equal'`` (default) keeps keys present with equal
 values in both headers. ``'first'`` copies the first operand's header.
@@ -85,8 +99,10 @@ first occurrence. ``'no_merge'`` returns an empty header::
 
     >>> selected = imarith(image, 2, '*', merge_headers='selected_keys',
     ...                   selected_keys=['OBJECT'])
-    >>> assert selected.header['OBJECT'] == 'Example'
-    >>> assert 'EXPTIME' not in selected.header
+    >>> print("selected.header['OBJECT']:", selected.header['OBJECT'])
+    selected.header['OBJECT']: Example
+    >>> print('Exposure retained:', 'EXPTIME' in selected.header)
+    Exposure retained: False
 
 By default, operands remain unchanged. ``inplace=True`` updates and returns the
 first operand when it is FrameData; otherwise a new FrameData is returned.
@@ -98,7 +114,8 @@ Use ``ImArith`` when reusing merge settings across several calls::
 
     >>> arithmetic = ImArith(merge_headers='first')
     >>> result = arithmetic.run(image, 2, '*')
-    >>> assert result.header['OBJECT'] == 'Example'
+    >>> print("result.header['OBJECT']:", result.header['OBJECT'])
+    result.header['OBJECT']: Example
 
 
 API reference: :doc:`../reference/image`.
