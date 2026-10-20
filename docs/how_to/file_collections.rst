@@ -10,7 +10,9 @@ Create image extensions and index their headers
 -----------------------------------------------
 
 The primary HDU is empty; the image and ``FILTER`` header live in extension 1.
-The file group stores a header database without modifying the FITS files::
+The file group stores a header database without modifying the FITS files.
+Resolve the temporary directory so input files and the database use the same
+canonical path, including when the temporary directory is reached by a symlink::
 
     >>> import numpy as np
     >>> from pathlib import Path
@@ -18,7 +20,7 @@ The file group stores a header database without modifying the FITS files::
     >>> from astropy.io import fits
     >>> from astropop.file_collection import FitsFileGroup
     >>> temporary = TemporaryDirectory()
-    >>> folder = Path(temporary.name)
+    >>> folder = Path(temporary.name).resolve()
     >>> for index, band in enumerate(['R', 'G', 'R']):
     ...     hdu = fits.ImageHDU(np.full((4, 4), index), name='SCI')
     ...     hdu.header['FILTER'] = band
