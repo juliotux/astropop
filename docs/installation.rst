@@ -4,10 +4,16 @@ Installation and first steps
 Requirements
 ------------
 
-This checkout requires Python 3.11 or newer, NumPy 2.0 or newer, Astropy 6.1.4
-or newer, SciPy 1.13 or newer, and Photutils 3.0 or newer. The complete runtime
-dependency list and optional extras are declared in ``pyproject.toml``; pip
-installs the required Python packages automatically. Released versions can
+The main dependencies of |astropop| are:
+
+ - Python 3.11 or newer
+ - NumPy 2.0 or newer
+ - Astropy 6.1.4 or newer
+ - SciPy 1.13 or newer
+ - Photutils 3.0 or newer.
+
+The complete runtime dependency list and optional extras are declared in ``pyproject.toml``;
+pip installs the required Python packages automatically. Released versions can
 have different requirements, so consult the metadata of the version installed.
 
 Install a release in an activated virtual or conda environment::
