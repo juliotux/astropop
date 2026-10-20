@@ -1,8 +1,8 @@
 Index and iterate over local FITS files
 =======================================
 
-This pytest example creates three tiny multi-extension FITS files in a temporary
-directory. It checks actual table columns and returned values; the older
+Create three tiny multi-extension FITS files in a temporary directory, then
+inspect their indexed headers and image values. The older
 :doc:`../tools/files` also contains illustrative verbatim transcripts, which
 are not execution results from the current build.
 
@@ -27,12 +27,16 @@ canonical path, including when the temporary directory is reached by a symlink::
     ...     fits.HDUList([fits.PrimaryHDU(), hdu]).writeto(folder / f'image_{index}.fits')
     >>> database = str(folder / 'headers.db')
     >>> group = FitsFileGroup(location=str(folder), ext=1, database=database)
-    >>> assert len(group) == 3
-    >>> assert 'filter' in [name.lower() for name in group.summary.colnames]
+    >>> print('len(group):', len(group))
+    len(group): 3
+    >>> print('Filter columns:', [name for name in group.summary.colnames if name.lower() == 'filter'])
+    Filter columns: ['filter']
     >>> red = group.filtered({'FILTER': 'R'})
-    >>> assert len(red) == 2
+    >>> print('len(red):', len(red))
+    len(red): 2
     >>> filter_column = next(name for name in group.summary.colnames if name.lower() == 'filter')
-    >>> assert sorted(len(subgroup) for subgroup in group.group_by([filter_column])) == [1, 2]
+    >>> print('Frames per filter:', sorted(len(subgroup) for subgroup in group.group_by([filter_column])))
+    Frames per filter: [1, 2]
 
 ``group_by`` uses exact summary-column names (lowercase ``filter`` here),
 unlike case-insensitive header keyword filtering.
@@ -41,13 +45,18 @@ The persistent database stores paths relative to its own directory; public
 ``files`` returns resolved paths. Reopen the database to reuse its stored index,
 then call ``update`` explicitly after files or headers change::
 
-    >>> assert group.relative_path(str(folder / 'image_0.fits')) == 'image_0.fits'
-    >>> assert Path(group.full_path(0)).is_absolute()
+    >>> print("group.relative_path(str(folder / 'image_0.fits')):", group.relative_path(str(folder / 'image_0.fits')))
+    group.relative_path(str(folder / 'image_0.fits')): image_0.fits
+    >>> print('Path(group.full_path(0)).is_absolute():', Path(group.full_path(0)).is_absolute())
+    Path(group.full_path(0)).is_absolute(): True
     >>> reopened = FitsFileGroup(database=database)
-    >>> assert len(reopened) == 3
+    >>> print('len(reopened):', len(reopened))
+    len(reopened): 3
     >>> reopened.update(location=str(folder))
-    >>> assert len(reopened) == 3
-    >>> assert fits.getheader(folder / 'image_0.fits', 1)['FILTER'] == 'R'
+    >>> print('len(reopened):', len(reopened))
+    len(reopened): 3
+    >>> print("fits.getheader(folder / 'image_0.fits', 1)['FILTER']:", fits.getheader(folder / 'image_0.fits', 1)['FILTER'])
+    fits.getheader(folder / 'image_0.fits', 1)['FILTER']: R
 
 Update rebuilds the index and logs unreadable files. It is not a transaction
 that guarantees every discovered file was accepted. Inspect the resulting file
@@ -62,9 +71,13 @@ measurements or output paths needed downstream, not every FrameData::
 
     >>> means = []
     >>> for frame in reopened.framedata(ext=1):
-    ...     assert frame.shape == (4, 4)
+    ...     print('frame.shape:', frame.shape)
     ...     means.append(float(np.mean(frame.data)))
-    >>> assert sorted(means) == [0., 1., 2.]
+    frame.shape: (4, 4)
+    frame.shape: (4, 4)
+    frame.shape: (4, 4)
+    >>> print('sorted(means):', sorted(means))
+    sorted(means): [0.0, 1.0, 2.0]
 
 Release the groups and collect reference cycles before deleting the temporary
 directory. This finalizes dbastable's SQLite connections, which can otherwise

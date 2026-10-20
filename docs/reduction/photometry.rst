@@ -35,10 +35,13 @@ clipping. The default ``global_bkg=True`` returns two scalar estimates; with
     >>> image = 100 + rng.normal(0, 2, (128, 128))
     >>> image += 500 * np.exp(-((x - 64.)**2 + (y - 64.)**2) / (2 * 2.**2))
     >>> sky, noise = background(image, box_size=32)
-    >>> assert abs(sky - 100) < 1 and 1 < noise < 3
+    >>> print(f'Background: {sky:.1f}; RMS: {noise:.1f}')
+    Background: 100.0; RMS: 2.0
     >>> sources = daofind(image, threshold=5, background=sky, noise=noise, fwhm=4.71)
-    >>> assert len(sources) >= 1
-    >>> assert np.hypot(sources['x'][0] - 64, sources['y'][0] - 64) < 1
+    >>> print('len(sources):', len(sources))
+    len(sources): 1
+    >>> print(f"Centroid: ({sources['x'][0]:.2f}, {sources['y'][0]:.2f})")
+    Centroid: (64.00, 64.00)
 
 ``daofind`` uses a Gaussian kernel with supplied ``fwhm``; its threshold is a
 multiple of noise above the supplied background. ``sharp_limit`` and
@@ -65,8 +68,8 @@ subtraction. Do not subtract the same background twice::
 
     >>> photometry = aperture_photometry(image, [64.], [64.], r=6.,
     ...                                  r_ann=(12., 18.), bkg_error=noise, gain=1.)
-    >>> assert photometry['flux'][0] > 0
-    >>> assert photometry['flux_error'][0] > 0
+    >>> print(f"Flux: {photometry['flux'][0]:.0f} +/- {photometry['flux_error'][0]:.0f}")
+    Flux: 12429 +/- 153
 
 ``bkg_method='mmm'`` and ``'mode'`` estimate local sky with
 ``3*median - 2*mean``; ``'median'`` and ``'mean'`` use those statistics directly.

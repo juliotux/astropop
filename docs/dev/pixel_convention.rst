@@ -15,7 +15,10 @@ geometric corner::
     >>> image = np.zeros((3, 5))
     >>> x, y = 4, 2
     >>> image[y, x] = 1
-    >>> assert image.shape == (3, 5) and image[2, 4] == 1
+    >>> print('image.shape:', image.shape)
+    image.shape: (3, 5)
+    >>> print('image[2, 4]:', image[2, 4])
+    image[2, 4]: 1.0
 
 ``np.indices`` returns ``(y_grid, x_grid)``. Astropop's ``iraf_indices`` helper
 instead returns ``(x_grid, y_grid)``, despite using the same zero-based centers.
@@ -47,7 +50,10 @@ coordinates, while ``1`` means FITS one-based coordinates. FITS header
     >>> wcs.wcs.cdelt = [1, 1]
     >>> zero_based = wcs.all_pix2world([[0, 0]], 0)
     >>> fits_based = wcs.all_pix2world([[1, 1]], 1)
-    >>> np.testing.assert_allclose(zero_based, fits_based)
+    >>> print('zero_based:', np.round(zero_based, 6))
+    zero_based: [[0. 0.]]
+    >>> print('fits_based:', np.round(fits_based, 6))
+    fits_based: [[0. 0.]]
 
 Photutils aperture positions also use zero-based ``(x, y)`` centers. Convert
 one-based external source lists explicitly; do not infer their origin from

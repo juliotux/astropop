@@ -138,15 +138,23 @@ alone does not identify a miss. The original catalog is unchanged::
     ...                      query_table=Table({'label': ['A'], 'count': [9]}))
     >>> matched = cat.match_objects([10, 180, 10], [20, -40, 20],
     ...                             limit_angle='1 arcsec')
-    >>> assert len(matched) == 3
-    >>> assert matched.sources_id().tolist() == ['A', '', 'A']
-    >>> assert np.isnan(matched.ra_dec_list()[1]).all()
-    >>> assert np.isnan(matched.magnitude('g').nominal[1])
-    >>> assert matched.query_table['count'].tolist() == [9, 0, 9]
-    >>> assert matched.query_table['label'].tolist() == ['A', '', 'A']
+    >>> print('len(matched):', len(matched))
+    len(matched): 3
+    >>> print('matched.sources_id().tolist():', matched.sources_id().tolist())
+    matched.sources_id().tolist(): ['A', '', 'A']
+    >>> print('Unmatched coordinates:', matched.ra_dec_list()[1])
+    Unmatched coordinates: [nan nan]
+    >>> print('Unmatched magnitude:', matched.magnitude('g').nominal[1])
+    Unmatched magnitude: nan
+    >>> print("matched.query_table['count'].tolist():", matched.query_table['count'].tolist())
+    matched.query_table['count'].tolist(): [9, 0, 9]
+    >>> print("matched.query_table['label'].tolist():", matched.query_table['label'].tolist())
+    matched.query_table['label'].tolist(): ['A', '', 'A']
     >>> successful = matched.sources_id() != ''
-    >>> assert len(matched[successful]) == 2
-    >>> assert cat.sources_id().tolist() == ['A']
+    >>> print('len(matched[successful]):', len(matched[successful]))
+    len(matched[successful]): 2
+    >>> print('cat.sources_id().tolist():', cat.sources_id().tolist())
+    cat.sources_id().tolist(): ['A']
 
 ``obstime`` selects the epoch used for nearest-neighbor searching when catalog
 proper motion and a reference epoch are available. Supply input coordinates at
@@ -165,10 +173,12 @@ example creates a source moving approximately one arcsecond east per year::
     >>> target = moving.get_coordinates(target_epoch)
     >>> at_epoch = moving.match_objects(target.ra.deg, target.dec.deg,
     ...                                 '0.1 arcsec', obstime=target_epoch)
-    >>> assert at_epoch.sources_id().tolist() == ['fast']
+    >>> print('at_epoch.sources_id().tolist():', at_epoch.sources_id().tolist())
+    at_epoch.sources_id().tolist(): ['fast']
     >>> at_original = moving.match_objects(target.ra.deg, target.dec.deg,
     ...                                    '0.1 arcsec')
-    >>> assert at_original.sources_id().tolist() == ['']
+    >>> print('at_original.sources_id().tolist():', at_original.sources_id().tolist())
+    at_original.sources_id().tolist(): ['']
 
 Matching selects rows; it is not a coordinate-correction operation. Recompute
 coordinates explicitly with ``get_coordinates(target_epoch)`` when inspecting

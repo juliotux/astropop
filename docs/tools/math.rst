@@ -48,9 +48,13 @@ parameters explicitly, and use Astropy's fitting tools if a fit is required::
     >>> from astropop.math.models import PSFGaussian2D, PSFMoffat2D
     >>> gaussian = PSFGaussian2D(x_0=2, y_0=2, flux=100, sigma_x=1, sigma_y=1, sky=10)
     >>> profile = gaussian(x, y)
-    >>> assert profile.shape == data.shape and profile[2, 2] > 10
+    >>> print('profile.shape:', profile.shape)
+    profile.shape: (5, 5)
+    >>> print(f'Central pixel: {profile[2, 2]:.2f}')
+    Central pixel: 25.92
     >>> moffat = PSFMoffat2D(width=2, power=2.5)
-    >>> assert float(moffat.fwhm) > 0
+    >>> print(f'Moffat FWHM: {float(moffat.fwhm):.2f} pixels')
+    Moffat FWHM: 2.26 pixels
 
 Gaussian widths are standard deviations; Moffat ``width`` and ``power``
 control the core and wings. Two-dimensional Gaussian ``theta`` is in degrees.

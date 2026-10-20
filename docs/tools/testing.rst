@@ -13,12 +13,11 @@ Values, arrays, and identity
 ``assert_equal`` and ``assert_almost_equal`` support scalar and array inputs.
 ``assert_almost_equal`` uses decimal places, rather than a relative tolerance.
 For numerical algorithms whose scale matters, NumPy's
-``np.testing.assert_allclose`` may express the intended tolerance more clearly::
-
-    >>> from astropop.testing import assert_equal, assert_almost_equal, assert_true
-    >>> assert_equal([1, 2], [1, 2])
-    >>> assert_almost_equal(1.0, 1.0000001, decimal=6)
-    >>> assert_true(2 > 1)
+``assert_allclose(actual, expected, rtol=..., atol=...)`` may express the
+intended tolerance more clearly. Call ``assert_equal(actual, expected)`` for
+exact equality, ``assert_almost_equal(actual, expected, decimal=6)`` for six
+places, or ``assert_true(condition)`` for a Boolean condition in a test.
+Successful checks return without printing; failures raise ``AssertionError``.
 
 ``assert_is``/``assert_is_not`` check object identity. The None, membership,
 instance, and ordering helpers check their named conditions. Most accept a
@@ -29,32 +28,27 @@ Exceptions, warnings, and paths
 
 ``assert_raises``, ``assert_raises_regex``, ``assert_warns``, and
 ``assert_not_warnings`` wrap NumPy's corresponding testing context managers.
-Use explicit expected exception or warning classes::
-
-    >>> from astropop.testing import assert_raises
-    >>> with assert_raises(ValueError):
-    ...     int('not a number')
+Pass an explicit expected exception or warning class to the context manager
+and put the operation being checked inside its block. Unexpected exceptions
+propagate instead of being treated as a successful check.
 
 ``assert_path_exists`` and ``assert_path_not_exists`` check filesystem paths.
 Create disposable fixtures in a test-specific temporary directory rather than
 in the source tree. See :doc:`../dev/testing` for running the project's offline
 tests, documentation checks, and separate live catalog conformance.
 
-For example, require one warning and then check a warning-free block::
+Recent NumPy versions deprecate the upstream warning helpers. For new code,
+prefer ``pytest.warns`` in tests or ``warnings.catch_warnings`` when inspecting
+warnings interactively. The latter lets you display the warning category and
+message directly::
 
     >>> import warnings
-    >>> from astropop.testing import assert_warns, assert_not_warnings
     >>> with warnings.catch_warnings(record=True) as recorded:
     ...     warnings.simplefilter('always')
-    ...     with assert_warns(UserWarning):
-    ...         warnings.warn('example warning', UserWarning)
-    ...     with assert_not_warnings():
-    ...         assert 1 + 1 == 2
-    >>> assert all(issubclass(item.category, DeprecationWarning) for item in recorded)
-
-Recent NumPy versions deprecate these upstream warning helpers; the example
-captures those deprecations locally for compatibility with older versions.
-For new tests, prefer ``pytest.warns`` or ``warnings.catch_warnings``.
+    ...     warnings.warn('example warning', UserWarning)
+    >>> for item in recorded:
+    ...     print(f'{item.category.__name__}: {item.message}')
+    UserWarning: example warning
 
 Testing helpers API
 -------------------

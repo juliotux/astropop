@@ -48,13 +48,14 @@ and expected results and use local temporary data.
   temporary data setup and cleanup only. Pytest executes those blocks;
   HTML hides them. Show meaningful evaluated results or formatted ``print``
   output in the visible workflow so doctests check what readers see. Avoid
-  assertions, ``np.testing`` calls and ``pytest.raises`` in tutorials; keep
-  implementation checks in the test suite. ``tutorial-data`` generates a
-  downloadable archive in the build directory using the same seeded generator.
+  assertions, ``np.testing`` calls and ``pytest.raises`` in documentation
+  examples; keep implementation checks in the test suite. ``tutorial-data``
+  generates a downloadable archive in the build directory using the same
+  seeded generator.
   Plots run the same fixture and reduction functions, rather than loading
-  external observations. The
-  generator is pure scientific Python on import; Sphinx imports stay in its
-  ``setup`` function so ordinary CI needs no documentation dependencies.
+  external observations. The generator is pure scientific Python on import;
+  Sphinx imports stay in its ``setup`` function so ordinary CI needs no
+  documentation dependencies.
 * Catalog help is rendered from bundled YAML configuration using
   ``catalog-help``; it does not construct a catalog or query a remote service.
 * Stored notebooks are rendered with ``nbsphinx_execute='never'``. The CCD
