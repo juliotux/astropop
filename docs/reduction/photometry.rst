@@ -3,6 +3,9 @@
 Photometry
 ==========
 
+Start with :doc:`../tutorials/photometry` for a local detect-measure-select
+workflow, including gain scaling and empty-field behavior.
+
 :mod:`astropop.photometry` provides background estimation, source detection,
 width estimation, and circular-aperture photometry. Pass two-dimensional
 numerical arrays, rather than FrameData objects, to these routines. For a

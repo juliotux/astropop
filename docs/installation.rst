@@ -42,6 +42,9 @@ to their external services; ordinary image reductions do not.
 A first reduction
 -----------------
 
+Continue with :doc:`tutorials/ccd_reduction` for a complete offline
+FITS-to-photometry example after this first calculation.
+
 Check which installation the interpreter imports, especially when using a
 notebook kernel::
 

@@ -181,7 +181,8 @@
         "pst-secondary-sidebar-modal",
         "pst-secondary-sidebar",
         "pst-page-navigation-heading-2",
-        "pst-page-toc-nav"
+        "pst-page-toc-nav",
+        "physical-quantities-and-uncertanties"
       ]
     },
     "data_structures/framedata.html": {
@@ -820,7 +821,8 @@
         "pst-secondary-sidebar-modal",
         "pst-secondary-sidebar",
         "pst-page-navigation-heading-2",
-        "pst-page-toc-nav"
+        "pst-page-toc-nav",
+        "soures-ids"
       ]
     },
     "tools/math.html": {

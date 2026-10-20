@@ -3,6 +3,9 @@
 Polarimetry Processing
 ======================
 
+Start with :doc:`../tutorials/polarimetry` to recover known half-wave Stokes
+parameters, then use this chapter for theory and advanced fitting choices.
+
 |astropop| polarimetry computation currently is desgined to work only with dual-beam polarimeters with half-wave plate (HWP) and quarter-wave plate (QWP) retarders, performing both circular and linear polarization computations, according the instrument capabilities and design. Savart or Wollaston analyzers are supported. For example of instruments that can be used with astropop, we already tested with success the following instruments:
 
 * IAGPOL [1]_ - Gaveta Polarimétrica do IAG `link <http://astroweb.iag.usp.br/~polarimetria/gaveta/default.htm>`_ at Observatório Pico dos Dias, Brazil

@@ -7,7 +7,8 @@
 Physical Quantities and Uncertainties
 =====================================
 
-Any physical measurement is not a simple number. It is a number, but have a physical unit and an uncertainty related to it.
+A physical measurement combines a nominal value, a physical unit and an
+uncertainty. QFloat stores these together for scalar and array calculations.
 
 |astropy| has a very useful module called `~astropy.units`, that handles physical units and |Quantity|, a container intended to store physical measurements with units.. But it doesn't perform any error propagation.
 
@@ -91,7 +92,7 @@ Units and Conversion
 
 Physical units are fully handled with `~astropy.units` module. But we don't use |Quantity| class to store the files. Instead, the code perform itself the units checking and conversions. This is needed to make it compatible with uncertainties, but reduces the compatibility with |astropy| functions directly.
 
-Internal conversion of units for math operations are made automatically and don't need manual intervention. But manual conversions are also possible using the ``<<`` operator or `~astropop.math.physical.QFloat.to` function. The same do the same thing: convert the actual |QFloat| to a new one, with the ne unit. Both accept `~astropy.units.UnitBase` instance or string for conversion.
+Internal conversion of units for math operations are made automatically and don't need manual intervention. But manual conversions are also possible using the ``<<`` operator or `~astropop.math.physical.QFloat.to` function. Both perform the same operation: convert the actual |QFloat| to a new one, with the new unit. Both accept `~astropy.units.UnitBase` instance or string for conversion.
 
 .. ipython:: python
 
@@ -123,7 +124,8 @@ scatter estimators described below.
 Supported Math Operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Since the math operations are the main reason of the |QFloat| to exist, they have a special focus in the implementation. All builtin Python math operations, with the exception of matrix multiplication, is implemented for |QFloat|. This makes possible to perform direct math operations with |QFloat|.
+Since the math operations are the main reason of the |QFloat| to exist, they have a special focus in the implementation. The arithmetic operators ``+``, ``-``, ``*``, ``/``, ``//``, ``%`` and ``**``
+are implemented for |QFloat|; matrix multiplication is not. This makes possible to perform direct math operations with |QFloat|.
 
 As example, to sum two |QFloat|, you just need to use the ``+`` operator.
 
@@ -158,7 +160,7 @@ Incorrect dimensionality in operations will raise |UnitsError|.
 Supported Numpy Array Operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Some `Numpy array functions <https://numpy.org/doc/1.19/reference/routines.array-manipulation.html>`_ are supported built-in by the |QFloat|, but not all of them. These functions are intended to perform array manipulations, like append, reshape, transpose, etc. With this compatibility you can use the Numpy functions directly with |QFloat| objects, like:
+Some `Numpy array functions <https://numpy.org/doc/stable/reference/routines.array-manipulation.html>`_ are supported built-in by the |QFloat|, but not all of them. These functions are intended to perform array manipulations, like append, reshape, transpose, etc. With this compatibility you can use the Numpy functions directly with |QFloat| objects, like:
 
 .. ipython:: python
 
@@ -304,6 +306,10 @@ Do not assume that all NumPy ufunc options work or are silently ignored::
 
 Use ``np.sum(q)`` for the supported quadrature-error summation.
 
+    >>> from astropy.units import UnitsError
+    >>> with pytest.raises(UnitsError):
+    ...     np.sin(QFloat(0.5))
+
 The current supported ufuncs are:
 
 - `~numpy.absolute` (``numpy.abs``)
@@ -347,7 +353,12 @@ All the units checking is automatically performed by |astropop|. In fact, most o
 Trigonometric Math
 ^^^^^^^^^^^^^^^^^^
 
-For trigonometric functions, like sines, cosines and tangents, the code is able to check the dimensionality of the numbers before perform the operation. So, only dimensionless numbers are accepted, being |dimensionless_unscaled| or |dimensionless_angles|. Any number with pyshical dimension don't make any sense inside trigonometric operations, which will raise an |UnitsError|.
+Direct trigonometric and hyperbolic functions require angles explicitly in
+``deg`` or ``rad``. Dimensionless values and other angular units are rejected
+with |UnitsError|; convert angular values to degrees or radians first. Results
+are dimensionless. Inverse functions instead require dimensionless unscaled
+input and return radians. These are the implemented conventions, including
+for hyperbolic functions.
 
 To avoid an additional module containing trigonometric functions inside |astropop|, these operations are performed using the |ufunc| described earlier. The main difference here is the unit checking performed by |astropop|.
 
@@ -445,7 +456,7 @@ Inequality handling is more ambiguous then equality to define. To avoid a comple
     qf2 >= qf1
     qf2 < qf1
 
-Note that errors are note being considered in operations. However, this operation perfmors full handling of physical units. So:
+These comparisons ignore uncertainties but check and convert physical units. So:
 
 .. ipython:: python
 
@@ -468,3 +479,7 @@ See :doc:`../reference/utilities` for the API reference.
     <span id="classes"></span>
     <span id="functions"></span>
     <span id="module-astropop.math.physical"></span>
+
+.. raw:: html
+
+    <span id="physical-quantities-and-uncertanties"></span>

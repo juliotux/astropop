@@ -217,3 +217,7 @@ See :doc:`../reference/catalogs` for the API reference.
     <span id="astropop-catalogs-package"></span>
     <span id="classes"></span>
     <span id="module-astropop.catalogs"></span>
+
+.. raw:: html
+
+    <span id="soures-ids"></span>
