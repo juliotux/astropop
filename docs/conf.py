@@ -14,6 +14,8 @@ nitpicky = True
 extensions = [
     'annotation_names',
     'catalog_help',
+    'tutorial_data',
+    'sphinx.ext.doctest',
     'sphinx.ext.intersphinx',
     'sphinx.ext.extlinks',
     'sphinx.ext.todo',
