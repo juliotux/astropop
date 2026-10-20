@@ -113,8 +113,8 @@ class Test_RunCommand():
         assert_equal(stderr, ['this is an error'])
 
     @pytest.mark.parametrize('com', com)
-    def test_logging(self, com):
-        logger.setLevel('DEBUG')
+    def test_logging(self, com, caplog):
+        caplog.set_level('DEBUG', logger=logger.name)
         logl = []
         expect_log = []
         if not isinstance(com, list):
@@ -139,8 +139,8 @@ class Test_RunCommand():
         logger.removeHandler(lh)
 
     @pytest.mark.parametrize('com', com2)
-    def test_logging_err(self, com):
-        logger.setLevel('DEBUG')
+    def test_logging_err(self, com, caplog):
+        caplog.set_level('DEBUG', logger=logger.name)
         logl = []
         expect_log = []
         if not isinstance(com, list):
