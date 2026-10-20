@@ -128,6 +128,7 @@ class FitsFileGroup():
         database: _PathLike=':memory:',
         **kwargs: _t.Any,
     ) -> None:
+        """Open the summary database and load the selected FITS headers."""
         self._ext = ext
         self._extensions = kwargs.pop('fits_ext', None)
         self._include = kwargs.pop('glob_include', None)
@@ -153,6 +154,11 @@ class FitsFileGroup():
         location: _PathLike | None,
         compression: bool,
     ) -> list[_PathLike]:
+        """Resolve explicit files or scan a directory using the configured filters.
+
+        Files and location are mutually exclusive. With neither supplied, return an
+        empty list. Compression controls the default extensions used for scanning.
+        """
         extensions = self._extensions
         if extensions is None:
             if compression:
@@ -430,6 +436,12 @@ class FitsFileGroup():
         self,
         item: str | int | slice | _npt.ArrayLike,
     ) -> FitsFileGroup | list[_t.Any]:
+        """Return a summary column or an independent group containing selected rows.
+
+        A keyword name selects its column values. An integer selects a one-file
+        group; slices and index arrays select a group in the requested order.
+        Unsupported keys raise KeyError.
+        """
         if isinstance(item, str):
             return self._table[item].values
 
