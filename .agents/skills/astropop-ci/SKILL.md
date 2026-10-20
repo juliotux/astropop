@@ -27,6 +27,24 @@ git diff --check
 
 The first path is a placeholder for the actual test module. If Ruff is not configured/installed in this checkout, inspect the repository's lint configuration first.
 
+## Documentation CI
+
+For documentation failures, inspect `tox config -e build_docs` and reproduce
+with `tox -e build_docs`. Its checks cover offline prompted examples, stored
+notebook schema/syntax/errors, a clean strict Sphinx build, and retained HTML
+URLs/anchors through `docs/development/check_docs.py`. Check the interpreter
+and extras against the GitHub docs job and `.readthedocs.yml`; use their current
+values rather than assuming the ordinary test matrix covers the docs environment.
+
+Distinguish a failed example, missing reference, broken legacy URL, unavailable
+external inventory, and missing rendering tools such as Pandoc. A notebook
+validation/rendering pass does not prove execution of its external workflow.
+Do not suppress warnings, remove URL expectations, or enable live queries to
+hide a failure. For page/API moves and example policy, follow the
+[documentation maintenance guide](../../../docs/development/documentation.rst).
+Report an isolated tox run separately from checks run in an existing environment,
+and configured hosted builds separately from observed remote results.
+
 ## Coverage and resources
 
 For a coverage collapse, inspect collection/skips and whether any test executes process-wide shutdown handlers. Preserve the existing cache API while repairing harness isolation unless cache redesign is explicitly in scope. Test exit behavior with a subprocess, not pytest's own exit handlers. Use per-test cache directories and close file handles, including on Windows.
