@@ -228,6 +228,22 @@ class SourcesCatalog:
             Observation time. If passed, it will be used to apply the proper
             motion to the coordinates, if available.
             Default: None
+
+        Returns
+        -------
+        matched : SourcesCatalog
+            New catalog with one row per input position, in input order.
+            Each position independently selects its nearest source, so
+            duplicates are possible. Unmatched rows have an empty ID, NaN
+            coordinates and photometry, and zero-valued auxiliary query
+            fields according to each field's dtype. The input catalog is
+            unchanged. Use ``matched.sources_id() != ''`` to select matches.
+
+        Notes
+        -----
+        ``obstime`` affects the search coordinates when proper motion is
+        available. Matching does not enforce one-to-one assignments or
+        replace catalog coordinates with the supplied positions.
         """
         # Match catalog to the objects using standard SkyCoord algorithm.
         obj_sk = SkyCoord(ra, dec, unit=['deg', 'deg'])

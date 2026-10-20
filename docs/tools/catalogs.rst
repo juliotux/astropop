@@ -75,17 +75,17 @@ Coordinates can be accessed using the `~astropop.catalogs.SourcesCatalog.skycoor
     cat.ra_dec_list()
     cat.get_coordinates()
 
-You can also access separated arrays for RA and Dec coordinates using the `~astropop.catalogs.SourcesCatalog.ra` and `~astropop.catalogs.SourcesCatalog.dec` properties.
+You can also access separated arrays for RA and Dec coordinates using the `~astropop.catalogs.SourcesCatalog.ra` and `~astropop.catalogs.SourcesCatalog.dec` methods.
 
 .. ipython:: python
 
     cat.ra()
     cat.dec()
 
-Soures IDs
+Source IDs
 ^^^^^^^^^^
 
-Sources IDs can be accessed using the `~astropop.catalogs.SourcesCatalog.sources_id` property.
+Source IDs can be accessed using the `~astropop.catalogs.SourcesCatalog.sources_id` method.
 
 .. ipython:: python
 
@@ -117,7 +117,64 @@ A summary table of the catalog can by obtained via `~astropop.catalogs.SourcesCa
 Object Matching
 ---------------
 
-To identify a list of sources in a |SourcesCatalog|, you can use the `~astropop.catalogs.SourcesCatalog.match_objects` method. In this method, lists of ``ra`` and ``dec`` coordinates are passed and the catalog will find the closest sources within a ``limit_angle`` radius around them. A new |SourcesCatalog| instance is returned, containing only the matched sources in the exact order of the ``ra`` and ``dec`` lists passed to the method. To handle high proper motion, ``obstime`` argument can also be passed, but only is applied when proper motion is available in the catalog.
+`~astropop.catalogs.SourcesCatalog.match_objects` finds the nearest catalog
+source independently for each input position, accepting it when its angular
+separation is at most ``limit_angle``. Supply coordinate arrays in decimal
+degrees and an explicit angular unit, for example ``'1 arcsec'``, for the limit.
+The returned catalog has the **same length and order as the input positions**,
+including unmatched rows. Multiple input positions can select the same catalog
+source; this is not a one-to-one assignment.
+
+Unmatched rows have an empty source ID, NaN coordinates and NaN magnitudes and
+magnitude errors. Auxiliary ``query_table`` fields are reset to their dtype's
+zero value (for example, numeric zero or an empty string), rather than NaN.
+Use the source-ID success mask to select valid rows; a zero auxiliary value
+alone does not identify a miss. The original catalog is unchanged::
+
+    >>> import numpy as np
+    >>> from astropy.table import Table
+    >>> from astropop.catalogs import SourcesCatalog
+    >>> cat = SourcesCatalog(ids=['A'], ra=[10], dec=[20], unit='deg',
+    ...                      mag={'g': [12]},
+    ...                      query_table=Table({'label': ['A'], 'count': [9]}))
+    >>> matched = cat.match_objects([10, 180, 10], [20, -40, 20],
+    ...                             limit_angle='1 arcsec')
+    >>> assert len(matched) == 3
+    >>> assert matched.sources_id().tolist() == ['A', '', 'A']
+    >>> assert np.isnan(matched.ra_dec_list()[1]).all()
+    >>> assert np.isnan(matched.magnitude('g').nominal[1])
+    >>> assert matched.query_table['count'].tolist() == [9, 0, 9]
+    >>> assert matched.query_table['label'].tolist() == ['A', '', 'A']
+    >>> successful = matched.sources_id() != ''
+    >>> assert len(matched[successful]) == 2
+    >>> assert cat.sources_id().tolist() == ['A']
+
+``obstime`` selects the epoch used for nearest-neighbor searching when catalog
+proper motion and a reference epoch are available. Supply input coordinates at
+that same target epoch. It does not infer missing proper motions. This local
+example creates a source moving approximately one arcsecond east per year::
+
+    >>> from astropy import units as u
+    >>> from astropy.time import Time
+    >>> moving = SourcesCatalog(ids=['fast'], ra=[10] * u.deg, dec=[20] * u.deg,
+    ...                         pm_ra_cosdec=[1000] * u.mas / u.yr,
+    ...                         pm_dec=[0] * u.mas / u.yr,
+    ...                         distance=[100] * u.pc,
+    ...                         radial_velocity=[0] * u.km / u.s,
+    ...                         obstime=Time('J2000'))
+    >>> target_epoch = Time('J2010')
+    >>> target = moving.get_coordinates(target_epoch)
+    >>> at_epoch = moving.match_objects(target.ra.deg, target.dec.deg,
+    ...                                 '0.1 arcsec', obstime=target_epoch)
+    >>> assert at_epoch.sources_id().tolist() == ['fast']
+    >>> at_original = moving.match_objects(target.ra.deg, target.dec.deg,
+    ...                                    '0.1 arcsec')
+    >>> assert at_original.sources_id().tolist() == ['']
+
+Matching selects rows; it is not a coordinate-correction operation. Recompute
+coordinates explicitly with ``get_coordinates(target_epoch)`` when inspecting
+propagated positions, rather than assuming the returned match coordinates are
+the input positions.
 
 .. ipython:: python
 
