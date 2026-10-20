@@ -9,6 +9,12 @@ Read the implementation, nearby tests, and the relevant guide under `docs/`. Kee
 
 ## Structure and contracts
 
+Annotations are the source of parameter and return types. For annotated
+callables, omit duplicate types from NumPy-style docstring fields; retain
+parameter/return names, behavior, units, shapes, defaults, errors and explicit
+strategy explanations. Configure Sphinx to render annotation-derived types,
+rather than hiding annotations or maintaining a second type definition.
+
 Use `docs/tutorials/` for complete learning workflows, `docs/how_to/` for tasks,
 `docs/concepts/` for shared assumptions, `docs/reference/` for API declarations,
 and `docs/development/` for contributor guidance. Existing module guides remain

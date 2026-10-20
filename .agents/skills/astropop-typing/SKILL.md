@@ -10,6 +10,15 @@ functions, constructors, methods, properties and nested helpers; `self` and
 `cls` normally need no explicit annotation. Exclude generated `version.py`.
 Preserve signatures, accepted inputs, defaults, mutation and scientific behavior.
 Annotations do not authorize adding coercion or runtime validation.
+Astropy models interpret inline annotations on `evaluate` as physical units.
+Use complete PEP 484 function type comments on those methods, preserving their
+original runtime annotations and unit behavior; ordinary methods use inline hints.
+
+Annotations are the source of parameter and return types. For annotated
+callables, omit duplicate types from NumPy-style docstring fields; retain
+parameter/return names, behavior, units, shapes, defaults, errors and explicit
+strategy explanations. Configure Sphinx to render annotation-derived types,
+rather than hiding annotations or maintaining a second type definition.
 
 Use Python 3.11-compatible types and postponed annotations where necessary.
 Use `numpy.typing.ArrayLike` for inputs accepting sequences/scalars and
@@ -32,6 +41,10 @@ Keep imports needed only by annotations under `TYPE_CHECKING` when runtime
 imports would cause a cycle or load an optional dependency. Preserve source
 formatting and line endings. Update public docstrings when an existing contract
 is ambiguous, without silently narrowing accepted input types to match a hint.
+
+Use `astropop/_typing.py` for shared scientific aliases. Keep the `py.typed`
+marker in packaged distributions. Run `python scripts/check_type_annotations.py`
+for signature coverage; it accepts complete PEP 484 comments for Astropy models.
 
 Validate annotation completeness and syntax separately from type correctness.
 Use the repository's configured static checks when present; inspect their scope
