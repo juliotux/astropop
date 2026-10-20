@@ -84,7 +84,7 @@ exclude = ["astropop._dev*", "tests*"]
 namespaces = false
 
 [tool.setuptools.package-data]
-"astropop" = ["data/*", "data/*/*", "data/*/*/*", "data/*/*/*/*"]
+"astropop" = ["py.typed", "data/*", "data/*/*", "data/*/*/*", "data/*/*/*/*"]
 "astropop.catalogs" = ["vizier_catalogs/*.yml"]
 
 [build-system]
