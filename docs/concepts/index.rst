@@ -12,3 +12,5 @@ and storage before selecting reduction settings.
     ../tools/flags
     ../dev/pixel_convention
     ../data_structures/cache
+    uncertainties
+    configuration

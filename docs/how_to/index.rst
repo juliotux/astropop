@@ -18,3 +18,6 @@ application.
     ../tools/catalogs
     ../tools/files
     ../tools/fits_utils
+    quality_flags
+    large_datasets
+    registration_diagnostics
