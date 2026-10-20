@@ -8,6 +8,7 @@ improvements.
 from __future__ import annotations
 
 import typing as _t
+from inspect import cleandoc as _cleandoc
 import numpy.typing as _npt
 import subprocess as _subprocess
 from ..framedata import FrameData as _FrameData
@@ -60,6 +61,7 @@ class SolveFieldCommand:
     _version = None
 
     def __init__(self, command: _PathLike | None=_solve_field) -> None:
+        """Validate the executable path or reuse an existing command wrapper."""
         if isinstance(command, SolveFieldCommand):
             self._version = command._version
             command = command._command
@@ -284,22 +286,33 @@ solve_field_params = {
 
 
 def get_options_help() -> str:
+    """Describe the supported solve-field options.
+
+    Returns
+    -------
+    help_text
+        A reStructuredText Notes section listing option names, accepted values
+        and their meanings. This only formats local definitions; it does not
+        invoke solve-field.
+    """
     s = "Notes\n-----\n\nThe supported options are:\n"
     for k, v in solve_field_params.items():
         s += f"    {k}: {v[0]}\n        {v[1]}\n"
     return s
 
 
-get_options_help.__doc__ = get_options_help()
+get_options_help.__doc__ = _cleandoc(get_options_help.__doc__) + '\n\n' + get_options_help()
 
 
 class AstrometryNetUnsolvedField(CalledProcessError):
     """Raised if Astrometry.net could not solve the field."""
 
     def __init__(self, path: _PathLike) -> None:
+        """Record the input path whose astrometric solution failed."""
         self.path = path
 
     def __str__(self) -> str:
+        """Describe the unsolved field using its input path."""
         return f"{self.path}: could not solve field"
 
 
@@ -381,6 +394,12 @@ def _parse_pltscl(options: dict[str, _t.Any]) -> list[str]:
 
 
 def _parse_crpix(options: dict[str, _t.Any]) -> list[str | float]:
+    """Consume reference-pixel options and build their command arguments.
+
+    The presence of ``'crpix-center'`` selects the image center. Otherwise both
+    ``'crpix-x'`` and ``'crpix-y'`` are required to emit an explicit position.
+    Combining the center option with both coordinates raises ValueError.
+    """
     center = False
     if 'crpix-center' in options:
         center = True
@@ -421,6 +440,7 @@ class AstrometricSolution():
         header: _HeaderLike,
         correspondences: Table | _npt.NDArray | None=None,
     ) -> None:
+        """Build a WCS and copy the header and optional correspondence table."""
         with warnings.catch_warnings():
             warnings.simplefilter('ignore')
             self._wcs = WCS(header, relax=True)
@@ -491,6 +511,7 @@ class AstrometrySolver():
         defaults: dict[str, _t.Any] | None=None,
         keep_files: bool=False,
     ) -> None:
+        """Configure solver defaults, validate its version and set file retention."""
         # declare the defaults here to be safer
         self._defaults = {'no-plots': None, 'overwrite': None}
         if defaults is None:
@@ -601,6 +622,11 @@ class AstrometrySolver():
         output_dir: _PathLike,
         correspond: _PathLike,
     ) -> list[_PathLike | float]:
+        """Build solve-field arguments for the input and output products.
+
+        Parsing consumes recognized entries from options. The root argument is
+        retained for compatibility but is not used to assemble the command.
+        """
         args = [fname, '--dir', output_dir]
         args += self._parse_options(options)
         args += ['--corr', correspond]
