@@ -78,6 +78,7 @@ illumination structure. The master flat should be near one, with no units.
 
 .. plot::
     :include-source: False
+    :alt: Master bias showing row and column structure, alongside the normalized flat sensitivity gradient and dust shadow.
     :caption: Master bias structure and normalized sensitivity from the supplied observations.
 
     from tutorial_data import plot_calibrations
@@ -130,6 +131,7 @@ frame uncertainties; see :doc:`../how_to/image_combination`.
 
 .. plot::
     :include-source: False
+    :alt: Raw science exposure, calibrated exposure and registered combined image on a common intensity scale.
     :caption: One raw exposure, its calibration, and the registered clipped mean, shown on a shared intensity scale.
 
     from tutorial_data import plot_reduction

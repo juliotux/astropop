@@ -77,6 +77,7 @@ it requires a matching change to the supplied background-noise scale.
 
 .. plot::
     :include-source: False
+    :alt: Stellar apertures and sky annuli on the reduced field, the sky map, and measured flux residuals relative to injected values.
     :caption: Detected stars with six-pixel apertures (cyan), sky annuli (orange), estimated background, and flux recovery against the injected stars.
 
     from tutorial_data import plot_photometry

@@ -44,6 +44,13 @@ and expected results and use local temporary data.
   ``code-block:: text`` for recorded console output. These blocks are not
   executed during the build. Run plot directives by building Sphinx, using
   seeded random generators.
+* Choose figures that answer a workflow question: which samples were rejected,
+  which sources matched, or where alignment residuals remain. Use computed
+  results, labeled axes and units, alternative text, and captions explaining
+  the interpretation. For shared plotting code, use an external-file directive
+  such as ``plot:: _ext/guide_figures.py plot_registration``. The
+  ``guide_figures`` extension records that helper as a source dependency so
+  edits to it invalidate the corresponding pages.
 * CCD and photometry tutorial fixtures use hidden ``doctest`` blocks for
   temporary data setup and cleanup only. Pytest executes those blocks;
   HTML hides them. Show meaningful evaluated results or formatted ``print``
