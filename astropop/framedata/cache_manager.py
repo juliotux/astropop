@@ -63,6 +63,7 @@ class TempDir:
         parent: TempDir | None=None,
         delete_on_remove: bool=True,
     ) -> None:
+        """Create the directory and register it with its parent or the global manager."""
         is_absolute = os.path.isabs(dirname)
 
         # only accept relative parents
@@ -173,6 +174,7 @@ class TempDir:
         return not keep
 
     def __enter__(self) -> _t.Self:
+        """Return this directory manager for use inside a context."""
         return self
 
     def __exit__(
@@ -181,12 +183,15 @@ class TempDir:
         exc_value: BaseException | None,
         traceback: _types.TracebackType | None,
     ) -> None:
+        """Apply directory deletion policy on exit without suppressing exceptions."""
         self.delete()
 
     def __str__(self) -> str:
+        """Return the configured directory name."""
         return self.dirname
 
     def __repr__(self) -> str:
+        """Identify the directory manager by its name and object address."""
         return f'<TempDir: "{self.dirname}" at {hex(id(self))}>'
 
 
@@ -224,6 +229,7 @@ class TempFile:
         parent: TempDir | None=None,
         delete_on_remove: bool=True,
     ) -> None:
+        """Register a basename with its parent without opening or creating the file."""
         if os.path.basename(filename) != filename:
             raise ValueError('filename must be a base name, not a full path.')
         # Initialize slots
@@ -277,6 +283,7 @@ class TempFile:
         self.file = None
 
     def __enter__(self) -> _t.Self:
+        """Return this file manager without opening the managed file."""
         return self
 
     def __exit__(
@@ -285,11 +292,14 @@ class TempFile:
         exc_value: BaseException | None,
         traceback: _types.TracebackType | None,
     ) -> None:
+        """Close the retained stream and apply deletion policy on context exit."""
         self.close()
         self.delete()
 
     def __str__(self) -> str:
+        """Return the managed file path."""
         return self.full_path
 
     def __repr__(self) -> str:
+        """Identify the file manager by its full path and object address."""
         return f'<TempFile: "{self.full_path}" at {hex(id(self))}>'

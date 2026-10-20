@@ -50,6 +50,7 @@ def shape_consistency(
         name: str,
         replicate: bool=False,
     ) -> _npt.ArrayLike | None:
+        """Validate an optional array against data, expanding a scalar when allowed."""
         if arr is None:
             return
         if arr is not None and data is None:
@@ -248,10 +249,12 @@ class FrameData:
     if _t.TYPE_CHECKING:
         @property
         def unit(self) -> u.UnitBase:
+            """Return the physical unit, using dimensionless units when none was stored."""
             ...
 
         @unit.setter
         def unit(self, value: _UnitLike) -> None:
+            """Normalize and replace the physical unit without rescaling pixel values."""
             ...
 
     _memmapping = False
@@ -282,6 +285,12 @@ class FrameData:
         origin_filename: _PathLike | None=None,
         **kwargs: _t.Any,
     ) -> None:
+        """Initialize image storage, metadata and enabled optional arrays.
+
+        The class documentation describes constructor parameters and configuration.
+        Disabled optional arrays are discarded before validation or allocation.
+        Memory mapping is enabled only when explicitly requested.
+        """
         # setup names
         setup_filename(self, cache_folder, cache_filename)
         self._origin = origin_filename
@@ -342,6 +351,7 @@ class FrameData:
                           kwargs.pop('wcs', None))
 
     def _meta_update(self, meta: _HeaderLike | None, wcs: WCS | None=None) -> None:
+        """Normalize FITS metadata, append commentary and separate the WCS."""
         # simplify things by enforcing meta type
         if not isinstance(meta, (dict, fits.Header, type(None))):
             raise TypeError('meta must be a dict, Header or None.')
@@ -401,6 +411,7 @@ class FrameData:
 
     @wcs.setter
     def wcs(self, value: WCS | None) -> None:
+        """Assign the WCS or clear it with None; reject other objects."""
         if isinstance(value, WCS) or value is None:
             self._wcs = value
         else:
@@ -413,6 +424,7 @@ class FrameData:
 
     @meta.setter
     def meta(self, value: _HeaderLike | None) -> None:
+        """Replace normalized metadata, append its commentary and extract its WCS."""
         self._meta_update(value)
 
     @property
@@ -427,6 +439,7 @@ class FrameData:
 
     @history.setter
     def history(self, value: str | _t.Iterable[str]) -> None:
+        """Append one or more history entries; ignore None."""
         if value is None:
             return
         if not np.isscalar(value):
@@ -441,6 +454,7 @@ class FrameData:
 
     @comment.setter
     def comment(self, value: str | _t.Iterable[str]) -> None:
+        """Append one or more comment entries; ignore None."""
         if value is None:
             return
         if not np.isscalar(value):
@@ -455,6 +469,7 @@ class FrameData:
 
     @data.setter
     def data(self, value: _npt.ArrayLike) -> None:
+        """Replace pixel storage and adopt an attached unit without propagating errors."""
         if hasattr(value, 'unit'):
             dunit = extract_units(value, None)
             self.unit = dunit
@@ -492,6 +507,12 @@ class FrameData:
 
     @uncertainty.setter
     def uncertainty(self, value: _npt.ArrayLike | u.Quantity | None) -> None:
+        """Replace standard uncertainties, checking units and data shape.
+
+        A scalar is expanded to the image shape. None or disabled uncertainty storage
+        removes the existing array and its backing file. Integer storage requires
+        finite values.
+        """
         if value is None or conf.FRAMEDATA_DISABLE_UNCERTAINTY:
             self._unct = delete_array_memmap(self._unct, read=False, remove=True)
             return
@@ -544,6 +565,11 @@ class FrameData:
 
     @flags.setter
     def flags(self, value: _npt.ArrayLike | None) -> None:
+        """Replace shape-matched flag bits using the pixel-flag dtype.
+
+        None or disabled flag storage removes the existing array and its backing
+        file. Scalar flags and values carrying physical units are rejected.
+        """
         if value is None or conf.FRAMEDATA_DISABLE_FLAGS:
             self._flags = delete_array_memmap(self._flags, read=False, remove=True)
             return
@@ -732,6 +758,7 @@ class FrameData:
         return result
 
     def __del__(self) -> None:
+        """Release memory mappings before deleting the managed cache directory."""
         if self.cache is not None:
             # Release mappings before deleting their files on Windows. There
             # is no need to copy the arrays when destroying the frame.
