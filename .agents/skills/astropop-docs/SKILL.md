@@ -33,9 +33,9 @@ matches which name from their order in a sentence.
 
 ## Examples and scientific behavior
 
-Use runnable examples for deterministic local behavior where the existing documentation tooling supports them. Use static Python blocks for live catalog examples so documentation builds do not depend on external catalog queries. Remove IPython-only options when converting a directive to `code-block`.
+Use standard `code-block:: python` directives for recipes and `code-block:: text` for stored console transcripts. Do not add IPython directives or execution-only options. Keep deterministic prompted examples and plot directives where execution is useful; static code blocks are not executed. Render VizieR help with `catalog-help`, using packaged configuration without constructing a catalog or querying services.
 Seed random generators in executable examples and plots. Distinguish pytest
-examples, Sphinx IPython/plot execution, verbatim transcripts, static recipes and
+examples, Sphinx plot execution, stored transcripts, static recipes and
 stored notebooks. Rendering or syntax-checking a notebook does not execute its
 workflow; do not report it as executed.
 
