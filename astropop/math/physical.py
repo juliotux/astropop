@@ -101,7 +101,7 @@ def convert_to_qfloat(value: _QuantityInput) -> QFloat:
 
 def require_qfloat(func: _t.Callable[..., _R]) -> _t.Callable[..., _R]:
     """Require qfloat as argument decorator."""
-    def decorator(self, *others: _QuantityInput) -> _R:
+    def decorator(self: QFloat, *others: _QuantityInput) -> _R:
         others = [convert_to_qfloat(i) for i in others]
         return func(self, *others)
     return decorator
@@ -211,12 +211,12 @@ def equal_within_errors(
 
     Parameters
     ----------
-    qf1, qf2: `~astropop.math.physical.QFloat`, `float` or `np.ndarray`
+    qf1, qf2
         QFloats to compare.
 
     Returns
     -------
-    bool:
+    bool
         `True` if the numbers are equal within the uncertainties,
         (the difference is smaller then the sum of errors). `False`
         if they are different.
@@ -249,17 +249,17 @@ def qfloat(
 
     Parameters
     ----------
-    value: number or array_like
+    value
         Nominal value(s) of the quantity.
-    uncertainty : number, array_like or `None` (optional)
+    uncertainty
         Uncertainty value of the quantity. If `None`, the quantity will be
         considered with no errors. Must match ``value`` shape.
-    unit: `~astropy.units.Unit` or string (optional)
+    unit
         The data unit. Must be `~astropy.units.Unit` compliant.
 
     Returns
     -------
-    f: `~astropop.math.physical.QFloat`
+    f
         The QFloat created.
     """
     f = QFloat(value, uncertainty, unit)
@@ -272,13 +272,13 @@ class QFloat():
 
     Parameters
     ----------
-    value : number, `~astropop.math.physical.QFloat` or array_like
+    value
         Nominal value(s) of the quantity. Must be a real number, array of real
         numbers or a QFloat.
-    uncertainty : number, array_like or `None` (optional)
+    uncertainty
         Uncertainty value of the quantity. If `None`, the quantity will be
         considered with no errors. Must match ``value`` shape.
-    unit : `~astropy.units.Unit` or string (optional)
+    unit
         The data unit. Must be `~astropy.units.Unit` compliant.
 
     Notes
@@ -287,6 +287,17 @@ class QFloat():
     - Units are handled by `~astropy.units`.
     - Math operations cares about units and uncertainties.
     """
+
+    # The decorator installs this descriptor at runtime; expose both access
+    # contracts to static tools without replacing the runtime implementation.
+    if _t.TYPE_CHECKING:
+        @property
+        def unit(self) -> units.UnitBase:
+            ...
+
+        @unit.setter
+        def unit(self, value: _UnitLike) -> None:
+            ...
 
     _nominal = None
     _uncert = None
@@ -426,12 +437,12 @@ class QFloat():
 
         Parameters
         ----------
-        value : number or array_like
+        value
             Nominal value(s) of the quantity.
-        uncertainty : number, array_like or `None` (optional)
+        uncertainty
             Uncertainty value of the quantity. If `None`, the quantity will be
             considered with no errors. Must match ``value`` shape.
-        unit : `~astropy.units.Unit` or string (optional)
+        unit
             The data unit. Must be `~astropy.units.Unit` compliant.
         """
         self.nominal = value
@@ -448,7 +459,7 @@ class QFloat():
 
         Returns
         -------
-        - QFloat:
+        result
             A new instance of this class, converted to the new unit.
         """
         other = units.Unit(unit, parse_strict='silent')
@@ -518,20 +529,20 @@ class QFloat():
         ----------
         function : callable
             Ufunc object that was called.
-        method : str
+        method
             String indicating which Ufunc method was called
             (``__call__``, ``reduce``, ``reduceat``, ``accumulate``,
             ``outer`` or ``inner``).
-        inputs : tuple
+        inputs
             A tuple of the input arguments to the ``ufunc``.
-        kwargs : keyword arguments
+        kwargs
             A dictionary containing the optional input arguments of the
             ``ufunc``. If given, any out arguments, both positional and
             keyword, are passed as a ``tuple`` in kwargs.
 
         Returns
         -------
-        result : `~astropop.math.physical.QFloat`
+        result
             Results of the ufunc, with the unit and uncertainty.
         """
         # Only call supported now
@@ -563,14 +574,14 @@ class QFloat():
 
         Parameters
         ----------
-        func: callable
+        func
             Arbitrary callable exposed by NumPy’s public API.
-        types: list
+        types
             Collection of unique argument types from the original NumPy
             function call that implement ``__array_function__``.
-        args: tuple
+        args
             Positional arguments directly passed on from the original call.
-        kwargs: dict
+        kwargs
             Keyword arguments directly passed on from the original call.
         """
         if func not in HANDLED_AFUNCS:

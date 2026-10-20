@@ -14,14 +14,14 @@ def hasher(string: object, size: int=8) -> str:
 
     Parameters
     ----------
-    string : object
+    string
         Value converted with str and encoded as UTF-8 before hashing.
-    size : int, optional
+    size
         Number of leading hexadecimal characters to return. Default: 8.
 
     Returns
     -------
-    digest : str
+    digest
         Leading digest characters. Truncated digests can collide.
     """
     string = str(string)

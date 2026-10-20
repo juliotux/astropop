@@ -109,19 +109,19 @@ def propagate_1(
 
     Parameters
     ----------
-    func: string
+    func
         Function name to perform error propagation. Must be in derivatives
         keys.
-    fx: float or array_like
+    fx
         Numerical result of f(x, y).
-    x: float or array_like
+    x
         Variable of the function.
-    sx: float or array_like
+    sx
         1-sigma errors of the function variable.
 
     Returns
     -------
-    sf: float or array_like
+    sf
         1-sigma uncorrelated error associated to the operation.
     """
     if func not in derivatives.keys():
@@ -154,19 +154,19 @@ def propagate_2(
 
     Parameters
     ----------
-    func: string
+    func
         Function name to perform error propagation. Must be in derivatives
         keys.
-    fxy: float or array_like
+    fxy
         Numerical result of f(x, y).
-    x, y: float or array_like
+    x, y
         Variables of the function.
-    sx, sy: float or array_like
+    sx, sy
         1-sigma errors of the function variables.
 
     Returns
     -------
-    sf: float or array_like
+    sf
         1-sigma uncorrelated error associated to the operation.
     """
     if func not in derivatives.keys():
@@ -200,18 +200,18 @@ def numerical_derivative(
 
     Parameters
     ----------
-    func: callable
+    func
         The function to compute the numerical derivative.
-    arg_ref: int or string
+    arg_ref
         Variable to be used for diferentiation. If int, a position will be
         used. If string, a variable name will be used.
-    step: float (optional)
+    step
         Epsilon to compute the numerical derivative, using the
         (-epsilon, +epsioln) method.
 
     Returns
     -------
-    derivative_wrapper: callable
+    derivative_wrapper
         Partial derivative function.
 
     Notes

@@ -44,20 +44,20 @@ class MoffatEquations:
 
         Parameters
         ----------
-        r : float or array
+        r
             Radial distance from the center.
-        width : float
+        width
             Moffat width parameter.
-        power : float
+        power
             Moffat power parameter.
-        flux : float
+        flux
             Total integrated flux parameter.
-        sky : float
+        sky
             Sky level parameter.
 
         Returns
         -------
-        values  : float or array
+        values
             Values of the model at r.
         """
         # multiply by pi to normalize in 1D
@@ -77,22 +77,22 @@ class MoffatEquations:
 
         Parameters
         ----------
-        x : float or array
+        x
             X coordinates to evaluate.
-        x0 : float
+        x0
             Center coordinates of the model.
-        width : float
+        width
             Moffat width parameter.
-        power : float
+        power
             Moffat power parameter.
-        flux : float
+        flux
             Total integrated flux parameter.
-        sky : float
+        sky
             Sky level parameter.
 
         Returns
         -------
-        values  : float or array
+        values
             Values of the model at x.
         """
         a = flux*2*(power - 1)/(width**2)
@@ -113,22 +113,22 @@ class MoffatEquations:
 
         Parameters
         ----------
-        x, y : float or array
+        x, y
             X and Y coordinates to evaluate.
-        x0, y0 : float
+        x0, y0
             Center coordinates of the model.
-        width : float
+        width
             Moffat width parameter.
-        power : float
+        power
             Moffat power parameter.
-        flux : float
+        flux
             Total integrated flux parameter.
-        sky : float
+        sky
             Sky level parameter.
 
         Returns
         -------
-        values  : float or array
+        values
             Values of the model at (x, y).
         """
         a = flux*(power - 1)/(np.pi*width**2)
@@ -326,18 +326,18 @@ class GaussianEquations:
 
         Parameters
         ----------
-        r : float or array
+        r
             Radial distance from the center.
-        flux : float
+        flux
             Total integrated flux parameter.
-        sigma : float
+        sigma
             Gaussian standard deviation parameter.
-        sky : float
+        sky
             Sky level parameter.
 
         Returns
         -------
-        values  : float or array
+        values
             Values of the model at r.
         """
         return sky + flux*np.exp(-0.5*(r**2)/(sigma**2))/(SQRT_TWO_PI*sigma)
@@ -354,20 +354,20 @@ class GaussianEquations:
 
         Parameters
         ----------
-        x : float or array
+        x
             X coordinates to evaluate.
-        x0 : float
+        x0
             Center coordinates of the model.
-        flux : float
+        flux
             Total integrated flux parameter.
-        sigma : float
+        sigma
             Gaussian standard deviation parameter.
-        sky : float
+        sky
             Sky level parameter.
 
         Returns
         -------
-        values  : float or array
+        values
             Values of the model at x.
         """
         a = flux/(SQRT_TWO_PI*sigma)
@@ -389,20 +389,20 @@ class GaussianEquations:
 
         Parameters
         ----------
-        x, y : float or array
+        x, y
             X and Y coordinates to evaluate.
-        x0, y0 : float
+        x0, y0
             Center coordinates of the model.
-        sigma_x, sigma_y : float
+        sigma_x, sigma_y
             Gaussian standard deviation parameters.
-        flux : float
+        flux
             Total integrated flux parameter.
-        sky : float
+        sky
             Sky level parameter.
 
         Returns
         -------
-        values  : float or array
+        values
             Values of the model at (x, y).
         """
         theta = np.radians(theta)
