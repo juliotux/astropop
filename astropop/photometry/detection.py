@@ -1,5 +1,11 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
+
+from __future__ import annotations
+
+import typing as _t
+import numpy.typing as _npt
+from .._typing import NumberArray as _NumberArray
 import numpy as np
 from astropy.convolution import convolve
 from astropy.modeling.fitting import LevMarLSQFitter
@@ -16,8 +22,16 @@ from astropop.math.array import trim_array, xy2r
 __all__ = ['segfind', 'daofind', 'starfind', 'median_fwhm']
 
 
-def segfind(data, threshold, background, noise, mask=None, fwhm=None, npix=5,
-            deblend=True):
+def segfind(
+    data: _npt.ArrayLike,
+    threshold: float,
+    background: _NumberArray,
+    noise: _NumberArray,
+    mask: _npt.ArrayLike | None=None,
+    fwhm: float | None=None,
+    npix: int=5,
+    deblend: bool=True,
+) -> Table:
     """Find sources using `~photutils.segmentation`.
 
     Parameters
@@ -133,7 +147,13 @@ def segfind(data, threshold, background, noise, mask=None, fwhm=None, npix=5,
     return res
 
 
-def _dao_source_morphology(data, x, y, r, mask=None):
+def _dao_source_morphology(
+    data: _npt.ArrayLike,
+    x: _npt.ArrayLike,
+    y: _npt.ArrayLike,
+    r: float,
+    mask: _npt.ArrayLike | None=None,
+) -> Table:
     """Measure each DAO source within its own circular segmentation mask."""
     columns = ['segment_flux', 'fwhm', 'eccentricity', 'elongation',
                'ellipticity', 'ellipse_cxx', 'ellipse_cyy', 'ellipse_cxy']
@@ -154,9 +174,18 @@ def _dao_source_morphology(data, x, y, r, mask=None):
     return vstack(tables, metadata_conflicts='silent')
 
 
-def daofind(data, threshold, background, noise, fwhm,
-            mask=None, sharp_limit=(0.2, 1.0), round_limit=(-1.0, 1.0),
-            exclude_border=True, positions=None):
+def daofind(
+    data: _npt.ArrayLike,
+    threshold: float,
+    background: _NumberArray,
+    noise: _NumberArray,
+    fwhm: float,
+    mask: _npt.ArrayLike | None=None,
+    sharp_limit: tuple[float, float] | None=(0.2, 1.0),
+    round_limit: tuple[float, float] | None=(-1.0, 1.0),
+    exclude_border: bool=True,
+    positions: _npt.ArrayLike | None=None,
+) -> Table:
     """Find sources using DAOfind algorithm.
 
     Parameters
@@ -283,9 +312,17 @@ def daofind(data, threshold, background, noise, fwhm,
     return res
 
 
-def starfind(data, threshold, background, noise, fwhm=None, mask=None,
-             sharp_limit=(0.2, 1.0), round_limit=(-1.0, 1.0),
-             exclude_border=True):
+def starfind(
+    data: _npt.ArrayLike,
+    threshold: float,
+    background: _NumberArray,
+    noise: _NumberArray,
+    fwhm: float | None=None,
+    mask: _npt.ArrayLike | None=None,
+    sharp_limit: tuple[float, float] | None=(0.2, 1.0),
+    round_limit: tuple[float, float] | None=(-1.0, 1.0),
+    exclude_border: bool=True,
+) -> Table:
     """Find stars using daofind AND sepfind.
 
     Parameters
@@ -376,7 +413,14 @@ def starfind(data, threshold, background, noise, fwhm=None, mask=None,
     return s
 
 
-def _fwhm_loop(model, data, x, y, xc, yc):
+def _fwhm_loop(
+    model: _t.Literal['gaussian', 'moffat'],
+    data: _npt.ArrayLike,
+    x: _npt.ArrayLike,
+    y: _npt.ArrayLike,
+    xc: float,
+    yc: float,
+) -> float:
     """
     Parameters
     ----------
@@ -421,7 +465,14 @@ def _fwhm_loop(model, data, x, y, xc, yc):
         return np.nan
 
 
-def median_fwhm(data, x, y, box_size=25, model='gaussian', min_fwhm=3.0):
+def median_fwhm(
+    data: _npt.ArrayLike,
+    x: _npt.ArrayLike,
+    y: _npt.ArrayLike,
+    box_size: int=25,
+    model: _t.Literal['gaussian', 'moffat']='gaussian',
+    min_fwhm: float=3.0,
+) -> float:
     """Calculate the median FWHM of the image with Gaussian or Moffat fit.
 
     Parameters
@@ -465,7 +516,7 @@ def median_fwhm(data, x, y, box_size=25, model='gaussian', min_fwhm=3.0):
     return fwhm
 
 
-def calc_fwhm(*args, **kwargs):
+def calc_fwhm(*args: _t.Any, **kwargs: _t.Any) -> float:
     """Calculate the median FWHM of the image with Gaussian or Moffat fit.
 
     Parameters

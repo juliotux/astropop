@@ -1,6 +1,13 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 """Aperture photometry module."""
 
+from __future__ import annotations
+
+import typing as _t
+import numpy.typing as _npt
+from .._typing import NumberArray as _NumberArray
+from photutils.aperture import Aperture as _Aperture
+
 import numpy as np
 import warnings
 from enum import Flag
@@ -53,7 +60,13 @@ class PhotometryFlags(Flag):
 PhotometryFlags.dtype = np.uint16
 
 
-def _err_out_of_bounds(shape, x, y, r, flag):
+def _err_out_of_bounds(
+    shape: tuple[int, int],
+    x: _npt.ArrayLike,
+    y: _npt.ArrayLike,
+    r: float,
+    flag: PhotometryFlags,
+) -> _npt.NDArray:
     """Detect when the aperture goes out of the image bounds."""
     # ensure r is positive
     r = np.absolute(r)
@@ -70,7 +83,12 @@ def _err_out_of_bounds(shape, x, y, r, flag):
     return flags
 
 
-def _err_pixel_flags(pixel_flags, apertures, flag_pixel, flag_aperture):
+def _err_pixel_flags(
+    pixel_flags: _npt.ArrayLike | None,
+    apertures: _Aperture,
+    flag_pixel: PixelMaskFlags,
+    flag_aperture: PhotometryFlags,
+) -> _npt.NDArray:
     """Detect when a pixel is flagged. Pixel flags is a 2D image flags."""
     flags = np.zeros(len(apertures), dtype=PhotometryFlags.dtype)
     if pixel_flags is None:
@@ -82,8 +100,17 @@ def _err_pixel_flags(pixel_flags, apertures, flag_pixel, flag_aperture):
     return flags
 
 
-def _calc_local_bkg(data, positions, r_in, r_out, error, bkg_method,
-                    sigma_clip, pixel_flags, mask):
+def _calc_local_bkg(
+    data: _npt.ArrayLike,
+    positions: _npt.ArrayLike,
+    r_in: float,
+    r_out: float,
+    error: _npt.ArrayLike | None,
+    bkg_method: _t.Literal['mmm', 'mode', 'median', 'mean'],
+    sigma_clip: float | None,
+    pixel_flags: _npt.ArrayLike | None,
+    mask: _npt.ArrayLike | None,
+) -> tuple[_NumberArray, _NumberArray, float, _npt.NDArray]:
     """Compute the background annulus for aperture photometry."""
     ann_ap = CircularAnnulus(positions, r_in=r_in, r_out=r_out)
 
@@ -123,7 +150,15 @@ def _calc_local_bkg(data, positions, r_in, r_out, error, bkg_method,
     return bkg, bkg_std, bkg_area, bkg_flags
 
 
-def _recenter_sources(data, x, y, r, limit, method, mask):
+def _recenter_sources(
+    data: _npt.ArrayLike,
+    x: _npt.ArrayLike,
+    y: _npt.ArrayLike,
+    r: float,
+    limit: float,
+    method: _t.Literal['com', 'gaussian', 'quadratic'],
+    mask: _npt.ArrayLike | None,
+) -> tuple[_npt.NDArray, _npt.NDArray, _npt.NDArray]:
     """Recenter the sources using photutils.centroids."""
     if method == 'com':
         func = centroid_com
@@ -160,11 +195,22 @@ def _recenter_sources(data, x, y, r, limit, method, mask):
     return x, y, error
 
 
-def aperture_photometry(data, x, y, r='auto', r_ann='auto',
-                        recenter_limit=None, recenter_method='com',
-                        gain=1.0, bkg_error=None, mask=None,
-                        bkg_method='mmm', bkg_sigma_clip=3.0,
-                        pixel_flags=None, box_size=11):
+def aperture_photometry(
+    data: _npt.ArrayLike,
+    x: _npt.ArrayLike,
+    y: _npt.ArrayLike,
+    r: float | _t.Literal['auto']='auto',
+    r_ann: tuple[float, float] | _t.Literal['auto'] | None='auto',
+    recenter_limit: float | None=None,
+    recenter_method: _t.Literal['com', 'gaussian', 'quadratic']='com',
+    gain: float=1.0,
+    bkg_error: _npt.ArrayLike | None=None,
+    mask: _npt.ArrayLike | None=None,
+    bkg_method: _t.Literal['mmm', 'mode', 'median', 'mean']='mmm',
+    bkg_sigma_clip: float | None=3.0,
+    pixel_flags: _npt.ArrayLike | None=None,
+    box_size: int=11,
+) -> Table:
     """Perform circular-aperture photometry using Photutils.
 
     Data are divided by gain before measurement. Returned fluxes are on this
