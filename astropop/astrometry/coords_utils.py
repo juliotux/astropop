@@ -1,6 +1,10 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 '''Functions to easy handle with astronomical coordinates.'''
 
+from __future__ import annotations
+
+import numpy.typing as _npt
+
 import numpy as np
 from astropy.coordinates import SkyCoord
 from astropy import units
@@ -8,7 +12,11 @@ from astropy import units
 __all__ = ['guess_coordinates']
 
 
-def guess_coordinates(ra, dec, skycoord=True):
+def guess_coordinates(
+    ra: _npt.ArrayLike,
+    dec: _npt.ArrayLike,
+    skycoord: bool=True,
+) -> SkyCoord | tuple[float | _npt.NDArray, float | _npt.NDArray]:
     """Try to guess the format or ra and dec passed."""
     # TODO: this needs a refactor!
     # process as lists of coordinates

@@ -1,6 +1,10 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 """Create WCS manually."""
 
+from __future__ import annotations
+
+import typing as _t
+
 import six
 import numpy as np
 from astropy.wcs import WCS
@@ -19,7 +23,15 @@ _angles = {
 }
 
 
-def wcs_from_coords(x, y, ra, dec, plate_scale, north, flip=None):
+def wcs_from_coords(
+    x: float,
+    y: float,
+    ra: str | float,
+    dec: str | float,
+    plate_scale: float,
+    north: float | _t.Literal['left', 'right', 'top', 'bottom'],
+    flip: _t.Literal['ra', 'dec', 'all'] | None=None,
+) -> WCS:
     """Create WCS based on coordinates and plate scale.
 
     x, y: float, pixel coordinates in image

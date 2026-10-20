@@ -5,6 +5,15 @@ This module wraps the astrometry.net solve-field routine, with automatic
 improvements.
 """
 
+from __future__ import annotations
+
+import typing as _t
+import numpy.typing as _npt
+import subprocess as _subprocess
+from ..framedata import FrameData as _FrameData
+from .._typing import (PathLike as _PathLike, UnitLike as _UnitLike,
+                       HeaderLike as _HeaderLike, ImageHDU as _ImageHDU)
+
 import os
 import shutil
 from subprocess import CalledProcessError
@@ -50,7 +59,7 @@ class SolveFieldCommand:
     """
     _version = None
 
-    def __init__(self, command=_solve_field):
+    def __init__(self, command: _PathLike | None=_solve_field) -> None:
         if isinstance(command, SolveFieldCommand):
             self._version = command._version
             command = command._command
@@ -59,14 +68,18 @@ class SolveFieldCommand:
         self._command = command
 
     @property
-    def version(self):
+    def version(self) -> version.Version:
         """Return the version of the solve-field command."""
         if self._version is None:
             _, sout, _ = run_command([self._command, '--version'])
             self._version = version.parse(sout[0])
         return self._version
 
-    def run(self, args, **kwargs):
+    def run(
+        self,
+        args: _t.Sequence[str],
+        **kwargs: _t.Any,
+    ) -> tuple[_subprocess.CompletedProcess[str], list[str], list[str]]:
         """Run the solve-field command."""
         return run_command([self._command, *args], **kwargs)
 
@@ -270,7 +283,7 @@ solve_field_params = {
 }
 
 
-def get_options_help():
+def get_options_help() -> str:
     s = "Notes\n-----\n\nThe supported options are:\n"
     for k, v in solve_field_params.items():
         s += f"    {k}: {v[0]}\n        {v[1]}\n"
@@ -283,14 +296,14 @@ get_options_help.__doc__ = get_options_help()
 class AstrometryNetUnsolvedField(CalledProcessError):
     """Raised if Astrometry.net could not solve the field."""
 
-    def __init__(self, path):
+    def __init__(self, path: _PathLike) -> None:
         self.path = path
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.path}: could not solve field"
 
 
-def _parse_angle(angle, unit=None):
+def _parse_angle(angle: str | float | Angle, unit: _UnitLike=None) -> float:
     """Transform angle in float."""
     # plate scale
     # radius
@@ -313,7 +326,7 @@ def _parse_angle(angle, unit=None):
     return float(angle)
 
 
-def _parse_coordinates(options):
+def _parse_coordinates(options: dict[str, _t.Any]) -> list[str]:
     """Parse filed center coordinates."""
     coord = options.pop('center', None)
     ra = options.pop('ra', None)
@@ -340,7 +353,7 @@ def _parse_coordinates(options):
     return ['--ra', str(ra), '--dec', str(dec)]
 
 
-def _parse_pltscl(options):
+def _parse_pltscl(options: dict[str, _t.Any]) -> list[str]:
     """Parse plate scale."""
     low = options.pop('scale-low', None)
     hi = options.pop('scale-high', None)
@@ -367,7 +380,7 @@ def _parse_pltscl(options):
             '--scale-units', str(units)]
 
 
-def _parse_crpix(options):
+def _parse_crpix(options: dict[str, _t.Any]) -> list[str | float]:
     center = False
     if 'crpix-center' in options:
         center = True
@@ -403,7 +416,11 @@ class AstrometricSolution():
     _header = None
     _corr = None
 
-    def __init__(self, header, correspondences=None):
+    def __init__(
+        self,
+        header: _HeaderLike,
+        correspondences: Table | _npt.NDArray | None=None,
+    ) -> None:
         with warnings.catch_warnings():
             warnings.simplefilter('ignore')
             self._wcs = WCS(header, relax=True)
@@ -412,17 +429,17 @@ class AstrometricSolution():
                 self._corr = Table(correspondences)
 
     @property
-    def wcs(self):
+    def wcs(self) -> WCS:
         """World Coordinate System `~astropy.wcs.WCS` solution."""
         return copy.deepcopy(self._wcs)
 
     @property
-    def header(self):
+    def header(self) -> fits.Header:
         """`~astropy.io.fits.Header` containing the astrometric solution."""
         return copy.deepcopy(self._header)
 
     @property
-    def correspondences(self):
+    def correspondences(self) -> Table | None:
         """Correspondece `~astropy.table.Table` between image stars and
         ``astrometry.net`` index objects.
 
@@ -468,8 +485,12 @@ class AstrometrySolver():
     and does not synthesize astrometry.cfg files from arbitrary parameters.
     """
 
-    def __init__(self, solve_field=_solve_field, defaults=None,
-                 keep_files=False):
+    def __init__(
+        self,
+        solve_field: _PathLike | SolveFieldCommand | None=_solve_field,
+        defaults: dict[str, _t.Any] | None=None,
+        keep_files: bool=False,
+    ) -> None:
         # declare the defaults here to be safer
         self._defaults = {'no-plots': None, 'overwrite': None}
         if defaults is None:
@@ -481,7 +502,13 @@ class AstrometrySolver():
             raise ValueError('Astrometry.net version must be at least 0.95.')
         self._keep = keep_files
 
-    def solve_field(self, filename, options=None, output_dir=None, **kwargs):
+    def solve_field(
+        self,
+        filename: _PathLike,
+        options: dict[str, _t.Any] | None=None,
+        output_dir: _PathLike | None=None,
+        **kwargs: _t.Any,
+    ) -> AstrometricSolution:
         """Try to solve an image using the astrometry.net.
 
         Parameters
@@ -524,11 +551,15 @@ class AstrometrySolver():
         return AstrometricSolution(header=solved_header,
                                    correspondences=coorespond)
 
-    def print_options_help(self):
+    def print_options_help(self) -> None:
         """Print the available options for ``solve-field``."""
         print(get_options_help())
 
-    def _get_output_dir(self, root, output_dir):
+    def _get_output_dir(
+        self,
+        root: str,
+        output_dir: _PathLike | None,
+    ) -> tuple[_PathLike, bool]:
         """Check output directory and create the temporary directory."""
         if output_dir is None:
             output_dir = mkdtemp(prefix=root + '_', suffix='_astrometry.net')
@@ -538,7 +569,7 @@ class AstrometrySolver():
             tmp_dir = False
         return output_dir, tmp_dir
 
-    def _parse_options(self, options):
+    def _parse_options(self, options: dict[str, _t.Any]) -> list[str | float]:
         """Parse and check all known options."""
         for key in options.keys():
             if key not in solve_field_params:
@@ -562,14 +593,26 @@ class AstrometrySolver():
 
         return args
 
-    def _get_args(self, root, fname, options, output_dir,
-                  correspond):
+    def _get_args(
+        self,
+        root: str,
+        fname: _PathLike,
+        options: dict[str, _t.Any],
+        output_dir: _PathLike,
+        correspond: _PathLike,
+    ) -> list[_PathLike | float]:
         args = [fname, '--dir', output_dir]
         args += self._parse_options(options)
         args += ['--corr', correspond]
         return args
 
-    def _run_solver(self, filename, options, output_dir=None, **kwargs):
+    def _run_solver(
+        self,
+        filename: _PathLike,
+        options: dict[str, _t.Any],
+        output_dir: _PathLike | None=None,
+        **kwargs: _t.Any,
+    ) -> tuple[fits.Header, Table]:
         """Run the astrometry.net localy using the given params.
 
         STDOUT and STDERR can be stored in variables for better check after
@@ -616,7 +659,16 @@ class AstrometrySolver():
             raise AstrometryNetUnsolvedField(filename)
 
 
-def create_xyls(fname, x, y, flux, imagew, imageh, header=None, dtype='f8'):
+def create_xyls(
+    fname: _PathLike,
+    x: _npt.ArrayLike,
+    y: _npt.ArrayLike,
+    flux: _npt.ArrayLike,
+    imagew: int,
+    imageh: int,
+    header: _HeaderLike | None=None,
+    dtype: _npt.DTypeLike='f8',
+) -> None:
     """Create and save the xyls file to run in astrometry.net
 
     Parameters
@@ -648,10 +700,17 @@ def create_xyls(fname, x, y, flux, imagew, imageh, header=None, dtype='f8'):
     f.writeto(fname, output_verify="ignore")
 
 
-def solve_astrometry_xy(x, y, flux, width, height,
-                        image_header=None, options=None,
-                        command=_solve_field,
-                        **kwargs):
+def solve_astrometry_xy(
+    x: _npt.ArrayLike,
+    y: _npt.ArrayLike,
+    flux: _npt.ArrayLike,
+    width: int,
+    height: int,
+    image_header: _HeaderLike | None=None,
+    options: dict[str, _t.Any] | None=None,
+    command: _PathLike | SolveFieldCommand | None=_solve_field,
+    **kwargs: _t.Any,
+) -> AstrometricSolution:
     """Solve astrometry from a (x,y) sources list using astrometry.net.
 
     Parameters
@@ -700,8 +759,12 @@ def solve_astrometry_xy(x, y, flux, width, height,
     return solver.solve_field(f.name, options=options, **kwargs)
 
 
-def solve_astrometry_framedata(frame, options=None, command=_solve_field,
-                               **kwargs):
+def solve_astrometry_framedata(
+    frame: _FrameData,
+    options: dict[str, _t.Any] | None=None,
+    command: _PathLike | SolveFieldCommand | None=_solve_field,
+    **kwargs: _t.Any,
+) -> AstrometricSolution:
     """Solve astrometry from a `~astropop.framedata.FrameData`.
 
     Parameters
@@ -732,8 +795,12 @@ def solve_astrometry_framedata(frame, options=None, command=_solve_field,
     return solver.solve_field(f.name, options=options, **kwargs)
 
 
-def solve_astrometry_image(filename, options=None, command=_solve_field,
-                           **kwargs):
+def solve_astrometry_image(
+    filename: _PathLike,
+    options: dict[str, _t.Any] | None=None,
+    command: _PathLike | SolveFieldCommand | None=_solve_field,
+    **kwargs: _t.Any,
+) -> AstrometricSolution:
     """Solve astrometry from an image using astrometry.net.
 
     Parameters
@@ -762,7 +829,12 @@ def solve_astrometry_image(filename, options=None, command=_solve_field,
     return solver.solve_field(filename, options=options, **kwargs)
 
 
-def solve_astrometry_hdu(hdu, options=None, command=_solve_field, **kwargs):
+def solve_astrometry_hdu(
+    hdu: _ImageHDU,
+    options: dict[str, _t.Any] | None=None,
+    command: _PathLike | SolveFieldCommand | None=_solve_field,
+    **kwargs: _t.Any,
+) -> AstrometricSolution:
     """Solve astrometry from a `~astropy.io.fits.ImageHDU` using astrometry.net.
 
     Parameters
