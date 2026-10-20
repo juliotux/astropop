@@ -65,7 +65,14 @@ measurements or output paths needed downstream, not every FrameData::
     ...     assert frame.shape == (4, 4)
     ...     means.append(float(np.mean(frame.data)))
     >>> assert sorted(means) == [0., 1., 2.]
+
+Release the groups and collect reference cycles before deleting the temporary
+directory. This finalizes dbastable's SQLite connections, which can otherwise
+keep the database file open on Windows::
+
+    >>> import gc
     >>> del frame, group, reopened, red
+    >>> _ = gc.collect()
     >>> temporary.cleanup()
 
 Do not wrap the iterator in ``list`` when the purpose is to bound live image
