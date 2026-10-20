@@ -29,17 +29,17 @@ def mask_from_flags(
 
     Parameters
     ----------
-    values: `~numpy.ndarray`
+    values
         Array continaing the values to be evaluated.
-    flags_to_mask : list of `~enum.Flag` or `~enum.Flag`
+    flags_to_mask
         List of flags to be masked.
-    allowed_flags_class : `~enum.Flag` or `None`
+    allowed_flags_class
         If not `None`, only flags from this class will be allowed. If `None`,
         any flag will be allowed.
 
     Returns
     -------
-    mask : `~numpy.ndarray`
+    mask
         Boolean mask with the same shape as ``values`` where all the pixels or
         elements that match any of the given flags will be masked.
     """

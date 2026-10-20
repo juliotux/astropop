@@ -26,7 +26,7 @@ def string_to_header_key(string: str) -> str:
 
     Parameters
     ----------
-    string : str
+    string
         String to convert to header key.
     """
     # for non hierarch keys, we will use normalized keywords (uppercase)

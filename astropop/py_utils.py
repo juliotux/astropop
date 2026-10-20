@@ -33,15 +33,15 @@ def string_fix(string: object, encode: str='utf-8') -> str:
 
     Parameters
     ----------
-    string: `str` or `bytes`
+    string
         String to be checked or converted.
-    encode: string (optional)
+    encode
         Python compatible `bytes` like encoding.
         Default: 'utf-8'
 
     Returns
     -------
-    string: `str`
+    string
         The Python 3 string.
     """
     if isinstance(string, bytes):
@@ -58,12 +58,12 @@ def check_number(value: object) -> bool:
 
     Parameters
     ----------
-    value: any
+    value
         Value to be checked.
 
     Returns
     -------
-    bool:
+    bool
         `True` if the value is a scalar number (not string, list or array) and
         `False` otherwise.
     """
@@ -148,9 +148,9 @@ def batch_key_replace(
 
     Parameters
     ----------
-    dictionary: dict_like
+    dictionary
         Dictionary to replace the keys.
-    key: string or None, optional
+    key
         The key to be replaced.
     """
     if key is None:
@@ -278,21 +278,21 @@ def run_command(
 
     Parameters
     ----------
-    args: list of strings or string
+    args
         Full command, with arguments, to be executed.
-    stdout: list (optional)
+    stdout
         List to store the stdout of the command. If None, a new list will be
         created.
-    stderr: list (optional)
+    stderr
         List to store the stderr of the command. If None, a new list will be
         created.
-    stdout_loglevel: string (optional)
+    stdout_loglevel
         Log level to print the stdout lines. Default is 'DEBUG'.
-    stderr_loglevel: string (optional)
+    stderr_loglevel
         Log level to print the stderr lines. Default is 'ERROR'.
-    logger: `~logging.Logger` (optional)
+    logger
         Custom logger to print the outputs.
-    **kwargs: dict (optional)
+    **kwargs
         Additional arguments passed to `~asyncio.create_subprocess_exec` on
         Windows or `~asyncio.create_subprocess_shell` on other platforms.
 

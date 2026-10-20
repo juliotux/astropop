@@ -21,10 +21,10 @@ class ListHandler(logging.Handler):
 
     Parameters
     ----------
-    log_list : list or None, optional
+    log_list
         List to store the logs. If None, a new list will be created and
         can be accesses with `ListHandler.log_list`
-    full_record : bool, optional
+    full_record
         Store the full Python log record instead of just the message.
     """
     def __init__(
@@ -66,11 +66,11 @@ def log_to_list(
 
     Parameters
     ----------
-    logger : `logging.Logger`
+    logger
         `~logging.Logger` instance where handler will be added.
-    log_list : list or None, optional
+    log_list
         List to store log records.
-    full_record : bool, optional
+    full_record
         Store full log records instead of just the message.
 
     Returns

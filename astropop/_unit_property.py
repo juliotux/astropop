@@ -16,7 +16,7 @@ class _UnitContainer(_t.Protocol):
     _unit: units.UnitBase | None
 
 
-def unit_property(cls) -> _C:
+def unit_property(cls: _C) -> _C:
     """Add a ``unit`` property to a class."""
     def _unit_getter(obj: _UnitContainer) -> units.UnitBase:
         if obj._unit is None:
