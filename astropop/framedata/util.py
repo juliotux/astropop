@@ -28,10 +28,10 @@ def read_framedata(obj: _ImageInput, copy: bool=False, **kwargs: _t.Any) -> Fram
 
     Parameters
     ----------
-    obj : compatible image object
+    obj
         FrameData, FITS filename or path, image HDU, HDUList, CCDData,
         NumPy array, Quantity, or QFloat. Image data must be two-dimensional.
-    copy : bool, optional
+    copy
         If obj is already a FrameData, return a copy instead of the original.
         Default: False.
     **kwargs
@@ -43,7 +43,7 @@ def read_framedata(obj: _ImageInput, copy: bool=False, **kwargs: _t.Any) -> Fram
 
     Returns
     -------
-    frame : `~astropop.framedata.FrameData`
+    frame
         Loaded image. Optional uncertainty and flag storage follows the
         current configuration when constructing or copying a frame.
 

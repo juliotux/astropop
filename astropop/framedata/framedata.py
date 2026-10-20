@@ -107,15 +107,15 @@ def uncertainty_unit_consistency(
 
     Parameters
     ----------
-    unit: string or `~astropy.units.Unit`
+    unit
         Target uncertainty unit. Mainly, this is the FrameData unit.
-    uncertainty: array_like
+    uncertainty
         Uncertainty object. If it has units, it will be converted to the
         target.
 
     Returns
     -------
-    uncertainty: `numpy.ndarray`
+    uncertainty
         Uncertainty converted to the target unit.
     """
     # Assume a plain array uncertainty if no unit.
@@ -197,22 +197,22 @@ class FrameData:
 
     Parameters
     ----------
-    data : array_like or `~astropy.units.Quantity`
+    data
         The main data values. If `~astropy.units.Quantity`, unit will be set
         automatically. If using any quantity with masks, you must set the mask
         in a separate parameter.
-    unit : `~astropy.units.Unit` or string (optional)
+    unit
         The data unit. Must be `~astropy.units.Unit` compliant.
-    dtype : string or `~numpy.dtype` (optional)
+    dtype
         Integer or floating-point dtype of the data. Default: float64.
         Integer uncertainties use the same dtype and truncate fractions.
-    uncertainty : float, array_like or `None` (optional)
+    uncertainty
         Standard deviation in the data unit. Scalars are expanded to the
         image shape; arrays must match it. Default: None.
-    mask : array_like or `None` (optional)
+    mask
         Frame mask. All the masked pixels will be flagged as
         `PixelMaskFlags.MASKED` and `PixelMaskFlags.UNSPECIFIED`.
-    flags : array_like or `None` (optional)
+    flags
         Pixel flags matching the image shape. See `PixelMaskFlags` for values.
         Stored as uint8; defaults to zeros unless flag storage is disabled.
     wcs : `~astropy.wcs.WCS` or `None` (optional)
@@ -221,15 +221,15 @@ class FrameData:
     meta or header: `dict` or `~astropy.io.fits.Header` (optional)
         Metadata (header) of the frame. Only one accepted. If both are passed,
         error will be raised.
-    cache_folder : string, TempDir or `None` (optional)
+    cache_folder
         Directory for cached arrays. A temporary directory under the Astropy
         cache is created by default. Use a dedicated directory: cache cleanup
         removes the directory and its contents.
-    cache_filename : string, `~pathlib.Path` or `None` (optional)
+    cache_filename
         Base file name to store the cached `~astropop.framedata.FrameData`.
-    origin_filename : string, `~pathlib.Path` or `None` (optional)
+    origin_filename
         Original file name of the data, available as ``origin_filename``.
-    use_memmap_backend : `bool` (optional)
+    use_memmap_backend
         Enable memmapping in the constructor using the configured cache folder.
 
     Notes
@@ -242,6 +242,17 @@ class FrameData:
       creating frames to avoid allocating these arrays. Changing the settings
       afterward hides existing arrays without freeing their memory.
     """
+
+    # The decorator installs this descriptor at runtime; expose both access
+    # contracts to static tools without replacing the runtime implementation.
+    if _t.TYPE_CHECKING:
+        @property
+        def unit(self) -> u.UnitBase:
+            ...
+
+        @unit.setter
+        def unit(self, value: _UnitLike) -> None:
+            ...
 
     _memmapping = False
     _unit = None
@@ -454,12 +465,12 @@ class FrameData:
 
         Parameters
         ----------
-        fill_value : number, optional
+        fill_value
             Value assigned to masked pixels in the copy. Default: numpy.nan.
 
         Returns
         -------
-        data : numpy.ndarray
+        data
             Independent data array. The stored pixels are unchanged. Integer data
             with an enabled mask are promoted to floating point for a nonfinite
             fill; finite fills retain the data dtype. With flags absent or disabled,
@@ -508,13 +519,13 @@ class FrameData:
 
         Parameters
         ----------
-        return_none : bool, optional
+        return_none
             Return None for missing or disabled uncertainty. If False, allocate
             a zero-filled array instead. Default: True.
 
         Returns
         -------
-        uncertainty : numpy.ndarray or None
+        uncertainty
             Independent array with the data shape and dtype, or None. Returning
             zeros is an explicit allocation even when storage is disabled.
         """
@@ -555,9 +566,9 @@ class FrameData:
 
         Parameters
         ----------
-        flag : `PixelMaskFlags`
+        flag
             Flag to be added.
-        where : `~numpy.ndarray`
+        where
             Positions where the flag will be added.
         """
         if not isinstance(flag, PixelMaskFlags):
@@ -582,11 +593,11 @@ class FrameData:
 
         Parameters
         ----------
-        flags: list of `PixelMaskFlags` or `PixelMaskFlags`
+        flags
 
         Returns
         -------
-        mask: `~numpy.ndarray` or None
+        mask
             True for masked pixels; None when flags are absent or disabled.
         """
         pixel_flags = self.flags
@@ -600,7 +611,7 @@ class FrameData:
 
         Parameters
         ----------
-        pixels: `~numpy.ndarray` or tuple
+        pixels
             Pixels to be masked. Can be a tuple of (y, x) positions or a
             boolean array where True means masked. Uses the same standard as
             ``array[pixels]`` indexing.
@@ -616,9 +627,9 @@ class FrameData:
 
         Parameters
         ----------
-        filename : str, optional
+        filename
             Custom memmap file name.
-        cache_folder : str, optional
+        cache_folder
             Custom folder to cache data.
         """
         # early return for already memmapped
@@ -659,13 +670,13 @@ class FrameData:
 
         Parameters
         ----------
-        dtype : numpy dtype or str, optional
+        dtype
             Convert the copied data and present uncertainties to this dtype.
             If None, keep their existing dtypes. Default: None.
 
         Returns
         -------
-        frame : FrameData
+        frame
             Independent frame with a separate cache directory. Memory-mapped
             sources produce a copy with its own mapped files. Optional-array
             configuration is evaluated when copying, so hidden arrays are omitted.
@@ -779,14 +790,14 @@ class FrameData:
 
         Parameters
         ----------
-        wcs_relax: `bool`, optional.
+        wcs_relax
             Allow non-standard WCS keys.
             Default: `True`
-        no_fits_standard_units: `bool`, optional
+        no_fits_standard_units
             Allow Astropy-compatible unit strings instead of requiring
             FITS-standard unit formatting.
             Default: `True`
-        **kwargs:
+        **kwargs
             hdu_uncertainty: string, optional
                 Standard-deviation extension name (default: ``UNCERT``).
                 Set to None to omit this extension.
@@ -800,7 +811,7 @@ class FrameData:
 
         Returns
         -------
-        `~astropy.io.fits.HDUList` :
+        result
             HDU list containing data, metadata, WCS, and present optional arrays.
         """
         return _to_hdu(self, wcs_relax=wcs_relax,
@@ -812,7 +823,7 @@ class FrameData:
 
         Returns
         -------
-        `~astropy.nddata.CCDData` :
+        result
             CCDData with data, unit, metadata, WCS, standard-deviation
             uncertainty, and Boolean mask. Missing optional arrays remain
             None. Individual flag bits and the separate history and comment
@@ -831,18 +842,18 @@ class FrameData:
 
         Parameters
         ----------
-        filename: str
+        filename
             Name of the file to write.
-        overwrite: bool, optional
+        overwrite
             If True, overwrite the file if it exists.
         wcs_relax: `bool`, optional.
             Allow non-standard WCS keys.
             Default: `True`
-        no_fits_standard_units: `bool`, optional
+        no_fits_standard_units
             Allow Astropy-compatible unit strings instead of requiring
             FITS-standard unit formatting.
             Default: `True`
-        **kwargs:
+        **kwargs
             hdu_uncertainty: string, optional
                 Standard-deviation extension name (default: ``UNCERT``).
                 Set to None to omit this extension.

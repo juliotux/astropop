@@ -46,11 +46,11 @@ class TempDir:
 
     Parameters
     ----------
-    dirname : str
+    dirname
         The directory name to be created.
-    delete_on_remove : bool, optional
+    delete_on_remove
         If True, the directory will be deleted when removed from the manager.
-    parent : TempDir or None, optional
+    parent
         Parent manager for a relative basename. With None, relative names use
         BaseTempDir and absolute names create top-level managed directories.
     """
@@ -107,14 +107,14 @@ class TempDir:
 
         Parameters
         ----------
-        basename: str
+        basename
             Base name of the file to be created.
-        delete_on_remove: bool
+        delete_on_remove
             Allow deletion on removal or shutdown when True. False retains it.
 
         Returns
         -------
-        TempFile:
+        TempFile
             The created TempFile instance.
         """
         f = TempFile(basename, parent=self,
@@ -127,14 +127,14 @@ class TempDir:
 
         Parameters
         ----------
-        basename: str
+        basename
             Base name of the file or folder to be created.
-        delete_on_remove: bool
+        delete_on_remove
             Allow deletion on removal or shutdown when True. False retains it.
 
         Returns
         -------
-        TempDir:
+        TempDir
             The created TempDir instance.
         """
         f = TempDir(basename, parent=self,
@@ -208,11 +208,11 @@ class TempFile:
 
     Parameters
     ----------
-    filename : str
+    filename
         The file name to be created. Only the base name will be used.
-    parent : TempDir
+    parent
         The parent directory where the file will be created.
-    delete_on_remove : bool, optional
+    delete_on_remove
         If True, the file will be deleted when removed from the manager.
     """
 

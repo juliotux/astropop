@@ -62,16 +62,16 @@ def extract_header_wcs(header: _HeaderLike) -> tuple[fits.Header, WCS | None]:
 
     Parameters
     ----------
-    header: `~astropy.fits.Header` or dict_like
+    header
         Header to extract the WCS.
     logger: `~logging.Logger` (optional)
         Logger instance to log warnings.
 
     Returns
     -------
-    header: `~astropy.fits.Header`
+    header
         Header cleaned from WCS keys.
-    wcs: `~astropy.wcs.WCS` os `None`
+    wcs
         World Coordinate Sistem extracted from the header.
     """
     header = header.copy()

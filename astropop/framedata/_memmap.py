@@ -22,17 +22,17 @@ def create_array_memmap(
 
     Parameters
     ----------
-    filename : `string`, `~pathlib.Path`
+    filename
         Name of memmap file to be created.
-    data : array_like
+    data
         Data to be stored in the memmap.
-    dtype : `string`, `~numpy.dtype` or `None` (optional)
+    dtype
         `~numpy.dtype` compilant data type. If `None`, `data.dtype` will be
         used.
 
     Returns
     -------
-    memmap : `~numpy.memmap`
+    memmap
         Memmap object of cached data.
     """
     # scalars should not be memmaped
@@ -66,17 +66,17 @@ def delete_array_memmap(
 
     Parameters
     ----------
-    memmap : array_like or `None`
+    memmap
         MemMap array to be deleted.
-    read : `bool` (optional)
+    read
         Read the data to memory before delete.
-    remove : `bool` (optional)
+    remove
         Close the mapping and delete the memmap file. References to the
         mapping, including views, must not be used afterwards.
 
     Returns
     -------
-    data : array_like or `None`
+    data
         Data read from memmap.
     """
     if memmap is None or np.isscalar(memmap):
@@ -110,14 +110,14 @@ def reset_memmap_array(
 
     Parameters
     ----------
-    array : array_like
+    array
         MemMap array to be reseted.
-    data : array_like
+    data
         Data to be stored in the memmap.
 
     Returns
     -------
-    memmap : `~numpy.memmap`
+    memmap
         Memmap object of cached data.
     """
     # scalar not memmaped
