@@ -46,7 +46,7 @@ class VizierSourcesCatalog(_OnlineSourcesCatalog):
 
     Parameters
     ----------
-    config_file: string or dict
+    config_file
         Yaml configuration file containing the parameters to be used
         for catalog queries, like table id, column names, etc.
     center: string, tuple or `~astropy.coordinates.SkyCoord`

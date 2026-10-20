@@ -36,9 +36,9 @@ class SourcesCatalog:
 
     Parameters
     ----------
-    ids: array
+    ids
         Names or ids of the objects in the catalog.
-    mag: `dict` (optional)
+    mag
         Dictionary of photometric magnitudes for each available filter. The
         keys are the names of the filters and the values are the photometric
         magnitudes of the object in a `~astropop.math.physical.QFloat` array. Photometry
@@ -55,7 +55,7 @@ class SourcesCatalog:
         motion on a target observation time.
     frame: str (optional)
         Celestial frame of coordinates. Default is 'ICRS'
-    query_table: `~astropy.table.Table` (optional)
+    query_table
         Optional table containing additional informations you may want to use
         for the sources. It must have the same number and order of the sources
         in the catalog.
@@ -153,12 +153,12 @@ class SourcesCatalog:
 
         Parameters
         ----------
-        band : str
+        band
             The band name.
 
         Returns
         -------
-        mag : float
+        mag
             The sources magnitude in QFloat format.
         """
         self._ensure_band(band)
@@ -171,12 +171,12 @@ class SourcesCatalog:
 
         Parameters
         ----------
-        band : str
+        band
             The band name.
 
         Returns
         -------
-        mag_list : list
+        mag_list
             List of tuples of (mag, mag_error).
         """
         mags = self.magnitude(band)
@@ -242,21 +242,21 @@ class SourcesCatalog:
 
         Parameters
         ----------
-        ra, dec: float or array-like
+        ra, dec
             RA and Dec coordinates of the objects to be matched to this
             catalog. All coordinates in decimal degree format.
-        limit_angle: string, float, `~astropy.coordinates.Angle`
+        limit_angle
             Angle limit for matching indexes. If string, if must be
             `~astropy.coordinates.Angle` compatible. If float, it will be
             interpreted as a decimal degree.
-        obstime: `~astropy.time.Time` (optional)
+        obstime
             Observation time. If passed, it will be used to apply the proper
             motion to the coordinates, if available.
             Default: None
 
         Returns
         -------
-        matched : SourcesCatalog
+        matched
             New catalog with one row per input position, in input order.
             Each position independently selects its nearest source, so
             duplicates are possible. Unmatched rows have an empty ID, NaN
@@ -377,18 +377,18 @@ class _OnlineSourcesCatalog(SourcesCatalog, abc.ABC):
 
         Parameters
         ----------
-        center: string, tuple or `~astropy.coordinates.SkyCoord`
+        center
             The center of the search field.
             If center is a string, can be an object name or the string
             containing the object coordinates. If it is a tuple, have to be
             (ra, dec) coordinates, in hexa or decimal degrees format.
-        radius: string, float, `~astropy.coordinates.Angle` (optional)
+        radius
             The radius to search. If None, the query will be performed as
             single object query mode. Else, the query will be performed as
             field mode. If a string value is passed, it must be readable by
             astropy.coordinates.Angle. If a float value is passed, it will
             be interpreted as a decimal degree radius.
-        band: string or list(string) (optional)
+        band
             Filters to query photometric informations. If None, photometric
             informations will be disabled. If ``'all'`` (default), all
             available filters will be queried. If a list, all filters in that

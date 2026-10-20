@@ -55,13 +55,13 @@ def get_center_radius(
 
     Parameters
     ----------
-    ra, dec: pair of coordinate lists in decimal degrees.
+    ra, dec
 
     Returns
     -------
-    center_ra: the RA of the center of the field.
-    center_dec: the DEC of the center of the field.
-    radius: The minimum radius to fit all objects in.
+    center_ra
+    center_dec
+    radius
     """
     center_ra = (np.max(ra) + np.min(ra))/2
     center_dec = (np.max(dec) + np.min(dec))/2

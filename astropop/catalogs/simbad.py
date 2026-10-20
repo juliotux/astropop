@@ -67,20 +67,20 @@ def _simbad_query_id(
 
     Parameters
     ----------
-    ra, dec : `float`
+    ra, dec
         RA and DEC decimal degrees coordinates to query.
-    limit_angle : string, float, `~astropy.coordinates.Angle`
+    limit_angle
         Maximum radius for search. If a string value is passed, it must be
         readable by astropy.coordinates.Angle. If a float value is passed,
         it will be interpreted as a decimal degree radius.
-    name_order : `list`, optional
+    name_order
         Order of priority of name prefixes to query. None will use the default
         order of ['MAIN_ID', 'NAME', 'HD', 'HR', 'HYP', 'TYC', 'AAVSO'].
         Default: None
 
     Returns
     -------
-    `str` or list(`str`)
+    result
         The ID of each object queried. If a single object is queried,
         a string is returned. If a list of objects is queried, a list
         of strings is returned.
@@ -138,19 +138,19 @@ def simbad_query_id(
 
     Parameters
     ----------
-    ra, dec : `float` or list(`float`)
+    ra, dec
         RA and DEC decimal degrees coordinates to query. If more than one
         object is queried, ra and dec must be lists of the same length.
-    limit_angle : string, float, `~astropy.coordinates.Angle`
+    limit_angle
         Maximum radius for search.
-    name_order : `list`, optional
+    name_order
         Order of priority of name prefixes to query. None will use the default
         order of ['MAIN_ID', 'NAME', 'HD', 'HR', 'HYP', 'TYC', 'AAVSO'].
         Default: None
 
     Returns
     -------
-    `str` or list(`str`)
+    result
         The ID of each object queried. If a single object is queried,
         a string is returned. If a list of objects is queried, a list
         of strings is returned.
@@ -167,18 +167,18 @@ class SimbadSourcesCatalog(_OnlineSourcesCatalog):
 
     Parameters
     ----------
-    center: string, tuple or `~astropy.coordinates.SkyCoord`
+    center
         The center of the search field.
         If center is a string, can be an object name or the string
         containing the object coordinates. If it is a tuple, have to be
         (ra, dec) coordinates, in hexa or decimal degrees format.
-    radius: string, float, `~astropy.coordinates.Angle` (optional)
+    radius
         The radius to search. If None, the query will be performed as
         single object query mode. Else, the query will be performed as
         field mode. If a string value is passed, it must be readable by
         astropy.coordinates.Angle. If a float value is passed, it will
         be interpreted as a decimal degree radius.
-    band: string or list(string) (optional)
+    band
         Filters to query photometric informations. If `None`, photometric
         informations will be disabled. If ``'all'`` (default), all
         available filters will be queried. If a list, all filters in that

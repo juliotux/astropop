@@ -74,27 +74,27 @@ class GaiaDR3SourcesCatalog(_OnlineSourcesCatalog):
 
     Parameters
     ----------
-    center: string, tuple or `~astropy.coordinates.SkyCoord`
+    center
         The center of the search field.
         If center is a string, can be an object name or the string
         containing the object coordinates. If it is a tuple, have to be
         (ra, dec) coordinates, in hexa or decimal degrees format.
-    radius: string, float, `~astropy.coordinates.Angle`
+    radius
         The radius to search. If None, the query will be performed as
         single object query mode. Else, the query will be performed as
         field mode. If a string value is passed, it must be readable by
         astropy.coordinates.Angle. If a float value is passed, it will
         be interpreted as a decimal degree radius.
-    band: string or list(string) (optional)
+    band
         Filters to query photometric informations. If None, photometric
         informations will be disabled. If ``'all'`` (default), all
         available filters will be queried. If a list, all filters in that
         list will be queried. By default, all filters are available.
-    max_g_mag: float (optional)
+    max_g_mag
         Maximum G-band magnitude to query. If None, no magnitude
         filtering will be performed. Default is None.
 
-    query_mode: {'async', 'sync'} (optional)
+    query_mode
         Use asynchronous jobs (default) or synchronous requests. Synchronous
         queries fetch pages of at most 2000 sources and return the complete
         result sorted by distance, without creating asynchronous jobs.
