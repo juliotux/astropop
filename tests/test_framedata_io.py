@@ -94,6 +94,39 @@ class TestFrameData2FITS:
 
 
 class TestFrameDataWriteFits:
+    @pytest.mark.parametrize('attribute', ['history', 'comment'])
+    @pytest.mark.parametrize('separator', ['\n', '\r\n', '\r'])
+    def test_write_multiline_commentary(self, tmp_path, attribute, separator):
+        frame = FrameData(np.ones((2, 2)))
+        messages = ['', f'first{separator}second{separator}{separator}last']
+        setattr(frame, attribute, messages)
+        filename = tmp_path / 'multiline.fits'
+
+        frame.write(filename)
+
+        with fits.open(filename) as hdul:
+            assert_equal(list(hdul[0].header[attribute]),
+                         ['', 'first', 'second', '', 'last'])
+            assert_equal(hdul[0].data, frame.data)
+        assert_equal(getattr(frame, attribute), messages)
+
+    def test_write_arithmetic_debug_history(self, tmp_path, caplog):
+        from astropop.image import imarith
+        from astropop.logger import logger
+
+        frame = FrameData(np.arange(12).reshape(3, 4), unit='adu')
+        with caplog.at_level('DEBUG', logger=logger.name):
+            result = imarith(frame, frame, '+')
+        # NumPy formats the operands on multiple lines in the debug message.
+        assert_true(any('\n' in entry for entry in result.history))
+        filename = tmp_path / 'arithmetic.fits'
+
+        result.write(filename)
+
+        with fits.open(filename) as hdul:
+            assert_equal(hdul[0].data, 2 * frame.data)
+            assert_in('Operation + between', '\n'.join(hdul[0].header['HISTORY']))
+
     def test_write_fits_defaults(self, tmpdir):
         fn = tmpdir.join('test.fits')
         frame = create_framedata()

@@ -313,10 +313,14 @@ def _to_hdu(
 
     if frame.history is not None:
         for i in frame.history:
-            header['history'] = i
+            # Debug records can include multiline array representations.
+            # FITS commentary cards cannot contain newline characters.
+            for line in i.splitlines() or ['']:
+                header['history'] = line
     if frame.comment is not None:
         for i in frame.comment:
-            header['comment'] = i
+            for line in i.splitlines() or ['']:
+                header['comment'] = line
     hdul = fits.HDUList(fits.PrimaryHDU(data, header=header))
 
     uncert = frame.uncertainty if hdu_uncertainty else None
