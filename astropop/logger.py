@@ -1,6 +1,7 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
 
+"""Configure Astropop logging and capture messages in caller-owned lists."""
 from __future__ import annotations
 
 import typing as _t
@@ -32,6 +33,7 @@ class ListHandler(logging.Handler):
         log_list: list[_t.Any] | None=None,
         full_record: bool=False,
     ) -> None:
+        """Retain a destination list or create one, choosing messages or full records."""
         logging.Handler.__init__(self)
         if log_list is None:
             log_list = []

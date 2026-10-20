@@ -1,5 +1,6 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
+"""Astronomical image reduction, photometry and catalog tools."""
 __all__ = ['__version__']
 
 try:

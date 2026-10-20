@@ -76,19 +76,23 @@ def check_number(value: object) -> bool:
 class _scalar_iterator(_t.Generic[_T]):
     """Iterator for scalar values."""
     def __init__(self, value: _T, length: int) -> None:
+        """Retain a scalar and the number of times it should be exposed."""
         self.value = value
         self.length = length
 
     def __iter__(self) -> _t.Iterator[_T]:
+        """Yield the same scalar the configured number of times."""
         for i in range(self.length):
             yield self.value
 
     def __getitem__(self, index: int) -> _T:
+        """Return the scalar for a valid nonnegative index, otherwise raise IndexError."""
         if index >= self.length or index < 0:
             raise IndexError
         return self.value
 
     def __len__(self) -> int:
+        """Return the configured repetition count."""
         return self.length
 
 
@@ -202,6 +206,7 @@ async def _subprocess(
 ) -> subprocess.CompletedProcess[str]:
     """Execute subprocesses."""
     def proccess_out(line: bytes, std_l: list[str], loglevel: int) -> None:
+        """Decode a UTF-8 output line, remove its line ending, store it and log it."""
         line = line.decode("utf-8").rstrip('\r\n')
         std_l.append(line)
         logger.log(loglevel, line)

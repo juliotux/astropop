@@ -22,8 +22,10 @@ def _optional(
     remains available. The wrapped function's arguments and metadata are kept.
     """
     def decorate(func: _t.Callable[_P, _R]) -> _t.Callable[_P, _R | None]:
+        """Wrap a callable while preserving its arguments and metadata."""
         @_wraps(func)
         def optional(*args: _P.args, **kwargs: _P.kwargs) -> _R | None:
+            """Return None for an enabled disable-setting, otherwise call the function."""
             if any(getattr(AstropopConfig, name) for name in disable_options):
                 return None
             return func(*args, **kwargs)
