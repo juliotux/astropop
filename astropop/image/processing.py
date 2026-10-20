@@ -1,5 +1,11 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
+
+from __future__ import annotations
+
+import typing as _t
+from .._typing import ImageInput as _ImageInput, QuantityInput as _QuantityInput
+from ..framedata import FrameData
 import os
 import numpy as np
 import astroscrappy
@@ -19,7 +25,11 @@ __all__ = ['cosmics_lacosmic', 'gain_correct', 'subtract_bias',
 # block_replicate = ccdproc.block_replicate
 
 
-def cosmics_lacosmic(frame, inplace=False, **lacosmic_kwargs):
+def cosmics_lacosmic(
+    frame: _ImageInput,
+    inplace: bool=False,
+    **lacosmic_kwargs: _t.Any,
+) -> FrameData:
     """
     Remove cosmic rays with LAcosmic. From astroscrappy package.
 
@@ -64,7 +74,11 @@ def cosmics_lacosmic(frame, inplace=False, **lacosmic_kwargs):
     return ccd
 
 
-def gain_correct(image, gain, inplace=False):
+def gain_correct(
+    image: _ImageInput,
+    gain: _QuantityInput,
+    inplace: bool=False,
+) -> FrameData:
     """
     Process the gain correction of an image.
 
@@ -102,7 +116,11 @@ def gain_correct(image, gain, inplace=False):
     return nim
 
 
-def subtract_bias(image, master_bias, inplace=False):
+def subtract_bias(
+    image: _ImageInput,
+    master_bias: _ImageInput,
+    inplace: bool=False,
+) -> FrameData:
     """
     Subtract a master_bias frame from a FrameData.
 
@@ -144,8 +162,13 @@ def subtract_bias(image, master_bias, inplace=False):
     return nim
 
 
-def subtract_dark(image, master_dark, dark_exposure, image_exposure,
-                  inplace=False):
+def subtract_dark(
+    image: _ImageInput,
+    master_dark: _ImageInput,
+    dark_exposure: _QuantityInput,
+    image_exposure: _QuantityInput,
+    inplace: bool=False,
+) -> FrameData:
     """
     Subtract master_dark frame from a FrameData.
 
@@ -203,8 +226,13 @@ def subtract_dark(image, master_dark, dark_exposure, image_exposure,
     return nim
 
 
-def flat_correct(image, master_flat, min_value=None, norm_value=None,
-                 inplace=False):
+def flat_correct(
+    image: _ImageInput,
+    master_flat: _ImageInput,
+    min_value: float | None=None,
+    norm_value: _QuantityInput | None=None,
+    inplace: bool=False,
+) -> FrameData:
     """
     Divide the image by a flat field frame.
 
@@ -255,7 +283,12 @@ def flat_correct(image, master_flat, min_value=None, norm_value=None,
     return nim
 
 
-def trim_image(image, x_slice=None, y_slice=None, inplace=False):
+def trim_image(
+    image: _ImageInput,
+    x_slice: slice | None=None,
+    y_slice: slice | None=None,
+    inplace: bool=False,
+) -> FrameData:
     """Trim an image to a given section. Uses python slice standard.
 
     Parameters

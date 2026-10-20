@@ -1,6 +1,13 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 """Compute shifts and translate astronomical images."""
 
+from __future__ import annotations
+
+import typing as _t
+import numpy.typing as _npt
+from .._typing import Window as _Window
+from skimage.transform import AffineTransform as _AffineTransform
+
 import abc
 from functools import partial
 from skimage import transform
@@ -15,7 +22,10 @@ __all__ = ['CrossCorrelationRegister', 'AsterismRegister',
            'register_framedata_list', 'compute_shift_list']
 
 
-def _algorithm_check(algorithm, kwargs):
+def _algorithm_check(
+    algorithm: _t.Literal['cross-correlation', 'asterism-matching'],
+    kwargs: dict[str, _t.Any],
+) -> _BaseRegister:
     """Check the algorithms and get the register."""
     if algorithm == 'cross-correlation':
         return CrossCorrelationRegister(**kwargs)
@@ -24,7 +34,7 @@ def _algorithm_check(algorithm, kwargs):
     raise ValueError(f'Algorithm {algorithm} unknown.')
 
 
-def _check_compatible_list(frame_list):
+def _check_compatible_list(frame_list: _t.Sequence[FrameData]) -> None:
     """Check if the list if it is compatible with the register."""
     for i in frame_list:
         if not isinstance(i, FrameData):
@@ -35,7 +45,10 @@ def _check_compatible_list(frame_list):
                              'Only frames with same shape allowed.')
 
 
-def _get_clip_slices(shifts, imshape):
+def _get_clip_slices(
+    shifts: _npt.ArrayLike,
+    imshape: tuple[int, int],
+) -> tuple[slice, slice]:
     """Get the slices of the clip."""
     # negative shifts means the image is translated up and right, so they
     # define the start.
@@ -65,7 +78,7 @@ class _BaseRegister(abc.ABC):
 
     _name = None
 
-    def __init__(self, window=None):
+    def __init__(self, window: _Window=None) -> None:
         if window is not None:
             if (not isinstance(window, tuple) or len(window) != 2
                     or not all(isinstance(i, slice) for i in window)):
@@ -75,7 +88,11 @@ class _BaseRegister(abc.ABC):
                 raise ValueError('window slices must have unit steps.')
         self.window = window
 
-    def _window_slices(self, image1, image2):
+    def _window_slices(
+        self,
+        image1: _npt.ArrayLike,
+        image2: _npt.ArrayLike,
+    ) -> tuple[slice, slice]:
         """Validate and normalize the window against both image shapes."""
         if image1.ndim != 2 or image1.shape != image2.shape:
             raise ValueError('Window registration requires matching 2D shapes.')
@@ -88,7 +105,12 @@ class _BaseRegister(abc.ABC):
         return tuple(slices)
 
     @staticmethod
-    def _apply_transform_image(image, tform, cval=0, order=3):
+    def _apply_transform_image(
+        image: _npt.NDArray,
+        tform: _AffineTransform,
+        cval: float=0,
+        order: int=3,
+    ) -> _npt.NDArray:
         """Apply the transform to an image."""
         # ensure correct data types
         image = np.array(image)
@@ -99,10 +121,22 @@ class _BaseRegister(abc.ABC):
                               preserve_range=True, order=order)
 
     @abc.abstractmethod
-    def _compute_transform(self, image1, image2, mask1=None, mask2=None):
+    def _compute_transform(
+        self,
+        image1: _npt.ArrayLike,
+        image2: _npt.ArrayLike,
+        mask1: _npt.ArrayLike | None=None,
+        mask2: _npt.ArrayLike | None=None,
+    ) -> _AffineTransform:
         """Compute the transform to register image2 to image1."""
 
-    def compute_transform(self, image1, image2, mask1=None, mask2=None):
+    def compute_transform(
+        self,
+        image1: _npt.ArrayLike,
+        image2: _npt.ArrayLike,
+        mask1: _npt.ArrayLike | None=None,
+        mask2: _npt.ArrayLike | None=None,
+    ) -> _AffineTransform:
         """Compute the transform to register image2 to image1.
 
         Parameters
@@ -141,8 +175,14 @@ class _BaseRegister(abc.ABC):
         return transform.AffineTransform(
             matrix=origin @ tform.params @ np.linalg.inv(origin))
 
-    def register_image(self, image1, image2, mask1=None, mask2=None,
-                       cval='median'):
+    def register_image(
+        self,
+        image1: _npt.ArrayLike,
+        image2: _npt.ArrayLike,
+        mask1: _npt.ArrayLike | None=None,
+        mask2: _npt.ArrayLike | None=None,
+        cval: float | _t.Literal['median', 'mean']='median',
+    ) -> tuple[_npt.NDArray, _npt.NDArray[np.bool_], _AffineTransform]:
         """Align and transform an image2 to match image1.
 
         Parameters
@@ -199,8 +239,13 @@ class _BaseRegister(abc.ABC):
         mask = mask > 0
         return reg_image, mask, tform
 
-    def register_framedata(self, frame1, frame2, cval='median',
-                           inplace=False):
+    def register_framedata(
+        self,
+        frame1: FrameData,
+        frame2: FrameData,
+        cval: float | _t.Literal['median', 'mean']='median',
+        inplace: bool=False,
+    ) -> FrameData:
         """Align and transform a frame2 to match frame1.
 
         Parameters
@@ -335,7 +380,7 @@ class CrossCorrelationRegister(_BaseRegister):
 
     _name = 'cross-correlation'
 
-    def __init__(self, window=None, **kwargs):
+    def __init__(self, window: _Window=None, **kwargs: _t.Any) -> None:
         super().__init__(window=window)
         if window is not None and kwargs.get('space', 'real').lower() != 'real':
             raise ValueError('window requires real-space image data.')
@@ -347,7 +392,13 @@ class CrossCorrelationRegister(_BaseRegister):
             kwargs['return_error'] = 'always'
         self._pcc = partial(phase_cross_correlation, **kwargs)
 
-    def _compute_transform(self, image1, image2, mask1=None, mask2=None):
+    def _compute_transform(
+        self,
+        image1: _npt.ArrayLike,
+        image2: _npt.ArrayLike,
+        mask1: _npt.ArrayLike | None=None,
+        mask2: _npt.ArrayLike | None=None,
+    ) -> _AffineTransform:
         if mask1 is not None or mask2 is not None:
             logger.debug("Masks are ignored in CrossCorrelationRegister.")
         # Masks are ignored by default
@@ -398,8 +449,14 @@ class AsterismRegister(_BaseRegister):
 
     _name = 'asterism-matching'
 
-    def __init__(self, max_control_points=50, detection_threshold=5,
-                 detection_function='segfind', window=None, **detection_kwargs):
+    def __init__(
+        self,
+        max_control_points: int=50,
+        detection_threshold: float=5,
+        detection_function: _t.Literal['segfind', 'daofind', 'starfind'] | _t.Callable[..., _t.Any]='segfind',
+        window: _Window=None,
+        **detection_kwargs: _t.Any,
+    ) -> None:
         super().__init__(window=window)
         try:
             import astroalign
@@ -415,7 +472,13 @@ class AsterismRegister(_BaseRegister):
         self._max_cntl_pts = max_control_points
         self._threshold = detection_threshold
 
-    def _compute_transform(self, image1, image2, mask1=None, mask2=None):
+    def _compute_transform(
+        self,
+        image1: _npt.ArrayLike,
+        image2: _npt.ArrayLike,
+        mask1: _npt.ArrayLike | None=None,
+        mask2: _npt.ArrayLike | None=None,
+    ) -> _AffineTransform:
         if mask1 is not None or mask2 is not None:
             logger.debug("Masks are ignored in AsterismRegister.")
 
@@ -441,8 +504,14 @@ class AsterismRegister(_BaseRegister):
         return tform
 
 
-def compute_shift_list(frame_list, algorithm='cross-correlation',
-                       ref_image=0, skip_failure=False, window=None, **kwargs):
+def compute_shift_list(
+    frame_list: _t.Sequence[FrameData],
+    algorithm: _t.Literal['cross-correlation', 'asterism-matching']='cross-correlation',
+    ref_image: int=0,
+    skip_failure: bool=False,
+    window: _Window=None,
+    **kwargs: _t.Any,
+) -> list[tuple[float, float]]:
     """Compute the shift between a list of frames.
 
     Parameters
@@ -517,10 +586,17 @@ def compute_shift_list(frame_list, algorithm='cross-correlation',
     return shift_list
 
 
-def register_framedata_list(frame_list, algorithm='cross-correlation',
-                            ref_image=0, clip_output=False,
-                            cval='median', inplace=False, skip_failure=False,
-                            window=None, **kwargs):
+def register_framedata_list(
+    frame_list: list[FrameData],
+    algorithm: _t.Literal['cross-correlation', 'asterism-matching']='cross-correlation',
+    ref_image: int=0,
+    clip_output: bool=False,
+    cval: float | _t.Literal['median', 'mean']='median',
+    inplace: bool=False,
+    skip_failure: bool=False,
+    window: _Window=None,
+    **kwargs: _t.Any,
+) -> list[FrameData]:
     """Perform registration in a framedata list.
 
     Parameters

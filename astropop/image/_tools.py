@@ -1,6 +1,12 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 """Tools for dealing with headers and flags."""
 
+from __future__ import annotations
+
+import typing as _t
+import numpy.typing as _npt
+from .._typing import HeaderLike as _HeaderLike
+
 import numpy as np
 from astropy.io.fits import Header
 
@@ -10,7 +16,11 @@ from ..framedata._compat import _normalize_and_strip_dict
 __all__ = ['merge_header', 'merge_flag']
 
 
-def merge_header(*headers, method='same', selected_keys=None):
+def merge_header(
+    *headers: _HeaderLike,
+    method: str='same',
+    selected_keys: _t.Sequence[str] | None=None,
+) -> Header:
     """Merge headers.
 
     Parameters
@@ -82,7 +92,10 @@ def merge_header(*headers, method='same', selected_keys=None):
     return meta
 
 
-def merge_flag(*flags, method='or'):
+def merge_flag(
+    *flags: _npt.NDArray,
+    method: _t.Literal['or', 'and', 'no_merge']='or',
+) -> _npt.NDArray:
     """Merge flags from images.
 
     Parameters

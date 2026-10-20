@@ -6,10 +6,20 @@ Only owned working arrays are changed. Sample-contiguous blocks bound the
 workspace needed for median and scatter calculations.
 """
 
+from __future__ import annotations
+
+import typing as _t
+import numpy.typing as _npt
+from .._typing import Axis as _Axis, Statistic as _Statistic
+
 import numpy as np
 
 
-def _pixel_blocks(data, valid, block_pixels):
+def _pixel_blocks(
+    data: _npt.NDArray,
+    valid: _npt.NDArray[np.bool_],
+    block_pixels: int,
+) -> _t.Iterator[tuple[slice, _npt.NDArray, _npt.NDArray[np.bool_]]]:
     """Yield owned sample-contiguous data and validity blocks."""
     # Combiner tiles are C-contiguous. Two-dimensional transpose views used
     # for MAD also reshape without copying their full sample stack.
@@ -23,7 +33,11 @@ def _pixel_blocks(data, valid, block_pixels):
         del work, keep
 
 
-def _middle_values(work, accepted, count):
+def _middle_values(
+    work: _npt.NDArray,
+    accepted: _npt.NDArray[np.bool_],
+    count: _npt.NDArray[np.intp],
+) -> _npt.NDArray:
     """Select in the storage dtype, promoting only the selected middle values."""
     work[~accepted] = np.inf if work.dtype.kind == 'f' else np.iinfo(work.dtype).max
     lower = np.maximum(count - 1, 0) // 2
@@ -43,7 +57,12 @@ def _middle_values(work, accepted, count):
     return result
 
 
-def _masked_median(data, valid, count=None, block_pixels=1024):
+def _masked_median(
+    data: _npt.NDArray,
+    valid: _npt.NDArray[np.bool_],
+    count: _npt.NDArray[np.intp] | None=None,
+    block_pixels: int=1024,
+) -> _npt.NDArray:
     """Find axis-zero medians using bounded work blocks and an explicit mask.
 
     True validity entries identify accepted samples, excluding input NaNs.
@@ -63,7 +82,12 @@ def _masked_median(data, valid, count=None, block_pixels=1024):
     return result
 
 
-def _masked_std(data, valid, count, block_pixels):
+def _masked_std(
+    data: _npt.NDArray,
+    valid: _npt.NDArray[np.bool_],
+    count: _npt.NDArray[np.intp],
+    block_pixels: int,
+) -> _npt.NDArray:
     """Use NumPy scatter calculations on bounded, NaN-masked work blocks."""
     result = np.full(data.shape[1:], np.nan, dtype=np.result_type(data.dtype, float))
     flat_result = result.reshape(-1)
@@ -79,7 +103,12 @@ def _masked_std(data, valid, count, block_pixels):
     return result
 
 
-def _masked_mad(data, valid, count, block_pixels):
+def _masked_mad(
+    data: _npt.NDArray,
+    valid: _npt.NDArray[np.bool_],
+    count: _npt.NDArray[np.intp],
+    block_pixels: int,
+) -> _npt.NDArray:
     """Gaussian-scaled MAD with NumPy handling intermediate arithmetic."""
     result = np.empty(data.shape[1:], dtype=np.result_type(data.dtype, float))
     flat_result, flat_count = result.reshape(-1), count.reshape(-1)
@@ -95,7 +124,11 @@ def _masked_mad(data, valid, count, block_pixels):
     return result
 
 
-def _quadrature(data, valid, block_pixels):
+def _quadrature(
+    data: _npt.NDArray,
+    valid: _npt.NDArray[np.bool_],
+    block_pixels: int,
+) -> _npt.NDArray:
     """Use NumPy's vector norm for masked input errors, in bounded blocks."""
     result = np.empty(data.shape[1:], dtype=np.result_type(data.dtype, float))
     flat_result = result.reshape(-1)
@@ -105,7 +138,13 @@ def _quadrature(data, valid, block_pixels):
     return result
 
 
-def _reduce(data, valid, method, count=None, block_pixels=1024):
+def _reduce(
+    data: _npt.NDArray,
+    valid: _npt.NDArray[np.bool_],
+    method: _t.Literal['mean', 'median', 'sum', 'std'],
+    count: _npt.NDArray[np.intp] | None=None,
+    block_pixels: int=1024,
+) -> _npt.NDArray:
     """Reduce nominal pixels or scatter using a shared validity mask."""
     if count is None:
         count = np.count_nonzero(valid, axis=0)
@@ -119,7 +158,13 @@ def _reduce(data, valid, method, count=None, block_pixels=1024):
     return reducers[method]()
 
 
-def _statistic(data, valid, func, axis, block_pixels):
+def _statistic(
+    data: _npt.NDArray,
+    valid: _npt.NDArray[np.bool_],
+    func: _Statistic,
+    axis: _Axis,
+    block_pixels: int,
+) -> _npt.NDArray:
     """Evaluate built-in statistics or protect working data from callbacks."""
     if callable(func):
         if data.dtype.kind == 'f':

@@ -1,6 +1,13 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 """Stack and combine astronomical images in FrameData."""
 
+from __future__ import annotations
+
+import typing as _t
+import numpy.typing as _npt
+from .._typing import (ImageInput as _ImageInput, PathLike as _PathLike, Axis as _Axis,
+                       Statistic as _Statistic)
+
 from tempfile import mkdtemp
 import numpy as np
 
@@ -15,8 +22,15 @@ from ._combine import _reduce, _statistic, _quadrature
 __all__ = ['imcombine', 'ImCombiner']
 
 
-def _sigma_clip(data, threshold=3, cen_func='median', dev_func='mad_std',
-                axis=None, valid=None, block_pixels=1024):
+def _sigma_clip(
+    data: _npt.ArrayLike,
+    threshold: float | tuple[float | None, float | None]=3,
+    cen_func: _Statistic='median',
+    dev_func: _Statistic='mad_std',
+    axis: _Axis=None,
+    valid: _npt.NDArray[np.bool_] | None=None,
+    block_pixels: int=1024,
+) -> _npt.NDArray[np.bool_]:
     """Create a mask of the sigma clipped pixels.
 
     This function will not change the array, instead, just output a
@@ -74,7 +88,11 @@ def _sigma_clip(data, threshold=3, cen_func='median', dev_func='mad_std',
     return mask
 
 
-def _minmax_clip(data, min_clip=None, max_clip=None):
+def _minmax_clip(
+    data: _npt.ArrayLike,
+    min_clip: float | None=None,
+    max_clip: float | None=None,
+) -> _npt.NDArray[np.bool_]:
     """Create a mask of pixels clipped between min_clip and max_clip vals.
 
     Parameters
@@ -108,7 +126,10 @@ def _minmax_clip(data, min_clip=None, max_clip=None):
     return mask
 
 
-def _yield_slices(shape, n_chunks):
+def _yield_slices(
+    shape: tuple[int, int],
+    n_chunks: int,
+) -> _t.Iterator[tuple[slice, slice]]:
     """Yield slices for a given shape and number of chunks."""
     if n_chunks == 1:
         # values ust be specified for later in code
@@ -192,8 +213,14 @@ class ImCombiner:
     _header_merge_keys = None  # Selected header keys for header merging
     _header_strategy = 'no_merge'  # strategy for header merging
 
-    def __init__(self, max_memory=1e9, dtype=np.float64, tmp_dir=None,
-                 use_disk_cache=False, **kwargs):
+    def __init__(
+        self,
+        max_memory: float=1000000000.0,
+        dtype: _npt.DTypeLike=np.float64,
+        tmp_dir: _PathLike | None=None,
+        use_disk_cache: bool=False,
+        **kwargs: _t.Any,
+    ) -> None:
         """Initialize combination settings; see ImCombiner for parameters.
         """
         try:
@@ -215,8 +242,12 @@ class ImCombiner:
         self.set_merge_header(kwargs.pop('merge_header', 'no_merge'),
                               kwargs.pop('merge_header_keys', None))
 
-    def set_sigma_clip(self, sigma_limits=None,
-                       center_func='median', dev_func='mad_std'):
+    def set_sigma_clip(
+        self,
+        sigma_limits: float | tuple[float | None, float | None] | None=None,
+        center_func: _Statistic='median',
+        dev_func: _Statistic='mad_std',
+    ) -> None:
         """Configure one-pass sigma rejection along the image stack.
 
         Parameters
@@ -262,7 +293,11 @@ class ImCombiner:
         self._sigma_cen_func = center_func
         self._sigma_dev_func = dev_func
 
-    def set_minmax_clip(self, min_value=None, max_value=None):
+    def set_minmax_clip(
+        self,
+        min_value: float | None=None,
+        max_value: float | None=None,
+    ) -> None:
         """Configure rejection outside an accepted pixel-value range.
 
         Parameters
@@ -296,7 +331,11 @@ class ImCombiner:
 
         self._minmax = (low, high)
 
-    def set_merge_header(self, strategy, keys=None):
+    def set_merge_header(
+        self,
+        strategy: _t.Literal['only_equal', 'first', 'selected_keys', 'no_merge'],
+        keys: _t.Sequence[str] | None=None,
+    ) -> None:
         """Configure metadata merging for the combined image.
 
         Parameters
@@ -325,7 +364,7 @@ class ImCombiner:
         self._header_strategy = strategy
         self._header_merge_keys = keys
 
-    def _clear(self):
+    def _clear(self) -> None:
         """Clear buffer and images."""
         self._buffer = None
         self._unct_bf = None
@@ -340,7 +379,11 @@ class ImCombiner:
         self._shape = None
         self._unit = None
 
-    def _load_images(self, image_list, method=None):
+    def _load_images(
+        self,
+        image_list: _t.Sequence[_ImageInput],
+        method: _t.Literal['mean', 'median', 'sum'] | None=None,
+    ) -> None:
         """Read images to FrameData and enable memmap."""
         # clear the buffers before load images.
         self._clear()
@@ -373,7 +416,7 @@ class ImCombiner:
             self._clear()
             raise
 
-    def _check_consistency(self):
+    def _check_consistency(self) -> None:
         """Check the consistency between loaded images."""
         if len(self._images) == 0:
             raise ValueError('Combiner have no images.')
@@ -393,7 +436,7 @@ class ImCombiner:
         self._shape = base_shape
         self._unit = base_unit
 
-    def _block_pixels(self):
+    def _block_pixels(self) -> int:
         """Bound reduction workspace independently of the image tile size."""
         # Statistics copy small groups of output pixels into contiguous sample
         # blocks. Include promoted subtraction/squaring and median copies,
@@ -402,7 +445,7 @@ class ImCombiner:
         per_pixel = len(self._images) * (self._dtype.itemsize + scratch + 1) + 128
         return max(1, min(1024, int(self._max_memory // (2 * per_pixel))))
 
-    def _chunk_slices(self, propagate_errors):
+    def _chunk_slices(self, propagate_errors: bool) -> _t.Iterator[tuple[slice, slice]]:
         """Reserve half the workspace budget for stack data and validity."""
         n = len(self._images)
         shape = self._images[0].shape
@@ -421,7 +464,11 @@ class ImCombiner:
         # The row-first tiling can produce more chunks than the requested count.
         return _yield_slices(shape, n_chunks)
 
-    def _read_chunk(self, slc, propagate_errors):
+    def _read_chunk(
+        self,
+        slc: tuple[slice, slice],
+        propagate_errors: bool,
+    ) -> tuple[_npt.NDArray, _npt.NDArray | None]:
         """Copy a tile and read flag bits only for that tile."""
         # Axis 0 spans images; the remaining axes are this tile's rows/columns.
         # Own these buffers so rejection and uncertainty arithmetic cannot
@@ -449,7 +496,10 @@ class ImCombiner:
                 np.copyto(uncertainty[index], 0, where=np.isnan(uncertainty[index]))
         return data, uncertainty
 
-    def _chunk_yielder(self, method):
+    def _chunk_yielder(
+        self,
+        method: _t.Literal['mean', 'median', 'sum'],
+    ) -> _t.Iterator[tuple[_npt.NDArray, _npt.NDArray | None, tuple[slice, slice]]]:
         """Yield owned data/error tiles and maintain their shared mask."""
         # Only sums with errors on every input propagate those arrays. Mean,
         # median and sums with missing errors estimate uncertainty from data
@@ -469,7 +519,7 @@ class ImCombiner:
             self._buffer = self._unct_bf = self._valid = None
             del data, uncertainty
 
-    def _apply_rejection(self):
+    def _apply_rejection(self) -> None:
         """Update validity without replacing pixels or errors with sentinels."""
         if self._valid is None:
             self._valid = ~np.isnan(self._buffer)
@@ -483,7 +533,11 @@ class ImCombiner:
             self._valid &= ~_minmax_clip(self._buffer, *self._minmax)
 
     @_optional('FRAMEDATA_DISABLE_UNCERTAINTY')
-    def _combine_uncertainty(self, method, count):
+    def _combine_uncertainty(
+        self,
+        method: _t.Literal['mean', 'median', 'sum'],
+        count: _npt.NDArray[np.intp],
+    ) -> _npt.NDArray | None:
         """Compute errors separately, using the nominal values' validity."""
         if method == 'sum' and self._unct_bf is not None:
             return _quadrature(self._unct_bf, self._valid, self._block_pixels())
@@ -496,7 +550,11 @@ class ImCombiner:
             uncertainty = uncertainty / np.maximum(root_count, 1)
         return uncertainty
 
-    def _combine(self, method, **kwargs):
+    def _combine(
+        self,
+        method: _t.Literal['mean', 'median', 'sum'],
+        **kwargs: _t.Any,
+    ) -> tuple[_npt.NDArray, _npt.NDArray | None, _npt.NDArray[np.bool_]]:
         """Coordinate nominal reduction, optional errors and normalization."""
         count = np.count_nonzero(self._valid, axis=0)
         data = _reduce(self._buffer, self._valid, method, count, self._block_pixels())
@@ -517,7 +575,12 @@ class ImCombiner:
             uncertainty = np.asarray(uncertainty, dtype=self._dtype)
         return data, uncertainty, invalid
 
-    def combine(self, image_list, method, **kwargs):
+    def combine(
+        self,
+        image_list: _t.Sequence[_ImageInput],
+        method: _t.Literal['mean', 'median', 'sum'],
+        **kwargs: _t.Any,
+    ) -> FrameData:
         """Combine images using the configured clipping, dtype and header settings.
 
         Parameters
@@ -604,7 +667,13 @@ class ImCombiner:
             self._clear()
 
 
-def imcombine(frames, method='median', memory_limit=1e9, dtype=np.float64, **kwargs):
+def imcombine(
+    frames: _t.Sequence[_ImageInput],
+    method: _t.Literal['mean', 'median', 'sum']='median',
+    memory_limit: float=1000000000.0,
+    dtype: _npt.DTypeLike=np.float64,
+    **kwargs: _t.Any,
+) -> FrameData:
     """Combine images with optional rejection and uncertainty estimation.
 
     Parameters
