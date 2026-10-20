@@ -54,7 +54,10 @@ and expected results and use local temporary data.
 API and editorial checklist
 -----------------------------
 
-Use NumPy-style docstrings for public callables. State defaults, literal string
+Use NumPy-style docstrings for public callables. Annotations define parameter
+and return types; omit redundant type declarations from annotated docstring
+fields and let Sphinx render the types in signatures. Keep names and behavioral
+explanations, including units, shapes and estimator limitations. State defaults, literal string
 choices and what each choice does, shape/dtype/unit requirements, mutation and
 array ownership, missing arrays, masks, return types, and expected failures.
 Distinguish methods (called with parentheses) from properties. Use “standard
@@ -100,3 +103,12 @@ missing local target and inspect the full log. Fix broken local references or
 examples; do not globally suppress warnings. Keep live catalog conformance in
 its dedicated test job. Rendered notebook pages must not silently replace a
 missing recorded response with a live request.
+
+Annotation coverage
+-------------------
+
+Run ``python scripts/check_type_annotations.py`` to check package signatures.
+This checks annotation presence, including complete PEP 484 comments for
+Astropy model ``evaluate`` methods, whose inline annotations have unit semantics.
+It excludes generated version metadata and does not establish static type
+correctness. The test and documentation tox environments run this check.

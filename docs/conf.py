@@ -3,6 +3,7 @@ import os
 
 ap_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, ap_dir)
+sys.path.insert(0, os.path.join(ap_dir, 'docs', '_ext'))
 
 # Minimum version, enforced by sphinx
 needs_sphinx = '4.3.0'
@@ -11,6 +12,7 @@ needs_sphinx = '4.3.0'
 nitpicky = True
 
 extensions = [
+    'annotation_names',
     'sphinx.ext.intersphinx',
     'sphinx.ext.extlinks',
     'sphinx.ext.todo',
@@ -37,6 +39,24 @@ plot_include_source = False
 plot_html_show_formats = False
 
 todo_include_todos = True
+
+# Annotations own types; NumPy-style docstrings explain behavior and units.
+autodoc_typehints = 'signature'
+autodoc_typehints_format = 'short'
+# Preserve shared aliases instead of expanding large unions or resolving cyclic
+# FrameData/QFloat names in the importing function's namespace.
+autodoc_type_aliases = {
+    name: 'astropop._typing.' + name[1:]
+    for name in ('_ImageInput', '_QuantityInput', '_NumberArray', '_UnitLike',
+                 '_HeaderLike', '_PathLike', '_ImageHDU', '_Index', '_Axis',
+                 '_Window', '_Statistic')
+}
+autodoc_type_aliases.update({
+    '_Extension': 'astropop.file_collection._Extension',
+    '_npt.ArrayLike': 'numpy.typing.ArrayLike',
+    '_npt.DTypeLike': 'numpy.typing.DTypeLike',
+})
+
 
 numpydoc_show_class_members = False
 numpydoc_attributes_as_param_list = False
@@ -83,5 +103,6 @@ intersphinx_mapping = {
     "matplotlib": ("https://matplotlib.org/stable/", None),
     "astropy": ('https://docs.astropy.org/en/stable/', None),
     'astroquery': ('https://astroquery.readthedocs.io/en/latest/', None),
+    'packaging': ('https://packaging.pypa.io/en/stable/', None),
     'uncertainties': ('https://uncertainties.readthedocs.io/en/latest/', None)
 }

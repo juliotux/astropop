@@ -15,3 +15,4 @@ their existing URLs; the module and symbol indexes remain available as
     astrometry
     catalogs
     utilities
+    types
