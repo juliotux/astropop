@@ -67,6 +67,7 @@ def estimate_dxdy(
         Displacement between the ordinary and extraordinary beams.
     """
     def _find_max(d: _npt.ArrayLike) -> float:
+        """Refine the peak displacement using successively narrower histograms."""
         dx = 0
         for lim in (np.max(d), *steps):
             lo, hi = (dx-lim, dx+lim)
@@ -239,6 +240,7 @@ class StokesParameters:
     psi: _QuantityInput | None = None
 
     def __post_init__(self) -> None:
+        """Validate the retarder and normalize Stokes values, angles and flux inputs."""
         # Check if all variables are correct
         self.retarder = str(self.retarder)
         if self.retarder not in ('halfwave', 'quarterwave'):
@@ -331,9 +333,11 @@ class StokesParameters:
                     'p': sigma_p}
 
     def __repr__(self) -> str:
+        """Identify this result object and display its Stokes values."""
         return object.__repr__(self) + '\n' + str(self)
 
     def __str__(self) -> str:
+        """Format q and u, including v only when circular polarization is present."""
         s = f'q={self.q}, u={self.u}'
         if self.v is not None:
             s += f', v={self.v}'
@@ -355,6 +359,7 @@ class _DualBeamPolarimetry(abc.ABC):
     zero_range: _t.Sequence[float] = field(default_factory=lambda: [0, 90])  # range of the zero position
 
     def __post_init__(self) -> None:
+        """Validate retarder and normalization settings and normalize angle bounds."""
         if self.retarder not in ['quarterwave', 'halfwave']:
             raise ValueError(f"Retarder {self.retarder} unknown.")
         if isinstance(self.zero, (QFloat, units.Quantity)):
@@ -638,6 +643,12 @@ class SLSDualBeamPolarimetry(_DualBeamPolarimetry):
         return QFloat(q, uncertainty=q_err), QFloat(u, uncertainty=u_err)
 
     def _quarter_fit(self, psi: _npt.ArrayLike, zi: QFloat) -> dict[str, QFloat]:
+        """Fit q, u and v, optionally solving for the retarder zero position.
+
+        Stokes values are bounded between -1 and 1. A fitted zero is restricted to
+        zero_range. Return fitted values with uncertainties from the covariance
+        diagonal; a fixed zero is returned without a fitted uncertainty.
+        """
         # if zero is not set, estimate it from the data
         if self.zero is not None:
             model = partial(quarterwave_model, zero=self.zero)
