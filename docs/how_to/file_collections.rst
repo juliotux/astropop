@@ -41,6 +41,30 @@ canonical path, including when the temporary directory is reached by a symlink::
 ``group_by`` uses exact summary-column names (lowercase ``filter`` here),
 unlike case-insensitive header keyword filtering.
 
+Select files by path before indexing
+------------------------------------
+
+``location`` scans a directory, while ``files`` selects an explicit list;
+supply only one. ``glob_include`` and ``glob_exclude`` match the discovered
+path, including its directory. Build a pattern using the same directory as the
+scan, rather than matching only a basename::
+
+    >>> from astropop.file_collection import list_fits_files
+    >>> pattern = str(folder / 'image_0*')
+    >>> included = list_fits_files(folder, glob_include=pattern)
+    >>> print('Included:', [Path(name).name for name in included])
+    Included: ['image_0.fits']
+    >>> excluded = list_fits_files(folder, glob_exclude=pattern)
+    >>> print('Remaining:', [Path(name).name for name in excluded])
+    Remaining: ['image_1.fits', 'image_2.fits']
+
+Use the same pattern in ``FitsFileGroup(location=folder, ext=1,
+glob_include=pattern)`` to index the selection. See :doc:`../tools/files`
+for explicit basename selection across nested directories.
+
+Reuse the header database
+-------------------------
+
 The persistent database stores paths relative to its own directory; public
 ``files`` returns resolved paths. Reopen the database to reuse its stored index,
 then call ``update`` explicitly after files or headers change::

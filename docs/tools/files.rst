@@ -18,18 +18,17 @@ This module is mainly designed to work like `~ccdproc.ImageFileCollection`, but 
 Initializing a |FitsFileGroup|
 ------------------------------
 
-The |FitsFileGroup| class is initialized with a list of files, or a folder containing FITS files. If a folder is given, all FITS files in the folder are read. If a list of files is given, only those files are read. The class can also be initialized with a list of files and a folder, in which case, the files in the folder are read and the files in the list are added to the database.
+Initialize |FitsFileGroup| with either ``location`` to scan a directory
+recursively or ``files`` to use an explicit list. Supplying both raises
+``ValueError``; the two sources are not combined.
 
-.. code-block:: text
+.. code-block:: python
 
-    In [1]: from astropop.file_collection import FitsFileGroup
+    from astropop.file_collection import FitsFileGroup
 
-    # using a folder location
-    In [2]: ffg = FitsFileGroup(location='/path/to/data')
-
-    # using a list of files
-    In [3]: ffg = FitsFileGroup(files=['/path/to/data/file1.fits',
-                                       '/path/to/data/file2.fits'])
+    ffg = FitsFileGroup(location='/path/to/data')
+    selected = FitsFileGroup(files=['/path/to/data/file1.fits',
+                                    '/path/to/data/file2.fits'])
 
 Optional keywords also exist to improve the class behavior. The most important are:
 
@@ -52,17 +51,36 @@ Optional keywords also exist to improve the class behavior. The most important a
     # can also read .fits.gz or .fits.zip files
     In [6]: ffg = FitsFileGroup(location='/path/to/data', compression=True)
 
-* ``glob_include``: If you want to read just some files, you can set them to ``glob_include``, using a `~glob.glob` pattern. For example, if you just want to read files which start with ``BIAS``, you can use ``glob_include='BIAS*'``. All files which match the pattern will be read, the other will be ignored.
+* ``glob_include`` keeps paths matching a shell-style ``fnmatch`` pattern.
+  The pattern is matched against the discovered path, including the directory,
+  rather than just the basename. For an absolute ``location``, ``'BIAS*'``
+  therefore matches no files. Include the directory in the pattern:
 
-  .. code-block:: text
+  .. code-block:: python
 
-    In [7]: ffg = FitsFileGroup(location='/path/to/data', glob_include='BIAS*')
+    from pathlib import Path
 
-* ``glob_exclude``: If you want to read all the files, except a few, you can set them to ``glob_exclude``, using a `~glob.glob` pattern. For example, if you want to read all files, except those which start with ``BIAS``, you can use ``glob_exclude='BIAS*'``.
+    folder = Path('/path/to/data').resolve()
+    bias_pattern = str(folder / 'BIAS*')
+    ffg = FitsFileGroup(location=folder, glob_include=bias_pattern)
 
-  .. code-block:: text
+* ``glob_exclude`` removes paths matching the pattern, using the same full-path
+  matching rule. To exclude the paths selected above:
 
-    In [8]: ffg = FitsFileGroup(location='/path/to/data', glob_exclude='BIAS*')
+  .. code-block:: python
+
+    ffg = FitsFileGroup(location=folder, glob_exclude=bias_pattern)
+
+The directory scan includes subdirectories. To select by basename regardless
+of directory depth, construct an explicit file list instead:
+
+.. code-block:: python
+
+    from astropop.file_collection import list_fits_files
+
+    bias_files = [name for name in list_fits_files(folder)
+                  if Path(name).name.startswith('BIAS')]
+    ffg = FitsFileGroup(files=bias_files)
 
 
 Files Summary and Header Keyword Values
@@ -255,7 +273,10 @@ If you want to not only generate a group of files from a single set of keyword v
 Iterators
 ---------
 
-There are also methods for iterating over the files from a |FitsFileGroup|. All these methods are generators that create temporary objects, that are excluded at the end of each loop, so the memory used is just enough to store the current file. To use them, as any `Python generator <https://docs.python.org/3/howto/functional.html#iterators>`_, you can use it inside a ``for`` loop, use the `next` function to get the next file or create a list with them if you want to keep the objects in memory.
+The iterator methods load files on demand. Use a ``for`` loop or ``next`` to
+process one yielded object at a time. Memory can still grow if you keep objects
+in a list or other container; the last loop variable also remains bound after
+the loop. The generator does not force deletion of objects held by the caller.
 
 - `~astropop.file_collection.FitsFileGroup.hdus`: Iterates over the files getting the selected hdu. Uses `~astropy.io.fits.open` and can accept any argument that `~astropy.io.fits.open` accepts.
 

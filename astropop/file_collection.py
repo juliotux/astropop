@@ -35,7 +35,7 @@ def list_fits_files(
     glob_include: str | None=None,
     glob_exclude: str | None=None,
 ) -> list[str]:
-    """List all fist files in a directory, if compressed or not.
+    """List FITS files recursively, optionally including compressed extensions.
 
     Parameters
     ----------
@@ -45,9 +45,11 @@ def list_fits_files(
         FITS file name extension to be used. Default is None, wich means
         that the default extensions will be used, like '.fits' and '.fit'.
     glob_include
-        Glob pattern to include files. Default is None.
+        Shell-style pattern matched against full discovered paths to include.
+        Default is None. Used when scanning ``location``.
     glob_exclude
-        Glob pattern to exclude files. Default is None.
+        Shell-style pattern matched against full discovered paths to exclude.
+        Default is None. Used when scanning ``location``.
 
     Returns
     -------
@@ -94,11 +96,10 @@ class FitsFileGroup():
     Parameters
     ----------
     location
-        Location of the fits files. If not specified, the files must be
-        specified in the files parameter.
+        Directory to scan recursively. Mutually exclusive with ``files``.
     files
-        List of files to be included in the group. If not specified, the
-        location parameter must be specified.
+        Explicit file list. Mutually exclusive with ``location``. With neither
+        supplied, reopen ``database`` if present, or create an empty group.
     ext
         FITS extension to be used. Default is 0.
     compression
@@ -108,9 +109,11 @@ class FitsFileGroup():
         SQLite database to be used to store the information. Default is
         ':memory:', which means that the database will be stored in memory.
     glob_include : str, optional
-        Glob pattern to include files. Default is None.
+        Shell-style pattern matched against full discovered paths to include.
+        Default is None. Used when scanning ``location``.
     glob_exclude : str, optional
-        Glob pattern to exclude files. Default is None.
+        Shell-style pattern matched against full discovered paths to exclude.
+        Default is None. Used when scanning ``location``.
     fits_ext : str, optional
         FITS file name extension to be used. Default is None, wich means
         that the default extensions will be used.
