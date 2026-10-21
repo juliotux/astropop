@@ -288,14 +288,23 @@ class StokesParameters:
 
     @property
     def theta(self) -> QFloat:
-        """Angle between Stokes parameters."""
+        """Linear polarization position angle in degrees, modulo 180.
+
+        Uses half of atan2(u, q) to preserve the quadrant. The approximate
+        uncertainty is 28.6 * p.std_dev / p.nominal degrees and is undefined
+        for zero linear polarization.
+        """
         theta = _compute_theta(self.q, self.u).nominal
         err = 28.6*self.p.std_dev/self.p.nominal
         return QFloat(theta, err, 'deg')
 
     @property
     def rms(self) -> _NumberArray:
-        """Root mean square of the fitting."""
+        """Population standard deviation of modulation residuals (ddof=0).
+
+        Despite the property name, this is not the root mean square: a
+        constant residual offset does not contribute. Requires zi and psi.
+        """
         if self.zi is None or self.psi is None:
             raise ValueError('StokesParameters without zi and psi data has no '
                              'fitting rms')
@@ -557,28 +566,29 @@ class _DualBeamPolarimetry(abc.ABC):
 class SLSDualBeamPolarimetry(_DualBeamPolarimetry):
     """Polarimetry computation for Stokes Least Squares algorithm.
 
-    This method is describe in [1]_ and consists in fitting the data using
-    theoretical models. This method has the advantage of not need particular
-    sets of retarder positions and can handle missing points. More datailed
-    description of fitted equations are given in [2]_ and [3]_.
+    Fit theoretical modulation models as described in [1]_, [2]_ and [3]_.
+    Retarder angles must be multiples of 22.5 degrees within psi_deviation.
+    Missing positions are possible if the remaining measurements constrain
+    the fit, but normalization estimation requires every phase in a cycle.
 
     Parameters
     ----------
     retarder
         Retarder type. Must be 'quarterwave' or 'halfwave'.
     k
-        Normalization factor. If None, it is estimated from the data.
-        Default is None.
+        Normalization factor multiplying the extraordinary beam. Default is
+        None: use 1 unless ``compute_k=True`` requests estimation.
     zero
-        Zero position of the retarder in degrees. Defult is None. If None,
+        Zero position of the retarder in degrees. Default is None. If None,
         it will be estimated from the data on quarterwave retarders and will be
         zero for halfwave retarders.
     compute_k
         Fit the normalization factor using the data. Default is False.
         Conflicts with ``k`` argument.
     min_snr
-        Minimum signal-to-noise ratio. Points with lower SNR will be discarded.
-        Default is None.
+        Reserved compatibility parameter; currently does not filter measurements.
+        Select usable beam measurements before calling ``compute``. Default
+        is None.
     psi_deviation
         Maximum deviation of the psi position from the sequence multiple
         of 22.5 degrees. Default is 0.1 degrees.
@@ -599,10 +609,15 @@ class SLSDualBeamPolarimetry(_DualBeamPolarimetry):
     - If ``k`` or ``zero`` arguments are passed, they won't be computed.
       Instead, the passed values will be used.
     - If ``compute_k`` is True, the value will be estimated from the data.
-      For halfwave retarders, it will be estimated by the ratio of the total
-      flux of the ordinary flux and the extraordinary flux in all positions
-      [2]_. For quarterwave retarders, it will be estimated in a iterative
+      For halfwave retarders, take the median flux per phase for each beam,
+      then divide the sum of the ordinary medians by the sum of the
+      extraordinary medians [2]_. Quarterwave retarders use the iterative
       process described in [4]_.
+    - Propagated zi errors are relative weights only when all are positive;
+      otherwise the whole fit is unweighted. ``curve_fit`` uses its default
+      ``absolute_sigma=False``, scaling parameter covariance by residual
+      variance. Returned errors are square roots of the covariance diagonal;
+      off-diagonal covariances are not stored in the result.
 
     References
     ----------

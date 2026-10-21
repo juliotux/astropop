@@ -66,8 +66,11 @@ uncertainty for each beam measurement::
     Position angle: 163.15 deg
 
 Here the supplied errors are an illustrative Poisson model and the nominal data
-contain no random noise. A tiny fitted residual does not prove the errors or
-instrument calibration are realistic. Inspect recovered Stokes uncertainties,
+contain no random noise. The fitter uses relative weights and scales parameter
+covariance by the residual variance (``absolute_sigma=False``), so the returned
+Stokes errors are nearly zero here despite nonzero beam errors. They are not
+absolute photon-noise error estimates. A tiny fitted residual does not prove
+the errors or instrument calibration are realistic. Inspect recovered Stokes uncertainties,
 beam fluxes, normalization and residuals versus retarder angle on actual data.
 Avoid saturated beams and incomplete or degenerate angle coverage.
 

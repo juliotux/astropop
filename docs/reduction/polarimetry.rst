@@ -6,7 +6,7 @@ Polarimetry Processing
 Start with :doc:`../tutorials/polarimetry` to recover known half-wave Stokes
 parameters, then use this chapter for theory and advanced fitting choices.
 
-|astropop| polarimetry computation currently is desgined to work only with dual-beam polarimeters with half-wave plate (HWP) and quarter-wave plate (QWP) retarders, performing both circular and linear polarization computations, according the instrument capabilities and design. Savart or Wollaston analyzers are supported. For example of instruments that can be used with astropop, we already tested with success the following instruments:
+|astropop| polarimetry computation is designed to work only with dual-beam polarimeters with half-wave plate (HWP) and quarter-wave plate (QWP) retarders, performing both circular and linear polarization computations, according the instrument capabilities and design. Savart or Wollaston analyzers are supported. For example of instruments that can be used with astropop, we already tested with success the following instruments:
 
 * IAGPOL [1]_ - Gaveta Polarimétrica do IAG `link <http://astroweb.iag.usp.br/~polarimetria/gaveta/default.htm>`_ at Observatório Pico dos Dias, Brazil
 * SPARC4 [2]_ - Simultaneous Polarimeter and Rapid Camera in Four bands `link <http://www.das.inpe.br/sparc4>`_ at Observatório Pico dos Dias, Brazil
@@ -25,13 +25,17 @@ In all this polarimeters, the light beam passed by a retarder and is decomposed 
 Description of the Polarimetry Reduction
 ----------------------------------------
 
-The reduction process overview is derived from the work of Magalhães et al. [1]_ and Rodrigues et al. [4]_ , using a fitting process better described by Campagnolo (2019) [5]_. In a few words, the code computes the normalized flux difference between the ordinary and extraordinary beams ($F_{e}$ and $F_{o}$) for each retarder plate position:
+The reduction follows the dual-beam method of Magalhães et al. [1]_ and
+Rodrigues et al. [4]_, with least-squares fitting described by Campagnolo
+(2019) [5]_. For each retarder position, the code computes the ordinary-minus-
+extraordinary flux difference. Here :math:`F_o` is the ordinary flux and
+:math:`F_e` is the extraordinary flux:
 
 .. math::
 
-    Z_{i} = \frac{F_{e} - F_{o}}{F_{e} + F_{o}}
+    Z_i = \frac{F_o - F_e}{F_o + F_e}
 
-And fits a equation for a given set o positions. There are two equations that can be used:
+The fitted modulation depends on the retarder:
 
 * For half-wave plates, only linear polarization is computed, and the equation is:
 
@@ -41,9 +45,10 @@ And fits a equation for a given set o positions. There are two equations that ca
 
   .. plot::
     :include-source: False
+    :alt: Half-wave modulation sampled at 22.5-degree retarder intervals.
+    :caption: Linear polarization modulates the beam difference with a 90-degree period.
 
     import numpy as np
-  rng = np.random.default_rng(42)
     import matplotlib.pyplot as plt
     from astropop.polarimetry import halfwave_model
 
@@ -70,9 +75,10 @@ And fits a equation for a given set o positions. There are two equations that ca
 
   .. plot::
     :include-source: False
+    :alt: Quarter-wave modulation with linear and circular polarization.
+    :caption: The circular component introduces a 180-degree period alongside the linear modulation.
 
     import numpy as np
-  rng = np.random.default_rng(42)
     import matplotlib.pyplot as plt
     from astropop.polarimetry import quarterwave_model
 
@@ -91,28 +97,41 @@ And fits a equation for a given set o positions. There are two equations that ca
     plt.tight_layout()
     plt.show()
 
-Where :math:`Q`, :math:``U`` and :math:``V`` are the linear and circular polarization fractions and $\psi_i$ is the retarder plate position.
+Here :math:`Q`, :math:`U` and :math:`V` are normalized Stokes fractions,
+returned as ``q``, ``u`` and ``v`` by the API, and :math:`\psi_i` is the
+retarder angle. The model functions accept angles in degrees.
 
 Normalization
 ^^^^^^^^^^^^^
 
-If the instrument have different sensibility for each beam or if the PSF of the two beams do not match (a common thing in Savart analyzers), a normalization :math:`k` factor must be included in the equation of the relative flux ($Z_i$). This normalization factor scales one of the beams to compensate the difference in sensibility. So, the flux difference equation becomes:
+Different beam throughput or extraction losses can require a normalization
+factor :math:`k`. Astropop scales the extraordinary beam:
 
 .. math::
 
-    Z_{i} = \frac{F_{e} - F_{o} \cdot k}{F_{e} + F_{o} \cdot k}
+    Z_i = \frac{F_o - k F_e}{F_o + k F_e}
 
-This :math:`k` factor is computed in different ways for half-wave and quarter-wave plates.
+Use a measured ``k=value`` or set ``compute_k=True`` to estimate it. The default,
+``k=None`` with ``compute_k=False``, uses :math:`k=1`.
 
-* For half-wave plates, :math:`k` is computed as the ratio between the sum of the extraordinary and ordinary fluxes along a complete set of 4 consecutive retarder positions (0, 22.5, 45 and 67.5 degrees). The explanation is better described in [1]_. This is possible because the equation for half-wave plates is symmetrical in 0. So:
+* For half-wave plates, the estimator groups measurements into four phases
+  modulo 90 degrees: 0, 22.5, 45 and 67.5 degrees. It takes the median flux
+  within each phase for each beam, ignoring NaNs, then uses
 
   .. math::
 
-    k = \frac{\sum_{i=1}^{4} F_{e, i}}{\sum_{i=1}^{4} F_{o, i}}
+      k = \frac{\sum_{j=1}^{4} \widetilde{F}_{o,j}}
+               {\sum_{j=1}^{4} \widetilde{F}_{e,j}}
 
-* For quarter-wave plates, the term :math:`Q\cos^2{2 \psi_i}` in the equation is always positive, so the results are not symmetrical in 0. Due to this, the equation above cannot be used to compute :math:`k`. Rodrigues (1998) [4]_ and Lima (2021) [6]_ describe a iterative process, where :math:`k` depends on :math:`Q`. According this process, the Stokes parameters are computed with some :math:`k`, and then a new :math:`k` is computed using the new Stokes parameters. This process is repeated until the computed Stokes parameters converge within a given tolerance.
+  Each phase needs usable measurements in both beams; otherwise normalization
+  raises ``ValueError``. With one measurement per phase, this reduces to the
+  ordinary-to-extraordinary total-flux ratio [1]_.
 
-Both methods are implemented in |astropop|.
+* For quarter-wave plates, :math:`Q\cos^2(2\psi_i)` generally has a nonzero
+  mean, with the sign of :math:`Q`. The half-wave estimator therefore cannot
+  be used unchanged. The code iterates the normalization and Stokes fit using
+  the fitted :math:`Q`, following [4]_ and [6]_, until the parameters converge
+  within the configured tolerance.
 
 Angle Zero of the Retarder
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -163,9 +182,11 @@ First of all, lets create the fake data to be used here for example.
 
 .. plot::
   :include-source: False
+  :alt: Ordinary and extraordinary beam fluxes and their normalized differences for both retarder types.
   :caption: Simulated data for the Stokes-Least-Squares polarimetry processing.
 
   import numpy as np
+  import matplotlib.pyplot as plt
   rng = np.random.default_rng(42)
   from astropop.polarimetry import halfwave_model, quarterwave_model
   flux = 1e7  # total flux of the source, in electrons
@@ -229,7 +250,7 @@ Create an `~astropop.polarimetry.SLSDualBeamPolarimetry`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The Stokes parameters computation is entirely done by the
-`~astropop.polarimetry.SLSDualBeamPolarimetry` class. This class stores some configuration parameters and process a given set of data using the `~astropop.polarimetry.SLSDualBeamPolarimetry.compute` method. During the instance creation you must choose the type of the retarder used in the observations, between ``halfwave`` and ``quarterwave`` options. Aditional arguments can be passed, like normaliation computation, zero position of retarder, and others. Check the class documentation for more information.
+`~astropop.polarimetry.SLSDualBeamPolarimetry` class. This class stores some configuration parameters and process a given set of data using the `~astropop.polarimetry.SLSDualBeamPolarimetry.compute` method. During the instance creation you must choose the type of the retarder used in the observations, between ``halfwave`` and ``quarterwave`` options. Additional arguments control normalization computation, zero position of retarder, and others. Check the class documentation for more information.
 
 First, you must create a `~astropop.polarimetry.SLSDualBeamPolarimetry` instance with your options. Here are some examples:
 
@@ -245,23 +266,25 @@ First, you must create a `~astropop.polarimetry.SLSDualBeamPolarimetry` instance
   # quarter-wave plate with normalization and zero position at 45 degrees
   s = SLSDualBeamPolarimetry('quarterwave', compute_k=True, zero=45)
 
-* For normalization, there is two (incompatible) arguments: ``compute_k`` and ``k``. When using ``k=value``, you are setting a fixed value for the normalization constant, so, it will not be computed by the code. For example, if you set ``k=1.05``, it will use this factor in the nromalization. for ``compute_k=True``, the normalization constant will be computed by the code. In general, all instruments we tested have this :math:`k` value very close to 1.0, but using normalization may improve some cases.
+* ``k=value`` supplies a fixed normalization factor. ``compute_k=True``
+  estimates the factor from the data and cannot be combined with a supplied
+  ``k``. Leaving both arguments at their defaults uses ``k=1``.
 
 * For the zero computation, you can choose between a fixed value of zero, using ``zero=value`` in degrees. So, setting ``zero=30.2`` will force the code to use 30.2° as the zero point of the retarder. When the zero is not specified, there are two behaviors you can expect:
-  - for ``halfwave`` retarders, the code will use 0.0 as the zero position, sice it is not possible to compute it from the data.
-  - for ```quarterwave``` retarders, the code will try to fit the zero together with the Stokes parameters. The code will seek the value the zero inside the limits defined by ``zero_range`` argument. So, if you want the code to find a zero between 0 and 45 degrees, you can set ``zero_range=(0, 45)``. By default, the code will use ``zero_range=(0, 90)``.
+  - for ``halfwave`` retarders, the code will use 0.0 as the zero position, since it is not possible to compute it from the data.
+  - for ``quarterwave`` retarders, the code will try to fit the zero together with the Stokes parameters. The code will seek the value the zero inside the limits defined by ``zero_range`` argument. So, if you want the code to find a zero between 0 and 45 degrees, you can set ``zero_range=(0, 45)``. By default, the code will use ``zero_range=(0, 90)``.
 
 .. note::
 
   - It is important to mention that ``quarterwave`` retarders find the zero position better when circular polarization is present. So, it is recommended that you use a circular polarized star to compute the zero of the instrument and use it for the other stars in the observation.
-  - **For stars that only have linear polarization, the code can compute the zero only if compute_k is set to False.** This happens because the ``zero`` and ``k`` parameters are degenerated in ``quarterwave`` retarders due to the :math:`Q\cos^2{2 \psi_i}`. So, using ``compute_k=True`` and ``zero=None`` will not converge to a solution in this case. For stars with circuar polarimetry, these arguments can be used together and the code will be able to find the zero position and the normalization constant at the same time.
+  - **For stars that only have linear polarization, the code can compute the zero only if compute_k is set to False.** This happens because the ``zero`` and ``k`` parameters are degenerated in ``quarterwave`` retarders due to the :math:`Q\cos^2{2 \psi_i}`. So, using ``compute_k=True`` and ``zero=None`` will not converge to a solution in this case. For stars with circular polarization, these arguments can be used together and the code will be able to find the zero position and the normalization constant at the same time.
 
 * The iteration process is controlled by 2 arguments: ``iter_tolerance`` and ``max_iters``. ``iter_tolerance`` sets the limit between runs where the code assumes the solution is converged. Like, if the difference between the Stokes parameters of the last two runs is less than ``iter_tolerance``, the code will stop. The ``max_iters`` sets the maximum number of iterations the code will run. By default, ``iter_tolerance=1e-5`` and ``max_iters=100``, which give very good results and are enough for most cases.
 
 Stokes Parameters Computation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The `~astropop.polarimetry.SLSDualBeamPolarimetry.compute` method is the method to be used to compute the Stokes parameters from the flux data. It recieves the list of retarder positions (in degrees) and the lists of ordinary and extraordinary fluxes for a source in each retarder position. Optionally, you can pass the lists of errors in the fluxes, that will be used to weight the least squares fit.
+The `~astropop.polarimetry.SLSDualBeamPolarimetry.compute` method is the method to be used to compute the Stokes parameters from the flux data. It receives the list of retarder positions (in degrees) and the lists of ordinary and extraordinary fluxes for a source in each retarder position. Optionally, you can pass the lists of errors in the fluxes, that will be used to weight the least squares fit.
 
 For example, computing the Stokes parameters for the half-wave plate data without errors:
 
@@ -282,6 +305,23 @@ And with errors:
   result = s.compute(psi_i, fo_quarter, fe_quarter,
                      fo_quarter_err, fe_quarter_err)
   print(result)
+
+Fit uncertainties and quality selection
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Beam uncertainties propagate to ``zi``. The fit uses them as relative weights
+only when **every** propagated uncertainty is positive. If any is zero or NaN,
+the entire fit is unweighted. Supply finite fluxes and uncertainties and select
+usable measurements before calling ``compute``; ``min_snr`` is currently an
+unused compatibility parameter and does not reject low-SNR points.
+
+The fitter uses ``scipy.optimize.curve_fit`` with its default
+``absolute_sigma=False``: parameter covariance is scaled by the residual
+variance. Returned Stokes errors are square roots of its diagonal, so noiseless
+data can give almost zero fitted errors even with nonzero input errors.
+The result does not retain the off-diagonal covariance; subsequent ``p`` and
+``theta`` errors do not include correlations between fitted Stokes parameters.
+Use ``theor_sigma`` for the separate flux-SNR estimate described below.
 
 `~astropop.polarimetry.StokesParameters` class
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -307,25 +347,31 @@ The linear polarization level is obtained from :math:`P=\sqrt{Q^2+U^2}` and is a
 
   result.p
 
-The position angle of linear polarization is obtained from :math:`\theta=\frac{1}{2}\tan^{-1}\left(\frac{U}{Q}\right)` and is accessed by `~astropop.polarimetry.StokesParameters.theta` property:
+The position angle is :math:`\theta=\frac{1}{2}\operatorname{atan2}(U,Q)`, preserving the quadrant and reported modulo 180 degrees. It is accessed by `~astropop.polarimetry.StokesParameters.theta` property:
 
 .. code-block:: python
 
   result.theta
 
-The RMS between the model using computed parameters and the :math:`Z_i` values stored can be accessed directly by `~astropop.polarimetry.StokesParameters.rms` property. It is only available if ``zi`` is stored in the class.
+Despite its name, `~astropop.polarimetry.StokesParameters.rms` returns the
+population standard deviation of the residuals (``np.std``, ``ddof=0``), not
+their root mean square. A constant residual offset does not contribute to this
+statistic. Both ``zi`` and ``psi`` must be stored in the result.
 
 .. code-block:: python
 
   result.rms
 
-A theoretical expected error based on the fluxes SNR can be also computed by `~astropop.polarimetry.StokesParameters` using `~astropop.polarimetry.StokesParameters.theor_sigma` method. It is only available if ``flux`` is stored in the class.
+A theoretical expected error based on the fluxes SNR can be also computed by `~astropop.polarimetry.StokesParameters` using `~astropop.polarimetry.StokesParameters.theor_sigma` property. It is only available if ``flux`` is stored in the class.
 
 .. code-block:: python
 
   result.theor_sigma
 
-The computation of this theoretical error is not trivial. For ``halfwave`` retarders it is:
+Here ``SNR`` is the quadrature sum of the per-position total-flux SNRs,
+``sqrt(sum((flux.nominal / flux.std_dev)**2))``. These estimates require meaningful
+flux uncertainties and are separate from the residual-scaled fitted errors.
+For ``halfwave`` retarders:
 
 .. math::
 
@@ -349,7 +395,9 @@ and for ``quarterwave`` retarders it is:
 
   \sigma_P = \frac{\sqrt{Q^2 \cdot \sigma_Q^2 + U^2\sigma_U^2}}{P}
 
-Also, a callable model with fixed Stokes parameters can be generated by `~astropop.polarimetry.StokesParameters.model` method. Useful for plotting or data/fitting comparison. The only argument of the callable model is the ``psi`` retarder position.
+The `~astropop.polarimetry.StokesParameters.model` property returns a callable
+with the fitted parameters fixed. Its argument is the retarder position
+``psi``; supply angular units when the stored zero angle carries units.
 
 .. code-block:: python
 
@@ -424,7 +472,10 @@ The result of the code is a structured `~numpy.ndarray` with the indexes of ordi
 
 .. note::
 
-  The use of *ordinary* and *extraordinary* names for the beams is just for a convention. This do not represent what beam, in reality, is the ordinary or the extraordinary.
+  The ``o`` and ``e`` columns label the geometric pairing only. Identify which
+  physical beam is ordinary using your instrument's convention before passing
+  the measured fluxes to ``compute``; swapping them changes the modulation sign
+  and the interpretation of the normalization factor.
 
 .. code-block:: python
 
