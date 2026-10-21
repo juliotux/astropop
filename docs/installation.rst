@@ -19,7 +19,22 @@ The complete runtime dependency list and optional extras are declared in
 Released versions can have different requirements, so consult the metadata of
 the version installed.
 
-Install a release in an activated virtual or conda environment::
+Create an environment and install a release
+-------------------------------------------
+
+Choose a virtual environment or a conda environment. With Python's built-in
+virtual environments::
+
+    python -m venv .venv
+
+Activate it with ``source .venv/bin/activate`` on Linux/macOS, or
+``.venv\Scripts\Activate.ps1`` in Windows PowerShell. Alternatively, create and
+activate a conda environment::
+
+    conda create -n astropop -c conda-forge python=3.14 pip
+    conda activate astropop
+
+Install Astropop using that environment's interpreter::
 
     python -m pip install astropop
 
@@ -37,6 +52,30 @@ The ``test`` extra installs test helpers; ``docs`` installs documentation
 packages. Some scientific dependencies contain compiled extensions. Prefer
 available binary wheels or install the corresponding packages in your conda
 environment; building those dependencies from source may require compilers.
+
+Use the environment in Jupyter
+------------------------------
+
+Install Jupyter and register a kernel from the activated environment::
+
+    python -m pip install jupyterlab ipykernel
+    python -m ipykernel install --user --name astropop --display-name "Python (astropop)"
+    jupyter lab
+
+Select **Python (astropop)** in the notebook's kernel menu. After changing the
+installation, restart the kernel and rerun the notebook from the start. Check
+its interpreter and imported package path (the paths depend on your machine)::
+
+    >>> import sys
+    >>> import astropop
+    >>> print('Interpreter:', sys.executable)  # doctest: +ELLIPSIS
+    Interpreter: ...
+    >>> print('Imported package:', astropop.__file__)  # doctest: +ELLIPSIS
+    Imported package: ...
+
+The ``latest`` documentation describes the development branch. An installed
+release may have older signatures; use documentation for that release or an
+editable development checkout when following examples for unreleased features.
 
 Astrometry.net is optional external software
 --------------------------------------------

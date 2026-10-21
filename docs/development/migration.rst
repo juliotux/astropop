@@ -6,11 +6,10 @@ published release has the same API. Check ``astropop.__version__`` and the
 installed metadata before migrating a production reduction. Use the
 `GitHub releases <https://github.com/sparc4-dev/astropop/releases>`_ and
 `commit history <https://github.com/sparc4-dev/astropop/commits/main/>`_ as the
-version-qualified record of changes; this page does not assign unreleased
-behavior to an invented release number.
+version-qualified record of changes.
 
-Development after 0.9.4
------------------------
+Unreleased changes after 0.9.4
+------------------------------
 
 The following contracts are present in this development tree after the
 ``0.9.4`` tag. In particular, that tag did not yet contain ``astropop.config``;

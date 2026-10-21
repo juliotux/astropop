@@ -10,8 +10,9 @@ and combination have separate task pages; their old combined URL is a gateway.
 API declarations live in ``reference/`` exactly once, while generated ``api/``
 URLs retain their names. Do not copy generated API files into version control.
 
-``docs/development/urls.json`` records the original 30 authored page URLs and
-fragment identifiers at the pre-reorganization baseline. Retained guides keep
+``docs/development/urls.json`` records retained authored page URLs and
+fragment identifiers, including the pre-reorganization baseline and later
+compatibility additions. Retained guides keep
 their content; extracted reference sections leave non-indexed compatibility
 anchors. Keep those anchors while external users may link to them. A future
 URL removal needs an explicit hosting redirect policy and verification.
