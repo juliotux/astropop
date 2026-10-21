@@ -225,6 +225,74 @@ def plot_catalog_epoch() -> Figure:
     return fig
 
 
+def plot_tutorial_paths() -> Figure:
+    """Separate the stack, time-series and paired-beam tutorial dependencies."""
+    fig, ax = plt.subplots(figsize=(12, 4.8), layout='constrained')
+    nodes = {
+        'bias': (0, 3.2, 'Master\nbias', 'C0'),
+        'flat': (2, 3.2, 'Master\nflat', 'C0'),
+        'stack': (4, 3.2, 'Calibrate +\nregister + stack', 'C0'),
+        'measure': (6, 3.2, 'Stack\nphotometry', 'C0'),
+        'wcs': (8, 3.2, 'Fit\nastrometry', 'C0'),
+        'magnitude': (10, 3.2, 'Calibrate\nmagnitudes', 'C0'),
+        'series': (4, 1.6, 'Calibrate separate\ntime-series images', 'C1'),
+        'curve': (6, 1.6, 'Differential\nlight curve', 'C1'),
+        'beams': (4, 0, 'Paired beam\nmeasurements', 'C2'),
+        'stokes': (6, 0, 'Fit Stokes\nparameters', 'C2'),
+    }
+    for x, y, label, color in nodes.values():
+        ax.text(x, y, label, ha='center', va='center', fontsize=10,
+                bbox={'boxstyle': 'round,pad=0.45', 'fc': 'white', 'ec': color})
+    edges = [('bias', 'flat'), ('flat', 'stack'), ('stack', 'measure'),
+             ('measure', 'wcs'), ('wcs', 'magnitude'), ('flat', 'series'),
+             ('series', 'curve'), ('beams', 'stokes')]
+    for start, end in edges:
+        ax.annotate('', xy=nodes[end][:2], xytext=nodes[start][:2],
+                    arrowprops={'arrowstyle': '->', 'shrinkA': 50, 'shrinkB': 50,
+                                'color': '0.4'})
+    ax.annotate('', xy=nodes['stack'][:2], xytext=nodes['bias'][:2],
+                arrowprops={'arrowstyle': '->', 'shrinkA': 34, 'shrinkB': 48,
+                            'connectionstyle': 'arc3,rad=-0.35', 'color': '0.4'})
+    ax.text(0, 1.6, 'Separate raw sequence;\nsame bias and flat masters',
+            va='center', fontsize=10, color='C1')
+    ax.text(0, 0, 'Separate polarimetric data;\nno input from the imaging stack',
+            va='center', fontsize=10, color='C2')
+    ax.set(xlim=(-1, 11), ylim=(-0.6, 4.2))
+    ax.axis('off')
+    return fig
+
+
+def plot_pixel_coordinates() -> Figure:
+    """Show zero/FITS pixel centers and the local origin of a nonsquare crop."""
+    from matplotlib.patches import Rectangle
+
+    image = np.arange(15).reshape(3, 5)
+    crop = image[1:3, 2:5]
+    fig, axes = plt.subplots(1, 3, figsize=(11, 3.5), layout='constrained')
+    panels = [(image, 0, 'NumPy centers: data[y, x]'),
+              (image, 1, 'FITS centers: CRPIX convention'),
+              (crop, 0, 'Crop: data[1:3, 2:5]')]
+    for ax, (pixels, origin, title) in zip(axes, panels):
+        rows, cols = pixels.shape
+        ax.imshow(pixels, origin='lower', cmap='Blues', vmin=0, vmax=20,
+                  extent=(origin - 0.5, cols + origin - 0.5,
+                          origin - 0.5, rows + origin - 0.5))
+        for y, x in np.ndindex(pixels.shape):
+            ax.text(x + origin, y + origin, f'({x + origin}, {y + origin})',
+                    ha='center', va='center', fontsize=9)
+        ax.set(xticks=np.arange(cols) + origin, yticks=np.arange(rows) + origin,
+               xlabel='Column x', ylabel='Row y', title=title)
+        ax.set_xticks(np.arange(cols + 1) + origin - 0.5, minor=True)
+        ax.set_yticks(np.arange(rows + 1) + origin - 0.5, minor=True)
+        ax.grid(which='minor', color='white', linewidth=1.5)
+        ax.tick_params(which='minor', length=0)
+    axes[0].add_patch(Rectangle((1.5, 0.5), 3, 2, fill=False, ec='C3', lw=2))
+    axes[1].add_patch(Rectangle((2.5, 1.5), 3, 2, fill=False, ec='C3', lw=2))
+    axes[2].set_xlabel('Column x\nFull-image (2, 1) becomes crop (0, 0)',
+                       fontsize=9)
+    return fig
+
+
 def setup(app: Sphinx) -> dict[str, bool]:
     """Invalidate task-guide plots when this shared helper changes."""
     def track_source(app: Sphinx, docname: str, source: list[str]) -> None:

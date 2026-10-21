@@ -96,3 +96,8 @@ to a full image or catalog; the registration implementation handles the window
 origin. See :doc:`../reduction/registering` for the transform and shift sign
 conventions. A crop changes the coordinate origin, so crop coordinates and WCS
 together rather than applying a full-image WCS to unadjusted cutout positions.
+
+.. plot:: _ext/task_figures.py plot_pixel_coordinates
+    :include-source: False
+    :alt: A three-row, five-column image labeled with zero-based and one-based pixel centers, followed by its two-row, three-column crop with a new local origin.
+    :caption: The red rectangle selects rows 1 to 2 and columns 2 to 4 in NumPy indexing. The crop starts at full-image (x, y) = (2, 1), so subtract that offset from source positions when moving into the crop.

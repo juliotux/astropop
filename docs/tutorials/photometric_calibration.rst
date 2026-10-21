@@ -9,10 +9,10 @@ out of the fit. This example fits only a zero point, not color or extinction.
 
 .. tutorial-data::
 
-Extract the shared archive once. Its ``data/reference`` directory lets you
-start this stage independently; earlier stages save your own products in
-``reduced``. Run the notebook from the extracted bundle or set the data path
-when following this page::
+Use the solved image and instrumental measurements from the preceding
+stages, or a complete reference pair. Save calibrated magnitudes in ``reduced``.
+See :doc:`index` for archive layout, configuration and rerun policy.
+Run from the extracted bundle root when following the HTML examples::
 
     >>> from pathlib import Path
 

@@ -2,9 +2,9 @@ Query a reference catalog and reuse the result
 ==============================================
 
 Choose a reference survey, query only the required region and bands, inspect
-the returned values, then save the response for repeated local matching. This
-workflow replaces the VizieR and SIMBAD worked notebook. It does not turn a
-positional match into a photometric calibration automatically.
+the returned values, then save the response for repeated local matching. Use the
+returned sources as candidate references; assess their quality before fitting
+a photometric calibration.
 
 Only the packaged-help example below is an offline doctest. Live query recipes
 need network access and their rows change with the services; documentation

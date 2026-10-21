@@ -9,10 +9,10 @@ sensitivity correction, unlike the additive bias.
 
 .. tutorial-data::
 
-Extract the shared archive once. Its ``data/reference`` directory lets you
-start this stage independently; earlier stages save your own products in
-``reduced``. Run the notebook from the extracted bundle or set the data path
-when following this page::
+Use the raw flats and the bias master from :doc:`master_bias`, or its
+reference equivalent. This stage writes ``reduced/master_flat.fits``.
+See :doc:`index` for archive layout, configuration and rerun policy.
+Run from the extracted bundle root when following the HTML examples::
 
     >>> from pathlib import Path
 

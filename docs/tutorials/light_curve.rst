@@ -9,10 +9,10 @@ one variable target, three comparison stars and small pointing shifts.
 
 .. tutorial-data::
 
-Extract the shared archive once. Its ``data/reference`` directory lets you
-start this stage independently; earlier stages save your own products in
-``reduced``. Run the notebook from the extracted bundle or set the data path
-when following this page::
+Use the separate exposures in ``data/time_series/raw`` and the bias/flat
+masters. This stage writes individual measurements and a differential light curve.
+See :doc:`index` for archive layout, configuration and rerun policy.
+Run from the extracted bundle root when following the HTML examples::
 
     >>> from pathlib import Path
 

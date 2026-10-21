@@ -16,8 +16,8 @@ Load the image
 For a standalone run, extract the archive and use its
 ``data/reference/combined.fits``. If you completed the CCD reduction, use your
 own ``reduced/combined.fits`` instead. The reference image was produced with the
-same calibration, registration and combination steps. No stars are generated
-in the visible measurement workflow.
+same calibration, registration and combination steps. See :doc:`index` for
+configuration and rerun policy.
 
 .. code-block:: python
 

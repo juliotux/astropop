@@ -9,10 +9,10 @@ select calibrations from their filenames alone on a real observing run.
 
 .. tutorial-data::
 
-Extract the shared archive once. Its ``data/reference`` directory lets you
-start this stage independently; earlier stages save your own products in
-``reduced``. Run the notebook from the extracted bundle or set the data path
-when following this page::
+Extract the shared archive and start with ``data/raw``. This first stage
+inspects the raw exposures and saves their selection in ``reduced``.
+See :doc:`index` for archive layout, configuration and rerun policy.
+Run from the extracted bundle root when following the HTML examples::
 
     >>> from pathlib import Path
 

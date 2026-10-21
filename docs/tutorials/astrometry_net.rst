@@ -1,9 +1,8 @@
 Solve an observed field with Astrometry.net
 ===========================================
 
-Start with a calibrated image containing isolated, unsaturated stars. This
-tutorial replaces the astrometry worked notebook: solve the field, inspect the
-returned WCS and save the calibrated image. It uses a local Astrometry.net
+Start with a calibrated image containing isolated, unsaturated stars. Solve the
+field, inspect the returned WCS and save the calibrated image. It uses a local Astrometry.net
 installation and index files, rather than an online solver or a fit to already
 identified counterparts.
 
