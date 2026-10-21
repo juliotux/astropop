@@ -3,30 +3,28 @@ AstroPoP
 
 |GHAction Status| |Codecov Status| |RTD Status| |CODACY|
 
-The ASTROnomical POlarimetry and Photometry pipeline. Developed for work with IAGPOL and SPARC4 polarimeters at Observatório Pico dos Dias (Brazil), but suitable to be used in other image polarimeters around the world.
+Astropop provides Python tools for astronomical image reduction, photometry
+and dual-beam polarimetry. It was developed for IAGPOL and SPARC4 at
+Observatório Pico dos Dias, Brazil, and can be used in other observing workflows.
 
 Features
 ^^^^^^^^
 
-This software is intended to provide a full pipeline to reduce raw polarimetry and photometry data taken with common CCD telescope cameras. It can do:
+Combine these tools into a reduction sequence suited to your instrument:
 
-- Create calibrate frames;
+- FITS image storage with units, optional uncertainties, pixel flags and metadata.
+- Bias, dark, flat-field and gain corrections, trimming and cosmic-ray removal.
+- Image registration and chunked mean, median and sum combination with rejection.
+- Background estimation, source detection and circular-aperture photometry.
+- Dual-beam pair matching and half-wave/quarter-wave Stokes-parameter fitting.
+- SIMBAD, VizieR and Gaia queries and local source matching.
+- FITS file grouping by headers and wrappers for the external Astrometry.net solver.
 
-- Calibrate images using bias/flat/dark frames;
-
-- Gain correction and in-processing image binnig;
-
-- Cosmic ray extraction (astroscrappy);
-
-- Align image sets;
-
-- Aperture and (planned) PSF photometry;
-
-- Calcite polarimeters;
-
-  - Automatic pairs of stars identification;
-
-- Automatic photometry calibration using online catalogs.
+The `offline tutorials <https://astropop.readthedocs.io/en/latest/tutorials/index.html>`_
+show how to connect these steps and inspect their results. Catalog matching
+supplies candidate references; selecting standards and fitting a photometric
+calibration remain explicit workflow steps. Astropop does not currently provide
+PSF photometry or an automatic end-to-end reduction for every instrument.
 
 Support and Community
 ^^^^^^^^^^^^^^^^^^^^^
@@ -50,54 +48,41 @@ The other image-reduction tools do not require Astrometry.net.
 Installation
 ^^^^^^^^^^^^
 
-Astropop can be downloaded from `gh/sparc4-dev/astropop <https://github.com/sparc4-dev/astropop>`_. It follows the stadard python package install procedure. All requirements can be installed with `pip` or `conda`.
+Install a release in an activated Python environment:
 
-Anaconda Environment
+.. code-block:: bash
+
+    python -m pip install astropop
+
+For optional plotting support, use ``python -m pip install 'astropop[all]'``.
+
+Conda environment
+-----------------
+
+To create an isolated environment with conda, then install Astropop and its
+Python dependencies:
+
+.. code-block:: bash
+
+    conda create -n astropop -c conda-forge python=3.14 pip
+    conda activate astropop
+    python -m pip install 'astropop[all]'
+
+Development checkout
 --------------------
 
-We recomend to use a `anaconda <https://www.anaconda.com/>`_ environment to use astropop. Having the anaconda installed, use the following command to install a new `<environment name>` with conda dependencies:
+To work on the source and install the test and documentation dependencies:
 
-.. code-block::
+.. code-block:: bash
 
-    conda create -n <environment name> -c conda-forge python=3.14 astroalign astropy astroquery astroscrappy matplotlib numpy photutils pyyaml reproject scikit-image scikit-learn scipy sep
+    git clone https://github.com/sparc4-dev/astropop.git
+    cd astropop
+    python -m pip install -e '.[all,test,docs]'
 
-Once the environment is created, you can `activate the environment <https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#activating-an-environment>`_ and install the astropop with `pip`.
-
-.. code-block::
-
-   conda activate <environment name>
-
-Stable Version
---------------
-
-The stable version of astropop is available in `PyPi <https://pypi.org/>`_ and can be installed directly with `pip` command.
-
-.. code-block::
-
-   pip install astropop
-
-Development Version
--------------------
-
-The development (unstable) version can be installed from the github code. With `pip`, can be done in any of the 3 ways:
-
-.. code-block::
-
-    pip install -U git+https://github.com/sparc4-dev/astropop
-
-or
-
-.. code-block::
-
-   pip install -U https://github.com/sparc4-dev/astropop/archive/refs/heads/main.zip
-
-or
-
-.. code-block::
-
-   git clone https://github.com/sparc4-dev/astropop
-   cd astropop
-   pip install -U .
+See `installation and first steps
+<https://astropop.readthedocs.io/en/latest/installation.html>`_ for optional
+external software, notebook environments and a first calculation. The package
+metadata for the selected release determines its dependency requirements.
 
 Citing
 ^^^^^^^^
