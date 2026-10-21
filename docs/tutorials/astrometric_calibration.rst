@@ -45,7 +45,13 @@ with a deliberate pixel offset. It is not the solution we are trying to recover:
     >>> from astropy.wcs.utils import fit_wcs_from_points
     >>> from astropop.framedata import read_framedata
     >>> output = data.parent / 'reduced'
-    >>> inputs = output if (output / 'instrumental.ecsv').exists() else data / 'reference'
+    >>> required = ('combined.fits', 'instrumental.ecsv')
+    >>> available = [(output / name).is_file() for name in required]
+    >>> if any(available) and not all(available):
+    ...     raise ValueError('Incomplete reduced products: rerun the preceding tutorials together.')
+    >>> inputs = output if all(available) else data / 'reference'
+    >>> print('Input product set:', inputs.name)
+    Input product set: reference
     >>> measured = Table.read(inputs / 'instrumental.ecsv')
     >>> standards = Table.read(data / 'standards.ecsv')
     >>> reference = SkyCoord(standards['ra'], standards['dec'])
@@ -58,6 +64,14 @@ with a deliberate pixel offset. It is not the solution we are trying to recover:
     >>> usable = (separation_pixels < 8) & (measured['flags'][nearest] == 0)
     >>> print(f'References within 8 pixels: {usable.sum()} / {len(reference)}')
     References within 8 pixels: 9 / 9
+
+Use the image and table from one product set. If only one required product
+exists in ``reduced``, the example stops instead of mixing it with a reference
+file. Rerun the preceding stages together, or explicitly choose
+``inputs = data / 'reference'`` before loading both files to use the bundled
+example. This presence check cannot establish freshness: after changing a crop,
+registration reference or photometry settings, regenerate all downstream
+products even if files with the expected names already exist.
 
 The tolerance is in detector pixels because this association starts from an
 approximate WCS. The references are isolated and uniquely associated here;
@@ -104,13 +118,15 @@ Save the solved image and matched table
 Choose the combined image you measured, attach the fitted WCS, and keep units,
 errors and masks in the FITS interchange::
 
-    >>> image_dir = output if (output / 'combined.fits').exists() else data / 'reference'
-    >>> image = read_framedata(image_dir / 'combined.fits')
+    >>> image = read_framedata(inputs / 'combined.fits')
     >>> image.wcs = solution
     >>> output.mkdir(exist_ok=True)
     >>> image.write(output / 'astrometric.fits', overwrite=True)
     >>> matched = Table({'id': standards['id'][usable], 'source_row': nearest[usable],
     ...                  'residual_arcsec': radial[usable], 'used_in_fit': fit_rows[usable]})
+    >>> matched.meta.update({'input_set': inputs.name, 'image': 'combined.fits',
+    ...                      'measurements': 'instrumental.ecsv', 'projection': 'TAN',
+    ...                      'association_radius_pixels': 8, 'fit_reference_ids': list(standards['id'][fit_rows])})
     >>> matched.write(output / 'astrometric_matches.ecsv', overwrite=True)
     >>> print('Saved: astrometric.fits and astrometric_matches.ecsv')
     Saved: astrometric.fits and astrometric_matches.ecsv

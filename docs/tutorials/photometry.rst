@@ -97,6 +97,9 @@ finite, unflagged measurements::
     Flux: 45040 ADU; relative error: 0.6%; flags: 0
     Flux: 39937 ADU; relative error: 0.7%; flags: 0
     >>> output.mkdir(exist_ok=True)
+    >>> selected.meta.update({'input_set': inputs.name, 'image': 'combined.fits',
+    ...                      'aperture_radius_pixels': 6., 'sky_annulus_pixels': [9., 13.],
+    ...                      'gain': 1., 'selection': 'finite positive flux and flags == 0'})
     >>> selected.write(output / 'instrumental.ecsv', format='ascii.ecsv', overwrite=True)
 
 The displayed relative errors are rounded; the saved ``flux_error`` column

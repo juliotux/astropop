@@ -41,10 +41,15 @@ from :doc:`photometry`. Reference products allow starting here independently::
     >>> from astropy.table import Table
     >>> from astropop.framedata import read_framedata
     >>> output = data.parent / 'reduced'
-    >>> image_dir = output if (output / 'astrometric.fits').exists() else data / 'reference'
-    >>> table_dir = output if (output / 'instrumental.ecsv').exists() else data / 'reference'
-    >>> image = read_framedata(image_dir / 'astrometric.fits')
-    >>> measured = Table.read(table_dir / 'instrumental.ecsv')
+    >>> required = ('astrometric.fits', 'instrumental.ecsv')
+    >>> available = [(output / name).is_file() for name in required]
+    >>> if any(available) and not all(available):
+    ...     raise ValueError('Incomplete reduced products: rerun the preceding tutorials together.')
+    >>> inputs = output if all(available) else data / 'reference'
+    >>> print('Input product set:', inputs.name)
+    Input product set: reference
+    >>> image = read_framedata(inputs / 'astrometric.fits')
+    >>> measured = Table.read(inputs / 'instrumental.ecsv')
     >>> standards = Table.read(data / 'standards.ecsv')
     >>> reference = SkyCoord(standards['ra'], standards['dec'])
     >>> sky = image.wcs.pixel_to_world(measured['x'], measured['y'])
@@ -55,6 +60,14 @@ from :doc:`photometry`. Reference products allow starting here independently::
     >>> calibrators = usable & standards['standard']
     >>> print(f'Matched sources: {usable.sum()}; zero-point standards: {calibrators.sum()}')
     Matched sources: 9; zero-point standards: 7
+
+Use the image and table from one product set. If only one required product
+exists in ``reduced``, the example stops instead of mixing it with a reference
+file. Rerun the preceding stages together, or explicitly choose
+``inputs = data / 'reference'`` before loading both files to use the bundled
+example. This presence check cannot establish freshness: after changing a crop,
+registration reference or photometry settings, regenerate all downstream
+products even if files with the expected names already exist.
 
 This simulation has known, isolated standards. The standard magnitudes refer
 to its synthetic R band; they do not define a transformation to an actual
@@ -107,6 +120,8 @@ with the table. Magnitudes without a zero-point convention are ambiguous::
     ...                 'R_error': calibrated_error[usable]})
     >>> result['R'].unit = result['R_error'].unit = u.mag
     >>> result.meta.update({'band': 'synthetic R', 'catalog': 'bundled synthetic standards',
+    ...                     'input_set': inputs.name, 'image': 'astrometric.fits',
+    ...                     'measurements': 'instrumental.ecsv',
     ...                     'zero_point': float(zero_point),
     ...                     'zero_point_error': float(zero_point_error),
     ...                     'flux_convention': 'ADU per second; mean of 30-second frames'})
