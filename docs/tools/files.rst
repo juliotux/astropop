@@ -1,349 +1,153 @@
 .. include:: ../references.txt
 
-
-
 Fits File Collections
 =====================
 
-Manage and organize FITS files, specially when working with large databases and need to organize files using their header keywords can be a tedious task. The :mod:`astropop.file_collection` module provides utilities to manage and organize FITS files in a database-like fashion.
-
-The basis of this is the |FitsFileGroup| class. It reads FITS files from a folder or a list, and creates a database containing their headers. So, you can easily access the headers and filter files based on their header keywords. This class is also useful to create summaries of the files headers.
-
-This module is mainly designed to work like `~ccdproc.ImageFileCollection`, but its main difference is to work with sqlite databases internally, and the hability to work with persistent headers databases. This may speedup some workflows, specially when working with large databases and compressed files, when headers reading can be very slow.
-
-.. note::
-
-    The |FitsFileGroup| class is designed to only read the files. So, it cannot be used to modify the files.
+|FitsFileGroup| indexes FITS headers in a SQLite database so you can select
+observations without loading every image. Start with
+:doc:`../how_to/file_collections` for an executable example; this page explains
+index ownership, selection and persistence. Editing a group changes its index,
+not the FITS files on disk.
 
 Initializing a |FitsFileGroup|
 ------------------------------
 
-Initialize |FitsFileGroup| with either ``location`` to scan a directory
-recursively or ``files`` to use an explicit list. Supplying both raises
-``ValueError``; the two sources are not combined.
+Supply ``location`` to scan a directory recursively, or ``files`` for an explicit
+list. The arguments are mutually exclusive. ``ext`` selects the header extension;
+an empty primary HDU can require ``ext=1`` or an extension name.
 
 .. code-block:: python
-
-    from astropop.file_collection import FitsFileGroup
-
-    ffg = FitsFileGroup(location='/path/to/data')
-    selected = FitsFileGroup(files=['/path/to/data/file1.fits',
-                                    '/path/to/data/file2.fits'])
-
-Optional keywords also exist to improve the class behavior. The most important are:
-
-* ``ext``: the extension number inside the FITS file to read the header. Default is 0. But if your important data is stored in secondary extensions, you can change this to read the header from there. Like, if your image is stored in the second extension, you can use ``ext=1``.
-
-  .. code-block:: text
-
-    In [4]: ffg = FitsFileGroup(location='/path/to/data', ext=1)
-
-* ``database``: name of the file where the database will be stored in disk. If not given, the database will be stored in memory. If the file already exists, the database will be read from there. If you want to create a new database, you can delete the file before initializing the class.
-
-  .. code-block:: text
-
-    In [5]: ffg = FitsFileGroup(location='/path/to/data', database='files.db')
-
-* ``compression``: if set to True, the reader will also try to find files in compressed format, like ``.fits.gz``. If set to False, which is the default, only uncompressed files will be read.
-
-  .. code-block:: text
-
-    # can also read .fits.gz or .fits.zip files
-    In [6]: ffg = FitsFileGroup(location='/path/to/data', compression=True)
-
-* ``glob_include`` keeps paths matching a shell-style ``fnmatch`` pattern.
-  The pattern is matched against the discovered path, including the directory,
-  rather than just the basename. For an absolute ``location``, ``'BIAS*'``
-  therefore matches no files. Include the directory in the pattern:
-
-  .. code-block:: python
 
     from pathlib import Path
+    from astropop.file_collection import FitsFileGroup, list_fits_files
 
     folder = Path('/path/to/data').resolve()
-    bias_pattern = str(folder / 'BIAS*')
-    ffg = FitsFileGroup(location=folder, glob_include=bias_pattern)
+    group = FitsFileGroup(location=folder, ext=1, database='headers.db')
 
-* ``glob_exclude`` removes paths matching the pattern, using the same full-path
-  matching rule. To exclude the paths selected above:
+``database`` defaults to an in-memory index. A path creates a persistent database
+or reopens an existing one; reopening does not automatically refresh headers.
+Call ``group.update(location=folder)`` to rebuild after changes. Rebuilding can
+remove custom index columns, so keep their provenance separately.
 
-  .. code-block:: python
-
-    ffg = FitsFileGroup(location=folder, glob_exclude=bias_pattern)
-
-The directory scan includes subdirectories. To select by basename regardless
-of directory depth, construct an explicit file list instead:
+``compression=True`` includes recognized compressed FITS suffixes in directory
+scans. ``fits_ext`` overrides the searched suffixes. ``glob_include`` and
+``glob_exclude`` use shell-style patterns against the discovered path, including
+its directory. For example, ``str(folder / 'BIAS*')`` matches paths beginning
+with that absolute prefix; ``'BIAS*'`` alone does not match absolute paths.
+To select basenames across subdirectories, build the list explicitly:
 
 .. code-block:: python
-
-    from astropop.file_collection import list_fits_files
 
     bias_files = [name for name in list_fits_files(folder)
                   if Path(name).name.startswith('BIAS')]
-    ffg = FitsFileGroup(files=bias_files)
-
+    biases = FitsFileGroup(files=bias_files, ext=1)
+    print('Selected bias files:', len(biases))
 
 Files Summary and Header Keyword Values
 ---------------------------------------
 
-Once the files are read, all headers are stored internally in a database. But a |Table| containing all the headers can be accessed using the `~astropop.file_collection.FitsFileGroup.summary` attribute. This table is a copy of the internal database, so modifying it will not affect the database or the filegroup itself.
+``group.summary`` returns a Table copy. Modifying that copy does not update the
+index. ``group.files`` returns resolved file paths. Persistent databases store
+paths relative to the database directory, so moving the database alone can
+break its relationship to the observations.
 
-.. code-block:: text
+.. code-block:: python
 
-    In [9]: ffg.summary
-    Out[9]:
-    <Table length=3>
-    FILENAME  EXPTIME  FILTER  OBJECT
-    bytes256 float64  bytes8  bytes8
-    -------- -------- ------- -------
-    file1.fits     1.0     R     star1
-    file2.fits     2.0     G     star2
-    file3.fits     3.0     R     star3
+    print('Indexed files:', len(group))
+    print('Columns:', group.summary.colnames)
+    print('Filters:', group.values('FILTER', unique=True))
 
-
-Also, a full list of the files can be accessed using the `~astropop.file_collection.FitsFileGroup.files` attribute.
-
-.. code-block:: text
-
-    In [10]: ffg.files
-    Out[10]:
-    ['/path/to/data/file1.fits',
-     '/path/to/data/file2.fits',
-     '/path/to/data/file3.fits']
-
-You can also get a list of the values of a given header keyword using the `~astropop.file_collection.FitsFileGroup.values` method. This method returns a list of the values of the given keyword, in the same order as the files in the `~astropop.file_collection.FitsFileGroup.files` attribute. If ``unique`` is set to True, only unique values are returned and the order is not guaranteed.
-
-.. code-block:: text
-
-    In [11]: ffg.values('FILTER')
-    Out[11]: ['R', 'G', 'R']
-
-    In [12]: ffg.values('FILTER', unique=True)
-    Out[12]: ['R', 'G']
-
+``values`` preserves file order unless ``unique=True`` is requested. Header
+columns are normalized in the summary; inspect ``summary.colnames`` before
+using names in operations that require exact spelling.
 
 Adding or Removing Files
 ------------------------
 
-Adding or removing files to the group is done using the `~astropop.file_collection.FitsFileGroup.add_file` and `~astropop.file_collection.FitsFileGroup.remove_file` methods.
+``add_file`` reads a file's header into the group. ``remove_file`` removes its
+entry from the index without deleting the observation. Use resolved paths when
+updating a group to avoid ambiguity about relative filenames.
 
-To add a file, use `~astropop.file_collection.FitsFileGroup.add_file`. Its only argument is ``file`` to set the file name. Prefer using full (absolute) paths for the file name in this function.
+.. code-block:: python
 
-.. code-block:: text
-
-    In [13]: ffg.add_file('/path/to/data/file4.fits')
-
-    In [14]: ffg.files
-    Out[14]:
-    ['/path/to/data/file1.fits',
-     '/path/to/data/file2.fits',
-     '/path/to/data/file3.fits',
-     '/path/to/data/file4.fits']
-
-For remove a file, the `~astropop.file_collection.FitsFileGroup.remove_file` accepts a file name with absolute path, or a path relative to the filegroup location. Prefere using absolute paths for the file name in this function too.
-
-.. code-block:: text
-
-    In [15]: ffg.remove_file('/path/to/data/file4.fits')
-
-    In [16]: ffg.files
-    Out[16]:
-    ['/path/to/data/file1.fits',
-     '/path/to/data/file2.fits',
-     '/path/to/data/file3.fits']
-
-    In [17]: ffg.remove_file('file1.fits')
-
-    In [18]: ffg.files
-    Out[18]:
-    ['/path/to/data/file2.fits',
-     '/path/to/data/file3.fits']
+    new_file = folder / 'new_exposure.fits'
+    group.add_file(new_file)
+    print('Indexed after addition:', len(group))
+    group.remove_file(new_file)
+    print('Indexed after removal:', len(group))
 
 Adding a Custom Column
 ----------------------
 
-It is also possible to add a custom column to the database and use it to filter the files. However, as the |FitsFileGroup| is designed to do not change the files, this column/keyword will not be added to the headers in the files. To do this, use the `~astropop.file_collection.FitsFileGroup.add_column` method. This method accepts two arguments: ``name`` to set the column name and ``values`` to set the values of the column. The values must be a list with the same length as the number of files in the filegroup.
+Store a per-file classification in the index with ``add_column``. Values must
+correspond to the current file order. The column is not written to FITS headers.
 
-.. code-block:: text
+.. code-block:: python
 
-    In [19]: ffg.add_column('CUSTOM', [1, 2, 3])
-
-    In [20]: ffg.summary
-    Out[20]:
-    <Table length=3>
-    FILENAME  EXPTIME  FILTER  OBJECT  CUSTOM
-    bytes256 float64  bytes8  bytes8  int64
-    -------- -------- ------- ------- ------
-    file1.fits     1.0     R     star1      1
-    file2.fits     2.0     G     star2      2
-    file3.fits     3.0     R     star3      3
-
-    In [21]: ffg.values('CUSTOM')
-    Out[21]: [1, 2, 3]
+    group.add_column('reviewed', [False] * len(group))
+    print('Review state:', group.values('reviewed'))
 
 Filtering and Grouping Files
 ----------------------------
 
-The main usage of |FitsFileGroup| is to filter, sort and organize FITS files. There are two ways to organize this files: filtering by certaing keyword values or grouping the files by certain keywords. Both return a new |FitsFileGroup| object.
+Filtering and grouping return new groups. They select references to the existing
+observations; they do not copy or calibrate the underlying FITS data.
 
 Filtering by Keyword Values
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The method `~astropop.file_collection.FitsFileGroup.filtered` receives a dictionary with the keywords and values to filter the files. So, a new |FitsFileGroup| will be created with only the matched files for all the keywords.
+``filtered`` requires every supplied keyword/value criterion to match. Keyword
+lookup here is case-insensitive. Check the selection count before combining it.
 
-.. code-block:: text
+.. code-block:: python
 
-    In [22]: ffg_filtered = ffg.filtered({'FILTER': 'R', 'EXPTIME': 1.0})
-
-    In [23]: ffg_filtered.files
-    Out[23]: ['/path/to/data/file1.fits']
-
-    In [24]: ffg_filtered.summary
-    Out[24]:
-    <Table length=1>
-    FILENAME  EXPTIME  FILTER  OBJECT  CUSTOM
-    bytes256 float64  bytes8  bytes8  int64
-    -------- -------- ------- ------- ------
-    file1.fits     1.0     R     star1      1
-
-    In [25]: ffg_filtered = ffg.filtered({'FILTER': 'R', 'EXPTIME': 2.0})
-
-    In [26]: ffg_filtered.files
-    Out[26]: []
-
-    In [27]: ffg_filtered.summary
-    Out[27]: <Table length=0>
+    red_science = group.filtered({'FILTER': 'R', 'IMAGETYP': 'LIGHT'})
+    print('R-band science exposures:', len(red_science))
 
 Grouping Files
 ^^^^^^^^^^^^^^
 
-Use the exact column names in ``ffg.summary.colnames`` for ``group_by``.
-Header keywords can appear lowercased in the database summary; grouping is
-case-sensitive. The local executable example is in
-:doc:`../how_to/file_collections`. Verbatim tables below are illustrative.
+``group_by`` yields groups sharing the selected header values. Unlike filtering,
+it requires exact summary-column names. For a lowercase ``filter`` column:
 
-If you want to not only generate a group of files from a single set of keyword valeus, but instead generate multiple groups of files that have the same values in a set of keywords, you can use the `~astropop.file_collection.FitsFileGroup.group_by` method. This method `yeilds <https://docs.python.org/3/reference/expressions.html#yield-expressions>`_ a new |FitsFileGroup| object for each group of files.
+.. code-block:: python
 
-.. Note::
+    for subset in group.group_by(['filter']):
+        print('Filter:', subset.values('FILTER', unique=True),
+              'frames:', len(subset))
 
-  Since it returns a generator, you must iterate over it to get the groups, like using ``for`` loop.
-
-.. code-block:: text
-
-  In [28]: ffg.summary
-  Out[28]:
-  <Table length=6>
-  FILENAME    EXPTIME  FILTER  OBJECT CUSTOM
-  bytes256    float64  bytes8  bytes8  int64
-  --------   -------- ------- ------- ------
-  file1.fits      1.0    R     star1      1
-  file2.fits      2.0    G     star2      1
-  file3.fits      3.0    R     star3      1
-  file4.fits      1.0    R     star1      2
-  file5.fits      2.0    G     star2      2
-  file6.fits      3.0    R     star3      2
-
-  In [29]: for group in ffg.group_by(['filter']):
-      ...:     print(f'filter {group.values("FILTER")[0]}')
-      ...:     print(f'images {len(group)}')
-      ...:     print(group.summary)
-      ...:     print('-----------------------------------------')
-      ...:
-  filter R
-  images 4
-  <Table length=4>
-  FILENAME    EXPTIME  FILTER  OBJECT CUSTOM
-  bytes256    float64  bytes8  bytes8  int64
-  --------   -------- ------- ------- ------
-  file1.fits      1.0    R     star1      1
-  file3.fits      3.0    R     star3      1
-  file4.fits      1.0    R     star1      2
-  file6.fits      3.0    R     star3      2
-  -----------------------------------------
-  filter G
-  images 2
-  <Table length=2>
-  FILENAME    EXPTIME  FILTER  OBJECT CUSTOM
-  bytes256    float64  bytes8  bytes8  int64
-  --------   -------- ------- ------- ------
-  file2.fits      2.0    G     star2      1
-  file5.fits      2.0    G     star2      2
-  -----------------------------------------
+For calibration selection, group by detector, binning, readout mode and geometry
+as well as filter where appropriate. Those keyword names are instrument-specific;
+see :doc:`../reduction/pipelines` for an application-level policy.
 
 Iterators
 ---------
 
-The iterator methods load files on demand. Use a ``for`` loop or ``next`` to
-process one yielded object at a time. Memory can still grow if you keep objects
-in a list or other container; the last loop variable also remains bound after
-the loop. The generator does not force deletion of objects held by the caller.
+The iterators load files on demand. Choose the data extension explicitly when
+iterating, even if you indexed another extension's header:
 
-- `~astropop.file_collection.FitsFileGroup.hdus`: Iterates over the files getting the selected hdu. Uses `~astropy.io.fits.open` and can accept any argument that `~astropy.io.fits.open` accepts.
+.. code-block:: python
 
-  .. code-block:: text
+    import numpy as np
 
-    In [30]: for hdu in ffg.hdus(ext=0):
-        ...:     print(hdu)
-        ...:
-    <astropy.io.fits.hdu.image.PrimaryHDU object at 0xabcdef123456>
-    <astropy.io.fits.hdu.image.PrimaryHDU object at 0x654321fedcba>
-    <astropy.io.fits.hdu.image.PrimaryHDU object at 0x123456789abc>
+    for frame in red_science.framedata(ext=1):
+        print('Shape:', frame.shape, 'median:', float(np.median(frame.data)))
 
-- `~astropop.file_collection.FitsFileGroup.data`: Iterates over the files getting the selected hdu and returning the data. Uses `~astropy.io.fits.getdata` and can accept any argument that `~astropy.io.fits.getdata` accepts.
+``headers`` yields headers, ``data`` yields image arrays, and ``hdus`` yields
+image HDUs. ``framedata`` converts the selected HDU to |FrameData|. Keep only
+measurements or output paths when processing a large group: converting an
+iterator to a list retains all its objects, and the last loop variable also
+remains bound after iteration.
 
-  .. code-block:: text
-
-    In [31]: for data in ffg.data(ext=0):
-        ...:     print(data)
-        ...:
-    [[1 2 3]
-     [4 5 6]
-     [7 8 9]]
-    [[1 2 3]
-     [4 5 6]
-     [7 8 9]]
-    [[1 2 3]
-     [4 5 6]
-     [7 8 9]]
-
-- `~astropop.file_collection.FitsFileGroup.headers`: Iterates over the files getting the selected hdu and returning the header. Uses `~astropy.io.fits.getheader` and can accept any argument that `~astropy.io.fits.getheader` accepts.
-
-  .. code-block:: text
-
-    In [32]: for header in ffg.headers(ext=0):
-        ...:     print(header['FILTER'])
-        ...:
-    R
-    G
-    R
-
-- `~astropop.file_collection.FitsFileGroup.framedata`: Iterate over the files generating |FrameData| objects from them. Use any argument that `~astropop.framedata.read_framedata` method.
-
-  .. code-block:: text
-
-    In [33]: for fd in ffg.framedata():
-        ...:     print(fd)
-        ...:
-    <FrameData object at 0xabcdef123456>
-    <FrameData object at 0x654321fedcba>
-    <FrameData object at 0x123456789abc>
-
-  .. Note::
-
-    If you want to to create a list of |FrameData| for a large number of files, you may fill all available memory. In this case, use ``use_memmap_backend=True`` that will create temporary `memmap <https://numpy.org/doc/stable/reference/generated/numpy.memmap.html>`_ files to store the data. By default, mapped files are created beneath Astropy's Astropop cache directory. You can change this using the ``cache_folder`` argument.
-
-    .. code-block:: text
-
-      In [34]: list(ffg.framedata(use_memmap_backend=True))
-      Out[34]:
-      [<FrameData object at 0xabcdef123456>,
-       <FrameData object at 0x654321fedcba>,
-       <FrameData object at 0x123456789abc>]
+``use_memmap_backend=True`` on ``framedata`` moves its arrays into temporary
+mapped files. ``cache_folder`` controls their location; this does not impose a
+whole-process RAM limit. See :doc:`../data_structures/cache` for cache ownership
+and cleanup, and :ref:`imcombine-memory-planning` for combination storage.
 
 File Collection API
 -------------------
 
-See :doc:`../reference/utilities` for the API reference.
+See :doc:`../reference/utilities` for signatures and parameter contracts.
 
 .. raw:: html
 

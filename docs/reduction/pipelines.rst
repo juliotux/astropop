@@ -3,64 +3,80 @@
 Building a reduction workflow
 =============================
 
-Astropop supplies reduction functions, not a pipeline scheduler or a universal
-instrument recipe. Your script chooses calibration files, detector parameters,
-processing order, and output names. Use :class:`~astropop.file_collection.FitsFileGroup`
-to select files by header values, and call individual reduction steps explicitly.
+Astropop supplies reduction functions; your application owns observation
+selection, detector policy, processing order, failures and output provenance.
+Use :doc:`../tutorials/ccd_reduction` for the numerical CCD sequence. This guide
+focuses on organizing those operations into a repeatable application.
 
-A small calibration workflow
-----------------------------
+.. _a-small-calibration-workflow:
 
-The following synthetic example builds a master bias, subtracts it, and divides
-by an already normalized flat. Replace the generated frames with
-``read_framedata`` calls or a file group's ``framedata()`` iterator for real data::
+Select compatible inputs
+------------------------
 
-    >>> import numpy as np
-    >>> from astropop.framedata import FrameData
-    >>> from astropop.image.imcombine import imcombine
-    >>> from astropop.image.processing import subtract_bias, flat_correct
-    >>> biases = [FrameData(np.full((8, 8), v), unit='adu') for v in (99., 100., 101.)]
-    >>> master_bias = imcombine(biases, method='median')
-    >>> science = FrameData(np.full((8, 8), 1100.), unit='adu', uncertainty=5.)
-    >>> normalized_flat = FrameData(np.ones((8, 8)), uncertainty=0.01)
-    >>> reduced = flat_correct(subtract_bias(science, master_bias), normalized_flat)
-    >>> print(f'Reduced image: {reduced.shape}, {reduced.unit}')
-    Reduced image: (8, 8), adu
-    >>> print(f'Pixel range: {reduced.data.min():.1f} to {reduced.data.max():.1f} ADU')
-    Pixel range: 1000.0 to 1000.0 ADU
+Build an observing log with :class:`~astropop.file_collection.FitsFileGroup`.
+Use your instrument's header names to separate camera/channel, binning, readout
+mode, amplifier layout, crop/shape and detector temperature. Flats also need the
+appropriate filter/optical configuration. A matching array shape alone does not
+establish calibration compatibility.
 
-For a detector requiring dark correction, subtract the bias from dark frames
-before constructing a master dark, then supply explicit science/dark exposure
-times to ``subtract_dark``. Prepare flats with the same calibration choices
-and normalize them before science correction. Detector-specific effects and
-overscan modeling must be handled by the application; Astropop does not infer
-them from an instrument name.
+Inspect the selected counts and exposure times before building masters. Bias
+frames define an additive zero; bias-subtracted darks need a stated exposure
+scale; flats describe a response after their own additive corrections. See
+:doc:`ccdprocessing` for the operations. The tutorials use one detector setup and
+select filename groups after inspection; an application should use its reviewed
+log rather than assuming every file named ``flat*`` belongs in one master.
+
+Store explicit input/output lists per stage. A rerun with a changed crop,
+registration reference, calibration selection or measurement radius invalidates
+downstream products even if their filenames already exist.
 
 Order, registration, and quality
 --------------------------------
 
-Apply the same crop to science and calibration frames. Correct detector effects
-before estimating star positions or registration transforms. Register images
-before combining a shifted science sequence, then pass source coordinates to
-photometry. Polarimetric workflows additionally require beam pairing and
-retarder-angle information; see :doc:`polarimetry`.
+Apply compatible geometry to science and calibration frames. Correct detector
+effects before measuring stars or estimating registration transforms. Register
+shifted science images before combining them. Photometry consumes the resulting
+image coordinate system; polarimetry additionally needs beam identification and
+retarder angles. Overscan and nonlinearity corrections are detector-specific
+steps that the application must provide when needed.
 
-Track masks deliberately: arithmetic marks pixels without excluding their
-values, combination rejects masked samples, and calibration convenience
-functions currently clear flag bits. See :doc:`ccdprocessing` and
-:doc:`imarith` before choosing how to propagate detector-quality flags.
+Choose quality propagation explicitly. Arithmetic marks pixels without excluding
+their values, combination rejects masked samples, and calibration convenience
+functions currently clear flag bits. Preserve and combine science/master quality
+maps according to :doc:`../how_to/quality_flags` rather than inferring usable
+pixels from a successful numerical operation.
+
+Failures and restart policy
+---------------------------
+
+Treat a failed frame, an empty measurement and a failed catalog request as
+separate outcomes. Record the filename, stage, exception and processing settings.
+Catch only errors for which the application has an explicit recovery policy;
+see :doc:`../how_to/troubleshooting`. Do not replace failed science results with
+empty successful products.
+
+Write derived products to a separate output directory and choose overwrite
+behavior deliberately. For long runs, a stage manifest can record completed
+outputs and their input identities. Before resuming, verify those inputs and
+settings still match; file existence alone is not a freshness check. If atomic
+publication is required, write and validate a temporary file on the destination
+filesystem before renaming it to the final path.
 
 Large datasets and reproducibility
 ----------------------------------
 
-Set optional-array configuration before loading frames. Iterate over science
-files rather than retaining every intermediate result. FrameData's memmap
-backend and the combiner's disk cache can move storage to disk; the combination
-memory budget covers work tiles, not every live input/output object.
+Configure optional arrays before constructing frames. Workers in separate
+processes need their own configuration before loading data; avoid threads that
+mutate shared configuration to different policies. See
+:doc:`../concepts/configuration`.
 
-Record software versions, configuration, calibration filenames, exposure/gain
-choices, rejection settings, and registration reference alongside your products.
-Write output frames explicitly, for example ``reduced.write('reduced.fits')``;
-choose overwrite behavior intentionally. The notebook examples linked from the
-home page illustrate complete scripts, but their instrument choices are not
-library defaults.
+Keep calibration masters for reuse, but iterate over science files and release
+intermediate images when no longer needed. Memmaps and the combiner's disk cache
+move storage to disk. The combination memory budget covers work tiles, not all
+caller-owned frames or output arrays; see :ref:`imcombine-memory-planning`.
+
+Record software versions, input identities, configuration, calibration filenames,
+exposure/gain choices, rejection settings and registration reference with the
+products. For photometry, also record aperture, annulus, background and flag
+selection choices; for catalogs, retain release, epoch and query provenance.
+The numerical arrays alone cannot reconstruct these decisions.
