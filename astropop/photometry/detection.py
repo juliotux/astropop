@@ -71,25 +71,24 @@ def segfind(
 
         - ``id``: source ID
         - ``x``, ``y``: x and y coordinates of the source centroid
-        - ``xcentroid``, ``ycentroid``: same as ``x`` and ``y``
         - ``peak``: value of the source peak
         - ``flux``: integrated (background-subtracted) source flux within the
           segment
-        - ``sigma_x``, ``sigma_y``: standard deviation of the source elipsoid
-          along x and y
+        - ``sigma_x``, ``sigma_y``: one-sigma semimajor and semiminor axis
+          lengths, respectively, from source second moments
         - ``theta``: rotation angle of the source elipsoid (degrees) from the
           positive x axis
-        - ``fwhm``: FWHM of circular gaussian fit of the source
+        - ``fwhm``: Circularized FWHM derived from source second moments
         - ``eccentricity``: The eccentricity of the 2D Gaussian function that
           has the same second-order moments as the source.
         - ``elongation``: The ratio of the lengths of the semimajor and
           semiminor axes.
-        - ``ellipticity``: 1.0 minus the elongation.
+        - ``ellipticity``: 1.0 minus the semiminor-to-semimajor axis ratio.
         - ``cxx``, ``cyy``, ``cxy``: SourceExtractor ellipse parameters.
           See [SourceExtractor docs]_
         - ``area``: area of the segment, in pixels
         - ``label``: label identifying the segment to which the source belongs.
-          Can be used as y-sorted index.
+          Retains the segmentation label after sorting rows by flux.
 
     References
     ----------
@@ -240,27 +239,21 @@ def daofind(
         - ``peak``: value of the source peak
         - ``flux``: integrated (background-subtracted) source flux within the
           segment
-        - ``fwhm``: FWHM of circular gaussian fit of the source
+        - ``fwhm``: Circularized FWHM derived from source second moments
         - ``sharpness``: The source DAOFIND sharpness statistic.
-        - ``roundness``: The source DAOFIND roundness statistic. Maximum
-          between ``g_roundness`` and ``r_roundness``.
+        - ``roundness``: The source DAOFIND roundness statistic. Maximum absolute
+          value of ``g_roundness`` and ``s_roundness``.
         - ``g_roundness``: The DAOFIND roundness statistic based on Gaussian
           marginal fit. Good for assymetries aligned with the x or y axis.
         - ``s_roundness``: The DAOFIND roundness statistic based on symmetry
           of the source. Good for assymetries aligned with the diagonal.
-        - ``sigma_x``, ``sigma_y``: standard deviation of the source elipsoid
-          along x and y
-        - ``theta``: rotation angle of the source elipsoid (degrees) from the
-          positive x axis
-        - ``fwhm``: FWHM of circular gaussian fit of the source
         - ``eccentricity``: The eccentricity of the 2D Gaussian function that
           has the same second-order moments as the source.
         - ``elongation``: The ratio of the lengths of the semimajor and
           semiminor axes.
-        - ``ellipticity``: 1.0 minus the elongation.
+        - ``ellipticity``: 1.0 minus the semiminor-to-semimajor axis ratio.
         - ``cxx``, ``cyy``, ``cxy``: SourceExtractor ellipse parameters.
           See [SourceExtractor docs]_
-        - ``area``: area of the segment, in pixels
     """
     # always use background subtracted data
     d = data-background
@@ -365,38 +358,11 @@ def starfind(
     Returns
     -------
     sources
-        Table with the sources found. The table will contain the following
-        columns:
-
-        - ``id``: source ID
-        - ``x``, ``y``: x and y coordinates of the source centroid
-        - ``xcentroid``, ``ycentroid``: same as ``x`` and ``y``
-        - ``peak``: value of the source peak
-        - ``flux``: integrated (background-subtracted) source flux within the
-          segment
-        - ``fwhm``: FWHM of circular gaussian fit of the source
-        - ``sharpness``: The source DAOFIND sharpness statistic.
-        - ``roundness``: The source DAOFIND roundness statistic. Maximum
-          between ``g_roundness`` and ``r_roundness``.
-        - ``g_roundness``: The DAOFIND roundness statistic based on Gaussian
-          marginal fit. Good for assymetries aligned with the x or y axis.
-        - ``s_roundness``: The DAOFIND roundness statistic based on symmetry
-          of the source. Good for assymetries aligned with the diagonal.
-        - ``sigma_x``, ``sigma_y``: standard deviation of the source elipsoid
-          along x and y
-        - ``theta``: rotation angle of the source elipsoid (degrees) from the
-          positive x axis
-        - ``fwhm``: FWHM of circular gaussian fit of the source
-        - ``eccentricity``: The eccentricity of the 2D Gaussian function that
-          has the same second-order moments as the source.
-        - ``elongation``: The ratio of the lengths of the semimajor and
-          semiminor axes.
-        - ``ellipticity``: 1.0 minus the elongation.
-        - ``cxx``, ``cyy``, ``cxy``: SourceExtractor ellipse parameters.
-          See [SourceExtractor docs]_
-        - ``area``: area of the segment, in pixels
-        - ``label``: label identifying the segment to which the source belongs.
-          Can be used as y-sorted index.
+        The same columns as `daofind`, sorted by decreasing flux. Segmentation
+        is used to estimate a representative FWHM before DAO detection;
+        segmentation-only columns such as ``area`` and ``label`` are not
+        returned. The estimated FWHM is stored in ``sources.meta`` under
+        ``'astropop fwhm'``.
     """
     # First, we identify the sources with sepfind (fwhm independent)
     sources = segfind(data, threshold, background, noise, mask=mask)

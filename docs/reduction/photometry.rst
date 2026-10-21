@@ -4,7 +4,7 @@ Photometry
 ==========
 
 Start with :doc:`../tutorials/photometry` for a local detect-measure-select
-workflow, including gain scaling and empty-field behavior.
+workflow. Gain scaling and empty-field behavior are described below.
 
 :mod:`astropop.photometry` provides background estimation, source detection,
 width estimation, and circular-aperture photometry. Pass two-dimensional
@@ -57,6 +57,34 @@ successful detection before using source columns.
 ``median_fwhm`` fits source profiles using ``model='gaussian'`` or
 ``'moffat'``. It uses cutouts of ``box_size`` and a ``min_fwhm`` lower bound.
 Use representative isolated stars, rather than saturated or blended sources.
+
+.. _empty-detection-behavior:
+
+When no sources are detected
+-----------------------------
+
+The wrappers do not share an empty-table return convention. ``segfind`` and
+``starfind`` raise ``ValueError('No sources found')`` after Photutils emits a
+``NoDetectionsWarning``. A blank field illustrates the segmentation case::
+
+    >>> from astropop.photometry import segfind
+    >>> blank = np.zeros((32, 32))
+    >>> try:
+    ...     empty = segfind(blank, threshold=5, background=0., noise=1.)
+    ... except ValueError as error:
+    ...     print(error)
+    No sources found
+
+Currently ``daofind`` does not handle Photutils returning ``None`` for no
+sources: after the warning, it raises ``TypeError`` while trying to read the
+result. This is a limitation of that wrapper, not an empty source table.
+Inspect the warning and traceback; do not treat every ``TypeError`` as a valid
+empty field, since it can also indicate an input or implementation error.
+
+A ``len(sources)`` check cannot handle an exception raised before a table is
+returned. Inspect the mask, background/noise scale, FWHM and threshold, then
+choose whether to skip the exposure or rerun detection with justified settings.
+No detected source does not imply zero measured flux at a known position.
 
 Aperture fluxes and local sky
 -----------------------------

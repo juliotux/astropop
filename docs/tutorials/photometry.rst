@@ -117,6 +117,7 @@ flags your application can accept. See :doc:`../reduction/photometry` for the
 estimator contracts and source flags, and :doc:`../how_to/catalogs` for matching
 a calibration catalog. Diagnose empty detections by inspecting masks, noise,
 FWHM and threshold rather than treating them as zero-flux measurements.
+See :ref:`empty-detection-behavior` for the wrappers' warnings and exceptions.
 
 Inspect recovery in the supplied simulation
 --------------------------------------------

@@ -59,7 +59,7 @@ numerical tolerances just to make a failing check pass.
     * - No sources detected
       - Inspect sky/noise, threshold, FWHM, masks and the detection wrapper used.
       - Wrappers do not share an empty-table contract. See
-        :doc:`../tutorials/photometry` for current warnings and failures.
+        :ref:`empty-detection-behavior` for current warnings and failures.
     * - Catalog request fails or returns no rows
       - Distinguish service exception from successful zero-length result;
         inspect query region, table/column names and saved response.
