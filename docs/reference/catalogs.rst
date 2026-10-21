@@ -3,9 +3,6 @@
 Catalogs
 ========
 
-Use these entries for signatures, parameter choices and return contracts.
-For workflows and scientific assumptions, read the linked guides.
-
 Guide: :doc:`../tools/catalogs`.
 
 .. automodapi:: astropop.catalogs

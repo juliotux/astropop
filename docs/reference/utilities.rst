@@ -3,8 +3,8 @@
 Quantities, models, files and utilities
 =======================================
 
-Use these entries for signatures, parameter choices and return contracts.
-For workflows and scientific assumptions, read the linked guides.
+Physical quantities
+-------------------
 
 Guide: :doc:`../data_structures/physical`.
 
@@ -26,10 +26,16 @@ Guide: :doc:`../data_structures/physical`.
     Alias of :class:`astropy.units.UnitsError`, used for incompatible physical
     units. It is the Astropy exception class, not a distinct Astropop subtype.
 
+File collections
+----------------
+
 Guide: :doc:`../tools/files`.
 
 .. automodapi:: astropop.file_collection
     :no-inheritance-diagram:
+
+Flags and metadata merging
+--------------------------
 
 Guide: :doc:`../tools/flags`.
 
@@ -38,6 +44,9 @@ Guide: :doc:`../tools/flags`.
 
 .. automodapi:: astropop.image._tools
     :no-inheritance-diagram:
+
+Array helpers and analytical models
+-----------------------------------
 
 Guide: :doc:`../tools/math`.
 
@@ -49,6 +58,9 @@ Guide: :doc:`../tools/math`.
 
 .. automodapi:: astropop.math.hasher
     :no-inheritance-diagram:
+
+FITS utilities
+--------------
 
 Guide: :doc:`../tools/fits_utils`.
 
@@ -62,8 +74,11 @@ Guide: :doc:`../tools/fits_utils`.
 .. py:data:: astropop.fits_utils.imhdus
 
     Tuple of Astropy image-HDU classes suitable for ``isinstance`` checks,
-    as illustrated above. An HDU can belong to one of these classes and still
+    as illustrated in :doc:`../tools/fits_utils`. An HDU can belong to one of these classes and still
     contain no image data.
+
+Logging
+-------
 
 Guide: :doc:`../tools/logger`.
 
@@ -77,10 +92,16 @@ Guide: :doc:`../tools/logger`.
     Shared standard-library Logger named ``astropop``. Its initial level is
     ``INFO``; changing its level affects subsequent library log messages.
 
+Processes and Python helpers
+----------------------------
+
 Guide: :doc:`../tools/py_utils`.
 
 .. automodapi:: astropop.py_utils
     :no-inheritance-diagram:
+
+Test helpers
+------------
 
 Guide: :doc:`../tools/testing`.
 

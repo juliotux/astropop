@@ -3,9 +3,6 @@
 FrameData and configuration
 ===========================
 
-Use these entries for signatures, parameter choices and return contracts.
-For workflows and scientific assumptions, read the linked guides.
-
 Guide: :doc:`../data_structures/framedata`.
 
 .. automodapi:: astropop.framedata
