@@ -742,16 +742,18 @@ def solve_astrometry_xy(
     Parameters
     ----------
     x
-        x positions of the sources in the image.
+        Source x positions in FITS one-based pixels. Add one to zero-based
+        detection coordinates.
     y
-        y positions of the sources in the image.
+        Source y positions in FITS one-based pixels. Add one to zero-based
+        detection coordinates.
     flux
         Estimated fluxes of the sources. A higher value indicates a brighter
         star.
     width
-        Image width.
+        Image width in pixels (number of columns).
     height
-        Image height.
+        Image height in pixels (number of rows).
     image_header
         Original image header.
     options
@@ -769,7 +771,7 @@ def solve_astrometry_xy(
     Returns
     -------
     result
-        Astrometric solution ot the field.
+        Astrometric solution of the field.
     """
     options = options or {}
     if image_header is not None:

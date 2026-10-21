@@ -6,8 +6,9 @@ Arrays and source positions
 
 NumPy images have shape ``(n_rows, n_columns)`` and are indexed ``data[y, x]``.
 Rows correspond to y; columns correspond to x. Astropop source detections,
-aperture positions, and WCS pixel coordinates use ``(x, y)`` ordering. Both
-axes start at zero at the center of the first pixel. Its boundaries are at
+aperture positions, and Astropy high-level WCS pixel coordinates use ``(x, y)``
+ordering. These interfaces start both axes at zero at the center of the first
+pixel; the FITS-oriented helpers described below are exceptions. Its boundaries are at
 ``-0.5`` and ``+0.5``; an integer array index selects that pixel's value, not a
 geometric corner::
 
@@ -58,6 +59,33 @@ coordinates, while ``1`` means FITS one-based coordinates. FITS header
 Photutils aperture positions also use zero-based ``(x, y)`` centers. Convert
 one-based external source lists explicitly; do not infer their origin from
 a column's name alone.
+
+Astropop helpers taking FITS coordinates
+---------------------------------------
+
+:func:`~astropop.astrometry.manual_wcs.wcs_from_coords` copies its ``x, y``
+arguments directly into one-based FITS ``CRPIX``. For the nonsquare image above,
+the zero-based pixel ``(4, 2)`` must therefore be supplied as ``(5, 3)``::
+
+    >>> from astropop.astrometry.manual_wcs import wcs_from_coords
+    >>> approximate = wcs_from_coords(5, 3, 120., -30., 0.34, north='top')
+    >>> print('Reference pixel (FITS):', approximate.wcs.crpix.astype(int))
+    Reference pixel (FITS): [5 3]
+    >>> sky = approximate.pixel_to_world(4, 2)
+    >>> print(f'Reference sky position: {sky.ra.deg:.3f}, {sky.dec.deg:.3f} deg')
+    Reference sky position: 120.000, -30.000 deg
+
+The named ``north`` directions correspond to angles measured counterclockwise
+from positive x: ``'right'`` is 0 degrees, ``'top'`` is 90, ``'left'`` is 180,
+and ``'bottom'`` is 270. These describe an image displayed with ``origin='lower'``
+before any requested axis flip. This helper supplies an approximate geometric
+WCS, not a fitted distortion calibration.
+
+:func:`~astropop.astrometry.astrometrynet.solve_astrometry_xy` also expects
+one-based ``x, y`` in the source list passed to astrometry.net. Add one to
+Astropop detection positions when using that wrapper; pass the image width as
+``image.shape[1]`` and height as ``image.shape[0]``. See
+:doc:`../tutorials/astrometry_net` for the external-solver recipe.
 
 Registration windows and cropping
 ---------------------------------
