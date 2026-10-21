@@ -31,9 +31,9 @@ To generate a |SourcesCatalog| from any Simbad query, use the |SimbadSourcesCata
     simbad_sources.table()
 
 
-The default behavior of the catalog is that whe no photometric band is passed, no photometric information will be retrieved. For a list of all available filters, see `~astropop.catalogs.simbad.SimbadSourcesCatalog.available_filters` property.
+The default behavior of the catalog is that when no photometric band is passed, no photometric information will be retrieved. For a list of all available filters, see `~astropop.catalogs.simbad.SimbadSourcesCatalog.available_filters` property.
 
-Also, additionally to the |SourcesCatalog| methods, |SimbadSourcesCatalog| have `~astropop.catalogs.simbad.SimbadSourcesCatalog.coordinates_bibcode` and `~astropop.catalogs.simbad.SimbadSourcesCatalog.magnitudes_bibcode` properties that returns the bibcode of the coordinates and photometry data, respectively.
+Also, additionally to the |SourcesCatalog| methods, |SimbadSourcesCatalog| have `~astropop.catalogs.simbad.SimbadSourcesCatalog.coordinates_bibcode` and `~astropop.catalogs.simbad.SimbadSourcesCatalog.magnitudes_bibcode` methods that return the bibcode of the coordinates and photometry data, respectively.
 
 .. code-block:: python
 

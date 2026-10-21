@@ -110,9 +110,14 @@ saved coordinates and bands without contacting VizieR:
 
 Unmatched rows stay in the input order, with empty IDs and NaN photometry.
 Matches are independent nearest neighbors; multiple detections can select the
-same reference star. This minimal reload uses the saved coordinate epoch.
-For substantial epoch differences, preserve and reconstruct the proper-motion
-metadata or use ``catalog.get_coordinates(obstime=...)`` before matching.
+same reference star. This minimal reload uses the saved RA/Dec positions
+without reconstructing an epoch or propagating proper motion. Proper-motion
+columns alone are insufficient: retain their coordinate frame, reference epoch,
+units and any distance/radial-velocity information needed for propagation.
+For a specific observation epoch, another option is to call
+``catalog.get_coordinates(obstime=...)`` on the original catalog and save those
+propagated positions with their target epoch. Do not pass a new epoch to the
+minimal reloaded catalog and expect its missing motion model to be restored.
 See :doc:`../tools/catalogs` for the coordinate and epoch contracts.
 
 Use SIMBAD for identity and literature references

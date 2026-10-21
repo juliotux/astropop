@@ -142,7 +142,7 @@ class SourcesCatalog:
         return self.get_coordinates()
 
     def ra_dec_list(self) -> _npt.NDArray:
-        """Get the sources coordinates in [(ra, dec)] format."""
+        """Return RA/Dec pairs in decimal degrees as a NumPy array."""
         sk = self.skycoord()
         return np.array(list(zip(sk.ra.degree, sk.dec.degree)))
 
@@ -252,9 +252,10 @@ class SourcesCatalog:
             RA and Dec coordinates of the objects to be matched to this
             catalog. All coordinates in decimal degree format.
         limit_angle
-            Angle limit for matching indexes. If string, if must be
-            `~astropy.coordinates.Angle` compatible. If float, it will be
-            interpreted as a decimal degree.
+            Maximum matching separation as a unit-bearing string, Angle or
+            angular Quantity. For example, ``'1 arcsec'`` or
+            ``1 * units.arcsec``. A bare float has no angular unit and raises
+            ``astropy.units.UnitTypeError``.
         obstime
             Observation time. If passed, it will be used to apply the proper
             motion to the coordinates, if available.
@@ -390,11 +391,9 @@ class _OnlineSourcesCatalog(SourcesCatalog, abc.ABC):
             containing the object coordinates. If it is a tuple, have to be
             (ra, dec) coordinates, in hexa or decimal degrees format.
         radius
-            The radius to search. If None, the query will be performed as
-            single object query mode. Else, the query will be performed as
-            field mode. If a string value is passed, it must be readable by
-            astropy.coordinates.Angle. If a float value is passed, it will
-            be interpreted as a decimal degree radius.
+            Required cone-search radius; None is not supported. Numeric values
+            are degrees. Strings must include angular units understood by
+            ``astropy.coordinates.Angle``; angular Quantities are also accepted.
         band
             Filters to query photometric informations. If None, photometric
             informations will be disabled. If ``'all'`` (default), all
