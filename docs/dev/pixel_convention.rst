@@ -61,9 +61,9 @@ one-based external source lists explicitly; do not infer their origin from
 a column's name alone.
 
 Astropop helpers taking FITS coordinates
----------------------------------------
+----------------------------------------
 
-:func:`~astropop.astrometry.manual_wcs.wcs_from_coords` copies its ``x, y``
+:func:`~astropop.astrometry.wcs_from_coords` copies its ``x, y``
 arguments directly into one-based FITS ``CRPIX``. For the nonsquare image above,
 the zero-based pixel ``(4, 2)`` must therefore be supplied as ``(5, 3)``::
 
@@ -81,7 +81,7 @@ and ``'bottom'`` is 270. These describe an image displayed with ``origin='lower'
 before any requested axis flip. This helper supplies an approximate geometric
 WCS, not a fitted distortion calibration.
 
-:func:`~astropop.astrometry.astrometrynet.solve_astrometry_xy` also expects
+:func:`~astropop.astrometry.solve_astrometry_xy` also expects
 one-based ``x, y`` in the source list passed to astrometry.net. Add one to
 Astropop detection positions when using that wrapper; pass the image width as
 ``image.shape[1]`` and height as ``image.shape[0]``. See
