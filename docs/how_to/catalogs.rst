@@ -60,3 +60,13 @@ epoch with available motion metadata before interpreting separations. Matching
 is independently nearest-neighbor within ``limit_angle``; it preserves unmatched
 rows and permits repeated reference sources. Neither astrometric proximity nor
 a shared band name alone establishes a valid photometric zero-point reference.
+
+.. plot:: _ext/task_figures.py plot_catalog_epoch
+    :include-source: False
+    :alt: A simulated moving star travels beyond its original one-arcsecond match circle between 2015 and 2025. Its separation from the observation drops below the match radius when the catalog is propagated to 2025.
+    :caption: A synthetic source with proper motion of 1000 mas/year in RA*cos(Dec) and 200 mas/year in Dec. The observation is offset by about 0.18 arcsec from its predicted 2025 position. SourcesCatalog.match_objects rejects it without an observation epoch and accepts it with obstime set to 2025; no online query is made.
+
+Increasing the match radius to span ten years of motion would also accept a
+larger neighborhood of unrelated sources. Propagate coordinates using available
+motion and epoch metadata before choosing the radius; this noiseless motion
+model does not include astrometric uncertainty or prove a unique association.

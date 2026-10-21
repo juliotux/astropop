@@ -51,6 +51,19 @@ is copied before these changes::
 Choose a dimensionless normalized flat to preserve the science unit. A flat
 with a physical unit changes the output unit according to division.
 
+.. plot:: _ext/task_figures.py plot_calibration
+    :include-source: False
+    :alt: Raw stellar field, the same field after bias and dark subtraction, the normalized flat with a sensitivity gradient and dust shadow, and the final corrected field.
+    :caption: A synthetic field corrected with subtract_bias, subtract_dark and flat_correct. The ideal bias and bias-corrected dark are known here; the dark is scaled from 10 to 20 seconds. The flat is dimensionless and normalized by its median. The three ADU panels share display limits; bright cores exceed the displayed range but are not saturated in the data.
+
+The residual gradient and dust shadow after subtraction are multiplicative
+response effects, so they remain until division by the flat. The final sky is
+approximately uniform, with the supplied random noise still present. These
+ideal calibration inputs demonstrate the operations, not the accuracy of
+masters estimated from a finite observing run. Follow
+:doc:`../tutorials/master_bias` and :doc:`../tutorials/master_flat` to build
+masters from exposures.
+
 Gain and uncertainty handling
 -----------------------------
 

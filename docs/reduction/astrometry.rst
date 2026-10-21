@@ -9,6 +9,17 @@ In summary, `astrometry.net`_ searches a given field in the sky and computes a `
 
 For a more detailed WCS usage, see |astropy| documentation of |WCS|.
 
+.. plot:: _ext/task_figures.py plot_wcs
+    :include-source: False
+    :alt: Five labeled stars on a detector grid and the same stars mapped into east and north sky offsets by a rotated TAN WCS. East increases left in the sky panel.
+    :caption: Mapping the same asterism through a supplied TAN WCS with 0.34 arcsec per pixel and a rotated detector. The grid lines are the same detector rows and columns in both panels. Pixel coordinates are zero-based; sky offsets are relative to the WCS reference position, with east displayed to the left.
+
+This is a coordinate-transformation illustration with a known WCS, not the
+output of an Astrometry.net solve. Attaching a WCS changes coordinate mapping;
+it does not rotate or resample the image pixels. Use :doc:`../tutorials/astrometry_net`
+to solve an observed field, and :doc:`../tutorials/astrometric_calibration` to
+inspect independently checked coordinate residuals.
+
 About astrometry.net
 --------------------
 

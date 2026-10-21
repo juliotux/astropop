@@ -86,6 +86,16 @@ needed::
     restored.flags[0, 0]: 130
     restored.flags[0, 0] & F.SATURATED.value: 0
 
+.. plot:: _ext/task_figures.py plot_quality_flags
+    :include-source: False
+    :alt: Six pairs of pixels show nominal values and flag integers through arithmetic, convenience calibration, explicit flag restoration, combination and FITS reload. Red crosses mark Boolean masks.
+    :caption: The two pixels above, followed through the actual APIs. Red crosses mark masked pixels; their values are still computed by arithmetic. Restoring the detector policy lets combination replace the masked sample with 90 ADU. FITS reload of the restored frame retains its mask but changes reason bits from 18 (MASKED | SATURATED) to 130 (MASKED | UNSPECIFIED).
+
+The FITS panel reloads the restored single exposure, rather than the combined
+image. The zero flags on the combined result do not mean the original samples
+were all defect-free; accepted samples and output provenance are different
+questions.
+
 See :doc:`../tools/flags` for bit decoding and :doc:`../data_structures/framedata`
 for the FITS interchange contract. If flag storage is disabled before frame
 construction, these maps are not retained; choose the policy before loading.

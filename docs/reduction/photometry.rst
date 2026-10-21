@@ -76,6 +76,15 @@ The displayed relative error is rounded; ``flux_error`` retains the computed
 value. Exact errors differ slightly between supported Photutils releases
 because their treatment of fractional boundary-pixel variance differs.
 
+.. plot:: _ext/task_figures.py plot_aperture
+    :include-source: False
+    :alt: A stellar cutout with a six-pixel source aperture and twelve-to-eighteen-pixel sky annulus, beside a radial intensity profile with the same regions shaded.
+    :caption: The seeded star used above. Blue encloses the source aperture; orange bounds the local-sky annulus. The radial-bin medians show where the stellar profile approaches the background. The displayed flux is computed by aperture_photometry; radial bins are a diagnostic, not its integration method.
+
+Move the annulus or mask contaminating neighbors when it includes other stars,
+bad pixels or structured sky. A flat-looking profile in this isolated example
+does not establish that the same aperture and sky radii suit a crowded field.
+
 ``bkg_method='mmm'`` and ``'mode'`` estimate local sky with
 ``3*median - 2*mean``; ``'median'`` and ``'mean'`` use those statistics directly.
 ``bkg_sigma_clip`` controls annulus clipping. ``bkg_error`` supplies background

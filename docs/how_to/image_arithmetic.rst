@@ -67,6 +67,16 @@ array. Correlations between operands are not tracked, including when the same
 frame is passed twice. CCDData variance and inverse-variance uncertainties are
 converted to standard deviations before propagation.
 
+.. plot:: _ext/task_figures.py plot_arithmetic
+    :include-source: False
+    :alt: Image-row values before and after bias and flat correction, with the propagated standard uncertainty for each stage below.
+    :caption: Subtracting an uncertain bias increases the variance even as it lowers the signal. Dividing by an uncertain flat adds a signal-dependent error, most visible at the star. These noiseless nominal profiles use supplied independent errors of 4 ADU for the raw pixels, 2 ADU for the bias and 0.02 for the dimensionless flat.
+
+Compare nominal values and uncertainties separately: removing an instrumental
+offset does not remove its calibration uncertainty. This diagram uses known
+bias and flat profiles to isolate the arithmetic; estimating those masters
+from exposures is a separate task.
+
 Set ``AstropopConfig.FRAMEDATA_DISABLE_UNCERTAINTY = True`` **before loading or
 creating frames** to omit uncertainty storage and skip extraction and
 propagation; the result then has ``uncertainty=None``. Setting the option after
