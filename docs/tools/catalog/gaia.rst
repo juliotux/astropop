@@ -37,7 +37,7 @@ Gaia catalogs can be huge. So, additionally, the initialization of the |GaiaDR3S
 
 .. code-block:: python
 
-    gaia_sources = gaia.gaiadr3('HD 5020', radius='60 arcsec', max_g_mag=10)
+    gaia_sources = gaia.gaiadr3('Sirius', radius='60 arcsec', max_g_mag=10)
     gaia_sources.table()
 
 Synchronous queries
@@ -64,7 +64,8 @@ returning partial results.
 Additional Catalog Properties
 -----------------------------
 
-The |GaiaDR3SourcesCatalog| class has some additional properties. You can get parallax and radial velocities from the catalog using the ``parallax`` and ``radial_velocity`` properties.
+Call ``parallax()`` and ``radial_velocity()`` on |GaiaDR3SourcesCatalog| to
+retrieve measurements with their uncertainties and units.
 
 .. automethod:: astropop.catalogs.gaia.GaiaDR3SourcesCatalog.parallax
     :noindex:
@@ -80,7 +81,8 @@ The |GaiaDR3SourcesCatalog| class has some additional properties. You can get pa
 
     gaia_sources.radial_velocity()
 
-Also, important variability and non-punctual flags are available as properties:
+The following methods return variability, multiplicity and galaxy-candidate
+flags from the queried rows:
 
 .. automethod:: astropop.catalogs.gaia.GaiaDR3SourcesCatalog.phot_variable_flag
     :noindex:

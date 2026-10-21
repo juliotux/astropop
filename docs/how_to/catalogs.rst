@@ -47,13 +47,23 @@ length and the service guide before indexing row zero. Verify table/column names
 against the installed packaged configuration and service schema before changing
 URLs or retrying indefinitely.
 
-Gaia uses synchronous queries in this implementation to avoid the problematic
-asynchronous job polling path. Synchronous transport still has timeouts and
-service limits; it cannot guarantee availability. The Gaia guide documents
-pagination and completeness checks. Restrict the query region/columns to the
-scientific need, use bounded retries in the application, and keep query failures
-visible. A successful recorded-response test checks our parser, not the remote
-service's current health.
+Gaia defaults to ``query_mode='async'``, which submits an asynchronous job and
+polls for its completion. Select ``query_mode='sync'`` explicitly to avoid that
+polling path:
+
+.. code-block:: python
+
+    from astropop.catalogs.gaia import GaiaDR3SourcesCatalog
+
+    catalog = GaiaDR3SourcesCatalog(
+        (101.28715, -16.71612), radius='20 arcsec', query_mode='sync')
+
+Synchronous queries are paginated to retrieve complete results; they still
+have network timeouts and service limits. See :doc:`../tools/catalog/gaia` for
+pagination and failure behavior. Restrict the query region to the scientific
+need, use bounded retries in the application, and keep query failures visible.
+A successful recorded-response test checks our parser, not the remote service's
+current health.
 
 For high-proper-motion targets, propagate reference coordinates to the observation
 epoch with available motion metadata before interpreting separations. Matching
