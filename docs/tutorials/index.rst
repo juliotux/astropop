@@ -9,7 +9,7 @@ from its tutorial's numerical examples and includes printed results and figures.
 .. plot:: _ext/task_figures.py plot_tutorial_paths
     :include-source: False
     :alt: Bias and flat masters feed the science stack and a separate time series. Stack photometry leads to astrometric and photometric calibration. Paired beam measurements feed polarimetry independently.
-    :caption: Follow the arrows for data dependencies. The light curve uses a separate twelve-exposure sequence; polarimetry starts from an eight-position beam table.
+    :caption: Follow the arrows for data dependencies. The light curve uses a separate twelve-exposure sequence; polarimetry starts from paired-beam tables, independent of the imaging stack.
 
 Download and run the examples
 -----------------------------
@@ -24,6 +24,7 @@ kernel. Extract the archive into a working directory and keep this layout:
     data/raw/               bias, flat and science exposures for the stack
     data/time_series/raw/   separate variable-star exposures
     data/polarimetry.ecsv    ordinary/extraordinary beam measurements
+    data/polarimetry_quarterwave.ecsv   noisy quarter-wave beam measurements
     data/reference/         products for independent stages
     notebooks/              nine runnable tutorial notebooks
     *.py                    local plotting and data helpers

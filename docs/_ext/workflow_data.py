@@ -55,6 +55,22 @@ def extend_dataset(data: Path) -> None:
                        'nominal_measurements': 'noiseless; supplied Poisson error model'})
     beams.write(data / 'polarimetry.ecsv', overwrite=True)
 
+    # A separate noisy sequence uses known instrument calibration constants.
+    # Keep its random stream independent of the imaging/time-series examples.
+    from astropop.polarimetry import quarterwave_model
+    quarter_angles = np.arange(16) * 22.5
+    quarter_signal = quarterwave_model(quarter_angles, 0.04, -0.03, 0.02, zero=7.5)
+    beam_rng = np.random.default_rng(7)
+    ordinary = beam_rng.poisson(1e5 * (1 + quarter_signal) / 2)
+    extraordinary = beam_rng.poisson(1e5 * (1 - quarter_signal) / (2 * 1.1))
+    quarter = Table({'angle_deg': quarter_angles, 'ordinary': ordinary,
+                     'extraordinary': extraordinary,
+                     'ordinary_error': np.sqrt(ordinary),
+                     'extraordinary_error': np.sqrt(extraordinary)})
+    quarter.meta.update({'retarder': 'quarterwave', 'normalization': 1.1,
+                         'zero_deg': 7.5, 'nominal_measurements': 'independent Poisson draws'})
+    quarter.write(data / 'polarimetry_quarterwave.ecsv', overwrite=True)
+
     series = data / 'time_series'
     (series / 'raw').mkdir(parents=True, exist_ok=True)
     finder = Table({'id': standards['id'][:4], 'role': ['target'] + ['comparison'] * 3,

@@ -3,10 +3,17 @@
 Polarimetry Processing
 ======================
 
-Start with :doc:`../tutorials/polarimetry` to recover known half-wave Stokes
-parameters, then use this chapter for theory and advanced fitting choices.
+Start with :doc:`../tutorials/polarimetry` for complete half-wave and quarter-wave
+workflows. This chapter explains the modulation models, fitting options, result
+properties and coordinate-pairing helpers.
 
-|astropop| polarimetry computation is designed to work only with dual-beam polarimeters with half-wave plate (HWP) and quarter-wave plate (QWP) retarders, performing both circular and linear polarization computations, according the instrument capabilities and design. Savart or Wollaston analyzers are supported. For example of instruments that can be used with astropop, we already tested with success the following instruments:
+|astropop| processes dual-beam polarimetry with half-wave (HWP) or quarter-wave
+(QWP) retarders. A half-wave sequence measures linear polarization; a
+quarter-wave sequence can measure both linear and circular polarization.
+The computation accepts extracted beam fluxes, so it does not depend on a
+particular detector or source-extraction package. Savart and Wollaston analyzers
+are examples of optical elements that separate the beams. Instruments using
+dual-beam techniques include:
 
 * IAGPOL [1]_ - Gaveta Polarimétrica do IAG `link <http://astroweb.iag.usp.br/~polarimetria/gaveta/default.htm>`_ at Observatório Pico dos Dias, Brazil
 * SPARC4 [2]_ - Simultaneous Polarimeter and Rapid Camera in Four bands `link <http://www.das.inpe.br/sparc4>`_ at Observatório Pico dos Dias, Brazil
@@ -14,13 +21,17 @@ parameters, then use this chapter for theory and advanced fitting choices.
 * FORS2 - FORS2, FOcal Reducer/low dispersion Spectrograph 2 at ESO, Chile, in IPOL mode. `link <https://www.eso.org/sci/facilities/paranal/instruments/fors/overview.html>`_
 * POLIMA2 - Optical Dual-Beam Polarizer at OAN-SPM, Mexico. `link <https://www.astrossp.unam.mx/en/users/instruments/ccd-imaging/polima-2>`_
 
-In all this polarimeters, the light beam passed by a retarder and is decomposed in two, ortogonal polarized, beams. So, the ordinary and extraordinary beams produce separated images and all the stars can appear duplicated in the detector. For example, see the image bellow taken from [3]_. |astropop| is designed to handle this kind of data.
+The analyzer separates orthogonally polarized ordinary and extraordinary
+beams, producing two images of each source on the detector. Identify the
+physical beams and calibrate their sign, throughput and angle conventions for
+your instrument before fitting. The LE2POL image below illustrates the paired
+source geometry [3]_.
 
 .. figure:: ../_static/le2pol.jpeg
    :alt: LE2POL image
    :align: center
 
-   LE2POL image, where all stars are duplicated. So, each star produces one image for each ordinary and extraordinary beams. The image is from [3]_.
+   LE2POL image with an ordinary and extraordinary image of each star [3]_.
 
 Description of the Polarimetry Reduction
 ----------------------------------------
@@ -44,7 +55,7 @@ The fitted modulation depends on the retarder:
     Z_i = Q \cos{4 \psi_i} + U \sin{4 \psi_i}
 
   .. plot::
-    :include-source: False
+    :include-source: false
     :alt: Half-wave modulation sampled at 22.5-degree retarder intervals.
     :caption: Linear polarization modulates the beam difference with a 90-degree period.
 
@@ -74,7 +85,7 @@ The fitted modulation depends on the retarder:
     Z_i = Q \cos^2{2 \psi_i} + U \sin{2 \psi_i} \cos{2 \psi_i} - V \sin{2 \psi_i}
 
   .. plot::
-    :include-source: False
+    :include-source: false
     :alt: Quarter-wave modulation with linear and circular polarization.
     :caption: The circular component introduces a 180-degree period alongside the linear modulation.
 
@@ -123,38 +134,61 @@ Use a measured ``k=value`` or set ``compute_k=True`` to estimate it. The default
       k = \frac{\sum_{j=1}^{4} \widetilde{F}_{o,j}}
                {\sum_{j=1}^{4} \widetilde{F}_{e,j}}
 
-  Each phase needs usable measurements in both beams; otherwise normalization
-  raises ``ValueError``. With one measurement per phase, this reduces to the
-  ordinary-to-extraordinary total-flux ratio [1]_.
+  Each phase needs usable measurements in both beams. Check phase occupancy
+  and finite fluxes before estimating normalization: a phase containing only
+  NaNs raises ``ValueError``; a completely absent phase can currently produce
+  an internal ``TypeError``. With one measurement per phase, this reduces to
+  the ordinary-to-extraordinary total-flux ratio [1]_.
 
 * For quarter-wave plates, :math:`Q\cos^2(2\psi_i)` generally has a nonzero
   mean, with the sign of :math:`Q`. The half-wave estimator therefore cannot
   be used unchanged. The code iterates the normalization and Stokes fit using
-  the fitted :math:`Q`, following [4]_ and [6]_, until the parameters converge
-  within the configured tolerance.
+  the fitted :math:`Q`, following [4]_ and [6]_. Its initial phase ratio uses
+  eight phases modulo 180 degrees, all of which need usable beam measurements.
+  The convergence controls and current iteration behavior are described below.
 
 Angle Zero of the Retarder
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-It is expected that the angle zero of the retarder plate do not match perfectly with the analyzer and the equatorial system of the sky. Due to this, the observation of standard stars may be needed to compute the correction to be applied to fix the instrumental computed position angle and the real position angle of the sky. As this is a standard, post-reduction, data processing step, we will not go deep into this topic here. An offset zero do not affect the results for linear polarization in half-wave plates.
+The mechanical retarder zero need not coincide with the analyzer reference or
+with the sky position-angle reference. The models evaluate ``psi + zero``.
+A half-wave zero offset rotates the recovered ``q,u`` components and changes
+``theta``, while preserving ``p = hypot(q,u)`` for an ideal rotation. It therefore
+matters even for purely linear polarization. A half-wave sequence cannot
+independently determine that offset and both linear Stokes components; observe
+suitable standards to calibrate the sky-angle convention.
 
-However, for circular polarization, the zero offset is important due to the assymmetry of the equation. So, with this configuration, there is an additional offset to be computed within the Stokes computation process. This instrumental offset, if wrong, leads to wrong results and with high errors. Additionally, the best wy to compute it is by reducing data from a star with strong circular polarization level. Once this offset is determined, it can be used in other reductions, since it is commonly a instrument-dependent value.
+In the quarter-wave model, the zero also enters the circular modulation term.
+An incorrect zero can mix the inferred components. Supply a measured zero when
+available. A circularly polarized standard can help constrain a fitted zero;
+the result still needs the instrument's beam-sign and sky-angle calibration.
+Recheck calibration when the optical setup changes rather than assuming the
+same offset applies indefinitely.
 
 Polarimetry Reduction in |astropop|
 -----------------------------------
 
-There are 2 main steps in the polarimetry reduction process: the pairs matching and the Stokes parameters computation.
+Reduction involves pairing the two beam images, extracting their fluxes, and
+fitting the modulation over retarder angle. The fitting API accepts arrays of
+angles and beam fluxes; the pairing helpers accept arrays of measured ``x,y``
+positions. You can use Astropop photometry or measurements from another package.
 
-To compute the Stokes parameters of a given source, |astropop| uses arrays of fluxes and retarder positions. So, it is not directly dependent on the photometry routines to process the data and you can use your own already extracted photometry for this process. Also, our helper functions to match the pairs of ordinary and extraordinary beams also use just arrays of x and y positions, and are not dependent on the photometry routines too. So, **no part of the polarimetry reduction depend on the use of |astropop| for source extraction and photometry and you can use your own data or code in this process**.
-
-For example, in this documentation we will use totally fake photometry and random pairs positions to illustrate the polarimetry reduction process.
+The following examples simulate fluxes to demonstrate the fitting interface.
+The helper section separately demonstrates coordinate pairing. For a complete
+read–fit–inspect–save workflow, use :doc:`../tutorials/polarimetry`.
 
 Stokes-Least-Squares Polarimetry Processing
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The Stokes-Least-Squares (SLS) method is a method to compute the Stokes parameters by fitting the modulation equations described above to the relative flux difference of the data using a least-squares method with Trust Region Reflective algorithm. For a better description and validation of this method, see [5]_.
+The Stokes-Least-Squares (SLS) method fits the modulation equations to the
+relative beam-flux difference with the Trust Region Reflective least-squares
+algorithm. See [5]_ for the method and its validation. The functions
+``halfwave_model`` and ``quarterwave_model`` also evaluate the modulation directly,
+which is useful for simulation and inspecting a fitted curve.
 
-First of all, lets create the fake data to be used here for example.
+Create both kinds of beam sequence with a seeded Gaussian perturbation of
+``zi``. These inputs illustrate the API; the perturbation is not a detector
+photon-noise simulation. The tutorial provides a separate Poisson-count example.
 
 .. code-block:: python
 
@@ -181,7 +215,7 @@ First of all, lets create the fake data to be used here for example.
 
 
 .. plot::
-  :include-source: False
+  :include-source: false
   :alt: Ordinary and extraordinary beam fluxes and their normalized differences for both retarder types.
   :caption: Simulated data for the Stokes-Least-Squares polarimetry processing.
 
@@ -249,10 +283,11 @@ First of all, lets create the fake data to be used here for example.
 Create an `~astropop.polarimetry.SLSDualBeamPolarimetry`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The Stokes parameters computation is entirely done by the
-`~astropop.polarimetry.SLSDualBeamPolarimetry` class. This class stores some configuration parameters and process a given set of data using the `~astropop.polarimetry.SLSDualBeamPolarimetry.compute` method. During the instance creation you must choose the type of the retarder used in the observations, between ``halfwave`` and ``quarterwave`` options. Additional arguments control normalization computation, zero position of retarder, and others. Check the class documentation for more information.
-
-First, you must create a `~astropop.polarimetry.SLSDualBeamPolarimetry` instance with your options. Here are some examples:
+`~astropop.polarimetry.SLSDualBeamPolarimetry` stores the fitting options.
+Choose ``'halfwave'`` to fit ``q,u`` or ``'quarterwave'`` to fit ``q,u,v``, then
+call ``compute`` on one source's sequence of beam fluxes. Create separate
+instances when observations need different normalization or zero calibrations.
+These constructor examples show the common configurations:
 
 .. code-block:: python
 
@@ -270,21 +305,36 @@ First, you must create a `~astropop.polarimetry.SLSDualBeamPolarimetry` instance
   estimates the factor from the data and cannot be combined with a supplied
   ``k``. Leaving both arguments at their defaults uses ``k=1``.
 
-* For the zero computation, you can choose between a fixed value of zero, using ``zero=value`` in degrees. So, setting ``zero=30.2`` will force the code to use 30.2° as the zero point of the retarder. When the zero is not specified, there are two behaviors you can expect:
-  - for ``halfwave`` retarders, the code will use 0.0 as the zero position, since it is not possible to compute it from the data.
-  - for ``quarterwave`` retarders, the code will try to fit the zero together with the Stokes parameters. The code will seek the value the zero inside the limits defined by ``zero_range`` argument. So, if you want the code to find a zero between 0 and 45 degrees, you can set ``zero_range=(0, 45)``. By default, the code will use ``zero_range=(0, 90)``.
+* ``zero=value`` fixes the retarder offset in degrees; for example,
+  ``zero=30.2`` uses 30.2 degrees in the model. With ``zero=None``, ``'halfwave'``
+  uses zero degrees, while ``'quarterwave'`` fits the offset together with the
+  Stokes components. ``zero_range=(0, 45)`` bounds a fitted offset to that
+  interval; the default range is ``(0, 90)`` degrees.
 
-.. note::
+* For a quarter-wave sequence with little or no circular signal, fitting both
+  ``zero`` and ``k`` can be degenerate. A numerical fit does not establish that
+  either calibration is identifiable. Prefer independently calibrated values;
+  inspect residuals and uncertainties when fitting additional parameters.
+  Circular polarization can help constrain the zero but is not a general
+  guarantee of convergence or uniqueness.
 
-  - It is important to mention that ``quarterwave`` retarders find the zero position better when circular polarization is present. So, it is recommended that you use a circular polarized star to compute the zero of the instrument and use it for the other stars in the observation.
-  - **For stars that only have linear polarization, the code can compute the zero only if compute_k is set to False.** This happens because the ``zero`` and ``k`` parameters are degenerated in ``quarterwave`` retarders due to the :math:`Q\cos^2{2 \psi_i}`. So, using ``compute_k=True`` and ``zero=None`` will not converge to a solution in this case. For stars with circular polarization, these arguments can be used together and the code will be able to find the zero position and the normalization constant at the same time.
-
-* The iteration process is controlled by 2 arguments: ``iter_tolerance`` and ``max_iters``. ``iter_tolerance`` sets the limit between runs where the code assumes the solution is converged. Like, if the difference between the Stokes parameters of the last two runs is less than ``iter_tolerance``, the code will stop. The ``max_iters`` sets the maximum number of iterations the code will run. By default, ``iter_tolerance=1e-5`` and ``max_iters=100``, which give very good results and are enough for most cases.
+* ``iter_tolerance`` and ``max_iters`` apply to quarter-wave normalization when
+  ``compute_k=True``. The code compares successive ``q,u,v`` using
+  ``np.allclose`` with ``atol=iter_tolerance`` and NumPy's default relative
+  tolerance. The defaults are ``1e-5`` and 100 iterations. Currently the loop
+  continues through its iteration budget even after recording convergence;
+  it does not stop at the first successful comparison. If no comparison meets
+  the criterion, ``compute`` raises ``RuntimeError``. These controls do not
+  replace checks of angular coverage or physical calibration.
 
 Stokes Parameters Computation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The `~astropop.polarimetry.SLSDualBeamPolarimetry.compute` method is the method to be used to compute the Stokes parameters from the flux data. It receives the list of retarder positions (in degrees) and the lists of ordinary and extraordinary fluxes for a source in each retarder position. Optionally, you can pass the lists of errors in the fluxes, that will be used to weight the least squares fit.
+Call `~astropop.polarimetry.SLSDualBeamPolarimetry.compute` with matching arrays
+of retarder positions in degrees and ordinary/extraordinary fluxes for one
+source. The solver requires positions at multiples of 22.5 degrees, within
+``psi_deviation`` (default 0.1 degrees). Optional beam errors must use the same
+flux scale; their propagation and fit weighting are explained below.
 
 For example, computing the Stokes parameters for the half-wave plate data without errors:
 
@@ -326,7 +376,14 @@ Use ``theor_sigma`` for the separate flux-SNR estimate described below.
 `~astropop.polarimetry.StokesParameters` class
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The result of `~astropop.polarimetry.SLSDualBeamPolarimetry.compute` is a `~astropop.polarimetry.StokesParameters` instance. This class is just a container that stores relevant parameters of the computation. Both final Stokes parameters (:math:`Q`, ``U`` and ``V``) and intermediate data, like :math:`\psi_i` retarder positions, :math:`Z_i` relative diference of fluxes, zero position and total flux in each position. It also compute some important properties, like position angle of linear polarization :math:`\theta`, linear polarization degree :math:`P` and theoretical error in Stokes parameters. Most of the properties are stored as |QFloat| containers.
+`~astropop.polarimetry.SLSDualBeamPolarimetry.compute` returns a
+`~astropop.polarimetry.StokesParameters` container. It stores fitted ``q,u``
+and, for quarter-wave data, ``v``, together with normalization, zero angle,
+retarder positions, modulation and total flux when available. Most numerical
+properties are |QFloat| values, carrying units and standard uncertainties.
+The container also derives linear polarization, position angle and diagnostics.
+It can be constructed directly from calibrated Stokes measurements, as the
+low-polarization example below demonstrates.
 
 The stored parameters are:
 
@@ -345,13 +402,13 @@ The linear polarization level is obtained from :math:`P=\sqrt{Q^2+U^2}` and is a
 
 .. code-block:: python
 
-  result.p
+  print(f'Linear polarization: {100 * result.p.nominal:.2f}%')
 
 The position angle is :math:`\theta=\frac{1}{2}\operatorname{atan2}(U,Q)`, preserving the quadrant and reported modulo 180 degrees. It is accessed by `~astropop.polarimetry.StokesParameters.theta` property:
 
 .. code-block:: python
 
-  result.theta
+  print(f'Position angle: {result.theta.nominal:.2f} deg')
 
 Despite its name, `~astropop.polarimetry.StokesParameters.rms` returns the
 population standard deviation of the residuals (``np.std``, ``ddof=0``), not
@@ -360,13 +417,13 @@ statistic. Both ``zi`` and ``psi`` must be stored in the result.
 
 .. code-block:: python
 
-  result.rms
+  print(f'Residual standard deviation: {result.rms:.4f}')
 
 A theoretical expected error based on the fluxes SNR can be also computed by `~astropop.polarimetry.StokesParameters` using `~astropop.polarimetry.StokesParameters.theor_sigma` property. It is only available if ``flux`` is stored in the class.
 
 .. code-block:: python
 
-  result.theor_sigma
+  print('Flux-SNR Stokes uncertainties:', result.theor_sigma)
 
 Here ``SNR`` is the quadrature sum of the per-position total-flux SNRs,
 ``sqrt(sum((flux.nominal / flux.std_dev)**2))``. These estimates require meaningful
@@ -411,127 +468,144 @@ with the fitted parameters fixed. Its argument is the retarder position
   plt.plot(line, model, '--', label='model');
   plt.xlabel(r'$\psi$');
   plt.ylabel(r'$Z_i$');
-  plt.title('Example of data and the callabel model comparison');
+  plt.title('Measured modulation and fitted model');
   plt.legend();
   plt.tight_layout();
   plt.show()
 
 
+Low linear polarization and angle precision
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The angle is half the direction of the ``q,u`` vector. Near the origin, small
+changes in either component can change that direction substantially. Construct
+three measurements with the same small polarization and relatively large
+component errors::
+
+    >>> from astropop.math import QFloat
+    >>> from astropop.polarimetry import StokesParameters
+    >>> for q, u in ((0.001, 0.), (0., 0.001), (-0.001, 0.)):
+    ...     low = StokesParameters('halfwave', q=QFloat(q, 0.002), u=QFloat(u, 0.002))
+    ...     print(f'q={q:+.3f}, u={u:+.3f}: theta={low.theta.nominal:.1f} +/- {low.theta.uncertainty:.1f} deg')
+    q=+0.001, u=+0.000: theta=0.0 +/- 57.2 deg
+    q=+0.000, u=+0.001: theta=45.0 +/- 57.2 deg
+    q=-0.001, u=+0.000: theta=90.0 +/- 57.2 deg
+
+``theta.uncertainty`` uses the approximation ``28.6 * p.uncertainty / p.nominal``
+in degrees. It is undefined at zero linear polarization and should not be
+interpreted as a calibrated confidence interval at low signal-to-noise.
+The nonnegative ``p = hypot(q,u)`` also has positive noise bias; Astropop does
+not apply a debiasing estimator. For inference in that regime, use an appropriate
+polarization likelihood and interval method; see the original statistical
+analysis of `polarization fraction and angle estimators
+<https://www.aanda.org/articles/aa/full_html/2015/02/aa24451-14/aa24451-14.html>`_.
+
+
 Helper Tools
 ------------
 
-As seen above, the dual-beam polarimeters produce images where all sources appear duplicated, due to ordinary and extraordinary beams presence. So, how can we separate the two beams? How to match the pairs to correctly process the polarimetry?
+A dual-beam image contains two detections for each physical source.
+`~astropop.polarimetry.estimate_dxdy` estimates their common displacement;
+`~astropop.polarimetry.match_pairs` associates detections using that displacement.
+Both work with pixel positions, independently of the flux-fitting API.
 
-The `~astropop.polarimetry` module has some helper tools to help with this task. The `~astropop.polarimetry.estimate_dxdy` that computes the displacement, in pixels, between the ordinary and extraordinary beams and the `~astropop.polarimetry.match_pairs` function that match the pairs of sources in the image, based on a given displacement.
+Create a field with 80 pairs separated by ``(+25,+35)`` pixels::
 
-.. code-block:: python
-
-  # random positions for the pairs
-  # 80 pairs of sources in a image of 1024x1024 pixels
-  # dx=25, dy=35
-  x = rng.uniform(0, 1024, 80)
-  x = np.concatenate((x, x+25))  # x positions of the rouces
-  y = rng.uniform(0, 1024, 80)
-  y = np.concatenate((y, y+35))  # y positions of the rouces
-
-  # plot the sources
-  plt.figure(figsize=(6, 6));
-  plt.plot(x, y, 'ko', ms=5);
-  plt.title('Example of the pairs of sources');
-  plt.show()
+    >>> import numpy as np
+    >>> rng = np.random.default_rng(42)
+    >>> base_x = rng.uniform(0, 950, 80)
+    >>> base_y = rng.uniform(0, 950, 80)
+    >>> x = np.concatenate((base_x, base_x + 25))
+    >>> y = np.concatenate((base_y, base_y + 35))
+    >>> print('Detections:', len(x), '; physical sources:', len(base_x))
+    Detections: 160 ; physical sources: 80
 
 Displacement Computation
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-To find the displacement in :math:`x` and :math:`y` directions (:math:`dx` and :math:`dy`), the `~astropop.polarimetry.estimate_dxdy` uses a iterative clipped histogram around the mode of the distribution.
+``estimate_dxdy`` forms detection pairs with ``y[j] > y[i]`` and computes
+``x[i] - x[j]`` and ``y[i] - y[j]``. Thus the displacement for this field is
+negative, although the second copy was constructed with positive offsets.
+``dist_limit`` restricts the absolute difference along each axis in pixels.
+The estimator locates the histogram mode, then refines it in successively
+narrower ranges. ``steps=[50, 5, 3, 1]`` uses those pixel half-widths around the
+preceding estimate; ``bins`` controls histogram resolution within each range.
 
-The code compute the distance of eache combination of two sources in the image, considering only the stars where :math:`y_i > y_j`, where :math:`y_i` and :math:`y_j` are the :math:`y` positions of the first and the second sources in the pair, respectively. This filtering eliminates reduncaties in the histogram of positive and negative values. Also, only pairs of stars closer than a ``dist_limit`` in each axes are considered.
+Estimate the displacement from the generated detections::
 
-After, the histogram is computed and the mode is estimated using the maximum value in this histogram. Than the histogram is clipped around this mode, and a new mode is estimated from a new, rebined, histogram. This iterative process repeats for all ``steps`` set for the function. For example, setting ``steps=[50, 5, 3, 1]``, the histogram will clipped in 50 pixels around the mode in the first iteration, 5 pixels in the second, 3 pixels in the third and 1 pixel in the last iteration. The number of ``bins`` of the histogram also interferes in the final result.
+    >>> from astropop.polarimetry import estimate_dxdy
+    >>> dx, dy = estimate_dxdy(x, y, dist_limit=50, steps=[50, 5, 3, 1], bins=100)
+    >>> print(f'dx = {dx:.2f} pixels; dy = {dy:.2f} pixels')
+    dx = -25.00 pixels; dy = -35.00 pixels
 
-For example, let's estimate the displacement between the ordinary and extraordinary beams of our fake sources.
-
-.. code-block:: python
-
-  from astropop.polarimetry import estimate_dxdy
-
-  dx, dy = estimate_dxdy(x, y, dist_limit=50, steps=[50, 5, 3, 1], bins=100)
-  print(f'dx = {dx:.2f} pixels')
-  print(f'dy = {dy:.2f} pixels')
-
-The result of :math:`dx \approx 25` pixels and :math:`dy \approx 35` pixels is the expected for the fake sources, since they where used to generate the coordinates. The final precision, in general, depends on the error of the positions of the sources, the number of beams and the size of the clipping in the final step.
+Position errors, unrelated neighbors and histogram settings affect the
+estimate. Use an instrument calibration field and inspect the matches; the
+method assumes a useful common displacement. Pair construction grows
+quadratically with detection count, so select a manageable sample rather than
+passing every detection in a large survey at once.
 
 Pairs Matching
 ^^^^^^^^^^^^^^
 
-Once you have a good value for the displacement, that is instrument-deppendent and may not need to be computed everytime, you can use the `~astropop.polarimetry.match_pairs` function to match the pairs of ordinary and extraordinary sources in the image.
+``match_pairs`` searches a `~scipy.spatial.cKDTree` for a neighbor near
+``(x - dx, y - dy)`` for each detection. ``tolerance`` is the maximum Euclidean
+matching distance in pixels. The structured NumPy array contains indices into
+the supplied positions, with fields ``'o'`` for the starting detection and
+``'e'`` for its matched neighbor. Sorting the detections first does not change
+this indexing contract::
 
-This function uses `~scipy.spatial.cKDTree` to find the nearest neighbors of the ordinary sources in the extraordinary sources. The ``tolerance`` defines the maximum distance limit, in pixels, to consider a matching.
-
-The result of the code is a structured `~numpy.ndarray` with the indexes of ordinary and extraordinary sorces in the original :math:`x` and :math:`y` arrays. The ordinary sources will appear in the ``o`` column and the extraordinary sources in the ``e`` column.
+    >>> from astropop.polarimetry import match_pairs
+    >>> sorting = np.argsort(y)
+    >>> x, y = x[sorting], y[sorting]
+    >>> pairs = match_pairs(x, y, dx, dy, tolerance=2.)
+    >>> print('Matched pairs:', len(pairs))
+    Matched pairs: 80
+    >>> n = 0
+    >>> index_o, index_e = pairs['o'][n], pairs['e'][n]
+    >>> x_o, y_o = x[index_o], y[index_o]
+    >>> x_e, y_e = x[index_e], y[index_e]
+    >>> print(f'Pair {n}: x_e-x_o={x_e-x_o:.1f}, y_e-y_o={y_e-y_o:.1f} pixels')
+    Pair 0: x_e-x_o=25.0, y_e-y_o=35.0 pixels
 
 .. note::
 
-  The ``o`` and ``e`` columns label the geometric pairing only. Identify which
-  physical beam is ordinary using your instrument's convention before passing
-  the measured fluxes to ``compute``; swapping them changes the modulation sign
-  and the interpretation of the normalization factor.
+    The ``'o'`` and ``'e'`` fields identify geometric matches. Establish which
+    physical beam is ordinary from your instrument convention before supplying
+    fluxes to ``compute``. Swapping beams changes the modulation sign and the
+    normalization interpretation. Independent nearest-neighbor queries do not
+    enforce a unique global assignment; check duplicates and crowded matches.
 
-.. code-block:: python
+The diagram uses three separated pairs so the displacement sign and returned
+indices are visible without crowding. The arrows run from each ``'o'`` detection
+to the neighbor at ``(x-dx,y-dy)``:
 
-  from astropop.polarimetry import match_pairs
+.. plot::
+    :include-source: false
+    :alt: Three geometric pairs separated by positive 25 and 35 pixels, labeled with the indices returned by match_pairs using negative dx and dy.
+    :caption: Geometric pair indices and the sign convention of match_pairs. Physical beam identification requires an instrument calibration.
 
-  # let's sort the sources by y position just to mix them
-  sorting = np.argsort(y)
-  x = x[sorting]
-  y = y[sorting]
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from astropop.polarimetry import match_pairs
 
-  pairs = match_pairs(x, y, 25, 35, tolerance=2.0)
-  print(pairs)
+    base = np.array([[20, 20], [110, 30], [70, 100]])
+    positions = np.vstack((base, base + [25, 35]))
+    pairs = match_pairs(positions[:, 0], positions[:, 1], -25, -35, tolerance=2)
+    fig, ax = plt.subplots(figsize=(6, 4))
+    for pair in pairs:
+        o, e = int(pair['o']), int(pair['e'])
+        start, end = positions[o], positions[e]
+        ax.plot(*start, 'o', color='C0')
+        ax.plot(*end, '^', color='C1')
+        ax.annotate('', xy=end, xytext=start,
+                    arrowprops={'arrowstyle': '->', 'color': '0.4'})
+        ax.annotate(f'o[{o}]', start, xytext=(-4, -12), textcoords='offset points')
+        ax.annotate(f'e[{e}]', end, xytext=(4, 2), textcoords='offset points')
+    ax.set(xlabel='x (pixel)', ylabel='y (pixel)', xlim=(0, 155), ylim=(0, 155),
+           title='Neighbor offset: (-dx, -dy) = (+25, +35) pixel')
+    ax.set_aspect('equal')
+    fig.tight_layout()
 
-So, to access the coordinates of the nth pair, you can use the ``pairs['o'][n]`` and ``pairs['e'][n]`` to get the index.
-
-.. code-block:: python
-
-  n = 27
-
-  # indexes of the stars
-  index_o = pairs['o'][n]
-  index_e = pairs['e'][n]
-
-  # coordinates of the ordinary beam
-  x_o = x[index_o]
-  y_o = y[index_o]
-
-  # coordinates of the extraordinary beam
-  x_e = x[index_e]
-  y_e = y[index_e]
-
-  print(f"star: {n}\n"
-        f"ordinary: index={index_o} x={x_o:.2f} y={y_o:.2f}\n"
-        f"extraordinary: index={index_e} x={x_e:.2f} y={y_e:.2f}")
-
-  plt.figure(figsize=(5, 5));
-  plt.plot(x, y, 'ko', ms=5, alpha=0.5);
-  plt.plot([x_o, x_e], [y_o, y_e], 'r-', lw=2);
-  plt.title(f"Pair n={n} matched");
-  plt.show()
-
-.. code-block:: python
-
-  # plot all matched pairs
-  plt.figure(figsize=(5, 5));
-  plt.plot(x, y, 'ko', ms=5, alpha=0.5);
-  for pair in pairs:
-      index_o = pair['o']
-      index_e = pair['e']
-      x_o = x[index_o]
-      y_o = y[index_o]
-      x_e = x[index_e]
-      y_e = y[index_e]
-      plt.plot([x_o, x_e], [y_o, y_e], 'r-', lw=2)
-  plt.title(f"All pairs matched");
-  plt.show()
 
 References
 ----------

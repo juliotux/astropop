@@ -23,6 +23,7 @@ if TYPE_CHECKING:
 NOTEBOOK_PLOTS = {
     'plot_observations': 'draw_observations(frame)',
     'plot_polarimetry': 'draw_polarimetry(psi, result)',
+    'plot_quarterwave': 'draw_polarimetry(quarter_psi, quarter_result)',
     'plot_bias': 'draw_bias(master_bias, first_bias)',
     'plot_flat': 'draw_flat(corrected, master_flat)',
     'plot_science': 'draw_science(calibrated[0], combined, science_files[0])',
@@ -60,6 +61,12 @@ def plot_polarimetry() -> Figure:
     """Render beam-table reduction using the published calculations."""
     with example('polarimetry') as ns:
         return draw_polarimetry(ns['psi'], ns['result'])
+
+
+def plot_quarterwave() -> Figure:
+    """Replay the noisy quarter-wave workflow through the shared plot function."""
+    with example('polarimetry') as ns:
+        return draw_polarimetry(ns['quarter_psi'], ns['quarter_result'])
 
 
 def draw_observations(frame: FrameData) -> Figure:

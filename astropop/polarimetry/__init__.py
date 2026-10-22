@@ -63,8 +63,16 @@ def estimate_dxdy(
 
     Return
     ------
-    dx, dy: float
-        Displacement between the ordinary and extraordinary beams.
+    dx, dy
+        Histogram-mode pixel differences x[i]-x[j], y[i]-y[j], using pairs
+        with y[j] > y[i]. The y displacement is therefore negative. Pass
+        these values to ``match_pairs`` and identify physical beams from
+        the instrument convention, not the displacement sign.
+
+    Notes
+    -----
+    The function constructs all detection pairs before filtering, requiring
+    storage that grows quadratically with the number of detections.
     """
     def _find_max(d: _npt.ArrayLike) -> float:
         """Refine the peak displacement using successively narrower histograms."""
@@ -115,16 +123,22 @@ def match_pairs(
     x, y
         Arrays of x and y positions of the sources.
     dx, dy
-        Displacement between the ordinary and extraordinary beams.
+        Pixel displacement: search for a neighbor at (x-dx, y-dy) for
+        every supplied detection.
     tolerance
-        Tolerance for the matching.
+        Maximum Euclidean distance in pixels from the predicted neighbor.
 
     Return
     ------
     `numpy.ndarray`:
-        Array of the indexes of the matched pairs. Column 'o' contains the
-        indexes of the ordinary points, column 'e' the indexes of the
-        extraordinary points.
+        Structured array of indices into the input positions. Field 'o'
+        contains the starting detection, and 'e' its matched neighbor.
+        These geometric labels do not establish physical beam identity.
+
+    Notes
+    -----
+    Independent nearest-neighbor queries do not enforce unique assignments.
+    Check reused neighbors in crowded fields before extracting beam fluxes.
     """
     kd = cKDTree(list(zip(x, y)))
 
@@ -593,11 +607,14 @@ class SLSDualBeamPolarimetry(_DualBeamPolarimetry):
         Maximum deviation of the psi position from the sequence multiple
         of 22.5 degrees. Default is 0.1 degrees.
     iter_tolerance
-        When fitting the parameter for quarterwave retarders, the iteration
-        stops when the difference between the previous and the current
-        parameters is less than this tolerance. Default is 1e-5.
+        Absolute tolerance passed to ``numpy.allclose`` when comparing
+        successive q, u, v during quarterwave normalization estimation.
+        NumPy's default relative tolerance also applies. Default is 1e-5.
     max_iters
-        Maximum number of iterations. Default is 100.
+        Iteration budget for quarterwave normalization estimation. The
+        current loop continues through this budget after recording a
+        converged comparison. Raises RuntimeError if no comparison meets
+        the convergence criterion. Default is 100.
     zero_range
         Minimum and maximum acceptable values for the zero position, in
         degrees. Default is [0, 90].
