@@ -58,6 +58,50 @@ science exposure time is 30 seconds, and all science frames use the same filter.
 There is no dark current, overscan, saturation or nonlinearity in this teaching
 camera. Those corrections must be planned separately for an actual detector.
 
+.. _calibration-selection:
+
+Choose compatible calibration groups
+------------------------------------
+
+Build groups from headers and detector knowledge before constructing masters.
+The keyword names vary by instrument; missing metadata must be resolved from
+the observing setup rather than treated as agreement.
+
+.. list-table:: Calibration compatibility
+    :header-rows: 1
+    :widths: 25 75
+
+    * - Setting
+      - Selection rule
+    * - Camera, channel and readout
+      - Match detector/amplifier, readout speed, gain mode and read-noise regime.
+        Bias offsets and spatial response can differ between modes.
+    * - Geometry and binning
+      - Match binning, subframe, overscan convention and trim region, including
+        their pixel origin. Equal image dimensions alone are insufficient.
+    * - Temperature and time
+      - Select the detector's validated stable range; assess bias/dark changes
+        with temperature and time rather than assuming a night's frames agree.
+    * - Filter and optical path
+      - Match flats to the science filter/channel and illumination setup. A bias
+        need not share a filter, but must share the relevant detector settings.
+    * - Exposure duration
+      - Verify finite positive science/flat durations, the intended near-zero
+        bias exposure and a common duration for a dark master before scaling.
+
+The shared synthetic data use one camera geometry and one readout setting;
+their headers do not encode a complete real-instrument configuration. The
+later notebooks use ``bias_*.fits``, ``flat_*.fits`` and ``science_*.fits`` as
+already selected sets so each can run independently. They do not consume the
+saved observing log automatically. On observations, replace those globs with
+file lists selected from the reviewed log or :doc:`../how_to/file_collections`,
+and keep the selection criteria with the master products.
+
+Before applying a saved master, recheck its geometry, unit and settings against
+the selected science group. The compatibility rules above also apply when
+loading reference products or rerunning a notebook; file existence establishes
+availability, not compatibility or freshness.
+
 Inspect the field and create file lists
 ---------------------------------------
 

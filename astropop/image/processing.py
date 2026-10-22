@@ -50,8 +50,10 @@ def cosmics_lacosmic(
         2D image to clean with LACosmic.
     inplace
         If True, the operations will be performed inplace in the ``frame``.
-    logger: `~logging.Logger`
-        Python logger to log the actions.
+    **lacosmic_kwargs
+        Options forwarded to astroscrappy.detect_cosmics, including gain,
+        readnoise, rejection thresholds and iteration count. Existing FrameData
+        masks are not forwarded automatically; supply inmask explicitly if needed.
 
     Returns
     -------

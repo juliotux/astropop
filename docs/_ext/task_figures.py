@@ -77,39 +77,6 @@ def plot_quality_flags() -> Figure:
     return fig
 
 
-def plot_calibration() -> Figure:
-    """Apply bias, exposure-scaled dark and normalized-flat corrections."""
-    from astropop.framedata import FrameData
-    from astropop.image.processing import subtract_bias, subtract_dark, flat_correct
-
-    y, x = np.indices((96, 96))
-    signal = 100 + 400 * np.exp(-((x - 40)**2 + (y - 53)**2) / (2 * 3**2))
-    signal += 250 * np.exp(-((x - 72)**2 + (y - 22)**2) / (2 * 3**2))
-    bias = FrameData(100 + 0.4 * x + 3 * np.sin(y / 7), unit='adu')
-    dark = FrameData(5 + 0.03 * y, unit='adu')
-    response = (0.7 + 0.6 * x / 95) * (1 - 0.18 * np.exp(
-        -((x - 28)**2 + (y - 28)**2) / (2 * 10**2)))
-    response /= np.median(response)
-    flat = FrameData(response)
-    rng = np.random.default_rng(42)
-    raw = FrameData(bias.data + 2 * dark.data + response * signal
-                    + rng.normal(0, 2, x.shape), unit='adu')
-    subtracted = subtract_dark(subtract_bias(raw, bias), dark,
-                               dark_exposure=10, image_exposure=20)
-    corrected = flat_correct(subtracted, flat)
-    panels = [(raw.data, 'Raw: offset + dark + response', 'ADU', 80, 300),
-              (subtracted.data, 'Bias and scaled dark subtracted', 'ADU', 80, 300),
-              (flat.data, 'Normalized flat response', 'Dimensionless', 0.65, 1.35),
-              (corrected.data, 'After flat correction', 'ADU', 80, 300)]
-    fig, axes = plt.subplots(2, 2, figsize=(9, 7), layout='constrained')
-    for ax, (pixels, title, unit, low, high) in zip(axes.flat, panels):
-        image = ax.imshow(pixels, origin='lower', cmap='viridis', vmin=low, vmax=high)
-        fig.colorbar(image, ax=ax, label=unit, shrink=0.8,
-                     extend='max' if unit == 'ADU' else 'neither')
-        ax.set(title=title, xlabel='x (pixel)', ylabel='y (pixel)')
-    return fig
-
-
 def plot_aperture() -> Figure:
     """Show the guide's aperture, local-sky annulus and measured radial profile."""
     from matplotlib.patches import Circle
@@ -141,6 +108,7 @@ def plot_aperture() -> Figure:
     axes[1].legend(fontsize='small')
     axes[1].grid(alpha=0.2)
     return fig
+
 
 
 def plot_wcs() -> Figure:

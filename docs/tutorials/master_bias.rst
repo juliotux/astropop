@@ -32,7 +32,8 @@ Run from the extracted bundle root when following the HTML examples::
 Select and combine bias exposures
 ---------------------------------
 
-Use the observing log to verify exposure type and matching camera settings.
+Follow the :ref:`calibration compatibility rules <calibration-selection>` to
+verify exposure type and matching camera settings against the observing log.
 This bundle's filenames provide a convenient preselected set::
 
     >>> import numpy as np

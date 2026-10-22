@@ -32,6 +32,11 @@ Run from the extracted bundle root when following the HTML examples::
 Read the calibration and normalize each flat
 --------------------------------------------
 
+Select flats for the science filter and detector settings using the
+:ref:`calibration compatibility rules <calibration-selection>`; the bundle's
+filename pattern already selects one group. Check the master bias geometry
+and units before subtracting it.
+
 Use your preceding stage's master bias if it is available; otherwise use the
 reference product included in the download::
 
@@ -48,6 +53,8 @@ reference product included in the download::
     >>> for path in flat_files:
     ...     corrected = subtract_bias(read_framedata(path), master_bias)
     ...     level = np.median(corrected.data)
+    ...     if not np.isfinite(level) or level <= 0:
+    ...         raise ValueError('Flat illumination must have a finite positive normalization.')
     ...     levels.append(level)
     ...     normalized_flats.append(imarith(corrected, level * u.adu, '/'))
     >>> print(f'Flat levels: {min(levels):.0f} to {max(levels):.0f} ADU')

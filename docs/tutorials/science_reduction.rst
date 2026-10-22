@@ -33,6 +33,11 @@ Run from the extracted bundle root when following the HTML examples::
 Calibrate individual exposures
 -------------------------------
 
+Apply the :ref:`calibration compatibility rules <calibration-selection>` to
+science and masters, including the selected filter, binning, readout and trim
+origin. The code below checks geometry, units and exposure duration, but cannot
+infer missing detector settings.
+
 Use your master calibrations when both are present, or the supplied reference
 pair for a standalone run. These data have a gain of one electron per ADU, so
 signal and read-noise variance can be combined numerically in the same scale::
@@ -51,23 +56,35 @@ signal and read-noise variance can be combined numerically in the same scale::
     >>> science_files = sorted((data / 'raw').glob('science_*.fits'))
     >>> output.mkdir(exist_ok=True)
     >>> calibrated = []
+    >>> exposure_times = []
     >>> for index, path in enumerate(science_files):
     ...     frame = read_framedata(path)
+    ...     if frame.shape != master_bias.shape or frame.shape != master_flat.shape:
+    ...         raise ValueError('Science and masters must have the same pixel geometry.')
+    ...     if frame.unit != master_bias.unit or master_flat.unit.physical_type != 'dimensionless':
+    ...         raise ValueError('Use a bias in science units and a dimensionless flat.')
+    ...     exposure_time = frame.meta['EXPTIME']
+    ...     if not np.isfinite(exposure_time) or exposure_time <= 0:
+    ...         raise ValueError('Science exposure durations must be finite and positive.')
+    ...     exposure_times.append(exposure_time)
     ...     signal = np.maximum(frame.data - master_bias.data, 0)
     ...     frame.uncertainty = np.sqrt(signal + frame.meta['RDNOISE']**2)
-    ...     detector_flags = frame.flags.copy()
+    ...     quality = frame.flags | master_bias.flags | master_flat.flags
     ...     corrected = flat_correct(subtract_bias(frame, master_bias), master_flat)
-    ...     corrected.flags = detector_flags
+    ...     corrected.flags = quality
     ...     corrected.write(output / f'calibrated_{index:02d}.fits', overwrite=True)
     ...     calibrated.append(corrected)
+    >>> if not calibrated or not np.all(np.array(exposure_times) == exposure_times[0]):
+    ...     raise ValueError('Select a nonempty science group with a common exposure duration.')
     >>> print(f'Calibrated exposures: {len(calibrated)}; units: {calibrated[0].unit}')
     Calibrated exposures: 6; units: adu
 
 For another gain, convert both terms to a consistent unit first. This estimate
 omits the uncertainty of the bias-subtracted signal inside the Poisson term;
 calibration then propagates the supplied image and master-frame uncertainties.
-The flag restoration assumes the masters add no additional defects. Combine
-quality maps explicitly when they do. These simulated exposures need no dark
+The flag restoration combines defects from science, bias and flat by bitwise
+OR; see :doc:`../how_to/quality_flags` for reason-bit persistence and interpretation.
+These simulated exposures need no dark
 subtraction or overscan correction.
 
 Register using the central field
@@ -87,7 +104,7 @@ output coordinates::
     >>> shifts.write(output / 'shifts.ecsv', overwrite=True)
     >>> combined = imcombine(aligned, method='mean', sigma_clip=4,
     ...                      sigma_dev_func='mad_std', dtype='float32')
-    >>> combined.meta['EXPTIME'] = 30.
+    >>> combined.meta['EXPTIME'] = float(exposure_times[0])
     >>> combined.write(output / 'combined.fits', overwrite=True)
     >>> print(f'Stack: {combined.shape}, {combined.dtype}, {combined.unit}; exposure scale: {combined.meta["EXPTIME"]:.0f} s')
     Stack: (256, 256), float32, adu; exposure scale: 30 s

@@ -8,6 +8,16 @@ not discover calibration files, build masters, or choose their order. Use
 :func:`~astropop.image.imcombine.imcombine` to construct masters and apply the
 steps appropriate to your detector. Inputs must have matching geometry and
 compatible units; these functions do not register calibration frames.
+Check :ref:`calibration compatibility <calibration-selection>` before combining
+or applying masters. Matching array shapes alone does not establish compatible
+detector settings.
+
+The additive bias/dark and multiplicative flat model is described in Astropy's
+`CCD calibration overview
+<https://www.astropy.org/ccd-reduction-and-photometry-guide/v/dev/notebooks/01-05-Calibration-overview.html>`_.
+The functions below implement individual arithmetic steps in that model;
+the application must supply compatible masters, exposure information and a
+detector-appropriate uncertainty model.
 
 Bias, dark, and flat correction
 -------------------------------
@@ -32,6 +42,34 @@ the headers::
      [1080. 1080. 1080. 1080.]
      [1080. 1080. 1080. 1080.]]
 
+Construct the dark from exposures with a common duration before scaling it.
+For this small example the master bias is already available and all raw darks
+were taken for ten seconds at the science detector's settings::
+
+    >>> from astropop.image import imcombine
+    >>> raw_darks = [FrameData(np.full((4, 4), value), unit='adu',
+    ...                        meta={'EXPTIME': 10.}) for value in (109., 110., 111.)]
+    >>> dark_times = np.array([frame.meta['EXPTIME'] for frame in raw_darks])
+    >>> if not np.all(np.isfinite(dark_times) & (dark_times > 0)) or not np.all(dark_times == dark_times[0]):
+    ...     raise ValueError('Select dark frames with one finite positive exposure duration.')
+    >>> master_dark = imcombine([subtract_bias(frame, bias) for frame in raw_darks],
+    ...                         method='median')
+    >>> master_dark.meta['EXPTIME'] = float(dark_times[0])
+    >>> dark_subtracted = subtract_dark(subtract_bias(science, bias), master_dark,
+    ...                                 dark_exposure=master_dark.meta['EXPTIME'],
+    ...                                 image_exposure=20.)
+    >>> print(f'Master dark: {master_dark.data[0, 0]:.1f} ADU in {dark_times[0]:.0f} s')
+    Master dark: 10.0 ADU in 10 s
+    >>> print(f'Science after scaled subtraction: {dark_subtracted.data[0, 0]:.1f} ADU')
+    Science after scaled subtraction: 1080.0 ADU
+
+Scaling assumes dark signal is proportional to exposure time at the selected
+temperature and detector settings. A dark that still contains bias would scale
+that bias too. Do not scale a nonlinear dark signal or combine different dark
+durations without an explicit normalization policy. Reusing one bias also
+correlates corrected inputs; the independent-error arithmetic does not track
+that shared covariance.
+
 ``flat_correct`` divides by a master flat. With ``min_value`` it first replaces
 smaller flat values by that lower bound; this is a clamp, not a mask. With
 ``norm_value`` it divides the flat by that explicitly supplied normalization
@@ -51,10 +89,41 @@ is copied before these changes::
 Choose a dimensionless normalized flat to preserve the science unit. A flat
 with a physical unit changes the output unit according to division.
 
-.. plot:: _ext/task_figures.py plot_calibration
-    :include-source: False
+.. plot::
+    :include-source: false
     :alt: Raw stellar field, the same field after bias and dark subtraction, the normalized flat with a sensitivity gradient and dust shadow, and the final corrected field.
     :caption: A synthetic field corrected with subtract_bias, subtract_dark and flat_correct. The ideal bias and bias-corrected dark are known here; the dark is scaled from 10 to 20 seconds. The flat is dimensionless and normalized by its median. The three ADU panels share display limits; bright cores exceed the displayed range but are not saturated in the data.
+
+    import matplotlib.pyplot as plt
+    import numpy as np
+    from astropop.framedata import FrameData
+    from astropop.image.processing import subtract_bias, subtract_dark, flat_correct
+
+    y, x = np.indices((96, 96))
+    signal = 100 + 400 * np.exp(-((x - 40)**2 + (y - 53)**2) / (2 * 3**2))
+    signal += 250 * np.exp(-((x - 72)**2 + (y - 22)**2) / (2 * 3**2))
+    bias = FrameData(100 + 0.4 * x + 3 * np.sin(y / 7), unit='adu')
+    dark = FrameData(5 + 0.03 * y, unit='adu')
+    response = (0.7 + 0.6 * x / 95) * (1 - 0.18 * np.exp(
+        -((x - 28)**2 + (y - 28)**2) / (2 * 10**2)))
+    response /= np.median(response)
+    flat = FrameData(response)
+    rng = np.random.default_rng(42)
+    raw = FrameData(bias.data + 2 * dark.data + response * signal
+                    + rng.normal(0, 2, x.shape), unit='adu')
+    subtracted = subtract_dark(subtract_bias(raw, bias), dark,
+                               dark_exposure=10, image_exposure=20)
+    corrected = flat_correct(subtracted, flat)
+    panels = [(raw.data, 'Raw: offset + dark + response', 'ADU', 80, 300),
+              (subtracted.data, 'Bias and scaled dark subtracted', 'ADU', 80, 300),
+              (flat.data, 'Normalized flat response', 'Dimensionless', 0.65, 1.35),
+              (corrected.data, 'After flat correction', 'ADU', 80, 300)]
+    fig, axes = plt.subplots(2, 2, figsize=(9, 7), layout='constrained')
+    for ax, (pixels, title, unit, low, high) in zip(axes.flat, panels):
+        image = ax.imshow(pixels, origin='lower', cmap='viridis', vmin=low, vmax=high)
+        fig.colorbar(image, ax=ax, label=unit, shrink=0.8,
+                     extend='max' if unit == 'ADU' else 'neither')
+        ax.set(title=title, xlabel='x (pixel)', ylabel='y (pixel)')
 
 The residual gradient and dust shadow after subtraction are multiplicative
 response effects, so they remain until division by the flat. The final sky is
@@ -74,6 +143,30 @@ number only changes numerical values. An uncertain gain can be supplied as a
 through :func:`~astropop.image.imarith.imarith`; they do not add a detector noise
 model when uncertainties are missing.
 
+For a bias-subtracted single exposure in ADU, a simple detector model is
+``variance_adu = max(signal_adu, 0) / gain_e_per_adu + (read_noise_e / gain_e_per_adu)**2``.
+This assumes independent Poisson photoelectrons and Gaussian read noise, treats
+gain as exact, and excludes master-frame uncertainty. Supply that uncertainty
+explicitly before converting the image to electrons::
+
+    >>> from astropy import units as u
+    >>> from astropop.image.processing import gain_correct
+    >>> gain_e_per_adu, read_noise_e = 2., 4.
+    >>> signal_adu = np.array([[1000.]])
+    >>> sigma_adu = np.sqrt(np.maximum(signal_adu, 0) / gain_e_per_adu
+    ...                     + (read_noise_e / gain_e_per_adu)**2)
+    >>> measured_signal = FrameData(signal_adu, unit='adu', uncertainty=sigma_adu)
+    >>> electrons = gain_correct(measured_signal, gain_e_per_adu * u.electron / u.adu)
+    >>> print(f'Signal: {electrons.data[0, 0]:.0f} {electrons.unit}')
+    Signal: 2000 electron
+    >>> print(f'Standard uncertainty: {electrons.uncertainty[0, 0]:.2f} {electrons.unit}')
+    Standard uncertainty: 44.90 electron
+
+Clipping negative signal to zero in this variance estimate does not change the
+image pixels. Include sky photoelectrons in the Poisson term even if a later
+step subtracts the sky. Add the appropriate calibration variances for actual
+observations; gain conversion itself only multiplies existing values/errors.
+
 Bias, dark, flat, and gain corrections preserve the first image's header and
 add correction provenance, but currently use ``merge_flags='no_merge'``.
 Consequently their arithmetic results have zero flags when storage is enabled;
@@ -81,6 +174,34 @@ input masks do not exclude pixels from the calculations. If your workflow must
 retain input quality flags, explicitly retain/merge them, or use ``imarith``
 with the required flag strategy. Configure optional-array settings before
 loading frames; see :ref:`optional-frame-arrays`.
+
+Low flat response and quality maps
+----------------------------------
+
+A zero response cannot be inverted scientifically. Clamping a normalized flat
+can keep intermediate divisions finite, but the affected pixels still need a
+quality policy. This illustrative threshold of 0.1 rejects both the low-response
+and zero-response pixels and explicitly restores the merged flags::
+
+    >>> from astropop.framedata import PixelMaskFlags as F
+    >>> exposure = FrameData([[100., 100., 100.]], unit='adu')
+    >>> response = FrameData([[1., 0.02, 0.]])
+    >>> response.add_flags(F.MASKED | F.BAD, where=response.data < 0.1)
+    >>> quality = np.bitwise_or(exposure.flags, response.flags)
+    >>> divided = flat_correct(exposure, response, min_value=0.1)
+    >>> divided.flags = quality
+    >>> print('Finite intermediate values:', divided.data.tolist())
+    Finite intermediate values: [[100.0, 1000.0, 1000.0]]
+    >>> print('Excluded pixels:', divided.mask.tolist())
+    Excluded pixels: [[False, True, True]]
+    >>> print('Original response:', response.data.tolist())
+    Original response: [[1.0, 0.02, 0.0]]
+
+Do not use the finite values at excluded pixels as repaired measurements.
+Choose response limits using the actual detector; inspect nonfinite responses
+too. See :doc:`../how_to/quality_flags` for defects in both science and masters,
+and full reason-bit persistence. ``min_value`` alone does not mark a mask or
+update the uncertainty model for clamped flat values.
 
 Cropping and cosmic rays
 ------------------------
@@ -101,10 +222,41 @@ recalculate uncertainties. Keyword arguments are forwarded to Astroscrappy,
 so supply its detector/noise parameters explicitly. Existing FrameData masks
 are not automatically forwarded as an Astroscrappy input mask.
 
+For example, clean a single sharp event in an otherwise uniform frame. This
+tests replacement and flag handling without simulating a real stellar field::
+
+    >>> from astropop.image.processing import cosmics_lacosmic
+    >>> pixels = np.full((32, 32), 100.)
+    >>> pixels[16, 16] = 10000.
+    >>> event = FrameData(pixels, unit='adu', uncertainty=4.)
+    >>> cleaned = cosmics_lacosmic(event, gain=1., readnoise=4., niter=1)
+    >>> print(f'Cleaned pixel: {cleaned.data[16, 16]:.1f} ADU')
+    Cleaned pixel: 100.0 ADU
+    >>> print('Cosmic-ray flag:', cleaned.mask_flags(F.COSMIC_RAY)[16, 16])
+    Cosmic-ray flag: True
+    >>> print('Interpolation flag:', cleaned.mask_flags(F.INTERPOLATED)[16, 16])
+    Interpolation flag: True
+    >>> print('Excluded from later combination:', cleaned.mask[16, 16])
+    Excluded from later combination: False
+
+Choose explicitly whether to keep an interpolated pixel or add ``MASKED`` to
+exclude it. Its stored uncertainty is still the input value; replacement does
+not estimate the interpolation error. The underlying method uses Laplacian edge
+detection, described by `van Dokkum (2001), PASP 113, 1420
+<https://arxiv.org/abs/astro-ph/0108003>`_. Detection thresholds and PSF sampling
+must be checked on observations; this isolated event does not establish the
+false-positive rate for stars or spectra.
+
 Every routine defaults to returning a separate frame. ``inplace=True`` updates
 the supplied FrameData; conversion of other supported input types still
 creates a FrameData. Record calibration choices outside the library when
 reproducibility requires more than the stored correction keywords.
+
+Overscan subtraction and detector nonlinearity correction are outside these
+convenience routines. Apply the instrument's calibrated correction and propagate
+its uncertainties at the appropriate stage. Use the same overscan, trimming,
+readout and linearity conventions for masters and science; do not interpret
+bias subtraction as a replacement for those detector-specific steps.
 
 CCD processing API
 ------------------
