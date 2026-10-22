@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import typing as _t
 import numpy.typing as _npt
+from .._typing import ImageLike as _ImageLike
 from .._typing import NumberArray as _NumberArray
 import numpy as np
 from astropy.convolution import convolve
@@ -24,11 +25,11 @@ __all__ = ['segfind', 'daofind', 'starfind', 'median_fwhm']
 
 
 def segfind(
-    data: _npt.ArrayLike,
+    data: _ImageLike,
     threshold: float,
     background: _NumberArray,
     noise: _NumberArray,
-    mask: _npt.ArrayLike | None=None,
+    mask: _ImageLike | None=None,
     fwhm: float | None=None,
     npix: int=5,
     deblend: bool=True,
@@ -148,11 +149,11 @@ def segfind(
 
 
 def _dao_source_morphology(
-    data: _npt.ArrayLike,
+    data: _ImageLike,
     x: _npt.ArrayLike,
     y: _npt.ArrayLike,
     r: float,
-    mask: _npt.ArrayLike | None=None,
+    mask: _ImageLike | None=None,
 ) -> Table:
     """Measure each DAO source within its own circular segmentation mask."""
     columns = ['segment_flux', 'fwhm', 'eccentricity', 'elongation',
@@ -175,12 +176,12 @@ def _dao_source_morphology(
 
 
 def daofind(
-    data: _npt.ArrayLike,
+    data: _ImageLike,
     threshold: float,
     background: _NumberArray,
     noise: _NumberArray,
     fwhm: float,
-    mask: _npt.ArrayLike | None=None,
+    mask: _ImageLike | None=None,
     sharp_limit: tuple[float, float] | None=(0.2, 1.0),
     round_limit: tuple[float, float] | None=(-1.0, 1.0),
     exclude_border: bool=True,
@@ -307,12 +308,12 @@ def daofind(
 
 
 def starfind(
-    data: _npt.ArrayLike,
+    data: _ImageLike,
     threshold: float,
     background: _NumberArray,
     noise: _NumberArray,
     fwhm: float | None=None,
-    mask: _npt.ArrayLike | None=None,
+    mask: _ImageLike | None=None,
     sharp_limit: tuple[float, float] | None=(0.2, 1.0),
     round_limit: tuple[float, float] | None=(-1.0, 1.0),
     exclude_border: bool=True,
@@ -382,7 +383,7 @@ def starfind(
 
 def _fwhm_loop(
     model: _t.Literal['gaussian', 'moffat'],
-    data: _npt.ArrayLike,
+    data: _ImageLike,
     x: _npt.ArrayLike,
     y: _npt.ArrayLike,
     xc: float,
@@ -433,7 +434,7 @@ def _fwhm_loop(
 
 
 def median_fwhm(
-    data: _npt.ArrayLike,
+    data: _ImageLike,
     x: _npt.ArrayLike,
     y: _npt.ArrayLike,
     box_size: int=25,

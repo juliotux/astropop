@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import typing as _t
 import numpy.typing as _npt
+from .._typing import ImageLike as _ImageLike
 from .._typing import NumberArray as _NumberArray
 from photutils.aperture import Aperture as _Aperture
 
@@ -84,7 +85,7 @@ def _err_out_of_bounds(
 
 
 def _err_pixel_flags(
-    pixel_flags: _npt.ArrayLike | None,
+    pixel_flags: _ImageLike | None,
     apertures: _Aperture,
     flag_pixel: PixelMaskFlags,
     flag_aperture: PhotometryFlags,
@@ -101,15 +102,15 @@ def _err_pixel_flags(
 
 
 def _calc_local_bkg(
-    data: _npt.ArrayLike,
+    data: _ImageLike,
     positions: _npt.ArrayLike,
     r_in: float,
     r_out: float,
-    error: _npt.ArrayLike | None,
+    error: _ImageLike | None,
     bkg_method: _t.Literal['mmm', 'mode', 'median', 'mean'],
     sigma_clip: float | None,
-    pixel_flags: _npt.ArrayLike | None,
-    mask: _npt.ArrayLike | None,
+    pixel_flags: _ImageLike | None,
+    mask: _ImageLike | None,
 ) -> tuple[_NumberArray, _NumberArray, float, _npt.NDArray]:
     """Compute the background annulus for aperture photometry."""
     ann_ap = CircularAnnulus(positions, r_in=r_in, r_out=r_out)
@@ -151,13 +152,13 @@ def _calc_local_bkg(
 
 
 def _recenter_sources(
-    data: _npt.ArrayLike,
+    data: _ImageLike,
     x: _npt.ArrayLike,
     y: _npt.ArrayLike,
     r: float,
     limit: float,
     method: _t.Literal['com', 'gaussian', 'quadratic'],
-    mask: _npt.ArrayLike | None,
+    mask: _ImageLike | None,
 ) -> tuple[_npt.NDArray, _npt.NDArray, _npt.NDArray]:
     """Recenter the sources using photutils.centroids."""
     if method == 'com':
@@ -196,7 +197,7 @@ def _recenter_sources(
 
 
 def aperture_photometry(
-    data: _npt.ArrayLike,
+    data: _ImageLike,
     x: _npt.ArrayLike,
     y: _npt.ArrayLike,
     r: float | _t.Literal['auto']='auto',
@@ -204,11 +205,11 @@ def aperture_photometry(
     recenter_limit: float | None=None,
     recenter_method: _t.Literal['com', 'gaussian', 'quadratic']='com',
     gain: float=1.0,
-    bkg_error: _npt.ArrayLike | None=None,
-    mask: _npt.ArrayLike | None=None,
+    bkg_error: float | _ImageLike | None=None,
+    mask: _ImageLike | None=None,
     bkg_method: _t.Literal['mmm', 'mode', 'median', 'mean']='mmm',
     bkg_sigma_clip: float | None=3.0,
-    pixel_flags: _npt.ArrayLike | None=None,
+    pixel_flags: _ImageLike | None=None,
     box_size: int=11,
 ) -> Table:
     """Perform circular-aperture photometry using Photutils.

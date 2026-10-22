@@ -7,6 +7,17 @@ keep signatures readable; they do not perform runtime validation or replace the
 operation-specific requirements. They live in the private implementation module
 ``astropop._typing`` and can change with the implementation.
 
+.. py:data:: astropop._typing.ImageLike
+
+    A two-dimensional pixel array with shape ``(rows, columns)``, including
+    nested numerical sequences and NumPy arrays. This is an ``Annotated``
+    NumPy ``ArrayLike`` contract with semantic shape metadata; type checkers do
+    not enforce the number of dimensions. Each operation's documented shape
+    requirements still apply. It does not include filenames or FrameData
+    containers, and it does not prescribe a dtype, copy or runtime conversion.
+    Masks, flag planes and uncertainty maps use this same spatial convention;
+    scalar uncertainties are listed separately where supported.
+
 .. py:data:: astropop._typing.ImageInput
 
     Image-like values accepted by conversion helpers: arrays, frames, quantities,

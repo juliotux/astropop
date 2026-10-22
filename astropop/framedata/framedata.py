@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import typing as _t
 import numpy.typing as _npt
+from .._typing import ImageLike as _ImageLike
 from .._typing import (NumberArray as _NumberArray, PathLike as _PathLike,
                        UnitLike as _UnitLike, HeaderLike as _HeaderLike,
                        Index as _Index)
@@ -37,19 +38,19 @@ __all__ = ['FrameData', 'PixelMaskFlags']
 
 
 def shape_consistency(
-    data: _npt.ArrayLike | None=None,
-    uncertainty: _npt.ArrayLike | None=None,
-    mask: _npt.ArrayLike | None=None,
-    flags: _npt.ArrayLike | None=None,
-) -> tuple[_npt.ArrayLike | None, _npt.ArrayLike | None, _npt.ArrayLike | None, _npt.ArrayLike | None]:
+    data: _ImageLike | None=None,
+    uncertainty: float | int | np.number | _ImageLike | None=None,
+    mask: _ImageLike | None=None,
+    flags: _ImageLike | None=None,
+) -> tuple[_ImageLike | None, _ImageLike | None, _ImageLike | None, _ImageLike | None]:
     """Check shape consistency across `data`, `uncertaitny` and `mask`."""
     dshape = np.shape(data)
 
     def _check(
-        arr: _npt.ArrayLike | None,
+        arr: float | int | np.number | _ImageLike | None,
         name: str,
         replicate: bool=False,
-    ) -> _npt.ArrayLike | None:
+    ) -> _ImageLike | None:
         """Validate an optional array against data, expanding a scalar when allowed."""
         if arr is None:
             return
@@ -75,7 +76,7 @@ def shape_consistency(
 
 
 def extract_units(
-    data: _npt.ArrayLike | u.Quantity,
+    data: _ImageLike | u.Quantity,
     unit: _UnitLike,
 ) -> u.UnitBase | None:
     """Extract and compare units if they are consistent."""
@@ -102,7 +103,7 @@ def extract_units(
 
 def uncertainty_unit_consistency(
     unit: _UnitLike,
-    uncertainty: _npt.ArrayLike | u.Quantity,
+    uncertainty: float | int | np.number | _ImageLike | u.Quantity,
 ) -> _npt.NDArray:
     """Check if an uncertainty can be set based on its unit.
 
@@ -273,12 +274,12 @@ class FrameData:
 
     def __init__(
         self,
-        data: _npt.ArrayLike | u.Quantity,
+        data: _ImageLike | u.Quantity,
         unit: _UnitLike=None,
         dtype: _npt.DTypeLike | None=None,
-        uncertainty: _npt.ArrayLike | u.Quantity | None=None,
-        mask: _npt.ArrayLike | None=None,
-        flags: _npt.ArrayLike | None=None,
+        uncertainty: float | int | np.number | _ImageLike | u.Quantity | None=None,
+        mask: _ImageLike | None=None,
+        flags: _ImageLike | None=None,
         use_memmap_backend: bool=False,
         cache_folder: str | TempDir | None=None,
         cache_filename: _PathLike | None=None,
@@ -468,7 +469,7 @@ class FrameData:
         return self._data
 
     @data.setter
-    def data(self, value: _npt.ArrayLike) -> None:
+    def data(self, value: _ImageLike) -> None:
         """Replace pixel storage and adopt an attached unit without propagating errors."""
         if hasattr(value, 'unit'):
             dunit = extract_units(value, None)
@@ -506,7 +507,7 @@ class FrameData:
         return self._unct
 
     @uncertainty.setter
-    def uncertainty(self, value: _npt.ArrayLike | u.Quantity | None) -> None:
+    def uncertainty(self, value: float | int | np.number | _ImageLike | u.Quantity | None) -> None:
         """Replace standard uncertainties, checking units and data shape.
 
         A scalar is expanded to the image shape. None or disabled uncertainty storage
@@ -564,7 +565,7 @@ class FrameData:
         return self._flags
 
     @flags.setter
-    def flags(self, value: _npt.ArrayLike | None) -> None:
+    def flags(self, value: _ImageLike | None) -> None:
         """Replace shape-matched flag bits using the pixel-flag dtype.
 
         None or disabled flag storage removes the existing array and its backing

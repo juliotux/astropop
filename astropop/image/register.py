@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import typing as _t
 import numpy.typing as _npt
+from .._typing import ImageLike as _ImageLike
 from .._typing import Window as _Window
 from skimage.transform import AffineTransform as _AffineTransform
 
@@ -91,8 +92,8 @@ class _BaseRegister(abc.ABC):
 
     def _window_slices(
         self,
-        image1: _npt.ArrayLike,
-        image2: _npt.ArrayLike,
+        image1: _ImageLike,
+        image2: _ImageLike,
     ) -> tuple[slice, slice]:
         """Validate and normalize the window against both image shapes."""
         if image1.ndim != 2 or image1.shape != image2.shape:
@@ -124,19 +125,19 @@ class _BaseRegister(abc.ABC):
     @abc.abstractmethod
     def _compute_transform(
         self,
-        image1: _npt.ArrayLike,
-        image2: _npt.ArrayLike,
-        mask1: _npt.ArrayLike | None=None,
-        mask2: _npt.ArrayLike | None=None,
+        image1: _ImageLike,
+        image2: _ImageLike,
+        mask1: _ImageLike | None=None,
+        mask2: _ImageLike | None=None,
     ) -> _AffineTransform:
         """Compute the transform to register image2 to image1."""
 
     def compute_transform(
         self,
-        image1: _npt.ArrayLike,
-        image2: _npt.ArrayLike,
-        mask1: _npt.ArrayLike | None=None,
-        mask2: _npt.ArrayLike | None=None,
+        image1: _ImageLike,
+        image2: _ImageLike,
+        mask1: _ImageLike | None=None,
+        mask2: _ImageLike | None=None,
     ) -> _AffineTransform:
         """Compute the transform to register image2 to image1.
 
@@ -178,10 +179,10 @@ class _BaseRegister(abc.ABC):
 
     def register_image(
         self,
-        image1: _npt.ArrayLike,
-        image2: _npt.ArrayLike,
-        mask1: _npt.ArrayLike | None=None,
-        mask2: _npt.ArrayLike | None=None,
+        image1: _ImageLike,
+        image2: _ImageLike,
+        mask1: _ImageLike | None=None,
+        mask2: _ImageLike | None=None,
         cval: float | _t.Literal['median', 'mean']='median',
     ) -> tuple[_npt.NDArray, _npt.NDArray[np.bool_], _AffineTransform]:
         """Align and transform an image2 to match image1.
@@ -396,10 +397,10 @@ class CrossCorrelationRegister(_BaseRegister):
 
     def _compute_transform(
         self,
-        image1: _npt.ArrayLike,
-        image2: _npt.ArrayLike,
-        mask1: _npt.ArrayLike | None=None,
-        mask2: _npt.ArrayLike | None=None,
+        image1: _ImageLike,
+        image2: _ImageLike,
+        mask1: _ImageLike | None=None,
+        mask2: _ImageLike | None=None,
     ) -> _AffineTransform:
         """Estimate the translation from phase correlation, ignoring supplied masks.
 
@@ -482,10 +483,10 @@ class AsterismRegister(_BaseRegister):
 
     def _compute_transform(
         self,
-        image1: _npt.ArrayLike,
-        image2: _npt.ArrayLike,
-        mask1: _npt.ArrayLike | None=None,
-        mask2: _npt.ArrayLike | None=None,
+        image1: _ImageLike,
+        image2: _ImageLike,
+        mask1: _ImageLike | None=None,
+        mask2: _ImageLike | None=None,
     ) -> _AffineTransform:
         """Detect bright sources and match asterisms to estimate a similarity transform.
 

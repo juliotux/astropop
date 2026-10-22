@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import typing as _t
-import numpy.typing as _npt
+from .._typing import ImageLike as _ImageLike
 from .._typing import NumberArray as _NumberArray
 
 import numpy as np
@@ -30,10 +30,10 @@ _rms_methods = {
 
 
 def background(
-    data: _npt.ArrayLike,
+    data: _ImageLike,
     box_size: int | tuple[int, int]=64,
     filter_size: int | tuple[int, int]=3,
-    mask: _npt.ArrayLike | None=None,
+    mask: _ImageLike | None=None,
     bkg_method: _t.Literal['mode', 'mean', 'median']='mode',
     rms_method: _t.Literal['std', 'mad_std']='std',
     sigma_clip: float | tuple[float, float]=3.0,

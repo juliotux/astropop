@@ -5,7 +5,7 @@ from __future__ import annotations
 from os import PathLike as _PathLike
 from types import EllipsisType as _EllipsisType
 from typing import TYPE_CHECKING as _TYPE_CHECKING, TypeAlias as _TypeAlias
-from typing import Union as _Union
+from typing import Annotated as _Annotated, Union as _Union
 from collections.abc import Callable as _Callable, Mapping as _Mapping
 
 import numpy as _np
@@ -23,8 +23,10 @@ NumberArray: _TypeAlias = float | int | _np.number | _NDArray
 UnitLike: _TypeAlias = str | _u.UnitBase | _u.Quantity | None
 HeaderLike: _TypeAlias = _fits.Header | _Mapping[str, object]
 ImageHDU: _TypeAlias = _fits.PrimaryHDU | _fits.ImageHDU | _fits.CompImageHDU
+# Semantic shape metadata; NumPy typing does not enforce dimensionality.
+ImageLike: _TypeAlias = _Annotated[_ArrayLike, "2D pixel array (rows, columns)"]
 ImageInput: _TypeAlias = _Union[
-    _ArrayLike, 'FrameData', 'QFloat', _u.Quantity, _CCDData,
+    ImageLike, 'FrameData', 'QFloat', _u.Quantity, _CCDData,
     ImageHDU, _fits.HDUList, PathLike,
 ]
 QuantityInput: _TypeAlias = _Union[

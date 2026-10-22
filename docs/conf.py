@@ -50,7 +50,7 @@ autodoc_typehints_format = 'short'
 # FrameData/QFloat names in the importing function's namespace.
 autodoc_type_aliases = {
     name: 'astropop._typing.' + name[1:]
-    for name in ('_ImageInput', '_QuantityInput', '_NumberArray', '_UnitLike',
+    for name in ('_ImageLike', '_ImageInput', '_QuantityInput', '_NumberArray', '_UnitLike',
                  '_HeaderLike', '_PathLike', '_ImageHDU', '_Index', '_Axis',
                  '_Window', '_Statistic')
 }
