@@ -44,6 +44,13 @@ def guess_coordinates(
     -----
     The helper guesses a format; it does not infer coordinate frame or epoch.
     Prefer an explicitly unit-bearing SkyCoord when the input format is known.
+
+    Examples
+    --------
+    >>> from astropop.astrometry import guess_coordinates
+    >>> position = guess_coordinates('08:00:00', '-30:00:00')
+    >>> print(f'{position.ra.deg:.1f} {position.dec.deg:.1f}')
+    120.0 -30.0
     """
     # TODO: this needs a refactor!
     # process as lists of coordinates

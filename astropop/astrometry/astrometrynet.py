@@ -429,6 +429,16 @@ class AstrometricSolution():
     correspondences
         A table containing the matched correspondences between the (x, y)
         positions and the matched (ra, dec) catalog coordinates.
+
+    Examples
+    --------
+    >>> from astropop.astrometry import AstrometricSolution, wcs_from_coords
+    >>> known = wcs_from_coords(16, 16, 120., -30., 0.34, north='top')
+
+    >>> # Wrap a known WCS locally; this does not call Astrometry.net.
+    >>> solution = AstrometricSolution(known.to_header())
+    >>> print(solution.wcs.pixel_n_dim, solution.correspondences)
+    2 None
     """
 
     _wcs = None
@@ -726,6 +736,20 @@ def create_xyls(
         stored separately on the binary-table HDU.
     dtype
         Data type of the fields. Default: 'f8'
+
+    Examples
+    --------
+    >>> from pathlib import Path
+    >>> from tempfile import TemporaryDirectory
+    >>> from astropy.io import fits
+    >>> from astropop.astrometry import create_xyls
+    >>> with TemporaryDirectory() as directory:
+    ...     filename = Path(directory) / 'sources.xyls'
+    ...     # Positions are already one-based FITS pixels; rows sort by flux.
+    ...     create_xyls(filename, [11., 21.], [16., 26.], [100., 200.], 32, 32)
+    ...     with fits.open(filename) as hdus:
+    ...         print(hdus[1].data['x'].tolist())
+    [21.0, 11.0]
     """
     head = {'IMAGEW': imagew,
             'IMAGEH': imageh}

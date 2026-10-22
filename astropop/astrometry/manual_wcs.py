@@ -66,6 +66,16 @@ def wcs_from_coords(
     reference stars or model field distortion. Check the mapping against
     reference sources, particularly far from CRPIX. Astropy's high-level
     pixel methods use zero-based coordinates even though CRPIX is one-based.
+
+    Examples
+    --------
+    >>> from astropop.astrometry import wcs_from_coords
+    >>> wcs = wcs_from_coords(16, 16, 120., -30., 0.34, north='top')
+
+    >>> # FITS reference pixel (16, 16) is (15, 15) in the high-level WCS API.
+    >>> sky = wcs.pixel_to_world(15, 15)
+    >>> print(f'{sky.ra.deg:.3f}, {sky.dec.deg:.3f} deg')
+    120.000, -30.000 deg
     """
     sk = guess_coordinates(ra, dec)
     ra, dec = sk.ra.degree, sk.dec.degree
