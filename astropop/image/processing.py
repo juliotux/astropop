@@ -60,6 +60,18 @@ def cosmics_lacosmic(
     result
         New cosmic-rays corrected `~astropop.framedata.FrameData` instance if not ``inplace``,
         else the ``image`` `~astropop.framedata.FrameData` instance.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from astropop.framedata import FrameData, PixelMaskFlags as F
+    >>> from astropop.image.processing import cosmics_lacosmic
+    >>> pixels = np.full((32, 32), 100.)
+    >>> pixels[16, 16] = 10000.
+    >>> frame = FrameData(pixels, unit='adu')
+    >>> cleaned = cosmics_lacosmic(frame, gain=1., readnoise=4., niter=1)
+    >>> print(bool(cleaned.mask_flags(F.COSMIC_RAY)[16, 16]))
+    True
     """
     frame = check_framedata(frame)
 
@@ -108,6 +120,18 @@ def gain_correct(
     result
         New gain corrected `~astropop.framedata.FrameData` instance if not ``inplace``, else the
         ``image`` `~astropop.framedata.FrameData` instance.
+
+    Examples
+    --------
+    >>> from astropy import units as u
+    >>> from astropop.framedata import FrameData
+    >>> from astropop.image.processing import gain_correct
+    >>> frame = FrameData([[100.]], unit='adu', uncertainty=3.)
+    >>> electrons = gain_correct(frame, 2 * u.electron / u.adu)
+    >>> print(electrons.data.tolist(), electrons.unit)
+    [[200.0]] electron
+    >>> print(electrons.uncertainty.tolist())
+    [[6.0]]
     """
     gain = convert_to_qfloat(gain)
     nim = imarith(image, gain, '*', inplace=inplace, merge_headers='first',
@@ -152,6 +176,16 @@ def subtract_bias(
     result
         New bias corrrected `~astropop.framedata.FrameData` instance if ``inplace``, else the
         ``image`` `~astropop.framedata.FrameData` instance.
+
+    Examples
+    --------
+    >>> from astropop.framedata import FrameData
+    >>> from astropop.image.processing import subtract_bias
+    >>> science = FrameData([[110.]], unit='adu', uncertainty=3.)
+    >>> bias = FrameData([[10.]], unit='adu', uncertainty=4.)
+    >>> corrected = subtract_bias(science, bias)
+    >>> print(corrected.data.tolist(), corrected.uncertainty.tolist())
+    [[100.0]] [[5.0]]
     """
     master_bias = check_framedata(master_bias)
     nim = imarith(image, master_bias, '-', inplace=inplace,
@@ -207,6 +241,19 @@ def subtract_dark(
     result
         New dark corrrected `~astropop.framedata.FrameData` instance if ``inplace``, else the
         ``image`` `~astropop.framedata.FrameData` instance.
+
+    Examples
+    --------
+    >>> from astropop.framedata import FrameData
+    >>> from astropop.image.processing import subtract_dark
+    >>> science = FrameData([[100.]], unit='adu')
+    >>> dark = FrameData([[5.]], unit='adu')
+
+    >>> # Both inputs are bias-subtracted; scale the dark from 10 to 20 seconds.
+    >>> corrected = subtract_dark(science, dark, dark_exposure=10,
+    ...                           image_exposure=20)
+    >>> print(corrected.data.tolist())
+    [[90.0]]
     """
     image = check_framedata(image)
     master_dark = check_framedata(master_dark)
@@ -260,6 +307,18 @@ def flat_correct(
     result
         New flat field corrected `~astropop.framedata.FrameData` instance if ``inplace``, else the
         ``image`` `~astropop.framedata.FrameData` instance.
+
+    Examples
+    --------
+    >>> from astropop.framedata import FrameData
+    >>> from astropop.image.processing import flat_correct
+    >>> science = FrameData([[80., 120.]], unit='adu')
+    >>> flat = FrameData([[0.8, 1.2]])
+
+    >>> # Divide by a dimensionless response normalized to unity.
+    >>> corrected = flat_correct(science, flat)
+    >>> print(corrected.data.tolist(), corrected.unit)
+    [[100.0, 100.0]] adu
     """
     master_flat = check_framedata(master_flat, copy=True)
     image = check_framedata(image)
@@ -308,6 +367,18 @@ def trim_image(
     -------
     result
         Trimmed `~astropop.framedata.FrameData` instance.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from astropop.framedata import FrameData
+    >>> from astropop.image.processing import trim_image
+    >>> frame = FrameData(np.arange(12).reshape(3, 4))
+
+    >>> # x selects columns and y selects rows, with exclusive upper bounds.
+    >>> cutout = trim_image(frame, x_slice=slice(1, 3), y_slice=slice(0, 2))
+    >>> print(cutout.data.tolist(), frame.shape)
+    [[1.0, 2.0], [5.0, 6.0]] (3, 4)
     """
     image = check_framedata(image, copy=False)
     if not inplace:

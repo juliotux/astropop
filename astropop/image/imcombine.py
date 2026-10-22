@@ -193,6 +193,19 @@ class ImCombiner:
     See Also
     --------
     imcombine : Convenience function including clipping and header options.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from astropop.image import ImCombiner
+    >>> combiner = ImCombiner(dtype='float32', max_memory=1024**2)
+    >>> combiner.set_minmax_clip(max_value=20)
+    >>> images = [np.full((2, 2), value) for value in (10, 12, 100)]
+
+    >>> # Rejection settings belong to the reusable combiner.
+    >>> result = combiner.combine(images, method='mean')
+    >>> print(result.data[0, 0].item())
+    11.0
     """
 
     _sigma_clip = None  # sigmaclip thresholds
@@ -765,6 +778,18 @@ def imcombine(
     See Also
     --------
     ImCombiner : Reuse combination settings across image collections.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from astropop.image import imcombine
+    >>> images = [np.full((2, 2), value) for value in (10, 12, 100)]
+
+    >>> # Reject samples above the accepted range before averaging.
+    >>> result = imcombine(images, method='mean', minmax_clip=(None, 20),
+    ...                    dtype='float32')
+    >>> print(result.data.tolist(), result.dtype.name)
+    [[11.0, 11.0], [11.0, 11.0]] float32
     """
     # Sanitize kwargs and create combiner
     kargs = {'dtype': dtype,

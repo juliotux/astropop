@@ -44,6 +44,18 @@ def merge_header(
     Notes
     -----
     - All headers must have normalized keywords.
+
+    Examples
+    --------
+    >>> from astropy.io.fits import Header
+    >>> from astropop.image._tools import merge_header
+    >>> first = Header({'FILTER': 'R', 'EXPTIME': 10})
+    >>> second = Header({'FILTER': 'R', 'EXPTIME': 20})
+
+    >>> # Preserve only values that agree in both headers.
+    >>> merged = merge_header(first, second, method='only_equal')
+    >>> print(dict(merged))
+    {'FILTER': 'R'}
     """
     if method not in ['first', 'selected_keys', 'no_merge', 'only_equal']:
         raise ValueError(f'Unknown method {method}.')
@@ -111,6 +123,17 @@ def merge_flag(
     -------
     flag
         Merged flag.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from astropop.image._tools import merge_flag
+    >>> first = np.array([1, 2], dtype='uint8')
+    >>> second = np.array([2, 2], dtype='uint8')
+    >>> print(merge_flag(first, second, method='or').tolist())
+    [3, 2]
+    >>> print(merge_flag(first, second, method='and').tolist())
+    [0, 2]
     """
     if method not in ['or', 'and', 'no_merge']:
         raise ValueError(f'Unknown method {method}.')

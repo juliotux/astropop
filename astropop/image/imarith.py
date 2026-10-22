@@ -53,6 +53,19 @@ class ImArith:
     Uncertainties use the existing derivative helpers when enabled; disabling
     them skips extraction and propagation. Floor division and remainder
     retain the existing raw-value conventions.
+
+    Examples
+    --------
+    >>> from astropop.framedata import FrameData
+    >>> from astropop.image import ImArith
+    >>> arithmetic = ImArith(merge_headers='first')
+    >>> frame = FrameData([[10.]], unit='adu', meta={'OBJECT': 'example'})
+
+    >>> # Reuse the configured merge policy for subsequent operations.
+    >>> doubled = arithmetic.run(frame, 2, '*')
+    >>> result = arithmetic.run(doubled, 5, '/')
+    >>> print(result.data.tolist(), result.header['OBJECT'])
+    [[4.0]] example
     """
 
     _operations = {'+': np.add, '-': np.subtract, '*': np.multiply,
@@ -351,6 +364,20 @@ def imarith(
     See Also
     --------
     ImArith : Reuse flag and header merge settings across operations.
+
+    Examples
+    --------
+    >>> from astropy import units as u
+    >>> from astropop.framedata import FrameData
+    >>> from astropop.image import imarith
+    >>> frame = FrameData([[1., 2.]], unit='m', uncertainty=0.1)
+
+    >>> # Addition converts the second operand to the first operand's unit.
+    >>> result = imarith(frame, 50 * u.cm, '+')
+    >>> print(result.data.tolist(), result.unit)
+    [[1.5, 2.5]] m
+    >>> print(result.uncertainty.tolist(), frame.data.tolist())
+    [[0.1, 0.1]] [[1.0, 2.0]]
     """
     arithmetic = ImArith(merge_flags=merge_flags, merge_headers=merge_headers,
                          selected_keys=kwargs.get('selected_keys', None))

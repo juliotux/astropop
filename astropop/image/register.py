@@ -378,6 +378,23 @@ class CrossCorrelationRegister(_BaseRegister):
     References
     ----------
     .. [1] :doi:`10.1364/OL.33.000156`
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from astropop.framedata import FrameData
+    >>> reference = np.zeros((24, 24))
+    >>> reference[8:12, 10:14] = [[1, 2, 1, 0], [2, 5, 2, 1],
+    ...                         [1, 3, 2, 0], [0, 1, 0, 0]]
+
+    >>> # NumPy roll takes (dy, dx); reported registration shifts use (dx, dy).
+    >>> moving = np.roll(reference, (2, -3), axis=(0, 1))
+
+    >>> from astropop.image.register import CrossCorrelationRegister
+    >>> register = CrossCorrelationRegister(upsample_factor=10)
+    >>> transform = register.compute_transform(reference, moving)
+    >>> print(np.round(transform.translation, 2).tolist())
+    [-3.0, 2.0]
     """
 
     _name = 'cross-correlation'
@@ -453,6 +470,17 @@ class AsterismRegister(_BaseRegister):
     References
     ----------
     .. [1] :doi:`10.1016/j.ascom.2020.100384`
+
+    Examples
+    --------
+    >>> from astropop.image.register import AsterismRegister
+
+    >>> # Configure the estimator without detecting sources or transforming pixels.
+    >>> register = AsterismRegister(max_control_points=20, detection_threshold=5)
+    >>> print(type(register).__name__)
+    AsterismRegister
+
+    For a complete source-matching example, see the image registration module guide.
     """
 
     _name = 'asterism-matching'
@@ -567,6 +595,22 @@ def compute_shift_list(
         The reference entry is ``[0, 0]``. Transforms map reference coordinates
         to moving-image coordinates, so alignment moves features in the
         opposite direction. Rotation and scale are not returned.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from astropop.framedata import FrameData
+    >>> reference = np.zeros((24, 24))
+    >>> reference[8:12, 10:14] = [[1, 2, 1, 0], [2, 5, 2, 1],
+    ...                         [1, 3, 2, 0], [0, 1, 0, 0]]
+
+    >>> # NumPy roll takes (dy, dx); reported registration shifts use (dx, dy).
+    >>> moving = np.roll(reference, (2, -3), axis=(0, 1))
+
+    >>> from astropop.image.register import compute_shift_list
+    >>> shifts = compute_shift_list([FrameData(reference), FrameData(moving)])
+    >>> print(np.round(shifts, 2).tolist())
+    [[0.0, 0.0], [-3.0, 2.0]]
     """
     reg = _algorithm_check(algorithm, dict(kwargs, window=window))
     _check_compatible_list(frame_list)
@@ -662,6 +706,28 @@ def register_framedata_list(
     registered
         Registered frames in input order, including the reference and any
         failed frames retained by ``skip_failure=True``.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from astropop.framedata import FrameData
+    >>> reference = np.zeros((24, 24))
+    >>> reference[8:12, 10:14] = [[1, 2, 1, 0], [2, 5, 2, 1],
+    ...                         [1, 3, 2, 0], [0, 1, 0, 0]]
+
+    >>> # NumPy roll takes (dy, dx); reported registration shifts use (dx, dy).
+    >>> moving = np.roll(reference, (2, -3), axis=(0, 1))
+
+    >>> from astropop.image.register import register_framedata_list
+    >>> aligned = register_framedata_list(
+    ...     [FrameData(reference), FrameData(moving)], cval=0,
+    ...     window=(slice(4, 18), slice(4, 18)))
+
+    >>> # The window estimates the transform; the full image is returned.
+    >>> print(aligned[1].shape)
+    (24, 24)
+    >>> print(float(np.max(np.abs(aligned[1].data - reference))))
+    0.0
     """
     reg = _algorithm_check(algorithm, dict(kwargs, window=window))
     _check_compatible_list(frame_list)
