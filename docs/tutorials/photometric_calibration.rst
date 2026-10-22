@@ -51,13 +51,23 @@ from :doc:`photometry`. Reference products allow starting here independently::
     >>> image = read_framedata(inputs / 'astrometric.fits')
     >>> measured = Table.read(inputs / 'instrumental.ecsv')
     >>> standards = Table.read(data / 'standards.ecsv')
+    >>> if not len(measured) or not len(standards):
+    ...     raise ValueError('No measurements or standards available for matching.')
     >>> reference = SkyCoord(standards['ra'], standards['dec'])
     >>> sky = image.wcs.pixel_to_world(measured['x'], measured['y'])
     >>> index, separation, _ = reference.match_to_catalog_sky(sky)
+    >>> unique = np.bincount(index, minlength=len(measured))[index] == 1
     >>> flux, flux_error = measured['flux'][index], measured['flux_error'][index]
     >>> usable = ((separation < 0.5 * u.arcsec) & (measured['flags'][index] == 0)
-    ...           & np.isfinite(flux) & np.isfinite(flux_error) & (flux > 0))
-    >>> calibrators = usable & standards['standard']
+    ...           & unique & np.isfinite(flux) & np.isfinite(flux_error)
+    ...           & (flux > 0) & (flux_error > 0))
+    >>> reference_valid = (np.isfinite(standards['R'])
+    ...                    & np.isfinite(standards['R_error'])
+    ...                    & (standards['R_error'] > 0))
+    >>> calibrators = usable & reference_valid & standards['standard']
+    >>> check = usable & reference_valid & ~standards['standard'] & (standards['id'] == 'S09')
+    >>> if calibrators.sum() < 2 or not np.any(check):
+    ...     raise ValueError('This workflow needs two standards and the withheld check star.')
     >>> print(f'Matched sources: {usable.sum()}; zero-point standards: {calibrators.sum()}')
     Matched sources: 9; zero-point standards: 7
 
@@ -71,8 +81,16 @@ products even if files with the expected names already exist.
 
 This simulation has known, isolated standards. The standard magnitudes refer
 to its synthetic R band; they do not define a transformation to an actual
-instrument's passband. Resolve duplicate associations, exclude variable or
-saturated standards, and inspect magnitude/color ranges on observations.
+instrument's passband. The selection rejects all associations that share a
+nearest detection with another catalog row; it does not resolve crowded-field
+ambiguities. It excludes flagged measurements and nonfinite or nonpositive
+fluxes and flux errors. Only standards and check stars need valid reference
+magnitudes and positive reference errors; a target can be calibrated without
+a reference magnitude.
+
+Requiring two standards and the withheld check star is this tutorial's policy,
+not an Astropop API restriction. Inspect the matches and exclude variable or
+saturated standards before fitting observations.
 
 Fit a zero point with an explicit exposure convention
 ------------------------------------------------------
@@ -82,8 +100,12 @@ The combined image is a mean on a 30-second exposure's ADU scale. Compute
 ``sigma_m = (2.5/ln(10))*sigma_flux/flux``. Treat exposure duration as exact here::
 
     >>> exposure = image.meta['EXPTIME']
-    >>> instrumental = -2.5 * np.log10(flux / exposure)
-    >>> instrumental_error = 2.5 / np.log(10) * flux_error / flux
+    >>> if not np.isfinite(exposure) or exposure <= 0:
+    ...     raise ValueError('EXPTIME must be finite and positive.')
+    >>> instrumental = np.full(len(standards), np.nan)
+    >>> instrumental_error = np.full(len(standards), np.nan)
+    >>> instrumental[usable] = -2.5 * np.log10(flux[usable] / exposure)
+    >>> instrumental_error[usable] = 2.5 / np.log(10) * flux_error[usable] / flux[usable]
     >>> offsets = standards['R'] - instrumental
     >>> offset_error = np.hypot(standards['R_error'], instrumental_error)
     >>> weights = 1 / np.square(offset_error[calibrators])
@@ -93,7 +115,6 @@ The combined image is a mean on a 30-second exposure's ADU scale. Compute
     >>> calibrated_error = np.hypot(instrumental_error, zero_point_error)
     >>> print(f'Zero point: {zero_point:.3f} +/- {zero_point_error:.3f} mag')
     Zero point: 25.000 +/- 0.005 mag
-    >>> check = usable & (standards['id'] == 'S09')
     >>> print(f'Check-star residual: {np.asarray(calibrated - standards["R"])[check][0]:+.3f} mag')
     Check-star residual: +0.009 mag
 
@@ -102,10 +123,20 @@ The combined image is a mean on a 30-second exposure's ADU scale. Compute
     :alt: Individual standard-star zero points and calibrated-minus-reference residuals versus reference magnitude, with a separate check star.
     :caption: The fitted zero point is compared with individual standards and an independent check star. The injected zero point is 25 mag; finite apertures and noise prevent exact recovery.
 
+Only usable measurements enter the logarithm; rejected rows retain NaN.
+Inspect individual offsets before accepting the fit. An isolated outlier calls
+for checking its association, flags and variability; a trend with magnitude or
+color suggests a measurement or model problem. Do not automatically clip these
+patterns away. After excluding a standard for a documented reason, recompute
+the fit and check-star residual.
+
 The zero-point uncertainty above assumes independent catalog and instrumental
 errors and a correct constant-offset model. Standards used in the fit share
 covariance with that zero point, so their residual/error bars are diagnostics,
-not independent goodness-of-fit measurements. Reusing the zero point also
+not independent goodness-of-fit measurements. The displayed and saved
+``R_error`` values add instrumental and zero-point variances as if independent;
+for fitted standards this omits their covariance with the zero point.
+Reusing the zero point also
 correlates calibrated magnitudes. Shared calibration errors, aperture corrections,
 passband/color terms and atmospheric extinction are not included. Do not add
 extra fitted terms unless the observations constrain them.
@@ -117,13 +148,15 @@ Keep units, the standard release/band, exposure convention and fitted calibratio
 with the table. Magnitudes without a zero-point convention are ambiguous::
 
     >>> result = Table({'id': standards['id'][usable], 'R': calibrated[usable],
-    ...                 'R_error': calibrated_error[usable]})
+    ...                 'R_error': calibrated_error[usable],
+    ...                 'used_in_fit': calibrators[usable]})
     >>> result['R'].unit = result['R_error'].unit = u.mag
     >>> result.meta.update({'band': 'synthetic R', 'catalog': 'bundled synthetic standards',
     ...                     'input_set': inputs.name, 'image': 'astrometric.fits',
     ...                     'measurements': 'instrumental.ecsv',
     ...                     'zero_point': float(zero_point),
     ...                     'zero_point_error': float(zero_point_error),
+    ...                     'error_convention': 'independent errors; fit covariance omitted',
     ...                     'flux_convention': 'ADU per second; mean of 30-second frames'})
     >>> output.mkdir(exist_ok=True)
     >>> result.write(output / 'calibrated_photometry.ecsv', overwrite=True)
