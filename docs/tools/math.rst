@@ -66,6 +66,11 @@ integrals or area-weighted radial integrals equal ``flux``. A finite sampled
 cutout need not sum to a model's flux parameter. Model and equation classes
 expose the corresponding FWHM relations.
 
+.. plot:: _ext/task_figures.py plot_psf_profiles
+    :include-source: False
+    :alt: Gaussian and Moffat circular 2D profiles with equal total flux and FWHM show different peak heights and extended Moffat wings; enclosed flux rises more slowly for the Moffat model.
+    :caption: Both profiles have integrated flux 1000, FWHM 4 pixels and zero sky; Moffat power is 2.5. The dotted line marks half the FWHM, where each profile reaches half its own peak. Right: analytic continuous 2D integrals, not sums of pixel-center samples. The Moffat wings leave more light outside a finite aperture.
+
 Short identifiers
 -----------------
 
