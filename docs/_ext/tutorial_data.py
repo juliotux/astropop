@@ -139,14 +139,17 @@ def build_bundle(folder: Path) -> Path:
     if data.exists():
         shutil.rmtree(data)
     generate_dataset(data)
-    from tutorial_notebooks import build_notebooks, WORKFLOWS
+    from tutorial_notebooks import build_notebooks, WORKFLOWS, SOURCE_PAGES
 
     source = Path(__file__).resolve().parents[1] / 'tutorials'
     build_notebooks(source, folder / 'notebooks')
     originals = folder / 'tutorial_sources'
     originals.mkdir(exist_ok=True)
     for page, _ in WORKFLOWS:
-        shutil.copyfile(source / f'{page}.rst', originals / f'{page}.rst')
+        relative = Path(SOURCE_PAGES[page] + '.rst')
+        destination = originals / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(source / relative, destination)
     helpers = ['tutorial_data.py', 'workflow_data.py', 'workflow_figures.py',
                'guide_figures.py', 'tutorial_notebooks.py']
     for name in helpers:

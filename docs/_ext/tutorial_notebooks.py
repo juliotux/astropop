@@ -20,9 +20,30 @@ WORKFLOWS = [
     ('photometry', '05_stacked_photometry'),
     ('light_curve', '06_light_curve'),
     ('polarimetry', '07_polarimetry'),
+    ('quarterwave', '07b_quarterwave'),
     ('astrometric_calibration', '08_astrometry'),
     ('photometric_calibration', '09_photometric_calibration'),
 ]
+
+SOURCE_PAGES = {
+    'observations': 'ccd_reduction/observations',
+    'master_bias': 'ccd_reduction/master_bias',
+    'master_flat': 'ccd_reduction/master_flat',
+    'science_reduction': 'ccd_reduction/science_reduction',
+    'dark_correction': 'ccd_reduction/dark_correction',
+    'photometry': 'photometry/photometry',
+    'photometric_calibration': 'photometry/photometric_calibration',
+    'light_curve': 'photometry/light_curve',
+    'local_catalog_matching': 'astrometry_catalogs/local_catalog_matching',
+    'astrometric_calibration': 'astrometry_catalogs/astrometric_calibration',
+    'astrometry_net': 'astrometry_catalogs/astrometry_net',
+    'online_catalogs': 'astrometry_catalogs/online_catalogs',
+    'fits_collections': 'diagnostics/fits_collections',
+    'quality_propagation': 'diagnostics/quality_propagation',
+    'registration_diagnostics': 'diagnostics/registration_diagnostics',
+    'polarimetry': 'polarimetry/halfwave',
+    'quarterwave': 'polarimetry/quarterwave',
+}
 
 BOOTSTRAP = '''from pathlib import Path
 import sys
@@ -56,7 +77,7 @@ def execute_workflow(page: str, data: Path) -> dict[str, object]:
     sources = Path(__file__).resolve().parent / 'tutorial_sources'
     if not sources.exists():
         sources = Path(__file__).resolve().parents[1] / 'tutorials'
-    text = visible_source((sources / f'{page}.rst').read_text())
+    text = visible_source((sources / f'{SOURCE_PAGES[page]}.rst').read_text())
     namespace = {'data': data, '__name__': '__tutorial__'}
     with contextlib.redirect_stdout(io.StringIO()):
         for example in doctest.DocTestParser().get_examples(text):
@@ -64,7 +85,7 @@ def execute_workflow(page: str, data: Path) -> dict[str, object]:
     return namespace
 
 
-def markdown(text: str) -> str:
+def markdown(text: str, source: str = '') -> str:
     """Translate the limited inline RST vocabulary used in these tutorial pages."""
     def document_link(match: re.Match[str]) -> str:
         """Keep workflow links local to the generated notebook collection."""
@@ -72,11 +93,12 @@ def markdown(text: str) -> str:
         label = target.replace('_', ' ')
         if '<' in target:
             label, target = target.rstrip('>').split('<', 1)
-        names = dict(WORKFLOWS)
-        if target in names:
-            return f'[{label.strip()}]({names[target]}.ipynb)'
         import posixpath
-        path = posixpath.normpath('tutorials/' + target)
+        path = posixpath.normpath(posixpath.join(
+            'tutorials', posixpath.dirname(source), target))
+        names = {'tutorials/' + SOURCE_PAGES[key]: name for key, name in WORKFLOWS}
+        if path in names:
+            return f'[{label.strip()}]({names[path]}.ipynb)'
         return f'[{label.strip()}](https://astropop.readthedocs.io/en/latest/{path}.html)'
 
     text = re.sub(r':doc:`([^`]+)`', document_link, text)
@@ -166,6 +188,8 @@ def build_notebook(page: Path) -> NotebookNode:
     """Convert narrative, prompted examples and plots without duplicating calculations."""
     import nbformat as nbf
 
+    source_path = next((v for v in SOURCE_PAGES.values()
+                        if page.as_posix().endswith(v + '.rst')), page.stem)
     text = visible_source(page.read_text())
     lines = text.splitlines()
     cells = [nbf.v4.new_code_cell(BOOTSTRAP, metadata={
@@ -174,7 +198,7 @@ def build_notebook(page: Path) -> NotebookNode:
 
     def flush() -> None:
         """Emit accumulated explanatory text as one Markdown cell."""
-        if value := markdown('\n'.join(narrative)):
+        if value := markdown('\n'.join(narrative), source_path):
             cells.append(nbf.v4.new_markdown_cell(value))
         narrative.clear()
 
@@ -203,18 +227,18 @@ def build_notebook(page: Path) -> NotebookNode:
     flush()
     notebook = nbf.v4.new_notebook(cells=cells, metadata={
         'kernelspec': {'name': 'python3', 'display_name': 'Python 3', 'language': 'python'},
-        'language_info': {'name': 'python'}, 'astropop_source': page.name})
+        'language_info': {'name': 'python'}, 'astropop_source': source_path + '.rst'})
     return notebook
 
 
 def build_notebooks(source: Path, output: Path) -> list[Path]:
-    """Write the nine generated notebooks, leaving their numerical source in RST."""
+    """Write the generated notebooks, leaving their numerical source in RST."""
     import nbformat
 
     output.mkdir(parents=True, exist_ok=True)
     paths = []
     for page, name in WORKFLOWS:
-        notebook = build_notebook(source / f'{page}.rst')
+        notebook = build_notebook(source / f'{SOURCE_PAGES[page]}.rst')
         path = output / f'{name}.ipynb'
         nbformat.write(notebook, path)
         paths.append(path)

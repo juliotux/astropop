@@ -14,7 +14,7 @@ collect_ignore = ['_ext', '_build']
 def tutorial_helpers(monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest,
                      tmp_path: Path) -> None:
     """Provide tutorial helpers and restore optional-array settings after each page."""
-    if request.node.path.parent.name != 'tutorials':
+    if not request.node.path.is_relative_to(Path(__file__).parent / 'tutorials'):
         return
     monkeypatch.chdir(tmp_path)
     from astropop.config import AstropopConfig

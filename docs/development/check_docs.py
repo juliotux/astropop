@@ -153,11 +153,11 @@ def check_notebooks():
 
     docs = Path(__file__).resolve().parents[1]
     sys.path.insert(0, str(docs / '_ext'))
-    from tutorial_notebooks import WORKFLOWS, build_notebook
+    from tutorial_notebooks import WORKFLOWS, SOURCE_PAGES, build_notebook
 
     cells = 0
     for page, name in WORKFLOWS:
-        notebook = build_notebook(docs / 'tutorials' / f'{page}.rst')
+        notebook = build_notebook(docs / 'tutorials' / f'{SOURCE_PAGES[page]}.rst')
         nbformat.validate(notebook)
         for index, cell in enumerate(notebook.cells):
             if cell.cell_type != 'code':

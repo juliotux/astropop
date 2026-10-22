@@ -47,7 +47,7 @@ def example(page: str) -> Iterator[dict[str, object]]:
     with TemporaryDirectory() as temporary:
         data = Path(temporary) / 'data'
         generate_dataset(data, include_extras=page in {
-            'light_curve', 'astrometric_calibration', 'photometric_calibration', 'polarimetry'})
+            'light_curve', 'astrometric_calibration', 'photometric_calibration', 'polarimetry', 'quarterwave'})
         yield execute_workflow(page, data)
 
 
@@ -91,7 +91,7 @@ def plot_polarimetry() -> Figure:
 
 def plot_quarterwave() -> Figure:
     """Replay the noisy quarter-wave workflow through the shared plot function."""
-    with example('polarimetry') as ns:
+    with example('quarterwave') as ns:
         return draw_polarimetry(ns['quarter_psi'], ns['quarter_result'])
 
 
