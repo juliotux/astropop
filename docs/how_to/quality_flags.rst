@@ -96,6 +96,54 @@ image. The zero flags on the combined result do not mean the original samples
 were all defect-free; accepted samples and output provenance are different
 questions.
 
+Include defects in calibration frames
+--------------------------------------
+
+For a bad pixel in the bias as well as a saturated science pixel, combine both
+quality maps by bitwise OR. This example keeps all reason bits and masks both
+affected pixels after subtraction::
+
+    >>> defective_bias = FrameData([[10., 10.]], unit='adu')
+    >>> defective_bias.add_flags(F.MASKED | F.BAD, where=(0, 1))
+    >>> quality = np.bitwise_or(raw.flags, defective_bias.flags)
+    >>> corrected = subtract_bias(raw, defective_bias)
+    >>> corrected.flags = quality
+    >>> print('Combined reasons:', corrected.flags.tolist())
+    Combined reasons: [[18, 10]]
+    >>> print('Excluded pixels:', corrected.mask.tolist())
+    Excluded pixels: [[True, True]]
+
+Apply the same policy to flat and dark defects when those calibrations are
+used. Quality maps must have the same pixel geometry as the science frame;
+crop or transform them consistently before combining their bits. Arithmetic
+still computes the nominal values, so inspect masks before using those values.
+
+Preserve the full flag map in a sidecar
+---------------------------------------
+
+Keep the Astropop bit field in a NumPy sidecar, alongside the FITS image whose
+MASK extension stores only the Boolean exclusion map. Restore the sidecar
+explicitly; ``read_framedata`` does not search for it::
+
+    >>> with TemporaryDirectory() as directory:
+    ...     path = Path(directory) / 'corrected.fits'
+    ...     flags_path = Path(directory) / 'corrected.flags.npy'
+    ...     corrected.write(path)
+    ...     np.save(flags_path, corrected.flags, allow_pickle=False)
+    ...     reloaded = read_framedata(path)
+    ...     reloaded.flags = np.load(flags_path, allow_pickle=False)
+    ...     print('Restored reasons:', reloaded.flags.tolist())
+    ...     print('Saturated:', reloaded.mask_flags(F.SATURATED).tolist())
+    ...     print('Bad:', reloaded.mask_flags(F.BAD).tolist())
+    Restored reasons: [[18, 10]]
+    Saturated: [[True, False]]
+    Bad: [[False, True]]
+
+Keep the pair together and record its pixel geometry, processing stage and
+Astropop version in your product provenance. A same-shaped sidecar from another
+exposure can be assigned successfully but describes the wrong pixels. This
+recipe stores Astropop reason bits, not an arbitrary instrument DQ definition.
+
 See :doc:`../tools/flags` for bit decoding and :doc:`../data_structures/framedata`
 for the FITS interchange contract. If flag storage is disabled before frame
 construction, these maps are not retained; choose the policy before loading.

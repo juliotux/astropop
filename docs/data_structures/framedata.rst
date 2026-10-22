@@ -367,6 +367,45 @@ FITS conversion preserves the Boolean mask, but does not serialize the full
 pixel flag array or the reasons each pixel was masked. It is not a lossless
 round trip for individual flag bits.
 
+Select science, variance and quality extensions explicitly
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Instrument files can contain several images, variance rather than standard
+deviation, and a quality map whose nonzero values mark defects. Select the
+science HDU itself and convert the companion arrays according to that file's
+documented convention. Naming a variance extension ``hdu_uncertainty`` would
+load its values as standard deviations without taking a square root::
+
+    >>> from astropy.io import fits
+    >>> hdus = fits.HDUList([
+    ...     fits.PrimaryHDU(),
+    ...     fits.ImageHDU(np.zeros((2, 2)), name='PREVIEW'),
+    ...     fits.ImageHDU(np.array([[10., 20.], [30., 40.]]), name='SCI'),
+    ...     fits.ImageHDU(np.full((2, 2), 4.), name='VAR'),
+    ...     fits.ImageHDU(np.array([[0, 4], [0, 0]], dtype='uint8'), name='DQ'),
+    ... ])
+    >>> hdus['SCI'].header['BUNIT'] = 'adu'
+    >>> with hdus:
+    ...     variance = hdus['VAR'].data
+    ...     if np.any(~np.isfinite(variance)) or np.any(variance < 0):
+    ...         raise ValueError('Variance must be finite and nonnegative for this import.')
+    ...     selected = read_framedata(hdus['SCI'], uncertainty=np.sqrt(variance),
+    ...                               mask=hdus['DQ'].data != 0, dtype='float32')
+    ...     print('Selected extension:', hdus['SCI'].name)
+    Selected extension: SCI
+    >>> print('Science:', selected.data.tolist())
+    Science: [[10.0, 20.0], [30.0, 40.0]]
+    >>> print('Standard uncertainty:', selected.uncertainty.tolist())
+    Standard uncertainty: [[2.0, 2.0], [2.0, 2.0]]
+    >>> print('Mask:', selected.mask.tolist())
+    Mask: [[False, True], [False, False]]
+
+The variance here is in ADU squared, matching the science data's ADU unit.
+Real DQ definitions may require selecting particular bits instead of masking
+every nonzero value. External DQ bit numbers are not automatically Astropop
+``PixelMaskFlags`` values; keep the original quality map if its reasons matter.
+See :doc:`../how_to/quality_flags` for saving a complete Astropop flag map.
+
 CCDData conversion
 ^^^^^^^^^^^^^^^^^^
 
