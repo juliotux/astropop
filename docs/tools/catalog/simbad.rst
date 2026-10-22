@@ -16,7 +16,7 @@ The database design is described by `Wenger et al. (2000), A&AS 143, 9
 <https://arxiv.org/abs/astro-ph/0002110>`_.
 
 The examples below make live queries and are not executed by documentation
-builds. Use :doc:`../../how_to/catalogs` for query reuse and failure handling,
+builds. Use :doc:`../../concepts/catalog_queries` for query reuse and failure handling,
 and :doc:`../catalogs` for the common local data/accessor contracts.
 
 |SourcesCatalog| from Simbad

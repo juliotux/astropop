@@ -37,7 +37,7 @@ executed by documentation builds; the returned rows depend on the service:
 Only DR3 is configured by this adapter. All |SourcesCatalog| methods are
 available, including local access and positional matching. Preserve the release,
 query region and epoch with saved data; see :doc:`../catalogs` for motion-aware
-snapshots and :doc:`../../how_to/catalogs` for service selection and reuse.
+snapshots and :doc:`../../concepts/catalog_queries` for service selection and reuse.
 
 Select ``'G'``, ``'BP'`` or ``'RP'`` by name/list, use ``band='all'`` (default)
 for all three, or ``band=None`` to disable normalized photometry. Available

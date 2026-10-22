@@ -23,7 +23,7 @@ Constructors accept ``center``, ``radius`` and ``band``. ``band='all'`` selects
 all configured filters; ``band=None`` disables normalized photometry; a list
 selects named filters. Column requests are assembled from the configuration,
 including its available magnitude columns, so selecting fewer bands does not
-guarantee a smaller remote response. Use :doc:`../../how_to/catalogs` for
+guarantee a smaller remote response. Use :doc:`../../concepts/catalog_queries` for
 service selection, query provenance and failure handling.
 
 Inspect packaged descriptions without a query:

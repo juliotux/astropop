@@ -1,16 +1,16 @@
 Concepts and conventions
 ========================
 
-Read these explanations to understand units, uncertainty, quality information
-and storage before selecting reduction settings.
+These pages explain assumptions and application policies shared by several
+modules. For functions, classes and simple usage examples, see
+:doc:`../how_to/index`; for complete reductions, see :doc:`../tutorials/index`.
 
 .. toctree::
     :maxdepth: 1
 
-    ../data_structures/framedata
-    ../data_structures/physical
-    ../tools/flags
     ../dev/pixel_convention
-    ../data_structures/cache
     uncertainties
     configuration
+    catalog_queries
+    reduction_workflows
+    troubleshooting

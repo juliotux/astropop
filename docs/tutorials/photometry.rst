@@ -132,7 +132,7 @@ For the supplied field, compare measured positions and fluxes against
 ``sources.ecsv`` only as a simulation check. On real data use isolated stars,
 repeat measurements across exposures, inspect flagged cases and choose which
 flags your application can accept. See :doc:`../reduction/photometry` for the
-estimator contracts and source flags, and :doc:`../how_to/catalogs` for matching
+estimator contracts and source flags, and :doc:`../concepts/catalog_queries` for matching
 a calibration catalog. Diagnose empty detections by inspecting masks, noise,
 FWHM and threshold rather than treating them as zero-flux measurements.
 See :ref:`empty-detection-behavior` for the wrappers' warnings and exceptions.

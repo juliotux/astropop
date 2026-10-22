@@ -5,7 +5,7 @@ Catalogs, coordinates and magnitudes
 
 |SourcesCatalog| stores source IDs, equatorial coordinates and optional
 magnitudes. It wraps |SkyCoord| rather than subclassing it. Local and online
-catalogs share this interface; :doc:`../how_to/catalogs` covers service choice,
+catalogs share this interface; :doc:`../concepts/catalog_queries` covers service choice,
 query failures and reuse, while this page explains the stored data and matching.
 
 .. _manual_catalogs:
@@ -327,7 +327,7 @@ Online Catalogs
 
 Service-specific adapters normalize their results into the same interface.
 Use the following guides for configured bands and query options, and
-:doc:`../how_to/catalogs` for choosing and reusing queries.
+:doc:`../concepts/catalog_queries` for choosing and reusing queries.
 
 .. toctree::
    :maxdepth: 1

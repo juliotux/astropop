@@ -148,6 +148,6 @@ photometric system or epoch than your image. Read its bibliographic source
 before using it as a calibration standard.
 
 For Gaia astrometry use :doc:`../tools/catalog/gaia`; for selecting a service
-and handling timeouts see :doc:`../how_to/catalogs`. The separate
+and handling timeouts see :doc:`../concepts/catalog_queries`. The separate
 :doc:`photometric_calibration` tutorial explains how reviewed, compatible
 standards enter the zero-point calculation.
