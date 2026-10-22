@@ -78,6 +78,7 @@ master_doc = 'index'
 
 # Project info
 project = 'astropop'
+author = 'Astropop contributors'
 copyright = '2018-2023, Julio Campagnolo and contributors'
 import astropop
 version = astropop.__version__.split('-', 1)[0]
