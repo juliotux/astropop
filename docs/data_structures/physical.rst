@@ -7,195 +7,121 @@
 Physical Quantities and Uncertainties
 =====================================
 
-A physical measurement combines a nominal value, a physical unit and an
-uncertainty. QFloat stores these together for scalar and array calculations.
+|QFloat| stores nominal values, standard uncertainties and a physical unit.
+It uses Astropy units and propagates uncertainties through supported arithmetic
+and NumPy operations. It is a separate container from |Quantity|, so functions
+accepting Astropy quantities do not necessarily accept QFloat.
 
-|astropy| has a very useful module called `~astropy.units`, that handles physical units and |Quantity|, a container intended to store physical measurements with units.. But it doesn't perform any error propagation.
-
-To handle this and make the things a lot easier in |astropop|, we created a new class, called |QFloat| to handle both uncertainties and physical units at once. By |QFloat| we mean "Quantity Float", relating it to physical measurements. This class mainly wraps `~astropy.units` methods to handle units and perform error propagation in a coherent way. This module is used in a lot of places inside |astropop|, mainly in `~astropop.image.processing` and |Framedata| to ensure correct processing in terms of units and errors propagation.
-
-.. WARNING:: In the actual state, |QFloat| assumes all uncertainties are standard deviation errors, performing the standard error propagation method. The error propagation also assumes that the uncertainties are uncorelated. This is fine for our usage, but may present problems if used out of this context.
+Propagation assumes independent inputs and uses first-order derivatives.
+Covariance is not tracked, including when the same object appears in both
+operands. Near nonlinear boundaries or for large relative errors, this model
+can be inadequate. See :doc:`../concepts/uncertainties` for the scientific
+assumptions and the distinction between propagation and sample scatter.
 
 The |QFloat| Class
 ------------------
 
-The |QFloat| class stores basically 3 variables: the nominal value, the uncertainty and the physical unit. To create this class, just pass these values in the class constructor and you can access it using the proper properties.
+Supply a scalar or array of nominal values, matching uncertainties and a unit.
+Omitting uncertainty stores zeros; omitting the unit creates a dimensionless
+quantity. A zero stored uncertainty means none was supplied in that case,
+not that a measurement has infinite precision::
 
-.. code-block:: python
-
-    from astropop.math import QFloat
-    import numpy as np
-    # A physical measure of 1.000+/-0.001 meters
-    qf = QFloat(1.0, 0.001, 'm')
-    qf.nominal # the nominal value, must be 1.0
-    qf.uncertainty # the uncertainty, 0.001
-    qf.unit # astropy's physical unit, meter
-    qf # full representation.
-
-Note that, for the full representation of the quantity, the nominal and the uncertainty values are rounded to the first non-zero error decimal. Internally, the number is stored with all the computed decimal places and this rounding just appears in the string representation.
-
-.. code-block:: python
-
-    qf = QFloat(1.0583225, 0.0031495756, 'cm')
-    qf.nominal
-    qf.uncertainty
-    qf
-
-|QFloat| also can store arrays of data, using the exactly same behavior.
-
-.. code-block:: python
-
-    qf = QFloat([1.0, 2.0, 3.0], [0.1, 0.2, 0.3], 'm/s')
-    qf
-
-During the creation, you can omit |QFloat.uncertainty| or |QFloat.unit| arguments, but not the nominal value. We decided to don't make possible create empty |QFloat| instances. Omiting arguments, the code interprets it as:
-
-- |QFloat.unit|: setting `None` unit, or omiting it, the class automatically interpret it as |dimensionless_unscaled|. This means: a number without physical unit.
-
-.. code-block:: python
-
-    qf_nounit = QFloat(1.0, 0.1)
-    qf_nounit
-
-- |QFloat.uncertainty|: setting uncertainties as `None`, or omiting it, the code consider automatically the uncertainty as 0.0.
-
-.. code-block:: python
-
-    qf_nostd = QFloat(1.0, unit='m')
-    qf_nostd
-
-You also can omit both, like converting a single dimensionless number to QFloat.
-
-.. code-block:: python
-
-    qf = QFloat(1.0)
-    qf
+    >>> import numpy as np
+    >>> from astropop.math import QFloat
+    >>> q = QFloat(1.0, 0.001, 'm')
+    >>> print('Nominal:', q.nominal)
+    Nominal: 1.0
+    >>> print('Standard uncertainty:', q.uncertainty)
+    Standard uncertainty: 0.001
+    >>> print('Unit:', q.unit)
+    Unit: m
+    >>> samples = QFloat([1, 2, 3], [0.1, 0.2, 0.3], 'm/s')
+    >>> print('Array shape:', samples.shape)
+    Array shape: (3,)
+    >>> print('Default uncertainty:', QFloat(1, unit='m').uncertainty)
+    Default uncertainty: 0.0
 
 Printing and String Representation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-By default, the |QFloat| shows the numbers rounded to the first significant digit of the uncertainty (rounded). This is done to make the representation more readable. But you can set the number of significant digits to show by setting the `~astropop.math.physical.QFloat.sig_digits` property.
+``sig_digits`` controls the displayed significant digits of the uncertainty.
+Formatting rounds the displayed nominal value to the corresponding decimal
+place; it does not round the stored arrays. Inspect the properties when a
+numeric value, rather than formatted text, is required::
 
-.. code-block:: python
-
-    qf = QFloat(1.0583225, 0.0031495756, 'cm')
-    print(qf)
-    qf.sig_digits = 2
-    print(qf)
-    qf.sig_digits = 3
-    print(qf)
+    >>> formatted = QFloat(1.0583225, 0.0031495756, 'cm')
+    >>> print(formatted)
+    1.058+-0.003 cm
+    >>> formatted.sig_digits = 2
+    >>> print(formatted)
+    1.0583+-0.0031 cm
+    >>> print('Stored nominal:', formatted.nominal)
+    Stored nominal: 1.0583225
 
 Units and Conversion
 --------------------
 
-Physical units are fully handled with `~astropy.units` module. But we don't use |Quantity| class to store the files. Instead, the code perform itself the units checking and conversions. This is needed to make it compatible with uncertainties, but reduces the compatibility with |astropy| functions directly.
+``to(unit)`` and ``<< unit`` return a converted QFloat, scaling both nominal
+values and uncertainties. Compatible units are converted automatically during
+arithmetic. Incompatible conversion raises Astropy ``UnitConversionError``::
 
-Internal conversion of units for math operations are made automatically and don't need manual intervention. But manual conversions are also possible using the ``<<`` operator or `~astropop.math.physical.QFloat.to` function. Both perform the same operation: convert the actual |QFloat| to a new one, with the new unit. Both accept `~astropy.units.UnitBase` instance or string for conversion.
-
-.. code-block:: python
-
-    from astropop.math import QFloat
-    from astropy import units
-    # One kilometer with 1 cm uncertainty
-    qf = QFloat(1000, 0.01, 'm')
-    qf << 'km'
-    qf << units.cm
-
-If improper conversion (incompatible units), an `~astropy.units.UnitConversionError` is raised.
+    >>> distance = QFloat(1000, 0.01, 'm')
+    >>> kilometers = distance.to('km')
+    >>> print(f'Distance: {kilometers.nominal:.3f} +/- {kilometers.uncertainty:.5f} {kilometers.unit}')
+    Distance: 1.000 +/- 0.00001 km
+    >>> print('Centimeters:', (distance << 'cm').nominal)
+    Centimeters: 100000.0
+    >>> from astropy.units import UnitConversionError
+    >>> try:
+    ...     distance.to('s')
+    ... except UnitConversionError:
+    ...     print('Length cannot be converted to time.')
+    Length cannot be converted to time.
 
 Math Operations and Error Propagation
 -------------------------------------
 
-As the main porpouse of this module, mathematical operations using physical quantities are performed between |QFloat| and compatible classes. We ensure a basic set of math operations to work, specially all the basic and trigonometric operations needed for basic data reduction. The code also support some basic |numpy| array functions, but not all of them.
-
-The operations are performed with proper unit management and conversion (when necessary), and simplyfied uncorrelated error propagation. For a function :math:`f` of :math:`x, y, z, \cdots` variables, the error :math:`\sigma` associated to each one of them, is propagated using the common equation:
+For independent inputs, the propagated variance of a function is
 
 .. math::
-    \sigma_f = \sqrt{ \left(\frac{\partial f}{\partial x}\right)^2 \sigma_x^2 + \left(\frac{\partial f}{\partial y} \right)^2 \sigma_y^2 + \left(\frac{\partial f}{\partial z} \right)^2 \sigma_z^2 + \cdots}
 
-Astropop's derivative helpers implement this independent-input model. Covariance
-is not tracked, including when the same QFloat is used in both operands. The
-implementation is inspired by the ``uncertainties`` package but does not provide
-that package's correlation tracking. Statistical reductions use the separate
-scatter estimators described below.
+    \sigma_f^2 = \sum_i \left(\frac{\partial f}{\partial x_i}\right)^2\sigma_i^2.
+
+This approximation does not retain correlations introduced by earlier
+calculations. Statistical reductions use the separate estimators below.
 
 Supported Math Operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Since the math operations are the main reason of the |QFloat| to exist, they have a special focus in the implementation. The arithmetic operators ``+``, ``-``, ``*``, ``/``, ``//``, ``%`` and ``**``
-are implemented for |QFloat|; matrix multiplication is not. This makes possible to perform direct math operations with |QFloat|.
+The operators ``+``, ``-``, ``*``, ``/``, ``//``, ``%`` and ``**`` are supported;
+matrix multiplication is not. Addition and subtraction require compatible
+units; multiplication and division form the resulting unit::
 
-As example, to sum two |QFloat|, you just need to use the ``+`` operator.
-
-.. code-block:: python
-
-    qf1 = QFloat(1.0, 0.1, 'm')
-    qf2 = QFloat(2.0, 0.1, 'm')
-    qf1 + qf2
-
-|astropop| handles all the needed units checking and conversions and the result is dimensionality correct. For example:
-
-.. code-block:: python
-
-    qf1 = QFloat(60, 0.5, 'km')
-    qf2 = QFloat(7000, 700, 'm')
-    qf1 + qf2
-    t = QFloat(2.0, 0.1, 'h')
-    qf1/t
-
-Incorrect dimensionality in operations will raise |UnitsError|.
-
-.. code-block:: text
-
-    In [2]: qf1 = QFloat(3.0, 0.01, 'kg')
-
-    In [3]: qf2 = QFloat(5.0, 0.2, 'K')
-
-    In [4]: qf1 + qf2
-    UnitConversionError: Can only apply 'decorator' function to quantities with compatible dimensions
+    >>> first = QFloat(1, 0.1, 'm')
+    >>> second = QFloat(200, 10, 'cm')
+    >>> total = first + second
+    >>> print(f'Sum: {total.nominal:.1f} +/- {total.uncertainty:.3f} {total.unit}')
+    Sum: 3.0 +/- 0.141 m
+    >>> speed = first / QFloat(2, 0.1, 's')
+    >>> print(f'Speed: {speed.nominal:.2f} +/- {speed.uncertainty:.3f} {speed.unit}')
+    Speed: 0.50 +/- 0.056 m / s
 
 Supported Numpy Array Operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Some `Numpy array functions <https://numpy.org/doc/stable/reference/routines.array-manipulation.html>`_ are supported built-in by the |QFloat|, but not all of them. These functions are intended to perform array manipulations, like append, reshape, transpose, etc. With this compatibility you can use the Numpy functions directly with |QFloat| objects, like:
+Supported array transformations carry both nominal and uncertainty arrays.
+Do not assume NumPy view sharing: transformations returning QFloat construct
+new arrays. Shape queries return ordinary shape information::
 
-.. code-block:: python
+    >>> reshaped = np.reshape(samples, (3, 1))
+    >>> print('Reshaped nominal:', reshaped.nominal.tolist())
+    Reshaped nominal: [[1.0], [2.0], [3.0]]
+    >>> print('Reshaped errors:', reshaped.uncertainty.tolist())
+    Reshaped errors: [[0.1], [0.2], [0.3]]
 
-    qf = QFloat(np.zeros((100, 100)), np.zeros((100, 100)))
-    np.shape(qf)
-
-Array transformations returning a |QFloat| construct new nominal and uncertainty
-arrays. Do not assume NumPy's view-sharing behavior: both arrays contribute to
-allocation costs. Shape queries return ordinary shape information. Measure
-runtime and peak memory for your own array sizes before choosing a workflow.
-
-The current Numpy array functions supported for this class are:
-
-- `~numpy.append`
-- `~numpy.around`
-- `~numpy.clip`
-- `~numpy.delete`
-- `~numpy.expand_dims`
-- `~numpy.flip`
-- `~numpy.fliplr`
-- `~numpy.flipud`
-- `~numpy.insert`
-- `~numpy.moveaxis`
-- `~numpy.ravel`
-- `~numpy.repeat`
-- `~numpy.reshape`
-- `~numpy.resize`
-- `~numpy.roll`
-- `~numpy.rollaxis`
-- `~numpy.round`
-- `~numpy.rot90`
-- `~numpy.shape`
-- `~numpy.size`
-- `~numpy.squeeze`
-- `~numpy.swapaxes`
-- `~numpy.take`
-- `~numpy.tile`
-- `~numpy.transpose`
+See the :ref:`NumPy support inventory <qfloat-numpy-support>` for the supported
+functions. Unsupported NumPy operations must be handled explicitly by the
+application; extracting nominal arrays also discards propagation and units.
 
 Statistical reductions
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -314,160 +240,75 @@ functions require an angular unit; convert degrees or radians explicitly::
     >>> print(f'sin(30 deg): {sine.nominal:.3f} +/- {sine.uncertainty:.3f}')
     sin(30 deg): 0.500 +/- 0.015
 
-The current supported ufuncs are:
-
-- `~numpy.absolute` (``numpy.abs``)
-- `~numpy.add`
-- `~numpy.arccos`
-- `~numpy.arccosh`
-- `~numpy.arcsin`
-- `~numpy.arcsinh`
-- `~numpy.arctan`
-- `~numpy.arctanh`
-- `~numpy.cos`
-- `~numpy.cosh`
-- `~numpy.deg2rad`
-- `~numpy.degrees`
-- `~numpy.divide` (`~numpy.true_divide`)
-- `~numpy.exp`
-- `~numpy.exp2`
-- `~numpy.expm1`
-- `~numpy.floor_divide`
-- `~numpy.hypot`
-- `~numpy.log`
-- `~numpy.log10`
-- `~numpy.log1p`
-- `~numpy.log2`
-- `~numpy.negative`
-- `~numpy.positive`
-- `~numpy.power` (`~numpy.float_power`)
-- `~numpy.rad2deg`
-- `~numpy.radians`
-- `~numpy.remainder` (`~numpy.mod`)
-- `~numpy.sin`
-- `~numpy.sinh`
-- `~numpy.square`
-- `~numpy.sqrt`
-- `~numpy.subtract`
-- `~numpy.tan`
-- `~numpy.tanh`
-
-All the units checking is automatically performed by |astropop|. In fact, most of these functions just wrap standart operations of |QFloat|, since this class perform the operations in a way very similar to the |ufunc|.
+See the :ref:`NumPy support inventory <qfloat-numpy-support>` for all supported
+ufunc names.
 
 Trigonometric Math
 ^^^^^^^^^^^^^^^^^^
 
-Direct trigonometric and hyperbolic functions require angles explicitly in
-``deg`` or ``rad``. Dimensionless values and other angular units are rejected
-with |UnitsError|; convert angular values to degrees or radians first. Results
-are dimensionless. Inverse functions instead require dimensionless unscaled
-input and return radians. These are the implemented conventions, including
-for hyperbolic functions.
+Direct trigonometric and hyperbolic handlers require angles in ``deg`` or
+``rad`` and return dimensionless values. Other angular units must first be
+converted. Inverse handlers require dimensionless unscaled inputs and return
+radians. These are the implemented conventions, including the hyperbolic
+functions::
 
-To avoid an additional module containing trigonometric functions inside |astropop|, these operations are performed using the |ufunc| described earlier. The main difference here is the unit checking performed by |astropop|.
-
-.. code-block:: python
-
-    qf = QFloat(30, 0.1, 'deg')
-    np.cos(qf)
-    np.sin(qf)
-
-For trionometric (and hyperbolic) functions, like `~numpy.sin` and `~numpy.sinh`, only angle are accepted. So, only |QFloat| with ``astropy.units.deg`` or ``astropy.units.rad`` will not raise |UnitsError|. Also, all these functions will result in |dimensionless_unscaled| values.
-
-For inverse trigonometric functions, like `~numpy.arcsin`, the inverse happens. The input must be a |dimensionless_unscaled| |QFloat|, and output will be in units of ``astropy.units.rad``.
-
-.. code-block:: python
-
-    qf = QFloat(0.5, 0.01)
-    np.arcsin(qf)
+    >>> inverse = np.arcsin(QFloat(0.5, 0.01))
+    >>> print(f'Angle: {inverse.nominal:.3f} +/- {inverse.uncertainty:.3f} {inverse.unit}')
+    Angle: 0.524 +/- 0.012 rad
 
 Comparisons Notes
 -----------------
 
-Comparing two numbers with units and uncertainties is an ambiguous thing. There are multiple ways to consider two numbers equal or different, or even greater or smaller. Due to this, we had to assume some conventions in the processing.
+Choose the comparison according to the question: exact stored measurements,
+interval overlap, or ordering of nominal values. None is a statistical
+hypothesis test.
 
 Equality
 ^^^^^^^^
 
-We consider two numbers equal if they have the same nominal and standard deviation values in the same unit. This means, they are exactly equal in everything, meaning a more programing-like approach. Like:
+``==`` compares all nominal values and uncertainties after unit conversion and
+returns one Boolean for the complete object, including arrays. Incompatible
+units compare unequal. ``!=`` negates that result::
 
-.. code-block:: python
-
-    # 1.0+/-0.1 meters
-    qf1 = QFloat(1.0, 0.1, 'm')
-    # same as above, but in cm
-    qf2 = QFloat(100, 10, 'cm')
-    qf1 == qf2
-
-So, the simple fact that two numers have different error bars imply that they are different.
-
-.. code-block:: python
-
-    # 1.0+/-0.2 meters. Same number, with different error
-    qf3 = QFloat(1.0, 0.2, 'm')
-    qf1 == qf3
-    # 0.5+/-0.1 meters
-    qf4 = QFloat(0.5, 0.1, 'm')
-    qf1 == qf4
-
-Of course, the different operator works in the exactly same way.
-
-.. code-block:: python
-
-    qf1 != qf2
-    qf1 != qf3
-    qf1 != qf4
-
-When comparing numbers with same dimension units, the code automatically converts if to compare. But, if incompatible units (different dimensions) are compared, they automatically are considered different. In physical terms, 1 second is different from 1 meter.
-
-.. code-block:: python
-
-    # Same nominal values of qf1, but in seconds
-    qf5 = (1.0, 0.1, 's')
-    qf1 == qf5
-    qf1 != qf5
+    >>> first = QFloat(1, 0.1, 'm')
+    >>> equivalent = QFloat(100, 10, 'cm')
+    >>> different_error = QFloat(1, 0.2, 'm')
+    >>> print('Equivalent measurements:', first == equivalent)
+    Equivalent measurements: True
+    >>> print('Different uncertainty:', first == different_error)
+    Different uncertainty: False
+    >>> print('Different dimension:', first == QFloat(1, 0.1, 's'))
+    Different dimension: False
 
 Equality considering errors
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To check physical equality, which consider if the numbers are equal inside the error bars, we created the `~astropop.math.physical.equal_within_errors` method. In this method we assume two numbers (:math:`a` and :math:`b`) are equal if their different is smaller than the sum of the errors (:math:`\sigma_a` and :math:`\sigma_b`).
+``equal_within_errors`` checks whether standard-uncertainty intervals overlap:
 
 .. math::
-    | a - b | <= \sigma_a + \sigma_b
 
-In other words, these two numbers are equal if they intercept each other, considering error bars. Or, within the errors, they have ate least one value in common.
+    |a-b| \leq \sigma_a + \sigma_b.
 
-So, for a proper physical check of equalities, use `~astropop.math.physical.equal_within_errors` instead of ``==`` operator. For example:
+It returns an elementwise result for arrays and False for incompatible units.
+This interval rule uses the sum of errors, not the quadrature uncertainty of a
+difference; it does not establish that two measurements have the same physical
+value::
 
-.. code-block:: python
-
-    from astropop.math.physical import QFloat, equal_within_errors
-    qf1 = QFloat(1.1, 0.1, 'm')
-    qf2 = QFloat(1.15, 0.05, 'm')
-    equal_within_errors(qf1, qf2)
+    >>> from astropop.math.physical import equal_within_errors
+    >>> print('Intervals overlap:', equal_within_errors(first, QFloat(1.15, 0.1, 'm')))
+    Intervals overlap: True
 
 Inequalities
 ^^^^^^^^^^^^
 
-Inequality handling is more ambiguous then equality to define. To avoid a complex API and keep the things in a coherent way, we perform greater, greater or equal, smaller and smaller or equal operations just comparing the nominal values of the numbers. For example:
+``<``, ``<=``, ``>`` and ``>=`` compare nominal values after unit conversion,
+ignoring uncertainties. Array inputs yield elementwise comparisons.
+Incompatible units raise a units error::
 
-.. code-block:: python
-
-    qf1 = QFloat(1.1, 0.1, 'm')
-    qf2 = QFloat(1.15, 0.05, 'm')
-    qf1 < qf2
-    qf2 >= qf1
-    qf2 < qf1
-
-These comparisons ignore uncertainties but check and convert physical units. So:
-
-.. code-block:: python
-
-    qf1 = QFloat(1.0, 0.1, 'm')
-    qf2 = QFloat(50, 10, 'cm')
-    qf1 >= qf2
-
-These comparisons can only be performed by same dimension measurements. If incompatible units are used, |UnitsError| is raised.
+    >>> print('Nominal ordering:', first < QFloat(115, 5, 'cm'))
+    Nominal ordering: True
+    >>> print('Array ordering:', (samples > QFloat(1.5, 0, 'm/s')).tolist())
+    Array ordering: [False, True, True]
 
 Physical Quantities API
 -----------------------
