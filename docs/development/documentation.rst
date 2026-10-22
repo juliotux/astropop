@@ -84,10 +84,10 @@ and expected results and use local temporary data.
   require a separate plotting script.
 * Use an external Python script only when the plot needs functions defined in
   another file, such as the shared workflow/figure helpers. For that case,
-  ``plot:: _ext/guide_figures.py plot_registration`` calls the shared function;
-  the ``guide_figures`` extension records its file as a source dependency.
-  Existing shared task diagnostics use ``_ext/task_figures.py`` with the same
-  dependency tracking. Keep small self-contained figures inline instead.
+  ``plot:: _ext/workflow_figures.py plot_polarimetry`` replays the tutorial
+  and calls the same drawing function used by its notebook. The extension
+  tracks those shared files as build dependencies. Keep self-contained task
+  diagnostics inline instead.
 * State in each caption whether a WCS, noise model or calibration frame is
   supplied rather than estimated. Use small deterministic inputs and the
   public operations being explained, whether the code is inline or shared.

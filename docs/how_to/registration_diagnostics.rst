@@ -69,10 +69,51 @@ subtracting a translation alone.
 Inspect which region the transform aligns
 -----------------------------------------
 
-.. plot:: _ext/guide_figures.py plot_registration
-    :include-source: False
+.. plot::
+    :include-source: false
     :alt: Reference image with a central window, and central and edge residuals for full-image and windowed registration against the middle frame.
     :caption: The cyan box selects the faint central stars. Full-image correlation follows the bright stationary feature, while windowed correlation follows the central drift. Both residual curves are relative to frame 1.
+
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    from matplotlib.colors import LogNorm
+    from matplotlib.patches import Rectangle
+    from astropop.framedata import FrameData
+    from astropop.image.register import register_framedata_list
+
+    y, x = np.indices((128, 128))
+    positions = np.array([[55., 50.], [75., 70.], [10., 10.]])
+    drift = np.array([[-2., -1.], [0., 0.], [2., 1.]])
+    frames = []
+    for dx, dy in drift:
+        image = np.zeros(x.shape)
+        for sx, sy in positions[:2] + [dx, dy]:
+            image += 100 * np.exp(-((x - sx)**2 + (y - sy)**2) / 2)
+        image += 1e6 * np.exp(-((x - 10)**2 + (y - 10)**2) / 2)
+        frames.append(FrameData(image))
+    fig, axes = plt.subplots(1, 3, figsize=(10.5, 3.4), layout='constrained')
+    axes[0].imshow(np.maximum(frames[1].data, 1), origin='lower', cmap='magma',
+                    norm=LogNorm(vmin=1, vmax=1e6))
+    axes[0].add_patch(Rectangle((34.5, 34.5), 55, 55, fill=False,
+                                edgecolor='cyan', linewidth=1.5))
+    axes[0].set(title='Middle reference and window', xlabel='x (pixel)', ylabel='y (pixel)')
+    observed = np.broadcast_to(positions, (3, 3, 2)).copy()
+    observed[:, :2] += drift[:, None, :]
+    for name, window, color in [('Full image', None, 'C0'),
+                                ('Central window', (slice(35, 90), slice(35, 90)), 'C1')]:
+        registered = register_framedata_list(frames, ref_image=1, window=window)
+        shifts = np.array([[frame.meta['astropop registration_shift_x'],
+                            frame.meta['astropop registration_shift_y']]
+                           for frame in registered])
+        residual = np.linalg.norm(observed - shifts[:, None, :] - positions, axis=2)
+        for ax, values in zip(axes[1:], [residual[:, :2].max(axis=1), residual[:, 2]]):
+            ax.plot(np.arange(3), values, 'o-', color=color, label=name)
+    for ax, title in zip(axes[1:], ['Largest central-star residual', 'Edge-feature residual']):
+        ax.set(title=title, xlabel='Frame index (reference = 1)',
+                ylabel='Position residual (pixel)', xticks=[0, 1, 2], ylim=(-0.1, 2.6))
+        ax.grid(alpha=0.2)
+    axes[1].legend(fontsize='small')
 
 The reference image uses a logarithmic intensity stretch to reveal the faint
 central stars; correlation still operates on the original pixel values.

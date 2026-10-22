@@ -116,7 +116,7 @@ optical distortion. Inspect stars across the field as in
 :doc:`../how_to/registration_diagnostics`.
 
 .. plot:: _ext/workflow_figures.py plot_science
-    :include-source: False
+    :include-source: false
     :alt: Raw exposure, bias/flat-corrected exposure and registered stack using a common intensity stretch.
     :caption: The same field before and after calibration and combination. Inspect background structure, stellar shapes and edge behavior, not only the appearance of the brightest star.
 

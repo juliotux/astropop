@@ -71,10 +71,57 @@ is independently nearest-neighbor within ``limit_angle``; it preserves unmatched
 rows and permits repeated reference sources. Neither astrometric proximity nor
 a shared band name alone establishes a valid photometric zero-point reference.
 
-.. plot:: _ext/task_figures.py plot_catalog_epoch
-    :include-source: False
+.. plot::
+    :include-source: false
     :alt: A simulated moving star travels beyond its original one-arcsecond match circle between 2015 and 2025. Its separation from the observation drops below the match radius when the catalog is propagated to 2025.
     :caption: A synthetic source with proper motion of 1000 mas/year in RA*cos(Dec) and 200 mas/year in Dec. The observation is offset by about 0.18 arcsec from its predicted 2025 position. SourcesCatalog.match_objects rejects it without an observation epoch and accepts it with obstime set to 2025; no online query is made.
+
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    from astropy import units as u
+    from astropy.coordinates import SkyCoord
+    from astropy.time import Time
+    from matplotlib.patches import Circle
+    from astropop.catalogs import SourcesCatalog
+
+    reference = SourcesCatalog(ids=['Moving star'], ra=[10.] * u.deg, dec=[20.] * u.deg,
+                               pm_ra_cosdec=[1000.] * u.mas / u.yr,
+                               pm_dec=[200.] * u.mas / u.yr, distance=[100.] * u.pc,
+                               radial_velocity=[0.] * u.km / u.s,
+                               obstime=Time(2015., format='jyear'))
+    years = np.arange(2015, 2026)
+    predicted = reference.get_coordinates(Time(years, format='jyear'))
+    # Plot only positions; each propagated coordinate has a different epoch.
+    track = SkyCoord(ra=predicted.ra, dec=predicted.dec)
+    start = track[0]
+    observed = track[-1].spherical_offsets_by(0.15 * u.arcsec, -0.1 * u.arcsec)
+    east, north = start.spherical_offsets_to(track)
+    dx, dy = start.spherical_offsets_to(observed)
+    fig, axes = plt.subplots(1, 2, figsize=(9, 3.9), layout='constrained')
+    axes[0].plot(east.arcsec, north.arcsec, '.-', color='0.6', label='Catalog motion model')
+    for index, color, year in [(0, 'C0', 2015), (-1, 'C1', 2025)]:
+        axes[0].add_patch(Circle((east.arcsec[index], north.arcsec[index]), 1,
+                                 fill=False, color=color, label=f'1 arcsec at {year}'))
+    axes[0].plot(dx.arcsec, dy.arcsec, 'k*', markersize=12, label='Observed in 2025')
+    axes[0].set(aspect='equal', xlim=(-1.5, 12), ylim=(-2, 5),
+                xlabel='East offset (arcsec)', ylabel='North offset (arcsec)',
+                title='The same source changes position')
+    axes[0].legend(fontsize='small', loc='lower right')
+    axes[1].plot(years, observed.separation(track).arcsec, 'ko-')
+    axes[1].axhline(1, color='C3', linestyle='--', label='Match radius: 1 arcsec')
+    for year in [None, 2025]:
+        epoch = None if year is None else Time(year, format='jyear')
+        matched = reference.match_objects([observed.ra.deg], [observed.dec.deg],
+                                           '1 arcsec', obstime=epoch)
+        accepted = matched.sources_id()[0] != ''
+        label = f'{"No epoch" if year is None else year}: {"matched" if accepted else "unmatched"}'
+        axes[1].plot([], [], ' ', label=label)
+    axes[1].set(xlabel='Epoch used for catalog coordinates (year)',
+                ylabel='Separation from observation (arcsec)', title='Propagate before matching',
+                xticks=[2015, 2020, 2025])
+    axes[1].legend(fontsize='small')
+    axes[1].grid(alpha=0.2)
 
 Increasing the match radius to span ten years of motion would also accept a
 larger neighborhood of unrelated sources. Propagate coordinates using available

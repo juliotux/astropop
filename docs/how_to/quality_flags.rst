@@ -86,10 +86,44 @@ needed::
     restored.flags[0, 0]: 130
     restored.flags[0, 0] & F.SATURATED.value: 0
 
-.. plot:: _ext/task_figures.py plot_quality_flags
-    :include-source: False
+.. plot::
+    :include-source: false
     :alt: Six pairs of pixels show nominal values and flag integers through arithmetic, convenience calibration, explicit flag restoration, combination and FITS reload. Red crosses mark Boolean masks.
     :caption: The two pixels above, followed through the actual APIs. Red crosses mark masked pixels; their values are still computed by arithmetic. Restoring the detector policy lets combination replace the masked sample with 90 ADU. FITS reload of the restored frame retains its mask but changes reason bits from 18 (MASKED | SATURATED) to 130 (MASKED | UNSPECIFIED).
+
+    import matplotlib.pyplot as plt
+    import numpy as np
+    from pathlib import Path
+    from tempfile import TemporaryDirectory
+
+    from astropy import units as u
+    from astropop.framedata import FrameData, PixelMaskFlags as F, read_framedata
+    from astropop.image import imarith, imcombine
+    from astropop.image.processing import subtract_bias
+
+    raw = FrameData([[110., 120.]], unit='adu')
+    raw.add_flags(F.MASKED | F.SATURATED, where=(0, 0))
+    arithmetic = imarith(raw, 10 * u.adu, '-', merge_flags='or')
+    cleared = subtract_bias(raw, FrameData([[10., 10.]], unit='adu'))
+    restored = cleared.copy()
+    restored.flags = raw.flags.copy()
+    combined = imcombine([restored, FrameData([[90., 110.]], unit='adu')], method='mean')
+    with TemporaryDirectory() as directory:
+        filename = Path(directory) / 'quality.fits'
+        restored.write(filename)
+        imported = read_framedata(filename)
+    stages = [(raw, 'Raw'), (arithmetic, "imarith: merge_flags='or'"),
+              (cleared, 'subtract_bias: cleared flags'), (restored, 'Restore detector flags'),
+              (combined, 'Combine with usable exposure'), (imported, 'FITS reload of restored frame')]
+    fig, axes = plt.subplots(2, 3, figsize=(10, 4.6), layout='constrained')
+    for ax, (frame, title) in zip(axes.flat, stages):
+        ax.imshow(frame.data, cmap='Blues', vmin=70, vmax=150, origin='lower')
+        for column in range(2):
+            ax.text(column, 0, f'{frame.data[0, column]:.0f} ADU\nflags: {frame.flags[0, column]}',
+                    ha='center', va='center', fontsize=10)
+        masked = np.flatnonzero(frame.mask[0])
+        ax.plot(masked, np.full(len(masked), 0.33), 'rx', markersize=9, markeredgewidth=2)
+        ax.set(title=title, xticks=[0, 1], yticks=[], xlabel='Column x (pixel)')
 
 The FITS panel reloads the restored single exposure, rather than the combined
 image. The zero flags on the combined result do not mean the original samples

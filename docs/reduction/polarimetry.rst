@@ -456,22 +456,29 @@ The `~astropop.polarimetry.StokesParameters.model` property returns a callable
 with the fitted parameters fixed. Its argument is the retarder position
 ``psi``; supply angular units when the stored zero angle carries units.
 
-.. code-block:: python
+.. plot::
+    :include-source: false
+    :alt: Quarter-wave modulation values with measurement error bars and a model evaluated through StokesParameters.model.
+    :caption: A seeded illustrative quarter-wave fit evaluated using result.model with angular units. The nominal modulation has added Gaussian noise; the supplied flux errors follow a separate square-root recipe.
 
-  import matplotlib.pyplot as plt
+    import matplotlib.pyplot as plt
+    import numpy as np
+    from astropy import units as u
+    from astropop.polarimetry import SLSDualBeamPolarimetry, quarterwave_model
 
-  plt.figure(figsize=(6, 4));
-  plt.errorbar(result.psi.nominal, result.zi.nominal,
-               yerr=result.zi.std_dev, fmt='o', label='data');
-  line = np.linspace(0, 360, 300);
-  model = result.model(line*result.psi.unit).nominal
-  plt.plot(line, model, '--', label='model');
-  plt.xlabel(r'$\psi$');
-  plt.ylabel(r'$Z_i$');
-  plt.title('Measured modulation and fitted model');
-  plt.legend();
-  plt.tight_layout();
-  plt.show()
+    rng = np.random.default_rng(42)
+    psi = np.arange(0, 360, 22.5)
+    zi = quarterwave_model(psi, 0.05, -0.07, 0.08) + rng.normal(0, 0.005, len(psi))
+    ordinary, extraordinary = 1e7 * (1 + zi) / 2, 1e7 * (1 - zi) / 2
+    result = SLSDualBeamPolarimetry('quarterwave', zero=0).compute(
+        psi, ordinary, extraordinary, np.sqrt(ordinary), np.sqrt(extraordinary))
+    line = np.linspace(0, 360, 300)
+    prediction = result.model(line * u.deg).nominal
+    fig, ax = plt.subplots(figsize=(6, 3.6), layout='constrained')
+    ax.errorbar(psi, result.zi.nominal, yerr=result.zi.uncertainty, fmt='o', label='Measurements')
+    ax.plot(line, prediction, '--', label='result.model')
+    ax.set(xlabel='Retarder angle (deg)', ylabel='Normalized beam difference')
+    ax.legend()
 
 
 Low linear polarization and angle precision

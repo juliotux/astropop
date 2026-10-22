@@ -119,7 +119,7 @@ The combined image is a mean on a 30-second exposure's ADU scale. Compute
     Check-star residual: +0.009 mag
 
 .. plot:: _ext/workflow_figures.py plot_photometric_calibration
-    :include-source: False
+    :include-source: false
     :alt: Individual standard-star zero points and calibrated-minus-reference residuals versus reference magnitude, with a separate check star.
     :caption: The fitted zero point is compared with individual standards and an independent check star. The injected zero point is 25 mag; finite apertures and noise prevent exact recovery.
 

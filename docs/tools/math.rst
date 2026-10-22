@@ -66,10 +66,40 @@ integrals or area-weighted radial integrals equal ``flux``. A finite sampled
 cutout need not sum to a model's flux parameter. Model and equation classes
 expose the corresponding FWHM relations.
 
-.. plot:: _ext/task_figures.py plot_psf_profiles
-    :include-source: False
+.. plot::
+    :include-source: false
     :alt: Gaussian and Moffat circular 2D profiles with equal total flux and FWHM show different peak heights and extended Moffat wings; enclosed flux rises more slowly for the Moffat model.
     :caption: Both profiles have integrated flux 1000, FWHM 4 pixels and zero sky; Moffat power is 2.5. The dotted line marks half the FWHM, where each profile reaches half its own peak. Right: analytic continuous 2D integrals, not sums of pixel-center samples. The Moffat wings leave more light outside a finite aperture.
+
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    from astropop.math.models import PSFGaussian2D, PSFMoffat2D
+
+    fwhm, flux, power = 4., 1000., 2.5
+    sigma = fwhm / (2 * np.sqrt(2 * np.log(2)))
+    width = fwhm / (2 * np.sqrt(2**(1 / power) - 1))
+    radius = np.linspace(0, 5 * fwhm, 1500)
+    gaussian = PSFGaussian2D(flux=flux, sigma_x=sigma, sigma_y=sigma)
+    moffat = PSFMoffat2D(flux=flux, width=width, power=power)
+    # Evaluate the numerical profiles directly. Sphinx resolves model type
+    # annotations for display, which can alter Astropy's inferred input units.
+    profiles = [model.evaluate(radius, np.zeros_like(radius), *model.parameters)
+                for model in (gaussian, moffat)]
+    fractions = [1 - np.exp(-radius**2 / (2 * sigma**2)),
+                 1 - (1 + (radius / width)**2)**(1 - power)]
+    fig, axes = plt.subplots(1, 2, figsize=(9, 3.6), layout='constrained')
+    for name, profile, fraction in zip(('Gaussian', 'Moffat'), profiles, fractions):
+        axes[0].semilogy(radius / fwhm, profile, label=name)
+        axes[1].plot(radius / fwhm, fraction, label=name)
+    axes[0].set(xlabel='Radius / FWHM', ylabel='Surface brightness (flux / pixel²)',
+                title='Equal integrated flux; different peaks', ylim=(0.01, 100))
+    axes[1].set(xlabel='Aperture radius / FWHM', ylabel='Enclosed flux / total flux',
+                title='Continuous circular-aperture integral', ylim=(0, 1.03))
+    for ax in axes:
+        ax.axvline(0.5, color='0.5', linestyle=':', linewidth=1)
+        ax.grid(alpha=0.2)
+        ax.legend()
 
 Short identifiers
 -----------------

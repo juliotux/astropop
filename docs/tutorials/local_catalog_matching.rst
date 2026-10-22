@@ -59,10 +59,43 @@ one, before deciding whether the search radius is appropriate::
     >>> print('Nearest separations (arcsec):', separation.arcsec.round(2).tolist())
     Nearest separations (arcsec): [0.22, 0.45, 2.06]
 
-.. plot:: _ext/guide_figures.py plot_catalog_matching
-    :include-source: False
+.. plot::
+    :include-source: false
     :alt: Two catalog neighborhoods with one-arcsecond circles; two input positions fall inside and one outside the radius.
     :caption: Local spherical offsets from A and B. Blue circles are accepted inputs, the red cross is unmatched, and dashed circles show the search radius. East increases to the right in this offset diagram.
+
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    from astropy import units as u
+    from astropy.coordinates import SkyCoord
+    from matplotlib.patches import Circle
+    from astropop.catalogs import SourcesCatalog
+
+    catalog = SourcesCatalog(ids=['A', 'B'], ra=[10., 11.], dec=[20., 21.], unit='deg')
+    origins = SkyCoord([11., 10., 10.], [21., 20., 20.], unit='deg')
+    targets = origins.spherical_offsets_by([0.2, -0.4, 2.] * u.arcsec,
+                                           [0.1, 0.2, -0.5] * u.arcsec)
+    matched = catalog.match_objects(targets.ra.deg, targets.dec.deg, '1 arcsec')
+    fig, axes = plt.subplots(1, 2, figsize=(8, 3.8), layout='constrained',
+                             sharex=True, sharey=True)
+    for ax, index, rows in zip(axes, [0, 1], [[1, 2], [0]]):
+        center = catalog.get_coordinates()[index]
+        east, north = center.spherical_offsets_to(targets[rows])
+        ax.add_patch(Circle((0, 0), 1, fill=False, linestyle='--', color='0.4'))
+        ax.plot(0, 0, '*', color='black', markersize=12, label='Catalog position')
+        for row, dx, dy in zip(rows, east.arcsec, north.arcsec):
+            accepted = matched.sources_id()[row] != ''
+            ax.plot(dx, dy, 'o' if accepted else 'x', color='C0' if accepted else 'C3',
+                     markersize=8)
+            ax.annotate(f'Input {row + 1}', (dx, dy), xytext=(5, 7),
+                         textcoords='offset points', fontsize='small')
+        ax.set(title=f'Neighborhood of {catalog.sources_id()[index]}',
+                xlabel='East offset (arcsec)', xlim=(-1.5, 2.7), ylim=(-1.4, 1.4),
+                aspect='equal')
+        ax.grid(alpha=0.2)
+    axes[0].set_ylabel('North offset (arcsec)')
+    axes[0].legend(loc='lower right', fontsize='small')
 
 Each panel has its own catalog position at the origin; it is not a full-field
 sky chart. A radius accepts a positional association, not proof of source

@@ -75,7 +75,7 @@ Inspect response and save
 --------------------------
 
 .. plot:: _ext/workflow_figures.py plot_flat
-    :include-source: False
+    :include-source: false
     :alt: One bias-subtracted flat in ADU and the dimensionless normalized master flat, showing the same gradient and dust shadow.
     :caption: Exposure brightness is removed; the detector response gradient and dust shadow remain so they can correct the science images.
 

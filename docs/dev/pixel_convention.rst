@@ -97,7 +97,37 @@ origin. See :doc:`../reduction/registering` for the transform and shift sign
 conventions. A crop changes the coordinate origin, so crop coordinates and WCS
 together rather than applying a full-image WCS to unadjusted cutout positions.
 
-.. plot:: _ext/task_figures.py plot_pixel_coordinates
-    :include-source: False
+.. plot::
+    :include-source: false
     :alt: A three-row, five-column image labeled with zero-based and one-based pixel centers, followed by its two-row, three-column crop with a new local origin.
     :caption: The red rectangle selects rows 1 to 2 and columns 2 to 4 in NumPy indexing. The crop starts at full-image (x, y) = (2, 1), so subtract that offset from source positions when moving into the crop.
+
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    from matplotlib.patches import Rectangle
+
+    image = np.arange(15).reshape(3, 5)
+    crop = image[1:3, 2:5]
+    fig, axes = plt.subplots(1, 3, figsize=(11, 3.5), layout='constrained')
+    panels = [(image, 0, 'NumPy centers: data[y, x]'),
+              (image, 1, 'FITS centers: CRPIX convention'),
+              (crop, 0, 'Crop: data[1:3, 2:5]')]
+    for ax, (pixels, origin, title) in zip(axes, panels):
+        rows, cols = pixels.shape
+        ax.imshow(pixels, origin='lower', cmap='Blues', vmin=0, vmax=20,
+                  extent=(origin - 0.5, cols + origin - 0.5,
+                          origin - 0.5, rows + origin - 0.5))
+        for y, x in np.ndindex(pixels.shape):
+            ax.text(x + origin, y + origin, f'({x + origin}, {y + origin})',
+                    ha='center', va='center', fontsize=9)
+        ax.set(xticks=np.arange(cols) + origin, yticks=np.arange(rows) + origin,
+               xlabel='Column x', ylabel='Row y', title=title)
+        ax.set_xticks(np.arange(cols + 1) + origin - 0.5, minor=True)
+        ax.set_yticks(np.arange(rows + 1) + origin - 0.5, minor=True)
+        ax.grid(which='minor', color='white', linewidth=1.5)
+        ax.tick_params(which='minor', length=0)
+    axes[0].add_patch(Rectangle((1.5, 0.5), 3, 2, fill=False, ec='C3', lw=2))
+    axes[1].add_patch(Rectangle((2.5, 1.5), 3, 2, fill=False, ec='C3', lw=2))
+    axes[2].set_xlabel('Column x\nFull-image (2, 1) becomes crop (0, 0)',
+                       fontsize=9)

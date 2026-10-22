@@ -304,6 +304,7 @@ def setup(app: Sphinx) -> dict[str, bool]:
         """Invalidate pages when either plotting or example-replay code changes."""
         if 'plot:: _ext/workflow_figures.py' in source[0]:
             app.env.note_dependency(__file__)
+            app.env.note_dependency(str(Path(__file__).with_name('guide_figures.py')))
             app.env.note_dependency(str(Path(__file__).with_name('tutorial_notebooks.py')))
             app.env.note_dependency(str(Path(__file__).with_name('tutorial_data.py')))
             app.env.note_dependency(str(Path(__file__).with_name('workflow_data.py')))

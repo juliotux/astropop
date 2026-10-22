@@ -67,10 +67,39 @@ array. Correlations between operands are not tracked, including when the same
 frame is passed twice. CCDData variance and inverse-variance uncertainties are
 converted to standard deviations before propagation.
 
-.. plot:: _ext/task_figures.py plot_arithmetic
-    :include-source: False
+.. plot::
+    :include-source: false
     :alt: Image-row values before and after bias and flat correction, with the propagated standard uncertainty for each stage below.
     :caption: Subtracting an uncertain bias increases the variance even as it lowers the signal. Dividing by an uncertain flat adds a signal-dependent error, most visible at the star. These noiseless nominal profiles use supplied independent errors of 4 ADU for the raw pixels, 2 ADU for the bias and 0.02 for the dimensionless flat.
+
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    from astropop.framedata import FrameData
+    from astropop.image import imarith
+
+    x = np.arange(80)
+    signal = 50 + 300 * np.exp(-0.5 * ((x - 42) / 6)**2)
+    response = 0.8 + 0.4 * x / (len(x) - 1)
+    raw = FrameData((100 + response * signal)[None, :], unit='adu', uncertainty=4.)
+    bias = FrameData(np.full(raw.shape, 100.), unit='adu', uncertainty=2.)
+    flat = FrameData(response[None, :], uncertainty=0.02)
+    subtracted = imarith(raw, bias, '-')
+    corrected = imarith(subtracted, flat, '/')
+    fig, axes = plt.subplots(2, 1, sharex=True, figsize=(8, 5.3),
+                             layout='constrained')
+    for frame, name, color in [(raw, 'Raw', '0.5'),
+                                (subtracted, 'Bias subtracted', 'C0'),
+                                (corrected, 'Flat corrected', 'C1')]:
+        axes[0].plot(x, frame.data[0], color=color, label=name)
+        axes[1].plot(x, frame.uncertainty[0], color=color)
+    axes[0].plot(x, signal, 'k--', linewidth=1, label='Injected signal')
+    axes[0].set(ylabel='Nominal value (ADU)', title='Arithmetic on one image row')
+    axes[0].legend(fontsize='small')
+    axes[1].set(xlabel='Column x (pixel)', ylabel='Standard uncertainty (ADU)',
+                title='Supplied errors propagated as independent inputs')
+    for ax in axes:
+        ax.grid(alpha=0.2)
 
 Compare nominal values and uncertainties separately: removing an instrumental
 offset does not remove its calibration uncertainty. This diagram uses known

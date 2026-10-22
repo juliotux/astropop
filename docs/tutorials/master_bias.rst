@@ -57,7 +57,7 @@ Inspect the spatial structure and save
 ---------------------------------------
 
 .. plot:: _ext/workflow_figures.py plot_bias
-    :include-source: False
+    :include-source: false
     :alt: Master bias image and column profiles of an individual bias exposure and the master bias.
     :caption: Combining preserves the additive detector structure while smoothing the column profile's random noise. The offset remains spatially dependent.
 

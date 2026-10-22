@@ -101,7 +101,7 @@ fit so their residuals provide a separate check. Pixel positions use zero-based
     Check-star RMS: 0.004 arcsec
 
 .. plot:: _ext/workflow_figures.py plot_astrometry
-    :include-source: False
+    :include-source: false
     :alt: Reference positions across the image and east/north WCS residuals, distinguishing fit stars from withheld check stars.
     :caption: Small fit residuals alone are insufficient; compare the withheld stars and look for spatial structure. This synthetic field follows a TAN projection without optical distortion.
 

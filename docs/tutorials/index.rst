@@ -6,10 +6,46 @@ light curve, or dual-beam polarimetry. The nine notebook companions share an
 archive, but do not all process the same observations. Each notebook is generated
 from its tutorial's numerical examples and includes printed results and figures.
 
-.. plot:: _ext/task_figures.py plot_tutorial_paths
-    :include-source: False
+.. plot::
+    :include-source: false
     :alt: Bias and flat masters feed the science stack and a separate time series. Stack photometry leads to astrometric and photometric calibration. Paired beam measurements feed polarimetry independently.
     :caption: Follow the arrows for data dependencies. The light curve uses a separate twelve-exposure sequence; polarimetry starts from paired-beam tables, independent of the imaging stack.
+
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    fig, ax = plt.subplots(figsize=(12, 4.8), layout='constrained')
+    nodes = {
+        'bias': (0, 3.2, 'Master\nbias', 'C0'),
+        'flat': (2, 3.2, 'Master\nflat', 'C0'),
+        'stack': (4, 3.2, 'Calibrate +\nregister + stack', 'C0'),
+        'measure': (6, 3.2, 'Stack\nphotometry', 'C0'),
+        'wcs': (8, 3.2, 'Fit\nastrometry', 'C0'),
+        'magnitude': (10, 3.2, 'Calibrate\nmagnitudes', 'C0'),
+        'series': (4, 1.6, 'Calibrate separate\ntime-series images', 'C1'),
+        'curve': (6, 1.6, 'Differential\nlight curve', 'C1'),
+        'beams': (4, 0, 'Paired beam\nmeasurements', 'C2'),
+        'stokes': (6, 0, 'Fit Stokes\nparameters', 'C2'),
+    }
+    for x, y, label, color in nodes.values():
+        ax.text(x, y, label, ha='center', va='center', fontsize=10,
+                bbox={'boxstyle': 'round,pad=0.45', 'fc': 'white', 'ec': color})
+    edges = [('bias', 'flat'), ('flat', 'stack'), ('stack', 'measure'),
+             ('measure', 'wcs'), ('wcs', 'magnitude'), ('flat', 'series'),
+             ('series', 'curve'), ('beams', 'stokes')]
+    for start, end in edges:
+        ax.annotate('', xy=nodes[end][:2], xytext=nodes[start][:2],
+                    arrowprops={'arrowstyle': '->', 'shrinkA': 50, 'shrinkB': 50,
+                                'color': '0.4'})
+    ax.annotate('', xy=nodes['stack'][:2], xytext=nodes['bias'][:2],
+                arrowprops={'arrowstyle': '->', 'shrinkA': 34, 'shrinkB': 48,
+                            'connectionstyle': 'arc3,rad=-0.35', 'color': '0.4'})
+    ax.text(0, 1.6, 'Separate raw sequence;\nsame bias and flat masters',
+            va='center', fontsize=10, color='C1')
+    ax.text(0, 0, 'Separate polarimetric data;\nno input from the imaging stack',
+            va='center', fontsize=10, color='C2')
+    ax.set(xlim=(-1, 11), ylim=(-0.6, 4.2))
+    ax.axis('off')
 
 Download and run the examples
 -----------------------------

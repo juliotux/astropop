@@ -125,7 +125,7 @@ errors. The science reduction stage estimates those errors explicitly::
     Saved: observing_log.ecsv and three file lists
 
 .. plot:: _ext/workflow_figures.py plot_observations
-    :include-source: False
+    :include-source: false
     :alt: Raw science field with stars and an edge event, beside its column median profile.
     :caption: The raw image contains both sky and detector structure. The column median shows large-scale structure that should not be interpreted as an astronomical source.
 

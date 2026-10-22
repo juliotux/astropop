@@ -164,7 +164,7 @@ here; crowded fields need more care. Continue with :doc:`astrometric_calibration
 to attach sky coordinates, or :doc:`light_curve` to follow individual exposures.
 
 .. plot:: _ext/workflow_figures.py plot_photometry
-    :include-source: False
+    :include-source: false
     :alt: Stellar apertures and sky annuli on the reduced field, the sky map, and measured flux residuals relative to injected values.
     :caption: Detected stars with six-pixel apertures (cyan), sky annuli (orange), estimated background, and flux recovery against the injected stars.
 

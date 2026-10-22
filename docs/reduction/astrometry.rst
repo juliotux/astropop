@@ -13,10 +13,43 @@ Use :doc:`../tutorials/astrometry_net` for an observed-image workflow and
 with independent reference-star residuals. This page describes setup and the
 wrapper's input, output and failure contracts.
 
-.. plot:: _ext/task_figures.py plot_wcs
-    :include-source: False
+.. plot::
+    :include-source: false
     :alt: Five labeled stars on a detector grid and the same stars mapped into east and north sky offsets by a rotated TAN WCS. East increases left in the sky panel.
     :caption: A known TAN WCS maps this asterism at 0.34 arcsec per pixel. Grid lines represent the same detector rows and columns in both panels. This illustrates coordinate transformation, not an Astrometry.net solve.
+
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    from astropy.wcs import WCS
+
+    camera = WCS(naxis=2)
+    camera.wcs.crpix = [64.5, 64.5]
+    camera.wcs.crval = [150., -30.]
+    camera.wcs.ctype = ['RA---TAN', 'DEC--TAN']
+    angle = np.deg2rad(15)
+    camera.wcs.cd = 0.34 / 3600 * np.array([[-np.cos(angle), np.sin(angle)],
+                                           [np.sin(angle), np.cos(angle)]])
+    x = np.array([20., 39., 65., 92., 110.])
+    y = np.array([28., 96., 60., 35., 103.])
+    center = camera.pixel_to_world(63.5, 63.5)
+    east, north = center.spherical_offsets_to(camera.pixel_to_world(x, y))
+    fig, axes = plt.subplots(1, 2, figsize=(9, 4), layout='constrained')
+    grid = np.linspace(0, 127, 64)
+    for fixed in np.linspace(0, 127, 5):
+        for xx, yy in [(grid, np.full_like(grid, fixed)), (np.full_like(grid, fixed), grid)]:
+            axes[0].plot(xx, yy, color='0.85', linewidth=1)
+            dx, dy = center.spherical_offsets_to(camera.pixel_to_world(xx, yy))
+            axes[1].plot(dx.arcsec, dy.arcsec, color='0.85', linewidth=1)
+    for ax, xx, yy in [(axes[0], x, y), (axes[1], east.arcsec, north.arcsec)]:
+        ax.plot(xx, yy, 'C0*', markersize=11)
+        for name, sx, sy in zip('ABCDE', xx, yy):
+            ax.annotate(name, (sx, sy), xytext=(5, 5), textcoords='offset points')
+        ax.set_aspect('equal')
+    axes[0].set(xlim=(-5, 132), ylim=(-5, 132), xlabel='x / column (pixel)',
+                ylabel='y / row (pixel)', title='Detector coordinates; origin = 0')
+    axes[1].set(xlim=(28, -28), ylim=(-28, 28), xlabel='East offset (arcsec)',
+                ylabel='North offset (arcsec)', title='Sky offsets; east increases left')
 
 About astrometry.net
 --------------------

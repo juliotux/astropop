@@ -98,10 +98,50 @@ an injected level of 1000 ADU with 3 ADU Gaussian noise. One sample receives a
     Median: 1001.6 ADU
     Clipped mean: 1000.8 ADU
 
-.. plot:: _ext/guide_figures.py plot_combination
-    :include-source: False
+.. plot::
+    :include-source: false
     :alt: Nine samples at a contaminated pixel with three combination estimates, followed by histograms of residuals from the injected bias level.
     :caption: Left: the event biases the ordinary mean at one pixel. Right: residual histograms across the output images; logarithmic counts and compressed horizontal tails keep both the central distribution and the mean's single affected pixel visible.
+
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    from matplotlib.ticker import ScalarFormatter
+    from astropop.framedata import FrameData
+    from astropop.image import imcombine
+
+    rng = np.random.default_rng(42)
+    pixels = rng.normal(1000, 3, (9, 48, 48))
+    pixels[0, 24, 24] += 600
+    frames = [FrameData(image, unit='adu') for image in pixels]
+    results = {
+        'Mean': imcombine(frames, method='mean'),
+        'Median': imcombine(frames, method='median'),
+        'Clipped mean': imcombine(frames, method='mean', sigma_clip=4,
+                                   sigma_dev_func='mad_std'),
+    }
+    fig, axes = plt.subplots(1, 2, figsize=(9, 3.8), layout='constrained')
+    axes[0].plot(np.arange(1, 10), pixels[:, 24, 24], 'ko', label='Input samples')
+    for index, (name, image) in enumerate(results.items()):
+        value = image.data[24, 24]
+        axes[0].axhline(value, color=f'C{index}', linestyle=['-', '--', ':'][index],
+                        label=f'{name}: {value:.1f} ADU')
+        axes[1].hist((image.data - 1000).ravel(), bins=np.arange(-8, 81),
+                     histtype='step', color=f'C{index}', label=name, linewidth=1.5)
+    axes[0].axhline(1000, color='0.5', linestyle='-.', label='Injected level: 1000 ADU')
+    axes[0].set(xlabel='Exposure number', ylabel='Pixel value (ADU)',
+                title='One pixel with a transient event', xticks=[1, 3, 5, 7, 9])
+    axes[0].legend(fontsize='small')
+    axes[1].axvline(0, color='0.5', linestyle='-.')
+    axes[1].set_xscale('symlog', linthresh=4)
+    axes[1].set_xticks([-8, -4, 0, 4, 20, 60])
+    axes[1].xaxis.set_major_formatter(ScalarFormatter())
+    axes[1].set(xlabel='Residual from 1000 ADU (compressed tails)',
+                ylabel='Number of pixels', yscale='log', ylim=(0.7, 3000),
+                title='Residuals across the combined image')
+    axes[1].legend(fontsize='small')
+    for ax in axes:
+        ax.grid(alpha=0.2)
 
 The median and clipped mean stay near the injected level at the affected pixel.
 Their values need not equal exactly 1000 ADU because only a few noisy samples
