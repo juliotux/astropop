@@ -13,15 +13,88 @@ query failures and reuse, while this page explains the stored data and matching.
 Manual (Offline) Catalog
 ------------------------
 
-Supply one ID per coordinate and one magnitude per source for each band.
-Coordinate arguments are forwarded to |SkyCoord|; use explicit angular units.
-The optional ``query_table`` carries auxiliary columns in the same row order.
-It does not supply coordinates or magnitudes automatically::
+The |SourcesCatalog| constructor accepts coordinate arguments understood by
+|SkyCoord|, together with source identifiers and optional photometry. It extracts
+``ids``, ``mag`` and ``query_table`` and forwards the remaining arguments to
+SkyCoord. Supply equatorial coordinates and explicit angular units for the
+RA/Dec accessors and matching methods used below. One identifier must correspond
+to each coordinate.
+
+Create a catalog without photometry
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For an astrometric source list, supply IDs and coordinates without ``mag``.
+The summary table then contains only those identifiers and coordinates; it
+does not invent photometric measurements::
 
     >>> import numpy as np
     >>> from astropy.table import Table
     >>> from astropop.catalogs import SourcesCatalog
     >>> from astropop.math import QFloat
+    >>> astrometric = SourcesCatalog(ids=['a', 'b', 'c'], ra=[1, 2, 3],
+    ...                             dec=[4, 5, 6], unit='deg')
+    >>> print(astrometric.table())
+     id  ra dec
+        deg deg
+    --- --- ---
+      a 1.0 4.0
+      b 2.0 5.0
+      c 3.0 6.0
+
+Supply magnitudes in several bands
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Pass a ``mag`` dictionary with filter names as keys and one magnitude per
+source as each value. The names are used to select photometry later; the
+constructor does not infer a filter system from them. Plain lists provide
+values without uncertainties. The summary includes an ``<band>_error`` column
+for each band, filled with zeros in this case::
+
+    >>> photometric = SourcesCatalog(ids=['a', 'b', 'c'], ra=[1, 2, 3],
+    ...                              dec=[4, 5, 6], unit='deg',
+    ...                              mag={'g': [12, 13, 14],
+    ...                                   'r': [11, 12, 13],
+    ...                                   'i': [10, 11, 12]})
+    >>> print(photometric.table()['id', 'g', 'g_error', 'r', 'i'])
+     id  g   g_error  r    i
+    --- ---- ------- ---- ----
+      a 12.0     0.0 11.0 10.0
+      b 13.0     0.0 12.0 11.0
+      c 14.0     0.0 13.0 12.0
+
+Zero stored errors here mean that uncertainties were not supplied; they do not
+establish exact measurements or justify infinite statistical weights.
+
+Supply magnitudes with uncertainties
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Use a |QFloat| array for each dictionary value to provide magnitudes and their
+standard uncertainties together. Source ordering must agree across every band.
+The constructor separates each array into its magnitude and error columns::
+
+    >>> uncertain = SourcesCatalog(ids=['a', 'b', 'c'], ra=[1, 2, 3],
+    ...                            dec=[4, 5, 6], unit='deg',
+    ...                            mag={'g': QFloat([12, 13, 14], [0.1, 0.2, 0.3]),
+    ...                                 'r': QFloat([11, 12, 13], [0.2, 0.3, 0.4]),
+    ...                                 'i': QFloat([10, 11, 12], [0.3, 0.4, 0.5])})
+    >>> print(uncertain.table()['id', 'g', 'g_error', 'r', 'r_error', 'i', 'i_error'])
+     id  g   g_error  r   r_error  i   i_error
+    --- ---- ------- ---- ------- ---- -------
+      a 12.0     0.1 11.0     0.2 10.0     0.3
+      b 13.0     0.2 12.0     0.3 11.0     0.4
+      c 14.0     0.3 13.0     0.4 12.0     0.5
+
+``magnitude('g')`` reconstructs a QFloat containing that band's values and
+uncertainties. See :doc:`../data_structures/physical` for working with QFloat;
+the accessors below demonstrate the catalog's photometric interface.
+
+Attach auxiliary query information
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+An optional ``query_table`` stores additional columns in the same source order.
+It does not supply coordinates or magnitudes automatically. For example, keep
+a quality code beside a catalog with one measured band::
+
     >>> auxiliary = Table({'quality': [0, 1, 0]})
     >>> cat = SourcesCatalog(ids=['a', 'b', 'c'], ra=[1, 2, 3],
     ...                      dec=[4, 5, 6], unit='deg',
@@ -32,11 +105,9 @@ It does not supply coordinates or magnitudes automatically::
     >>> print('Bands:', cat.filters)
     Bands: ['g']
 
-Omit ``mag`` for an astrometry-only catalog. Plain magnitude lists are accepted,
-but their errors are stored as zeros; this means no errors were supplied, not
-that the measurements are exact. ``ids`` must be one-dimensional, and coordinate
-and magnitude lengths must agree. The constructor does not validate the length
-of ``query_table``: the caller must ensure its length and ordering match.
+``ids`` must be one-dimensional, and coordinate and magnitude lengths must
+agree. The constructor does not validate the length of ``query_table``:
+the caller must ensure its length and ordering match.
 
 Properties Accessing
 --------------------
