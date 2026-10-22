@@ -53,7 +53,8 @@ injected centroids. Refine those positions using detections on the first frame::
     >>> frames = []
     >>> for path in sorted((data / 'time_series' / 'raw').glob('science_*.fits')):
     ...     frame = read_framedata(path)
-    ...     frame.uncertainty = np.sqrt(np.maximum(frame.data - bias.data, 0) + 16)
+    ...     frame.uncertainty = np.sqrt(np.maximum(frame.data - bias.data, 0)
+    ...                                 + frame.meta['RDNOISE']**2)
     ...     frames.append(flat_correct(subtract_bias(frame, bias), flat))
     >>> sky0, rms0 = background(frames[0].data, box_size=32, global_bkg=False)
     >>> detected = daofind(frames[0].data, threshold=5, background=sky0, noise=rms0, fwhm=4.24)
@@ -94,14 +95,27 @@ reference aperture positions. This avoids resampling the photometry pixels::
     ...     times.append((start + frame.meta['EXPTIME'] / 2 * u.s).jd)
     >>> fluxes, errors, flags = np.array(fluxes), np.array(errors), np.array(flags)
     >>> usable = ((flags == 0).all(axis=1) & np.isfinite(fluxes).all(axis=1)
-    ...           & np.isfinite(errors).all(axis=1) & (fluxes > 0).all(axis=1))
+    ...           & np.isfinite(errors).all(axis=1) & (fluxes > 0).all(axis=1)
+    ...           & (errors > 0).all(axis=1))
+    >>> if not np.any(usable):
+    ...     raise ValueError('No exposure has valid target and comparison measurements.')
     >>> print(f'Usable exposures: {usable.sum()} / {len(frames)}')
     Usable exposures: 12 / 12
 
 This coordinate rule is specific to translations. Use the complete transform
 for rotation/scale, and inspect registration failures before measuring. The
 metadata specify exposure-start UTC here; adding half the exposure gives
-mid-exposure JD in UTC. This is not a barycentric time correction.
+mid-exposure JD in UTC. This is not a barycentric time correction. For timing
+work requiring BJD in TDB, the correction also needs the observatory location
+and target sky position; changing a column name or time scale alone does not
+apply the light-travel correction.
+
+The input noise estimate uses the header's read noise and assumes this dataset's
+gain of one electron per ADU. For another gain, convert the Poisson and read
+noise terms to the image's units before combining them. Fixed apertures are
+suitable here because the simulated PSF width is constant. On observations,
+inspect widths and centering across the sequence, especially near bad pixels
+or when seeing changes.
 
 Normalize a comparison ensemble
 --------------------------------
@@ -113,8 +127,9 @@ independent per-exposure measurement errors through the division::
     >>> flux, error = fluxes[usable], errors[usable]
     >>> comparison_levels = np.median(flux[:, 1:], axis=0)
     >>> comparisons = flux[:, 1:] / comparison_levels
+    >>> comparison_count = comparisons.shape[1]
     >>> ensemble = comparisons.mean(axis=1)
-    >>> ensemble_error = np.sqrt(((error[:, 1:] / comparison_levels)**2).sum(axis=1)) / 3
+    >>> ensemble_error = np.sqrt(((error[:, 1:] / comparison_levels)**2).sum(axis=1)) / comparison_count
     >>> target = flux[:, 0] / np.median(flux[:, 0])
     >>> differential = target / ensemble
     >>> differential_error = differential * np.sqrt((error[:, 0] / flux[:, 0])**2
@@ -149,7 +164,11 @@ normalization prevent exact recovery of the injected amplitude.
 
 The per-source table retains measurements and flags even for exposures rejected
 from the differential curve. The strict selection here requires all three
-comparison stars and the target to be usable in the same exposure.
+comparison stars and the target to be usable in the same exposure. A missing,
+flagged or invalid comparison rejects that exposure. Keeping the same ensemble
+avoids introducing offsets by silently changing its membership. In this finder
+table the target is the first row and the comparisons are the remaining rows;
+preserve that ordering when adapting the example.
 
 The formal errors above treat the median normalization levels as fixed and omit
 shared-master errors and correlations between comparison stars. They are not a
