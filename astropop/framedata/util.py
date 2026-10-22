@@ -53,6 +53,21 @@ def read_framedata(obj: _ImageInput, copy: bool=False, **kwargs: _t.Any) -> Fram
     HDU containing image data; pass an image HDU directly to select a specific
     image. Uncertainty extensions are interpreted as standard deviations.
     FITS and CCDData masks are imported as Boolean masks, not full pixel flags.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from astropy import units as u
+    >>> from astropop.framedata import read_framedata
+    >>> frame = read_framedata(np.ones((2, 3)) * u.adu, dtype='float32')
+    >>> print(frame.shape, frame.dtype.name, frame.unit)
+    (2, 3) float32 adu
+
+    >>> # Existing FrameData is returned directly unless a copy is requested.
+    >>> print(read_framedata(frame) is frame)
+    True
+    >>> print(read_framedata(frame, copy=True) is frame)
+    False
     """
     if isinstance(obj, FrameData):
         if copy:

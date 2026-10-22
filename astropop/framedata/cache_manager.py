@@ -53,6 +53,22 @@ class TempDir:
     parent
         Parent manager for a relative basename. With None, relative names use
         BaseTempDir and absolute names create top-level managed directories.
+
+    Examples
+    --------
+    >>> from pathlib import Path
+    >>> from tempfile import TemporaryDirectory
+    >>> from astropop.framedata.cache_manager import TempDir
+    >>> with TemporaryDirectory() as root:
+    ...     # Give the manager its own child directory because it owns cleanup.
+    ...     with TempDir(str(Path(root) / 'owned-cache')) as cache:
+    ...         managed = cache.create_file('message.txt')
+    ...         with managed.open('w') as stream:
+    ...             _ = stream.write('example')
+    ...         print(Path(managed.full_path).read_text())
+    ...     print(Path(cache.full_path).exists())
+    example
+    False
     """
 
     __slots__ = ['dirname', 'parent', 'managed', 'delete_on_remove']
@@ -219,6 +235,22 @@ class TempFile:
         The parent directory where the file will be created.
     delete_on_remove
         If True, the file will be deleted when removed from the manager.
+
+    Examples
+    --------
+    >>> from pathlib import Path
+    >>> from tempfile import TemporaryDirectory
+    >>> from astropop.framedata.cache_manager import TempDir, TempFile
+    >>> with TemporaryDirectory() as root:
+    ...     with TempDir(str(Path(root) / 'owned-cache')) as cache:
+    ...         managed = TempFile('message.txt', parent=cache)
+    ...         # Registration alone does not create a file; open it to write data.
+    ...         print(Path(managed.full_path).exists())
+    ...         with managed.open('w') as stream:
+    ...             _ = stream.write('example')
+    ...         print(Path(managed.full_path).read_text())
+    False
+    example
     """
 
     __slots__ = ['filename', 'parent', 'delete_on_remove', 'file']

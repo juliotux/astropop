@@ -172,7 +172,17 @@ def setup_filename(
 
 
 class PixelMaskFlags(Flag):
-    """Flags for pixel masking."""
+    """Flags for pixel masking.
+
+    Examples
+    --------
+    >>> from astropop.framedata import PixelMaskFlags as F
+
+    >>> # Record saturation and request exclusion as separate bits.
+    >>> bits = F.SATURATED | F.MASKED
+    >>> print(bits.value, F.MASKED in bits)
+    18 True
+    """
     # Type of Masking
     INTERPOLATED = 1 << 0  # pixel interpolated from neighbors
     MASKED = 1 << 1  # pixel value removed
@@ -243,6 +253,19 @@ class FrameData:
       `~astropop.config.AstropopConfig` settings. Set them before loading or
       creating frames to avoid allocating these arrays. Changing the settings
       afterward hides existing arrays without freeing their memory.
+
+    Examples
+    --------
+    >>> from astropop.framedata import FrameData
+    >>> frame = FrameData([[10., 20.]], unit='adu', uncertainty=2.)
+
+    >>> # A scalar standard uncertainty is expanded to the image shape.
+    >>> print(frame.shape, frame.uncertainty.tolist())
+    (1, 2) [[2.0, 2.0]]
+
+    >>> frame.mask_pixels((0, 1))
+    >>> print(frame.mask.tolist(), frame.data.tolist())
+    [[False, True]] [[10.0, 20.0]]
     """
 
     # The decorator installs this descriptor at runtime; expose both access
@@ -397,7 +420,16 @@ class FrameData:
         return self._data.dtype
 
     def astype(self, dtype: _npt.DTypeLike) -> FrameData:
-        """Return a copy of the current FrameData with new dtype in data."""
+        """Return a copy of the current FrameData with new dtype in data.
+
+        Examples
+        --------
+        >>> from astropop.framedata import FrameData
+        >>> frame = FrameData([[10., 20.]], uncertainty=0.5)
+        >>> converted = frame.astype('float32')
+        >>> print(converted.dtype.name, converted.uncertainty.dtype.name)
+        float32 float32
+        """
         return self.copy(dtype)
 
     @property
@@ -550,6 +582,19 @@ class FrameData:
         uncertainty
             Independent array with the data shape and dtype, or None. Returning
             zeros is an explicit allocation even when storage is disabled.
+
+        Examples
+        --------
+        >>> from astropop.framedata import FrameData
+        >>> frame = FrameData([[10., 20.]])
+        >>> print(frame.get_uncertainty())
+        None
+
+        >>> # Request zeros for calculations without allocating stored errors.
+        >>> print(frame.get_uncertainty(False).tolist())
+        [[0.0, 0.0]]
+        >>> print(frame.uncertainty)
+        None
         """
         uncertainty = self.uncertainty
         if uncertainty is None and return_none:
@@ -597,6 +642,16 @@ class FrameData:
             Flag to be added.
         where
             Positions where the flag will be added.
+
+        Examples
+        --------
+        >>> from astropop.framedata import FrameData, PixelMaskFlags as F
+        >>> frame = FrameData([[10., 100.]])
+
+        >>> # Mark the reason and exclusion policy together at bright pixels.
+        >>> frame.add_flags(F.SATURATED | F.MASKED, where=frame.data > 50)
+        >>> print(frame.flags.tolist(), frame.mask.tolist())
+        [[0, 18]] [[False, True]]
         """
         if not isinstance(flag, PixelMaskFlags):
             raise TypeError('Flag must be a PixelMaskFlags instance.')
@@ -708,6 +763,17 @@ class FrameData:
             sources produce a copy with its own mapped files. Optional-array
             configuration is evaluated when copying, so hidden arrays are omitted.
             Origin filename, history and comments are preserved.
+
+        Examples
+        --------
+        >>> from astropop.framedata import FrameData
+        >>> original = FrameData([[10.]])
+        >>> duplicate = original.copy()
+
+        >>> # Editing copied pixels leaves the original frame unchanged.
+        >>> duplicate.data[0, 0] = 99
+        >>> print(original.data.tolist(), duplicate.data.tolist())
+        [[10.0]] [[99.0]]
         """
         nf = object.__new__(FrameData)
         # copy metadata
@@ -841,6 +907,14 @@ class FrameData:
         -------
         result
             HDU list containing data, metadata, WCS, and present optional arrays.
+
+        Examples
+        --------
+        >>> from astropop.framedata import FrameData
+        >>> frame = FrameData([[10.]], unit='adu', uncertainty=2.)
+        >>> with frame.to_hdu() as hdus:
+        ...     print(hdus[0].data.tolist(), hdus['UNCERT'].data.tolist())
+        [[10.0]] [[2.0]]
         """
         return _to_hdu(self, wcs_relax=wcs_relax,
                        no_fits_standard_units=no_fits_standard_units,

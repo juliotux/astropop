@@ -56,6 +56,20 @@ class AstropopConfig:
         Ignore FrameData flag and mask inputs and assignments, omit new arrays,
         and return None from flag and mask getters even on existing frames.
         Default is False.
+
+    Examples
+    --------
+    >>> from astropop.config import AstropopConfig
+    >>> from astropop.framedata import FrameData
+    >>> previous = AstropopConfig.FRAMEDATA_DISABLE_UNCERTAINTY
+    >>> try:
+    ...     # Configure allocation before creating or reading frames.
+    ...     AstropopConfig.FRAMEDATA_DISABLE_UNCERTAINTY = True
+    ...     frame = FrameData([[100.]], uncertainty=2.)
+    ...     print(frame.uncertainty)
+    ... finally:
+    ...     AstropopConfig.FRAMEDATA_DISABLE_UNCERTAINTY = previous
+    None
     """
     FRAMEDATA_DISABLE_UNCERTAINTY: _t.ClassVar[bool] = False
     FRAMEDATA_DISABLE_FLAGS: _t.ClassVar[bool] = False
