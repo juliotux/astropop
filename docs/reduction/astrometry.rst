@@ -223,6 +223,122 @@ zero-based detection coordinates exactly once. Image shape is
 ``(height, width)``. See :doc:`../tutorials/astrometry_net` for a complete example
 of each input path and attaching the resulting WCS.
 
+For the same calibrated exposure, choose one of the following input paths.
+These are external-solver recipes, requiring the executable, indexes and the
+specified local files; they are not offline doctests. Reuse one set of options
+so changing the input container does not change the intended sky search:
+
+.. code-block:: python
+
+    from astropop.astrometry import (solve_astrometry_image,
+                                    solve_astrometry_framedata,
+                                    solve_astrometry_hdu, solve_astrometry_xy)
+    from astropop.framedata import read_framedata
+    from astropy.io import fits
+    from astropy.table import Table
+
+    filename = 'reduced/science.fits'
+    options = {'ra': 132.5, 'dec': 11.83, 'radius': 1., 'cpulimit': 60}
+
+    # Use a filename when the calibrated image is already on disk.
+    from_file = solve_astrometry_image(filename, options=options)
+    print('File solution axes:', from_file.wcs.world_axis_physical_types)
+
+    # Use FrameData when the calibrated frame is already in memory.
+    frame = read_framedata(filename)
+    from_frame = solve_astrometry_framedata(frame, options=options)
+    print('Frame solution axes:', from_frame.wcs.world_axis_physical_types)
+
+    # Use an HDU when working directly with Astropy FITS containers.
+    with fits.open(filename) as hdus:
+        from_hdu = solve_astrometry_hdu(hdus[0], options=options)
+    print('HDU solution axes:', from_hdu.wcs.world_axis_physical_types)
+
+    # Use a measured source list to bypass image-source extraction by the solver.
+    sources = Table.read('reduced/photometry.ecsv')  # zero-based x,y and measured flux
+    from_sources = solve_astrometry_xy(
+        sources['x'] + 1, sources['y'] + 1, sources['flux'],
+        width=frame.shape[1], height=frame.shape[0], options=options)
+    print('Source-list matches:', len(from_sources.correspondences))
+
+For a multi-extension image, load the intended science HDU rather than an
+empty primary HDU. The helper functions return the solution separately; they
+do not attach it to ``frame``. Assign ``frame.wcs = from_frame.wcs`` explicitly
+when that is the desired product. ``solve_astrometry_xy`` assumes the supplied
+positions and dimensions describe the same image geometry.
+
+Write a solver source list
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``create_xyls`` writes an Astrometry.net FITS source-list file without running
+the solver. Supply matching-length arrays of one-based pixel positions and
+fluxes from the same image, plus its width and height. The binary table has
+``x``, ``y`` and ``flux`` fields sorted by decreasing flux; its header records
+``IMAGEW`` and ``IMAGEH``. Use it to inspect or pass a measured list to an
+external solver workflow::
+
+    >>> from tempfile import TemporaryDirectory
+    >>> from pathlib import Path
+    >>> from astropy.io import fits
+    >>> from astropop.astrometry import create_xyls
+    >>> with TemporaryDirectory() as directory:
+    ...     path = Path(directory) / 'sources.xyls'
+    ...     create_xyls(path, x=[3., 8., 5.], y=[6., 4., 9.],
+    ...                 flux=[100., 300., 200.], imagew=32, imageh=24)
+    ...     with fits.open(path) as hdus:
+    ...         print('Columns:', hdus[1].columns.names)
+    ...         print('Sorted flux:', hdus[1].data['flux'].tolist())
+    ...         print('Image width and height:', hdus[1].header['IMAGEW'], hdus[1].header['IMAGEH'])
+    Columns: ['x', 'y', 'flux']
+    Sorted flux: [300.0, 200.0, 100.0]
+    Image width and height: 32 24
+
+The default table dtype is ``'f8'``. An optional ``header`` supplies the primary
+HDU header; this is distinct from the image-size cards on the table HDU.
+The writer does not overwrite existing files. ``solve_astrometry_xy`` creates
+its own temporary source list, so an application using that helper need not
+call ``create_xyls`` separately.
+
+Prepare coordinates and an approximate WCS
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``guess_coordinates`` accepts RA/Dec scalars or equal-length arrays. Numeric
+values, including numeric strings, are interpreted in degrees. If numeric
+conversion fails, the helper tries RA as hour angle and Dec as degrees.
+``skycoord=True`` returns a SkyCoord; ``skycoord=False`` returns numerical
+RA/Dec in degrees. Keep input formats consistent and prefer an explicitly
+unit-bearing SkyCoord when the format is already known::
+
+    >>> from astropop.astrometry import guess_coordinates, wcs_from_coords
+    >>> decimal = guess_coordinates('132.5', '11.83')
+    >>> sexagesimal = guess_coordinates('08:50:00', '+11:49:48')
+    >>> print(f'Numeric strings: {decimal.ra.deg:.3f}, {decimal.dec.deg:.3f} deg')
+    Numeric strings: 132.500, 11.830 deg
+    >>> print(f'Sexagesimal strings: {sexagesimal.ra.deg:.3f}, {sexagesimal.dec.deg:.3f} deg')
+    Sexagesimal strings: 132.500, 11.830 deg
+    >>> ra, dec = guess_coordinates([132.5, 133.], [11.83, 12.], skycoord=False)
+    >>> print('Degree arrays:', ra.tolist(), dec.tolist())
+    Degree arrays: [132.5, 133.0] [11.83, 12.0]
+
+``wcs_from_coords`` constructs a TAN WCS from a reference pixel, pointing,
+plate scale in arcseconds per pixel and north direction. Use it when an
+approximate geometric mapping is sufficient, for example to initialize a
+calibration. It does not solve an observed field or measure optical distortion.
+The reference pixel supplied to this helper is one-based FITS ``CRPIX``, unlike
+Astropy's high-level pixel coordinates::
+
+    >>> approximate = wcs_from_coords(32.5, 24.5, 132.5, 11.83, 0.5, north='top')
+    >>> center = approximate.pixel_to_world(31.5, 23.5)
+    >>> print(f'Approximate reference position: {center.ra.deg:.3f}, {center.dec.deg:.3f} deg')
+    Approximate reference position: 132.500, 11.830 deg
+
+``north='top'`` corresponds to 90 degrees counterclockwise from positive x;
+``'right'``, ``'left'`` and ``'bottom'`` correspond to 0, 180 and 270 degrees.
+A numeric ``north`` gives that angle directly. ``flip='ra'`` flips the RA axis,
+``'dec'`` flips Dec, ``'all'`` flips both, and ``None`` applies no extra flip.
+See :doc:`../dev/pixel_convention` for a nonsquare pixel-grid example and the
+relationship between display orientation and coordinate origins.
+
 Supported ``solve-field`` options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

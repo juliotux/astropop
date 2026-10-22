@@ -17,7 +17,34 @@ def guess_coordinates(
     dec: _npt.ArrayLike,
     skycoord: bool=True,
 ) -> SkyCoord | tuple[float | _npt.NDArray, float | _npt.NDArray]:
-    """Try to guess the format or ra and dec passed."""
+    """Interpret paired RA/Dec values as numeric degrees or sexagesimal angles.
+
+    Parameters
+    ----------
+    ra, dec
+        Scalars or equal-length arrays. Values convertible to floating point
+        are interpreted in degrees, including numeric strings. Otherwise try
+        RA as hour angle and Dec as degrees with Astropy SkyCoord.
+    skycoord
+        If True (default), return SkyCoord; if False, return numerical RA/Dec
+        in degrees as a pair of scalars or arrays.
+
+    Returns
+    -------
+    coordinates
+        Parsed sky coordinates in the selected representation.
+
+    Raises
+    ------
+    ValueError
+        One coordinate is scalar and the other an array, array lengths differ,
+        or the supplied angles cannot be parsed as coordinates.
+
+    Notes
+    -----
+    The helper guesses a format; it does not infer coordinate frame or epoch.
+    Prefer an explicitly unit-bearing SkyCoord when the input format is known.
+    """
     # TODO: this needs a refactor!
     # process as lists of coordinates
     if not np.isscalar(ra) and not np.isscalar(dec):

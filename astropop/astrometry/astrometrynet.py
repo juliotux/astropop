@@ -712,15 +712,18 @@ def create_xyls(
     fname
         The path to save the .xyls file.
     x
-        X coordinates of the sources.
+        Source x positions in one-based FITS pixels, written unchanged.
     y
-        Y coordinates of the sources.
+        Source y positions in one-based FITS pixels, written unchanged.
     flux
         Estimated flux of the sources.
     imagew
         Width of the original image. ``IMAGEW`` header field of .xyls
     imageh
         Height of the original image. ``IMAGEH`` header field of .xyls
+    header
+        Optional header passed to the primary FITS HDU. Image dimensions are
+        stored separately on the binary-table HDU.
     dtype
         Data type of the fields. Default: 'f8'
     """
