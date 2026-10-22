@@ -3,30 +3,42 @@
 Photometry
 ==========
 
-Start with :doc:`../tutorials/photometry` for a local detect-measure-select
-workflow. Gain scaling and empty-field behavior are described below.
+:mod:`astropop.photometry` provides functions for estimating image background,
+detecting sources, fitting their widths and measuring circular-aperture fluxes.
+The sections below describe each interface and its calculation. A complete
+image-to-source-table workflow is in :doc:`../tutorials/photometry`.
 
-:mod:`astropop.photometry` provides background estimation, source detection,
-width estimation, and circular-aperture photometry. Pass two-dimensional
-numerical arrays, rather than FrameData objects, to these routines. For a
-FrameData, pass ``frame.data``, and explicitly supply its mask, flags, and the
-appropriate noise model where supported. Configuration that disables FrameData
-arrays does not disable the photometry routines' own error calculations.
+The functions accept two-dimensional :data:`~astropop._typing.ImageLike`
+pixel inputs. For a FrameData, pass ``frame.data`` and explicitly supply its
+mask, pixel flags and noise information where supported. Coordinates are
+zero-based ``(x, y)`` pixel centers; array indexing is ``data[y, x]``. A true
+mask entry excludes that pixel. These routines calculate their own measurement
+errors independently of FrameData's optional-storage configuration.
 
-Coordinates are zero-based ``(x, y)`` pixel centers, while images are indexed
-``data[y, x]``. A ``True`` mask value excludes a pixel. Work on calibrated images
-and choose detector gain/background noise in units consistent with the data.
+.. raw:: html
 
-Background and detection
-------------------------
+    <span id="background-and-detection"></span>
 
-``background`` divides the image into ``box_size`` meshes and filters the
-mesh estimates with ``filter_size``. ``bkg_method='mode'`` uses the
-SExtractor background estimator, ``'mean'`` uses a mean, and ``'median'`` uses
-a median. ``rms_method='std'`` estimates standard deviation; ``'mad_std'``
-uses Gaussian-scaled median absolute deviation. ``sigma_clip`` controls mesh
-clipping. The default ``global_bkg=True`` returns two scalar estimates; with
-``False`` it returns background and RMS maps of the image shape::
+Background estimation with ``background``
+-----------------------------------------
+
+``background`` wraps Photutils' two-dimensional background estimator. It divides
+pixels into ``box_size`` meshes, estimates sky and RMS in each mesh, filters
+those estimates with ``filter_size`` and interpolates maps to the image shape.
+``bkg_method='mode'`` selects the SExtractor estimator, ``'mean'`` selects a mean,
+and ``'median'`` selects a median. ``rms_method='std'`` uses standard deviation;
+``'mad_std'`` uses Gaussian-scaled median absolute deviation. ``sigma_clip``
+controls clipping within the meshes.
+
+With ``global_bkg=True`` (default), the function returns the medians of the
+background and RMS maps as two scalars. With ``global_bkg=False``, it returns
+the two maps. Background and RMS use the input pixel scale; RMS is a standard
+deviation, not a variance. The
+`Photutils background description
+<https://photutils.readthedocs.io/en/stable/user_guide/background.html>`_
+explains mesh estimation and the importance of excluding source contamination.
+
+Estimate the background beneath one isolated Gaussian star::
 
     >>> import numpy as np
     >>> from astropop.photometry import background, daofind, aperture_photometry
@@ -37,45 +49,98 @@ clipping. The default ``global_bkg=True`` returns two scalar estimates; with
     >>> sky, noise = background(image, box_size=32)
     >>> print(f'Background: {sky:.1f}; RMS: {noise:.1f}')
     Background: 100.0; RMS: 2.0
+    >>> sky_map, noise_map = background(image, box_size=32, global_bkg=False)
+    >>> print('Background and RMS shapes:', sky_map.shape, noise_map.shape)
+    Background and RMS shapes: (128, 128) (128, 128)
+
+The mesh size sets the spatial scale represented by the background model. A
+mesh dominated by a source cannot reliably describe the sky beneath it; mask
+such pixels or choose a suitable mesh scale. The returned RMS describes
+background fluctuations, not the total uncertainty including source counts.
+
+Point-source detection with ``daofind``
+---------------------------------------
+
+``daofind`` delegates point-source detection to Photutils' DAOStarFinder, which
+convolves the image with a Gaussian kernel of supplied ``fwhm``. ``threshold``
+is expressed in multiples of the supplied noise. The wrapper subtracts the
+supplied background; it does not estimate it. A spatial noise map is reduced
+to its median for the DAO threshold. ``sharp_limit`` and ``round_limit`` select
+source shapes, ``exclude_border`` controls kernel-edge detections, and
+``positions`` restricts searches to supplied candidates. See the
+`Photutils detection description
+<https://photutils.readthedocs.io/en/stable/user_guide/detection.html>`_
+for the underlying kernel and shape statistics.
+
+For the star above, a Gaussian width of two pixels corresponds to
+:math:`\mathrm{FWHM}=2\sqrt{2\ln 2}\,\sigma\simeq4.71` pixels::
+
     >>> sources = daofind(image, threshold=5, background=sky, noise=noise, fwhm=4.71)
     >>> print('len(sources):', len(sources))
     len(sources): 1
     >>> print(f"Centroid: ({sources['x'][0]:.2f}, {sources['y'][0]:.2f})")
     Centroid: (64.00, 64.00)
 
-``daofind`` uses a Gaussian kernel with supplied ``fwhm``; its threshold is a
-multiple of noise above the supplied background. ``sharp_limit`` and
-``round_limit`` select shapes, while ``positions`` restricts centroid searches
-to supplied candidates. Spatial noise maps are reduced to a median for its
-DAO threshold. ``segfind`` instead detects connected segments above the
-background/noise threshold, with ``npix`` controlling minimum area.
-``starfind`` combines segmentation, width estimation, and DAO detection.
-All return source tables; ``x`` and ``y`` are the centroid coordinates and
-``flux`` is a detection measurement, not the final aperture flux. Check for
-successful detection before using source columns.
+The returned Astropy Table includes ``x,y`` centroids, flux and morphology
+measurements. Its detection flux is not the final annulus-subtracted aperture
+flux. Use ``aperture_photometry`` for that measurement.
 
-``median_fwhm`` fits source profiles using ``model='gaussian'`` or
-``'moffat'``. It uses cutouts of ``box_size`` and a ``min_fwhm`` lower bound.
-Use representative isolated stars, rather than saturated or blended sources.
+Segment detection with ``segfind``
+----------------------------------
 
-For the same isolated star, compare the segmentation and combined detection
-interfaces, then fit its Gaussian width. These are alternative detection paths;
-they need not produce identical lists for blends or extended sources::
+``segfind`` identifies connected pixel regions above the background/noise
+threshold. ``npix`` specifies their minimum connected area. ``fwhm=None``
+disables pre-convolution; supplying a FWHM enables Gaussian smoothing.
+``deblend=True`` splits overlapping segments with Photutils' deblending method.
+Unlike ``daofind``, the segmentation threshold can retain spatial noise values.
+
+Its table contains centroids, integrated segment flux, area and second-moment
+shape measurements. These describe the segmented footprint, which need not be
+a circular aperture or a complete stellar profile. Detect the same isolated
+star without imposing a Gaussian detection kernel::
 
     >>> from astropop.photometry import segfind, starfind, median_fwhm
     >>> segments = segfind(image, threshold=5, background=sky, noise=noise, npix=5)
+    >>> print('Segments:', len(segments))
+    Segments: 1
+
+Combined detection with ``starfind``
+------------------------------------
+
+``starfind`` first uses segmentation to find candidates and a representative
+width, refines that width with Gaussian profile fits, then calls ``daofind``
+with a kernel FWHM of 1.5 times the refined width. Its output follows the DAO
+table schema; segmentation-only columns are not retained. The refined width
+is stored in ``table.meta['astropop fwhm']``. The current implementation
+re-estimates the width rather than using the supplied ``fwhm`` argument as a
+fixed kernel size::
+
     >>> refined = starfind(image, threshold=5, background=sky, noise=noise)
-    >>> print('Segments:', len(segments), '; refined sources:', len(refined))
-    Segments: 1 ; refined sources: 1
+    >>> print('Refined sources:', len(refined))
+    Refined sources: 1
+
+These three detection functions need not produce identical source lists in
+blended fields. Their different footprints and shape selections affect the
+returned detections and flux measurements.
+
+Width estimation with ``median_fwhm``
+-------------------------------------
+
+``median_fwhm`` extracts a cutout of ``box_size`` around each supplied ``x,y``
+position, fits a radial profile and returns the median usable FWHM. Select
+``model='gaussian'`` for a Gaussian or ``'moffat'`` for a Moffat profile;
+``min_fwhm`` supplies the lower bound on the reported estimate. The fitted
+profile definitions are described in :doc:`../tools/math`.
+
+Fit the detected isolated star with the Gaussian model::
+
     >>> width = median_fwhm(image, refined['x'], refined['y'], model='gaussian')
     >>> print(f'Fitted Gaussian FWHM: {width:.2f} pixels')
     Fitted Gaussian FWHM: 4.71 pixels
 
-The fitted width describes the selected profiles, not an automatic aperture
-correction. Compare it with spatial changes across the detector and repeat the
-measurement as seeing changes. Inspect segment geometry when deciding whether
-a candidate is a point source; detection flux and aperture flux have different
-pixel selections and sky treatment.
+This width characterizes the fitted sources. It is not an aperture correction
+or a model of spatially varying seeing. Saturated, blended or truncated profiles
+can give unrepresentative widths.
 
 .. _empty-detection-behavior:
 
@@ -105,8 +170,12 @@ returned. Inspect the mask, background/noise scale, FWHM and threshold, then
 choose whether to skip the exposure or rerun detection with justified settings.
 No detected source does not imply zero measured flux at a known position.
 
-Aperture fluxes and local sky
------------------------------
+.. raw:: html
+
+    <span id="aperture-fluxes-and-local-sky"></span>
+
+Aperture measurement with ``aperture_photometry``
+-------------------------------------------------
 
 Use a numerical ``r`` for a fixed circular radius. ``r='auto'`` estimates
 ``0.6371 * median Gaussian FWHM``. ``r_ann=(inner, outer)`` measures a local
@@ -266,8 +335,12 @@ Inspect the input/adopted coordinates and cutout as well, especially for
 masked, blended or empty sources; an unchanged coordinate with zero flags
 alone does not prove a centroid fit succeeded.
 
-Output quality flags
---------------------
+.. raw:: html
+
+    <span id="output-quality-flags"></span>
+
+The ``PhotometryFlags`` class
+-----------------------------
 
 The table includes ``flux``, ``flux_error``, aperture and annulus areas, local
 sky statistics, and integer ``flags``. Quality bits are defined by

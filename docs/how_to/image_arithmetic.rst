@@ -3,6 +3,16 @@
 Image arithmetic
 ================
 
+The :mod:`astropop.image.imarith` module exposes ``imarith`` for a single
+calculation and ``ImArith`` for repeated calculations with shared merge settings.
+Both normalize operands, apply the selected operation, propagate enabled
+uncertainties and construct a FrameData result. This chapter describes those
+interfaces; :doc:`../tutorials/science_reduction` combines image operations in
+a complete reduction.
+
+The ``imarith`` function
+------------------------
+
 Use |imarith| to calculate with image values, physical units, and standard
 uncertainties. It returns a |FrameData| and supports ``+``, ``-``, ``*``, ``/``,
 ``//``, ``%``, and ``**``. Operands may be |FrameData|, |QFloat|, |Quantity|,
@@ -11,7 +21,7 @@ one of that unit. NumPy broadcasting applies to the numerical operands::
 
     >>> import numpy as np
     >>> from astropop.framedata import FrameData, PixelMaskFlags
-    >>> from astropop.image import imarith, ImArith, imcombine, ImCombiner
+    >>> from astropop.image import imarith, ImArith
     >>> image = FrameData(np.full((2, 2), 10.0), unit='adu', uncertainty=2.0,
     ...                   meta={'OBJECT': 'Example', 'EXPTIME': 30.0})
     >>> scaled = imarith(image, 2, '*')
@@ -27,9 +37,11 @@ one of that unit. NumPy broadcasting applies to the numerical operands::
     Input pixels: [[10. 10.]
      [10. 10.]]
 
-Nominal calculations use floating-point values. This function has no ``dtype``
-option; use |imcombine| for combination with a selected working dtype. Neither
-operation registers images: align images before doing pixel-by-pixel reduction.
+Nominal calculations use floating-point values; ``imarith`` has no ``dtype``
+argument. NumPy broadcasting determines the result shape; unlike direct
+FrameData construction, this arithmetic path also supports scalar results.
+The operation acts on corresponding numerical elements; it does not estimate
+an alignment or use WCS to match the operands.
 
 Units and uncertainty propagation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -149,7 +161,16 @@ The updated frame receives the result's data, unit, uncertainty, flags, and
 merged header. Skipping propagation therefore clears an in-place result's old
 uncertainty. Arithmetic does not propagate WCS to a new result.
 
-Use ``ImArith`` when reusing merge settings across several calls::
+The ``ImArith`` class
+---------------------
+
+``ImArith`` stores ``merge_flags``, ``merge_headers`` and ``selected_keys``.
+Its ``run(operand1, operand2, operation, inplace=False)`` method performs the
+same calculation as ``imarith``. The class does not retain a source image;
+pass operands to each call. Optional-array configuration is read for each run,
+so the class uses the current FrameData uncertainty and flag policy.
+
+Create an instance with a fixed header-merge strategy, then call ``run``::
 
     >>> arithmetic = ImArith(merge_headers='first')
     >>> result = arithmetic.run(image, 2, '*')

@@ -3,7 +3,16 @@
 Image combination
 =================
 
-Start with three small images to inspect combination values and units::
+The :mod:`astropop.image.imcombine` module provides ``imcombine`` for a single
+combination and ``ImCombiner`` for reusable rejection, storage and header
+settings. Both reduce corresponding pixels along an image stack. The sections
+below describe accepted samples, nominal estimators, uncertainties and the
+combiner's memory strategy.
+
+The ``imcombine`` function
+--------------------------
+
+Import the function and its configurable class::
 
     >>> import numpy as np
     >>> from astropy import units as u
@@ -418,18 +427,6 @@ This is a recipe with application-supplied ``paths``, not an executed benchmark.
 Disk caching uses the loading and cleanup behavior described above. Filesystem
 page cache, disk space and I/O speed also matter.
 
-Iterate over science products and write each result before processing the next.
-For measurements, record input count, image shape, dtype, optional-array policy,
-method/rejection settings, cache mode, memory budget, software versions and
-hardware. Benchmark in a fresh process and report both elapsed time and peak
-resident memory, distinguishing baseline interpreter/import cost from the
-increment during combination. Sampling RSS can miss short peaks and includes
-mapped pages; allocator tracing alone may omit native allocations. Keep those
-measurements separate from numerical correctness checks.
-
-See :doc:`../concepts/configuration` for restoring global settings and configuring
-spawned workers; :doc:`../data_structures/cache` describes cache ownership.
-
 Headers and reusable configuration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -448,9 +445,28 @@ records ``HIERARCH astropop imcombine nimages`` and
     >>> print("preserved.header['astropop imcombine nimages']:", preserved.header['astropop imcombine nimages'])
     preserved.header['astropop imcombine nimages']: 2
 
-Use |ImCombiner| to retain settings for several combinations. Its constructor
-uses ``max_memory`` for the budget. Unlike the convenience function,
-``set_sigma_clip`` defaults to ``dev_func='mad_std'``::
+The ``ImCombiner`` class
+------------------------
+
+``ImCombiner`` stores the options used by ``combine(image_list, method=...)``.
+The constructor accepts ``dtype`` for pixel storage, ``max_memory`` for the
+work-tile budget, and ``use_disk_cache``/``tmp_dir`` for private input storage.
+It uses the same nominal and uncertainty estimators as ``imcombine``; creating
+an instance does not load images or perform a combination.
+
+Its configuration methods change subsequent calls to ``combine``:
+
+* ``set_sigma_clip(sigma_limits, center_func='median', dev_func='mad_std')``
+  sets one-pass rejection. A scalar threshold is symmetric, a pair supplies
+  lower/upper limits, and ``None`` disables it. Unlike the wrapper function,
+  the method defaults to ``'mad_std'`` rather than ``'std'``.
+* ``set_minmax_clip(min_value=None, max_value=None)`` sets accepted pixel-value
+  bounds. A missing bound leaves that side open; two missing bounds disable
+  the filter. Boundary values are accepted.
+* ``set_merge_header(strategy, keys=None)`` sets the header strategy described
+  above. ``keys`` names the retained cards for ``'selected_keys'``.
+
+Configure these methods before calling ``combine``::
 
     >>> combiner = ImCombiner(max_memory=16 * 1024**2, dtype='float32')
     >>> combiner.set_sigma_clip(3, center_func='median', dev_func='mad_std')

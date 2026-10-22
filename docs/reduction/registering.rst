@@ -9,8 +9,12 @@ cross-correlation for translations and asterism matching for stellar fields
 with translation and rotation. Registration operates on pixel coordinates;
 it does not use a WCS to find the alignment.
 
-Registering a list of frames
-----------------------------
+.. raw:: html
+
+    <span id="registering-a-list-of-frames"></span>
+
+List interfaces: ``compute_shift_list`` and ``register_framedata_list``
+-----------------------------------------------------------------------
 
 Use :func:`~astropop.image.register.register_framedata_list` with a non-empty
 list of :class:`~astropop.framedata.FrameData` objects of the same two-dimensional
@@ -46,8 +50,12 @@ unchanged. Use ``inplace=True`` to modify the input frames.
 does not resample or modify the frames. Calling it before registration is
 optional: registration computes its own transforms.
 
-Choosing an algorithm
----------------------
+.. raw:: html
+
+    <span id="choosing-an-algorithm"></span>
+
+The ``CrossCorrelationRegister`` and ``AsterismRegister`` classes
+-----------------------------------------------------------------
 
 ``algorithm='cross-correlation'`` is the default. It compares the image pixels
 using phase cross-correlation and estimates translation only. Increase
@@ -137,11 +145,15 @@ For a transform containing rotation or scale, the translation is one component
 of the full transform about the image origin, not the displacement of every
 star. ``compute_shift_list`` returns only that translation component. Use
 ``compute_transform`` to obtain the full transform. The executed
-:doc:`../how_to/registration_diagnostics` example includes rotation/scale,
+:doc:`../tutorials/registration_diagnostics` example includes rotation/scale,
 coordinate correction with ``transform.inverse`` and a valid-footprint check.
 
-Registering individual images
------------------------------
+.. raw:: html
+
+    <span id="registering-individual-images"></span>
+
+Methods: ``compute_transform``, ``register_image`` and ``register_framedata``
+-----------------------------------------------------------------------------
 
 Create :class:`~astropop.image.register.CrossCorrelationRegister` or
 :class:`~astropop.image.register.AsterismRegister` to work with one pair of

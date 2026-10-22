@@ -3,14 +3,17 @@
 CCD image processing
 ====================
 
-:mod:`astropop.image.processing` provides individual calibration steps. It does
-not discover calibration files, build masters, or choose their order. Use
-:func:`~astropop.image.imcombine.imcombine` to construct masters and apply the
-steps appropriate to your detector. Inputs must have matching geometry and
-compatible units; these functions do not register calibration frames.
-Check :ref:`calibration compatibility <calibration-selection>` before combining
-or applying masters. Matching array shapes alone does not establish compatible
-detector settings.
+:mod:`astropop.image.processing` supplies ``subtract_bias``, ``subtract_dark``,
+``flat_correct`` and ``gain_correct`` for calibration arithmetic, ``trim_image``
+for cropping, and ``cosmics_lacosmic`` for cosmic-ray cleaning. Each function
+accepts image inputs through FrameData conversion and returns a FrameData.
+The arithmetic functions accept ``inplace=True`` to update the science frame;
+their examples below use the default independent result.
+
+This module applies supplied calibrations; it does not select observations or
+estimate masters. For that complete process, see
+:doc:`../tutorials/science_reduction`. The sections below explain the numerical
+steps, options and returned image information.
 
 The additive bias/dark and multiplicative flat model is described in Astropy's
 `CCD calibration overview
@@ -22,11 +25,15 @@ detector-appropriate uncertainty model.
 Bias, dark, and flat correction
 -------------------------------
 
-``subtract_bias`` subtracts an already combined bias. ``subtract_dark`` scales
-an already bias-corrected dark by ``image_exposure / dark_exposure`` before
-subtraction. Supply a nonzero dark exposure, with both exposures expressed in
-the same units. Exposure values are supplied explicitly rather than read from
-the headers::
+The ``subtract_bias`` function
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``subtract_bias(image, master_bias)`` computes :math:`C=I-B`, where :math:`I`
+is the science image and :math:`B` the supplied master bias. Pixel geometry and
+units must be compatible. Enabled standard uncertainties propagate using the
+independent-input rule :math:`\sigma_C^2=\sigma_I^2+\sigma_B^2`.
+
+Subtract a uniform 100 ADU bias from a 1200 ADU image::
 
     >>> import numpy as np
     >>> from astropop.framedata import FrameData
@@ -35,6 +42,23 @@ the headers::
     >>> bias = FrameData(np.full((4, 4), 100.), unit='adu', uncertainty=1.)
     >>> dark = FrameData(np.full((4, 4), 10.), unit='adu', uncertainty=0.5)
     >>> corrected = subtract_bias(science, bias)
+    >>> print(f'Bias-subtracted pixel: {corrected.data[0, 0]:.0f} {corrected.unit}')
+    Bias-subtracted pixel: 1100 adu
+
+The ``subtract_dark`` function
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``subtract_dark`` scales a supplied bias-corrected master dark by
+``image_exposure / dark_exposure`` and subtracts it:
+
+.. math::
+
+    C = I - \frac{t_I}{t_D}D.
+
+Exposure values are explicit arguments, not inferred from headers. Supply a
+nonzero dark exposure and use the same time unit for both arguments. A ten-ADU
+dark measured in ten seconds removes twenty ADU from a twenty-second image::
+
     >>> corrected = subtract_dark(corrected, dark, dark_exposure=10, image_exposure=20)
     >>> print('corrected.data:', np.round(corrected.data, 6))
     corrected.data: [[1080. 1080. 1080. 1080.]
@@ -42,39 +66,21 @@ the headers::
      [1080. 1080. 1080. 1080.]
      [1080. 1080. 1080. 1080.]]
 
-Construct the dark from exposures with a common duration before scaling it.
-For this small example the master bias is already available and all raw darks
-were taken for ten seconds at the science detector's settings::
+Master construction and exposure-group selection are demonstrated in
+:doc:`../tutorials/dark_correction`. The scaling assumes a dark signal
+proportional to exposure time; the function does not fit a temperature or
+nonlinearity model.
 
-    >>> from astropop.image import imcombine
-    >>> raw_darks = [FrameData(np.full((4, 4), value), unit='adu',
-    ...                        meta={'EXPTIME': 10.}) for value in (109., 110., 111.)]
-    >>> dark_times = np.array([frame.meta['EXPTIME'] for frame in raw_darks])
-    >>> if not np.all(np.isfinite(dark_times) & (dark_times > 0)) or not np.all(dark_times == dark_times[0]):
-    ...     raise ValueError('Select dark frames with one finite positive exposure duration.')
-    >>> master_dark = imcombine([subtract_bias(frame, bias) for frame in raw_darks],
-    ...                         method='median')
-    >>> master_dark.meta['EXPTIME'] = float(dark_times[0])
-    >>> dark_subtracted = subtract_dark(subtract_bias(science, bias), master_dark,
-    ...                                 dark_exposure=master_dark.meta['EXPTIME'],
-    ...                                 image_exposure=20.)
-    >>> print(f'Master dark: {master_dark.data[0, 0]:.1f} ADU in {dark_times[0]:.0f} s')
-    Master dark: 10.0 ADU in 10 s
-    >>> print(f'Science after scaled subtraction: {dark_subtracted.data[0, 0]:.1f} ADU')
-    Science after scaled subtraction: 1080.0 ADU
-
-Scaling assumes dark signal is proportional to exposure time at the selected
-temperature and detector settings. A dark that still contains bias would scale
-that bias too. Do not scale a nonlinear dark signal or combine different dark
-durations without an explicit normalization policy. Reusing one bias also
-correlates corrected inputs; the independent-error arithmetic does not track
-that shared covariance.
+The ``flat_correct`` function
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ``flat_correct`` divides by a master flat. With ``min_value`` it first replaces
 smaller flat values by that lower bound; this is a clamp, not a mask. With
 ``norm_value`` it divides the flat by that explicitly supplied normalization
-value. Neither option estimates a normalization automatically. The master flat
-is copied before these changes::
+value. Neither option estimates a normalization automatically. With a supplied
+normalization :math:`n`, the calculation is :math:`C=I/(F/n)` after any lower
+bound has been applied to :math:`F`. The master flat is copied before these
+changes::
 
     >>> flat = FrameData(np.full((4, 4), 2.))
     >>> calibrated = flat_correct(corrected, flat, norm_value=2.)
@@ -199,7 +205,7 @@ and zero-response pixels and explicitly restores the merged flags::
 
 Do not use the finite values at excluded pixels as repaired measurements.
 Choose response limits using the actual detector; inspect nonfinite responses
-too. See :doc:`../how_to/quality_flags` for defects in both science and masters,
+too. See :doc:`../tutorials/quality_propagation` for defects in both science and masters,
 and full reason-bit persistence. ``min_value`` alone does not mark a mask or
 update the uncertainty model for clamped flat values.
 
