@@ -18,8 +18,8 @@ Set the level on the shared logger and restore it after temporary changes::
     >>> from astropop.logger import logger, resolve_level_string
     >>> previous = logger.level
     >>> logger.setLevel('WARNING')
-    >>> resolve_level_string('INFO') == logging.INFO
-    True
+    >>> print('INFO level:', resolve_level_string('INFO'))
+    INFO level: 20
     >>> logger.setLevel(previous)
 
 ``resolve_level_string`` accepts an integer, a numeric string, or an uppercase

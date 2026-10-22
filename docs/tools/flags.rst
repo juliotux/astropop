@@ -46,6 +46,38 @@ headers, ``'first'`` for the first header, ``'selected_keys'`` for explicitly
 named keys by first occurrence, or ``'no_merge'`` for an empty header. Always
 specify the intended method when calling these lower-level helpers.
 
+For a custom array operation, inspect the lower-level flag strategies directly.
+The example uses two-bit integer arrays so each result is visible::
+
+    >>> from astropop.image._tools import merge_flag, merge_header
+    >>> first = np.array([1, 2], dtype='uint8')
+    >>> second = np.array([2, 2], dtype='uint8')
+    >>> for method in ('or', 'and', 'no_merge'):
+    ...     print(method, merge_flag(first, second, method=method).tolist())
+    or [3, 2]
+    and [0, 2]
+    no_merge [0, 0]
+
+Choose header merging independently of flag merging. ``'selected_keys'``
+requires ``selected_keys``; the first occurrence supplies each selected value.
+Here the filter agrees, but exposure time differs::
+
+    >>> from astropy.io.fits import Header
+    >>> first_header = Header({'FILTER': 'R', 'EXPTIME': 10})
+    >>> second_header = Header({'FILTER': 'R', 'EXPTIME': 20})
+    >>> for method in ('only_equal', 'first', 'selected_keys', 'no_merge'):
+    ...     merged = merge_header(first_header, second_header, method=method,
+    ...                           selected_keys=['EXPTIME'])
+    ...     print(method, dict(merged))
+    only_equal {'FILTER': 'R'}
+    first {'FILTER': 'R', 'EXPTIME': 10}
+    selected_keys {'EXPTIME': 10}
+    no_merge {}
+
+These operations return merged arrays/headers; they do not infer an exposure
+policy or update an image's physical calibration. The arithmetic wrapper
+applies the chosen strategies to its result.
+
 Flags and merge API
 -------------------
 

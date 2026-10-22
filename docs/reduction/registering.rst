@@ -1,7 +1,7 @@
 .. include:: ../references.txt
 
-Image Alignment and Registering
-===============================
+Register images and measure transforms
+======================================
 
 The :mod:`astropop.image.register` module estimates the relative motion between
 images and resamples them onto a reference image's pixel grid. It provides
@@ -239,3 +239,7 @@ See :doc:`../reference/image` for the API reference.
     <span id="classes"></span>
     <span id="functions"></span>
     <span id="module-astropop.image.register"></span>
+
+.. raw:: html
+
+    <span id="image-alignment-and-registering"></span>

@@ -1,7 +1,7 @@
 .. include:: ../references.txt
 
-Catalogs Data
-=============
+Catalogs, coordinates and magnitudes
+====================================
 
 |SourcesCatalog| stores source IDs, equatorial coordinates and optional
 magnitudes. It wraps |SkyCoord| rather than subclassing it. Local and online
@@ -109,8 +109,8 @@ a quality code beside a catalog with one measured band::
 agree. The constructor does not validate the length of ``query_table``:
 the caller must ensure its length and ordering match.
 
-Properties Accessing
---------------------
+Read coordinates, identifiers and magnitudes
+--------------------------------------------
 
 Coordinates
 ^^^^^^^^^^^
@@ -347,3 +347,11 @@ See :doc:`../reference/catalogs` for the API reference.
 .. raw:: html
 
     <span id="soures-ids"></span>
+
+.. raw:: html
+
+    <span id="catalogs-data"></span>
+
+.. raw:: html
+
+    <span id="properties-accessing"></span>
