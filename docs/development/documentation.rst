@@ -130,9 +130,16 @@ and expected results and use local temporary data.
 API and editorial checklist
 -----------------------------
 
+The documentation toolchain requires Python 3.12 or newer; the maintained tox
+and Read the Docs builds use Python 3.14. This is separate from the runtime
+Python minimum of the library.
+
 Use NumPy-style docstrings for public callables. Annotations define parameter
 and return types; omit redundant type declarations from annotated docstring
-fields and let Sphinx render the types in signatures. Keep names and behavioral
+fields. ``sphinx_autodoc_typehints`` reads the annotations and fills the
+NumPyDoc parameter and return descriptions during the build. Signatures keep
+the parameter names and defaults, while type information appears beside the
+explanatory text. Keep names and behavioral
 explanations, including units, shapes and estimator limitations. State defaults, literal string
 choices and what each choice does, shape/dtype/unit requirements, mutation and
 array ownership, missing arrays, masks, return types, and expected failures.
@@ -153,7 +160,8 @@ Strict checks and pull-request previews
 ``tox -e build_docs`` uses Python 3.14 and installs both ``docs`` and ``test``
 extras. It checks generated-notebook schema/code syntax, runs local prompted
 examples with remote data disabled, builds every page with strict reference
-and warning checks, then verifies retained URLs and anchors. The GitHub docs
+and warning checks, then verifies retained URLs, anchors and annotation-derived
+parameter types on representative function and class pages. The GitHub docs
 job selects that environment. Read the Docs also selects Python 3.14 and
 ``sphinx.fail_on_warning: true``; ``nitpicky=True`` in ``docs/conf.py`` checks
 object references on both hosts. The tox job executes the nine offline

@@ -62,6 +62,7 @@ docs = [
     "ipython",
     "ipykernel",
     "sphinx",
+    "sphinx-autodoc-typehints>=3.17.2",
     "sphinx-astropy",
     "sphinx-book-theme",
     "numpydoc",

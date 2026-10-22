@@ -219,7 +219,7 @@ class FrameData:
     wcs : `~astropy.wcs.WCS` or `None` (optional)
         World Coordinate System of the image. If meta or header keys already
         contain WCS information, an error will be raised.
-    meta or header: `dict` or `~astropy.io.fits.Header` (optional)
+    meta, header : dict or astropy.io.fits.Header, optional
         Metadata (header) of the frame. Only one accepted. If both are passed,
         error will be raised.
     cache_folder

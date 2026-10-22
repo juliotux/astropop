@@ -6,7 +6,7 @@ sys.path.insert(0, ap_dir)
 sys.path.insert(0, os.path.join(ap_dir, 'docs', '_ext'))
 
 # Minimum version, enforced by sphinx
-needs_sphinx = '4.3.0'
+needs_sphinx = '9.1'
 
 # Check missing object references in local and hosted builds alike.
 nitpicky = True
@@ -23,6 +23,7 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx_automodapi.automodapi',
     'numpydoc',
+    'sphinx_autodoc_typehints',
     'matplotlib.sphinxext.plot_directive',
 ]
 
@@ -37,8 +38,13 @@ plot_html_show_formats = False
 
 todo_include_todos = True
 
-# Annotations own types; NumPy-style docstrings explain behavior and units.
-autodoc_typehints = 'signature'
+# The type-hint extension fills NumPyDoc parameter/return fields directly.
+# Disable Sphinx's separate injector to avoid a second parameter list.
+autodoc_typehints = 'none'
+always_document_param_types = True
+typehints_document_rtype_none = False
+from annotation_names import format_alias
+typehints_formatter = format_alias
 autodoc_typehints_format = 'short'
 # Preserve shared aliases instead of expanding large unions or resolving cyclic
 # FrameData/QFloat names in the importing function's namespace.
@@ -54,6 +60,10 @@ autodoc_type_aliases.update({
     '_npt.DTypeLike': 'numpy.typing.DTypeLike',
 })
 
+
+# NumPy exposes this private context-manager type in two imported test helpers;
+# its implementation class has no public inventory target.
+nitpick_ignore = [('py:class', 'unittest.case._AssertRaisesContext')]
 
 numpydoc_show_class_members = False
 numpydoc_attributes_as_param_list = False

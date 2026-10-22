@@ -39,26 +39,29 @@ class SourcesCatalog:
         keys are the names of the filters and the values are the photometric
         magnitudes of the object in a `~astropop.math.physical.QFloat` array. Photometry
         will be only available if this argument is set.
-    ra, dec: array (optional)
+    ra, dec : `~numpy.typing.ArrayLike`, optional
         Right ascension and declination forwarded to SkyCoord. Supply explicit
         angular units for plain numerical arrays, for example ``unit='deg'``.
-    pm_ra_cosdec, pm_dec: `~astropy.units.Quantity` (optional)
+    pm_ra_cosdec, pm_dec : `~astropy.units.Quantity`, optional
         Proper motion of both coordinates.
-    unit: `~astropy.units.Unit`, string, or tuple
+    unit : `~astropy.units.Unit` or str or tuple
         Units for supplied coordinate values.
-    obstime: time-like (optional)
+    obstime : object, optional
         Time of observation of the values. Used to compute proper
         motion on a target observation time.
-    frame: str (optional)
+    frame : str, optional
         Celestial frame of coordinates. Default is 'ICRS'
     query_table
         Auxiliary source columns. The caller must provide the same row count
         and order as the coordinates; the constructor does not validate this
         alignment and retains the supplied table rather than copying it.
-    *args, **kwargs:
-        Arguments to be passed to `~astropy.coordinates.SkyCoord`
-        initialization. See `~astropy.coordinates.SkyCoord` docs for more
-        details.
+    *args
+        Positional coordinate arguments forwarded to
+        `~astropy.coordinates.SkyCoord` initialization.
+    **kwargs
+        Keyword coordinate arguments forwarded to
+        `~astropy.coordinates.SkyCoord`. See its documentation for accepted
+        coordinate representations and time values.
     """
 
     _base_table = None  # Store array of ids
@@ -403,7 +406,7 @@ class _OnlineSourcesCatalog(SourcesCatalog, abc.ABC):
 
         Raises
         ------
-        ValueError:
+        ValueError
             If a ``band`` not available in the filters is passed.
         """
         self._center = astroquery_skycoord(center)

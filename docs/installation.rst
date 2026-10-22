@@ -49,7 +49,10 @@ For an editable checkout, install from the repository root::
     python -m pip install -e '.[all,test,docs]'
 
 The ``test`` extra installs test helpers; ``docs`` installs documentation
-packages. Some scientific dependencies contain compiled extensions. Prefer
+packages. Building this development documentation requires Python 3.12 or
+newer for automatic annotation rendering; the maintained documentation builds
+use Python 3.14. Runtime use of Astropop still supports Python 3.11.
+Some scientific dependencies contain compiled extensions. Prefer
 available binary wheels or install the corresponding packages in your conda
 environment; building those dependencies from source may require compilers.
 

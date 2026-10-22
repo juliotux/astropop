@@ -43,6 +43,66 @@ def check_urls(html):
     print(f"Verified {len(manifest['pages'])} retained page URLs and anchors")
 
 
+class ParameterTypes(HTMLParser):
+    """Collect nonempty types rendered beside parameter names in API fields."""
+
+    def __init__(self) -> None:
+        """Initialize per-paragraph state and the set of typed parameters."""
+        super().__init__()
+        self.typed: set[str] = set()
+        self._name: list[str] | None = None
+        self._parameter = ''
+        self._has_type = False
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        """Recognize parameter labels and the annotation renderer's type span."""
+        if tag == 'strong':
+            self._name = []
+        if tag == 'span' and 'sphinx_autodoc_typehints-type' in dict(attrs).get('class', '').split():
+            self._has_type = True
+
+    def handle_data(self, data: str) -> None:
+        """Read a bold parameter name and confirm the following type has text."""
+        if self._name is not None:
+            self._name.append(data)
+        elif self._parameter and self._has_type and data.strip():
+            self.typed.add(self._parameter)
+
+    def handle_endtag(self, tag: str) -> None:
+        """Finish labels and prevent parameter state leaking into later prose."""
+        if tag == 'strong' and self._name is not None:
+            self._parameter = ''.join(self._name).strip()
+            self._name = None
+        elif tag == 'p':
+            self._parameter = ''
+            self._has_type = False
+
+
+def check_parameter_types(html: Path) -> None:
+    """Require annotation-derived types in representative function/class fields."""
+    required = {
+        'astropop.framedata.FrameData': {'data', 'dtype', 'uncertainty'},
+        'astropop.image.imcombine.imcombine': {'frames', 'method', 'dtype'},
+        'astropop.image.imarith.imarith': {'operand1', 'operand2', 'merge_flags'},
+        'astropop.astrometry.guess_coordinates': {'ra', 'dec', 'skycoord'},
+        'astropop.catalogs.SourcesCatalog': {'ids', 'mag'},
+    }
+    failures = []
+    for name, parameters in required.items():
+        page = html / 'api' / f'{name}.html'
+        if not page.is_file():
+            failures.append(f'Missing API page for parameter types: {page.name}')
+            continue
+        parser = ParameterTypes()
+        parser.feed(page.read_text())
+        missing = parameters - parser.typed
+        if missing:
+            failures.append(f'Missing parameter-description types in {page.name}: {sorted(missing)}')
+    if failures:
+        raise SystemExit('\n'.join(failures))
+    print(f'Verified annotation-derived parameter types on {len(required)} API pages')
+
+
 _DIRECTIVE_MODES = {
     '.. code-block:: text': 'stored console transcript; not executed',
     '.. catalog-help::': 'local catalog help; rendered without online queries',
@@ -117,6 +177,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     if args.html:
         check_urls(args.html)
+        check_parameter_types(args.html)
     if args.inventory:
         example_inventory()
     if args.notebooks:

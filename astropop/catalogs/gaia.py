@@ -100,7 +100,7 @@ class GaiaDR3SourcesCatalog(_OnlineSourcesCatalog):
 
     Raises
     ------
-    ValueError:
+    ValueError
         If a ``band`` not available in the filters is passed, or
         ``query_mode`` is not ``'async'`` or ``'sync'``.
     """

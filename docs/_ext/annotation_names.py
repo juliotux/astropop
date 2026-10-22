@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from docutils import nodes
     from sphinx import addnodes
     from sphinx.application import Sphinx
+    from sphinx.config import Config
     from sphinx.environment import BuildEnvironment
 
 
@@ -56,15 +57,42 @@ def format_signature(
     return format_annotation(signature), format_annotation(return_annotation)
 
 
+
+def format_alias(annotation: Any, config: Config) -> str | None:
+    """Link configured scientific aliases with their short names in type fields."""
+    name = getattr(annotation, 'name', None) or getattr(annotation, '__name__', None)
+    # NumPy's test-helper stubs use private aliases without inventory entries.
+    # Render their public constituent types instead of linking private names.
+    if name == '_ExceptionSpec':
+        return ':py:class:`type` or :py:class:`tuple` of exception classes'
+    if name == '_RegexLike':
+        return ':py:class:`str`, :py:class:`bytes` or :py:class:`re.Pattern`'
+    if isinstance(name, str) and name in config.autodoc_type_aliases.values():
+        return f':py:obj:`~{name}`'
+    return None
+
+
 def resolve_alias(
     app: Sphinx, env: BuildEnvironment, node: addnodes.pending_xref,
     contnode: nodes.TextElement,
-) -> nodes.reference | None:
+) -> nodes.reference | nodes.TextElement | None:
     """Link type aliases registered as data/attributes instead of classes."""
     from sphinx.ext.intersphinx import missing_reference
 
     aliases = app.config.autodoc_type_aliases
     target = node['reftarget']
+    # NumPyDoc's unannotated/forwarded parameter types can contain English
+    # qualifiers and literal choices. They are text, not Python class names.
+    if node.get('refdomain') == 'py' and node.get('reftype') == 'class':
+        if target in {'optional', 'or', 'tuple or', 'one', '"real"',
+                      '"fourier"', '{"always"}'}:
+            return contnode
+        if target == 'string':
+            target = 'str'
+            node['reftarget'] = target
+            return env.domains['py'].resolve_xref(
+                env, node['refdoc'], app.builder, 'class', target, node, contnode
+            ) or missing_reference(app, env, node, contnode)
     if node.get('refdomain') != 'py' or not (
         target in aliases or target in aliases.values() or target.startswith('numpy.')
     ):

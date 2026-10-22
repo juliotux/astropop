@@ -187,7 +187,7 @@ class SimbadSourcesCatalog(_OnlineSourcesCatalog):
 
     Raises
     ------
-    ValueError:
+    ValueError
         If a ``band`` not available in the filters is passed.
     """
 

@@ -67,7 +67,7 @@ class VizierSourcesCatalog(_OnlineSourcesCatalog):
 
     Raises
     ------
-    ValueError:
+    ValueError
         If a ``band`` not available in the filters is passed.
     """
 
