@@ -26,6 +26,7 @@ Run from the extracted bundle root when following the HTML examples::
 
     >>> from tempfile import TemporaryDirectory
     >>> from tutorial_data import generate_dataset
+
     >>> _temporary = TemporaryDirectory()
     >>> data = Path(_temporary.name).resolve() / 'data'
     >>> generate_dataset(data, include_extras=True)
@@ -45,26 +46,33 @@ with a deliberate pixel offset. It is not the solution we are trying to recover:
     >>> from astropy.wcs.utils import fit_wcs_from_points
     >>> from astropop.framedata import read_framedata
     >>> from astropop.catalogs import SourcesCatalog
+
     >>> output = data.parent / 'reduced'
     >>> required = ('combined.fits', 'instrumental.ecsv')
     >>> available = [(output / name).is_file() for name in required]
     >>> if any(available) and not all(available):
     ...     raise ValueError('Incomplete reduced products: rerun the preceding tutorials together.')
+
     >>> inputs = output if all(available) else data / 'reference'
+
     >>> print('Input product set:', inputs.name)
     Input product set: reference
+
     >>> measured = Table.read(inputs / 'instrumental.ecsv')
     >>> standards = Table.read(data / 'standards.ecsv')
     >>> catalog = SourcesCatalog(ids=standards['id'], ra=standards['ra'],
     ...                          dec=standards['dec'], unit='deg')
     >>> reference = catalog.get_coordinates()
     >>> rough = WCS(fits.getheader(data / 'pointing.fits'))
+
+    >>> # The rough pointing WCS is only used to associate detections with standards.
     >>> x_guess, y_guess = rough.world_to_pixel(reference)
     >>> distance2 = ((measured['x'][:, None] - x_guess)**2
     ...              + (measured['y'][:, None] - y_guess)**2)
     >>> nearest = np.argmin(distance2, axis=0)
     >>> separation_pixels = np.sqrt(distance2[nearest, np.arange(len(reference))])
     >>> usable = (separation_pixels < 8) & (measured['flags'][nearest] == 0)
+
     >>> print(f'References within 8 pixels: {usable.sum()} / {len(reference)}')
     References within 8 pixels: 9 / 9
 
@@ -92,14 +100,18 @@ Use seven references distributed across the field. Keep the last two out of the
 fit so their residuals provide a separate check. Pixel positions use zero-based
 ``(x, y)`` order, while image arrays use ``[y, x]``::
 
+    >>> # Reserve other matched stars to check the solution independently of the fit.
     >>> fit_rows = usable & (np.arange(len(reference)) < 7)
     >>> check_rows = usable & ~fit_rows
     >>> x, y = measured['x'][nearest], measured['y'][nearest]
     >>> solution = fit_wcs_from_points((x[fit_rows], y[fit_rows]), reference[fit_rows],
     ...                                projection='TAN')
     >>> recovered = solution.pixel_to_world(x, y)
+
+    >>> # Use spherical offsets so the east residual includes the declination factor.
     >>> east, north = reference.spherical_offsets_to(recovered)
     >>> radial = np.hypot(east.arcsec, north.arcsec)
+
     >>> print(f'Fit stars: {fit_rows.sum()}; independent check stars: {check_rows.sum()}')
     Fit stars: 7; independent check stars: 2
     >>> print(f'Check-star RMS: {np.sqrt(np.mean(radial[check_rows]**2)):.3f} arcsec')
@@ -125,6 +137,8 @@ Choose the combined image you measured, attach the fitted WCS, and keep units,
 errors and masks in the FITS interchange::
 
     >>> image = read_framedata(inputs / 'combined.fits')
+
+    >>> # Attach coordinates to existing pixels; assigning WCS does not resample the image.
     >>> image.wcs = solution
     >>> output.mkdir(exist_ok=True)
     >>> image.write(output / 'astrometric.fits', overwrite=True)
@@ -134,6 +148,7 @@ errors and masks in the FITS interchange::
     ...                      'measurements': 'instrumental.ecsv', 'projection': 'TAN',
     ...                      'association_radius_pixels': 8, 'fit_reference_ids': list(standards['id'][fit_rows])})
     >>> matched.write(output / 'astrometric_matches.ecsv', overwrite=True)
+
     >>> print('Saved: astrometric.fits and astrometric_matches.ecsv')
     Saved: astrometric.fits and astrometric_matches.ecsv
 

@@ -19,22 +19,30 @@ canonical path, including when the temporary directory is reached by a symlink::
     >>> from tempfile import TemporaryDirectory
     >>> from astropy.io import fits
     >>> from astropop.file_collection import FitsFileGroup
+
     >>> temporary = TemporaryDirectory()
     >>> folder = Path(temporary.name).resolve()
     >>> for index, band in enumerate(['R', 'G', 'R']):
     ...     hdu = fits.ImageHDU(np.full((4, 4), index), name='SCI')
     ...     hdu.header['FILTER'] = band
     ...     fits.HDUList([fits.PrimaryHDU(), hdu]).writeto(folder / f'image_{index}.fits')
+
     >>> database = str(folder / 'headers.db')
     >>> group = FitsFileGroup(location=str(folder), ext=1, database=database)
+
     >>> print('len(group):', len(group))
     len(group): 3
     >>> print('Filter columns:', [name for name in group.summary.colnames if name.lower() == 'filter'])
     Filter columns: ['filter']
+
     >>> red = group.filtered({'FILTER': 'R'})
+
     >>> print('len(red):', len(red))
     len(red): 2
+
+    >>> # Grouping needs the stored column name, unlike case-insensitive header filtering.
     >>> filter_column = next(name for name in group.summary.colnames if name.lower() == 'filter')
+
     >>> print('Frames per filter:', sorted(len(subgroup) for subgroup in group.group_by([filter_column])))
     Frames per filter: [1, 2]
 
@@ -50,11 +58,15 @@ path, including its directory. Build a pattern using the same directory as the
 scan, rather than matching only a basename::
 
     >>> from astropop.file_collection import list_fits_files
+
     >>> pattern = str(folder / 'image_0*')
     >>> included = list_fits_files(folder, glob_include=pattern)
+
     >>> print('Included:', [Path(name).name for name in included])
     Included: ['image_0.fits']
+
     >>> excluded = list_fits_files(folder, glob_exclude=pattern)
+
     >>> print('Remaining:', [Path(name).name for name in excluded])
     Remaining: ['image_1.fits', 'image_2.fits']
 
@@ -73,10 +85,15 @@ then call ``update`` explicitly after files or headers change::
     group.relative_path(str(folder / 'image_0.fits')): image_0.fits
     >>> print('Path(group.full_path(0)).is_absolute():', Path(group.full_path(0)).is_absolute())
     Path(group.full_path(0)).is_absolute(): True
+
     >>> reopened = FitsFileGroup(database=database)
+
     >>> print('len(reopened):', len(reopened))
     len(reopened): 3
+
+    >>> # Refresh explicitly; reopening a database reuses its saved header index.
     >>> reopened.update(location=str(folder))
+
     >>> print('len(reopened):', len(reopened))
     len(reopened): 3
     >>> print("fits.getheader(folder / 'image_0.fits', 1)['FILTER']:", fits.getheader(folder / 'image_0.fits', 1)['FILTER'])
@@ -94,12 +111,14 @@ Choose the data extension explicitly when iterating. Keep only the scalar
 measurements or output paths needed downstream, not every FrameData::
 
     >>> means = []
+
     >>> for frame in reopened.framedata(ext=1):
     ...     print('frame.shape:', frame.shape)
     ...     means.append(float(np.mean(frame.data)))
     frame.shape: (4, 4)
     frame.shape: (4, 4)
     frame.shape: (4, 4)
+
     >>> print('sorted(means):', sorted(means))
     sorted(means): [0.0, 1.0, 2.0]
 
@@ -108,6 +127,7 @@ directory. This finalizes dbastable's SQLite connections, which can otherwise
 keep the database file open on Windows::
 
     >>> import gc
+
     >>> del frame, group, reopened, red
     >>> _ = gc.collect()
     >>> temporary.cleanup()

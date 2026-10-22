@@ -18,14 +18,18 @@ pixels and, with ``merge_flags='or'``, carries the bits forward::
     >>> from astropop.framedata import FrameData, PixelMaskFlags as F, read_framedata
     >>> from astropop.image import imarith, imcombine
     >>> from astropop.image.processing import subtract_bias
+
     >>> raw = FrameData([[110., 120.]], unit='adu')
     >>> bad_bits = F.MASKED | F.SATURATED
     >>> raw.add_flags(bad_bits, where=(0, 0))
+
     >>> print('raw.flags[0, 0]:', raw.flags[0, 0])
     raw.flags[0, 0]: 18
     >>> print('raw.mask.tolist():', raw.mask.tolist())
     raw.mask.tolist(): [[True, False]]
+
     >>> arithmetic = imarith(raw, 10 * u.adu, '-', merge_flags='or')
+
     >>> print('arithmetic.data:', np.round(arithmetic.data, 6))
     arithmetic.data: [[100. 110.]]
     >>> print('arithmetic.flags:', arithmetic.flags.tolist())
@@ -40,9 +44,13 @@ Save the detector-quality map and restore it explicitly after calibration::
     >>> detector_flags = raw.flags.copy()
     >>> bias = FrameData([[10., 10.]], unit='adu')
     >>> calibrated = subtract_bias(raw, bias)
+
     >>> print('calibrated.flags.any():', calibrated.flags.any())
     calibrated.flags.any(): False
+
+    >>> # Restore the saved detector defects after the helper's no-merge arithmetic.
     >>> calibrated.flags = detector_flags
+
     >>> print('calibrated.flags:', calibrated.flags.tolist())
     calibrated.flags: [[18, 0]]
     >>> print('calibrated.mask.tolist():', calibrated.mask.tolist())
@@ -60,6 +68,7 @@ the masked first sample but does not merge its reason bits into the output::
 
     >>> other = FrameData([[90., 110.]], unit='adu')
     >>> combined = imcombine([calibrated, other], method='mean')
+
     >>> print('combined.data:', np.round(combined.data, 6))
     combined.data: [[ 90. 110.]]
     >>> print('combined.mask.any():', combined.mask.any())
@@ -75,9 +84,12 @@ needed::
 
     >>> from tempfile import TemporaryDirectory
     >>> from pathlib import Path
+
     >>> with TemporaryDirectory() as directory:
     ...     path = Path(directory) / 'quality.fits'
     ...     calibrated.write(path)
+    ...
+    ...     # FITS reload restores the Boolean mask, not the original saturation reason bit.
     ...     restored = read_framedata(path)
     ...     print('restored.mask:', restored.mask.tolist())
     ...     print('restored.flags[0, 0]:', restored.flags[0, 0])
@@ -106,12 +118,15 @@ needed::
     arithmetic = imarith(raw, 10 * u.adu, '-', merge_flags='or')
     cleared = subtract_bias(raw, FrameData([[10., 10.]], unit='adu'))
     restored = cleared.copy()
+
+    # Restore the saved reason bits that the calibration helper cleared.
     restored.flags = raw.flags.copy()
     combined = imcombine([restored, FrameData([[90., 110.]], unit='adu')], method='mean')
     with TemporaryDirectory() as directory:
         filename = Path(directory) / 'quality.fits'
         restored.write(filename)
         imported = read_framedata(filename)
+
     stages = [(raw, 'Raw'), (arithmetic, "imarith: merge_flags='or'"),
               (cleared, 'subtract_bias: cleared flags'), (restored, 'Restore detector flags'),
               (combined, 'Combine with usable exposure'), (imported, 'FITS reload of restored frame')]
@@ -142,6 +157,7 @@ affected pixels after subtraction::
     >>> quality = np.bitwise_or(raw.flags, defective_bias.flags)
     >>> corrected = subtract_bias(raw, defective_bias)
     >>> corrected.flags = quality
+
     >>> print('Combined reasons:', corrected.flags.tolist())
     Combined reasons: [[18, 10]]
     >>> print('Excluded pixels:', corrected.mask.tolist())

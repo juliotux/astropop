@@ -49,8 +49,10 @@ BOOTSTRAP = '''from pathlib import Path
 import sys
 import os
 import matplotlib
+
 matplotlib.use('module://matplotlib_inline.backend_inline')
 
+# Accept launches from either the bundle root or its notebooks directory.
 bundle = Path.cwd()
 if not (bundle / 'tutorial_data.py').exists():
     bundle = bundle.parent
@@ -58,9 +60,12 @@ os.chdir(bundle)
 sys.path.insert(0, str(bundle))
 from tutorial_data import generate_dataset
 from astropop.config import AstropopConfig
+
+# Set allocation policy before the dataset helper reads or creates frames.
 AstropopConfig.FRAMEDATA_DISABLE_UNCERTAINTY = False
 AstropopConfig.FRAMEDATA_DISABLE_FLAGS = False
 
+# Reuse existing inputs so rerunning a notebook does not regenerate them.
 data = bundle / 'data'
 if not data.exists():
     generate_dataset(data)
@@ -125,12 +130,28 @@ def indented_block(lines: list[str], start: int) -> tuple[list[str], int]:
     return lines[start:end], end
 
 
+def example_code(block: list[str]) -> str:
+    """Keep prompted code, comments and spacing without copying console output."""
+    code = []
+    in_input = False
+    for line in block:
+        prompt = re.match(r'^\s*(>>>|\.\.\.)(?: (.*))?$', line)
+        if prompt and (prompt[1] == '>>>' or in_input):
+            code.append(prompt[2] or '')
+            in_input = True
+        else:
+            in_input = False
+            if not line.strip():
+                code.append('')
+    return '\n'.join(code).strip('\n')
+
+
 def example_cells(block: list[str]) -> list[NotebookNode]:
     """Convert prompted examples to code and a separate expected-output cell."""
     import nbformat as nbf
 
     examples = doctest.DocTestParser().get_examples('\n'.join(block))
-    code = '\n'.join(example.source.rstrip() for example in examples)
+    code = example_code(block)
     expected = ''.join(example.want for example in examples).replace('<BLANKLINE>', '')
     cells = [nbf.v4.new_code_cell(code)]
     if expected:

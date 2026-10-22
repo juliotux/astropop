@@ -18,6 +18,7 @@ VizieR configurations are packaged with Astropop. Read their help before
 constructing a catalog; construction performs the remote query::
 
     >>> from astropop.catalogs import vizier
+
     >>> print(vizier.ucac4.help().splitlines()[0])
     ucac4: UCAC4 Catalogue (Zacharias+, 2012)
 
@@ -41,6 +42,7 @@ footprint rather than only its center pixel:
     center = SkyCoord(ra=2.71675, dec=-54.29066, unit='deg', frame='icrs')
     radius = '10 arcmin'
     catalog = vizier.ucac4(center, radius, band=['B', 'V'])
+
     print(f'Returned sources: {len(catalog)}')
     print('Requested filters:', catalog.filters)
     print(catalog.table()[:5])
@@ -66,6 +68,8 @@ restore the catalog's full coordinate epoch or proper-motion model.
     output = Path('catalogs')
     output.mkdir(exist_ok=True)
     snapshot = catalog.table()
+
+    # Record query choices and retrieval time alongside the downloaded values.
     snapshot.meta.update({
         'service': 'VizieR', 'catalog': 'UCAC4',
         'center_ra_deg': float(center.ra.deg),
@@ -75,6 +79,7 @@ restore the catalog's full coordinate epoch or proper-motion model.
     })
     snapshot.write(output / 'ucac4.ecsv', overwrite=True)
     catalog.query_table.write(output / 'ucac4_query.ecsv', overwrite=True)
+
     print(f'Saved normalized and auxiliary rows: {len(snapshot)}')
 
 These named outputs are overwritten when rerun. Keep a dated copy when a
@@ -104,7 +109,10 @@ saved coordinates and bands without contacting VizieR:
                                        limit_angle='1 arcsec')
     found = matched.sources_id() != ''
     photometry = matched.magnitude('V')
+
+    # A positional match can still lack a usable magnitude in the requested band.
     usable = found & np.isfinite(photometry.nominal)
+
     print(f'Positional matches: {found.sum()} / {len(measured)}')
     print(f'Matches with finite V magnitudes: {usable.sum()}')
 
@@ -134,11 +142,14 @@ the intended bands explicitly, then inspect the references for each measurement:
 
     sirius = SkyCoord(ra=101.28715, dec=-16.71612, unit='deg')
     literature = SimbadSourcesCatalog(sirius, '10 arcmin', band=['B', 'V'])
+
     print(f'SIMBAD sources: {len(literature)}')
     print(literature.table()[:5])
     print('V references:', literature.magnitudes_bibcode('V'))
+
     name = simbad_query_id(sirius.ra.deg, sirius.dec.deg, '10 arcsec',
                            name_order=['HD', 'HR', 'TYC'])
+
     print('Preferred identifier:', name)
 
 The preferred identifier can be empty if nothing matches. Identifier lookups

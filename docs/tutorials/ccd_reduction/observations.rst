@@ -25,6 +25,7 @@ Run from the extracted bundle root when following the HTML examples::
 
     >>> from tempfile import TemporaryDirectory
     >>> from tutorial_data import generate_dataset
+
     >>> _temporary = TemporaryDirectory()
     >>> data = Path(_temporary.name).resolve() / 'data'
     >>> generate_dataset(data, include_extras=False)
@@ -39,13 +40,18 @@ science data in an image extension; select that extension explicitly::
     >>> from astropy.io import fits
     >>> from astropy.table import Table
     >>> from astropop.framedata import read_framedata
+
     >>> files = sorted((data / 'raw').glob('*.fits'))
     >>> rows = []
     >>> for path in files:
+    ...
+    ...     # Read the observing metadata without loading the image pixels.
     ...     header = fits.getheader(path)
     ...     rows.append((path.name, header['IMAGETYP'], header['FILTER'],
     ...                  header['EXPTIME'], header['DATE-OBS']))
+
     >>> log = Table(rows=rows, names=['file', 'type', 'filter', 'exposure_s', 'start_utc'])
+
     >>> for kind in ['BIAS', 'FLAT', 'LIGHT']:
     ...     print(f'{kind}: {np.count_nonzero(log["type"] == kind)} frames')
     BIAS: 8 frames
@@ -111,9 +117,13 @@ keyword for another instrument. The additional compatibility rules above still
 apply to each selected group::
 
     >>> from astropop.file_collection import FitsFileGroup
+
     >>> group = FitsFileGroup(files=[str(path) for path in files], ext=0)
+
+    >>> # Select by exposure type; detector and filter compatibility need separate checks.
     >>> science_group = group.filtered({'IMAGETYP': 'LIGHT'})
     >>> science_files = [Path(name) for name in science_group.files]
+
     >>> print('Indexed exposures:', len(group), '; science exposures:', len(science_group))
     Indexed exposures: 20 ; science exposures: 6
 
@@ -129,16 +139,19 @@ raw frames have no uncertainty extension; loading them does not invent detector
 errors. The science reduction stage estimates those errors explicitly::
 
     >>> frame = read_framedata(science_files[0])
+
     >>> print(f'Image: {frame.shape}, {frame.unit}; raw uncertainty: {frame.uncertainty}')
     Image: (256, 256), adu; raw uncertainty: None
     >>> print(f'Exposure: {frame.meta["EXPTIME"]:.0f} s; filter: {frame.meta["FILTER"]}')
     Exposure: 30 s; filter: R
+
     >>> output = data.parent / 'reduced'
     >>> output.mkdir(exist_ok=True)
     >>> log.write(output / 'observing_log.ecsv', overwrite=True)
     >>> for kind in ['BIAS', 'FLAT', 'LIGHT']:
     ...     names = [row['file'] for row in log if row['type'] == kind]
     ...     _ = (output / f'{kind.lower()}_files.txt').write_text('\n'.join(names) + '\n')
+
     >>> print('Saved: observing_log.ecsv and three file lists')
     Saved: observing_log.ecsv and three file lists
 
@@ -157,6 +170,7 @@ Continue with :doc:`master_bias`.
     :hide:
 
     >>> import gc
+
     >>> del group, science_group
     >>> _ = gc.collect()
     >>> _temporary.cleanup()

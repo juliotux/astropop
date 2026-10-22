@@ -8,6 +8,7 @@ but ``G`` is not::
 
     >>> from astropop.catalogs import SourcesCatalog
     >>> from astropop.math import QFloat
+
     >>> reference = SourcesCatalog(ids=['A', 'B'], ra=[10., 11.], dec=[20., 21.],
     ...                            unit='deg', mag={'g': QFloat([12., 13.], [0.1, 0.2])})
 
@@ -21,11 +22,13 @@ to a right ascension in degrees::
 
     >>> from astropy import units as u
     >>> from astropy.coordinates import SkyCoord
+
     >>> origins = SkyCoord([11., 10., 10.], [21., 20., 20.], unit='deg')
     >>> targets = origins.spherical_offsets_by([0.2, -0.4, 2.] * u.arcsec,
     ...                                        [0.1, 0.2, -0.5] * u.arcsec)
     >>> matched = reference.match_objects(targets.ra.deg, targets.dec.deg,
     ...                                   limit_angle='1 arcsec')
+
     >>> matched.sources_id().tolist()
     ['B', 'A', '']
     >>> print(matched.magnitude('g').nominal.tolist())
@@ -37,6 +40,7 @@ rows for subsequent photometric work and display each magnitude with its error::
     >>> valid = matched.sources_id() != ''
     >>> selected = matched[valid]
     >>> magnitudes = selected.magnitude('g')
+
     >>> for source_id, value, error in zip(selected.sources_id(),
     ...                                    magnitudes.nominal, magnitudes.uncertainty):
     ...     print(f'{source_id}: g = {value:.1f} +/- {error:.1f} mag')
@@ -56,6 +60,7 @@ Measure the nearest-neighbor distance for every input, including the unmatched
 one, before deciding whether the search radius is appropriate::
 
     >>> indices, separation, _ = targets.match_to_catalog_sky(reference.get_coordinates())
+
     >>> print('Nearest separations (arcsec):', separation.arcsec.round(2).tolist())
     Nearest separations (arcsec): [0.22, 0.45, 2.06]
 
@@ -76,6 +81,8 @@ one, before deciding whether the search radius is appropriate::
     origins = SkyCoord([11., 10., 10.], [21., 20., 20.], unit='deg')
     targets = origins.spherical_offsets_by([0.2, -0.4, 2.] * u.arcsec,
                                            [0.1, 0.2, -0.5] * u.arcsec)
+
+    # The result follows input order and retains an unmatched row beyond the radius.
     matched = catalog.match_objects(targets.ra.deg, targets.dec.deg, '1 arcsec')
     fig, axes = plt.subplots(1, 2, figsize=(8, 3.8), layout='constrained',
                              sharex=True, sharey=True)
@@ -94,6 +101,7 @@ one, before deciding whether the search radius is appropriate::
                 xlabel='East offset (arcsec)', xlim=(-1.5, 2.7), ylim=(-1.4, 1.4),
                 aspect='equal')
         ax.grid(alpha=0.2)
+
     axes[0].set_ylabel('North offset (arcsec)')
     axes[0].legend(loc='lower right', fontsize='small')
 
@@ -114,6 +122,7 @@ auxiliary query fields or a complete proper-motion model::
     >>> from astropy.table import Table
     >>> from pathlib import Path
     >>> from tempfile import TemporaryDirectory
+
     >>> with TemporaryDirectory() as directory:
     ...     filename = Path(directory) / 'reference.ecsv'
     ...     reference.table().write(filename, format='ascii.ecsv')
@@ -149,12 +158,14 @@ Run from the extracted archive root:
 .. code-block:: python
 
     from pathlib import Path
+
     data = Path('data')
 
 .. doctest::
     :hide:
 
     >>> from tutorial_data import generate_dataset
+
     >>> _inputs = TemporaryDirectory()
     >>> data = Path(_inputs.name).resolve() / 'data'
     >>> generate_dataset(data)
@@ -164,6 +175,7 @@ with a local sky annulus::
 
     >>> from astropop.framedata import read_framedata
     >>> from astropop.photometry import background, daofind, aperture_photometry
+
     >>> image = read_framedata(data / 'reference' / 'astrometric.fits')
     >>> standards = Table.read(data / 'standards.ecsv')
     >>> field_catalog = SourcesCatalog(ids=standards['id'], ra=standards['ra'],
@@ -179,6 +191,7 @@ with a local sky annulus::
     >>> counterparts = field_catalog.match_objects(positions.ra.deg, positions.dec.deg,
     ...                                            limit_angle='0.5 arcsec')
     >>> usable = (counterparts.sources_id() != '') & (measured['flags'] == 0)
+
     >>> print(f'Detected: {len(detections)}; matched with zero flags: {usable.sum()}')
     Detected: 9; matched with zero flags: 9
 
@@ -200,6 +213,7 @@ Export the selected measurements alongside their reference IDs and R magnitudes:
     >>> output = data.parent / 'reduced'
     >>> output.mkdir(exist_ok=True)
     >>> measurements.write(output / 'matched_measurements.ecsv', overwrite=True)
+
     >>> print('Saved matched measurements:', len(measurements))
     Saved matched measurements: 9
 

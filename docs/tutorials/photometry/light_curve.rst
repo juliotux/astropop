@@ -25,6 +25,7 @@ Run from the extracted bundle root when following the HTML examples::
 
     >>> from tempfile import TemporaryDirectory
     >>> from tutorial_data import generate_dataset
+
     >>> _temporary = TemporaryDirectory()
     >>> data = Path(_temporary.name).resolve() / 'data'
     >>> generate_dataset(data, include_extras=True)
@@ -44,6 +45,7 @@ injected centroids. Refine those positions using detections on the first frame::
     >>> from astropop.image.processing import subtract_bias, flat_correct
     >>> from astropop.image.register import register_framedata_list
     >>> from astropop.photometry import background, daofind, aperture_photometry
+
     >>> output = data.parent / 'reduced'
     >>> own_masters = all((output / name).exists() for name in ['master_bias.fits', 'master_flat.fits'])
     >>> inputs = output if own_masters else data / 'reference'
@@ -53,15 +55,21 @@ injected centroids. Refine those positions using detections on the first frame::
     >>> frames = []
     >>> for path in sorted((data / 'time_series' / 'raw').glob('science_*.fits')):
     ...     frame = read_framedata(path)
+    ...
+    ...     # At gain = 1, combine clipped signal and squared read noise in ADU variance.
     ...     frame.uncertainty = np.sqrt(np.maximum(frame.data - bias.data, 0)
     ...                                 + frame.meta['RDNOISE']**2)
     ...     frames.append(flat_correct(subtract_bias(frame, bias), flat))
+
     >>> sky0, rms0 = background(frames[0].data, box_size=32, global_bkg=False)
     >>> detected = daofind(frames[0].data, threshold=5, background=sky0, noise=rms0, fwhm=4.24)
     >>> distance2 = ((detected['x'][:, None] - finder['x'])**2
     ...              + (detected['y'][:, None] - finder['y'])**2)
+
+    >>> # Each finder-list source selects its nearest first-frame detection.
     >>> nearest = np.argmin(distance2, axis=0)
     >>> x0, y0 = detected['x'][nearest], detected['y'][nearest]
+
     >>> print('Source roles:', finder['role'].tolist())
     Source roles: ['target', 'comparison', 'comparison', 'comparison']
 
@@ -85,20 +93,28 @@ reference aperture positions. This avoids resampling the photometry pixels::
     ...     dx = shifted.meta['astropop registration_shift_x']
     ...     dy = shifted.meta['astropop registration_shift_y']
     ...     sky, rms = background(frame.data, box_size=32, global_bkg=False)
+    ...
+    ...     # Measure original calibrated pixels; add reference-to-moving shifts to positions.
     ...     measured = aperture_photometry(frame.data, x0 + dx, y0 + dy, r=6.,
     ...                                    r_ann=(9., 13.), bkg_error=rms, gain=1.,
     ...                                    mask=frame.mask, pixel_flags=frame.flags)
     ...     fluxes.append(measured['flux'])
     ...     errors.append(measured['flux_error'])
     ...     flags.append(measured['flags'])
+    ...
+    ...     # Use the exposure midpoint in UTC; this is not a barycentric time correction.
     ...     start = Time(frame.meta['DATE-OBS'], format='isot', scale='utc')
     ...     times.append((start + frame.meta['EXPTIME'] / 2 * u.s).jd)
+
     >>> fluxes, errors, flags = np.array(fluxes), np.array(errors), np.array(flags)
+
+    >>> # Keep exposures with a valid target and the same complete comparison ensemble.
     >>> usable = ((flags == 0).all(axis=1) & np.isfinite(fluxes).all(axis=1)
     ...           & np.isfinite(errors).all(axis=1) & (fluxes > 0).all(axis=1)
     ...           & (errors > 0).all(axis=1))
     >>> if not np.any(usable):
     ...     raise ValueError('No exposure has valid target and comparison measurements.')
+
     >>> print(f'Usable exposures: {usable.sum()} / {len(frames)}')
     Usable exposures: 12 / 12
 
@@ -125,11 +141,17 @@ relative curves. Divide the target's relative flux by that ensemble. Propagate
 independent per-exposure measurement errors through the division::
 
     >>> flux, error = fluxes[usable], errors[usable]
+
+    >>> # Column zero is the target; normalize each comparison by its own median.
     >>> comparison_levels = np.median(flux[:, 1:], axis=0)
     >>> comparisons = flux[:, 1:] / comparison_levels
     >>> comparison_count = comparisons.shape[1]
     >>> ensemble = comparisons.mean(axis=1)
+
+    >>> # Combine independent errors, treating the normalization medians as fixed.
     >>> ensemble_error = np.sqrt(((error[:, 1:] / comparison_levels)**2).sum(axis=1)) / comparison_count
+
+    >>> # Normalize the target separately before removing the ensemble's common variation.
     >>> target = flux[:, 0] / np.median(flux[:, 0])
     >>> differential = target / ensemble
     >>> differential_error = differential * np.sqrt((error[:, 0] / flux[:, 0])**2
@@ -140,15 +162,22 @@ independent per-exposure measurement errors through the division::
     >>> curve['elapsed_min'] = (curve['jd_utc'] - curve['jd_utc'][0]) * 24 * 60
     >>> output.mkdir(exist_ok=True)
     >>> curve.write(output / 'light_curve.ecsv', overwrite=True)
+
+    >>> # Preserve every measurement and its flags, including rejected exposures.
     >>> individual = Table({'jd_utc': np.repeat(times, len(finder)),
     ...                     'id': np.tile(finder['id'], len(frames)),
     ...                     'flux': fluxes.ravel(), 'flux_error': errors.ravel(),
     ...                     'flags': flags.ravel()})
     >>> individual.write(output / 'time_series_photometry.ecsv', overwrite=True)
+
     >>> print(f'Differential flux range: {differential.min():.2f} to {differential.max():.2f}')
     Differential flux range: 0.87 to 1.19
+
     >>> truth = Table.read(data / 'time_series' / 'truth.ecsv')
+
+    >>> # Use simulation truth only to inspect recovery, not to calibrate the curve.
     >>> difference = differential - truth['relative_flux'][usable]
+
     >>> print(f'Largest simulation difference: {100 * np.max(np.abs(difference)):.1f}%')
     Largest simulation difference: 4.5%
 

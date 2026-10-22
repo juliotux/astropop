@@ -30,6 +30,7 @@ assumes a field near RA 132.5 degrees, Dec 11.83 degrees and a scale around
     index_directory = Path('astrometry-indexes').resolve()
     frame = read_framedata(image_path)
     height, width = frame.shape
+
     print(f'Image: {width} columns by {height} rows; unit: {frame.unit}')
 
     options = {
@@ -61,6 +62,7 @@ Solve and inspect the result
     solution = solver.solve_field(image_path, options=options,
                                   stdout_loglevel='INFO')
     center = solution.wcs.pixel_to_world((width - 1) / 2, (height - 1) / 2)
+
     print(f'Field center: {center.ra.deg:.6f}, {center.dec.deg:.6f} deg')
     print(f'Solver correspondences: {len(solution.correspondences)}')
     print(solution.header)
@@ -96,9 +98,11 @@ Attach the WCS and save
 
 .. code-block:: python
 
+    # Save the fitted coordinates alongside the original calibrated pixels.
     frame.wcs = solution.wcs
     output = image_path.with_name(image_path.stem + '_wcs.fits')
     frame.write(output, overwrite=True)
+
     print(f'Saved image and WCS: {output}')
 
 Assign the solution to ``frame.wcs`` before writing: solving returns an
@@ -130,7 +134,10 @@ instead of asking the solver to detect them again:
     sky, rms = background(frame.data, mask=frame.mask)
     sources = starfind(frame.data, background=sky, noise=rms,
                        threshold=5, mask=frame.mask)
+
     print(f'Detected source-list candidates: {len(sources)}')
+
+    # This solver expects FITS pixel centers, so add one to the detected coordinates.
     solution = solve_astrometry_xy(
         sources['x'] + 1, sources['y'] + 1, sources['flux'],
         width=width, height=height, image_header=frame.header,

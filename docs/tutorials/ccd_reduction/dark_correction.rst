@@ -11,6 +11,7 @@ Prepare small example inputs::
     >>> import numpy as np
     >>> from astropop.framedata import FrameData
     >>> from astropop.image.processing import subtract_bias, subtract_dark
+
     >>> science = FrameData(np.full((4, 4), 1200.), unit='adu')
     >>> bias = FrameData(np.full((4, 4), 100.), unit='adu')
 
@@ -22,17 +23,21 @@ For this small example the master bias is already available and all raw darks
 were taken for ten seconds at the science detector's settings::
 
     >>> from astropop.image import imcombine
+
     >>> raw_darks = [FrameData(np.full((4, 4), value), unit='adu',
     ...                        meta={'EXPTIME': 10.}) for value in (109., 110., 111.)]
     >>> dark_times = np.array([frame.meta['EXPTIME'] for frame in raw_darks])
     >>> if not np.all(np.isfinite(dark_times) & (dark_times > 0)) or not np.all(dark_times == dark_times[0]):
     ...     raise ValueError('Select dark frames with one finite positive exposure duration.')
+
+    >>> # Remove bias before combining, so exposure scaling affects only the dark signal.
     >>> master_dark = imcombine([subtract_bias(frame, bias) for frame in raw_darks],
     ...                         method='median')
     >>> master_dark.meta['EXPTIME'] = float(dark_times[0])
     >>> dark_subtracted = subtract_dark(subtract_bias(science, bias), master_dark,
     ...                                 dark_exposure=master_dark.meta['EXPTIME'],
     ...                                 image_exposure=20.)
+
     >>> print(f'Master dark: {master_dark.data[0, 0]:.1f} ADU in {dark_times[0]:.0f} s')
     Master dark: 10.0 ADU in 10 s
     >>> print(f'Science after scaled subtraction: {dark_subtracted.data[0, 0]:.1f} ADU')
@@ -54,6 +59,7 @@ The temporary directory below stands in for a separate reduction-output folder::
     >>> from pathlib import Path
     >>> from tempfile import TemporaryDirectory
     >>> from astropop.framedata import read_framedata
+
     >>> with TemporaryDirectory() as directory:
     ...     filename = Path(directory) / 'dark_corrected.fits'
     ...     dark_subtracted.write(filename)

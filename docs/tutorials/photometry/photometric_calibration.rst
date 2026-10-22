@@ -25,6 +25,7 @@ Run from the extracted bundle root when following the HTML examples::
 
     >>> from tempfile import TemporaryDirectory
     >>> from tutorial_data import generate_dataset
+
     >>> _temporary = TemporaryDirectory()
     >>> data = Path(_temporary.name).resolve() / 'data'
     >>> generate_dataset(data, include_extras=True)
@@ -41,19 +42,26 @@ from :doc:`photometry`. Reference products allow starting here independently::
     >>> from astropop.framedata import read_framedata
     >>> from astropop.catalogs import SourcesCatalog
     >>> from astropop.math import QFloat
+
     >>> output = data.parent / 'reduced'
     >>> required = ('astrometric.fits', 'instrumental.ecsv')
+
+    >>> # Require image and measurements from the same reduction, without mixing products.
     >>> available = [(output / name).is_file() for name in required]
     >>> if any(available) and not all(available):
     ...     raise ValueError('Incomplete reduced products: rerun the preceding tutorials together.')
+
     >>> inputs = output if all(available) else data / 'reference'
+
     >>> print('Input product set:', inputs.name)
     Input product set: reference
+
     >>> image = read_framedata(inputs / 'astrometric.fits')
     >>> measured = Table.read(inputs / 'instrumental.ecsv')
     >>> standards = Table.read(data / 'standards.ecsv')
     >>> if not len(measured) or not len(standards):
     ...     raise ValueError('No measurements or standards available for matching.')
+
     >>> catalog = SourcesCatalog(ids=standards['id'], ra=standards['ra'],
     ...                          dec=standards['dec'], unit='deg',
     ...                          mag={'R': QFloat(standards['R'], standards['R_error'])})
@@ -61,6 +69,8 @@ from :doc:`photometry`. Reference products allow starting here independently::
     >>> reference_magnitudes = catalog.magnitude('R')
     >>> sky = image.wcs.pixel_to_world(measured['x'], measured['y'])
     >>> index, separation, _ = reference.match_to_catalog_sky(sky)
+
+    >>> # Reject standards that select the same measured detection.
     >>> unique = np.bincount(index, minlength=len(measured))[index] == 1
     >>> flux, flux_error = measured['flux'][index], measured['flux_error'][index]
     >>> usable = ((separation < 0.5 * u.arcsec) & (measured['flags'][index] == 0)
@@ -73,6 +83,7 @@ from :doc:`photometry`. Reference products allow starting here independently::
     >>> check = usable & reference_valid & ~standards['standard'] & (standards['id'] == 'S09')
     >>> if calibrators.sum() < 2 or not np.any(check):
     ...     raise ValueError('This workflow needs two standards and the withheld check star.')
+
     >>> print(f'Matched sources: {usable.sum()}; zero-point standards: {calibrators.sum()}')
     Matched sources: 9; zero-point standards: 7
 
@@ -112,17 +123,27 @@ The combined image is a mean on a 30-second exposure's ADU scale. Compute
     >>> exposure = image.meta['EXPTIME']
     >>> if not np.isfinite(exposure) or exposure <= 0:
     ...     raise ValueError('EXPTIME must be finite and positive.')
+
     >>> instrumental = np.full(len(standards), np.nan)
     >>> instrumental_error = np.full(len(standards), np.nan)
+
+    >>> # Divide by exposure duration to define instrumental magnitudes from count rate.
     >>> instrumental[usable] = -2.5 * np.log10(flux[usable] / exposure)
+
+    >>> # The logarithm's derivative converts relative flux error to magnitude error.
     >>> instrumental_error[usable] = 2.5 / np.log(10) * flux_error[usable] / flux[usable]
     >>> offsets = reference_magnitudes.nominal - instrumental
     >>> offset_error = np.hypot(reference_magnitudes.uncertainty, instrumental_error)
+
+    >>> # Fit the zero point using inverse-variance weights of independent offsets.
     >>> weights = 1 / np.square(offset_error[calibrators])
     >>> zero_point = np.sum(weights * offsets[calibrators]) / np.sum(weights)
     >>> zero_point_error = 1 / np.sqrt(np.sum(weights))
     >>> calibrated = instrumental + zero_point
+
+    >>> # This simple error budget omits covariance between the fit and its calibrators.
     >>> calibrated_error = np.hypot(instrumental_error, zero_point_error)
+
     >>> print(f'Zero point: {zero_point:.3f} +/- {zero_point_error:.3f} mag')
     Zero point: 25.000 +/- 0.005 mag
     >>> print(f'Check-star residual: {np.asarray(calibrated - standards["R"])[check][0]:+.3f} mag')
@@ -170,6 +191,7 @@ with the table. Magnitudes without a zero-point convention are ambiguous::
     ...                     'flux_convention': 'ADU per second; mean of 30-second frames'})
     >>> output.mkdir(exist_ok=True)
     >>> result.write(output / 'calibrated_photometry.ecsv', overwrite=True)
+
     >>> print(f'Saved calibrated sources: {len(result)}')
     Saved calibrated sources: 9
 

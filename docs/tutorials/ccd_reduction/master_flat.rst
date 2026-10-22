@@ -25,6 +25,7 @@ Run from the extracted bundle root when following the HTML examples::
 
     >>> from tempfile import TemporaryDirectory
     >>> from tutorial_data import generate_dataset
+
     >>> _temporary = TemporaryDirectory()
     >>> data = Path(_temporary.name).resolve() / 'data'
     >>> generate_dataset(data, include_extras=False)
@@ -45,21 +46,29 @@ reference product included in the download::
     >>> from astropop.framedata import read_framedata
     >>> from astropop.image import imarith, imcombine
     >>> from astropop.image.processing import subtract_bias
+
     >>> output = data.parent / 'reduced'
     >>> inputs = output if (output / 'master_bias.fits').exists() else data / 'reference'
     >>> master_bias = read_framedata(inputs / 'master_bias.fits')
     >>> flat_files = sorted((data / 'raw').glob('flat_*.fits'))
     >>> normalized_flats, levels = [], []
     >>> for path in flat_files:
+    ...
+    ...     # Remove the additive bias before estimating each flat's illumination level.
     ...     corrected = subtract_bias(read_framedata(path), master_bias)
     ...     level = np.median(corrected.data)
     ...     if not np.isfinite(level) or level <= 0:
     ...         raise ValueError('Flat illumination must have a finite positive normalization.')
     ...     levels.append(level)
+    ...
+    ...     # The ADU denominator makes each normalized flat dimensionless.
     ...     normalized_flats.append(imarith(corrected, level * u.adu, '/'))
+
     >>> print(f'Flat levels: {min(levels):.0f} to {max(levels):.0f} ADU')
     Flat levels: 8995 to 11996 ADU
+
     >>> master_flat = imcombine(normalized_flats, method='median', dtype='float32')
+
     >>> print(f'Median response: {np.median(master_flat.data):.3f}; units: {master_flat.unit.physical_type}')
     Median response: 1.000; units: dimensionless
 
@@ -86,6 +95,7 @@ quality map explicitly as described in :doc:`../diagnostics/quality_propagation`
 
     >>> output.mkdir(exist_ok=True)
     >>> master_flat.write(output / 'master_flat.fits', overwrite=True)
+
     >>> print('Saved: master_flat.fits')
     Saved: master_flat.fits
 

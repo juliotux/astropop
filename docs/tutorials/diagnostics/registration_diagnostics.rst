@@ -15,6 +15,7 @@ not a physical model of an instrument's distortion::
     >>> import numpy as np
     >>> from astropop.framedata import FrameData
     >>> from astropop.image.register import register_framedata_list
+
     >>> y, x = np.indices((128, 128))
     >>> positions = np.array([[55., 50.], [75., 70.], [10., 10.]])
     >>> drift = np.array([[-2., -1.], [0., 0.], [2., 1.]])  # (dx, dy)
@@ -23,8 +24,11 @@ not a physical model of an instrument's distortion::
     ...     image = np.zeros(x.shape)
     ...     for sx, sy in positions[:2] + [dx, dy]:
     ...         image += 100 * np.exp(-((x - sx)**2 + (y - sy)**2) / 2)
+    ...
+    ...     # Keep a bright edge feature fixed while the two central stars drift.
     ...     image += 1e6 * np.exp(-((x - 10)**2 + (y - 10)**2) / 2)
     ...     frames.append(FrameData(image))
+
     >>> full = register_framedata_list(frames, ref_image=1)
     >>> windowed = register_framedata_list(
     ...     frames, ref_image=1, window=(slice(35, 90), slice(35, 90)))
@@ -32,8 +36,10 @@ not a physical model of an instrument's distortion::
     ...     return np.array([[f.meta['astropop registration_shift_x'],
     ...                       f.meta['astropop registration_shift_y']]
     ...                      for f in registered])
+
     >>> full_shift = measured_shifts(full)
     >>> window_shift = measured_shifts(windowed)
+
     >>> print('full_shift:', np.round(full_shift, 1) + 0.0)  # Display signed zeros as zero.
     full_shift: [[0. 0.]
      [0. 0.]
@@ -52,6 +58,7 @@ to express them on the reference grid. Image arrays remain indexed ``[y, x]``::
     >>> residual_full = observed - full_shift[:, None, :] - positions
     >>> residual_window = observed - window_shift[:, None, :] - positions
     >>> central_offsets = np.linalg.norm(residual_window[:, :2], axis=2)
+
     >>> print('Largest central residual per frame:', np.round(central_offsets.max(axis=1), 2))
     Largest central residual per frame: [0. 0. 0.]
     >>> print(f'Central residual with full image: {np.linalg.norm(residual_full[0, 0]):.2f} pixels')
@@ -90,8 +97,11 @@ Inspect which region the transform aligns
         image = np.zeros(x.shape)
         for sx, sy in positions[:2] + [dx, dy]:
             image += 100 * np.exp(-((x - sx)**2 + (y - sy)**2) / 2)
+
+        # Keep a bright edge feature fixed while the two central stars drift.
         image += 1e6 * np.exp(-((x - 10)**2 + (y - 10)**2) / 2)
         frames.append(FrameData(image))
+
     fig, axes = plt.subplots(1, 3, figsize=(10.5, 3.4), layout='constrained')
     axes[0].imshow(np.maximum(frames[1].data, 1), origin='lower', cmap='magma',
                     norm=LogNorm(vmin=1, vmax=1e6))
@@ -109,10 +119,12 @@ Inspect which region the transform aligns
         residual = np.linalg.norm(observed - shifts[:, None, :] - positions, axis=2)
         for ax, values in zip(axes[1:], [residual[:, :2].max(axis=1), residual[:, 2]]):
             ax.plot(np.arange(3), values, 'o-', color=color, label=name)
+
     for ax, title in zip(axes[1:], ['Largest central-star residual', 'Edge-feature residual']):
         ax.set(title=title, xlabel='Frame index (reference = 1)',
                 ylabel='Position residual (pixel)', xticks=[0, 1, 2], ylim=(-0.1, 2.6))
         ax.grid(alpha=0.2)
+
     axes[1].legend(fontsize='small')
 
 The reference image uses a logarithmic intensity stretch to reveal the faint
@@ -141,6 +153,7 @@ not introduce an extra image-resampling step::
 
     >>> from skimage.transform import SimilarityTransform
     >>> from astropop.image.register import AsterismRegister
+
     >>> reference_xy = np.array([
     ...     [40, 40], [90, 45], [160, 35], [215, 70], [55, 110], [120, 115],
     ...     [185, 130], [35, 190], [100, 210], [170, 195], [220, 220], [200, 45]], dtype=float)
@@ -154,16 +167,20 @@ not introduce an extra image-resampling step::
     ...     for index, (sx, sy) in enumerate(positions_xy):
     ...         pixels += (1000 + 100 * index) * np.exp(-((xx - sx)**2 + (yy - sy)**2) / 8)
     ...     fields.append(pixels)
+
     >>> matcher = AsterismRegister(detection_threshold=5, max_control_points=20)
     >>> transform = matcher.compute_transform(fields[0], fields[1])
+
     >>> print(f'Scale: {transform.scale:.3f}; rotation: {np.rad2deg(transform.rotation):.2f} deg')
     Scale: 1.020; rotation: 2.00 deg
     >>> print('Translation (pixels):', np.round(transform.translation, 2))
     Translation (pixels): [-3.  4.]
+
     >>> corrected_xy = transform.inverse(moving_xy)
     >>> offset = np.linalg.norm(corrected_xy - reference_xy, axis=1)
     >>> translation_only = moving_xy - transform.translation
     >>> wrong_offset = np.linalg.norm(translation_only - reference_xy, axis=1)
+
     >>> print(f'Largest full-transform residual: {offset.max():.3f} pixels')
     Largest full-transform residual: 0.000 pixels
     >>> print(f'Largest translation-only residual: {wrong_offset.max():.1f} pixels')
@@ -191,6 +208,8 @@ full-image transform directly; do not apply another crop-origin offset.
                           [170, 195], [220, 220], [200, 45]], dtype=float)
     injected = SimilarityTransform(scale=1.02, rotation=np.deg2rad(2), translation=(-3, 4))
     observed = injected(reference)
+
+    # Removing translation alone leaves the injected rotation and scale uncorrected.
     residual = observed - injected.translation - reference
     corrected = injected.inverse(observed)
     fig, axes = plt.subplots(1, 2, figsize=(8, 3.8), layout='constrained')
@@ -216,6 +235,7 @@ removes every invalid sample::
     >>> reference_frame, moving_frame = [FrameData(pixels) for pixels in fields]
     >>> registered = matcher.register_framedata(reference_frame, moving_frame, cval=0)
     >>> common_valid = ~reference_frame.mask & ~registered.mask
+
     >>> print(f'Common valid pixels: {100 * common_valid.mean():.1f}%')
     Common valid pixels: 92.0%
 
@@ -233,6 +253,7 @@ be interpreted as a successfully registered zero-valued exposure::
     >>> batch = register_framedata_list(
     ...     [reference_frame, blank_frame], algorithm='asterism-matching',
     ...     skip_failure=True, cval=0, detection_threshold=5, max_control_points=20)
+
     >>> print('Output frames:', len(batch))
     Output frames: 2
     >>> print('Failed-frame status:', batch[1].meta['astropop registration'])

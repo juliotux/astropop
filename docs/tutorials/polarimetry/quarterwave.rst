@@ -13,6 +13,7 @@ Run from the extracted bundle root:
 .. code-block:: python
 
     from pathlib import Path
+
     data = Path('data')
 
 .. doctest::
@@ -21,6 +22,7 @@ Run from the extracted bundle root:
     >>> from pathlib import Path
     >>> from tempfile import TemporaryDirectory
     >>> from tutorial_data import generate_dataset
+
     >>> _temporary = TemporaryDirectory()
     >>> data = Path(_temporary.name).resolve() / 'data'
     >>> generate_dataset(data)
@@ -31,6 +33,7 @@ Prepare the fitting interfaces and output directory::
     >>> from astropy import units as u
     >>> from astropy.table import Table
     >>> from astropop.polarimetry import SLSDualBeamPolarimetry
+
     >>> output = data.parent / 'reduced'
     >>> output.mkdir(exist_ok=True)
 
@@ -47,28 +50,37 @@ injected values. Keep only finite positive beam counts and uncertainties::
     >>> valid = np.ones(len(quarter), dtype=bool)
     >>> for name in ('ordinary', 'extraordinary', 'ordinary_error', 'extraordinary_error'):
     ...     valid &= np.isfinite(quarter[name]) & (quarter[name] > 0)
+
     >>> quarter = quarter[valid]
     >>> quarter_psi = np.array(quarter['angle_deg'])
     >>> known_k, known_zero = 1.1, 7.5
     >>> phi = np.deg2rad(2 * (quarter_psi + known_zero))
+
+    >>> # The three columns multiply q, u and v; their rank checks angle coverage.
     >>> basis = np.column_stack((np.cos(phi)**2, np.sin(phi) * np.cos(phi), -np.sin(phi)))
     >>> rank = np.linalg.matrix_rank(basis)
     >>> if len(quarter) <= 3 or rank < 3:
     ...     raise ValueError('Need redundant measurements that constrain all three Stokes components.')
+
     >>> print(f'Usable beam pairs: {len(quarter)}; independent model columns: {rank}')
     Usable beam pairs: 16; independent model columns: 3
+
+    >>> # Treat the independently calibrated beam normalization and zero angle as fixed.
     >>> quarter_solver = SLSDualBeamPolarimetry('quarterwave', k=known_k, zero=known_zero)
     >>> quarter_result = quarter_solver.compute(
     ...     quarter_psi, quarter['ordinary'], quarter['extraordinary'],
     ...     quarter['ordinary_error'], quarter['extraordinary_error'])
+
     >>> for name in ('q', 'u', 'v'):
     ...     parameter = getattr(quarter_result, name)
     ...     print(f'{name} = {parameter.nominal:+.4f} +/- {parameter.uncertainty:.4f}')
     q = +0.0404 +/- 0.0012
     u = -0.0330 +/- 0.0021
     v = +0.0196 +/- 0.0011
+
     >>> quarter_prediction = quarter_result.model(quarter_psi * u.deg)
     >>> quarter_residual = quarter_result.zi.nominal - quarter_prediction.nominal
+
     >>> print(f'Modulation residual standard deviation: {np.std(quarter_residual):.4f}')
     Modulation residual standard deviation: 0.0027
 
@@ -94,10 +106,12 @@ the half-wave result::
     ...     parameter = getattr(quarter_result, name)
     ...     quarter_stokes[name] = [parameter.nominal]
     ...     quarter_stokes[name + '_error'] = [parameter.uncertainty]
+
     >>> quarter_stokes.meta.update({'retarder': 'quarterwave', 'beam_normalization': known_k,
     ...                             'zero_angle_deg': known_zero, 'input': 'polarimetry_quarterwave.ecsv',
     ...                             'error_convention': 'relative-weight residual-scaled marginal errors'})
     >>> quarter_stokes.write(output / 'stokes_quarterwave.ecsv', overwrite=True)
+
     >>> print('Saved:', 'stokes_quarterwave.ecsv')
     Saved: stokes_quarterwave.ecsv
 
@@ -109,7 +123,9 @@ Repeated measurements at the same angle can reduce noise but do not add model
 columns. For example, repeating one row of this design eight times still has
 only one independent column::
 
+    >>> # Repeating one angle adds measurements without adding independent constraints.
     >>> repeated_basis = np.repeat(basis[:1], 8, axis=0)
+
     >>> print('Repeated-angle rank:', np.linalg.matrix_rank(repeated_basis), '; required:', 3)
     Repeated-angle rank: 1 ; required: 3
 

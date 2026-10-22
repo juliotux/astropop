@@ -25,6 +25,7 @@ Run from the extracted bundle root when following the HTML examples::
 
     >>> from tempfile import TemporaryDirectory
     >>> from tutorial_data import generate_dataset
+
     >>> _temporary = TemporaryDirectory()
     >>> data = Path(_temporary.name).resolve() / 'data'
     >>> generate_dataset(data, include_extras=False)
@@ -39,9 +40,13 @@ This bundle's filenames provide a convenient preselected set::
     >>> import numpy as np
     >>> from astropop.framedata import read_framedata
     >>> from astropop.image import imcombine
+
     >>> bias_files = sorted((data / 'raw').glob('bias_*.fits'))
     >>> first_bias = read_framedata(bias_files[0])
+
+    >>> # Combine the file inputs directly without keeping a separate loaded-image list.
     >>> master_bias = imcombine(bias_files, method='median', dtype='float32')
+
     >>> print(f'Bias frames: {len(bias_files)}; master: {master_bias.shape}, {master_bias.dtype}')
     Bias frames: 8; master: (256, 256), float32
     >>> print(f'Median bias level: {np.median(master_bias.data):.1f} {master_bias.unit}')
@@ -69,6 +74,7 @@ not a direct measurement of the detector's read noise::
     >>> output = data.parent / 'reduced'
     >>> output.mkdir(exist_ok=True)
     >>> master_bias.write(output / 'master_bias.fits', overwrite=True)
+
     >>> print(f'Saved: master_bias.fits; units: {master_bias.unit}')
     Saved: master_bias.fits; units: adu
 

@@ -22,6 +22,7 @@ configuration and rerun policy.
 .. code-block:: python
 
     from pathlib import Path
+
     data = Path('data')
 
 .. doctest::
@@ -30,6 +31,7 @@ configuration and rerun policy.
     >>> from pathlib import Path
     >>> from tempfile import TemporaryDirectory
     >>> from tutorial_data import generate_dataset
+
     >>> _temporary = TemporaryDirectory()
     >>> data = Path(_temporary.name).resolve() / 'data'
     >>> generate_dataset(data, include_extras=False)
@@ -39,6 +41,7 @@ Read the calibrated FITS image, including its available mask and pixel flags::
     >>> import numpy as np
     >>> from astropop.framedata import read_framedata
     >>> from astropop.photometry import background, daofind, aperture_photometry
+
     >>> output = data.parent / 'reduced'
     >>> inputs = output if (output / 'combined.fits').exists() else data / 'reference'
     >>> image = read_framedata(inputs / 'combined.fits')
@@ -52,8 +55,11 @@ profiles and inspect the resulting map. The input image retains its sky;
 
     >>> sky, rms = background(image.data, box_size=32, filter_size=3,
     ...                       mask=image.mask, global_bkg=False)
+
+    >>> # Supply the background separately; detection handles its subtraction.
     >>> sources = daofind(image.data, threshold=5, background=sky, noise=rms,
     ...                   fwhm=4.24, mask=image.mask)
+
     >>> len(sources)
     9
 
@@ -87,9 +93,11 @@ Check and export the table
 Inspect positions, fluxes, errors and flag reasons. This example selects positive,
 finite, unflagged measurements::
 
+    >>> # Reject flagged or nonpositive measurements before calculating flux ratios.
     >>> usable = (np.isfinite(measured['flux']) & (measured['flux'] > 0)
     ...           & (measured['flags'] == 0))
     >>> selected = measured[usable]
+
     >>> len(selected)
     9
     >>> for row in selected[:3]:
@@ -98,6 +106,7 @@ finite, unflagged measurements::
     Flux: 59738 ADU; relative error: 0.5%; flags: 0
     Flux: 45040 ADU; relative error: 0.6%; flags: 0
     Flux: 39937 ADU; relative error: 0.7%; flags: 0
+
     >>> output.mkdir(exist_ok=True)
     >>> selected.meta.update({'input_set': inputs.name, 'image': 'combined.fits',
     ...                      'aperture_radius_pixels': 6., 'sky_annulus_pixels': [9., 13.],
@@ -145,12 +154,16 @@ Match each measured position to its nearest injected star, then display the
 largest positional offset and the range of recovered flux fractions::
 
     >>> from astropy.table import Table
+
     >>> truth = Table.read(data / 'sources.ecsv')
+
+    >>> # Match measured centroids to simulation truth only for this recovery diagnostic.
     >>> distance2 = ((selected['x'][:, None] - truth['x'])**2
     ...              + (selected['y'][:, None] - truth['y'])**2)
     >>> nearest = np.argmin(distance2, axis=1)
     >>> offset = np.sqrt(np.min(distance2, axis=1))
     >>> recovery = 100 * selected['flux'] / truth['flux'][nearest]
+
     >>> print(f'Largest position offset: {np.max(offset):.2f} pixels')
     Largest position offset: 0.04 pixels
     >>> print(f'Recovered flux: {np.min(recovery):.1f}% to {np.max(recovery):.1f}%')
