@@ -96,6 +96,21 @@ def segfind(
     .. [SourceExtractor docs] Ellipse parameters
        (https://sextractor.readthedocs.io/en/latest/Position.html\
         #ellipse-parameters-cxx-cyy-cxy)
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> y, x = np.indices((32, 32))
+    >>> pixels = 100 + 500 * np.exp(-((x - 16.)**2 + (y - 16.)**2) / 8)
+
+    >>> from astropop.photometry import segfind
+
+    >>> # Supply the sky level separately from its RMS noise.
+    >>> sources = segfind(pixels, threshold=5, background=100., noise=2., npix=5, deblend=False)
+    >>> print(len(sources))
+    1
+    >>> print(f"({sources['x'][0]:.1f}, {sources['y'][0]:.1f})")
+    (16.0, 16.0)
     """
     # algorithm needs the sky-subtracted image
     # also, force create a new instance of image
@@ -255,6 +270,21 @@ def daofind(
         - ``ellipticity``: 1.0 minus the semiminor-to-semimajor axis ratio.
         - ``cxx``, ``cyy``, ``cxy``: SourceExtractor ellipse parameters.
           See [SourceExtractor docs]_
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> y, x = np.indices((32, 32))
+    >>> pixels = 100 + 500 * np.exp(-((x - 16.)**2 + (y - 16.)**2) / 8)
+
+    >>> from astropop.photometry import daofind
+
+    >>> # Supply the sky level separately from its RMS noise.
+    >>> sources = daofind(pixels, threshold=5, background=100., noise=2., fwhm=4.71)
+    >>> print(len(sources))
+    1
+    >>> print(f"({sources['x'][0]:.1f}, {sources['y'][0]:.1f})")
+    (16.0, 16.0)
     """
     # always use background subtracted data
     d = data-background
@@ -364,6 +394,21 @@ def starfind(
         segmentation-only columns such as ``area`` and ``label`` are not
         returned. The estimated FWHM is stored in ``sources.meta`` under
         ``'astropop fwhm'``.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> y, x = np.indices((32, 32))
+    >>> pixels = 100 + 500 * np.exp(-((x - 16.)**2 + (y - 16.)**2) / 8)
+
+    >>> from astropop.photometry import starfind
+
+    >>> # Supply the sky level separately from its RMS noise.
+    >>> sources = starfind(pixels, threshold=5, background=100., noise=2.)
+    >>> print(len(sources))
+    1
+    >>> print(f"({sources['x'][0]:.1f}, {sources['y'][0]:.1f})")
+    (16.0, 16.0)
     """
     # First, we identify the sources with sepfind (fwhm independent)
     sources = segfind(data, threshold, background, noise, mask=mask)
@@ -471,6 +516,17 @@ def median_fwhm(
     ValueError
         If ``model`` is neither ``'gaussian'`` nor ``'moffat'`` and a fit is
         attempted.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> y, x = np.indices((32, 32))
+    >>> pixels = 100 + 500 * np.exp(-((x - 16.)**2 + (y - 16.)**2) / 8)
+
+    >>> from astropop.photometry import median_fwhm
+    >>> width = median_fwhm(pixels, [16.], [16.], model='gaussian')
+    >>> print(f'{width:.2f} pixels')
+    4.71 pixels
     """
     indices = np.indices(data.shape)
     rects = [trim_array(data, box_size, (xi, yi), indices=indices)

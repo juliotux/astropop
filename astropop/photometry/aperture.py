@@ -33,7 +33,17 @@ __all__ = ['aperture_photometry', 'PhotometryFlags']
 
 
 class PhotometryFlags(Flag):
-    """Flags for aperture photometry. Do not subclass it."""
+    """Flags for aperture photometry. Do not subclass it.
+
+    Examples
+    --------
+    >>> from astropop.photometry.aperture import PhotometryFlags as P
+    >>> status = P.SATURATED_PIXEL_IN_APERTURE | P.REMOVED_PIXEL_IN_APERTURE
+
+    >>> # Decode whether the measured aperture included a saturated pixel.
+    >>> print(bool(status.value & P.SATURATED_PIXEL_IN_APERTURE.value))
+    True
+    """
 
     # 1: At least one pixel in the aperture was removed or masked
     REMOVED_PIXEL_IN_APERTURE = 1 << 0
@@ -335,6 +345,22 @@ def aperture_photometry(
     .. [1] Astropy workshop sample notebook
         (https://github.com/astropy/astropy-workshop/blob/9eec8aeb04cec0de4ae\
          8a5056449b92ca4019e16/09-Photutils/03-aperture_local_bkgsub.ipynb)
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> y, x = np.indices((32, 32))
+    >>> pixels = 100 + 500 * np.exp(-((x - 16.)**2 + (y - 16.)**2) / 8)
+
+    >>> from astropop.photometry import aperture_photometry
+
+    >>> # Estimate local sky in an annulus outside the source aperture.
+    >>> measured = aperture_photometry(pixels, [16.], [16.], r=6.,
+    ...                                r_ann=(9., 13.), bkg_error=2., gain=1.)
+    >>> print(len(measured), measured['flags'].tolist())
+    1 [0]
+    >>> print(f"{measured['flux'][0]:.0f}")
+    12412
     """
     res_ap = Table()
 

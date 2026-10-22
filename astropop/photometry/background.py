@@ -85,6 +85,20 @@ def background(
         Background value or image.
     rms
         RMS value or image.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from astropop.photometry import background
+    >>> pixels = np.full((16, 16), 100.)
+    >>> sky, rms = background(pixels, box_size=8, filter_size=1)
+    >>> print(float(sky), float(rms))
+    100.0 0.0
+
+    >>> # Request maps instead of the global median estimates.
+    >>> sky_map, rms_map = background(pixels, box_size=8, global_bkg=False)
+    >>> print(sky_map.shape, rms_map.shape)
+    (16, 16) (16, 16)
     """
     data = np.array(data)
     # check valid methods
