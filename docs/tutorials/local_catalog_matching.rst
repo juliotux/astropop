@@ -133,3 +133,81 @@ choices and failure diagnosis.
 For a reference with velocities, use the
 :ref:`complete coordinate-model snapshot <catalog-motion-snapshot>` example
 to retain its epoch and motion metadata.
+
+Match detections measured from an image
+---------------------------------------
+
+Apply the same matching interface to measured image positions. This section
+uses the :doc:`shared tutorial archive <index>`: the reference image has a WCS
+fitted in :doc:`astrometric_calibration`, and ``standards.ecsv`` supplies local
+reference positions and magnitudes. Keep optional arrays enabled before loading
+frames as described in :doc:`index`. Detection and matching remain separate
+steps; a WCS is required to convert image centroids into sky coordinates.
+
+Run from the extracted archive root:
+
+.. code-block:: python
+
+    from pathlib import Path
+    data = Path('data')
+
+.. doctest::
+    :hide:
+
+    >>> from tutorial_data import generate_dataset
+    >>> _inputs = TemporaryDirectory()
+    >>> data = Path(_inputs.name).resolve() / 'data'
+    >>> generate_dataset(data)
+
+Load the image and reference catalog, detect sources, and measure their fluxes
+with a local sky annulus::
+
+    >>> from astropop.framedata import read_framedata
+    >>> from astropop.photometry import background, daofind, aperture_photometry
+    >>> image = read_framedata(data / 'reference' / 'astrometric.fits')
+    >>> standards = Table.read(data / 'standards.ecsv')
+    >>> field_catalog = SourcesCatalog(ids=standards['id'], ra=standards['ra'],
+    ...                                dec=standards['dec'], unit='deg',
+    ...                                mag={'R': QFloat(standards['R'], standards['R_error'])})
+    >>> sky, noise = background(image.data, box_size=32, mask=image.mask)
+    >>> detections = daofind(image.data, threshold=5, background=sky, noise=noise,
+    ...                      fwhm=4.24, mask=image.mask)
+    >>> measured = aperture_photometry(image.data, detections['x'], detections['y'],
+    ...                                r=6, r_ann=(9, 13), bkg_error=noise,
+    ...                                mask=image.mask, pixel_flags=image.flags)
+    >>> positions = image.wcs.pixel_to_world(measured['x'], measured['y'])
+    >>> counterparts = field_catalog.match_objects(positions.ra.deg, positions.dec.deg,
+    ...                                            limit_angle='0.5 arcsec')
+    >>> usable = (counterparts.sources_id() != '') & (measured['flags'] == 0)
+    >>> print(f'Detected: {len(detections)}; matched with zero flags: {usable.sum()}')
+    Detected: 9; matched with zero flags: 9
+
+The reference follows the simulation's exact coordinate model. Real reference
+errors and imperfect WCS solutions affect these associations; inspect separations
+and duplicate identifiers before treating a counterpart as a calibration star.
+The measured flux is still instrumental, not a calibrated magnitude.
+
+Export the selected measurements alongside their reference IDs and R magnitudes::
+
+    >>> measurements = measured[usable].copy()
+    >>> measurements['catalog_id'] = counterparts.sources_id()[usable]
+    >>> magnitudes = counterparts.magnitude('R')
+    >>> measurements['reference_R'] = magnitudes.nominal[usable] * u.mag
+    >>> measurements['reference_R_error'] = magnitudes.uncertainty[usable] * u.mag
+    >>> measurements.meta.update({'catalog': 'bundled synthetic standards',
+    ...                           'match_radius_arcsec': 0.5,
+    ...                           'image': 'reference/astrometric.fits'})
+    >>> output = data.parent / 'reduced'
+    >>> output.mkdir(exist_ok=True)
+    >>> measurements.write(output / 'matched_measurements.ecsv', overwrite=True)
+    >>> print('Saved matched measurements:', len(measurements))
+    Saved matched measurements: 9
+
+Continue with :doc:`photometric_calibration` to estimate a zero point from
+suitable standards. A shared name or band does not alone establish compatible
+passbands, epochs or quality.
+
+.. doctest::
+    :hide:
+
+    >>> _inputs.cleanup()

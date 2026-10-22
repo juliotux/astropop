@@ -37,9 +37,10 @@ from :doc:`photometry`. Reference products allow starting here independently::
 
     >>> import numpy as np
     >>> from astropy import units as u
-    >>> from astropy.coordinates import SkyCoord
     >>> from astropy.table import Table
     >>> from astropop.framedata import read_framedata
+    >>> from astropop.catalogs import SourcesCatalog
+    >>> from astropop.math import QFloat
     >>> output = data.parent / 'reduced'
     >>> required = ('astrometric.fits', 'instrumental.ecsv')
     >>> available = [(output / name).is_file() for name in required]
@@ -53,7 +54,11 @@ from :doc:`photometry`. Reference products allow starting here independently::
     >>> standards = Table.read(data / 'standards.ecsv')
     >>> if not len(measured) or not len(standards):
     ...     raise ValueError('No measurements or standards available for matching.')
-    >>> reference = SkyCoord(standards['ra'], standards['dec'])
+    >>> catalog = SourcesCatalog(ids=standards['id'], ra=standards['ra'],
+    ...                          dec=standards['dec'], unit='deg',
+    ...                          mag={'R': QFloat(standards['R'], standards['R_error'])})
+    >>> reference = catalog.get_coordinates()
+    >>> reference_magnitudes = catalog.magnitude('R')
     >>> sky = image.wcs.pixel_to_world(measured['x'], measured['y'])
     >>> index, separation, _ = reference.match_to_catalog_sky(sky)
     >>> unique = np.bincount(index, minlength=len(measured))[index] == 1
@@ -61,9 +66,9 @@ from :doc:`photometry`. Reference products allow starting here independently::
     >>> usable = ((separation < 0.5 * u.arcsec) & (measured['flags'][index] == 0)
     ...           & unique & np.isfinite(flux) & np.isfinite(flux_error)
     ...           & (flux > 0) & (flux_error > 0))
-    >>> reference_valid = (np.isfinite(standards['R'])
-    ...                    & np.isfinite(standards['R_error'])
-    ...                    & (standards['R_error'] > 0))
+    >>> reference_valid = (np.isfinite(reference_magnitudes.nominal)
+    ...                    & np.isfinite(reference_magnitudes.uncertainty)
+    ...                    & (reference_magnitudes.uncertainty > 0))
     >>> calibrators = usable & reference_valid & standards['standard']
     >>> check = usable & reference_valid & ~standards['standard'] & (standards['id'] == 'S09')
     >>> if calibrators.sum() < 2 or not np.any(check):
@@ -78,6 +83,11 @@ file. Rerun the preceding stages together, or explicitly choose
 example. This presence check cannot establish freshness: after changing a crop,
 registration reference or photometry settings, regenerate all downstream
 products even if files with the expected names already exist.
+
+SourcesCatalog keeps identifiers, positions and uncertain R magnitudes in one
+interface; ``magnitude`` returns a QFloat whose uncertainty is the catalog
+standard error. The zero-point calculation below uses those numerical values
+explicitly so its weighting and covariance assumptions remain visible.
 
 This simulation has known, isolated standards. The standard magnitudes refer
 to its synthetic R band; they do not define a transformation to an actual
@@ -106,8 +116,8 @@ The combined image is a mean on a 30-second exposure's ADU scale. Compute
     >>> instrumental_error = np.full(len(standards), np.nan)
     >>> instrumental[usable] = -2.5 * np.log10(flux[usable] / exposure)
     >>> instrumental_error[usable] = 2.5 / np.log(10) * flux_error[usable] / flux[usable]
-    >>> offsets = standards['R'] - instrumental
-    >>> offset_error = np.hypot(standards['R_error'], instrumental_error)
+    >>> offsets = reference_magnitudes.nominal - instrumental
+    >>> offset_error = np.hypot(reference_magnitudes.uncertainty, instrumental_error)
     >>> weights = 1 / np.square(offset_error[calibrators])
     >>> zero_point = np.sum(weights * offsets[calibrators]) / np.sum(weights)
     >>> zero_point_error = 1 / np.sqrt(np.sum(weights))

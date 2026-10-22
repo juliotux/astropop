@@ -39,12 +39,12 @@ with a deliberate pixel offset. It is not the solution we are trying to recover:
 
     >>> import numpy as np
     >>> from astropy import units as u
-    >>> from astropy.coordinates import SkyCoord
     >>> from astropy.io import fits
     >>> from astropy.table import Table
     >>> from astropy.wcs import WCS
     >>> from astropy.wcs.utils import fit_wcs_from_points
     >>> from astropop.framedata import read_framedata
+    >>> from astropop.catalogs import SourcesCatalog
     >>> output = data.parent / 'reduced'
     >>> required = ('combined.fits', 'instrumental.ecsv')
     >>> available = [(output / name).is_file() for name in required]
@@ -55,7 +55,9 @@ with a deliberate pixel offset. It is not the solution we are trying to recover:
     Input product set: reference
     >>> measured = Table.read(inputs / 'instrumental.ecsv')
     >>> standards = Table.read(data / 'standards.ecsv')
-    >>> reference = SkyCoord(standards['ra'], standards['dec'])
+    >>> catalog = SourcesCatalog(ids=standards['id'], ra=standards['ra'],
+    ...                          dec=standards['dec'], unit='deg')
+    >>> reference = catalog.get_coordinates()
     >>> rough = WCS(fits.getheader(data / 'pointing.fits'))
     >>> x_guess, y_guess = rough.world_to_pixel(reference)
     >>> distance2 = ((measured['x'][:, None] - x_guess)**2
@@ -73,6 +75,9 @@ file. Rerun the preceding stages together, or explicitly choose
 example. This presence check cannot establish freshness: after changing a crop,
 registration reference or photometry settings, regenerate all downstream
 products even if files with the expected names already exist.
+
+SourcesCatalog supplies identified sky positions; the measured centroids come
+from the preceding photometry stage. The catalog does not fit the WCS.
 
 The tolerance is in detector pixels because this association starts from an
 approximate WCS. The references are isolated and uniquely associated here;

@@ -102,6 +102,25 @@ the selected science group. The compatibility rules above also apply when
 loading reference products or rerunning a notebook; file existence establishes
 availability, not compatibility or freshness.
 
+Select files through ``FitsFileGroup``
+--------------------------------------
+
+Use the header index to select exposures without loading their pixel arrays.
+``IMAGETYP`` is this camera's exposure-type keyword; select the equivalent
+keyword for another instrument. The additional compatibility rules above still
+apply to each selected group::
+
+    >>> from astropop.file_collection import FitsFileGroup
+    >>> group = FitsFileGroup(files=[str(path) for path in files], ext=0)
+    >>> science_group = group.filtered({'IMAGETYP': 'LIGHT'})
+    >>> science_files = [Path(name) for name in science_group.files]
+    >>> print('Indexed exposures:', len(group), '; science exposures:', len(science_group))
+    Indexed exposures: 20 ; science exposures: 6
+
+The observing log records what was inspected; the group supplies the input
+paths for image loading. Explicit file lists use string paths for the header
+index's database backend. Neither interface modifies the raw observations.
+
 Inspect the field and create file lists
 ---------------------------------------
 
@@ -109,7 +128,6 @@ Leave optional uncertainties and flags enabled before loading frames. Initial
 raw frames have no uncertainty extension; loading them does not invent detector
 errors. The science reduction stage estimates those errors explicitly::
 
-    >>> science_files = [data / 'raw' / row['file'] for row in log if row['type'] == 'LIGHT']
     >>> frame = read_framedata(science_files[0])
     >>> print(f'Image: {frame.shape}, {frame.unit}; raw uncertainty: {frame.uncertainty}')
     Image: (256, 256), adu; raw uncertainty: None
@@ -138,4 +156,7 @@ Continue with :doc:`master_bias`.
 .. doctest::
     :hide:
 
+    >>> import gc
+    >>> del group, science_group
+    >>> _ = gc.collect()
     >>> _temporary.cleanup()
