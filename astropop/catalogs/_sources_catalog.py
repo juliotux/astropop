@@ -62,6 +62,24 @@ class SourcesCatalog:
         Keyword coordinate arguments forwarded to
         `~astropy.coordinates.SkyCoord`. See its documentation for accepted
         coordinate representations and time values.
+
+    Examples
+    --------
+    >>> from astropop.catalogs import SourcesCatalog
+    >>> from astropop.math import QFloat
+    >>> positions = dict(ids=['A', 'B'], ra=[10., 11.], dec=[20., 21.], unit='deg')
+    >>> astrometric = SourcesCatalog(**positions)
+    >>> print(astrometric.ra_dec_list().tolist())
+    [[10.0, 20.0], [11.0, 21.0]]
+
+    >>> # Plain magnitudes have zero errors; QFloat preserves supplied errors.
+    >>> plain = SourcesCatalog(**positions, mag={'g': [12., 13.], 'r': [11., 12.]})
+    >>> measured = SourcesCatalog(**positions,
+    ...                           mag={'g': QFloat([12., 13.], [0.1, 0.2])})
+    >>> print(plain.magnitude('g').uncertainty.tolist())
+    [0.0, 0.0]
+    >>> print(measured.magnitude('g').uncertainty.tolist())
+    [0.1, 0.2]
     """
 
     _base_table = None  # Store array of ids
@@ -165,6 +183,16 @@ class SourcesCatalog:
         -------
         mag
             The sources magnitude in QFloat format.
+
+        Examples
+        --------
+        >>> from astropop.catalogs import SourcesCatalog
+        >>> from astropop.math import QFloat
+        >>> catalog = SourcesCatalog(ids=['A'], ra=[10.], dec=[20.], unit='deg',
+        ...                          mag={'g': QFloat([12.], [0.1])})
+        >>> magnitude = catalog.magnitude('g')
+        >>> print(magnitude.nominal.tolist(), magnitude.uncertainty.tolist())
+        [12.0] [0.1]
         """
         self._ensure_band(band)
         return QFloat(self._mags_table[f'{band}'],
@@ -197,6 +225,22 @@ class SourcesCatalog:
         When Astropy raises ValueError, including for missing velocity data,
         return a copy of the original coordinates without changing their epoch.
         A returned SkyCoord therefore does not guarantee motion was applied.
+
+        Examples
+        --------
+        >>> from astropy import units as u
+        >>> from astropy.time import Time
+        >>> from astropop.catalogs import SourcesCatalog
+        >>> moving = SourcesCatalog(
+        ...     ids=['A'], ra=[10.] * u.deg, dec=[20.] * u.deg,
+        ...     pm_ra_cosdec=[1000.] * u.mas / u.yr, pm_dec=[0.] * u.mas / u.yr,
+        ...     distance=[100.] * u.pc, radial_velocity=[0.] * u.km / u.s,
+        ...     obstime=Time('J2000'))
+
+        >>> # Propagate to the observing epoch before comparing sky positions.
+        >>> later = moving.get_coordinates(Time('J2010'))
+        >>> print(f'{moving.skycoord().separation(later).arcsec[0]:.1f} arcsec')
+        10.0 arcsec
         """
         sk = self._base_table['coords']
         try:
@@ -280,6 +324,16 @@ class SourcesCatalog:
         ``obstime`` affects the search coordinates when proper motion is
         available. Matching does not enforce one-to-one assignments or
         replace catalog coordinates with the supplied positions.
+
+        Examples
+        --------
+        >>> from astropop.catalogs import SourcesCatalog
+        >>> reference = SourcesCatalog(ids=['A'], ra=[10.], dec=[20.], unit='deg')
+        >>> matched = reference.match_objects([10., 180.], [20., -40.], '1 arcsec')
+
+        >>> # Keep input order; an empty identifier marks the unmatched position.
+        >>> print(matched.sources_id().tolist())
+        ['A', '']
         """
         # Match catalog to the objects using standard SkyCoord algorithm.
         obj_sk = SkyCoord(ra, dec, unit=['deg', 'deg'])

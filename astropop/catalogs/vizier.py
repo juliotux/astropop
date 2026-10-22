@@ -231,6 +231,15 @@ def list_vizier_catalogs() -> str:
     catalogs
         ReStructuredText containing catalog names, bibliographic references and
         descriptions loaded from the local YAML files. No online query is made.
+
+    Examples
+    --------
+    >>> from astropop.catalogs.vizier import list_vizier_catalogs
+
+    >>> # This inspects local definitions without contacting VizieR.
+    >>> descriptions = list_vizier_catalogs()
+    >>> print('ucac4' in descriptions, 'apass9' in descriptions)
+    True True
     """
     root = path.join(path.dirname(__file__), 'vizier_catalogs')
     catalogs = 'Available pre-configured Vizier catalogs are:\n'
