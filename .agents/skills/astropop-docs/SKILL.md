@@ -119,6 +119,15 @@ matches which name from their order in a sentence.
 ## Examples and scientific behavior
 
 Use standard `code-block:: python` directives for recipes and `code-block:: text` for stored console transcripts. Do not add IPython directives or execution-only options. Keep deterministic prompted examples and plot directives where execution is useful; static code blocks are not executed. Render VizieR help with `catalog-help`, using packaged configuration without constructing a catalog or querying services.
+
+Separate logical steps in examples with blank lines, including the bodies of
+long loops. Add comments immediately beside small steps whose purpose, units,
+coordinate direction, selection rule or scientific assumption needs explanation.
+Explain why that operation is needed; do not merely restate the next line or
+add a title comment at the start of each block. Simple self-explanatory snippets
+need no forced commentary. Preserve existing outputs and keep these comments
+and blank lines in generated notebook companions too.
+
 Seed random generators in executable examples and plots. Distinguish pytest
 examples, Sphinx plot execution, stored transcripts, static recipes and
 stored notebooks. Rendering or syntax-checking a notebook does not execute its
