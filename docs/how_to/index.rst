@@ -1,11 +1,28 @@
 Task guides
 ===========
 
-Choose a task below. For a complete observing sequence, start with
-:doc:`../tutorials/index`; for exact signatures, use :doc:`../reference/index`.
+These chapters document Astropop's modules: what their functions and classes
+compute, how to use them, and how to interpret their results. Each chapter
+combines simple examples with the algorithms, units and assumptions relevant
+to that API. Exact signatures are in :doc:`../reference/index`.
 
-Image reduction
----------------
+For a complete reduction involving several modules, follow
+:doc:`../tutorials/index`. Shared reduction policies and troubleshooting are
+in :doc:`../concepts/index`.
+
+Image containers and quantities
+-------------------------------
+
+.. toctree::
+    :maxdepth: 1
+
+    ../data_structures/framedata
+    ../data_structures/physical
+    ../data_structures/cache
+    ../tools/flags
+
+Image processing
+----------------
 
 .. toctree::
     :maxdepth: 1
@@ -14,10 +31,9 @@ Image reduction
     image_arithmetic
     image_combination
     ../reduction/registering
-    quality_flags
 
-Measurement and calibration
----------------------------
+Measurements and calibration
+----------------------------
 
 .. toctree::
     :maxdepth: 1
@@ -25,28 +41,23 @@ Measurement and calibration
     ../reduction/photometry
     ../reduction/polarimetry
     ../reduction/astrometry
-    catalogs
+
+Catalogs
+--------
+
+.. toctree::
+    :maxdepth: 1
+
     ../tools/catalogs
 
-Data management and applications
---------------------------------
+Files and numerical utilities
+-----------------------------
 
 .. toctree::
     :maxdepth: 1
 
-    file_collections
     ../tools/files
     ../tools/fits_utils
-    ../reduction/pipelines
-
-Diagnostics and supporting tools
---------------------------------
-
-.. toctree::
-    :maxdepth: 1
-
-    registration_diagnostics
-    troubleshooting
-    ../tools/logger
     ../tools/math
+    ../tools/logger
     ../tools/py_utils

@@ -126,7 +126,7 @@ arithmetic operators on FrameData::
 Use ``read_framedata('image.fits')`` for existing files. Set optional-array
 configuration **before loading or creating frames** when memory savings are
 required; see :ref:`optional-frame-arrays`. Continue with :doc:`tutorials/index`
-for complete workflows or :doc:`how_to/index` for individual reduction tasks.
+for complete workflows or :doc:`how_to/index` for module explanations and simple API examples.
 
 Running checks and building the documentation
 ---------------------------------------------

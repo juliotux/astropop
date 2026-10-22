@@ -83,7 +83,7 @@ For another gain, convert both terms to a consistent unit first. This estimate
 omits the uncertainty of the bias-subtracted signal inside the Poisson term;
 calibration then propagates the supplied image and master-frame uncertainties.
 The flag restoration combines defects from science, bias and flat by bitwise
-OR; see :doc:`../how_to/quality_flags` for reason-bit persistence and interpretation.
+OR; see :doc:`quality_propagation` for reason-bit persistence and interpretation.
 These simulated exposures need no dark
 subtraction or overscan correction.
 
@@ -113,7 +113,7 @@ Reported shifts map reference coordinates to moving-image coordinates; subtract
 them to correct a source position. The registration routine already applies the
 inverse transform when aligning pixels. A central window does not correct
 optical distortion. Inspect stars across the field as in
-:doc:`../how_to/registration_diagnostics`.
+:doc:`registration_diagnostics`.
 
 .. plot:: _ext/workflow_figures.py plot_science
     :include-source: false

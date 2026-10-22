@@ -69,7 +69,7 @@ These isolated stars have unique nearest detections. Inspect associations and
 use a distance limit for crowded or uncertain finder coordinates. The target
 is S01; it must not contribute to the comparison ensemble. The simulated
 masters have no defects; real masks require the policy in
-:doc:`../how_to/quality_flags`.
+:doc:`quality_propagation`.
 
 Follow coordinates without interpolating the measured pixels
 -------------------------------------------------------------

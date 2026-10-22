@@ -82,7 +82,7 @@ Inspect response and save
 Low-response pixels amplify noise during division. A detector-quality policy
 must identify unusable regions; normalization does not repair them. The
 convenience calibration functions currently clear flags, so restore your chosen
-quality map explicitly as described in :doc:`../how_to/quality_flags`::
+quality map explicitly as described in :doc:`quality_propagation`::
 
     >>> output.mkdir(exist_ok=True)
     >>> master_flat.write(output / 'master_flat.fits', overwrite=True)

@@ -50,7 +50,7 @@ Register and reject isolated events
 
 The same :doc:`science_reduction` workflow estimates translations from a central
 window, applies them to the full images and combines the aligned exposures with
-clipping. Review :doc:`../how_to/registration_diagnostics` for center/edge
+clipping. Review :doc:`registration_diagnostics` for center/edge
 residuals, and :doc:`../how_to/image_combination` for estimator and rejection
 choices. Registration, outlier rejection and distortion correction are distinct.
 

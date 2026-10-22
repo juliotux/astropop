@@ -94,7 +94,7 @@ their headers do not encode a complete real-instrument configuration. The
 later notebooks use ``bias_*.fits``, ``flat_*.fits`` and ``science_*.fits`` as
 already selected sets so each can run independently. They do not consume the
 saved observing log automatically. On observations, replace those globs with
-file lists selected from the reviewed log or :doc:`../how_to/file_collections`,
+file lists selected from the reviewed log or :doc:`fits_collections`,
 and keep the selection criteria with the master products.
 
 Before applying a saved master, recheck its geometry, unit and settings against
@@ -132,7 +132,7 @@ errors. The science reduction stage estimates those errors explicitly::
 The edge event is not a star. A display stretch helps reveal the field but does
 not modify pixels or fix defects. Inspect the rest of the sequence for changes
 in illumination, geometry, filter, temperature and exposure before grouping it.
-For a persistent searchable header database see :doc:`../how_to/file_collections`.
+For a persistent searchable header database see :doc:`fits_collections`.
 Continue with :doc:`master_bias`.
 
 .. doctest::

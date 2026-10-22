@@ -132,3 +132,18 @@ before interpreting associations as astrometric or photometric calibration.
 The Astrometry.net and online-catalog tutorials require your own image/index files or
 live services, respectively; their external recipes are not run by offline
 doctests or included in the nine generated notebook companions.
+
+Additional reduction workflows
+------------------------------
+
+These additional workflows follow data through several interfaces, retaining
+intermediate results so their effects can be inspected. They are independent
+of the nine downloadable observing-sequence notebooks.
+
+.. toctree::
+    :maxdepth: 1
+
+    fits_collections
+    dark_correction
+    quality_propagation
+    registration_diagnostics

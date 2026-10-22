@@ -4,9 +4,10 @@ Fits File Collections
 =====================
 
 |FitsFileGroup| indexes FITS headers in a SQLite database so you can select
-observations without loading every image. Start with
-:doc:`../how_to/file_collections` for an executable example; this page explains
-index ownership, selection and persistence. Editing a group changes its index,
+observations without loading every image. This chapter explains the constructor,
+summary properties, filtering/grouping methods and image iterators, with simple
+examples for each interface. For a complete extension-selection and database
+reuse workflow, see :doc:`../tutorials/fits_collections`. Editing a group changes its index,
 not the FITS files on disk.
 
 Initializing a |FitsFileGroup|
@@ -189,7 +190,7 @@ it requires exact summary-column names. For a lowercase ``filter`` column:
 
 For calibration selection, group by detector, binning, readout mode and geometry
 as well as filter where appropriate. Those keyword names are instrument-specific;
-see :doc:`../reduction/pipelines` for an application-level policy.
+see :doc:`../concepts/reduction_workflows` for an application-level policy.
 
 Iterators
 ---------

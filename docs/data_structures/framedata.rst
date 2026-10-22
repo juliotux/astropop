@@ -404,7 +404,7 @@ The variance here is in ADU squared, matching the science data's ADU unit.
 Real DQ definitions may require selecting particular bits instead of masking
 every nonzero value. External DQ bit numbers are not automatically Astropop
 ``PixelMaskFlags`` values; keep the original quality map if its reasons matter.
-See :doc:`../how_to/quality_flags` for saving a complete Astropop flag map.
+See :doc:`../tutorials/quality_propagation` for saving a complete Astropop flag map.
 
 CCDData conversion
 ^^^^^^^^^^^^^^^^^^

@@ -25,7 +25,7 @@ a new published release number.
 * Do not rely on masks excluding operands in arithmetic. Combination excludes
   masked samples; calibration convenience functions clear flags; FITS exchange
   retains a Boolean mask rather than every reason bit. See
-  :doc:`../how_to/quality_flags` before migrating quality-sensitive workflows.
+  :doc:`../tutorials/quality_propagation` before migrating quality-sensitive workflows.
 * Mean/median combination uses scatter errors, while sums can propagate input
   errors. Identical nominal inputs can have zero combined scatter despite
   nonzero measurement errors. See :doc:`../concepts/uncertainties`.
