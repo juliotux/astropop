@@ -27,6 +27,9 @@
 - Include relevant technical details, algorithm assumptions and references to
   original articles, scientific literature or technical documentation of widely
   used software. Tie references to the actual implemented behavior.
+- Use `.. plot::` with `:include-source: false` for plots and graphics. Keep
+  plotting code in the RST whenever possible; use external Python scripts only
+  when functions defined in another file are needed.
 - Follow [the documentation skill](../skills/astropop-docs/SKILL.md) for the full
   writing and validation requirements when changing documentation.
 

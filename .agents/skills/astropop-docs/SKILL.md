@@ -76,6 +76,35 @@ workflow; do not report it as executed.
 
 For FrameData guides, check shape/dtype constraints, copying and array sharing, metadata/WCS, FITS extension selection, overwrite defaults, and whether interchange preserves Boolean masks or full flag bits. Document only storage/configuration features available on this branch.
 
+## Plots and graphics
+
+- Code documentation plots and graphics with the Sphinx `.. plot::` directive
+  and set `:include-source: false` explicitly.
+- Keep the plotting code inside the `.rst` page whenever possible. A simple,
+  self-contained figure must not be moved into a separate Python script merely
+  to shorten the RST. Ordinary imports of NumPy, Matplotlib or the public API do
+  not by themselves require an external plotting script.
+- Use an external Python script only when the plot needs to call functions
+  defined in another file, such as a shared workflow or reusable figure helper.
+  Explain the shared dependency and keep the source tracked for rebuilds.
+- Keep labels, units, alternative text and an explanatory caption. Seed random
+  inputs and validate the rendered figure in the Sphinx build.
+
+For a self-contained figure, use this form:
+
+```rst
+.. plot::
+    :include-source: false
+    :alt: Signal measured in three successive exposures.
+    :caption: A small illustrative sequence, plotted directly from the RST.
+
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots()
+    ax.plot([1, 2, 3], [10, 12, 11], marker='o')
+    ax.set(xlabel='Exposure number', ylabel='Signal (ADU)')
+```
+
 ## Build and validation
 
 For build failures:

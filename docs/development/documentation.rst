@@ -78,15 +78,19 @@ and expected results and use local temporary data.
 * Choose figures that answer a workflow question: which samples were rejected,
   which sources matched, or where alignment residuals remain. Use computed
   results, labeled axes and units, alternative text, and captions explaining
-  the interpretation. For shared plotting code, use an external-file directive
-  such as ``plot:: _ext/guide_figures.py plot_registration``. The
-  ``guide_figures`` extension records that helper as a source dependency so
-  edits to it invalidate the corresponding pages.
-* Task-guide diagnostics live in ``_ext/task_figures.py``. They use small,
-  deterministic inputs and the public operations being explained. State in
-  each caption whether a WCS, noise model or calibration frame is supplied
-  rather than estimated. The helper is tracked as a source dependency, so
-  changing it rebuilds the task figures.
+  the interpretation. Code graphics with ``.. plot::`` and explicitly set
+  ``:include-source: false``. Keep plotting code inside the RST whenever
+  possible. Ordinary imports of plotting libraries or the public API do not
+  require a separate plotting script.
+* Use an external Python script only when the plot needs functions defined in
+  another file, such as the shared workflow/figure helpers. For that case,
+  ``plot:: _ext/guide_figures.py plot_registration`` calls the shared function;
+  the ``guide_figures`` extension records its file as a source dependency.
+  Existing shared task diagnostics use ``_ext/task_figures.py`` with the same
+  dependency tracking. Keep small self-contained figures inline instead.
+* State in each caption whether a WCS, noise model or calibration frame is
+  supplied rather than estimated. Use small deterministic inputs and the
+  public operations being explained, whether the code is inline or shared.
 * Tutorial RST pages are the maintained numerical source. Hidden ``doctest``
   blocks only prepare temporary data and clean it up; visible examples print
   meaningful results for doctests to verify. Keep assertions and testing
