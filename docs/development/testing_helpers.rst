@@ -62,7 +62,7 @@ propagate instead of being treated as a successful check.
 
 ``assert_path_exists`` and ``assert_path_not_exists`` check filesystem paths.
 Create disposable fixtures in a test-specific temporary directory rather than
-in the source tree. See :doc:`../dev/testing` for running the project's offline
+in the source tree. See :doc:`testing` for running the project's offline
 tests, documentation checks, and separate live catalog conformance.
 
 Recent NumPy versions deprecate the upstream warning helpers. For new code,

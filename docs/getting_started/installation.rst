@@ -106,7 +106,7 @@ From an editable checkout with the corresponding extras installed::
 The documentation build generates notebook downloads from the tutorial pages;
 it does not execute remote-query recipes. The ordinary test command
 uses recorded catalog responses; live catalog conformance is a separate,
-explicit check described in :doc:`../dev/testing`.
+explicit check described in :doc:`../development/testing`.
 
 .. currentmodule:: None
 

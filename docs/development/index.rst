@@ -23,7 +23,7 @@ Start a contribution
        python -m pytest tests docs --remote-data=none
 
 5. Update the affected guide or API docstring and follow :doc:`documentation`
-   for strict rendering, notebook and retained-URL checks.
+   for strict rendering, notebook and canonical-page checks.
 6. Review the diff and open a PR explaining the problem, resulting behavior,
    validation and remaining limitations. Keep independent changes in separate
    commits with an area prefix such as ``image:`` or ``docs:``.
@@ -38,8 +38,8 @@ Contributor guides
 .. toctree::
     :maxdepth: 1
 
-    ../dev/testing
-    ../dev/internal_interfaces
+    testing
+    internal_interfaces
     testing_helpers
     documentation
     typing

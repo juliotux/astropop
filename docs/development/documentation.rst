@@ -1,34 +1,31 @@
 Maintain and review documentation
 =================================
 
-Reader paths and stable URLs
-----------------------------
+Reader paths and chapter ownership
+----------------------------------
 
 The home page has five destinations: Getting started, Tutorials, Modules and
 reference, Development, and Project information. Each module chapter contains
 its explanations, examples, technical background and Reference/API declarations.
 Generated ``api/`` pages provide individual symbol contracts and retain their
-URLs. Keep each indexed declaration in one owning chapter. Legacy authored
-paths remain compatibility gateways, not a second task/concept/reference tree.
+URLs. Keep each indexed declaration in one owning chapter. Remove superseded
+source pages and update their incoming links; do not leave orphan pages,
+compatibility gateways or duplicate task/concept/reference trees.
 
 Tutorials are organized beneath five real subsection indexes: CCD reduction,
 photometry, astrometry/catalogs, polarimetry and diagnostics. Each index states
 its inputs, outputs, dependencies and execution requirements. The half-wave
 and quarter-wave tutorials are independent workflows and notebook companions.
 
-``docs/development/urls.json`` records retained authored page URLs and
-fragment identifiers, including the pre-reorganization baseline and later
-compatibility additions. Retained guides keep
-their content; extracted reference sections leave non-indexed compatibility
-anchors. Keep those anchors while external users may link to them. A future
-URL removal needs an explicit hosting redirect policy and verification.
-
-After building, verify the retained URLs and anchors::
+After building into a clean output directory, verify the canonical pages::
 
     python docs/development/check_docs.py --html docs/_build/html
 
-This checks local built HTML. It does not prove that a hosting service redirects
-removed URLs, or that an external website still resolves.
+This requires built HTML for every authored page, rejects orphan source pages,
+and checks annotation-derived parameter types. The strict Sphinx build checks
+navigation and references. Remove the old build output after source moves so
+stale HTML cannot mask missing pages. Hosting redirects for old external URLs
+are separate from the maintained source tree.
 
 Module explanations and complete tutorials
 ------------------------------------------
@@ -175,7 +172,7 @@ its API family, scientific assumptions and focused operations, and integrates
 the generated reference contracts.
 Link between them, preserving critical scientific limitations beside operations.
 Do not claim speed, memory bounds or scientific validation without a specified
-measurement or test. Follow :doc:`../dev/testing` for strict build commands and
+measurement or test. Follow :doc:`testing` for strict build commands and
 ordinary versus live-service tests.
 
 Strict checks and pull-request previews
@@ -184,7 +181,7 @@ Strict checks and pull-request previews
 ``tox -e build_docs`` uses Python 3.14 and installs both ``docs`` and ``test``
 extras. It checks generated-notebook schema/code syntax, runs local prompted
 examples with remote data disabled, builds every page with strict reference
-and warning checks, then verifies retained URLs, anchors and annotation-derived
+and warning checks, then verifies canonical pages and annotation-derived
 parameter types on representative function and class pages. The GitHub docs
 job selects that environment. Read the Docs also selects Python 3.14 and
 ``sphinx.fail_on_warning: true``; ``nitpicky=True`` in ``docs/conf.py`` checks

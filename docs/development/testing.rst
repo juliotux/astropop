@@ -60,12 +60,12 @@ Notebook examples should not introduce implicit live catalog requests during
 builds. Generated API pages and build output are ignored by Git.
 
 ``tox -e build_docs`` runs these checks on Python 3.14, including offline
-prompted examples, generated-notebook schema/syntax checks and retained HTML URLs.
+prompted examples, generated-notebook schema/syntax checks and canonical HTML pages.
 CI uses the same tox environment. Read the Docs selects Python 3.14 and fails
 on Sphinx warnings. The tox job also executes the ten offline notebook
 companions sequentially and independently. External solver and online-query
-recipes are not executed by builds. See :doc:`../development/documentation` for example classification
+recipes are not executed by builds. See :doc:`documentation` for example classification
 and hosted preview review.
 
 
-:doc:`../development/benchmarking` describes reproducible timing and memory measurements.
+:doc:`benchmarking` describes reproducible timing and memory measurements.

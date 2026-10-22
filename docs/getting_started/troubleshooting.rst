@@ -26,4 +26,4 @@ numerical tolerances just to make a failing check pass.
 When reporting a suspected bug, include a tiny reproducible input or synthetic
 example, expected versus actual result, version information and full traceback.
 State whether external services, local indexes or instrument-specific data are
-required. See :doc:`../dev/testing` for reproducing offline versus live checks.
+required. See :doc:`../development/testing` for reproducing offline versus live checks.

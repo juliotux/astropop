@@ -4,9 +4,8 @@ Recover Stokes parameters from paired beam fluxes
 Measure paired beams in eight ideal half-wave images and recover their linear
 polarization. For an independent linear/circular-polarization sequence, see
 :doc:`quarterwave`.
-The local images and tables require no online catalog. The first example uses a half-wave
-retarder and unit beam normalization; the second uses a quarter-wave retarder
-with known calibration constants. Both require matched ordinary/extraordinary
+The local images require no online catalog. This workflow uses a half-wave
+retarder and unit beam normalization, with matched ordinary/extraordinary
 beams and angles in degrees. Read the beam and angle definitions in
 :doc:`../../modules/polarimetry/index` before applying it to observations.
 

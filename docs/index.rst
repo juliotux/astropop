@@ -18,11 +18,3 @@ Explore the documentation
     modules/index
     development/index
     project/index
-
-.. raw:: html
-
-    <span id="choose-a-reading-path"></span>
-    <span id="api-reference"></span>
-    <span id="developer-documentation"></span>
-    <span id="getting-started"></span>
-    <span id="worked-notebooks"></span>

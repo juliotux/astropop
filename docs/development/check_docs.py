@@ -1,4 +1,4 @@
-"""Inspect documentation examples and check retained HTML URLs.
+"""Inspect documentation examples and check canonical HTML pages.
 
 Run from the repository root; this script does not execute examples or contact
 services. Use pytest and Sphinx for execution and rendering respectively.
@@ -11,36 +11,22 @@ from pathlib import Path
 import sys
 
 
-class Anchors(HTMLParser):
-    """Collect HTML IDs for retained documentation-link checks."""
-
-    def __init__(self):
-        """Initialize the HTML parser with an empty set of anchor IDs."""
-        super().__init__()
-        self.ids = set()
-
-    def handle_starttag(self, tag, attrs):
-        """Record IDs from a start tag, ignoring its other attributes."""
-        self.ids.update(value for key, value in attrs if key == 'id')
-
-
-def check_urls(html):
-    """Verify retained pages and anchors, exiting with all missing targets."""
-    manifest = json.loads(Path(__file__).with_name('urls.json').read_text())
+def check_pages(html: Path) -> None:
+    """Require built HTML for every authored page and reject orphan placeholders."""
+    docs = Path(__file__).resolve().parents[1]
+    pages = [page for page in docs.rglob('*.rst')
+             if not any(part in ('api', '_build', '_templates')
+                        for part in page.relative_to(docs).parts)]
     failures = []
-    for name, contract in manifest['pages'].items():
-        page = html / name
-        if not page.is_file():
-            failures.append(f'Missing page: {name}')
-            continue
-        parser = Anchors()
-        parser.feed(page.read_text())
-        for anchor in contract['anchors']:
-            if anchor not in parser.ids:
-                failures.append(f'Missing anchor: {name}#{anchor}')
+    for page in sorted(pages):
+        relative = page.relative_to(docs)
+        if ':orphan:' in page.read_text().splitlines():
+            failures.append(f'Orphan source page: {relative}')
+        if not (html / relative.with_suffix('.html')).is_file():
+            failures.append(f'Missing built page: {relative}')
     if failures:
         raise SystemExit('\n'.join(failures))
-    print(f"Verified {len(manifest['pages'])} retained page URLs and anchors")
+    print(f'Verified {len(pages)} canonical documentation pages; no orphan sources')
 
 
 class ParameterTypes(HTMLParser):
@@ -176,7 +162,7 @@ if __name__ == '__main__':
                         help='Check generated notebook schemas and Python syntax; no execution')
     args = parser.parse_args()
     if args.html:
-        check_urls(args.html)
+        check_pages(args.html)
         check_parameter_types(args.html)
     if args.inventory:
         example_inventory()

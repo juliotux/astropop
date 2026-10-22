@@ -80,7 +80,7 @@ To work on the source and install the test and documentation dependencies:
     python -m pip install -e '.[all,test,docs]'
 
 See `installation and first steps
-<https://astropop.readthedocs.io/en/latest/installation.html>`_ for optional
+<https://astropop.readthedocs.io/en/latest/getting_started/installation.html>`_ for optional
 external software, notebook environments and a first calculation. The package
 metadata for the selected release determines its dependency requirements.
 
