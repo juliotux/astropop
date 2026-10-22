@@ -38,7 +38,9 @@
 - Include relevant technical details, algorithm assumptions and references to
   original articles, scientific literature or technical documentation of widely
   used software. Tie references to the actual implemented behavior.
-- Use `.. plot::` with `:include-source: false` for plots and graphics. Keep
+- Use inline `.. mermaid::` for workflow, dependency and ownership diagrams;
+  do not draw these schemes with Matplotlib. Keep them readable and captioned.
+- Use `.. plot::` with `:include-source: false` for scientific plots. Keep
   plotting code in the RST whenever possible; use external Python scripts only
   when functions defined in another file are needed.
 - Follow [the documentation skill](../skills/astropop-docs/SKILL.md) for the full

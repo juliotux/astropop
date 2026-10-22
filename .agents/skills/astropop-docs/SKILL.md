@@ -126,9 +126,15 @@ workflow; do not report it as executed.
 
 For FrameData guides, check shape/dtype constraints, copying and array sharing, metadata/WCS, FITS extension selection, overwrite defaults, and whether interchange preserves Boolean masks or full flag bits. Document only storage/configuration features available on this branch.
 
-## Plots and graphics
+## Scientific plots and diagrams
 
-- Code documentation plots and graphics with the Sphinx `.. plot::` directive
+- Use inline `.. mermaid::` diagrams for workflows, dependencies, architecture
+  and storage ownership. Let the diagram engine lay out nodes and arrows;
+  do not draw these schemes with Matplotlib. Use captions and alternative text, and split large diagrams into readable
+  stages. Review browser rendering, light/dark themes and fullscreen viewing;
+  a Sphinx build alone does not validate Mermaid syntax.
+- Use Matplotlib for scientific plots, image displays and spatial/data
+  annotations. Code these with the Sphinx `.. plot::` directive
   and set `:include-source: false` explicitly.
 - Keep the plotting code inside the `.rst` page whenever possible. A simple,
   self-contained figure must not be moved into a separate Python script merely
