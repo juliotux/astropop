@@ -119,6 +119,8 @@ For a specific observation epoch, another option is to call
 propagated positions with their target epoch. Do not pass a new epoch to the
 minimal reloaded catalog and expect its missing motion model to be restored.
 See :doc:`../tools/catalogs` for the coordinate and epoch contracts.
+The :ref:`coordinate-model snapshot example <catalog-motion-snapshot>` shows
+how to preserve a SkyCoord with its epoch and velocities in ECSV.
 
 Use SIMBAD for identity and literature references
 -------------------------------------------------

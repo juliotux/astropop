@@ -23,16 +23,12 @@ from ._online_tools import astroquery_radius, \
 
 
 class SourcesCatalog:
-    """Manage and query a catalog of point sources objects.
+    """Store source identifiers, equatorial coordinates and optional magnitudes.
 
-    This catalog wraps around `~astropy.coordinates.SkyCoord` and it's
-    query mechanism, extending it to include sources id or names,
-    magnitudes or other informtions that user may want. It's initialization
-    accept all initialization arguments from this class. Other informations
-    are stored according the following arguments.
-
-    Currently, it is designed to contain only magnitudes for photometric
-    data.
+    Coordinate arguments are forwarded to `~astropy.coordinates.SkyCoord`.
+    This class wraps SkyCoord rather than subclassing it. Auxiliary query
+    columns are retained separately from the normalized coordinate/photometry
+    table.
 
     Parameters
     ----------
@@ -44,8 +40,8 @@ class SourcesCatalog:
         magnitudes of the object in a `~astropop.math.physical.QFloat` array. Photometry
         will be only available if this argument is set.
     ra, dec: array (optional)
-        RA and DEC coordinates of the object. Conflicts with ``coords``
-        argument. If floats, are interpreted as decimal degrees.
+        Right ascension and declination forwarded to SkyCoord. Supply explicit
+        angular units for plain numerical arrays, for example ``unit='deg'``.
     pm_ra_cosdec, pm_dec: `~astropy.units.Quantity` (optional)
         Proper motion of both coordinates.
     unit: `~astropy.units.Unit`, string, or tuple
@@ -56,9 +52,9 @@ class SourcesCatalog:
     frame: str (optional)
         Celestial frame of coordinates. Default is 'ICRS'
     query_table
-        Optional table containing additional informations you may want to use
-        for the sources. It must have the same number and order of the sources
-        in the catalog.
+        Auxiliary source columns. The caller must provide the same row count
+        and order as the coordinates; the constructor does not validate this
+        alignment and retains the supplied table rather than copying it.
     *args, **kwargs:
         Arguments to be passed to `~astropy.coordinates.SkyCoord`
         initialization. See `~astropy.coordinates.SkyCoord` docs for more
@@ -134,7 +130,7 @@ class SourcesCatalog:
             raise ValueError(f'{band} not available.')
 
     def sources_id(self) -> _npt.NDArray:
-        """Get the list of sources id in catalog."""
+        """Return the underlying identifier array; copy it before editing."""
         return self._base_table['id'].value
 
     def skycoord(self) -> SkyCoord:
@@ -173,7 +169,7 @@ class SourcesCatalog:
                       'mag')
 
     def mag_list(self, band: str) -> _npt.NDArray:
-        """Get the sources photometric mag in [(mag, mag_error)] format.
+        """Return a NumPy array of magnitude/error pairs for one band.
 
         Parameters
         ----------
@@ -183,17 +179,22 @@ class SourcesCatalog:
         Returns
         -------
         mag_list
-            List of tuples of (mag, mag_error).
+            Array with one row per source and magnitude/error columns.
         """
         mags = self.magnitude(band)
         return np.array(list(zip(mags.nominal, mags.std_dev)))
 
     def copy(self) -> SourcesCatalog:
-        """Copy the current catalog to a new instance."""
+        """Return a shallow copy sharing the underlying catalog tables."""
         return copy.copy(self)
 
     def get_coordinates(self, obstime: _Time | None=None) -> SkyCoord:
-        """Get the skycoord positions from the catalog."""
+        """Return coordinates, attempting space motion to the supplied epoch.
+
+        When Astropy raises ValueError, including for missing velocity data,
+        return a copy of the original coordinates without changing their epoch.
+        A returned SkyCoord therefore does not guarantee motion was applied.
+        """
         sk = self._base_table['coords']
         try:
             return sk.apply_space_motion(new_obstime=obstime)

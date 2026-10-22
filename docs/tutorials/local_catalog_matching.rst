@@ -97,3 +97,6 @@ For observational reuse also save catalog release, query region, filters,
 coordinate frame/epoch, retrieval date and software versions. Do not infer
 those from a filename. Continue with :doc:`../how_to/catalogs` for live-service
 choices and failure diagnosis.
+For a reference with velocities, use the
+:ref:`complete coordinate-model snapshot <catalog-motion-snapshot>` example
+to retain its epoch and motion metadata.

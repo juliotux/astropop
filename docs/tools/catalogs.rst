@@ -3,115 +3,134 @@
 Catalogs Data
 =============
 
-|astropop| offers an easy-to-use interface for working with sources catalogs, primarily for handling astrometric RA and Dec coordinates and photometric magnitudes, as well as cross-matching between catalogs. It can either work with offline data or access online catalogs through the |astroquery| package. However, it is not as comprehensive as |astroquery| and is intended to provide a straightforward and consistent way to interact with (RA, Dec) catalogs of sources, with limited capabilities by design.
-
-The main class for this work is |SourcesCatalog|, which serves as a wrapper for |SkyCoord|, adding information such as source IDs and magnitudes. However, it is not derived from |SkyCoord|, so not all |SkyCoord| methods can be used on a |SourcesCatalog| object.
+|SourcesCatalog| stores source IDs, equatorial coordinates and optional
+magnitudes. It wraps |SkyCoord| rather than subclassing it. Local and online
+catalogs share this interface; :doc:`../how_to/catalogs` covers service choice,
+query failures and reuse, while this page explains the stored data and matching.
 
 .. _manual_catalogs:
 
 Manual (Offline) Catalog
 ------------------------
 
-The |SourcesCatalog| class is created by providing almost the same arguments as |SkyCoord|, along with a list of source names and a dictionary of magnitudes. The code extracts the ``ids``, ``mag``, and ``query_table`` arguments and passes the rest to |SkyCoord|. However, it's recommended to use ``ra`` and ``dec`` compatible arguments as described in the |SourcesCatalog| API to avoid issues with data access and cross-matching.
+Supply one ID per coordinate and one magnitude per source for each band.
+Coordinate arguments are forwarded to |SkyCoord|; use explicit angular units.
+The optional ``query_table`` carries auxiliary columns in the same row order.
+It does not supply coordinates or magnitudes automatically::
 
-If you want to create a basic astrometric catalog without photometric data, simply pass a list of object ``ids`` and the appropriate astrometric information, as shown in the example provided.
+    >>> import numpy as np
+    >>> from astropy.table import Table
+    >>> from astropop.catalogs import SourcesCatalog
+    >>> from astropop.math import QFloat
+    >>> auxiliary = Table({'quality': [0, 1, 0]})
+    >>> cat = SourcesCatalog(ids=['a', 'b', 'c'], ra=[1, 2, 3],
+    ...                      dec=[4, 5, 6], unit='deg',
+    ...                      mag={'g': QFloat([12, 13, 14], [0.1, 0.2, 0.3])},
+    ...                      query_table=auxiliary)
+    >>> print('Sources:', len(cat))
+    Sources: 3
+    >>> print('Bands:', cat.filters)
+    Bands: ['g']
 
-.. code-block:: python
-
-    from astropop.catalogs import SourcesCatalog
-    cat = SourcesCatalog(ids=['a', 'b', 'c'], ra=[1, 2, 3],
-                         dec=[4, 5, 6], unit='deg')
-    cat.table()
-
-For the additional magnitudes, a dictionary must be passed, with one list of magnitudes for each filter. The dictionary keys are the filter names, and the values are the corresponding lists of magnitudes. The example below shows how to create a catalog with three filters, ``'g'``, ``'r'``, and ``'i'``. These lists can be plain values for magnitudes without errors, or |QFloat| objects for magnitudes with errors. If errors are present, they will be extracted and stored in the ``*_error`` columns. If no errors are present, the ``*_error`` columns will be filled with zeros.
-
-.. code-block:: python
-
-    cat = SourcesCatalog(ids=['a', 'b', 'c'], ra=[1, 2, 3],
-                         dec=[4, 5, 6], unit='deg',
-                         mag={'g': [1, 2, 3],
-                              'r': [4, 5, 6],
-                              'i': [7, 8, 9]})
-    cat.table()
-
-.. code-block:: python
-
-    from astropop.math import QFloat
-    cat = SourcesCatalog(ids=['a', 'b', 'c'], ra=[1, 2, 3],
-                         dec=[4, 5, 6], unit='deg',
-                         mag={'g': QFloat([1, 2, 3], [0.1, 0.2, 0.3]),
-                              'r': QFloat([4, 5, 6], [0.4, 0.5, 0.6]),
-                              'i': QFloat([7, 8, 9], [0.7, 0.8, 0.9])})
-    cat.table()
-
-An optional table with additional informations can be passed as ``query_table`` argument. This table will be accessed only by ``query_table`` property and will also be filtered for cross-matching. However, it cannot be used for automatic extraction the default |SourcesCatalog| data.
-
-.. code-block:: python
-
-    from astropy.table import Table
-    cat = SourcesCatalog(ids=['a', 'b', 'c'], ra=[1, 2, 3],
-                         dec=[4, 5, 6], unit='deg',
-                         query_table=Table({'id': ['a', 'b', 'c'],
-                                            'z': [1, 2, 3]}))
-    cat.table()
-    cat.query_table
-
+Omit ``mag`` for an astrometry-only catalog. Plain magnitude lists are accepted,
+but their errors are stored as zeros; this means no errors were supplied, not
+that the measurements are exact. ``ids`` must be one-dimensional, and coordinate
+and magnitude lengths must agree. The constructor does not validate the length
+of ``query_table``: the caller must ensure its length and ordering match.
 
 Properties Accessing
 --------------------
 
-The |SourcesCatalog| class provides several functions to get the data stored in the catalog. No setter function is present, to protect the catalog internally. So |SourcesCatalog| are inteded to be read-only objects.
-
 Coordinates
 ^^^^^^^^^^^
 
-Coordinates can be accessed using the `~astropop.catalogs.SourcesCatalog.skycoord`, `~astropop.catalogs.SourcesCatalog.ra_dec_list` and `~astropop.catalogs.SourcesCatalog.get_coordinates` functions. The difference is that in the first a |SkyCoord| object is returned, while in the second a list of tuples is returned. The last function is useful to get coordinates in |SkyCoord| format with space motion applied.
+``skycoord()`` returns the stored coordinate model as a SkyCoord;
+``get_coordinates(obstime)`` attempts space-motion propagation to that epoch.
+``ra()``, ``dec()`` and ``ra_dec_list()`` return numerical degrees, with the last
+arranged as a NumPy array of RA/Dec pairs::
 
-.. code-block:: python
-
-    cat = SourcesCatalog(ids=['a', 'b', 'c'], ra=[1, 2, 3],
-                         dec=[4, 5, 6], unit='deg')
-    cat.skycoord()
-    cat.ra_dec_list()
-    cat.get_coordinates()
-
-You can also access separated arrays for RA and Dec coordinates using the `~astropop.catalogs.SourcesCatalog.ra` and `~astropop.catalogs.SourcesCatalog.dec` methods.
-
-.. code-block:: python
-
-    cat.ra()
-    cat.dec()
+    >>> print('RA (deg):', cat.ra().tolist())
+    RA (deg): [1.0, 2.0, 3.0]
+    >>> print('RA/Dec pairs:', cat.ra_dec_list().tolist())
+    RA/Dec pairs: [[1.0, 4.0], [2.0, 5.0], [3.0, 6.0]]
 
 Source IDs
 ^^^^^^^^^^
 
-Source IDs can be accessed using the `~astropop.catalogs.SourcesCatalog.sources_id` method.
+``sources_id()`` returns the identifier array::
 
-.. code-block:: python
-
-    cat = SourcesCatalog(ids=['a', 'b', 'c'], ra=[1, 2, 3],
-                         dec=[4, 5, 6], unit='deg')
-    cat.sources_id()
+    >>> print('IDs:', cat.sources_id().tolist())
+    IDs: ['a', 'b', 'c']
 
 Magnitudes
 ^^^^^^^^^^
 
-Magnitudes can be either accessed using `~astropop.catalogs.SourcesCatalog.magnitude` or `~astropop.catalogs.SourcesCatalog.mag_list` functions. For both of them, the ``band`` argument must be passed to access the magnitudes in a given filter. The difference is that the first function returns a |QFloat| object, while the second returns a list of tuples containing (magnitude, error). If the ``band`` argument is not passed, an error is raised. Also, the filter must be available in the catalog.
+``magnitude(band)`` returns a |QFloat| in magnitudes. ``mag_list(band)`` returns
+a NumPy array of magnitude/error pairs. Supply an available band explicitly;
+absent photometry or an unknown band raises ``ValueError``::
 
-.. code-block:: python
-
-    cat = SourcesCatalog(ids=['a', 'b', 'c'], ra=[1, 2, 3],
-                         dec=[4, 5, 6], unit='deg',
-                         mag={'g': [1, 2, 3],
-                              'r': [4, 5, 6],
-                              'i': [7, 8, 9]})
-    cat.magnitude('g')
-    cat.mag_list('g')
+    >>> print('g values:', cat.magnitude('g').nominal.tolist())
+    g values: [12.0, 13.0, 14.0]
+    >>> print('g errors:', cat.magnitude('g').uncertainty.tolist())
+    g errors: [0.1, 0.2, 0.3]
+    >>> print('g pairs:', cat.mag_list('g').tolist())
+    g pairs: [[12.0, 0.1], [13.0, 0.2], [14.0, 0.3]]
 
 Summary Table
 ^^^^^^^^^^^^^
 
-A summary table of the catalog can by obtained via `~astropop.catalogs.SourcesCatalog.table` function. This table contains the sources IDs, coordinates, proper motion (if available) and magnitudes (if available). No additional information is included. See the examples present in :ref:`manual_catalogs` section.
+``table()`` returns IDs, coordinates, available proper motions and magnitudes.
+It excludes auxiliary query columns and does not serialize the complete motion
+model, including its reference epoch, distance and radial velocity::
+
+    >>> print('Summary columns:', cat.table().colnames)
+    Summary columns: ['id', 'ra', 'dec', 'g', 'g_error']
+    >>> print('Auxiliary columns:', cat.query_colnames)
+    Auxiliary columns: ['quality']
+
+Row selection, query columns and copying
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+An integer, slice, index list or Boolean array selects rows into a new catalog.
+Even an integer returns a one-row catalog. A string instead selects a column
+from the auxiliary query table, not from ``table()``::
+
+    >>> print('First row IDs:', cat[0].sources_id().tolist())
+    First row IDs: ['a']
+    >>> print('Query quality:', cat['quality'].tolist())
+    Query quality: [0, 1, 0]
+    >>> print('Selected IDs:', cat[np.array([True, False, True])].sources_id().tolist())
+    Selected IDs: ['a', 'c']
+    >>> exported = cat.table()
+    >>> exported['id'][0] = 'z'
+    >>> print('Original IDs:', cat.sources_id().tolist())
+    Original IDs: ['a', 'b', 'c']
+
+Without a query table, string indexing raises ``KeyError``. Access magnitudes
+with ``magnitude('g')``, not ``cat['g']`` unless the query itself has a ``g``
+column. ``table()`` and ``query_table`` return separate tables, but the object
+is not an immutable store: ``sources_id()`` exposes its underlying array,
+``copy()`` is shallow, and the constructor retains the supplied auxiliary
+table. Copy IDs before editing them; use ``copy.deepcopy(cat)`` when independent
+internal storage is required. Do not rely on shallow copies to isolate edits.
+
+Empty catalogs and invalid coordinates
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+An empty local catalog is valid storage, but not a nearest-neighbor reference::
+
+    >>> empty = SourcesCatalog(ids=[], ra=[], dec=[], unit='deg')
+    >>> print('Empty source count:', len(empty))
+    Empty source count: 0
+    >>> print('Empty summary rows:', len(empty.table()))
+    Empty summary rows: 0
+
+Check that a reference has rows before calling ``match_objects``. Handle an
+empty detection list before invoking matching as well. Nonfinite coordinates
+cannot be used by the nearest-neighbor search; filter or report them before
+matching, keeping the original row indices so results can be reassembled.
+Astropy also rejects invalid declinations and incompatible coordinate shapes.
+Do not treat those input errors as successful unmatched observations.
 
 Object Matching
 ---------------
@@ -185,32 +204,59 @@ coordinates explicitly with ``get_coordinates(target_epoch)`` when inspecting
 propagated positions, rather than assuming the returned match coordinates are
 the input positions.
 
-.. code-block:: python
+.. _catalog-motion-snapshot:
 
-    cat = SourcesCatalog(ids=['a', 'b', 'c'], ra=[1, 2, 3],
-                         dec=[4, 5, 6], unit='deg')
-    matched = cat.match_objects([1, 3], [4, 6], limit_angle='1 arcmin')
-    matched.table()
+Preserve a motion model for local reuse
+---------------------------------------
 
-Magnitudes and additional ``query_table`` informations are also filtered and returned in the exact same order of the ``ra`` and ``dec`` lists passed to the method.
+Save the SkyCoord as an ECSV mixin column when the reference epoch and full
+motion model are needed later. This retains the coordinate frame, time,
+distance and velocity metadata of the example instead of reducing it to RA/Dec
+columns. Reconstruct the catalog explicitly on reload::
 
-.. code-block:: python
+    >>> from astropy.table import QTable
+    >>> from pathlib import Path
+    >>> from tempfile import TemporaryDirectory
+    >>> with TemporaryDirectory() as directory:
+    ...     path = Path(directory) / 'moving_reference.ecsv'
+    ...     snapshot = QTable({'id': moving.sources_id(), 'coords': moving.skycoord()})
+    ...     snapshot.meta['description'] = 'Synthetic motion example, not an observed catalog'
+    ...     snapshot.write(path, format='ascii.ecsv')
+    ...     saved = QTable.read(path, format='ascii.ecsv')
+    ...     restored = SourcesCatalog(saved['coords'], ids=saved['id'])
+    ...     predicted = restored.get_coordinates(target_epoch)
+    ...     print('Reference epoch:', restored.skycoord().obstime.jyear)
+    ...     print(f'Reload difference: {predicted.separation(target).mas[0]:.3f} mas')
+    Reference epoch: 2000.0
+    Reload difference: 0.000 mas
 
-    cat = SourcesCatalog(ids=['a', 'b', 'c'], ra=[1, 2, 3],
-                         dec=[4, 5, 6], unit='deg',
-                         mag={'g': [1, 2, 3],
-                              'r': [4, 5, 6],
-                              'i': [7, 8, 9]},
-                         query_table=Table({'id': ['a', 'b', 'c'],
-                                            'z': [1, 2, 3]}))
-    matched = cat.match_objects([1, 3], [4, 6], limit_angle='1 arcmin')
-    matched.table()
-    matched.query_table
+Add magnitudes and auxiliary columns separately if they are needed, and record
+catalog release, query region and retrieval provenance. The zero difference
+above checks this serialization example; it is not a measure of physical
+proper-motion accuracy.
+
+An epoch argument cannot supply a missing motion model. For coordinates without
+velocities, ``get_coordinates`` returns a copy of the original positions when
+Astropy cannot propagate them; it does not relabel their epoch::
+
+    >>> fixed = SourcesCatalog(ids=['fixed'], ra=[10], dec=[20], unit='deg')
+    >>> unchanged = fixed.get_coordinates(target_epoch)
+    >>> print('Position (deg):', unchanged.ra.deg.tolist(), unchanged.dec.deg.tolist())
+    Position (deg): [10.0] [20.0]
+    >>> print('Reference epoch:', unchanged.obstime)
+    Reference epoch: None
+
+Check that proper motion and a reference epoch are present before treating an
+epoch-dependent match as propagated. The method catches Astropy ``ValueError``
+and returns unchanged coordinates, so a returned object alone is not proof
+that space motion was applied.
 
 Online Catalogs
 ---------------
 
-The |astroquery| package allows for querying online catalogs, but the |astropop| package offers a more user-friendly interface through the `~astropop.catalogs` module. As the queries from |astroquery| is not exactly homogeneous and some manual work must be done some times, we offer specialized classes for pre-defined catalogs. See the following descriptions for more information.
+Service-specific adapters normalize their results into the same interface.
+Use the following guides for configured bands and query options, and
+:doc:`../how_to/catalogs` for choosing and reusing queries.
 
 .. toctree::
    :maxdepth: 1
