@@ -51,7 +51,8 @@ class MoffatEquations:
         power
             Moffat power parameter.
         flux
-            Total integrated flux parameter.
+            Amplitude parameter; the peak above sky is
+            ``flux * 2 * (power - 1) / width**2``, not a 1D integral.
         sky
             Sky level parameter.
 
@@ -86,7 +87,8 @@ class MoffatEquations:
         power
             Moffat power parameter.
         flux
-            Total integrated flux parameter.
+            Amplitude parameter; the peak above sky is
+            ``flux * 2 * (power - 1) / width**2``, not a 1D integral.
         sky
             Sky level parameter.
 
@@ -329,7 +331,8 @@ class GaussianEquations:
         r
             Radial distance from the center.
         flux
-            Total integrated flux parameter.
+            Amplitude with 1D Gaussian normalization; not the area-weighted
+            integral of a circular 2D profile.
         sigma
             Gaussian standard deviation parameter.
         sky

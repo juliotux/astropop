@@ -101,6 +101,60 @@ expose the corresponding FWHM relations.
         ax.grid(alpha=0.2)
         ax.legend()
 
+Choose a line profile or a radial profile
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``PSFGaussian1D`` and ``PSFMoffat1D`` evaluate a line coordinate ``x`` with a
+movable ``x_0`` center. ``PSFGaussianRadial`` and ``PSFMoffatRadial`` instead
+accept distances from an already chosen center, so they have no ``x_0``
+parameter. Use a 2D class for detector images, a 1D class for a line profile,
+and a radial class for intensity versus radius. These are intensity samples,
+not pixel-integrated or annularly integrated fluxes.
+
+For a center at zero, the 1D and radial implementations give the same
+numerical samples within each family. The differing Gaussian/Moffat amplitude
+conventions above still apply::
+
+    >>> from astropop.math.models import (PSFGaussian1D, PSFGaussianRadial,
+    ...                                   PSFMoffat1D, PSFMoffatRadial)
+    >>> coordinates = np.array([0., 1., 2.])
+    >>> profiles = [PSFGaussian1D(x_0=0, flux=100, sigma=1, sky=10),
+    ...             PSFGaussianRadial(flux=100, sigma=1, sky=10),
+    ...             PSFMoffat1D(x_0=0, flux=100, width=2, power=2.5, sky=10),
+    ...             PSFMoffatRadial(flux=100, width=2, power=2.5, sky=10)]
+    >>> for model in profiles:
+    ...     print(type(model).__name__, np.round(model(coordinates), 3).tolist())
+    PSFGaussian1D [49.894, 34.197, 15.399]
+    PSFGaussianRadial [49.894, 34.197, 15.399]
+    PSFMoffat1D [85.0, 52.933, 23.258]
+    PSFMoffatRadial [85.0, 52.933, 23.258]
+
+``GaussianEquations`` and ``MoffatEquations`` expose the numerical formulas
+used by the model classes without creating a fittable object. Their
+``model_1d``, ``model_2d`` and ``model_radial`` methods evaluate profiles with
+explicit parameters. ``fwhm`` converts width parameters to full width at half
+maximum. Gaussian ``normalize_1d``/``normalize_2d`` and Moffat ``normalize``
+return the multiplicative normalization for the corresponding infinite-domain
+profile; the Moffat normalization helper is for two dimensions.
+For example, inspect circular 2D normalization and the widths directly::
+
+    >>> from astropop.math.models import GaussianEquations, MoffatEquations
+    >>> print(f'Gaussian 2D normalization: {GaussianEquations.normalize_2d(1, 1):.4f}')
+    Gaussian 2D normalization: 0.1592
+    >>> print(f'Moffat 2D normalization: {MoffatEquations.normalize(2, 2.5):.4f}')
+    Moffat 2D normalization: 0.1194
+    >>> print(f'Gaussian FWHM: {GaussianEquations.fwhm(1):.3f}')
+    Gaussian FWHM: 2.355
+    >>> print(f'Moffat FWHM: {MoffatEquations.fwhm(2, 2.5):.3f}')
+    Moffat FWHM: 2.261
+
+For an elliptical ``PSFGaussian2D``, its ``fwhm`` property is the arithmetic
+mean of the x- and y-axis FWHMs. It is not an area-equivalent circular width.
+Choose positive Gaussian widths, and positive Moffat width with ``power > 1``
+when using the normalized 2D model. See the
+`Astropy modeling guide <https://docs.astropy.org/en/stable/modeling/>`_ for
+parameter constraints and fitting these fittable models.
+
 Short identifiers
 -----------------
 
