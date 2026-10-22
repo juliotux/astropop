@@ -90,10 +90,18 @@ and expected results and use local temporary data.
   ``code-block:: text`` for recorded console output. These blocks are not
   executed during the build. Run plot directives by building Sphinx, using
   seeded random generators.
-* Choose figures that answer a workflow question: which samples were rejected,
+* Use inline ``.. mermaid::`` diagrams for workflows, dependencies and storage
+  ownership. Let Mermaid lay out nodes and arrows; do not draw these schemes
+  with Matplotlib. Split large diagrams into readable stages and use captions
+  and alternative text. Mermaid renders SVG in the browser with light/dark
+  themes and fullscreen viewing. Its versioned JavaScript loads from jsDelivr;
+  viewing diagrams requires JavaScript and access to that CDN. A Sphinx build
+  checks the directive, not Mermaid syntax or browser rendering: review the
+  rendered diagrams in a browser after editing them.
+* Choose scientific plots that answer a workflow question: which samples were rejected,
   which sources matched, or where alignment residuals remain. Use computed
   results, labeled axes and units, alternative text, and captions explaining
-  the interpretation. Code graphics with ``.. plot::`` and explicitly set
+  the interpretation. Code these plots with ``.. plot::`` and explicitly set
   ``:include-source: false``. Keep plotting code inside the RST whenever
   possible. Ordinary imports of plotting libraries or the public API do not
   require a separate plotting script.

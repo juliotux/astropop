@@ -1,0 +1,6 @@
+/* Mermaid emits SVG into a pre element; it is a figure, not a code block. */
+pre.mermaid {
+    background: transparent;
+    border: 0;
+    padding: 0;
+}

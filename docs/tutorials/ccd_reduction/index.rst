@@ -68,46 +68,54 @@ derived products so notebooks can be rerun; raw files remain inputs. Source
 truth is used only for recovery diagnostics. A small residual in the simulation
 does not establish accuracy for different detectors or observations.
 
-.. plot::
-    :include-source: false
-    :alt: Bias and flat masters feed the science stack and a separate time series. Stack photometry leads to astrometric and photometric calibration. Paired beam measurements feed polarimetry independently.
-    :caption: Follow the arrows for data dependencies. The light curve uses a separate twelve-exposure sequence; half-wave polarimetry starts from paired-beam images and quarter-wave polarimetry from a flux table, both independent of the imaging stack.
+The diagrams below separate the shared calibration products from the two
+imaging workflows. Arrows indicate which products a step needs; follow the
+linked tutorials for the actual calculations.
 
-    import matplotlib.pyplot as plt
-    import numpy as np
+.. mermaid::
+    :align: center
+    :alt: Raw bias exposures produce a master bias. Raw flats and the master bias feed bias subtraction and normalization, which produce the master flat.
+    :caption: Build the shared calibration masters. The normalized flat is derived from bias-corrected exposures.
 
-    fig, ax = plt.subplots(figsize=(12, 4.8), layout='constrained')
-    nodes = {
-        'bias': (0, 3.2, 'Master\nbias', 'C0'),
-        'flat': (2, 3.2, 'Master\nflat', 'C0'),
-        'stack': (4, 3.2, 'Calibrate +\nregister + stack', 'C0'),
-        'measure': (6, 3.2, 'Stack\nphotometry', 'C0'),
-        'wcs': (8, 3.2, 'Fit\nastrometry', 'C0'),
-        'magnitude': (10, 3.2, 'Calibrate\nmagnitudes', 'C0'),
-        'series': (4, 1.6, 'Calibrate separate\ntime-series images', 'C1'),
-        'curve': (6, 1.6, 'Differential\nlight curve', 'C1'),
-        'beams': (4, 0, 'Detect + measure\npaired beams', 'C2'),
-        'stokes': (6, 0, 'Fit Stokes\nparameters', 'C2'),
-    }
-    for x, y, label, color in nodes.values():
-        ax.text(x, y, label, ha='center', va='center', fontsize=10,
-                bbox={'boxstyle': 'round,pad=0.45', 'fc': 'white', 'ec': color})
-    edges = [('bias', 'flat'), ('flat', 'stack'), ('stack', 'measure'),
-             ('measure', 'wcs'), ('wcs', 'magnitude'), ('flat', 'series'),
-             ('series', 'curve'), ('beams', 'stokes')]
-    for start, end in edges:
-        ax.annotate('', xy=nodes[end][:2], xytext=nodes[start][:2],
-                    arrowprops={'arrowstyle': '->', 'shrinkA': 50, 'shrinkB': 50,
-                                'color': '0.4'})
-    ax.annotate('', xy=nodes['stack'][:2], xytext=nodes['bias'][:2],
-                arrowprops={'arrowstyle': '->', 'shrinkA': 34, 'shrinkB': 48,
-                            'connectionstyle': 'arc3,rad=-0.35', 'color': '0.4'})
-    ax.text(0, 1.6, 'Separate raw sequence;\nsame bias and flat masters',
-            va='center', fontsize=10, color='C1')
-    ax.text(0, 0, 'Separate polarimetric data;\nno input from the imaging stack',
-            va='center', fontsize=10, color='C2')
-    ax.set(xlim=(-1, 11), ylim=(-0.6, 4.2))
-    ax.axis('off')
+    flowchart TD
+        accTitle: Shared calibration masters
+        accDescr: Raw bias exposures produce a master bias. Raw flats and the master bias feed bias subtraction and normalization, which produce the master flat.
+        biases["Raw bias exposures"] --> bias["Master bias"]
+        bias --> correct["Subtract bias and normalize<br/>each flat exposure"]
+        flats["Raw flat exposures"] --> correct
+        correct -->|combine| flat["Master flat"]
+
+.. mermaid::
+    :align: center
+    :alt: Master bias, master flat and raw science exposures feed science calibration. Calibrated images are registered and combined, then measured. Local references and source measurements provide astrometric and photometric calibration.
+    :caption: Produce and measure a science stack. Reference stars supply the local astrometric and photometric standards.
+
+    flowchart TD
+        accTitle: Science stack and photometric calibration
+        accDescr: Master bias, master flat and raw science exposures feed science calibration. Calibrated images are registered and combined, then measured. Local references and source measurements provide astrometric and photometric calibration.
+        masters["Master bias + master flat"] --> calibrated["Calibrate individual exposures"]
+        raw["Raw science exposures"] --> calibrated
+        calibrated --> stack["Register and combine"]
+        stack --> measured["Detect stars and measure fluxes"]
+        measured --> wcs["Fit the astrometric solution"]
+        references["Local reference stars"] --> wcs
+        wcs --> magnitudes["Calibrate magnitudes"]
+        references --> magnitudes
+
+.. mermaid::
+    :align: center
+    :alt: The same master bias and flat calibrate a separate twelve-exposure sequence. Measurements on individual exposures produce the differential light curve without using the science stack.
+    :caption: The light curve uses a separate observing sequence and retains individual exposures rather than measuring the science stack.
+
+    flowchart TD
+        accTitle: Differential time-series photometry
+        accDescr: The same master bias and flat calibrate a separate twelve-exposure sequence. Measurements on individual exposures produce the differential light curve without using the science stack.
+        masters["Same master bias + master flat"] --> calibrated["Calibrate individual exposures"]
+        sequence["Separate raw time series<br/>12 exposures"] --> calibrated
+        calibrated --> curve["Measure target and comparison stars<br/>and produce a differential light curve"]
+
+Polarimetry uses separate half-wave images or a quarter-wave flux table. These
+inputs do not come from the imaging stack; see :doc:`../polarimetry/index`.
 
 
 Follow the CCD reduction

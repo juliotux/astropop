@@ -21,6 +21,7 @@ extensions = [
     'sphinx.ext.extlinks',
     'sphinx.ext.todo',
     'sphinx.ext.mathjax',
+    'sphinxcontrib.mermaid',
     'sphinx_automodapi.automodapi',
     'numpydoc',
     'sphinx_autodoc_typehints',
@@ -35,6 +36,19 @@ extlinks = {
 plot_html_show_source_link = False
 plot_include_source = False
 plot_html_show_formats = False
+
+# Pin the browser renderer so diagram appearance changes only when reviewed.
+mermaid_version = '12.2.0'
+mermaid_light_theme = 'redux'
+mermaid_dark_theme = 'redux-dark'
+mermaid_fullscreen = True
+mermaid_height = 'auto'
+mermaid_init_config = {
+    'startOnLoad': False,
+    'look': 'neo',
+    'fontFamily': 'system-ui, sans-serif',
+    'flowchart': {'curve': 'basis', 'wrappingWidth': 260},
+}
 
 todo_include_todos = True
 
@@ -92,6 +106,7 @@ pygments_style = 'sphinx'
 # html_theme = 'pydata_sphinx_theme'
 html_theme = "sphinx_book_theme"
 html_static_path = ['_static']
+html_css_files = ['diagrams.css']
 htmlhelp_basename = 'astropop'
 html_theme_options = {
   "show_prev_next": False,

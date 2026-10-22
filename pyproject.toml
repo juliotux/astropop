@@ -65,6 +65,7 @@ docs = [
     "sphinx-autodoc-typehints>=3.17.2",
     "sphinx-astropy",
     "sphinx-book-theme",
+    "sphinxcontrib-mermaid>=2.1.1,<3",
     "numpydoc",
     "nbclient",
     "nbformat"

@@ -349,33 +349,22 @@ The storage diagram separates the arrays retained for the entire call from
 those sized by the working-memory budget. Enabling disk caching changes where
 the internal copies live; it does not eliminate the caller's existing frames.
 
-.. plot::
-    :include-source: false
-    :alt: Caller inputs flow to internal copies, then through a budgeted stack tile and scratch blocks into full-size output arrays; retained inputs and outputs sit outside the tile budget.
+.. mermaid::
+    :align: center
+    :alt: Caller inputs feed internal copies. A dashed working-memory cluster contains the current stack tile, validity mask and statistics scratch blocks. Tiles update the complete output; the other retained arrays lie outside the working-memory budget.
     :caption: Conceptual storage ownership during combination; box sizes are not byte measurements. The dashed area is sized using memory_limit, subject to minimum working storage. Other arrays and Python overhead contribute to total process memory.
 
-    import matplotlib.pyplot as plt
-    from matplotlib.patches import FancyBboxPatch, Rectangle
-
-    fig, ax = plt.subplots(figsize=(11, 3.5), layout='constrained')
-    boxes = [(0, 'Caller inputs', 'Arrays, frames or filenames'),
-             (3, 'Internal input copies', 'RAM or explicit disk cache'),
-             (6, 'Current output tile', 'Stack + validity mask\n+ statistics scratch blocks'),
-             (9, 'Complete output', 'Data, uncertainty and flags\nwhen enabled')]
-    for x, title, detail in boxes:
-        ax.add_patch(FancyBboxPatch((x, 0.6), 2.45, 1.3, boxstyle='round,pad=0.08',
-                                   facecolor='white', edgecolor='0.35'))
-        ax.text(x + 1.225, 1.65, title, ha='center', va='center', fontsize=10, weight='bold')
-        ax.text(x + 1.225, 1.05, detail, ha='center', va='center', fontsize=9)
-    for start in (2.55, 5.55, 8.55):
-        ax.annotate('', xy=(start + 0.35, 1.3), xytext=(start, 1.3),
-                    arrowprops={'arrowstyle': '->', 'color': '0.3'})
-    ax.add_patch(Rectangle((5.75, 0.3), 2.95, 1.95, fill=False, linestyle='--',
-                           edgecolor='C0', linewidth=1.5))
-    ax.text(7.225, 2.5, 'Working-memory budget', ha='center', color='C0', fontsize=10)
-    ax.text(7.225, 0, 'Repeat for the next tile', ha='center', fontsize=9)
-    ax.set(xlim=(-0.2, 11.8), ylim=(-0.25, 2.8))
-    ax.axis('off')
+    flowchart TD
+        accTitle: Image combination storage ownership
+        accDescr: Caller inputs feed internal copies. A dashed working-memory cluster contains the current stack tile, validity mask and statistics scratch blocks. Tiles update the complete output; the other retained arrays lie outside the working-memory budget.
+        caller["Caller inputs<br/>Arrays, frames or filenames"] --> copies["Internal input copies<br/>RAM or explicit disk cache"]
+        copies --> tile
+        subgraph budget["Working-memory budget: memory_limit"]
+            tile["Current output tile<br/>Stack + validity mask"] --> scratch["Statistics scratch blocks"]
+            scratch -. next block / tile .-> tile
+        end
+        scratch -->|write tile| output["Complete output<br/>Data, uncertainty and flags when enabled"]
+        style budget stroke-dasharray:5 5
 
 The combiner loads its internal input copies before reducing chunks. For
 hundreds of images, consider a smaller dtype and explicit disk caching::

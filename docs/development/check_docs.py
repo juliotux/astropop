@@ -95,6 +95,7 @@ _DIRECTIVE_MODES = {
     '.. tutorial-notebook::': 'generated RST companion; execute with development/run_tutorials.py',
     '.. tutorial-data::': 'generated local FITS download; no online queries',
     '.. plot::': 'Sphinx plot execution',
+    '.. mermaid::': 'browser-rendered Mermaid diagram; review in a browser',
     '.. code-block:: python': 'static recipe; not executed',
 }
 
