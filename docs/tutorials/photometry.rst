@@ -73,11 +73,13 @@ choices or a different measurement method::
     ...     image.data, sources['x'], sources['y'], r=6., r_ann=(9., 13.),
     ...     gain=1., bkg_error=rms, mask=image.mask, pixel_flags=image.flags)
 
-Measure the original image, not the background-subtracted detection image:
-local annuli subtract the sky during photometry. Subtracting a global map as
-well would count the background correction twice. ``gain=1`` preserves the
-input numerical flux scale. In this API data are divided by ``gain``; changing
-it requires a matching change to the supplied background-noise scale.
+This example measures the original image and estimates its sky in local annuli.
+An alternative is to subtract the global map first and let an annulus estimate
+only the residual sky. Those are different estimators, not inherently duplicate
+subtractions. Subtracting the same estimated sky twice would be incorrect.
+See :doc:`../reduction/photometry` for both paths and their error conventions.
+``gain=1`` preserves the input numerical flux scale. In this API data are
+divided by ``gain``; changing it also requires a matching background-noise scale.
 
 Check and export the table
 ---------------------------
@@ -105,8 +107,24 @@ finite, unflagged measurements::
 The displayed relative errors are rounded; the saved ``flux_error`` column
 retains the computed values. Exact errors differ slightly between supported
 Photutils releases because their fractional boundary-pixel variance weighting
-differs. The formal flux error includes the supplied background/Poisson model.
-It does not include every systematic, flat-field uncertainty, registration covariance,
+differs. This measurement deliberately illustrates the convenience wrapper's
+background/Poisson model, rather than using ``image.uncertainty`` from the stack;
+that array is not an argument to ``aperture_photometry``. For an ideal mean of
+N equal independent exposures, a source with mean S ADU has Poisson variance
+S/(N*g), where g is the detector gain in electrons per ADU. Here the routine
+instead uses its single-image term S/g. Rejected samples, interpolation and
+unequal accepted counts prevent a universal replacement of g by N*g; the
+wrapper would also divide the nominal pixels when changing ``gain``.
+
+The supplied RMS estimates background fluctuations in the stack. Because the
+input still contains sky, the wrapper's pre-annulus Poisson calculation can
+also count sky noise already present in that RMS. These formal errors are not
+a calibrated uncertainty model for this clipped/interpolated stack. Measure
+the individual calibrated exposures for time-series errors, or construct and
+propagate an appropriate pixel-error/covariance model with an aperture API that
+accepts it. The module guide explains the residual-image alternative.
+
+The displayed errors also omit systematic, flat-field uncertainty, registration covariance,
 aperture correction or uncertainty in a photometric zero point. A small error
 bar therefore does not establish an accurate calibrated magnitude.
 

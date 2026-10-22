@@ -253,8 +253,8 @@ def aperture_photometry(
         recentering will be performed.
         Default: `None`
     recenter_method
-        Algorithm to recenter the apertures. If None, no recentering will be
-        performed. ``'com'`` method will use the center of mass of the aperture,
+        Algorithm used when recenter_limit is set. ``'com'`` uses the center
+        of mass of the aperture,
         ``'gaussian'`` will use a gaussian fit to the aperture and ``'quadratic'``
         will use a quadratic fit to the aperture. See `~photutils.centroids`
         for more information.
@@ -304,8 +304,8 @@ def aperture_photometry(
           sources.
         - ``bkg``: background value by pixel
         - ``bkg_stddev``: background standard deviation inside the annulus
-        - ``bkg_area``: effective area of the annulus (considering mask and
-          clipping)
+        - ``bkg_area``: geometric annulus area, without a reduction for masked
+          or sigma-clipped pixels; NaN when no annulus is requested
         - ``flags``: flag for the sources
         - ``original_x``, ``original_y``: original input positions
 
@@ -322,11 +322,12 @@ def aperture_photometry(
     Notes
     -----
     - The input data is divided by the gain prior to any calculation.
-    - The centroid of the sources is computed within a circular footprint with
-      radius ``2*r+1``. See `~photutils.centroids.centroid_sources` for more
+    - Recentering uses a circular footprint of radius ``r`` in a cutout of
+      width ``2*r+1``. See `~photutils.centroids.centroid_sources` for more
       information.
-    - Local background subtraction is performed entirely by photutils. So,
-      we do not touch it or compute any errors here.
+    - Pixel errors are computed before local-sky subtraction and passed to
+      Photutils for aperture integration. Uncertainty in the estimated annulus
+      sky is not separately propagated.
 
     References
     ----------

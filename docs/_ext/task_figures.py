@@ -77,39 +77,6 @@ def plot_quality_flags() -> Figure:
     return fig
 
 
-def plot_aperture() -> Figure:
-    """Show the guide's aperture, local-sky annulus and measured radial profile."""
-    from matplotlib.patches import Circle
-    from astropop.photometry import background, aperture_photometry
-
-    rng = np.random.default_rng(42)
-    y, x = np.indices((128, 128))
-    radius = np.hypot(x - 64, y - 64)
-    pixels = 100 + rng.normal(0, 2, x.shape) + 500 * np.exp(-radius**2 / 8)
-    sky, noise = background(pixels, box_size=32)
-    measured = aperture_photometry(pixels, [64.], [64.], r=6., r_ann=(12., 18.),
-                                   bkg_error=noise, gain=1.)
-    profile = [np.median(pixels[(radius >= i) & (radius < i + 1)]) for i in range(23)]
-    fig, axes = plt.subplots(1, 2, figsize=(9, 4), layout='constrained')
-    axes[0].imshow(pixels, origin='lower', cmap='gray', vmin=94, vmax=180)
-    for value, color, label in [(6, 'C0', 'Source aperture'),
-                                 (12, 'C1', 'Sky annulus'), (18, 'C1', None)]:
-        axes[0].add_patch(Circle((64, 64), value, fill=False, color=color,
-                                 linewidth=1.5, label=label))
-    axes[0].set(xlim=(42, 86), ylim=(42, 86), xlabel='x (pixel)', ylabel='y (pixel)',
-                title=f"Measured flux: {measured['flux'][0]:.0f} ADU")
-    axes[0].legend(loc='upper right', fontsize='small')
-    axes[1].plot(np.arange(23) + 0.5, profile, 'k.-', label='Median in radial bins')
-    axes[1].axhline(sky, color='0.4', linestyle='--', label='Estimated background')
-    axes[1].axvspan(0, 6, color='C0', alpha=0.15, label='Aperture: r < 6')
-    axes[1].axvspan(12, 18, color='C1', alpha=0.15, label='Sky: 12 < r < 18')
-    axes[1].set(xlabel='Distance from source center (pixel)', ylabel='Pixel value (ADU)',
-                title='Keep the sky annulus outside the source core', xlim=(0, 23))
-    axes[1].legend(fontsize='small')
-    axes[1].grid(alpha=0.2)
-    return fig
-
-
 
 def plot_wcs() -> Figure:
     """Map a small detector asterism through a supplied TAN coordinate system."""
