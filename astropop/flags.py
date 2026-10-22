@@ -42,6 +42,16 @@ def mask_from_flags(
     mask
         Boolean mask with the same shape as ``values`` where all the pixels or
         elements that match any of the given flags will be masked.
+
+    Examples
+    --------
+    >>> from astropop.flags import mask_from_flags
+    >>> from astropop.framedata import PixelMaskFlags as F
+    >>> values = [0, F.MASKED.value, (F.MASKED | F.SATURATED).value]
+
+    >>> # Select saturation explicitly rather than treating every reason as a mask.
+    >>> print(mask_from_flags(values, F.SATURATED).tolist())
+    [False, False, True]
     """
     flag = 0
     if not isinstance(flags_to_mask, (list, tuple)):

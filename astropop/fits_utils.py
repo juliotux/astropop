@@ -28,6 +28,14 @@ def string_to_header_key(string: str) -> str:
     ----------
     string
         String to convert to header key.
+
+    Examples
+    --------
+    >>> from astropop.fits_utils import string_to_header_key
+    >>> print(string_to_header_key('exptime'))
+    EXPTIME
+    >>> print(string_to_header_key('HIERARCH astropop example'))
+    astropop example
     """
     # for non hierarch keys, we will use normalized keywords (uppercase)
     if fits.Card._keywd_FSC_RE.match(string.upper()) and len(string) <= 8:

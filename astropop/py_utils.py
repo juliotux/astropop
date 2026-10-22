@@ -43,6 +43,14 @@ def string_fix(string: object, encode: str='utf-8') -> str:
     -------
     string
         The Python 3 string.
+
+    Examples
+    --------
+    >>> from astropop.py_utils import string_fix
+    >>> print(string_fix(b'object name'))
+    object name
+    >>> print(string_fix(42))
+    42
     """
     if isinstance(string, bytes):
         string = string.decode(encode)
@@ -66,6 +74,14 @@ def check_number(value: object) -> bool:
     bool
         `True` if the value is a scalar number (not string, list or array) and
         `False` otherwise.
+
+    Examples
+    --------
+    >>> from astropop.py_utils import check_number
+
+    >>> # Boolean values and sequences do not count as scalar numbers here.
+    >>> print(check_number(1.5), check_number(True), check_number([1.5]))
+    True False False
     """
     if isinstance(value, Number):
         if not isinstance(value, (bool, complex)):
@@ -97,7 +113,16 @@ class _scalar_iterator(_t.Generic[_T]):
 
 
 class broadcast:
-    """Broadcast values to the list size. Alternative to `~numpy.broadcast`."""
+    """Broadcast values to the list size. Alternative to `~numpy.broadcast`.
+
+    Examples
+    --------
+    >>> from astropop.py_utils import broadcast
+
+    >>> # Repeat scalar values while advancing through the coordinate list.
+    >>> print(list(broadcast([1, 2, 3], 5, None)))
+    [(1, 5, None), (2, 5, None), (3, 5, None)]
+    """
 
     def __init__(self, *args: object) -> None:
         """Initialize the broadcast object."""
@@ -156,6 +181,16 @@ def batch_key_replace(
         Dictionary to replace the keys.
     key
         The key to be replaced.
+
+    Examples
+    --------
+    >>> from astropop.py_utils import batch_key_replace
+    >>> settings = {'root': '/data', 'file': '{root}/image.fits'}
+
+    >>> # Resolve references in place, preserving unrelated dictionary entries.
+    >>> batch_key_replace(settings)
+    >>> print(settings['file'])
+    /data/image.fits
     """
     if key is None:
         for i in dictionary.keys():
@@ -304,6 +339,16 @@ def run_command(
     Returns
     -------
         `~subprocess.CompletedProcess` results of the execution.
+
+    Examples
+    --------
+    >>> import sys
+    >>> from astropop.py_utils import run_command
+
+    >>> # Use this interpreter and an argument list instead of platform shell syntax.
+    >>> completed, stdout, stderr = run_command([sys.executable, '-c', 'print(42)'])
+    >>> print(completed.returncode, stdout, stderr)
+    0 ['42'] []
     """
     # Put the cmd in python list, required
     if isinstance(args, (str, bytes)):

@@ -27,6 +27,17 @@ class ListHandler(logging.Handler):
         can be accesses with `ListHandler.log_list`
     full_record
         Store the full Python log record instead of just the message.
+
+    Examples
+    --------
+    >>> import logging
+    >>> from astropop.logger import ListHandler
+    >>> handler = ListHandler()
+    >>> record = logging.LogRecord('example', logging.INFO, '', 0,
+    ...                            'Processed %d frames', (3,), None)
+    >>> _ = handler.handle(record)
+    >>> print(handler.log_list)
+    ['Processed 3 frames']
     """
     def __init__(
         self,
@@ -78,6 +89,20 @@ def log_to_list(
     Returns
     -------
         `ListHandler` created during the process.
+
+    Examples
+    --------
+    >>> import logging
+    >>> from astropop.logger import log_to_list
+    >>> local_logger = logging.Logger('example', level=logging.INFO)
+    >>> handler = log_to_list(local_logger)
+    >>> try:
+    ...     local_logger.info('Processed %d frames', 3)
+    ...     print(handler.log_list)
+    ... finally:
+    ...     # Detach the capture so it does not retain later messages.
+    ...     local_logger.removeHandler(handler)
+    ['Processed 3 frames']
     """
     lh = ListHandler(log_list, full_record)
     logger.addHandler(lh)
@@ -85,7 +110,14 @@ def log_to_list(
 
 
 def resolve_level_string(value: str | int) -> int:
-    """Resolve the log level of a string."""
+    """Resolve the log level of a string.
+
+    Examples
+    --------
+    >>> from astropop.logger import resolve_level_string
+    >>> print(resolve_level_string('INFO'), resolve_level_string('WARNING'))
+    20 30
+    """
     try:
         # Handle already int values
         value = int(value)

@@ -55,6 +55,19 @@ def list_fits_files(
     -------
     result
         List of files found.
+
+    Examples
+    --------
+    >>> from pathlib import Path
+    >>> from tempfile import TemporaryDirectory
+    >>> import numpy as np
+    >>> from astropy.io import fits
+    >>> from astropop.file_collection import list_fits_files
+    >>> with TemporaryDirectory() as directory:
+    ...     filename = Path(directory) / 'bias.fits'
+    ...     fits.writeto(filename, np.zeros((2, 2)))
+    ...     print([Path(name).name for name in list_fits_files(directory)])
+    ['bias.fits']
     """
     if fits_extensions is None:
         fits_extensions = _fits_extensions
@@ -120,6 +133,22 @@ class FitsFileGroup():
     show_progress_bar : bool, optional
         If True, show a progress bar while reading the files. Default is
         False. Requires ``tqdm`` module. May not be compatible with every mod.
+
+    Examples
+    --------
+    >>> from pathlib import Path
+    >>> from tempfile import TemporaryDirectory
+    >>> import numpy as np
+    >>> from astropy.io import fits
+    >>> from astropop.file_collection import FitsFileGroup
+    >>> with TemporaryDirectory() as directory:
+    ...     filename = Path(directory) / 'science.fits'
+    ...     fits.writeto(filename, np.ones((2, 2)), fits.Header({'FILTER': 'R'}))
+    ...     # Index headers in memory, then select files without retaining image arrays.
+    ...     group = FitsFileGroup(files=[str(filename)])
+    ...     red = group.filtered({'FILTER': 'R'})
+    ...     print(len(red), [Path(name).name for name in red.files])
+    1 ['science.fits']
     """
 
     def __init__(
