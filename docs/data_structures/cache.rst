@@ -45,6 +45,24 @@ requests deletion according to that policy; it does not override retained
 children. Close open files and release memory mappings before deleting them,
 especially on Windows.
 
+The parent checks its managed children before deletion. This example retains
+one file, observes the resulting policy, then permits explicit cleanup::
+
+    >>> with TemporaryDirectory() as root:
+    ...     directory = TempDir(str(Path(root) / 'owned-cache'))
+    ...     retained = directory.create_file('keep.txt', delete_on_remove=False)
+    ...     with retained.open('w') as stream:
+    ...         _ = stream.write('keep')
+    ...     directory.delete()
+    ...     print('Parent removable:', directory.is_removable)
+    ...     print('File retained:', Path(retained.full_path).exists())
+    ...     retained.delete_on_remove = True
+    ...     directory.delete()
+    ...     print('Parent deleted:', not Path(directory.full_path).exists())
+    Parent removable: False
+    File retained: True
+    Parent deleted: True
+
 At interpreter shutdown, the registered ``cleanup`` function removes eligible
 managed directories if the module variable ``DELETE_ON_EXIT`` is true. Change
 that variable on the module itself if needed; assigning an independently

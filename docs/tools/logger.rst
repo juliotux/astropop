@@ -52,6 +52,37 @@ information. The handler captures only records that pass logging's level and
 filter checks. List storage has no size limit or additional thread-safety
 guarantees; applications control its lifetime.
 
+The ``ListHandler`` class
+-------------------------
+
+Construct ``ListHandler(log_list=None, full_record=False)`` directly when an
+application needs to configure a handler before attaching it. The default
+stores each record's ``getMessage()`` text; ``full_record=True`` retains the
+LogRecord, including its logger name, severity and formatted message. The
+``log_list`` and ``full_record`` properties expose these settings.
+
+Attach the handler to the logger and remove it when finished::
+
+    >>> from astropop.logger import ListHandler
+    >>> records = ListHandler(full_record=True)
+    >>> previous = logger.level
+    >>> logger.setLevel('INFO')
+    >>> logger.addHandler(records)
+    >>> try:
+    ...     logger.info('Combined %d frames', 3)
+    ... finally:
+    ...     logger.removeHandler(records)
+    ...     logger.setLevel(previous)
+    >>> record = records.log_list[0]
+    >>> print(record.name, record.levelname, record.getMessage())
+    astropop INFO Combined 3 frames
+
+``emit`` appends an already-created LogRecord; normal application code calls
+``logger.info`` or another severity method so logger/handler filtering occurs
+before emission. A formatter assigned to the handler does not change the
+stored ``getMessage()`` text. Format retained records explicitly if a timestamp
+or another presentation is needed.
+
 Logging API
 -----------
 

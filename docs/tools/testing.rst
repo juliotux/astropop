@@ -19,9 +19,37 @@ exact equality, ``assert_almost_equal(actual, expected, decimal=6)`` for six
 places, or ``assert_true(condition)`` for a Boolean condition in a test.
 Successful checks return without printing; failures raise ``AssertionError``.
 
-``assert_is``/``assert_is_not`` check object identity. The None, membership,
-instance, and ordering helpers check their named conditions. Most accept a
-custom ``msg`` to explain the failure.
+The remaining helpers make the condition explicit in their names. The call
+forms below describe their use in test code; successful calls return ``None``
+and failed conditions raise ``AssertionError``. ``msg`` replaces the default
+failure explanation.
+
+.. list-table:: Conditions checked by each helper
+    :header-rows: 1
+    :widths: 48 52
+
+    * - Call form
+      - Condition required for success
+    * - ``assert_not_equal(a, b, msg=None)``
+      - Values differ; NumPy equality semantics apply to arrays.
+    * - ``assert_true(a, msg=None)`` / ``assert_false(a, msg=None)``
+      - ``a`` is truthy / falsy; these do not require the singleton True / False.
+    * - ``assert_is(a, b, msg=None)`` / ``assert_is_not(a, b, msg=None)``
+      - Objects have the same / different identity, independently of equality.
+    * - ``assert_is_none(a, msg=None)`` / ``assert_is_not_none(a, msg=None)``
+      - ``a`` is / is not the singleton None.
+    * - ``assert_in(a, b, msg=None)`` / ``assert_not_in(a, b, msg=None)``
+      - Container ``b`` contains / does not contain ``a``.
+    * - ``assert_is_instance(a, b, msg=None)`` / ``assert_is_not_instance(a, b, msg=None)``
+      - ``isinstance(a, b)`` is true / false, including subclass instances.
+    * - ``assert_greater(a, b, msg=None)`` / ``assert_greater_equal(a, b, msg=None)``
+      - ``a > b`` / ``a >= b``.
+    * - ``assert_less(a, b, msg=None)`` / ``assert_less_equal(a, b, msg=None)``
+      - ``a < b`` / ``a <= b``.
+
+These conditions do not mask errors in the comparison itself. For example,
+a multi-element Boolean array is not a scalar truth value; use an array-aware
+comparison instead of passing it to ``assert_true``.
 
 Exceptions, warnings, and paths
 -------------------------------
