@@ -1,52 +1,28 @@
-.. include:: ../references.txt
+:orphan:
 
 Catalogs
 ========
 
-Guide: :doc:`../tools/catalogs`.
+Current chapter
+---------------
 
-.. automodapi:: astropop.catalogs
-    :no-inheritance-diagram:
+Continue with :doc:`../modules/catalogs/index` for the maintained documentation.
 
-Guide: :doc:`../tools/catalog/gaia`.
+.. raw:: html
 
-.. automodapi:: astropop.catalogs.gaia
-    :skip: gaiadr3
-    :no-inheritance-diagram:
-    :inherited-members:
-
-.. currentmodule:: None
-
-.. py:data:: astropop.catalogs.gaia.gaiadr3
-
-    Alias of :class:`~astropop.catalogs.gaia.GaiaDR3SourcesCatalog`; accepts the same
-    constructor arguments and returns the same catalog type.
-
-Guide: :doc:`../tools/catalog/simbad`.
-
-.. automodapi:: astropop.catalogs.simbad
-    :skip: simbad
-    :no-inheritance-diagram:
-    :inherited-members:
-
-.. currentmodule:: None
-
-.. py:data:: astropop.catalogs.simbad.simbad
-
-    Alias of :class:`~astropop.catalogs.simbad.SimbadSourcesCatalog`; accepts the same
-    constructor arguments and returns the same catalog type.
-
-Guide: :doc:`../tools/catalog/vizier`.
-
-.. automodapi:: astropop.catalogs.vizier
-    :skip: list_vizier_catalogs
-    :no-inheritance-diagram:
-    :inherited-members:
-
-.. currentmodule:: astropop.catalogs.vizier
-
-.. py:function:: list_vizier_catalogs()
-
-    Return a formatted string listing preconfigured catalog names, descriptions,
-    and reference bibcodes from the packaged YAML files. Print the returned
-    string to inspect the installed choices. No online query is performed.
+    <span id="astropop-catalogs-gaia-module"></span>
+    <span id="astropop-catalogs-package"></span>
+    <span id="astropop-catalogs-simbad-module"></span>
+    <span id="astropop-catalogs-vizier-module"></span>
+    <span id="astropop.catalogs.gaia.gaiadr3"></span>
+    <span id="astropop.catalogs.simbad.simbad"></span>
+    <span id="astropop.catalogs.vizier.list_vizier_catalogs"></span>
+    <span id="classes"></span>
+    <span id="functions"></span>
+    <span id="id1"></span>
+    <span id="id2"></span>
+    <span id="id3"></span>
+    <span id="module-astropop.catalogs"></span>
+    <span id="module-astropop.catalogs.gaia"></span>
+    <span id="module-astropop.catalogs.simbad"></span>
+    <span id="module-astropop.catalogs.vizier"></span>
