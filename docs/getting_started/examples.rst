@@ -25,6 +25,7 @@ correctly. Keep uncertainties and flags enabled **before loading frames**:
 
     from astropop.config import AstropopConfig
 
+    # Enable these arrays before reading frames so the examples can propagate them.
     AstropopConfig.FRAMEDATA_DISABLE_UNCERTAINTY = False
     AstropopConfig.FRAMEDATA_DISABLE_FLAGS = False
 

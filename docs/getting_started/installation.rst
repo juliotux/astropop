@@ -32,6 +32,7 @@ Activate it with ``source .venv/bin/activate`` on Linux/macOS, or
 activate a conda environment::
 
     conda create -n astropop -c conda-forge python=3.14 pip
+
     conda activate astropop
 
 Install Astropop using that environment's interpreter::
@@ -45,7 +46,9 @@ To include optional plotting support::
 For an editable checkout, install from the repository root::
 
     git clone https://github.com/sparc4-dev/astropop.git
+
     cd astropop
+
     python -m pip install -e '.[all,test,docs]'
 
 The ``test`` extra installs test helpers; ``docs`` installs documentation
@@ -62,7 +65,9 @@ Use the environment in Jupyter
 Install Jupyter and register a kernel from the activated environment::
 
     python -m pip install jupyterlab ipykernel
+
     python -m ipykernel install --user --name astropop --display-name "Python (astropop)"
+
     jupyter lab
 
 Select **Python (astropop)** in the notebook's kernel menu. After changing the
@@ -71,6 +76,7 @@ its interpreter and imported package path (the paths depend on your machine)::
 
     >>> import sys
     >>> import astropop
+
     >>> print('Interpreter:', sys.executable)  # doctest: +ELLIPSIS
     Interpreter: ...
     >>> print('Imported package:', astropop.__file__)  # doctest: +ELLIPSIS
@@ -101,6 +107,7 @@ Running checks and building the documentation
 From an editable checkout with the corresponding extras installed::
 
     python -m pytest tests docs --remote-data=none
+
     python -m sphinx -b html docs docs/_build/html
 
 The documentation build generates notebook downloads from the tutorial pages;

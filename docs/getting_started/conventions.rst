@@ -13,9 +13,13 @@ pixel; the FITS-oriented helpers described below are exceptions. Its boundaries 
 geometric corner::
 
     >>> import numpy as np
+
     >>> image = np.zeros((3, 5))
     >>> x, y = 4, 2
+
+    >>> # NumPy indexes rows first; astronomical positions are usually written (x, y).
     >>> image[y, x] = 1
+
     >>> print('image.shape:', image.shape)
     image.shape: (3, 5)
     >>> print('image[2, 4]:', image[2, 4])
@@ -45,12 +49,16 @@ coordinates, while ``1`` means FITS one-based coordinates. FITS header
 ``CRPIX`` values use the one-based convention::
 
     >>> from astropy.wcs import WCS
+
     >>> wcs = WCS(naxis=2)
     >>> wcs.wcs.crpix = [1, 1]
     >>> wcs.wcs.crval = [0, 0]
     >>> wcs.wcs.cdelt = [1, 1]
+
+    >>> # The origin argument selects whether the first pixel center is 0 or 1.
     >>> zero_based = wcs.all_pix2world([[0, 0]], 0)
     >>> fits_based = wcs.all_pix2world([[1, 1]], 1)
+
     >>> print('zero_based:', np.round(zero_based, 6))
     zero_based: [[0. 0.]]
     >>> print('fits_based:', np.round(fits_based, 6))
@@ -68,10 +76,15 @@ arguments directly into one-based FITS ``CRPIX``. For the nonsquare image above,
 the zero-based pixel ``(4, 2)`` must therefore be supplied as ``(5, 3)``::
 
     >>> from astropop.astrometry.manual_wcs import wcs_from_coords
+
     >>> approximate = wcs_from_coords(5, 3, 120., -30., 0.34, north='top')
+
     >>> print('Reference pixel (FITS):', approximate.wcs.crpix.astype(int))
     Reference pixel (FITS): [5 3]
+
+    >>> # High-level WCS methods use zero-based pixels, unlike FITS CRPIX.
     >>> sky = approximate.pixel_to_world(4, 2)
+
     >>> print(f'Reference sky position: {sky.ra.deg:.3f}, {sky.dec.deg:.3f} deg')
     Reference sky position: 120.000, -30.000 deg
 
@@ -127,6 +140,7 @@ together rather than applying a full-image WCS to unadjusted cutout positions.
         ax.set_yticks(np.arange(rows + 1) + origin - 0.5, minor=True)
         ax.grid(which='minor', color='white', linewidth=1.5)
         ax.tick_params(which='minor', length=0)
+
     axes[0].add_patch(Rectangle((1.5, 0.5), 3, 2, fill=False, ec='C3', lw=2))
     axes[1].add_patch(Rectangle((2.5, 1.5), 3, 2, fill=False, ec='C3', lw=2))
     axes[2].set_xlabel('Column x\nFull-image (2, 1) becomes crop (0, 0)',

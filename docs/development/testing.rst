@@ -47,8 +47,11 @@ Runnable reStructuredText examples are part of pytest collection. Run changed
 guides and build the HTML documentation::
 
     python -m pytest docs --remote-data=none
+
     python -m sphinx -b html -E -a -n -W --keep-going docs docs/_build/html
+
     python docs/development/check_docs.py --html docs/_build/html
+
     python docs/development/check_docs.py --notebooks
 
 The ``-a -n`` options check references while rewriting every page, including

@@ -71,9 +71,13 @@ warnings interactively. The latter lets you display the warning category and
 message directly::
 
     >>> import warnings
+
     >>> with warnings.catch_warnings(record=True) as recorded:
+    ...
+    ...     # Record even repeated warnings rather than relying on the process warning filter.
     ...     warnings.simplefilter('always')
     ...     warnings.warn('example warning', UserWarning)
+
     >>> for item in recorded:
     ...     print(f'{item.category.__name__}: {item.message}')
     UserWarning: example warning

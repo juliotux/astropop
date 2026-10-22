@@ -43,7 +43,10 @@ to a process policy before any input is read::
 
     from astropop.config import AstropopConfig as conf
     from astropop.framedata import read_framedata
+
     conf.FRAMEDATA_DISABLE_UNCERTAINTY = True
+
+    # Set the allocation policy before loading pixels and their optional arrays.
     frame = read_framedata('science.fits')
 
 This static recipe requires your file and deliberately disables all FrameData
