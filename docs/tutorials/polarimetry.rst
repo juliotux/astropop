@@ -1,9 +1,10 @@
 Recover Stokes parameters from paired beam fluxes
 =================================================
 
-Recover linear polarization from eight illustrative half-wave beam pairs, then
+Measure paired beams in eight ideal half-wave images and recover their linear
+polarization, then
 fit linear and circular polarization in a separate noisy quarter-wave sequence.
-The local beam table requires no online catalog. The first example uses a half-wave
+The local images and tables require no online catalog. The first example uses a half-wave
 retarder and unit beam normalization; the second uses a quarter-wave retarder
 with known calibration constants. Both require matched ordinary/extraordinary
 beams and angles in degrees. Read the beam and angle definitions in
@@ -13,10 +14,14 @@ beams and angles in degrees. Read the beam and angle definitions in
 
 .. tutorial-data::
 
-Extract the shared archive and locate ``data/polarimetry.ecsv``. This is a
-separate beam-measurement sequence, not the ordinary imaging stack.
-The half-wave nominal fluxes are noiseless and their errors follow an illustrative
-Poisson model; the quarter-wave table contains independent Poisson counts. They do not represent an instrumental polarization calibration.
+Extract the shared archive and locate ``data/polarimetry/images`` and
+``data/polarimetry_quarterwave.ecsv``. These are separate polarimetric sequences,
+not the ordinary imaging stack. The half-wave images contain ideal Gaussian
+beams on a constant sky of 100 electrons per pixel, with no random noise or
+detector defects. They represent already calibrated images; real images need
+bias/flat correction and quality masks before measurement. The quarter-wave
+table contains independent Poisson counts. Neither supplies an instrumental
+polarization calibration.
 
 .. code-block:: python
 
@@ -33,22 +38,66 @@ Poisson model; the quarter-wave table contains independent Poisson counts. They 
     >>> data = Path(_temporary.name).resolve() / 'data'
     >>> generate_dataset(data)
 
-Read the beam measurements
----------------------------
+Detect, pair and measure the beams
+----------------------------------
 
-Inspect paired ordinary/extraordinary fluxes and their retarder angles before
-fitting. These measurements have already been extracted with aperture photometry;
-beam identification and instrumental corrections must precede this step on
-observations::
+The lower-left beam is ordinary in this simulation, and its extraordinary
+partner is displaced by ``(+24,+24)`` pixels. That physical assignment and
+separation are supplied instrument information. ``match_pairs`` identifies
+geometric neighbors; it cannot determine which physical beam is ordinary.
+
+Read the first calibrated image and detect its two sources::
 
     >>> import numpy as np
     >>> from astropy.table import Table
-    >>> from astropop.polarimetry import SLSDualBeamPolarimetry
-    >>> beams = Table.read(data / 'polarimetry.ecsv')
+    >>> from astropop.framedata import read_framedata
+    >>> from astropop.photometry import daofind, aperture_photometry
+    >>> from astropop.polarimetry import match_pairs, SLSDualBeamPolarimetry
+    >>> image_files = sorted((data / 'polarimetry' / 'images').glob('halfwave_*.fits'))
+    >>> first_image = read_framedata(image_files[0])
+    >>> detections = daofind(first_image.data, threshold=5, background=100.,
+    ...                      noise=10., fwhm=3.53)
+    >>> pairs = match_pairs(detections['x'], detections['y'], -24., -24., tolerance=2.)
+    >>> print(f'Detected beams: {len(detections)}; geometric pairs: {len(pairs)}')
+    Detected beams: 2; geometric pairs: 1
+    >>> pair = pairs[0]
+
+The negative displacement follows ``match_pairs``'s ``(x-dx,y-dy)`` convention.
+The images have no drift, so the first image's measured centroids can be reused.
+Use an annulus to subtract sky from each beam; supply its counting-noise standard
+deviation separately from the source Poisson term::
+
+    >>> rows = []
+    >>> for filename in image_files:
+    ...     frame = read_framedata(filename)
+    ...     measured = aperture_photometry(frame.data, detections['x'], detections['y'],
+    ...                                    r=6, r_ann=(9, 12), gain=1., bkg_error=10.,
+    ...                                    mask=frame.mask, pixel_flags=frame.flags)
+    ...     if np.any(measured['flags'] != 0):
+    ...         raise ValueError('Inspect flagged beam measurements before fitting.')
+    ...     ordinary_row, extraordinary_row = measured[pair['o']], measured[pair['e']]
+    ...     rows.append((frame.meta['RETANGLE'], ordinary_row['flux'],
+    ...                  extraordinary_row['flux'], ordinary_row['flux_error'],
+    ...                  extraordinary_row['flux_error']))
+    >>> beams = Table(rows=rows, names=['angle_deg', 'ordinary', 'extraordinary',
+    ...                                'ordinary_error', 'extraordinary_error'])
+    >>> beams.meta.update({'flux_unit': 'electron', 'aperture_radius_pixels': 6,
+    ...                    'sky_annulus_pixels': [9, 12]})
     >>> psi = np.array(beams['angle_deg'])
     >>> ordinary, extraordinary = beams['ordinary'], beams['extraordinary']
     >>> print(f'Beam pairs: {len(beams)}; angle spacing: {psi[1] - psi[0]:.1f} deg')
     Beam pairs: 8; angle spacing: 22.5 deg
+
+A finite aperture loses the same profile fraction from both identical beams
+here, so their normalized difference is preserved. Unequal PSFs, a truncated
+aperture or contamination can instead bias it. The nominal images are noiseless;
+the nonzero errors describe an illustrative source-plus-sky counting model,
+not measured scatter in these images.
+
+.. plot:: _ext/workflow_figures.py plot_beam_image
+    :include-source: false
+    :alt: An ideal half-wave image with two detected beams, their source apertures and sky annuli, labeled ordinary and extraordinary.
+    :caption: The measured positions and supplied physical beam assignment used above. Matching uses the calibrated separation; photometry measures the original pixels at those positions.
 
 Fit and inspect the polarization
 ---------------------------------
@@ -67,7 +116,7 @@ uncertainty for each beam measurement::
     >>> print(f'Position angle: {result.theta.nominal:.2f} {result.theta.unit}')
     Position angle: 163.15 deg
 
-Here the supplied errors are an illustrative Poisson model and the nominal data
+Here the supplied errors are an illustrative source-plus-sky Poisson model and the nominal data
 contain no random noise. The fitter uses relative weights and scales parameter
 covariance by the residual variance (``absolute_sigma=False``), so the returned
 Stokes errors are nearly zero here despite nonzero beam errors. They are not
@@ -124,9 +173,13 @@ Keep the polarization convention and angle units with the result::
     >>> stokes['theta_deg'].unit = stokes['theta_error_deg'].unit = u.deg
     >>> stokes.meta.update({'retarder': 'halfwave', 'beam_normalization': 1.,
     ...                     'zero_angle_deg': 0., 'nominal_fluxes': 'noiseless example'})
+    >>> beams.write(output / 'beam_photometry.ecsv', overwrite=True)
     >>> stokes.write(output / 'stokes.ecsv', overwrite=True)
     >>> print(f'Saved Stokes measurements: {len(stokes)}')
     Saved Stokes measurements: 1
+
+``beam_photometry.ecsv`` also retains the extracted fluxes and measurement errors,
+so the fit can be repeated without remeasuring the images.
 
 Choose the normalization and angle coverage
 -------------------------------------------

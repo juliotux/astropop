@@ -9,7 +9,7 @@ from its tutorial's numerical examples and includes printed results and figures.
 .. plot::
     :include-source: false
     :alt: Bias and flat masters feed the science stack and a separate time series. Stack photometry leads to astrometric and photometric calibration. Paired beam measurements feed polarimetry independently.
-    :caption: Follow the arrows for data dependencies. The light curve uses a separate twelve-exposure sequence; polarimetry starts from paired-beam tables, independent of the imaging stack.
+    :caption: Follow the arrows for data dependencies. The light curve uses a separate twelve-exposure sequence; half-wave polarimetry starts from paired-beam images and quarter-wave polarimetry from a flux table, both independent of the imaging stack.
 
     import matplotlib.pyplot as plt
     import numpy as np
@@ -24,7 +24,7 @@ from its tutorial's numerical examples and includes printed results and figures.
         'magnitude': (10, 3.2, 'Calibrate\nmagnitudes', 'C0'),
         'series': (4, 1.6, 'Calibrate separate\ntime-series images', 'C1'),
         'curve': (6, 1.6, 'Differential\nlight curve', 'C1'),
-        'beams': (4, 0, 'Paired beam\nmeasurements', 'C2'),
+        'beams': (4, 0, 'Detect + measure\npaired beams', 'C2'),
         'stokes': (6, 0, 'Fit Stokes\nparameters', 'C2'),
     }
     for x, y, label, color in nodes.values():
@@ -59,7 +59,8 @@ kernel. Extract the archive into a working directory and keep this layout:
 
     data/raw/               bias, flat and science exposures for the stack
     data/time_series/raw/   separate variable-star exposures
-    data/polarimetry.ecsv    ordinary/extraordinary beam measurements
+    data/polarimetry/images/ ideal calibrated half-wave beam images
+    data/polarimetry.ecsv    injected half-wave beam fluxes for reference
     data/polarimetry_quarterwave.ecsv   noisy quarter-wave beam measurements
     data/reference/         products for independent stages
     notebooks/              nine runnable tutorial notebooks
@@ -114,7 +115,9 @@ Separate observing sequences
     polarimetry
 
 The light curve uses individual exposures with the same detector calibration.
-Polarimetry uses paired beam fluxes and retarder angles rather than the CCD stack.
+Polarimetry detects and measures paired beams in a separate image sequence,
+then fits their modulation; its quarter-wave example starts from a noisy beam
+table. Neither sequence uses the ordinary CCD stack.
 
 Additional walkthroughs
 ------------------------

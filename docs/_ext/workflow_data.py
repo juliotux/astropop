@@ -14,7 +14,7 @@ from astropy.wcs import WCS
 
 
 def extend_dataset(data: Path) -> None:
-    """Add standards, approximate pointing and an independently sampled light curve."""
+    """Add standards, pointing, paired-beam images and a separate light curve."""
     from astropop.framedata import FrameData, read_framedata
     from tutorial_data import measure_dataset
 
@@ -54,6 +54,7 @@ def extend_dataset(data: Path) -> None:
     beams.meta.update({'retarder': 'halfwave', 'normalization': 1., 'zero_deg': 0.,
                        'nominal_measurements': 'noiseless; supplied Poisson error model'})
     beams.write(data / 'polarimetry.ecsv', overwrite=True)
+    write_beam_images(data, beams)
 
     # A separate noisy sequence uses known instrument calibration constants.
     # Keep its random stream independent of the imaging/time-series examples.
@@ -96,6 +97,26 @@ def extend_dataset(data: Path) -> None:
         frame.write(series / 'raw' / f'science_{i:02d}.fits', overwrite=True)
     Table({'elapsed_minutes': np.arange(12), 'relative_flux': intrinsic,
            'transparency': transparency}).write(series / 'truth.ecsv', overwrite=True)
+
+
+def write_beam_images(data: Path, beams: Table) -> None:
+    """Write ideal calibrated beam images with a known sky and fixed geometry.
+
+    Nominal pixels are noiseless. The tutorial independently supplies its
+    illustrative counting-error model during aperture measurement.
+    """
+    folder = data / 'polarimetry' / 'images'
+    folder.mkdir(parents=True, exist_ok=True)
+    y, x = np.indices((64, 64))
+    for index, beam in enumerate(beams):
+        pixels = np.full(x.shape, 100.)
+        for xc, yc, flux in [(20, 20, beam['ordinary']),
+                             (44, 44, beam['extraordinary'])]:
+            radius2 = (x - xc)**2 + (y - yc)**2
+            pixels += flux / (2 * np.pi * 1.5**2) * np.exp(-radius2 / (2 * 1.5**2))
+        header = fits.Header({'BUNIT': 'electron', 'RETANGLE': float(beam['angle_deg'])})
+        fits.writeto(folder / f'halfwave_{index:02d}.fits', pixels.astype('float32'),
+                     header, overwrite=True)
 
 
 def identify_sources(measured: Table, standards: Table, rough: WCS) -> np.ndarray:

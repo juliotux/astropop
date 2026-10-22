@@ -22,6 +22,7 @@ if TYPE_CHECKING:
 # replay those same examples in an isolated directory, without testing helpers.
 NOTEBOOK_PLOTS = {
     'plot_observations': 'draw_observations(frame)',
+    'plot_beam_image': 'draw_beam_image(first_image, detections, pair)',
     'plot_polarimetry': 'draw_polarimetry(psi, result)',
     'plot_quarterwave': 'draw_polarimetry(quarter_psi, quarter_result)',
     'plot_bias': 'draw_bias(master_bias, first_bias)',
@@ -50,6 +51,31 @@ def example(page: str) -> Iterator[dict[str, object]]:
         yield execute_workflow(page, data)
 
 
+def draw_beam_image(image: FrameData, detections: Table, pair: np.void) -> Figure:
+    """Show the actual detected beam positions and photometry apertures."""
+    from matplotlib.patches import Circle
+
+    fig, ax = plt.subplots(figsize=(5.5, 4.5), layout='constrained')
+    shown = ax.imshow(image.data, origin='lower', cmap='gray')
+    fig.colorbar(shown, ax=ax, label='Pixel value (electron)')
+    for key, name, color in [('o', 'Ordinary', 'C0'), ('e', 'Extraordinary', 'C1')]:
+        row = detections[pair[key]]
+        position = row['x'], row['y']
+        for radius in [6, 9, 12]:
+            ax.add_patch(Circle(position, radius, fill=False, color=color,
+                                linestyle='-' if radius == 6 else '--'))
+        ax.annotate(name, position, xytext=(0, 16), textcoords='offset points',
+                    ha='center', color=color)
+    ax.set(xlabel='Column x (pixel)', ylabel='Row y (pixel)')
+    return fig
+
+
+def plot_beam_image() -> Figure:
+    """Render image-to-beam measurement from the maintained tutorial source."""
+    with example('polarimetry') as ns:
+        return draw_beam_image(ns['first_image'], ns['detections'], ns['pair'])
+
+
 def draw_polarimetry(psi: np.ndarray, result: StokesParameters) -> Figure:
     """Draw the recovered modulation from the currently loaded beam measurements."""
     from guide_figures import plot_polarimetry
@@ -58,7 +84,7 @@ def draw_polarimetry(psi: np.ndarray, result: StokesParameters) -> Figure:
 
 
 def plot_polarimetry() -> Figure:
-    """Render beam-table reduction using the published calculations."""
+    """Render image-extracted beam modulation using the published calculations."""
     with example('polarimetry') as ns:
         return draw_polarimetry(ns['psi'], ns['result'])
 
