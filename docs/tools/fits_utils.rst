@@ -1,52 +1,19 @@
-.. include:: ../references.txt
+:orphan:
 
 FITS file utilities
 ===================
 
-Use :mod:`astropy.io.fits` to open and write FITS files, and
-:func:`~astropop.framedata.read_framedata` when image data, units, masks, and
-uncertainties should travel together. The small :mod:`astropop.fits_utils`
-module provides shared FITS conventions used by those interfaces.
+Current chapter
+---------------
 
-Identifying image HDUs
-----------------------
-
-``imhdus`` is a tuple of the Astropy image-HDU classes accepted by Astropop,
-including primary, image-extension, compressed-image, and streaming HDUs. Use
-it with ``isinstance``; it does not inspect whether the HDU contains data::
-
-    >>> from astropy.io import fits
-    >>> from astropop.fits_utils import imhdus
-    >>> isinstance(fits.PrimaryHDU(), imhdus)
-    True
-    >>> isinstance(fits.BinTableHDU(), imhdus)
-    False
-
-Header-key normalization
-------------------------
-
-``string_to_header_key`` uppercases standard FITS keywords of at most eight
-characters. For longer or nonstandard keywords, it preserves their spelling
-and removes a leading ``HIERARCH`` prefix and its following space if supplied. Astropy's Header
-interface handles that prefix when the key is written::
-
-    >>> from astropop.fits_utils import string_to_header_key
-    >>> string_to_header_key('exptime')
-    'EXPTIME'
-    >>> string_to_header_key('HIERARCH astropop example')
-    'astropop example'
-
-This helper normalizes a key string; it does not modify a Header or validate
-its associated value.
-
-FITS utilities API
-------------------
-
-See :doc:`../reference/utilities` for the API reference.
+Continue with :doc:`../modules/files/fits_utils` for the maintained documentation.
 
 .. raw:: html
 
     <span id="astropop-fits-utils-module"></span>
     <span id="astropop.fits_utils.imhdus"></span>
     <span id="astropop.fits_utils.string_to_header_key"></span>
+    <span id="fits-utilities-api"></span>
+    <span id="header-key-normalization"></span>
+    <span id="identifying-image-hdus"></span>
     <span id="module-astropop.fits_utils"></span>
