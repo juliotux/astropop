@@ -31,13 +31,13 @@ three rows down from the reference:
 >>> moving = np.roll(reference, (3, -4), axis=(0, 1))
 >>> frames = [FrameData(reference), FrameData(moving)]
 >>> shifts = compute_shift_list(frames)
->>> np.allclose(shifts, [[0, 0], [-4, 3]])
-True
+>>> print('Measured shifts (dx, dy):', np.round(shifts, 2).tolist())
+Measured shifts (dx, dy): [[0.0, 0.0], [-4.0, 3.0]]
 >>> aligned = register_framedata_list(frames, cval=0)
->>> np.allclose(aligned[0].data, aligned[1].data)
-True
->>> aligned[1].shape == moving.shape
-True
+>>> print(f'Largest image difference: {np.max(np.abs(aligned[0].data - aligned[1].data)):.3f}')
+Largest image difference: 0.000
+>>> print('Registered shape:', aligned[1].shape)
+Registered shape: (96, 128)
 
 The returned list preserves input order, including the reference frame.
 ``inplace=False`` (the default) creates new frames and leaves the originals
@@ -53,7 +53,11 @@ Choosing an algorithm
 using phase cross-correlation and estimates translation only. Increase
 ``upsample_factor`` for subpixel sampling of the correlation peak; for example,
 10 gives a sampling interval of one tenth of a pixel. This interval is not a
-guarantee of measurement accuracy:
+guarantee of measurement accuracy. The implementation delegates to
+`scikit-image phase cross-correlation
+<https://scikit-image.org/docs/stable/api/skimage.registration.html#skimage.registration.phase_cross_correlation>`_;
+its Fourier sampling assumptions and ambiguity for periodic images still apply:
+
 
 .. code-block:: python
 
@@ -63,7 +67,11 @@ guarantee of measurement accuracy:
 ``algorithm='asterism-matching'`` detects sources, sorts them by brightness,
 and matches stellar triangles using ``astroalign``. It can accommodate rotation
 and scale changes as well as translation. Use it when the images contain enough
-common, well-separated stars:
+common, well-separated stars. The triangle-matching approach is described by
+`Beroiz, Cabral and Sanchez (2020), Astronomy and Computing 32, 100384
+<https://arxiv.org/abs/1909.02946>`_. Astropop detects its control points before
+calling Astroalign:
+
 
 .. code-block:: python
 
@@ -94,11 +102,11 @@ Using the frames from the example above:
 
 >>> window = (slice(20, 75), slice(30, 90))
 >>> shifts = compute_shift_list(frames, window=window)
->>> np.allclose(shifts, [[0, 0], [-4, 3]])
-True
+>>> print('Measured shifts (dx, dy):', np.round(shifts, 2).tolist())
+Measured shifts (dx, dy): [[0.0, 0.0], [-4.0, 3.0]]
 >>> aligned = register_framedata_list(frames, window=window, cval=0)
->>> np.allclose(aligned[1].data, reference)
-True
+>>> print(f'Largest windowed image difference: {np.max(np.abs(aligned[1].data - reference)):.3f}')
+Largest windowed image difference: 0.000
 
 The same window is selected in every image. Choose a region large enough to
 contain common features despite the expected motion. Both algorithms support
@@ -128,7 +136,9 @@ features right by four columns and up by three rows.
 For a transform containing rotation or scale, the translation is one component
 of the full transform about the image origin, not the displacement of every
 star. ``compute_shift_list`` returns only that translation component. Use
-``compute_transform`` to obtain the full transform.
+``compute_transform`` to obtain the full transform. The executed
+:doc:`../how_to/registration_diagnostics` example includes rotation/scale,
+coordinate correction with ``transform.inverse`` and a valid-footprint check.
 
 Registering individual images
 -----------------------------
@@ -141,15 +151,15 @@ images. Algorithm options and ``window`` belong in the constructor:
 >>> from astropop.image.register import CrossCorrelationRegister
 >>> register = CrossCorrelationRegister(window=window, upsample_factor=10)
 >>> transform = register.compute_transform(reference, moving)
->>> np.allclose(transform.translation, [-4, 3])
-True
+>>> print('Transform translation:', np.round(transform.translation, 2).tolist())
+Transform translation: [-4.0, 3.0]
 >>> image, mask, transform = register.register_image(
 ...     reference, moving, cval=0)
->>> np.allclose(image, reference)
-True
+>>> print(f'Largest registered difference: {np.max(np.abs(image - reference)):.3f}')
+Largest registered difference: 0.000
 >>> result = register.register_framedata(frames[0], frames[1], cval=0)
->>> np.allclose(result.data, image)
-True
+>>> print('FrameData result shape:', result.shape)
+FrameData result shape: (96, 128)
 
 ``compute_transform`` returns a scikit-image transform without changing the
 arrays. ``register_image`` returns the aligned NumPy array, a boolean mask

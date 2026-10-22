@@ -89,3 +89,117 @@ zero or connect them through a residual plot as successful estimates. Review
 sources crossing the estimation window, saturation and edge masks before
 changing algorithms. See :doc:`../reduction/registering` for coordinate conventions,
 interpolation and failure policy.
+
+Register rotation and scale, then correct coordinates
+-----------------------------------------------------
+
+Asterism matching estimates a similarity transform from common stars. Build a
+small field whose moving-image positions have a known scale change, rotation
+and translation. Render both fields from those positions so the simulation does
+not introduce an extra image-resampling step::
+
+    >>> from skimage.transform import SimilarityTransform
+    >>> from astropop.image.register import AsterismRegister
+    >>> reference_xy = np.array([
+    ...     [40, 40], [90, 45], [160, 35], [215, 70], [55, 110], [120, 115],
+    ...     [185, 130], [35, 190], [100, 210], [170, 195], [220, 220], [200, 45]], dtype=float)
+    >>> injected = SimilarityTransform(scale=1.02, rotation=np.deg2rad(2),
+    ...                                translation=(-3, 4))
+    >>> moving_xy = injected(reference_xy)
+    >>> yy, xx = np.indices((256, 256))
+    >>> fields = []
+    >>> for positions_xy in (reference_xy, moving_xy):
+    ...     pixels = np.full(xx.shape, 10.)
+    ...     for index, (sx, sy) in enumerate(positions_xy):
+    ...         pixels += (1000 + 100 * index) * np.exp(-((xx - sx)**2 + (yy - sy)**2) / 8)
+    ...     fields.append(pixels)
+    >>> matcher = AsterismRegister(detection_threshold=5, max_control_points=20)
+    >>> transform = matcher.compute_transform(fields[0], fields[1])
+    >>> print(f'Scale: {transform.scale:.3f}; rotation: {np.rad2deg(transform.rotation):.2f} deg')
+    Scale: 1.020; rotation: 2.00 deg
+    >>> print('Translation (pixels):', np.round(transform.translation, 2))
+    Translation (pixels): [-3.  4.]
+    >>> corrected_xy = transform.inverse(moving_xy)
+    >>> offset = np.linalg.norm(corrected_xy - reference_xy, axis=1)
+    >>> translation_only = moving_xy - transform.translation
+    >>> wrong_offset = np.linalg.norm(translation_only - reference_xy, axis=1)
+    >>> print(f'Largest full-transform residual: {offset.max():.3f} pixels')
+    Largest full-transform residual: 0.000 pixels
+    >>> print(f'Largest translation-only residual: {wrong_offset.max():.1f} pixels')
+    Largest translation-only residual: 12.6 pixels
+
+The reported transform maps reference positions into the moving image. Its
+``inverse`` therefore maps measured moving-image coordinates back to the
+reference grid. Subtracting ``transform.translation`` alone leaves rotation
+and scale around the image origin uncorrected. The displayed zero residual is
+rounded and belongs to this noiseless isolated-star simulation, not a measured
+accuracy bound for real images. With a registration window, use the returned
+full-image transform directly; do not apply another crop-origin offset.
+
+.. plot::
+    :include-source: false
+    :alt: Translation-only correction leaves position-dependent residual vectors across the field, while the full inverse mapping overlays the reference positions.
+    :caption: Geometry of the injected 1.02 scale, 2-degree rotation and (-3, 4) translation. These panels use the known transform to illustrate the coordinate rule; the fitted transform is assessed numerically above. Arrows are residuals in pixel units, without magnification.
+
+    import matplotlib.pyplot as plt
+    import numpy as np
+    from skimage.transform import SimilarityTransform
+
+    reference = np.array([[40, 40], [90, 45], [160, 35], [215, 70], [55, 110],
+                          [120, 115], [185, 130], [35, 190], [100, 210],
+                          [170, 195], [220, 220], [200, 45]], dtype=float)
+    injected = SimilarityTransform(scale=1.02, rotation=np.deg2rad(2), translation=(-3, 4))
+    observed = injected(reference)
+    residual = observed - injected.translation - reference
+    corrected = injected.inverse(observed)
+    fig, axes = plt.subplots(1, 2, figsize=(8, 3.8), layout='constrained')
+    axes[0].scatter(*reference.T, color='0.4', s=20)
+    axes[0].quiver(*reference.T, *residual.T, angles='xy', scale_units='xy', scale=1)
+    axes[0].set_title('Translation-only residuals')
+    axes[1].scatter(*reference.T, s=55, facecolors='none', edgecolors='k', label='Reference')
+    axes[1].scatter(*corrected.T, s=15, label='Full inverse correction')
+    axes[1].set_title('Full coordinate correction')
+    axes[1].legend(fontsize='small')
+    for ax in axes:
+        ax.set(xlim=(0, 256), ylim=(0, 256), xlabel='x (pixel)', ylabel='y (pixel)', aspect='equal')
+        ax.grid(alpha=0.2)
+
+Select a valid footprint and handle a failed exposure
+-----------------------------------------------------
+
+The coordinate transform also tells the image resampler where to read moving
+pixels. It can require samples outside that image. Keep flags enabled and use
+the output mask to select usable pixels instead of assuming a rectangular crop
+removes every invalid sample::
+
+    >>> reference_frame, moving_frame = [FrameData(pixels) for pixels in fields]
+    >>> registered = matcher.register_framedata(reference_frame, moving_frame, cval=0)
+    >>> common_valid = ~reference_frame.mask & ~registered.mask
+    >>> print(f'Common valid pixels: {100 * common_valid.mean():.1f}%')
+    Common valid pixels: 92.0%
+
+``common_valid`` is a pixel selection on the reference grid, not a new image
+coordinate system. Use it when measuring or combining those registered pixels.
+``clip_output=True`` uses translations for cropping and cannot guarantee a
+rotation/scale footprint. Interpolation and registration uncertainties still
+need their own error treatment even inside the valid area.
+
+A blank moving frame has no stars to match. With ``skip_failure=True`` the
+failed exposure remains in the returned list and is fully masked; it must not
+be interpreted as a successfully registered zero-valued exposure::
+
+    >>> blank_frame = FrameData(np.zeros(fields[0].shape))
+    >>> batch = register_framedata_list(
+    ...     [reference_frame, blank_frame], algorithm='asterism-matching',
+    ...     skip_failure=True, cval=0, detection_threshold=5, max_control_points=20)
+    >>> print('Output frames:', len(batch))
+    Output frames: 2
+    >>> print('Failed-frame status:', batch[1].meta['astropop registration'])
+    Failed-frame status: failed
+    >>> print('Usable pixels in failed frame:', np.count_nonzero(~batch[1].mask))
+    Usable pixels in failed frame: 0
+
+The detector emits a no-source warning and registration logs the failure.
+Keep input indices or filenames alongside the results when rejecting failed
+frames. A fully failed list cannot provide an image stack or a common useful
+footprint; report that condition rather than replacing failed shifts by zero.
