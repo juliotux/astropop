@@ -24,6 +24,14 @@ def hasher(string: object, size: int=8) -> str:
     -------
     digest
         Leading digest characters. Truncated digests can collide.
+
+    Examples
+    --------
+    >>> from astropop.math.hasher import hasher
+    >>> print(hasher('abc'))
+    ba7816bf
+    >>> print(hasher('abc', size=4))
+    ba78
     """
     string = str(string)
     h = hashlib.sha256(string.encode()).hexdigest()

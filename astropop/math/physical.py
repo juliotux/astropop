@@ -232,6 +232,17 @@ def equal_within_errors(
     - We consider two numbers equal within errors when
       abs(number1 - number2) <= error1 + error2
     - Incompatible units means different numbers.
+
+    Examples
+    --------
+    >>> from astropop.math import QFloat
+    >>> from astropop.math.physical import equal_within_errors
+    >>> first = QFloat(1., 0.1, 'm')
+    >>> second = QFloat(115., 10., 'cm')
+
+    >>> # Compare the difference with the sum of errors in compatible units.
+    >>> print(bool(equal_within_errors(first, second)))
+    True
     """
     qf1, qf2 = [convert_to_qfloat(i) for i in (qf1, qf2)]
     try:
@@ -267,6 +278,13 @@ def qfloat(
     -------
     f
         The QFloat created.
+
+    Examples
+    --------
+    >>> from astropop.math import qfloat
+    >>> measurement = qfloat(10., 0.5, 'adu')
+    >>> print(measurement.nominal, measurement.uncertainty, measurement.unit)
+    10.0 0.5 adu
     """
     f = QFloat(value, uncertainty, unit)
     return f
@@ -292,6 +310,21 @@ class QFloat():
     - This class don't support memmapping. Is intended to be in memory ops.
     - Units are handled by `~astropy.units`.
     - Math operations cares about units and uncertainties.
+
+    Examples
+    --------
+    >>> from astropop.math import QFloat
+    >>> length = QFloat(2., 0.1, 'm')
+
+    >>> # Multiplying by an exact scalar scales the standard uncertainty too.
+    >>> doubled = length * 3
+    >>> print(f'{doubled.nominal:.1f} +/- {doubled.uncertainty:.1f} {doubled.unit}')
+    6.0 +/- 0.3 m
+
+    >>> # Arrays carry one standard uncertainty per nominal value.
+    >>> samples = QFloat([1., 2.], [0.1, 0.2], 'm')
+    >>> print(samples.shape, samples.uncertainty.tolist())
+    (2,) [0.1, 0.2]
     """
 
     # The decorator installs this descriptor at runtime; expose both access
@@ -489,6 +522,18 @@ class QFloat():
         -------
         result
             A new instance of this class, converted to the new unit.
+
+        Examples
+        --------
+        >>> from astropop.math import QFloat
+        >>> meters = QFloat(1., 0.02, 'm')
+        >>> centimeters = meters.to('cm')
+
+        >>> # Convert both the nominal value and its standard uncertainty.
+        >>> print(centimeters.nominal, centimeters.uncertainty, centimeters.unit)
+        100.0 2.0 cm
+        >>> print(meters.nominal, meters.unit)
+        1.0 m
         """
         other = units.Unit(unit, parse_strict='silent')
         (_, conv), unit = get_converters_and_unit(self.to, other, self.unit)

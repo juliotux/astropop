@@ -21,7 +21,14 @@ SQRT_TWO_PI = np.sqrt(TWO_PI)
 
 
 class MoffatEquations:
-    """Moffat equations and utilities."""
+    """Moffat equations and utilities.
+
+    Examples
+    --------
+    >>> from astropop.math.models import MoffatEquations
+    >>> print(f'{MoffatEquations.fwhm(width=2., power=2.5):.3f}')
+    2.261
+    """
     @staticmethod
     def normalize(width: _npt.ArrayLike, power: _npt.ArrayLike) -> _NumberArray:
         """Normalization factor for 2D distribution."""
@@ -167,6 +174,15 @@ class PSFMoffat2D(Fittable2DModel):
     arrays or uncertainties. Use consistent coordinate and output scales.
     Declared fit bounds do not replace checking physically valid parameters.
     A finite sampled cutout need not sum to the flux parameter.
+
+    Examples
+    --------
+    >>> from astropop.math.models import PSFMoffat2D
+    >>> profile = PSFMoffat2D(flux=100., sky=10., width=2., power=2.5)
+
+    >>> # The 2D flux is an integral over the plane, not the central pixel value.
+    >>> print(f'{profile(0., 0.):.2f}')
+    21.94
     """
 
     x_0 = Parameter(default=0, description='X center')
@@ -224,6 +240,15 @@ class PSFMoffat1D(Fittable1DModel):
     A finite sampled cutout need not sum to the flux parameter.
     The historical amplitude is ``flux * 2 * (power - 1) / width**2``;
     despite the parameter name, it is not a 1D integral normalization.
+
+    Examples
+    --------
+    >>> from astropop.math.models import PSFMoffat1D
+    >>> profile = PSFMoffat1D(flux=100., sky=10., width=2., power=2.5)
+
+    >>> # Here flux is an amplitude coefficient rather than a one-dimensional integral.
+    >>> print(f'{profile(0.):.2f}')
+    85.00
     """
 
     x_0 = Parameter(default=0, description='X center')
@@ -275,6 +300,15 @@ class PSFMoffatRadial(Fittable1DModel):
     A finite sampled cutout need not sum to the flux parameter.
     The historical amplitude is ``flux * 2 * (power - 1) / width**2``;
     despite the parameter name, it is not a 1D integral normalization.
+
+    Examples
+    --------
+    >>> from astropop.math.models import PSFMoffatRadial
+    >>> profile = PSFMoffatRadial(flux=100., sky=10., width=2., power=2.5)
+
+    >>> # This radial helper uses the Moffat amplitude coefficient, not a flux integral.
+    >>> print(f'{profile(0.):.2f}')
+    85.00
     """
 
     flux = Parameter(default=1, fixed=False, bounds=(0, None),
@@ -300,7 +334,16 @@ class PSFMoffatRadial(Fittable1DModel):
 
 
 class GaussianEquations:
-    """Gaussian equantions and utilities."""
+    """Gaussian equantions and utilities.
+
+    Examples
+    --------
+    >>> from astropop.math.models import GaussianEquations
+
+    >>> # Convert Gaussian sigma to full width at half maximum in the same unit.
+    >>> print(f'{GaussianEquations.fwhm(2.):.3f}')
+    4.710
+    """
 
     @staticmethod
     def normalize_2d(sigmax: _npt.ArrayLike, sigmay: _npt.ArrayLike) -> _NumberArray:
@@ -449,6 +492,15 @@ class PSFGaussian2D(Fittable2DModel):
     arrays or uncertainties. Use consistent coordinate and output scales.
     Declared fit bounds do not replace checking physically valid parameters.
     A finite sampled cutout need not sum to the flux parameter.
+
+    Examples
+    --------
+    >>> from astropop.math.models import PSFGaussian2D
+    >>> profile = PSFGaussian2D(flux=100., sky=10., sigma_x=1., sigma_y=1.)
+
+    >>> # The 2D flux is an integral over the plane, not the central pixel value.
+    >>> print(f'{profile(0., 0.):.2f}')
+    25.92
     """
     x_0 = Parameter(default=0, description='X center')
     y_0 = Parameter(default=0, description='Y center')
@@ -501,6 +553,15 @@ class PSFGaussian1D(Fittable1DModel):
     arrays or uncertainties. Use consistent coordinate and output scales.
     Declared fit bounds do not replace checking physically valid parameters.
     A finite sampled cutout need not sum to the flux parameter.
+
+    Examples
+    --------
+    >>> from astropop.math.models import PSFGaussian1D
+    >>> profile = PSFGaussian1D(flux=100., sky=10., sigma=1.)
+
+    >>> # The 1D flux is an integral along the line; sky adds a constant offset.
+    >>> print(f'{profile(0.):.2f}')
+    49.89
     """
 
     x_0 = Parameter(default=0, description='X center')
@@ -545,6 +606,15 @@ class PSFGaussianRadial(Fittable1DModel):
     arrays or uncertainties. Use consistent coordinate and output scales.
     Declared fit bounds do not replace checking physically valid parameters.
     A finite sampled cutout need not sum to the flux parameter.
+
+    Examples
+    --------
+    >>> from astropop.math.models import PSFGaussianRadial
+    >>> profile = PSFGaussianRadial(flux=100., sky=10., sigma=1.)
+
+    >>> # This radial helper uses one-dimensional Gaussian normalization.
+    >>> print(f'{profile(0.):.2f}')
+    49.89
     """
 
     flux = Parameter(default=1, fixed=False, bounds=(0, None),
