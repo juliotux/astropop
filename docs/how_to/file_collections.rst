@@ -2,9 +2,9 @@ Index and iterate over local FITS files
 =======================================
 
 Create three tiny multi-extension FITS files in a temporary directory, then
-inspect their indexed headers and image values. The older
-:doc:`../tools/files` also contains illustrative verbatim transcripts, which
-are not execution results from the current build.
+inspect their indexed headers and image values. Use
+:doc:`../tools/files` for constructor options, index ownership, alternate
+iterators and additional simple examples.
 
 Create image extensions and index their headers
 -----------------------------------------------

@@ -61,6 +61,77 @@ break its relationship to the observations.
 columns are normalized in the summary; inspect ``summary.colnames`` before
 using names in operations that require exact spelling.
 
+Inspect a small explicit group
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For this example, ``example_folder`` contains ``image_0.fits`` through
+``image_2.fits``. Each has an empty primary HDU and a ``SCI`` image extension
+with a ``FILTER`` header. Listing paths first lets an application inspect or
+modify the input list before constructing its group:
+
+.. doctest::
+    :hide:
+
+    >>> from pathlib import Path
+    >>> from tempfile import TemporaryDirectory
+    >>> import numpy as np
+    >>> from astropy.io import fits
+    >>> _file_example = TemporaryDirectory()
+    >>> example_folder = Path(_file_example.name).resolve()
+    >>> for index, band in enumerate(('R', 'B', 'R')):
+    ...     image = fits.ImageHDU(np.full((2, 3), index + 1.), name='SCI')
+    ...     image.header['FILTER'] = band
+    ...     image.header['BUNIT'] = 'adu'
+    ...     fits.HDUList([fits.PrimaryHDU(), image]).writeto(example_folder / f'image_{index}.fits')
+
+.. doctest::
+
+    >>> from astropop.file_collection import FitsFileGroup, list_fits_files
+    >>> paths = list_fits_files(example_folder)
+    >>> small = FitsFileGroup(files=paths, ext='SCI', database=str(example_folder / 'example.db'))
+    >>> print('Files:', [Path(name).name for name in small.files])
+    Files: ['image_0.fits', 'image_1.fits', 'image_2.fits']
+    >>> print('Filter column:', [key for key in small.keys if key == 'filter'])
+    Filter column: ['filter']
+    >>> print('Filter values:', small['filter'])
+    Filter values: ['R', 'B', 'R']
+    >>> print('First-file group:', len(small[0]), '; first-two group:', len(small[:2]))
+    First-file group: 1 ; first-two group: 2
+    >>> stored = small.relative_path(small.files[0])
+    >>> print('Stored path:', stored)
+    Stored path: image_0.fits
+    >>> print('Resolved file:', Path(small.full_path(stored)).name)
+    Resolved file: image_0.fits
+
+``keys`` lists indexed column names. String indexing selects a column using
+its actual name; integer indexing returns a one-file group, and a slice returns
+a group with the selected rows. These groups refer to the original observations;
+they do not write new image files. ``relative_path`` and ``full_path`` translate
+between database-relative filenames and filesystem paths. In-memory databases
+have no database directory, so there is no relative-path conversion in that case.
+
+The alternate iterators below read the same selected ``SCI`` extension but
+return different objects. This example retains only short summaries::
+
+    >>> print('Header filters:', [header['FILTER'] for header in small.headers(ext='SCI')])
+    Header filters: ['R', 'B', 'R']
+    >>> print('Image means:', [float(np.mean(pixels)) for pixels in small.data(ext='SCI', memmap=False)])
+    Image means: [1.0, 2.0, 3.0]
+    >>> print('HDU names:', [hdu.name for hdu in small.hdus(ext='SCI', memmap=False)])
+    HDU names: ['SCI', 'SCI', 'SCI']
+    >>> print('Frame units:', [str(frame.unit) for frame in small.framedata(ext='SCI')])
+    Frame units: ['adu', 'adu', 'adu']
+
+Use ``headers`` when pixel data are unnecessary, ``data`` for array-only
+processing, ``hdus`` for both header and data, and ``framedata`` when reduction
+functions need units and optional arrays. These are read interfaces; changing
+a yielded object does not automatically write the source FITS file.
+
+.. doctest::
+    :hide:
+
+    >>> _file_example.cleanup()
+
 Adding or Removing Files
 ------------------------
 

@@ -26,10 +26,12 @@ exit, including exception paths::
     >>> with TemporaryDirectory() as root:
     ...     with TempDir(str(Path(root) / 'owned-cache')) as directory:
     ...         managed = directory.create_file('message.txt')
+    ...         print('File manager:', type(managed).__name__)
     ...         with managed.open('w') as stream:
     ...             _ = stream.write('example')
     ...         print('Path(managed.full_path).read_text():', Path(managed.full_path).read_text())
     ...     print('Path(directory.full_path).exists():', Path(directory.full_path).exists())
+    File manager: TempFile
     Path(managed.full_path).read_text(): example
     Path(directory.full_path).exists(): False
 
