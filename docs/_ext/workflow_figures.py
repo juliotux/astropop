@@ -28,6 +28,7 @@ NOTEBOOK_PLOTS = {
     'plot_science': 'draw_science(calibrated[0], combined, science_files[0])',
     'plot_photometry': 'draw_photometry(image, sky, selected, truth)',
     'plot_light_curve': 'draw_light_curve(curve, truth)',
+    'plot_comparison_curves': 'draw_comparison_curves(curve, comparisons, finder["id"][1:])',
     'plot_astrometry': 'draw_astrometry(x, y, east, north, fit_rows, check_rows)',
     'plot_photometric_calibration': ('draw_photometric_calibration(standards, offsets, '
                                    'offset_error, zero_point, zero_point_error, calibrated, '
@@ -193,6 +194,35 @@ def plot_light_curve() -> Figure:
     """Render the time series using the published calculations."""
     with example('light_curve') as ns:
         return draw_light_curve(ns['curve'], ns['truth'])
+
+
+def draw_comparison_curves(curve: Table, comparisons: np.ndarray,
+                            identifiers: np.ndarray) -> Figure:
+    """Inspect each comparison against an ensemble that excludes that star."""
+    count = comparisons.shape[1]
+    if count < 2:
+        raise ValueError('At least two comparison stars are needed for this diagnostic.')
+    others = (comparisons.sum(axis=1)[:, None] - comparisons) / (count - 1)
+    ratios = comparisons / others
+    fig, axes = plt.subplots(2, 1, sharex=True, figsize=(7.5, 5.4),
+                             layout='constrained')
+    for index, identifier in enumerate(identifiers):
+        axes[0].plot(curve['elapsed_min'], comparisons[:, index], 'o-', label=str(identifier))
+        axes[1].plot(curve['elapsed_min'], ratios[:, index], 'o-', label=str(identifier))
+    axes[0].set(ylabel='Flux / own median', title='Individual comparison measurements')
+    axes[1].axhline(1, color='0.4', linestyle='--', linewidth=1)
+    axes[1].set(xlabel='Elapsed mid-exposure time (min, UTC)',
+                ylabel='Star / other comparisons', title='Exclude each star from its reference')
+    for ax in axes:
+        ax.legend(fontsize='small')
+        ax.grid(alpha=0.2)
+    return fig
+
+
+def plot_comparison_curves() -> Figure:
+    """Replay the tutorial and call the same helper used by notebook cells."""
+    with example('light_curve') as ns:
+        return draw_comparison_curves(ns['curve'], ns['comparisons'], ns['finder']['id'][1:])
 
 
 def draw_astrometry(x: np.ndarray, y: np.ndarray, east: u.Quantity, north: u.Quantity,

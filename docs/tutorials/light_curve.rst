@@ -153,7 +153,7 @@ independent per-exposure measurement errors through the division::
     Largest simulation difference: 4.5%
 
 .. plot:: _ext/workflow_figures.py plot_light_curve
-    :include-source: False
+    :include-source: false
     :alt: Target and comparison ensemble flux versus time, followed by a differential light curve with measurement errors and injected variability.
     :caption: The comparison ensemble follows shared throughput changes. Dividing by it recovers the target's variability. Injected truth is used only for this final simulation comparison.
 
@@ -169,6 +169,28 @@ flagged or invalid comparison rejects that exposure. Keeping the same ensemble
 avoids introducing offsets by silently changing its membership. In this finder
 table the target is the first row and the comparisons are the remaining rows;
 preserve that ordering when adapting the example.
+
+Inspect the individual comparison stars
+---------------------------------------
+
+A stable ensemble average can hide a discrepant comparison star. First plot
+each comparison divided by its own median, then divide it by the mean of the
+**other** comparison stars. Excluding the star under inspection from its
+reference avoids suppressing its deviations through self-inclusion. This
+diagnostic requires at least two comparison stars; it uses the same fixed
+membership and accepted exposures as the target curve.
+
+.. plot:: _ext/workflow_figures.py plot_comparison_curves
+    :include-source: false
+    :alt: Each comparison star's normalized flux follows the shared throughput trend; a second panel divides each star by the ensemble of the other comparisons to reveal relative deviations.
+    :caption: The shared workflow helper uses the current notebook measurements for both panels. Individual ratios reveal differences that averaging could hide. The panels show measured curves, without using injected target variability as a calibration input.
+
+Shared throughput changes should appear together in the upper panel. In the
+lower panel, investigate a discrepant measurement or persistent trend by
+inspecting its aperture, sky annulus, masks and centering. Deviations include
+measurement noise; they do not by themselves prove a star is variable. A bad
+comparison also affects the reference of the remaining stars. Try physically
+justified subsets and remeasure the target before interpreting a small signal.
 
 The formal errors above treat the median normalization levels as fixed and omit
 shared-master errors and correlations between comparison stars. They are not a
