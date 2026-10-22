@@ -43,16 +43,25 @@ pytest, which would also affect coverage collection.
 Documentation checks
 --------------------
 
-Runnable reStructuredText examples are part of pytest collection. Run changed
-guides and build the HTML documentation::
+Runnable reStructuredText examples are part of pytest collection. Package
+docstring examples use ``--doctest-modules`` explicitly because ordinary test
+paths cover ``tests`` and ``docs``. These examples use small local inputs; they
+do not query catalogs or invoke Astrometry.net. Run both sets and build the
+HTML documentation::
 
     python -m pytest docs --remote-data=none
+
+    python -m pytest --doctest-modules astropop --ignore=astropop/catalogs/gaia.py --remote-data=none
 
     python -m sphinx -b html -E -a -n -W --keep-going docs docs/_build/html
 
     python docs/development/check_docs.py --html docs/_build/html
 
     python docs/development/check_docs.py --notebooks
+
+The Gaia module has no offline docstring examples and is excluded from this
+collection: the current Astroquery Gaia client requests service status when
+imported. Recorded and live catalog tests cover that adapter separately.
 
 The ``-a -n`` options check references while rewriting every page, including
 unchanged guides. Notebook checks validate generated companions, rather than
@@ -63,7 +72,8 @@ Notebook examples should not introduce implicit live catalog requests during
 builds. Generated API pages and build output are ignored by Git.
 
 ``tox -e build_docs`` runs these checks on Python 3.14, including offline
-prompted examples, generated-notebook schema/syntax checks and canonical HTML pages.
+prompted examples, package docstrings, generated-notebook schema/syntax checks
+and canonical HTML pages.
 CI uses the same tox environment. Read the Docs selects Python 3.14 and fails
 on Sphinx warnings. The tox job also executes the ten offline notebook
 companions sequentially and independently. External solver and online-query
