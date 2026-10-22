@@ -73,6 +73,20 @@ def estimate_dxdy(
     -----
     The function constructs all detection pairs before filtering, requiring
     storage that grows quadratically with the number of detections.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from astropop.polarimetry import estimate_dxdy
+    >>> rng = np.random.default_rng(42)
+    >>> base_x, base_y = rng.uniform(0, 950, (2, 20))
+    >>> x = np.concatenate((base_x, base_x + 25))
+    >>> y = np.concatenate((base_y, base_y + 35))
+
+    >>> # Repeated offsets identify the two-beam displacement among unrelated pairs.
+    >>> dx, dy = estimate_dxdy(x, y, dist_limit=50, steps=[50, 5, 3, 1], bins=100)
+    >>> print(f'{dx:.1f}, {dy:.1f} pixels')
+    -25.0, -35.0 pixels
     """
     def _find_max(d: _npt.ArrayLike) -> float:
         """Refine the peak displacement using successively narrower histograms."""
@@ -139,6 +153,17 @@ def match_pairs(
     -----
     Independent nearest-neighbor queries do not enforce unique assignments.
     Check reused neighbors in crowded fields before extracting beam fluxes.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from astropop.polarimetry import match_pairs
+    >>> x, y = np.array([10., 35.]), np.array([20., 55.])
+
+    >>> # Search at (x - dx, y - dy), so these displacements are negative.
+    >>> pairs = match_pairs(x, y, dx=-25., dy=-35., tolerance=1.)
+    >>> print(pairs.tolist())
+    [(0, 1)]
     """
     kd = cKDTree(list(zip(x, y)))
 
@@ -181,6 +206,15 @@ def quarterwave_model(
     ------
     z: array_like
         Array of polarimetry values.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from astropop.polarimetry import quarterwave_model
+    >>> psi = np.array([0., 45., 90., 135.])
+    >>> modulation = quarterwave_model(psi, q=0.1, u=0.2, v=0.03)
+    >>> print(np.round(modulation, 3).tolist())
+    [0.1, -0.03, 0.1, 0.03]
     """
     if zero is not None:
         psi = psi+zero  # avoid inplace modification
@@ -213,6 +247,15 @@ def halfwave_model(
     ------
     z: array_like
         Array of polarimetry values.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from astropop.polarimetry import halfwave_model
+    >>> psi = np.array([0., 22.5, 45., 67.5])
+    >>> modulation = halfwave_model(psi, q=0.1, u=0.2)
+    >>> print(np.round(modulation, 3).tolist())
+    [0.1, 0.2, -0.1, -0.2]
     """
     if zero is not None:
         psi = psi+zero  # avoid inplace modification
@@ -241,6 +284,17 @@ class StokesParameters:
         Array of retarder positions in degrees.
     flux
         Sum of ordinary and extraordinary counts in each retarder position.
+
+    Examples
+    --------
+    >>> from astropop.polarimetry import StokesParameters
+    >>> result = StokesParameters('halfwave', q=0.03, u=0.04)
+
+    >>> # Linear polarization combines q and u; theta uses the half-angle convention.
+    >>> print(f'{100 * result.p.nominal:.1f}%')
+    5.0%
+    >>> print(f'{result.theta.nominal:.2f} {result.theta.unit}')
+    26.57 deg
     """
 
     retarder: _t.Literal['halfwave', 'quarterwave']  # 'quarterwave' or 'halfwave'
@@ -642,6 +696,21 @@ class SLSDualBeamPolarimetry(_DualBeamPolarimetry):
     .. [2] https://ui.adsabs.harvard.edu/abs/1984PASP...96..383M
     .. [3] https://ui.adsabs.harvard.edu/abs/1998A&A...335..979R
     .. [4] https://ui.adsabs.harvard.edu/abs/2021AJ....161..225L
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from astropop.polarimetry import SLSDualBeamPolarimetry, halfwave_model
+    >>> psi = np.arange(8) * 22.5
+    >>> modulation = halfwave_model(psi, q=0.03, u=-0.02)
+
+    >>> # Split fixed total counts into beams with the desired normalized difference.
+    >>> ordinary = 10000 * (1 + modulation) / 2
+    >>> extraordinary = 10000 * (1 - modulation) / 2
+    >>> solver = SLSDualBeamPolarimetry('halfwave', k=1., zero=0.)
+    >>> result = solver.compute(psi, ordinary, extraordinary)
+    >>> print(f'q={result.q.nominal:.3f}, u={result.u.nominal:.3f}')
+    q=0.030, u=-0.020
     """
 
     def _get_fitter(
