@@ -18,7 +18,11 @@ Annotations are the source of parameter and return types. For annotated
 callables, omit duplicate types from NumPy-style docstring fields; retain
 parameter/return names, behavior, units, shapes, defaults, errors and explicit
 strategy explanations. Configure Sphinx to render annotation-derived types,
-rather than hiding annotations or maintaining a second type definition.
+rather than hiding annotations or maintaining a second type definition. Render
+annotation-derived types beside parameter/return descriptions. With this
+project's NumPyDoc layout, use the configured ``sphinx_autodoc_typehints``
+extension and verify the rendered fields with ``check_docs.py --html``;
+types appearing only in a signature do not satisfy this requirement.
 
 Use Python 3.11-compatible types and postponed annotations where necessary.
 Use `numpy.typing.ArrayLike` for inputs accepting sequences/scalars and
