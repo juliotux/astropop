@@ -208,6 +208,58 @@ does not disable uncertainty calculations::
     enabled.uncertainty: [[0.70710678]]
     enabled.flags: [[0]]
 
+Inspect pixels with few accepted samples
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Here the three columns retain two, one and zero samples after rejection.
+The single surviving value has zero scatter, which does not establish a
+noise-free measurement::
+
+    >>> sparse = [FrameData([[10., 20., 100.]], uncertainty=2),
+    ...           FrameData([[14., 100., 100.]], uncertainty=2)]
+    >>> sparse_mean = imcombine(sparse, method='mean', minmax_clip=(None, 50))
+    >>> print('Mean:', sparse_mean.data.tolist())
+    Mean: [[12.0, 20.0, nan]]
+    >>> print('Standard uncertainty:', np.round(sparse_mean.uncertainty, 3).tolist())
+    Standard uncertainty: [[1.414, 0.0, nan]]
+    >>> print('Missing pixels:', sparse_mean.mask.tolist())
+    Missing pixels: [[False, False, True]]
+    >>> for normalize in (False, True):
+    ...     summed = imcombine(sparse, method='sum', minmax_clip=(None, 50),
+    ...                        sum_normalize=normalize)
+    ...     print(f'Normalize={normalize}: {summed.data.tolist()}')
+    Normalize=False: [[24.0, 20.0, nan]]
+    Normalize=True: [[24.0, 40.0, nan]]
+
+Empty reductions can emit NumPy runtime warnings about an empty slice or
+invalid division. Inspect the output mask and missing values when these occur;
+do not interpret the single-sample zero uncertainty as a replacement for them.
+
+Normalized sums extrapolate the accepted samples to the total exposure count.
+They do not recover rejected flux from variable sources or correct unequal
+exposure durations. The returned frame has no accepted-count map; retain such
+diagnostics separately when the observing strategy requires them.
+
+For integer output, an all-rejected pixel is filled with zero. If flag storage
+is disabled, that zero is indistinguishable from a valid zero using the output
+alone::
+
+    >>> previous_flags = conf.FRAMEDATA_DISABLE_FLAGS
+    >>> try:
+    ...     conf.FRAMEDATA_DISABLE_FLAGS = True
+    ...     integer_inputs = [FrameData([[0, 100]], dtype='int16') for _ in range(2)]
+    ...     integer_result = imcombine(integer_inputs, dtype='int16',
+    ...                                minmax_clip=(None, 50))
+    ...     print('Integer pixels:', integer_result.data.tolist())
+    ...     print('Mask:', integer_result.mask)
+    ... finally:
+    ...     conf.FRAMEDATA_DISABLE_FLAGS = previous_flags
+    Integer pixels: [[0, 0]]
+    Mask: None
+
+Keep flags enabled or select floating output with a NaN fill when missing
+pixels must remain identifiable. This choice must precede loading the frames.
+
 Dtype and memory use
 ^^^^^^^^^^^^^^^^^^^^
 
@@ -292,9 +344,7 @@ Set optional-array configuration before loading frames::
 
 This is a recipe with application-supplied ``paths``, not an executed benchmark.
 Disk caching uses the loading and cleanup behavior described above. Filesystem
-page cache, disk space and I/O speed also matter. Never use a shared working
-directory as ``tmp_dir``. Caller-owned FrameData storage remains your
-responsibility.
+page cache, disk space and I/O speed also matter.
 
 Iterate over science products and write each result before processing the next.
 For measurements, record input count, image shape, dtype, optional-array policy,
