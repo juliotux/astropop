@@ -18,6 +18,12 @@
 
 ## Documentation
 
+- Task guides are module-oriented: explain the module's functions and classes
+  with simple local examples. Multi-step workflows combining several modules
+  belong in tutorials; identify concepts and troubleshooting separately.
+- Use `ImageLike` for 2D pixel-array inputs, with explicit scalar alternatives
+  where supported. Keep coordinate vectors, stacks and broad `ImageInput`
+  conversion contracts distinct.
 - Module guides must give clear, descriptive, human-readable explanations of
   the module's functions and classes, with simple examples and useful outputs.
   Preserve distinct construction/input examples when reorganizing or shortening

@@ -25,9 +25,15 @@ extension and verify the rendered fields with ``check_docs.py --html``;
 types appearing only in a signature do not satisfy this requirement.
 
 Use Python 3.11-compatible types and postponed annotations where necessary.
-Use `numpy.typing.ArrayLike` for inputs accepting sequences/scalars and
-`NDArray` for arrays; specify a dtype only when the implementation guarantees
-it. Astropy quantities, units, coordinates, times, tables, headers and HDUs are
+Use the shared `ImageLike` alias for 2D pixel-array inputs (including spatial
+mask, flag and uncertainty maps), rather than generic `ArrayLike`. It describes
+`(rows, columns)` using `Annotated` metadata; it does not enforce shape. Keep
+scalar-or-image uncertainties explicitly unioned with scalar types. Retain
+`ImageInput` for conversion helpers accepting frames, FITS objects and paths.
+Do not use `ImageLike` for source-coordinate vectors, 3D image stacks, or
+arbitrary-dimensional numerical helpers. Use `numpy.typing.ArrayLike` for
+those generic sequence/scalar inputs and `NDArray` for concrete array outputs;
+specify a dtype only when the implementation guarantees it. Astropy quantities, units, coordinates, times, tables, headers and HDUs are
 separate contracts, not interchangeable numerical arrays. Keep missing arrays
 explicitly optional. Do not imply shape validation that the type system cannot
 express. Reuse private aliases for recurring domain contracts rather than

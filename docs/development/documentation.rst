@@ -27,6 +27,17 @@ removed URLs, or that an external website still resolves.
 Module explanations and complete tutorials
 ------------------------------------------
 
+Task guides are module-oriented. Each guide should focus on a module or a
+coherent API family, explaining its functions and classes with simple examples.
+Cross-module, multi-step reductions belong in tutorials; diagnostics and shared
+concepts remain supporting material.
+
+Use :doc:`../reduction/polarimetry` as the model: connect the scientific model
+to the module's functions/classes, explain their options and results, and include
+focused examples. Keep general observing/restart policy, complete cross-module
+diagnostics and benchmarking instructions in concepts, tutorials or contributor
+guides, rather than filling module guides with unrelated advice.
+
 Module guides must explain their functions and classes in clear, descriptive,
 human-readable prose. Describe what an operation does, when it is useful, how
 to supply its inputs and how to interpret the result. Explain important options,
@@ -42,7 +53,8 @@ Related functions can share an example when each function's use remains clear.
 When editing or reorganizing, preserve the explanations and behaviors those
 examples teach. Removing repetition must not remove that instructional coverage.
 
-Tutorials address more complex, complete tasks that combine several APIs. Take
+Tutorials address more complex, multi-step tasks that combine APIs from several
+modules. Take
 the reader from prepared inputs through processing and inspection to a usable
 result. Module examples remain available for learning individual operations;
 link them from the integrated workflow where useful.
@@ -143,12 +155,17 @@ explanatory text. Keep names and behavioral
 explanations, including units, shapes and estimator limitations. State defaults, literal string
 choices and what each choice does, shape/dtype/unit requirements, mutation and
 array ownership, missing arrays, masks, return types, and expected failures.
+Use :data:`~astropop._typing.ImageLike` for 2D pixel-array inputs rather than
+generic ArrayLike, retaining explicit scalar alternatives for uncertainties.
+Use ImageInput for frame/FITS/path conversions and keep coordinate vectors and
+image stacks distinct. Concrete NumPy array outputs retain their NDArray
+contracts. These aliases describe shape requirements without enforcing them.
 Distinguish methods (called with parentheses) from properties. Use “standard
 deviation” for stored uncertainty; distinguish it from variance and scatter.
 Explain zero-based ``(x, y)`` separately from NumPy ``[y, x]`` indexing.
 
-A tutorial teaches a complete local workflow; a task guide solves a specific
-problem; a concept explains assumptions; a reference specifies exact contracts.
+A tutorial teaches a complete multi-module workflow; a task guide explains a
+module or API family through focused operations; a concept explains assumptions; a reference specifies exact contracts.
 Link between them, preserving critical scientific limitations beside operations.
 Do not claim speed, memory bounds or scientific validation without a specified
 measurement or test. Follow :doc:`../dev/testing` for strict build commands and

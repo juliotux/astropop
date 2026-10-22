@@ -9,6 +9,25 @@ Read the implementation, nearby tests, and the relevant guide under `docs/`. Kee
 
 ## Module guides and tutorials serve different readers
 
+Task guides are module-oriented documentation. Organize their explanations
+around the module's functions and classes, with local, simple examples and
+useful results. A page that strings multiple modules together to produce a
+complete reduction belongs in tutorials. Keep cross-cutting concepts and
+troubleshooting identifiable as supporting material rather than treating them
+as substitutes for a module guide.
+
+Use `docs/reduction/polarimetry.rst` as the editorial model: explain the
+module's scientific model, then its classes/functions, their options, results
+and focused examples. Make API ownership visible in section headings where
+useful. Technical equations, algorithm details, figures and references belong
+beside the function or class they explain. Do not turn task guides into general
+reduction advice, observing-policy essays, troubleshooting checklists, benchmark
+instructions or extended cross-module workflows. Move such material to the
+appropriate tutorial, concept or development page, leaving a relevant link.
+A navigation change alone does not fix a guide whose body still avoids
+explaining the API. Preserve useful prose/examples at their maintained location
+and retain legacy URLs and fragments when moving them.
+
 - **Module documentation must be clear, descriptive and human-readable about
   every function and class the module offers.** Explain what each does, when
   to use it, how to construct/call it and how to interpret its result. Include
@@ -29,7 +48,7 @@ Read the implementation, nearby tests, and the relevant guide under `docs/`. Kee
   improvement if it replaces a useful explanation/example with a terse summary.
   Moving API declarations to reference pages must not strip module guides of
   their explanatory prose or examples.
-- **Tutorials must complete more complex tasks using several APIs together.**
+- **Tutorials must complete multi-step tasks using APIs from several modules together.**
   Include preparation, the full processing sequence, inspection and a usable
   result. Tutorials complement simple module examples; do not move all examples
   out of module guides or substitute disconnected API demonstrations for a
@@ -53,8 +72,16 @@ annotation-derived types beside parameter/return descriptions. With this
 project's NumPyDoc layout, use the configured ``sphinx_autodoc_typehints``
 extension and verify the rendered fields with ``check_docs.py --html``;
 types appearing only in a signature do not satisfy this requirement.
+Use the shared `ImageLike` contract for 2D pixel-array inputs, including masks
+and flag maps, instead of generic `ArrayLike`. Explain `(rows, columns)` and
+operation-specific shape/dtype restrictions. Keep scalar uncertainty alternatives
+explicit. `ImageInput` additionally covers frame/FITS/path conversion inputs;
+coordinate vectors and image stacks are different contracts. NumPy array
+outputs can retain concrete `NDArray` types and guaranteed dtypes. Do not claim
+that the alias enforces dimensionality statically or at runtime.
 
-Use `docs/tutorials/` for complete learning workflows, `docs/how_to/` for tasks,
+Use `docs/tutorials/` for complete multi-module workflows, `docs/how_to/` for
+module-oriented task guides,
 `docs/concepts/` for shared assumptions, `docs/reference/` for API declarations,
 and `docs/development/` for contributor guidance. Existing module guides remain
 supported entry points. Consult [documentation maintenance](../../../docs/development/documentation.rst)
