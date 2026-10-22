@@ -138,28 +138,35 @@ class GaiaDR3SourcesCatalog(_OnlineSourcesCatalog):
         self._g.ROW_LIMIT = -1
 
     def parallax(self) -> QFloat:
-        """Return the parallax for the sources."""
+        """Return measured parallaxes and standard errors in milliarcseconds.
+
+        Values follow catalog source order; no distance inference is performed.
+        """
         return QFloat(self._query['parallax'],
                       self._query['parallax_error'],
                       unit='mas')
 
     def radial_velocity(self) -> QFloat:
-        """Return the radial velocity for the sources."""
+        """Return radial velocities and standard errors in km/s, in source order."""
         return QFloat(np.array(self._query['radial_velocity'], dtype='f4'),
                       np.array(self._query['radial_velocity_error'],
                                dtype='f4'),
                       unit='km/s')
 
     def phot_variable_flag(self) -> _npt.NDArray:
-        """Return the photometric variable flag for the sources."""
+        """Return True for stored values other than 'CONSTANT'.
+
+        Unavailable/unclassified strings also satisfy this comparison. Inspect
+        the original query column before interpreting True as variability.
+        """
         return np.array(self._query['phot_variable_flag'] != 'CONSTANT')
 
     def non_single_star(self) -> _npt.NDArray:
-        """Return if each source is the non single star table."""
+        """Return the stored DR3 non_single_star field without Boolean conversion."""
         return np.array(self._query['non_single_star'])
 
     def in_galaxy_candidates(self) -> _npt.NDArray:
-        """Return if the source is in galaxy candidates table."""
+        """Return the stored DR3 in_galaxy_candidates field in source order."""
         return np.array(self._query['in_galaxy_candidates'])
 
     @staticmethod

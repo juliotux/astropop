@@ -6,39 +6,69 @@
 Gaia Catalog
 ============
 
-The European space mission Gaia aims to measure the positions, distances, motions, and brightnesses of over 1 billion stars within the Milky Way galaxy, as well as provide data for a significant number of extragalactic and Solar system objects. This information, along with data on multiplicity, variability, and other astrophysical parameters, is stored in the Gaia Archive.
+Gaia measures stellar positions, motions and brightnesses and provides
+additional astrophysical measurements and classifications. This adapter queries
+Gaia Data Release 3 (DR3), normalizing a selected set of its columns into a
+|SourcesCatalog| while retaining the query table for release-specific access.
+It does not expose every product in the Gaia Archive. The release content,
+selection and limitations are described by `Gaia Collaboration et al. (2023),
+A&A 674, A1 <https://arxiv.org/abs/2208.00211>`_.
 
-|astroquery| provides a query interface to Gaia, using `~astroquery.gaia` module. But, as we do with another sources, |GaiaDR3SourcesCatalog| can directly query the Gaia Archive and return a |SourcesCatalog| object. This can be done using the |gaiadr3| or |GaiaDR3SourcesCatalog|.
+|GaiaDR3SourcesCatalog| uses the Astroquery Gaia client to query a field when
+constructed. Supply a center, radius and optional bands; the |gaiadr3| callable
+is an alias for the same class. Name centers such as Sirius can involve name
+resolution as well as the catalog request. These live-query recipes are not
+executed by documentation builds; the returned rows depend on the service:
 
 .. code-block:: python
 
     from astropop.catalogs import gaia
     gaia_sources = gaia.gaiadr3('Sirius', radius='20 arcsec')
-    gaia_sources.table()
+    print('Sources:', len(gaia_sources))
+    print(gaia_sources.table()[:5])
 
 .. code-block:: python
 
     from astropop.catalogs.gaia import GaiaDR3SourcesCatalog
     gaia_sources = GaiaDR3SourcesCatalog('Sirius', radius='20 arcsec')
-    gaia_sources.table()
+    print('Sources:', len(gaia_sources))
+    print(gaia_sources.table()[:5])
 
-Currently, only the Data Release 3 (DR3) is supported. The |GaiaDR3SourcesCatalog| class is a subclass of |SourcesCatalog|, so all the methods of |SourcesCatalog| are available.
+Only DR3 is configured by this adapter. All |SourcesCatalog| methods are
+available, including local access and positional matching. Preserve the release,
+query region and epoch with saved data; see :doc:`../catalogs` for motion-aware
+snapshots and :doc:`../../how_to/catalogs` for service selection and reuse.
 
-All the 3 Gaia filters are available for photometry: ``G``, ``BP`` and ``RP``. As Gaia catalog do not provide a direct magnitude error, we compute it from ``phot_*_mean_flux_over_error`` columns, using the approximation:
+Select ``'G'``, ``'BP'`` or ``'RP'`` by name/list, use ``band='all'`` (default)
+for all three, or ``band=None`` to disable normalized photometry. Available
+bands do not guarantee finite measurements in every row. The adapter estimates
+standard magnitude errors from each ``phot_*_mean_flux_over_error`` value:
+
 
 .. math::
 
     \sigma_{mag} \approx \frac{1.1}{SNR_{flux}}
 
+The factor 1.1 approximates ``2.5/ln(10)`` for first-order flux-to-magnitude
+propagation. These errors describe the queried mean-flux precision under that
+approximation, not all systematic calibration errors. Inspect missing values,
+flux signal-to-noise and appropriate release quality columns before weighting
+photometric standards.
+
 Limiting Magnitude and Number of Sources
 ----------------------------------------
 
-Gaia catalogs can be huge. So, additionally, the initialization of the |GaiaDR3SourcesCatalog| class accepts a parameter to perform maximum G magnitude for the query called ``max_g_mag``. This parameter is useful to limit the number of sources returned by the query. For example, if we want to query the Gaia DR3 catalog for the ``Sirius`` star, but only for sources with G magnitude less than 10, we can do:
+Use ``max_g_mag`` to restrict the query to ``phot_g_mean_mag < max_g_mag``;
+``None`` (default) applies no G-magnitude cut. This is a selection by brightness,
+not a fixed limit on row count, and the cut is applied regardless of which
+photometric bands are requested. For example, keep sources brighter than G=10
+in a sixty-arcsecond region around Sirius:
 
 .. code-block:: python
 
     gaia_sources = gaia.gaiadr3('Sirius', radius='60 arcsec', max_g_mag=10)
-    gaia_sources.table()
+    print('Sources:', len(gaia_sources))
+    print(gaia_sources.table()[:5])
 
 Synchronous queries
 -------------------
@@ -65,45 +95,60 @@ Additional Catalog Properties
 -----------------------------
 
 Call ``parallax()`` and ``radial_velocity()`` on |GaiaDR3SourcesCatalog| to
-retrieve measurements with their uncertainties and units.
+retrieve |QFloat| arrays with uncertainties, in milliarcseconds and km/s,
+respectively. The arrays follow source order; unavailable measurements can be
+NaN. ``parallax()`` returns the measured parallax, not a distance estimate.
 
 .. automethod:: astropop.catalogs.gaia.GaiaDR3SourcesCatalog.parallax
     :noindex:
 
 .. code-block:: python
 
-    gaia_sources.parallax()
+    parallax = gaia_sources.parallax()
+    print('Parallax:', parallax.nominal, parallax.unit)
+    print('Parallax errors:', parallax.uncertainty)
 
 .. automethod:: astropop.catalogs.gaia.GaiaDR3SourcesCatalog.radial_velocity
     :noindex:
 
 .. code-block:: python
 
-    gaia_sources.radial_velocity()
+    velocity = gaia_sources.radial_velocity()
+    print('Radial velocity:', velocity.nominal, velocity.unit)
+    print('Velocity errors:', velocity.uncertainty)
 
-The following methods return variability, multiplicity and galaxy-candidate
-flags from the queried rows:
+The methods below expose release-specific indicators. They are not a uniform
+set of independent Boolean quality tests. Interpret them with the original
+query fields and the DR3 documentation:
 
 .. automethod:: astropop.catalogs.gaia.GaiaDR3SourcesCatalog.phot_variable_flag
     :noindex:
 
 .. code-block:: python
 
-    gaia_sources.phot_variable_flag()
+    print('Variability indicator:', gaia_sources.phot_variable_flag())
+    print('Original values:', gaia_sources.query_table['phot_variable_flag'])
 
 .. automethod:: astropop.catalogs.gaia.GaiaDR3SourcesCatalog.non_single_star
     :noindex:
 
 .. code-block:: python
 
-    gaia_sources.non_single_star()
+    print('Non-single-star field:', gaia_sources.non_single_star())
 
 .. automethod:: astropop.catalogs.gaia.GaiaDR3SourcesCatalog.in_galaxy_candidates
     :noindex:
 
 .. code-block:: python
 
-    gaia_sources.in_galaxy_candidates()
+    print('Galaxy-candidate field:', gaia_sources.in_galaxy_candidates())
+
+``phot_variable_flag()`` currently returns True whenever the stored string is
+not ``'CONSTANT'``. This includes unclassified/unavailable values, so True does
+not establish detected variability. ``non_single_star()`` and
+``in_galaxy_candidates()`` return their stored fields without a common Boolean
+conversion or extra validation. Inspect the original values and release meaning
+before using any of these methods to reject or select calibration stars.
 
 
 See :doc:`../../reference/catalogs` for the API reference.
