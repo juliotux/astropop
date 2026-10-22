@@ -31,16 +31,16 @@ The first path is a placeholder for the actual test module. If Ruff is not confi
 
 For documentation failures, inspect `tox config -e build_docs` and reproduce
 with `tox -e build_docs`. Its checks cover offline prompted examples, stored
-notebook schema/syntax/errors, a clean strict Sphinx build, and retained HTML
-URLs/anchors through `docs/development/check_docs.py`. Check the interpreter
+notebook schema/syntax/errors, a clean strict Sphinx build, and canonical HTML
+pages without orphan sources through `docs/development/check_docs.py`. Check the interpreter
 and extras against the GitHub docs job and `.readthedocs.yml`; use their current
 values rather than assuming the ordinary test matrix covers the docs environment.
 
-Distinguish a failed example, missing reference, broken legacy URL, unavailable
+Distinguish a failed example, missing canonical page, broken reference, unavailable
 external inventory, and missing rendering tools such as Pandoc. A notebook
 validation/rendering pass does not prove execution of its external workflow.
-Do not suppress warnings, remove URL expectations, or enable live queries to
-hide a failure. For page/API moves and example policy, follow the
+Do not suppress warnings, omit maintained pages from validation, add orphan
+compatibility pages, or enable live queries to hide a failure. For page/API moves and example policy, follow the
 [documentation maintenance guide](../../../docs/development/documentation.rst).
 Report an isolated tox run separately from checks run in an existing environment,
 and configured hosted builds separately from observed remote results.

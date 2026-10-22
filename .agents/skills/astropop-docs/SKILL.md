@@ -26,7 +26,8 @@ instructions or extended cross-module workflows. Move such material to the
 appropriate tutorial, concept or development page, leaving a relevant link.
 A navigation change alone does not fix a guide whose body still avoids
 explaining the API. Preserve useful prose/examples at their maintained location
-and retain legacy URLs and fragments when moving them.
+and update all incoming links when moving them. Remove superseded source pages;
+do not keep orphan pages or compatibility gateways.
 
 - **Module documentation must be clear, descriptive and human-readable about
   every function and class the module offers.** Explain what each does, when
@@ -86,8 +87,9 @@ subsection landing pages; `docs/modules/` for explanatory module chapters with
 integrated Reference/API; `docs/development/` for contributor guidance; and
 `docs/project/` for migration, citation and license information. Do not restore
 parallel task-guide, concepts and API-reference trees. Place technical concepts
-with the module that owns their contract. The old source paths are compatibility
-gateways, not additional maintained copies.
+with the module that owns their contract. Delete obsolete source paths after
+moving their content and update internal links, downloads and helper registries.
+Do not leave orphan pages, redirect stubs or compatibility-anchor placeholders.
 
 Each module chapter introduces its subject, gives simple examples, explains
 functions/classes and relevant scientific details, and contains Reference/API
@@ -104,9 +106,10 @@ Consult [documentation maintenance](../../../docs/development/documentation.rst)
 for the maintained structure and validation policy.
 
 Keep each indexed API declaration in one place. Generated `docs/api/` pages
-remain generated; do not edit or commit them. When extracting sections, preserve
-old URLs and anchors using `docs/development/urls.json` and compatibility links.
-Do not weaken the URL manifest merely to make a broken migration pass.
+remain generated; do not edit or commit them. Validate the current canonical
+source pages and their built HTML with `check_docs.py --html`. Use a clean output
+directory after moves so obsolete HTML cannot mask broken links. Hosting redirects
+are separate from the maintained source tree; do not create orphan files for them.
 
 For parameters with named strategies, explain every literal string explicitly:
 for example, ``'or'`` combines bits by OR, ``'and'`` keeps common bits, and

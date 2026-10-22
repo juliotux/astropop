@@ -24,6 +24,8 @@
 - Group multi-module tutorials under real subsection indexes with inputs,
   outputs and prerequisites. Place shared concepts with their owning modules;
   do not restore parallel task-guide, concepts and API-reference trees.
+  Remove superseded source pages and update incoming links; do not retain
+  orphan pages or compatibility gateways.
 - Use `ImageLike` for 2D pixel-array inputs, with explicit scalar alternatives
   where supported. Keep coordinate vectors, stacks and broad `ImageInput`
   conversion contracts distinct.
