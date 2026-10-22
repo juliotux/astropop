@@ -1,38 +1,26 @@
-.. include:: ../references.txt
+:orphan:
 
 FrameData and configuration
 ===========================
 
-Guide: :doc:`../data_structures/framedata`.
+Current chapter
+---------------
 
-.. automodapi:: astropop.framedata
-    :no-inheritance-diagram:
+Continue with :doc:`../modules/framedata/index` for the maintained documentation.
 
-.. automodapi:: astropop.config
-    :no-inheritance-diagram:
+.. raw:: html
 
-Guide: :doc:`../data_structures/cache`.
-
-.. automodapi:: astropop.framedata.cache_manager
-    :no-inheritance-diagram:
-
-.. currentmodule:: None
-
-.. py:data:: astropop.framedata.cache_manager.BaseTempDir
-
-    Shared TempDir instance at ``CACHE_DIR``. Relative top-level manager names
-    are created beneath this instance.
-
-.. currentmodule:: None
-
-.. py:data:: astropop.framedata.cache_manager.CACHE_DIR
-
-    Path beneath Astropy's cache directory used for Astropop-managed files.
-    The value is established when the module is imported.
-
-.. currentmodule:: None
-
-.. py:data:: astropop.framedata.cache_manager.DELETE_ON_EXIT
-
-    Module-level Boolean, initially ``True``, controlling shutdown cleanup.
-    Individual entries' retention policies still apply when cleanup is enabled.
+    <span id="astropop-config-module"></span>
+    <span id="astropop-framedata-cache-manager-module"></span>
+    <span id="astropop-framedata-package"></span>
+    <span id="astropop.framedata.cache_manager.BaseTempDir"></span>
+    <span id="astropop.framedata.cache_manager.CACHE_DIR"></span>
+    <span id="astropop.framedata.cache_manager.DELETE_ON_EXIT"></span>
+    <span id="classes"></span>
+    <span id="functions"></span>
+    <span id="id1"></span>
+    <span id="id2"></span>
+    <span id="id3"></span>
+    <span id="module-astropop.config"></span>
+    <span id="module-astropop.framedata"></span>
+    <span id="module-astropop.framedata.cache_manager"></span>
