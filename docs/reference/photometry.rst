@@ -1,20 +1,17 @@
-.. include:: ../references.txt
+:orphan:
 
 Photometry
 ==========
 
-Guide: :doc:`../reduction/photometry`.
+Current chapter
+---------------
 
-.. automodapi:: astropop.photometry
-    :no-inheritance-diagram:
+Continue with :doc:`../modules/photometry/index` for the maintained documentation.
 
-.. autoclass:: astropop.photometry.aperture.PhotometryFlags
-    :members:
-    :exclude-members: dtype
+.. raw:: html
 
-.. currentmodule:: None
-
-.. py:attribute:: astropop.photometry.aperture.PhotometryFlags.dtype
-    :value: numpy.uint16
-
-    Unsigned 16-bit storage type used for photometry flags.
+    <span id="astropop-photometry-package"></span>
+    <span id="astropop.photometry.aperture.PhotometryFlags"></span>
+    <span id="astropop.photometry.aperture.PhotometryFlags.dtype"></span>
+    <span id="functions"></span>
+    <span id="module-astropop.photometry"></span>

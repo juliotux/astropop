@@ -1,17 +1,12 @@
-.. include:: ../references.txt
+:orphan:
 
 Image Arithmetic and Combining
 ==============================
 
-The guides now have separate entry points:
+Current chapter
+---------------
 
-* :doc:`../how_to/image_arithmetic` covers operands, units, uncertainty,
-  flags, headers and in-place results.
-* :doc:`../how_to/image_combination` covers rejection, estimators, dtype,
-  chunk memory and disk caching.
-* :doc:`../reference/image` contains the exact API contracts.
-
-This page retains its URL and legacy anchors for existing links.
+Continue with :doc:`../modules/image/index` for the maintained documentation.
 
 .. raw:: html
 
@@ -32,8 +27,4 @@ This page retains its URL and legacy anchors for existing links.
     <span id="masks-and-rejection"></span>
     <span id="module-astropop.image.imarith"></span>
     <span id="module-astropop.image.imcombine"></span>
-    <span id="pst-page-navigation-heading-2"></span>
-    <span id="pst-page-toc-nav"></span>
-    <span id="pst-secondary-sidebar"></span>
-    <span id="pst-secondary-sidebar-modal"></span>
     <span id="units-and-uncertainty-propagation"></span>

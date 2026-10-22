@@ -1,22 +1,27 @@
-.. include:: ../references.txt
+:orphan:
 
 Image reduction
 ===============
 
-Guide: :doc:`../reduction/imarith`.
+Current chapter
+---------------
 
-.. automodapi:: astropop.image.imarith
-    :no-inheritance-diagram:
+Continue with :doc:`../modules/image/index` for the maintained documentation.
 
-.. automodapi:: astropop.image.imcombine
-    :no-inheritance-diagram:
+.. raw:: html
 
-Guide: :doc:`../reduction/ccdprocessing`.
-
-.. automodapi:: astropop.image.processing
-    :no-inheritance-diagram:
-
-Guide: :doc:`../reduction/registering`.
-
-.. automodapi:: astropop.image.register
-    :no-inheritance-diagram:
+    <span id="astropop-image-imarith-module"></span>
+    <span id="astropop-image-imcombine-module"></span>
+    <span id="astropop-image-processing-module"></span>
+    <span id="astropop-image-register-module"></span>
+    <span id="classes"></span>
+    <span id="functions"></span>
+    <span id="id1"></span>
+    <span id="id2"></span>
+    <span id="id3"></span>
+    <span id="id4"></span>
+    <span id="id5"></span>
+    <span id="module-astropop.image.imarith"></span>
+    <span id="module-astropop.image.imcombine"></span>
+    <span id="module-astropop.image.processing"></span>
+    <span id="module-astropop.image.register"></span>
