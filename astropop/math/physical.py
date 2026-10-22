@@ -230,7 +230,7 @@ def equal_within_errors(
     Notes
     -----
     - We consider two numbers equal within errors when
-      number1 - number2 <= error1 + error2
+      abs(number1 - number2) <= error1 + error2
     - Incompatible units means different numbers.
     """
     qf1, qf2 = [convert_to_qfloat(i) for i in (qf1, qf2)]

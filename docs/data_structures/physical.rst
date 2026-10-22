@@ -41,6 +41,64 @@ not that a measurement has infinite precision::
     >>> print('Default uncertainty:', QFloat(1, unit='m').uncertainty)
     Default uncertainty: 0.0
 
+Construction helpers and array access
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``qfloat(value, uncertainty, unit)`` is the function form of the QFloat
+constructor; it returns the same container. Array uncertainties must match the
+nominal array shape, rather than broadcasting a scalar error. Standard errors
+are stored as absolute values. Passing an existing QFloat to ``QFloat(existing)``
+copies its nominal/error arrays and unit; do not supply replacement uncertainty
+or unit arguments in that form. Use ``to`` for a physical unit conversion::
+
+    >>> from astropop.math import qfloat
+    >>> measured = qfloat([10, 20], [1., 2.], 'cm')
+    >>> copied = QFloat(measured)
+    >>> measured.nominal[0] = 11
+    >>> print('Original and copied first value:', measured.nominal[0], copied.nominal[0])
+    Original and copied first value: 11.0 10.0
+    >>> selected = measured[1:]
+    >>> print('Selected values:', selected.nominal.tolist(), str(selected.unit))
+    Selected values: [20.0] cm
+    >>> measured[0] = QFloat(0.5, 0.01, 'm')
+    >>> print('Assigned values:', measured.nominal.tolist())
+    Assigned values: [50.0, 20.0]
+    >>> print('Assigned uncertainties:', measured.uncertainty.tolist())
+    Assigned uncertainties: [1.0, 2.0]
+
+Indexing returns a QFloat carrying the selected uncertainties and unit; indexed
+assignment converts compatible units and updates both arrays. ``nominal`` and
+``uncertainty`` expose the stored arrays, so editing their elements edits the
+measurement. The constructor copy above remains independent. Uncertainty arrays
+retain their inferred NumPy dtype; use floating-point errors when indexed
+assignment must preserve fractional uncertainties. For an Astropy
+Quantity, explicitly pass ``quantity.value`` and ``unit=quantity.unit`` and
+supply any measurement uncertainty separately.
+
+Updating a measurement
+^^^^^^^^^^^^^^^^^^^^^^
+
+``value`` is a read-only alias for accessing ``nominal``; ``std_dev`` is a
+read/write alias of ``uncertainty``. Replacing the ``nominal`` property resets
+its uncertainties to zero while retaining its unit. Set the errors afterward
+when replacing nominal measurements. ``shape`` and ``size`` describe the
+nominal array, and ``reset`` replaces values, uncertainties and unit together::
+
+    >>> measured.nominal = [7, 8]
+    >>> print('Errors after replacing nominal:', measured.std_dev.tolist())
+    Errors after replacing nominal: [0.0, 0.0]
+    >>> measured.std_dev = [0.7, 0.8]
+    >>> print('Values:', measured.value.tolist(), '; shape:', measured.shape, '; size:', measured.size)
+    Values: [7.0, 8.0] ; shape: (2,) ; size: 2
+    >>> measured.reset(1.5, 0.1, 's')
+    >>> print(f'Reset measurement: {measured.nominal:.1f} +/- {measured.uncertainty:.1f} {measured.unit}')
+    Reset measurement: 1.5 +/- 0.1 s
+
+When omitted from ``reset``, uncertainty becomes zero and unit becomes
+dimensionless. Setting the unit property alone changes the unit label; it is
+not a numerical conversion. Use ``to`` or ``<<`` when the numerical scale must
+change with the unit.
+
 Printing and String Representation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
