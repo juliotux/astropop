@@ -17,12 +17,17 @@ same order::
 
     >>> import numpy as np
     >>> from astropop.math.array import iraf_indices, xy2r, trim_array, all_equal
+
     >>> data = np.arange(25).reshape(5, 5)
     >>> x, y = iraf_indices(data)
     >>> radii, values = xy2r(x, y, data, 2, 2)
+
     >>> radii[12], values[12]
     (np.float64(0.0), np.int64(12))
+
+    >>> # The returned center is relative to the cutout, not the original image.
     >>> cutout, cx, cy = trim_array(data, 2, (2, 2))
+
     >>> cutout.shape, (cx, cy)
     ((3, 3), (1, 1))
     >>> bool(all_equal(np.ones((2, 2))))
@@ -46,13 +51,17 @@ is an additive constant background. Choose the profile's
 parameters explicitly, and use Astropy's fitting tools if a fit is required::
 
     >>> from astropop.math.models import PSFGaussian2D, PSFMoffat2D
+
     >>> gaussian = PSFGaussian2D(x_0=2, y_0=2, flux=100, sigma_x=1, sigma_y=1, sky=10)
     >>> profile = gaussian(x, y)
+
     >>> print('profile.shape:', profile.shape)
     profile.shape: (5, 5)
     >>> print(f'Central pixel: {profile[2, 2]:.2f}')
     Central pixel: 25.92
+
     >>> moffat = PSFMoffat2D(width=2, power=2.5)
+
     >>> print(f'Moffat FWHM: {float(moffat.fwhm):.2f} pixels')
     Moffat FWHM: 2.26 pixels
 
@@ -77,6 +86,8 @@ expose the corresponding FWHM relations.
     from astropop.math.models import PSFGaussian2D, PSFMoffat2D
 
     fwhm, flux, power = 4., 1000., 2.5
+
+    # Give both profiles the same FWHM and total flux for the wing comparison.
     sigma = fwhm / (2 * np.sqrt(2 * np.log(2)))
     width = fwhm / (2 * np.sqrt(2**(1 / power) - 1))
     radius = np.linspace(0, 5 * fwhm, 1500)
@@ -86,12 +97,15 @@ expose the corresponding FWHM relations.
     # annotations for display, which can alter Astropy's inferred input units.
     profiles = [model.evaluate(radius, np.zeros_like(radius), *model.parameters)
                 for model in (gaussian, moffat)]
+
+    # Integrate the circular profiles analytically to compare enclosed flux.
     fractions = [1 - np.exp(-radius**2 / (2 * sigma**2)),
                  1 - (1 + (radius / width)**2)**(1 - power)]
     fig, axes = plt.subplots(1, 2, figsize=(9, 3.6), layout='constrained')
     for name, profile, fraction in zip(('Gaussian', 'Moffat'), profiles, fractions):
         axes[0].semilogy(radius / fwhm, profile, label=name)
         axes[1].plot(radius / fwhm, fraction, label=name)
+
     axes[0].set(xlabel='Radius / FWHM', ylabel='Surface brightness (flux / pixel²)',
                 title='Equal integrated flux; different peaks', ylim=(0.01, 100))
     axes[1].set(xlabel='Aperture radius / FWHM', ylabel='Enclosed flux / total flux',
@@ -117,11 +131,13 @@ conventions above still apply::
 
     >>> from astropop.math.models import (PSFGaussian1D, PSFGaussianRadial,
     ...                                   PSFMoffat1D, PSFMoffatRadial)
+
     >>> coordinates = np.array([0., 1., 2.])
     >>> profiles = [PSFGaussian1D(x_0=0, flux=100, sigma=1, sky=10),
     ...             PSFGaussianRadial(flux=100, sigma=1, sky=10),
     ...             PSFMoffat1D(x_0=0, flux=100, width=2, power=2.5, sky=10),
     ...             PSFMoffatRadial(flux=100, width=2, power=2.5, sky=10)]
+
     >>> for model in profiles:
     ...     print(type(model).__name__, np.round(model(coordinates), 3).tolist())
     PSFGaussian1D [49.894, 34.197, 15.399]
@@ -139,6 +155,7 @@ profile; the Moffat normalization helper is for two dimensions.
 For example, inspect circular 2D normalization and the widths directly::
 
     >>> from astropop.math.models import GaussianEquations, MoffatEquations
+
     >>> print(f'Gaussian 2D normalization: {GaussianEquations.normalize_2d(1, 1):.4f}')
     Gaussian 2D normalization: 0.1592
     >>> print(f'Moffat 2D normalization: {MoffatEquations.normalize(2, 2.5):.4f}')
@@ -162,6 +179,7 @@ Short identifiers
 hex digest, and returns the first ``size`` characters::
 
     >>> from astropop.math.hasher import hasher
+
     >>> hasher('abc')
     'ba7816bf'
 

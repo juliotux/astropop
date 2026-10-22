@@ -38,14 +38,19 @@ Estimate the background beneath one isolated Gaussian star::
 
     >>> import numpy as np
     >>> from astropop.photometry import background, daofind, aperture_photometry
+
     >>> rng = np.random.default_rng(42)
     >>> y, x = np.indices((128, 128))
     >>> image = 100 + rng.normal(0, 2, (128, 128))
     >>> image += 500 * np.exp(-((x - 64.)**2 + (y - 64.)**2) / (2 * 2.**2))
     >>> sky, noise = background(image, box_size=32)
+
     >>> print(f'Background: {sky:.1f}; RMS: {noise:.1f}')
     Background: 100.0; RMS: 2.0
+
+    >>> # Request local maps when one background value cannot describe the field.
     >>> sky_map, noise_map = background(image, box_size=32, global_bkg=False)
+
     >>> print('Background and RMS shapes:', sky_map.shape, noise_map.shape)
     Background and RMS shapes: (128, 128) (128, 128)
 
@@ -72,6 +77,7 @@ For the star above, a Gaussian width of two pixels corresponds to
 :math:`\mathrm{FWHM}=2\sqrt{2\ln 2}\,\sigma\simeq4.71` pixels::
 
     >>> sources = daofind(image, threshold=5, background=sky, noise=noise, fwhm=4.71)
+
     >>> print('len(sources):', len(sources))
     len(sources): 1
     >>> print(f"Centroid: ({sources['x'][0]:.2f}, {sources['y'][0]:.2f})")
@@ -96,7 +102,9 @@ a circular aperture or a complete stellar profile. Detect the same isolated
 star without imposing a Gaussian detection kernel::
 
     >>> from astropop.photometry import segfind, starfind, median_fwhm
+
     >>> segments = segfind(image, threshold=5, background=sky, noise=noise, npix=5)
+
     >>> print('Segments:', len(segments))
     Segments: 1
 
@@ -112,6 +120,7 @@ re-estimates the width rather than using the supplied ``fwhm`` argument as a
 fixed kernel size::
 
     >>> refined = starfind(image, threshold=5, background=sky, noise=noise)
+
     >>> print('Refined sources:', len(refined))
     Refined sources: 1
 
@@ -131,6 +140,7 @@ profile definitions are described in :doc:`../utilities/math`.
 Fit the detected isolated star with the Gaussian model::
 
     >>> width = median_fwhm(image, refined['x'], refined['y'], model='gaussian')
+
     >>> print(f'Fitted Gaussian FWHM: {width:.2f} pixels')
     Fitted Gaussian FWHM: 4.71 pixels
 
@@ -148,7 +158,9 @@ The wrappers do not share an empty-table return convention. ``segfind`` and
 ``NoDetectionsWarning``. A blank field illustrates the segmentation case::
 
     >>> from astropop.photometry import segfind
+
     >>> blank = np.zeros((32, 32))
+
     >>> try:
     ...     empty = segfind(blank, threshold=5, background=0., noise=1.)
     ... except ValueError as error:
@@ -178,6 +190,7 @@ estimates and subtracts during measurement::
     >>> photometry = aperture_photometry(image, [64.], [64.], r=6.,
     ...                                  r_ann=(12., 18.), bkg_error=noise, gain=1.)
     >>> flux, error = photometry['flux'][0], photometry['flux_error'][0]
+
     >>> print(f'Flux: {flux:.0f}; relative error: {100 * error / flux:.0f}%')
     Flux: 12429; relative error: 1%
 
@@ -202,6 +215,8 @@ because their treatment of fractional boundary-pixel variance differs.
     sky, noise = background(pixels, box_size=32)
     measured = aperture_photometry(pixels, [64.], [64.], r=6., r_ann=(12., 18.),
                                    bkg_error=noise, gain=1.)
+
+    # Summarize the synthetic star in one-pixel radial bins for the profile panel.
     profile = [np.median(pixels[(radius >= i) & (radius < i + 1)]) for i in range(23)]
     fig, axes = plt.subplots(1, 2, figsize=(9, 4), layout='constrained')
     axes[0].imshow(pixels, origin='lower', cmap='gray', vmin=94, vmax=180)
@@ -209,6 +224,7 @@ because their treatment of fractional boundary-pixel variance differs.
                                  (12, 'C1', 'Sky annulus'), (18, 'C1', None)]:
         axes[0].add_patch(Circle((64, 64), value, fill=False, color=color,
                                  linewidth=1.5, label=label))
+
     axes[0].set(xlim=(42, 86), ylim=(42, 86), xlabel='x (pixel)', ylabel='y (pixel)',
                 title=f"Measured flux: {measured['flux'][0]:.0f} ADU")
     axes[0].legend(loc='upper right', fontsize='small')
@@ -244,9 +260,11 @@ without another local subtraction. The sky uncertainty remains even though its
 mean level was removed; keep supplying ``bkg_error``. Here the global scalar
 estimate is adequate for the example's uniform sky::
 
+    >>> # Without an annulus, remove the sky before measuring aperture flux.
     >>> residual = image - sky
     >>> no_annulus = aperture_photometry(residual, [64.], [64.], r=6.,
     ...                                  r_ann=None, bkg_error=noise, gain=1.)
+
     >>> print(f'Background-subtracted flux: {no_annulus["flux"][0]:.0f}')
     Background-subtracted flux: 12419
     >>> print('Local sky:', no_annulus['bkg'][0])
@@ -275,10 +293,13 @@ electrons per ADU, the example's background-subtracted flux doubles::
 
     >>> detector_gain = 2.  # electrons per ADU, treated as exact
     >>> electron_image = residual * detector_gain
+
+    >>> # Rescale the background noise along with the pixels when changing units.
     >>> electron_noise = noise * detector_gain
     >>> in_electrons = aperture_photometry(electron_image, [64.], [64.], r=6.,
     ...                                    r_ann=None, gain=1., bkg_error=electron_noise)
     >>> ratio = in_electrons['flux'][0] / no_annulus['flux'][0]
+
     >>> print(f'Electron/ADU flux ratio: {ratio:.3f}')
     Electron/ADU flux ratio: 2.000
 
@@ -312,12 +333,16 @@ aperture. This candidate starts one pixel off the star; allowing only 0.1 pixel
 rejects the centroid's larger move and retains the input position::
 
     >>> from astropop.photometry.aperture import PhotometryFlags as P
+
     >>> recentered = aperture_photometry(image, [65.], [64.], r=6.,
     ...                                   r_ann=(12., 18.), bkg_error=noise,
     ...                                   recenter_limit=0.1)
+
     >>> print('Input/adopted x:', recentered['original_x'][0], recentered['x'][0])
     Input/adopted x: 65.0 65.0
+
     >>> reasons = [flag.name for flag in P if int(recentered['flags'][0]) & flag.value]
+
     >>> print('Recentering flags:', reasons)
     Recentering flags: ['RECENTERING_FAILED']
 
@@ -350,11 +375,14 @@ The routine records both locations in the source's flags. Decode each set bit
 by name so simultaneous conditions remain visible::
 
     >>> bad_pixels = np.zeros(image.shape, dtype=bool)
+
+    >>> # Remove a core pixel to show that masking can also remove real stellar flux.
     >>> bad_pixels[64, 64] = True
     >>> bad_pixels[64, 78] = True
     >>> masked = aperture_photometry(image, [64.], [64.], r=6.,
     ...                              r_ann=(12., 18.), bkg_error=noise, mask=bad_pixels)
     >>> reasons = [flag.name for flag in P if int(masked['flags'][0]) & flag.value]
+
     >>> print('Measurement flags:', reasons)
     Measurement flags: ['REMOVED_PIXEL_IN_APERTURE', 'REMOVED_PIXEL_IN_ANNULUS']
     >>> print(f'Flux with the core pixel removed: {masked["flux"][0]:.0f}')

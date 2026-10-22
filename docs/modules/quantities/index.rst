@@ -28,14 +28,18 @@ not that a measurement has infinite precision::
 
     >>> import numpy as np
     >>> from astropop.math import QFloat
+
     >>> q = QFloat(1.0, 0.001, 'm')
+
     >>> print('Nominal:', q.nominal)
     Nominal: 1.0
     >>> print('Standard uncertainty:', q.uncertainty)
     Standard uncertainty: 0.001
     >>> print('Unit:', q.unit)
     Unit: m
+
     >>> samples = QFloat([1, 2, 3], [0.1, 0.2, 0.3], 'm/s')
+
     >>> print('Array shape:', samples.shape)
     Array shape: (3,)
     >>> print('Default uncertainty:', QFloat(1, unit='m').uncertainty)
@@ -52,15 +56,22 @@ copies its nominal/error arrays and unit; do not supply replacement uncertainty
 or unit arguments in that form. Use ``to`` for a physical unit conversion::
 
     >>> from astropop.math import qfloat
+
     >>> measured = qfloat([10, 20], [1., 2.], 'cm')
     >>> copied = QFloat(measured)
     >>> measured.nominal[0] = 11
+
     >>> print('Original and copied first value:', measured.nominal[0], copied.nominal[0])
     Original and copied first value: 11.0 10.0
+
     >>> selected = measured[1:]
+
     >>> print('Selected values:', selected.nominal.tolist(), str(selected.unit))
     Selected values: [20.0] cm
+
+    >>> # Assignment converts both the value and its uncertainty to the array's unit.
     >>> measured[0] = QFloat(0.5, 0.01, 'm')
+
     >>> print('Assigned values:', measured.nominal.tolist())
     Assigned values: [50.0, 20.0]
     >>> print('Assigned uncertainties:', measured.uncertainty.tolist())
@@ -85,12 +96,17 @@ when replacing nominal measurements. ``shape`` and ``size`` describe the
 nominal array, and ``reset`` replaces values, uncertainties and unit together::
 
     >>> measured.nominal = [7, 8]
+
     >>> print('Errors after replacing nominal:', measured.std_dev.tolist())
     Errors after replacing nominal: [0.0, 0.0]
+
     >>> measured.std_dev = [0.7, 0.8]
+
     >>> print('Values:', measured.value.tolist(), '; shape:', measured.shape, '; size:', measured.size)
     Values: [7.0, 8.0] ; shape: (2,) ; size: 2
+
     >>> measured.reset(1.5, 0.1, 's')
+
     >>> print(f'Reset measurement: {measured.nominal:.1f} +/- {measured.uncertainty:.1f} {measured.unit}')
     Reset measurement: 1.5 +/- 0.1 s
 
@@ -108,9 +124,12 @@ place; it does not round the stored arrays. Inspect the properties when a
 numeric value, rather than formatted text, is required::
 
     >>> formatted = QFloat(1.0583225, 0.0031495756, 'cm')
+
     >>> print(formatted)
     1.058+-0.003 cm
+
     >>> formatted.sig_digits = 2
+
     >>> print(formatted)
     1.0583+-0.0031 cm
     >>> print('Stored nominal:', formatted.nominal)
@@ -125,11 +144,14 @@ arithmetic. Incompatible conversion raises Astropy ``UnitConversionError``::
 
     >>> distance = QFloat(1000, 0.01, 'm')
     >>> kilometers = distance.to('km')
+
     >>> print(f'Distance: {kilometers.nominal:.3f} +/- {kilometers.uncertainty:.5f} {kilometers.unit}')
     Distance: 1.000 +/- 0.00001 km
     >>> print('Centimeters:', (distance << 'cm').nominal)
     Centimeters: 100000.0
+
     >>> from astropy.units import UnitConversionError
+
     >>> try:
     ...     distance.to('s')
     ... except UnitConversionError:
@@ -157,10 +179,15 @@ units; multiplication and division form the resulting unit::
 
     >>> first = QFloat(1, 0.1, 'm')
     >>> second = QFloat(200, 10, 'cm')
+
+    >>> # Convert compatible units before adding independent measurement variances.
     >>> total = first + second
+
     >>> print(f'Sum: {total.nominal:.1f} +/- {total.uncertainty:.3f} {total.unit}')
     Sum: 3.0 +/- 0.141 m
+
     >>> speed = first / QFloat(2, 0.1, 's')
+
     >>> print(f'Speed: {speed.nominal:.2f} +/- {speed.uncertainty:.3f} {speed.unit}')
     Speed: 0.50 +/- 0.056 m / s
 
@@ -172,6 +199,7 @@ Do not assume NumPy view sharing: transformations returning QFloat construct
 new arrays. Shape queries return ordinary shape information::
 
     >>> reshaped = np.reshape(samples, (3, 1))
+
     >>> print('Reshaped nominal:', reshaped.nominal.tolist())
     Reshaped nominal: [[1.0], [2.0], [3.0]]
     >>> print('Reshaped errors:', reshaped.uncertainty.tolist())
@@ -236,8 +264,12 @@ Inspect nominal values, uncertainties and units from each reduction::
     >>> import numpy as np
     >>> from astropy import units as u
     >>> from astropop.math import QFloat
+
     >>> q = QFloat([[1, 3], [5, 7]], [[2, 2], [2, 2]], 'adu')
+
+    >>> # Sum propagates supplied errors; mean and median below use sample scatter.
     >>> total = np.sum(q, axis=0)
+
     >>> print('total.nominal:', np.round(total.nominal, 6))
     total.nominal: [ 6. 10.]
     >>> print('total.uncertainty:', np.round(total.uncertainty, 6))
@@ -255,13 +287,19 @@ Inspect nominal values, uncertainties and units from each reduction::
     median nominal: [2. 6.]
     result.uncertainty: [0.707107 0.707107]
     result.unit: adu
+
     >>> missing = QFloat([1, 3, 8, np.nan], [100, 100, 100, 100], 'adu')
+
+    >>> # NaN-aware reductions omit missing nominal values from the estimate.
     >>> average = np.nanmean(missing)
+
     >>> print('average.nominal:', np.round(average.nominal, 6))
     average.nominal: 4.0
     >>> print('average.uncertainty:', np.round(average.uncertainty, 6))
     average.uncertainty: 1.699673
+
     >>> middle = np.nanmedian(missing)
+
     >>> print('middle.nominal:', np.round(middle.nominal, 6))
     middle.nominal: 3.0
     >>> print('middle.uncertainty:', np.round(middle.uncertainty, 6))
@@ -276,6 +314,7 @@ Inspect nominal values, uncertainties and units from each reduction::
     values: [2. 2.]
     type(values).__name__: ndarray
     values: [2. 2.]
+
     >>> for reduce in (np.var, np.nanvar):
     ...     print(reduce.__name__, np.round(reduce(q, axis=0), 6))
     var [4. 4.]
@@ -295,6 +334,7 @@ functions require an angular unit; convert degrees or radians explicitly::
 
     >>> angle = QFloat(30, 1, 'deg')
     >>> sine = np.sin(angle)
+
     >>> print(f'sin(30 deg): {sine.nominal:.3f} +/- {sine.uncertainty:.3f}')
     sin(30 deg): 0.500 +/- 0.015
 
@@ -311,6 +351,7 @@ radians. These are the implemented conventions, including the hyperbolic
 functions::
 
     >>> inverse = np.arcsin(QFloat(0.5, 0.01))
+
     >>> print(f'Angle: {inverse.nominal:.3f} +/- {inverse.uncertainty:.3f} {inverse.unit}')
     Angle: 0.524 +/- 0.012 rad
 
@@ -331,6 +372,7 @@ units compare unequal. ``!=`` negates that result::
     >>> first = QFloat(1, 0.1, 'm')
     >>> equivalent = QFloat(100, 10, 'cm')
     >>> different_error = QFloat(1, 0.2, 'm')
+
     >>> print('Equivalent measurements:', first == equivalent)
     Equivalent measurements: True
     >>> print('Different uncertainty:', first == different_error)
@@ -353,6 +395,7 @@ difference; it does not establish that two measurements have the same physical
 value::
 
     >>> from astropop.math.physical import equal_within_errors
+
     >>> print('Intervals overlap:', equal_within_errors(first, QFloat(1.15, 0.1, 'm')))
     Intervals overlap: True
 

@@ -31,8 +31,10 @@ does not invent photometric measurements::
     >>> from astropy.table import Table
     >>> from astropop.catalogs import SourcesCatalog
     >>> from astropop.math import QFloat
+
     >>> astrometric = SourcesCatalog(ids=['a', 'b', 'c'], ra=[1, 2, 3],
     ...                             dec=[4, 5, 6], unit='deg')
+
     >>> print(astrometric.table())
      id  ra dec
         deg deg
@@ -55,6 +57,7 @@ for each band, filled with zeros in this case::
     ...                              mag={'g': [12, 13, 14],
     ...                                   'r': [11, 12, 13],
     ...                                   'i': [10, 11, 12]})
+
     >>> print(photometric.table()['id', 'g', 'g_error', 'r', 'i'])
      id  g   g_error  r    i
     --- ---- ------- ---- ----
@@ -77,6 +80,7 @@ The constructor separates each array into its magnitude and error columns::
     ...                            mag={'g': QFloat([12, 13, 14], [0.1, 0.2, 0.3]),
     ...                                 'r': QFloat([11, 12, 13], [0.2, 0.3, 0.4]),
     ...                                 'i': QFloat([10, 11, 12], [0.3, 0.4, 0.5])})
+
     >>> print(uncertain.table()['id', 'g', 'g_error', 'r', 'r_error', 'i', 'i_error'])
      id  g   g_error  r   r_error  i   i_error
     --- ---- ------- ---- ------- ---- -------
@@ -100,6 +104,7 @@ a quality code beside a catalog with one measured band::
     ...                      dec=[4, 5, 6], unit='deg',
     ...                      mag={'g': QFloat([12, 13, 14], [0.1, 0.2, 0.3])},
     ...                      query_table=auxiliary)
+
     >>> print('Sources:', len(cat))
     Sources: 3
     >>> print('Bands:', cat.filters)
@@ -172,8 +177,12 @@ from the auxiliary query table, not from ``table()``::
     Query quality: [0, 1, 0]
     >>> print('Selected IDs:', cat[np.array([True, False, True])].sources_id().tolist())
     Selected IDs: ['a', 'c']
+
     >>> exported = cat.table()
+
+    >>> # The exported table is a copy; editing it leaves the catalog unchanged.
     >>> exported['id'][0] = 'z'
+
     >>> print('Original IDs:', cat.sources_id().tolist())
     Original IDs: ['a', 'b', 'c']
 
@@ -191,6 +200,7 @@ Empty catalogs and invalid coordinates
 An empty local catalog is valid storage, but not a nearest-neighbor reference::
 
     >>> empty = SourcesCatalog(ids=[], ra=[], dec=[], unit='deg')
+
     >>> print('Empty source count:', len(empty))
     Empty source count: 0
     >>> print('Empty summary rows:', len(empty.table()))
@@ -223,11 +233,13 @@ alone does not identify a miss. The original catalog is unchanged::
     >>> import numpy as np
     >>> from astropy.table import Table
     >>> from astropop.catalogs import SourcesCatalog
+
     >>> cat = SourcesCatalog(ids=['A'], ra=[10], dec=[20], unit='deg',
     ...                      mag={'g': [12]},
     ...                      query_table=Table({'label': ['A'], 'count': [9]}))
     >>> matched = cat.match_objects([10, 180, 10], [20, -40, 20],
     ...                             limit_angle='1 arcsec')
+
     >>> print('len(matched):', len(matched))
     len(matched): 3
     >>> print('matched.sources_id().tolist():', matched.sources_id().tolist())
@@ -240,7 +252,10 @@ alone does not identify a miss. The original catalog is unchanged::
     matched.query_table['count'].tolist(): [9, 0, 9]
     >>> print("matched.query_table['label'].tolist():", matched.query_table['label'].tolist())
     matched.query_table['label'].tolist(): ['A', '', 'A']
+
+    >>> # Unmatched inputs retain a row with an empty identifier; select matches explicitly.
     >>> successful = matched.sources_id() != ''
+
     >>> print('len(matched[successful]):', len(matched[successful]))
     len(matched[successful]): 2
     >>> print('cat.sources_id().tolist():', cat.sources_id().tolist())
@@ -253,6 +268,7 @@ example creates a source moving approximately one arcsecond east per year::
 
     >>> from astropy import units as u
     >>> from astropy.time import Time
+
     >>> moving = SourcesCatalog(ids=['fast'], ra=[10] * u.deg, dec=[20] * u.deg,
     ...                         pm_ra_cosdec=[1000] * u.mas / u.yr,
     ...                         pm_dec=[0] * u.mas / u.yr,
@@ -260,13 +276,18 @@ example creates a source moving approximately one arcsecond east per year::
     ...                         radial_velocity=[0] * u.km / u.s,
     ...                         obstime=Time('J2000'))
     >>> target_epoch = Time('J2010')
+
+    >>> # Propagate the reference position to the observation epoch before matching.
     >>> target = moving.get_coordinates(target_epoch)
     >>> at_epoch = moving.match_objects(target.ra.deg, target.dec.deg,
     ...                                 '0.1 arcsec', obstime=target_epoch)
+
     >>> print('at_epoch.sources_id().tolist():', at_epoch.sources_id().tolist())
     at_epoch.sources_id().tolist(): ['fast']
+
     >>> at_original = moving.match_objects(target.ra.deg, target.dec.deg,
     ...                                    '0.1 arcsec')
+
     >>> print('at_original.sources_id().tolist():', at_original.sources_id().tolist())
     at_original.sources_id().tolist(): ['']
 
@@ -288,6 +309,7 @@ columns. Reconstruct the catalog explicitly on reload::
     >>> from astropy.table import QTable
     >>> from pathlib import Path
     >>> from tempfile import TemporaryDirectory
+
     >>> with TemporaryDirectory() as directory:
     ...     path = Path(directory) / 'moving_reference.ecsv'
     ...     snapshot = QTable({'id': moving.sources_id(), 'coords': moving.skycoord()})
@@ -312,6 +334,7 @@ Astropy cannot propagate them; it does not relabel their epoch::
 
     >>> fixed = SourcesCatalog(ids=['fixed'], ra=[10], dec=[20], unit='deg')
     >>> unchanged = fixed.get_coordinates(target_epoch)
+
     >>> print('Position (deg):', unchanged.ra.deg.tolist(), unchanged.dec.deg.tolist())
     Position (deg): [10.0] [20.0]
     >>> print('Reference epoch:', unchanged.obstime)

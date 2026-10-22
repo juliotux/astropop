@@ -38,10 +38,12 @@ Subtract a uniform 100 ADU bias from a 1200 ADU image::
     >>> import numpy as np
     >>> from astropop.framedata import FrameData
     >>> from astropop.image.processing import subtract_bias, subtract_dark, flat_correct
+
     >>> science = FrameData(np.full((4, 4), 1200.), unit='adu', uncertainty=5.)
     >>> bias = FrameData(np.full((4, 4), 100.), unit='adu', uncertainty=1.)
     >>> dark = FrameData(np.full((4, 4), 10.), unit='adu', uncertainty=0.5)
     >>> corrected = subtract_bias(science, bias)
+
     >>> print(f'Bias-subtracted pixel: {corrected.data[0, 0]:.0f} {corrected.unit}')
     Bias-subtracted pixel: 1100 adu
 
@@ -59,7 +61,9 @@ Exposure values are explicit arguments, not inferred from headers. Supply a
 nonzero dark exposure and use the same time unit for both arguments. A ten-ADU
 dark measured in ten seconds removes twenty ADU from a twenty-second image::
 
+    >>> # Scale the 10-second dark to the science exposure's 20 seconds.
     >>> corrected = subtract_dark(corrected, dark, dark_exposure=10, image_exposure=20)
+
     >>> print('corrected.data:', np.round(corrected.data, 6))
     corrected.data: [[1080. 1080. 1080. 1080.]
      [1080. 1080. 1080. 1080.]
@@ -84,6 +88,7 @@ changes::
 
     >>> flat = FrameData(np.full((4, 4), 2.))
     >>> calibrated = flat_correct(corrected, flat, norm_value=2.)
+
     >>> print('calibrated.data:', np.round(calibrated.data, 6))
     calibrated.data: [[1080. 1080. 1080. 1080.]
      [1080. 1080. 1080. 1080.]
@@ -115,6 +120,8 @@ with a physical unit changes the output unit according to division.
     response /= np.median(response)
     flat = FrameData(response)
     rng = np.random.default_rng(42)
+
+    # Simulate a science exposure twice as long as the dark master.
     raw = FrameData(bias.data + 2 * dark.data + response * signal
                     + rng.normal(0, 2, x.shape), unit='adu')
     subtracted = subtract_dark(subtract_bias(raw, bias), dark,
@@ -157,12 +164,16 @@ explicitly before converting the image to electrons::
 
     >>> from astropy import units as u
     >>> from astropop.image.processing import gain_correct
+
     >>> gain_e_per_adu, read_noise_e = 2., 4.
     >>> signal_adu = np.array([[1000.]])
+
+    >>> # Express both Poisson noise and read noise in ADU before adding variances.
     >>> sigma_adu = np.sqrt(np.maximum(signal_adu, 0) / gain_e_per_adu
     ...                     + (read_noise_e / gain_e_per_adu)**2)
     >>> measured_signal = FrameData(signal_adu, unit='adu', uncertainty=sigma_adu)
     >>> electrons = gain_correct(measured_signal, gain_e_per_adu * u.electron / u.adu)
+
     >>> print(f'Signal: {electrons.data[0, 0]:.0f} {electrons.unit}')
     Signal: 2000 electron
     >>> print(f'Standard uncertainty: {electrons.uncertainty[0, 0]:.2f} {electrons.unit}')
@@ -190,12 +201,18 @@ quality policy. This illustrative threshold of 0.1 rejects both the low-response
 and zero-response pixels and explicitly restores the merged flags::
 
     >>> from astropop.framedata import PixelMaskFlags as F
+
     >>> exposure = FrameData([[100., 100., 100.]], unit='adu')
     >>> response = FrameData([[1., 0.02, 0.]])
     >>> response.add_flags(F.MASKED | F.BAD, where=response.data < 0.1)
+
+    >>> # Retain the reason bits explicitly across the calibration helper.
     >>> quality = np.bitwise_or(exposure.flags, response.flags)
     >>> divided = flat_correct(exposure, response, min_value=0.1)
+
+    >>> # A denominator floor avoids extreme values; the saved flags still exclude defects.
     >>> divided.flags = quality
+
     >>> print('Finite intermediate values:', divided.data.tolist())
     Finite intermediate values: [[100.0, 1000.0, 1000.0]]
     >>> print('Excluded pixels:', divided.mask.tolist())
@@ -217,7 +234,9 @@ Python's zero-based, stop-exclusive slicing. It crops data, uncertainties, and
 flags together and slices an existing WCS::
 
     >>> from astropop.image.processing import trim_image
+
     >>> trimmed = trim_image(calibrated, x_slice=slice(1, 3), y_slice=slice(0, 3))
+
     >>> trimmed.shape
     (3, 2)
 
@@ -232,10 +251,12 @@ For example, clean a single sharp event in an otherwise uniform frame. This
 tests replacement and flag handling without simulating a real stellar field::
 
     >>> from astropop.image.processing import cosmics_lacosmic
+
     >>> pixels = np.full((32, 32), 100.)
     >>> pixels[16, 16] = 10000.
     >>> event = FrameData(pixels, unit='adu', uncertainty=4.)
     >>> cleaned = cosmics_lacosmic(event, gain=1., readnoise=4., niter=1)
+
     >>> print(f'Cleaned pixel: {cleaned.data[16, 16]:.1f} ADU')
     Cleaned pixel: 100.0 ADU
     >>> print('Cosmic-ray flag:', cleaned.mask_flags(F.COSMIC_RAY)[16, 16])

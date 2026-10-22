@@ -14,7 +14,9 @@ recipe makes a live query; its result count depends on the service:
 .. code-block:: python
 
     from astropop.catalogs import vizier
+
     catalog = vizier.ucac4('M1', radius='2 arcmin', band=['B', 'V'])
+
     print('Sources:', len(catalog))
     print('Bands:', catalog.filters)
     print(catalog.table()[:5])
@@ -31,6 +33,8 @@ Inspect packaged descriptions without a query:
 .. code-block:: python
 
     print(vizier.list_vizier_catalogs())
+
+    # Read the packaged catalog description without querying the service.
     print(vizier.ucac4.help())
 
 The help below is generated from the same bundled YAML files. It describes the
@@ -153,8 +157,10 @@ This also makes a live query:
 .. code-block:: python
 
     from astropop.catalogs.vizier import VizierSourcesCatalog
+
     custom = VizierSourcesCatalog('ucac4_custom.yml', (83.633, 22.0145),
                                   radius='2 arcmin', band=['B', 'V'])
+
     print('Configuration:', custom.name)
     print('Sources:', len(custom))
     print(custom.table()[:5])

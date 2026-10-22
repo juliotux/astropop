@@ -469,6 +469,8 @@ with the fitted parameters fixed. Its argument is the retarder position
     rng = np.random.default_rng(42)
     psi = np.arange(0, 360, 22.5)
     zi = quarterwave_model(psi, 0.05, -0.07, 0.08) + rng.normal(0, 0.005, len(psi))
+
+    # Split a fixed total flux according to the normalized beam difference.
     ordinary, extraordinary = 1e7 * (1 + zi) / 2, 1e7 * (1 - zi) / 2
     result = SLSDualBeamPolarimetry('quarterwave', zero=0).compute(
         psi, ordinary, extraordinary, np.sqrt(ordinary), np.sqrt(extraordinary))
@@ -491,6 +493,7 @@ component errors::
 
     >>> from astropop.math import QFloat
     >>> from astropop.polarimetry import StokesParameters
+
     >>> for q, u in ((0.001, 0.), (0., 0.001), (-0.001, 0.)):
     ...     low = StokesParameters('halfwave', q=QFloat(q, 0.002), u=QFloat(u, 0.002))
     ...     print(f'q={q:+.3f}, u={u:+.3f}: theta={low.theta.nominal:.1f} +/- {low.theta.uncertainty:.1f} deg')
@@ -519,11 +522,13 @@ Both work with pixel positions, independently of the flux-fitting API.
 Create a field with 80 pairs separated by ``(+25,+35)`` pixels::
 
     >>> import numpy as np
+
     >>> rng = np.random.default_rng(42)
     >>> base_x = rng.uniform(0, 950, 80)
     >>> base_y = rng.uniform(0, 950, 80)
     >>> x = np.concatenate((base_x, base_x + 25))
     >>> y = np.concatenate((base_y, base_y + 35))
+
     >>> print('Detections:', len(x), '; physical sources:', len(base_x))
     Detections: 160 ; physical sources: 80
 
@@ -541,7 +546,9 @@ preceding estimate; ``bins`` controls histogram resolution within each range.
 Estimate the displacement from the generated detections::
 
     >>> from astropop.polarimetry import estimate_dxdy
+
     >>> dx, dy = estimate_dxdy(x, y, dist_limit=50, steps=[50, 5, 3, 1], bins=100)
+
     >>> print(f'dx = {dx:.2f} pixels; dy = {dy:.2f} pixels')
     dx = -25.00 pixels; dy = -35.00 pixels
 
@@ -562,15 +569,22 @@ the supplied positions, with fields ``'o'`` for the starting detection and
 this indexing contract::
 
     >>> from astropop.polarimetry import match_pairs
+
+    >>> # Apply the same permutation to both coordinate arrays to preserve detections.
     >>> sorting = np.argsort(y)
     >>> x, y = x[sorting], y[sorting]
     >>> pairs = match_pairs(x, y, dx, dy, tolerance=2.)
+
     >>> print('Matched pairs:', len(pairs))
     Matched pairs: 80
+
     >>> n = 0
+
+    >>> # The pair entries are indices into the sorted detection arrays.
     >>> index_o, index_e = pairs['o'][n], pairs['e'][n]
     >>> x_o, y_o = x[index_o], y[index_o]
     >>> x_e, y_e = x[index_e], y[index_e]
+
     >>> print(f'Pair {n}: x_e-x_o={x_e-x_o:.1f}, y_e-y_o={y_e-y_o:.1f} pixels')
     Pair 0: x_e-x_o=25.0, y_e-y_o=35.0 pixels
 
@@ -597,6 +611,8 @@ to the neighbor at ``(x-dx,y-dy)``:
 
     base = np.array([[20, 20], [110, 30], [70, 100]])
     positions = np.vstack((base, base + [25, 35]))
+
+    # The matcher takes (x_o - x_e, y_o - y_e), opposite to the drawn arrows.
     pairs = match_pairs(positions[:, 0], positions[:, 1], -25, -35, tolerance=2)
     fig, ax = plt.subplots(figsize=(6, 4))
     for pair in pairs:
@@ -608,6 +624,7 @@ to the neighbor at ``(x-dx,y-dy)``:
                     arrowprops={'arrowstyle': '->', 'color': '0.4'})
         ax.annotate(f'o[{o}]', start, xytext=(-4, -12), textcoords='offset points')
         ax.annotate(f'e[{e}]', end, xytext=(4, 2), textcoords='offset points')
+
     ax.set(xlabel='x (pixel)', ylabel='y (pixel)', xlim=(0, 155), ylim=(0, 155),
            title='Neighbor offset: (-dx, -dy) = (+25, +35) pixel')
     ax.set_aspect('equal')

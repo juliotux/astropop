@@ -22,8 +22,10 @@ shape::
 
     >>> import numpy as np
     >>> from astropop.framedata import FrameData, PixelMaskFlags, read_framedata
+
     >>> frame = FrameData([[10, 20], [30, 40]], unit='adu', uncertainty=0.5,
     ...                   dtype='float32', meta={'OBJECT': 'Example'})
+
     >>> print('frame.shape:', frame.shape)
     frame.shape: (2, 2)
     >>> print('frame.size:', frame.size)
@@ -45,10 +47,15 @@ for an independent frame, or ``astype()`` to copy while changing dtype.
 Copies include metadata and any arrays enabled by the current configuration::
 
     >>> duplicate = frame.copy()
+
+    >>> # Change the copy to demonstrate that its pixels are independent.
     >>> duplicate.data[0, 0] = 99
+
     >>> print('frame.data[0, 0]:', frame.data[0, 0])
     frame.data[0, 0]: 10.0
+
     >>> converted = frame.astype('float64')
+
     >>> print('converted.dtype:', converted.dtype)
     converted.dtype: float64
 
@@ -74,7 +81,9 @@ Arithmetic and statistics
 Use ``imarith`` for arithmetic with units and uncertainty propagation::
 
     >>> from astropop.image.imarith import imarith
+
     >>> scaled = imarith(frame, 2, '*')
+
     >>> print('scaled.data:', np.round(scaled.data, 6))
     scaled.data: [[20. 40.]
      [60. 80.]]
@@ -102,11 +111,14 @@ Pass a dictionary or FITS header as ``meta`` (or its constructor alias
 FITS header and support normal keyword access::
 
     >>> frame.header['EXPTIME'] = (30.0, 'Exposure time in seconds')
+
     >>> print("frame.meta['EXPTIME']:", frame.meta['EXPTIME'])
     frame.meta['EXPTIME']: 30.0
+
     >>> frame.history = 'Created example image'
     >>> frame.history = ['Checked units', 'Checked uncertainty']
     >>> frame.comment = 'Demonstration frame'
+
     >>> print('frame.history[-1]:', frame.history[-1])
     frame.history[-1]: Checked uncertainty
 
@@ -133,12 +145,17 @@ expanded across the image. Convert uncertainty quantities to the data unit
 before assigning their numerical values::
 
     >>> from astropy import units as u
+
+    >>> # Convert uncertainty values to the data unit before passing the plain array.
     >>> errors = (np.full((2, 2), 10) * u.cm).to_value(u.m)
     >>> measured = FrameData(np.ones((2, 2)), unit='m', uncertainty=errors)
+
     >>> print('measured.get_uncertainty():', np.round(measured.get_uncertainty(), 6))
     measured.get_uncertainty(): [[0.1 0.1]
      [0.1 0.1]]
+
     >>> no_errors = FrameData(np.ones((2, 2)))
+
     >>> print('no_errors.get_uncertainty():', no_errors.get_uncertainty())
     no_errors.get_uncertainty(): None
     >>> print('no_errors.get_uncertainty(False):', np.round(no_errors.get_uncertainty(False), 6))
@@ -156,12 +173,17 @@ exclude it from operations that respect the mask::
 
     >>> frame.add_flags(PixelMaskFlags.SATURATED | PixelMaskFlags.MASKED,
     ...                 (0, 1))
+
     >>> print('frame.mask[0, 1]:', frame.mask[0, 1])
     frame.mask[0, 1]: True
     >>> print('frame.mask_flags(PixelMaskFlags.SATURATED)[0, 1]:', frame.mask_flags(PixelMaskFlags.SATURATED)[0, 1])
     frame.mask_flags(PixelMaskFlags.SATURATED)[0, 1]: True
+
     >>> frame.mask_pixels((1, 0))
+
+    >>> # Insert NaNs in a separate array; the stored pixel values stay intact.
     >>> masked_data = frame.get_masked_data()
+
     >>> print('Masked pixel:', masked_data[0, 1])
     Masked pixel: nan
     >>> print('frame.data[0, 1]:', frame.data[0, 1])
@@ -210,7 +232,9 @@ For example, set the option before creating any frames for the reduction::
     >>> from astropop.config import AstropopConfig
     >>> from astropop.framedata import FrameData
     >>> from astropop.image.imarith import imarith
+
     >>> previous = AstropopConfig.FRAMEDATA_DISABLE_UNCERTAINTY
+
     >>> try:
     ...     AstropopConfig.FRAMEDATA_DISABLE_UNCERTAINTY = True
     ...     minimal = FrameData(np.ones((100, 100)), uncertainty=0.5)
@@ -275,6 +299,7 @@ folder under the Astropy cache. ``enable_memmap()`` uses that configured folder;
 no explicit directory is required. To choose the location yourself::
 
     >>> from tempfile import TemporaryDirectory
+
     >>> with TemporaryDirectory() as directory:
     ...     cached = FrameData(np.ones((100, 100)), cache_folder=directory,
     ...                        use_memmap_backend=True)
@@ -305,8 +330,10 @@ For example, a QFloat image supplies nominal values, standard uncertainties,
 and units together::
 
     >>> from astropop.math.physical import QFloat
+
     >>> quantity_image = QFloat(np.ones((2, 2)), np.full((2, 2), 0.2), 'adu')
     >>> adapted = read_framedata(quantity_image, dtype='float32')
+
     >>> print('adapted.dtype:', adapted.dtype)
     adapted.dtype: float32
     >>> print('adapted.uncertainty:', np.round(adapted.uncertainty, 6))
@@ -329,6 +356,7 @@ Missing uncertainty or mask arrays produce no corresponding extension::
 
     >>> from pathlib import Path
     >>> from tempfile import TemporaryDirectory
+
     >>> with TemporaryDirectory() as directory:
     ...     filename = Path(directory) / 'example.fits'
     ...     frame.write(filename)
@@ -345,6 +373,7 @@ Missing uncertainty or mask arrays produce no corresponding extension::
     restored.mask: [[False, True], [True, False]]
     restored.unit: adu
     restored.header['OBJECT']: Example
+
     >>> with frame.to_hdu() as hdus:
     ...     print("hdus[0].header['BUNIT']:", hdus[0].header['BUNIT'])
     ...     print('Extensions:', [hdu.name for hdu in hdus])
@@ -378,6 +407,7 @@ documented convention. Naming a variance extension ``hdu_uncertainty`` would
 load its values as standard deviations without taking a square root::
 
     >>> from astropy.io import fits
+
     >>> hdus = fits.HDUList([
     ...     fits.PrimaryHDU(),
     ...     fits.ImageHDU(np.zeros((2, 2)), name='PREVIEW'),
@@ -386,6 +416,7 @@ load its values as standard deviations without taking a square root::
     ...     fits.ImageHDU(np.array([[0, 4], [0, 0]], dtype='uint8'), name='DQ'),
     ... ])
     >>> hdus['SCI'].header['BUNIT'] = 'adu'
+
     >>> with hdus:
     ...     variance = hdus['VAR'].data
     ...     if np.any(~np.isfinite(variance)) or np.any(variance < 0):
@@ -394,6 +425,7 @@ load its values as standard deviations without taking a square root::
     ...                               mask=hdus['DQ'].data != 0, dtype='float32')
     ...     print('Selected extension:', hdus['SCI'].name)
     Selected extension: SCI
+
     >>> print('Science:', selected.data.tolist())
     Science: [[10.0, 20.0], [30.0, 40.0]]
     >>> print('Standard uncertainty:', selected.uncertainty.tolist())
@@ -414,6 +446,7 @@ Convert explicitly with ``to_ccddata()`` and ``read_framedata()``::
 
     >>> ccd = frame.to_ccddata()
     >>> restored_ccd = read_framedata(ccd)
+
     >>> print('restored_ccd.data:', np.round(restored_ccd.data, 6))
     restored_ccd.data: [[10. 20.]
      [30. 40.]]

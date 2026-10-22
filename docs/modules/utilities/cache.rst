@@ -23,6 +23,7 @@ exit, including exception paths::
     >>> from tempfile import TemporaryDirectory
     >>> from pathlib import Path
     >>> from astropop.framedata.cache_manager import TempDir
+
     >>> with TemporaryDirectory() as root:
     ...     with TempDir(str(Path(root) / 'owned-cache')) as directory:
     ...         managed = directory.create_file('message.txt')
@@ -56,6 +57,8 @@ one file, observes the resulting policy, then permits explicit cleanup::
     ...     directory.delete()
     ...     print('Parent removable:', directory.is_removable)
     ...     print('File retained:', Path(retained.full_path).exists())
+    ...
+    ...     # Release the child's retention policy so its parent can also be deleted.
     ...     retained.delete_on_remove = True
     ...     directory.delete()
     ...     print('Parent deleted:', not Path(directory.full_path).exists())

@@ -32,8 +32,10 @@ search region explicit. The ``simbad`` callable is an alias for the same class:
 .. code-block:: python
 
     from astropop.catalogs import simbad
+
     simbad_sources = simbad.simbad(center='Sirius', radius='1 arcmin',
                                    band=['g'])
+
     print('Sources:', len(simbad_sources))
     print(simbad_sources.table()[:5])
 
@@ -42,6 +44,7 @@ search region explicit. The ``simbad`` callable is an alias for the same class:
     simbad_sources = simbad.SimbadSourcesCatalog(center='Sirius',
                                                  radius='1 arcmin',
                                                  band=['B', 'V'])
+
     print('Sources:', len(simbad_sources))
     print(simbad_sources.table()[:5])
 
@@ -87,10 +90,13 @@ that searches an already loaded SimbadSourcesCatalog:
 .. code-block:: python
 
     from astropop.catalogs.simbad import simbad_query_id
+
     print(simbad_query_id(101.287155, -16.716115833333333, limit_angle='1 arcsec'))
+
     names = simbad_query_id(ra=[101.287155, 101.28876708333333],
                             dec=[-16.716115833333333, -16.716867777777775],
                             limit_angle='1 arcsec')
+
     print('Matched identifiers:', names)
 
 Supply ``limit_angle`` as the angular search radius. An empty string is returned
@@ -103,8 +109,10 @@ TYC, returning the first available match in that order:
 
 .. code-block:: python
 
+    # Choose the first available identifier following this catalog-prefix order.
     name = simbad_query_id(101.287155, -16.716115833333333, limit_angle='1 arcsec',
                            name_order=['HD', 'HR', 'TYC'])
+
     print('Preferred identifier:', name)
 
 .. warning::

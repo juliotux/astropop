@@ -28,11 +28,15 @@ wrapper's input, output and failure contracts.
     camera.wcs.crval = [150., -30.]
     camera.wcs.ctype = ['RA---TAN', 'DEC--TAN']
     angle = np.deg2rad(15)
+
+    # Combine the rotation and plate scale in the pixel-to-sky matrix.
     camera.wcs.cd = 0.34 / 3600 * np.array([[-np.cos(angle), np.sin(angle)],
                                            [np.sin(angle), np.cos(angle)]])
     x = np.array([20., 39., 65., 92., 110.])
     y = np.array([28., 96., 60., 35., 103.])
     center = camera.pixel_to_world(63.5, 63.5)
+
+    # Use spherical offsets rather than subtracting right ascensions directly.
     east, north = center.spherical_offsets_to(camera.pixel_to_world(x, y))
     fig, axes = plt.subplots(1, 2, figsize=(9, 4), layout='constrained')
     grid = np.linspace(0, 127, 64)
@@ -41,11 +45,13 @@ wrapper's input, output and failure contracts.
             axes[0].plot(xx, yy, color='0.85', linewidth=1)
             dx, dy = center.spherical_offsets_to(camera.pixel_to_world(xx, yy))
             axes[1].plot(dx.arcsec, dy.arcsec, color='0.85', linewidth=1)
+
     for ax, xx, yy in [(axes[0], x, y), (axes[1], east.arcsec, north.arcsec)]:
         ax.plot(xx, yy, 'C0*', markersize=11)
         for name, sx, sy in zip('ABCDE', xx, yy):
             ax.annotate(name, (sx, sy), xytext=(5, 5), textcoords='offset points')
         ax.set_aspect('equal')
+
     axes[0].set(xlim=(-5, 132), ylim=(-5, 132), xlabel='x / column (pixel)',
                 ylabel='y / row (pixel)', title='Detector coordinates; origin = 0')
     axes[1].set(xlim=(28, -28), ylim=(-28, 28), xlabel='East offset (arcsec)',
@@ -114,13 +120,19 @@ mapping, without invoking a solver or claiming to fit observations::
 
     >>> from astropy.wcs import WCS
     >>> from astropop.astrometry import AstrometricSolution
+
     >>> known = WCS(naxis=2)
     >>> known.wcs.crpix = [32.5, 24.5]
     >>> known.wcs.crval = [132.5, 11.83]
+
+    >>> # Convert the plate scale from arcseconds to degrees per pixel.
     >>> known.wcs.cdelt = [-0.5 / 3600, 0.5 / 3600]
     >>> known.wcs.ctype = ['RA---TAN', 'DEC--TAN']
     >>> solution = AstrometricSolution(known.to_header())
+
+    >>> # Subtract one from FITS CRPIX to address the same center with this API.
     >>> center = solution.wcs.pixel_to_world(31.5, 23.5)
+
     >>> print(f'Center: {center.ra.deg:.3f}, {center.dec.deg:.3f} deg')
     Center: 132.500, 11.830 deg
     >>> print('Correspondences:', solution.correspondences)
@@ -151,6 +163,7 @@ your own calibrated FITS image and installed indexes:
         options={'ra': 132.5, 'dec': 11.83, 'radius': 1.0,
                  'scale-low': 0.4, 'scale-high': 0.6,
                  'scale-units': 'arcsecperpix', 'crpix-center': None})
+
     print('Matched stars:', len(solution.correspondences))
 
 Numbers supplied for ``'ra'``, ``'dec'`` and ``'radius'`` are in degrees.
@@ -242,23 +255,30 @@ so changing the input container does not change the intended sky search:
 
     # Use a filename when the calibrated image is already on disk.
     from_file = solve_astrometry_image(filename, options=options)
+
     print('File solution axes:', from_file.wcs.world_axis_physical_types)
 
     # Use FrameData when the calibrated frame is already in memory.
+
     frame = read_framedata(filename)
     from_frame = solve_astrometry_framedata(frame, options=options)
+
     print('Frame solution axes:', from_frame.wcs.world_axis_physical_types)
 
     # Use an HDU when working directly with Astropy FITS containers.
+
     with fits.open(filename) as hdus:
         from_hdu = solve_astrometry_hdu(hdus[0], options=options)
+
     print('HDU solution axes:', from_hdu.wcs.world_axis_physical_types)
 
     # Use a measured source list to bypass image-source extraction by the solver.
+
     sources = Table.read('reduced/photometry.ecsv')  # zero-based x,y and measured flux
     from_sources = solve_astrometry_xy(
         sources['x'] + 1, sources['y'] + 1, sources['flux'],
         width=frame.shape[1], height=frame.shape[0], options=options)
+
     print('Source-list matches:', len(from_sources.correspondences))
 
 For a multi-extension image, load the intended science HDU rather than an
@@ -281,6 +301,7 @@ external solver workflow::
     >>> from pathlib import Path
     >>> from astropy.io import fits
     >>> from astropop.astrometry import create_xyls
+
     >>> with TemporaryDirectory() as directory:
     ...     path = Path(directory) / 'sources.xyls'
     ...     create_xyls(path, x=[3., 8., 5.], y=[6., 4., 9.],
@@ -310,13 +331,17 @@ RA/Dec in degrees. Keep input formats consistent and prefer an explicitly
 unit-bearing SkyCoord when the format is already known::
 
     >>> from astropop.astrometry import guess_coordinates, wcs_from_coords
+
     >>> decimal = guess_coordinates('132.5', '11.83')
     >>> sexagesimal = guess_coordinates('08:50:00', '+11:49:48')
+
     >>> print(f'Numeric strings: {decimal.ra.deg:.3f}, {decimal.dec.deg:.3f} deg')
     Numeric strings: 132.500, 11.830 deg
     >>> print(f'Sexagesimal strings: {sexagesimal.ra.deg:.3f}, {sexagesimal.dec.deg:.3f} deg')
     Sexagesimal strings: 132.500, 11.830 deg
+
     >>> ra, dec = guess_coordinates([132.5, 133.], [11.83, 12.], skycoord=False)
+
     >>> print('Degree arrays:', ra.tolist(), dec.tolist())
     Degree arrays: [132.5, 133.0] [11.83, 12.0]
 
@@ -329,6 +354,7 @@ Astropy's high-level pixel coordinates::
 
     >>> approximate = wcs_from_coords(32.5, 24.5, 132.5, 11.83, 0.5, north='top')
     >>> center = approximate.pixel_to_world(31.5, 23.5)
+
     >>> print(f'Approximate reference position: {center.ra.deg:.3f}, {center.dec.deg:.3f} deg')
     Approximate reference position: 132.500, 11.830 deg
 
@@ -355,6 +381,7 @@ without invoking a solver:
 .. code-block:: python
 
     from astropop.astrometry.astrometrynet import get_options_help
+
     print(get_options_help())
 
 The same help is available through

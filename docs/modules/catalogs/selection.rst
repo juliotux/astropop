@@ -95,6 +95,8 @@ a shared band name alone establishes a valid photometric zero-point reference.
     # Plot only positions; each propagated coordinate has a different epoch.
     track = SkyCoord(ra=predicted.ra, dec=predicted.dec)
     start = track[0]
+
+    # Offset the final-epoch position slightly to simulate a measured source.
     observed = track[-1].spherical_offsets_by(0.15 * u.arcsec, -0.1 * u.arcsec)
     east, north = start.spherical_offsets_to(track)
     dx, dy = start.spherical_offsets_to(observed)
@@ -103,6 +105,7 @@ a shared band name alone establishes a valid photometric zero-point reference.
     for index, color, year in [(0, 'C0', 2015), (-1, 'C1', 2025)]:
         axes[0].add_patch(Circle((east.arcsec[index], north.arcsec[index]), 1,
                                  fill=False, color=color, label=f'1 arcsec at {year}'))
+
     axes[0].plot(dx.arcsec, dy.arcsec, 'k*', markersize=12, label='Observed in 2025')
     axes[0].set(aspect='equal', xlim=(-1.5, 12), ylim=(-2, 5),
                 xlabel='East offset (arcsec)', ylabel='North offset (arcsec)',
@@ -117,6 +120,7 @@ a shared band name alone establishes a valid photometric zero-point reference.
         accepted = matched.sources_id()[0] != ''
         label = f'{"No epoch" if year is None else year}: {"matched" if accepted else "unmatched"}'
         axes[1].plot([], [], ' ', label=label)
+
     axes[1].set(xlabel='Epoch used for catalog coordinates (year)',
                 ylabel='Separation from observation (arcsec)', title='Propagate before matching',
                 xticks=[2015, 2020, 2025])

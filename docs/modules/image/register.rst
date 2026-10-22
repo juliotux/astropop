@@ -25,15 +25,21 @@ three rows down from the reference:
 >>> from astropop.framedata import FrameData
 >>> from astropop.image.register import (compute_shift_list,
 ...                                     register_framedata_list)
+
 >>> rng = np.random.default_rng(42)
 >>> reference = np.zeros((96, 128))
 >>> reference[32:60, 45:75] = rng.uniform(1, 10, (28, 30))
+
+>>> # Array shifts are (dy, dx); registration reports positions as (dx, dy).
 >>> moving = np.roll(reference, (3, -4), axis=(0, 1))
 >>> frames = [FrameData(reference), FrameData(moving)]
 >>> shifts = compute_shift_list(frames)
+
 >>> print('Measured shifts (dx, dy):', np.round(shifts, 2).tolist())
 Measured shifts (dx, dy): [[0.0, 0.0], [-4.0, 3.0]]
+
 >>> aligned = register_framedata_list(frames, cval=0)
+
 >>> print(f'Largest image difference: {np.max(np.abs(aligned[0].data - aligned[1].data)):.3f}')
 Largest image difference: 0.000
 >>> print('Registered shape:', aligned[1].shape)
@@ -100,11 +106,15 @@ omit the step), and the selected region must be non-empty.
 Using the frames from the example above:
 
 
+>>> # Window slices are (rows, columns), and only limit transform estimation.
 >>> window = (slice(20, 75), slice(30, 90))
 >>> shifts = compute_shift_list(frames, window=window)
+
 >>> print('Measured shifts (dx, dy):', np.round(shifts, 2).tolist())
 Measured shifts (dx, dy): [[0.0, 0.0], [-4.0, 3.0]]
+
 >>> aligned = register_framedata_list(frames, window=window, cval=0)
+
 >>> print(f'Largest windowed image difference: {np.max(np.abs(aligned[1].data - reference)):.3f}')
 Largest windowed image difference: 0.000
 
@@ -149,15 +159,23 @@ images. Algorithm options and ``window`` belong in the constructor:
 
 
 >>> from astropop.image.register import CrossCorrelationRegister
+
 >>> register = CrossCorrelationRegister(window=window, upsample_factor=10)
+
+>>> # The transform maps reference positions to the moving image.
 >>> transform = register.compute_transform(reference, moving)
+
 >>> print('Transform translation:', np.round(transform.translation, 2).tolist())
 Transform translation: [-4.0, 3.0]
+
 >>> image, mask, transform = register.register_image(
 ...     reference, moving, cval=0)
+
 >>> print(f'Largest registered difference: {np.max(np.abs(image - reference)):.3f}')
 Largest registered difference: 0.000
+
 >>> result = register.register_framedata(frames[0], frames[1], cval=0)
+
 >>> print('FrameData result shape:', result.shape)
 FrameData result shape: (96, 128)
 

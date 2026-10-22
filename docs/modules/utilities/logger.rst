@@ -16,10 +16,13 @@ Set the level on the shared logger and restore it after temporary changes::
 
     >>> import logging
     >>> from astropop.logger import logger, resolve_level_string
+
     >>> previous = logger.level
     >>> logger.setLevel('WARNING')
+
     >>> print('INFO level:', resolve_level_string('INFO'))
     INFO level: 20
+
     >>> logger.setLevel(previous)
 
 ``resolve_level_string`` accepts an integer, a numeric string, or an uppercase
@@ -33,6 +36,7 @@ contains formatted message strings, without timestamps or level prefixes.
 Always remove the handler when finished so later messages do not accumulate::
 
     >>> from astropop.logger import log_to_list
+
     >>> messages = []
     >>> previous = logger.level
     >>> logger.setLevel('INFO')
@@ -40,8 +44,11 @@ Always remove the handler when finished so later messages do not accumulate::
     >>> try:
     ...     logger.info('Processing image %d', 3)
     ... finally:
+    ...
+    ...     # Detach this capture so later application messages do not keep filling the list.
     ...     logger.removeHandler(handler)
     ...     logger.setLevel(previous)
+
     >>> messages
     ['Processing image 3']
 
@@ -64,6 +71,7 @@ LogRecord, including its logger name, severity and formatted message. The
 Attach the handler to the logger and remove it when finished::
 
     >>> from astropop.logger import ListHandler
+
     >>> records = ListHandler(full_record=True)
     >>> previous = logger.level
     >>> logger.setLevel('INFO')
@@ -71,9 +79,13 @@ Attach the handler to the logger and remove it when finished::
     >>> try:
     ...     logger.info('Combined %d frames', 3)
     ... finally:
+    ...
+    ...     # Remove the handler even if processing raises an exception.
     ...     logger.removeHandler(records)
     ...     logger.setLevel(previous)
+
     >>> record = records.log_list[0]
+
     >>> print(record.name, record.levelname, record.getMessage())
     astropop INFO Combined 3 frames
 

@@ -30,6 +30,7 @@ propagated to the combined frame::
     >>> images = [FrameData(np.full((2, 2), value), unit='adu')
     ...           for value in (1, 3, 5)]
     >>> combined = imcombine(images, method='mean', dtype='float32')
+
     >>> print('combined.data:', np.round(combined.data, 6))
     combined.data: [[3. 3.]
      [3. 3.]]
@@ -66,11 +67,14 @@ are combined; minmax rejection does not change the sigma statistics::
 
     >>> stack = [FrameData(np.full((2, 2), value)) for value in (1, 2, 3, 100)]
     >>> clipped = imcombine(stack, method='mean', minmax_clip=(None, 10))
+
     >>> print('clipped.data:', np.round(clipped.data, 6))
     clipped.data: [[2. 2.]
      [2. 2.]]
+
     >>> robust = imcombine(stack, method='median', sigma_clip=3,
     ...                    sigma_cen_func='median', sigma_dev_func='mad_std')
+
     >>> print('robust.data:', np.round(robust.data, 6))
     robust.data: [[2. 2.]
      [2. 2.]]
@@ -93,6 +97,8 @@ an injected level of 1000 ADU with 3 ADU Gaussian noise. One sample receives a
 
     >>> rng = np.random.default_rng(42)
     >>> pixels = rng.normal(1000, 3, (9, 48, 48))
+
+    >>> # Contaminate one exposure at one pixel to compare rejection strategies.
     >>> pixels[0, 24, 24] += 600
     >>> bias_frames = [FrameData(image, unit='adu') for image in pixels]
     >>> estimates = {
@@ -101,6 +107,7 @@ an injected level of 1000 ADU with 3 ADU Gaussian noise. One sample receives a
     ...     'Clipped mean': imcombine(bias_frames, method='mean', sigma_clip=4,
     ...                               sigma_dev_func='mad_std'),
     ... }
+
     >>> for name, image in estimates.items():
     ...     print(f'{name}: {image.data[24, 24]:.1f} ADU')
     Mean: 1067.1 ADU
@@ -121,6 +128,8 @@ an injected level of 1000 ADU with 3 ADU Gaussian noise. One sample receives a
 
     rng = np.random.default_rng(42)
     pixels = rng.normal(1000, 3, (9, 48, 48))
+
+    # Contaminate one exposure at one pixel to compare rejection strategies.
     pixels[0, 24, 24] += 600
     frames = [FrameData(image, unit='adu') for image in pixels]
     results = {
@@ -137,6 +146,7 @@ an injected level of 1000 ADU with 3 ADU Gaussian noise. One sample receives a
                         label=f'{name}: {value:.1f} ADU')
         axes[1].hist((image.data - 1000).ravel(), bins=np.arange(-8, 81),
                      histtype='step', color=f'C{index}', label=name, linewidth=1.5)
+
     axes[0].axhline(1000, color='0.5', linestyle='-.', label='Injected level: 1000 ADU')
     axes[0].set(xlabel='Exposure number', ylabel='Pixel value (ADU)',
                 title='One pixel with a transient event', xticks=[1, 3, 5, 7, 9])
@@ -207,9 +217,14 @@ sum and its corresponding uncertainty::
 
     >>> pair = [FrameData([[10.0]], uncertainty=2),
     ...         FrameData([[100.0]], uncertainty=3)]
+
+    >>> # The default rescales an accepted-sample sum to the full input count.
     >>> normalized = imcombine(pair, method='sum', minmax_clip=(None, 20))
+
+    >>> # Disable normalization to keep only the sum of samples that survived rejection.
     >>> raw = imcombine(pair, method='sum', minmax_clip=(None, 20),
     ...                 sum_normalize=False)
+
     >>> print('normalized.data:', np.round(normalized.data, 6))
     normalized.data: [[20.]]
     >>> print('normalized.uncertainty:', np.round(normalized.uncertainty, 6))
@@ -227,8 +242,10 @@ scatter calculations. Clipping still computes statistics needed for rejection.
 does not disable uncertainty calculations::
 
     >>> from astropop.config import AstropopConfig as conf
+
     >>> previous_uncertainty = conf.FRAMEDATA_DISABLE_UNCERTAINTY
     >>> previous_flags = conf.FRAMEDATA_DISABLE_FLAGS
+
     >>> try:
     ...     conf.FRAMEDATA_DISABLE_UNCERTAINTY = True
     ...     conf.FRAMEDATA_DISABLE_FLAGS = True
@@ -267,6 +284,7 @@ noise-free measurement::
     >>> sparse = [FrameData([[10., 20., 100.]], uncertainty=2),
     ...           FrameData([[14., 100., 100.]], uncertainty=2)]
     >>> sparse_mean = imcombine(sparse, method='mean', minmax_clip=(None, 50))
+
     >>> print('Mean:', sparse_mean.data.tolist())
     Mean: [[12.0, 20.0, nan]]
     >>> print('Standard uncertainty:', np.round(sparse_mean.uncertainty, 3).tolist())
@@ -294,6 +312,7 @@ is disabled, that zero is indistinguishable from a valid zero using the output
 alone::
 
     >>> previous_flags = conf.FRAMEDATA_DISABLE_FLAGS
+
     >>> try:
     ...     conf.FRAMEDATA_DISABLE_FLAGS = True
     ...     integer_inputs = [FrameData([[0, 100]], dtype='int16') for _ in range(2)]
@@ -370,6 +389,7 @@ The combiner loads its internal input copies before reducing chunks. For
 hundreds of images, consider a smaller dtype and explicit disk caching::
 
     >>> from tempfile import TemporaryDirectory
+
     >>> with TemporaryDirectory() as directory:
     ...     cached = imcombine(images, method='median', dtype='float32',
     ...                        memory_limit=16 * 1024**2,
@@ -406,6 +426,7 @@ Set optional-array configuration before loading frames::
 
     from astropop.config import AstropopConfig as conf
     from astropop.image import imcombine
+
     conf.FRAMEDATA_DISABLE_UNCERTAINTY = True  # before loading any frames
     # Set this only if your reduction does not require FrameData masks/flags.
     conf.FRAMEDATA_DISABLE_FLAGS = True
@@ -429,6 +450,7 @@ records ``HIERARCH astropop imcombine nimages`` and
     >>> image = FrameData([[10.0]], unit='adu', meta={'OBJECT': 'Example'})
     >>> preserved = imcombine([image, image], merge_header='selected_keys',
     ...                          merge_header_keys=['OBJECT'])
+
     >>> print("preserved.header['OBJECT']:", preserved.header['OBJECT'])
     preserved.header['OBJECT']: Example
     >>> print("preserved.header['astropop imcombine nimages']:", preserved.header['astropop imcombine nimages'])
@@ -458,10 +480,13 @@ Its configuration methods change subsequent calls to ``combine``:
 Configure these methods before calling ``combine``::
 
     >>> combiner = ImCombiner(max_memory=16 * 1024**2, dtype='float32')
+
+    >>> # Use a robust deviation estimate so an outlier does not inflate its own threshold.
     >>> combiner.set_sigma_clip(3, center_func='median', dev_func='mad_std')
     >>> combiner.set_minmax_clip(min_value=0)
     >>> combiner.set_merge_header('first')
     >>> result = combiner.combine(images, method='median')
+
     >>> print('result.data:', np.round(result.data, 6))
     result.data: [[3. 3.]
      [3. 3.]]

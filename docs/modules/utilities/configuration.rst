@@ -26,8 +26,12 @@ stored uncertainty, even though its constructor receives one::
 
     >>> from astropop.config import AstropopConfig
     >>> from astropop.framedata import FrameData
+
     >>> previous = AstropopConfig.FRAMEDATA_DISABLE_UNCERTAINTY
+
     >>> try:
+    ...
+    ...     # Disable allocation before constructing the frame, even when errors are supplied.
     ...     AstropopConfig.FRAMEDATA_DISABLE_UNCERTAINTY = True
     ...     frame = FrameData([[100., 101.]], uncertainty=2., unit='adu')
     ...     print('Uncertainty:', frame.uncertainty)

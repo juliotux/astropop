@@ -23,14 +23,18 @@ executed by documentation builds; the returned rows depend on the service:
 .. code-block:: python
 
     from astropop.catalogs import gaia
+
     gaia_sources = gaia.gaiadr3('Sirius', radius='20 arcsec')
+
     print('Sources:', len(gaia_sources))
     print(gaia_sources.table()[:5])
 
 .. code-block:: python
 
     from astropop.catalogs.gaia import GaiaDR3SourcesCatalog
+
     gaia_sources = GaiaDR3SourcesCatalog('Sirius', radius='20 arcsec')
+
     print('Sources:', len(gaia_sources))
     print(gaia_sources.table()[:5])
 
@@ -66,7 +70,9 @@ in a sixty-arcsecond region around Sirius:
 
 .. code-block:: python
 
+    # Apply the G-band limit in the query to reduce the returned source list.
     gaia_sources = gaia.gaiadr3('Sirius', radius='60 arcsec', max_g_mag=10)
+
     print('Sources:', len(gaia_sources))
     print(gaia_sources.table()[:5])
 
@@ -77,6 +83,7 @@ To avoid waiting for asynchronous Gaia jobs, select ``query_mode='sync'``:
 
 .. code-block:: python
 
+    # Use numeric coordinates to avoid a separate object-name lookup.
     gaia_sources = GaiaDR3SourcesCatalog(
         (101.28715, -16.71612), radius='20 arcsec', query_mode='sync')
 
@@ -105,6 +112,7 @@ NaN. ``parallax()`` returns the measured parallax, not a distance estimate.
 .. code-block:: python
 
     parallax = gaia_sources.parallax()
+
     print('Parallax:', parallax.nominal, parallax.unit)
     print('Parallax errors:', parallax.uncertainty)
 
@@ -114,6 +122,7 @@ NaN. ``parallax()`` returns the measured parallax, not a distance estimate.
 .. code-block:: python
 
     velocity = gaia_sources.radial_velocity()
+
     print('Radial velocity:', velocity.nominal, velocity.unit)
     print('Velocity errors:', velocity.uncertainty)
 

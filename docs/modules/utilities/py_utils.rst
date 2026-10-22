@@ -14,6 +14,7 @@ strings, and applies ``str`` to other objects. ``check_number`` accepts real
 scalar numbers, excluding booleans, complex numbers, and arrays::
 
     >>> from astropop.py_utils import string_fix, check_number
+
     >>> string_fix(b'object name')
     'object name'
     >>> string_fix(42)
@@ -30,6 +31,7 @@ multidimensional shapes. With only scalars it yields one tuple; unequal
 iterable lengths raise ``ValueError``::
 
     >>> from astropop.py_utils import broadcast
+
     >>> list(broadcast([1, 2, 3], 5, None))
     [(1, 5, None), (2, 5, None), (3, 5, None)]
 
@@ -42,8 +44,12 @@ input in place and returns ``None``. References can be nested, but must not
 form a cycle::
 
     >>> from astropop.py_utils import batch_key_replace
+
     >>> settings = {'root': '/data', 'file': '{root}/image.fits'}
+
+    >>> # Substitutions update the dictionary in place, including references to other keys.
     >>> batch_key_replace(settings)
+
     >>> settings['file']
     '/data/image.fits'
 
@@ -56,7 +62,9 @@ so paths containing spaces remain single arguments::
 
     >>> import sys
     >>> from astropop.py_utils import run_command
+
     >>> completed, stdout, stderr = run_command([sys.executable, '-c', 'print(42)'])
+
     >>> completed.returncode, stdout, stderr
     (0, ['42'], [])
 

@@ -22,9 +22,11 @@ one of that unit. NumPy broadcasting applies to the numerical operands::
     >>> import numpy as np
     >>> from astropop.framedata import FrameData, PixelMaskFlags
     >>> from astropop.image import imarith, ImArith
+
     >>> image = FrameData(np.full((2, 2), 10.0), unit='adu', uncertainty=2.0,
     ...                   meta={'OBJECT': 'Example', 'EXPTIME': 30.0})
     >>> scaled = imarith(image, 2, '*')
+
     >>> print('scaled.data:', np.round(scaled.data, 6))
     scaled.data: [[20. 20.]
      [20. 20.]]
@@ -54,8 +56,12 @@ the second unit first. Floor division returns the quotient unit; remainder
 keeps the first operand's unit::
 
     >>> from astropy import units as u
+
     >>> lengths = FrameData(np.ones((2, 2)), unit='m', uncertainty=0.1)
+
+    >>> # Addition converts centimeters to the first operand's meter unit.
     >>> added = imarith(lengths, 50 * u.cm, '+')
+
     >>> print('added.data:', np.round(added.data, 6))
     added.data: [[1.5 1.5]
      [1.5 1.5]]
@@ -97,6 +103,8 @@ converted to standard deviations before propagation.
     bias = FrameData(np.full(raw.shape, 100.), unit='adu', uncertainty=2.)
     flat = FrameData(response[None, :], uncertainty=0.02)
     subtracted = imarith(raw, bias, '-')
+
+    # Remove the additive offset before dividing by the dimensionless response.
     corrected = imarith(subtracted, flat, '/')
     fig, axes = plt.subplots(2, 1, sharex=True, figsize=(8, 5.3),
                              layout='constrained')
@@ -105,6 +113,7 @@ converted to standard deviations before propagation.
                                 (corrected, 'Flat corrected', 'C1')]:
         axes[0].plot(x, frame.data[0], color=color, label=name)
         axes[1].plot(x, frame.uncertainty[0], color=color)
+
     axes[0].plot(x, signal, 'k--', linewidth=1, label='Injected signal')
     axes[0].set(ylabel='Nominal value (ADU)', title='Arithmetic on one image row')
     axes[0].legend(fontsize='small')
@@ -137,7 +146,10 @@ flags. Missing flags count as zero. Masks mark the output but do not exclude
 pixels from arithmetic. Disabling flag storage omits output flags and masks::
 
     >>> image.mask_pixels((0, 0))
+
+    >>> # The mask marks quality; it does not stop arithmetic on the stored pixel.
     >>> masked_result = imarith(image, 2, '*')
+
     >>> print('masked_result.mask[0, 0]:', masked_result.mask[0, 0])
     masked_result.mask[0, 0]: True
     >>> print('masked_result.data[0, 0]:', masked_result.data[0, 0])
@@ -150,6 +162,7 @@ first occurrence. ``'no_merge'`` returns an empty header::
 
     >>> selected = imarith(image, 2, '*', merge_headers='selected_keys',
     ...                   selected_keys=['OBJECT'])
+
     >>> print("selected.header['OBJECT']:", selected.header['OBJECT'])
     selected.header['OBJECT']: Example
     >>> print('Exposure retained:', 'EXPTIME' in selected.header)
@@ -174,6 +187,7 @@ Create an instance with a fixed header-merge strategy, then call ``run``::
 
     >>> arithmetic = ImArith(merge_headers='first')
     >>> result = arithmetic.run(image, 2, '*')
+
     >>> print("result.header['OBJECT']:", result.header['OBJECT'])
     result.header['OBJECT']: Example
 

@@ -17,10 +17,14 @@ bit occurs. Supply flag members, not raw integer bit numbers. The optional
     >>> import numpy as np
     >>> from astropop.flags import mask_from_flags
     >>> from astropop.framedata import PixelMaskFlags
+
     >>> flags = np.array([0, PixelMaskFlags.MASKED.value,
     ...                   (PixelMaskFlags.MASKED | PixelMaskFlags.SATURATED).value])
+
     >>> mask_from_flags(flags, PixelMaskFlags.SATURATED).tolist()
     [False, False, True]
+
+    >>> # The list selects pixels carrying either of these bits; both are not required.
     >>> mask_from_flags(flags, [PixelMaskFlags.MASKED, PixelMaskFlags.SATURATED],
     ...                 allowed_flags_class=PixelMaskFlags).tolist()
     [False, True, True]
@@ -50,8 +54,10 @@ For a custom array operation, inspect the lower-level flag strategies directly.
 The example uses two-bit integer arrays so each result is visible::
 
     >>> from astropop.image._tools import merge_flag, merge_header
+
     >>> first = np.array([1, 2], dtype='uint8')
     >>> second = np.array([2, 2], dtype='uint8')
+
     >>> for method in ('or', 'and', 'no_merge'):
     ...     print(method, merge_flag(first, second, method=method).tolist())
     or [3, 2]
@@ -63,8 +69,10 @@ requires ``selected_keys``; the first occurrence supplies each selected value.
 Here the filter agrees, but exposure time differs::
 
     >>> from astropy.io.fits import Header
+
     >>> first_header = Header({'FILTER': 'R', 'EXPTIME': 10})
     >>> second_header = Header({'FILTER': 'R', 'EXPTIME': 20})
+
     >>> for method in ('only_equal', 'first', 'selected_keys', 'no_merge'):
     ...     merged = merge_header(first_header, second_header, method=method,
     ...                           selected_keys=['EXPTIME'])

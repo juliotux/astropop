@@ -23,6 +23,8 @@ an empty primary HDU can require ``ext=1`` or an extension name.
     from astropop.file_collection import FitsFileGroup, list_fits_files
 
     folder = Path('/path/to/data').resolve()
+
+    # Index the science extension rather than the empty primary HDU.
     group = FitsFileGroup(location=folder, ext=1, database='headers.db')
 
 ``database`` defaults to an in-memory index. A path creates a persistent database
@@ -42,6 +44,7 @@ To select basenames across subdirectories, build the list explicitly:
     bias_files = [name for name in list_fits_files(folder)
                   if Path(name).name.startswith('BIAS')]
     biases = FitsFileGroup(files=bias_files, ext=1)
+
     print('Selected bias files:', len(biases))
 
 Files Summary and Header Keyword Values
@@ -77,6 +80,7 @@ modify the input list before constructing its group:
     >>> from tempfile import TemporaryDirectory
     >>> import numpy as np
     >>> from astropy.io import fits
+
     >>> _file_example = TemporaryDirectory()
     >>> example_folder = Path(_file_example.name).resolve()
     >>> for index, band in enumerate(('R', 'B', 'R')):
@@ -88,8 +92,10 @@ modify the input list before constructing its group:
 .. doctest::
 
     >>> from astropop.file_collection import FitsFileGroup, list_fits_files
+
     >>> paths = list_fits_files(example_folder)
     >>> small = FitsFileGroup(files=paths, ext='SCI', database=str(example_folder / 'example.db'))
+
     >>> print('Files:', [Path(name).name for name in small.files])
     Files: ['image_0.fits', 'image_1.fits', 'image_2.fits']
     >>> print('Filter column:', [key for key in small.keys if key == 'filter'])
@@ -98,7 +104,9 @@ modify the input list before constructing its group:
     Filter values: ['R', 'B', 'R']
     >>> print('First-file group:', len(small[0]), '; first-two group:', len(small[:2]))
     First-file group: 1 ; first-two group: 2
+
     >>> stored = small.relative_path(small.files[0])
+
     >>> print('Stored path:', stored)
     Stored path: image_0.fits
     >>> print('Resolved file:', Path(small.full_path(stored)).name)
@@ -144,8 +152,11 @@ updating a group to avoid ambiguity about relative filenames.
 
     new_file = folder / 'new_exposure.fits'
     group.add_file(new_file)
+
     print('Indexed after addition:', len(group))
+
     group.remove_file(new_file)
+
     print('Indexed after removal:', len(group))
 
 Adding a Custom Column
@@ -157,6 +168,7 @@ correspond to the current file order. The column is not written to FITS headers.
 .. code-block:: python
 
     group.add_column('reviewed', [False] * len(group))
+
     print('Review state:', group.values('reviewed'))
 
 Filtering and Grouping Files
@@ -173,7 +185,9 @@ lookup here is case-insensitive. Check the selection count before combining it.
 
 .. code-block:: python
 
+    # Select matching header values before opening the pixel arrays.
     red_science = group.filtered({'FILTER': 'R', 'IMAGETYP': 'LIGHT'})
+
     print('R-band science exposures:', len(red_science))
 
 Grouping Files
@@ -202,6 +216,7 @@ iterating, even if you indexed another extension's header:
 
     import numpy as np
 
+    # Iterate over frames instead of keeping every image array in a list.
     for frame in red_science.framedata(ext=1):
         print('Shape:', frame.shape, 'median:', float(np.median(frame.data)))
 

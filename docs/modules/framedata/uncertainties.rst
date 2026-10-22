@@ -50,10 +50,14 @@ pixel yields 1000 +/- sqrt(29) ADU. Dividing by a dimensionless flat of
     >>> import numpy as np
     >>> from astropop.framedata import FrameData
     >>> from astropop.image.processing import subtract_bias, flat_correct
+
     >>> science = FrameData([[1100.]], uncertainty=5, unit='adu')
     >>> bias = FrameData([[100.]], uncertainty=2, unit='adu')
     >>> flat = FrameData([[1.]], uncertainty=0.01)
+
+    >>> # Bias subtraction and flat division both contribute to the propagated error.
     >>> calibrated = flat_correct(subtract_bias(science, bias), flat)
+
     >>> print('calibrated.data:', np.round(calibrated.data, 6))
     calibrated.data: [[1000.]]
     >>> print('calibrated.uncertainty:', np.round(calibrated.uncertainty, 6))

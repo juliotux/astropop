@@ -17,6 +17,7 @@ it with ``isinstance``; it does not inspect whether the HDU contains data::
 
     >>> from astropy.io import fits
     >>> from astropop.fits_utils import imhdus
+
     >>> isinstance(fits.PrimaryHDU(), imhdus)
     True
     >>> isinstance(fits.BinTableHDU(), imhdus)
@@ -31,6 +32,7 @@ and removes a leading ``HIERARCH`` prefix and its following space if supplied. A
 interface handles that prefix when the key is written::
 
     >>> from astropop.fits_utils import string_to_header_key
+
     >>> string_to_header_key('exptime')
     'EXPTIME'
     >>> string_to_header_key('HIERARCH astropop example')
