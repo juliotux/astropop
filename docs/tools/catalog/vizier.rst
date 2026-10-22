@@ -6,114 +6,83 @@
 Vizier Catalogs
 ===============
 
-The VizieR is an astronomical catalog service that provides standard astronomical catalogs and tables in a uniform format. The VizieR is a service of the Centre de Données astronomiques de Strasbourg (CDS) and is operated by the Strasbourg Astronomical Data Center (CDS) and is available at http://vizier.u-strasbg.fr.
-
-Several VizieR catalogs are useful for astrometric and photometric calibration. However, they do not allways have the same column names. So, the |vizier| module provides a set of classes to access the VizieR catalogs and to return the data in a |SourcesCatalog| instance.
-
-To access an specific pre-defined catalog, just use ``vizier.<<catalog_name>>`` with the query parameters. Like, if you want to query the UCAC4 catalog for the sources in a 2 arcmin radius around the coordinates of the Crab Nebula, you can do:
+The VizieR adapters map configured survey columns to the shared
+|SourcesCatalog| interface. Use the packaged configuration name to query a
+region, then inspect the returned identifiers, coordinates and bands. This
+recipe makes a live query; its result count depends on the service:
 
 .. code-block:: python
 
     from astropop.catalogs import vizier
     catalog = vizier.ucac4('M1', radius='2 arcmin', band=['B', 'V'])
-    catalog.table()
-    catalog.magnitude('B')
-    catalog.sources_id()
-    catalog.skycoord()
+    print('Sources:', len(catalog))
+    print('Bands:', catalog.filters)
+    print(catalog.table()[:5])
 
-All catalogs have the same input parameters, that are a field ``center``, a search ``radius`` and the list of photometric ``band`` to query. They are derived from the |VizierSourcesCatalog| class, configured with a pre-defined configuration file to operate with the specific catalog. The list of all available pre-defined catalogs can be obtained with `astropop.catalogs.vizier.list_vizier_catalogs` method. Each catalog has a ``help`` method that returns a description of the catalog and the list of available photometric bands.
+Constructors accept ``center``, ``radius`` and ``band``. ``band='all'`` selects
+all configured filters; ``band=None`` disables normalized photometry; a list
+selects named filters. Column requests are assembled from the configuration,
+including its available magnitude columns, so selecting fewer bands does not
+guarantee a smaller remote response. Use :doc:`../../how_to/catalogs` for
+service selection, query provenance and failure handling.
 
-The help below is generated from the bundled configuration files during the
-documentation build. Displaying it does not make online queries. The Python
-blocks show how to print the same help in your own session.
+Inspect packaged descriptions without a query:
+
+.. code-block:: python
+
+    print(vizier.list_vizier_catalogs())
+    print(vizier.ucac4.help())
+
+The help below is generated from the same bundled YAML files. It describes the
+installed configuration, not a live verification of the remote schema.
 
 Currently available catalogs are:
 
 - ``vizier.allwise``
 
-  .. code-block:: python
-
-      print(vizier.allwise.help())
-
   .. catalog-help:: allwise
 
 - ``vizier.apass9``
-
-  .. code-block:: python
-
-      print(vizier.apass9.help())
 
   .. catalog-help:: apass9
 
 - ``vizier.denis``
 
-  .. code-block:: python
-
-      print(vizier.denis.help())
-
   .. catalog-help:: denis
 
 - ``vizier.gsc242``
-
-  .. code-block:: python
-
-      print(vizier.gsc242.help())
 
   .. catalog-help:: gsc242
 
 - ``vizier.hip``
 
-  .. code-block:: python
-
-      print(vizier.hip.help())
-
   .. catalog-help:: hip
 
+- ``vizier.skymapper``
+
+  .. catalog-help:: skymapper
+
 - ``vizier.twomass``
-
-  .. code-block:: python
-
-      print(vizier.twomass.help())
 
   .. catalog-help:: twomass
 
 - ``vizier.tycho2``
 
-  .. code-block:: python
-
-      print(vizier.tycho2.help())
-
   .. catalog-help:: tycho2
 
 - ``vizier.ucac4``
-
-  .. code-block:: python
-
-      print(vizier.ucac4.help())
 
   .. catalog-help:: ucac4
 
 - ``vizier.ucac5``
 
-  .. code-block:: python
-
-      print(vizier.ucac5.help())
-
   .. catalog-help:: ucac5
 
 - ``vizier.vsx``
 
-  .. code-block:: python
-
-      print(vizier.vsx.help())
-
   .. catalog-help:: vsx
 
 - ``vizier.wise``
-
-  .. code-block:: python
-
-      print(vizier.wise.help())
 
   .. catalog-help:: wise
 
@@ -121,12 +90,13 @@ Currently available catalogs are:
 Configure a New Catalog
 -----------------------
 
-To configure a new catalog, you can use a `YAML <https://yaml.org/>`_ configure file, to be passed to the |VizierSourcesCatalog| class. See the documentation for details. The file must have the following structure:
+Save the following schema as ``ucac4_custom.yml``. It maps the VizieR table
+identifier, requested columns, coordinates, magnitudes, epoch and source IDs:
 
 .. code-block:: yaml
 
     ---
-    # caralog table in vizier
+    # VizieR table identifier
     table: 'I/322A/out'
     # small description for the catalog
     description: "UCAC4 Catalogue (Zacharias+, 2012)"
@@ -166,8 +136,8 @@ To configure a new catalog, you can use a `YAML <https://yaml.org/>`_ configure 
     # but not both
     epoch:
       column: 'EpRA'  # epoch of coordinates column name
-      # value = 'J2000.0'  # fixed epoch of coordinates value
-      format: 'jyear'  # epoch format, default is 'jyear'
+      # value: 2000.0  # alternative fixed Julian year
+      format: 'jyear'  # explicit Astropy Time format
 
     # identifier configuration
     ids:
@@ -176,6 +146,58 @@ To configure a new catalog, you can use a `YAML <https://yaml.org/>`_ configure 
       # multiple columns can be used, as a list. In this case, set also a separator
       # column: ['UCAC4', 'UCAC4_2']
       # separator: '-'  # separator between columns
+
+Instantiate the configured adapter with that file before the field arguments.
+This also makes a live query:
+
+.. code-block:: python
+
+    from astropop.catalogs.vizier import VizierSourcesCatalog
+    custom = VizierSourcesCatalog('ucac4_custom.yml', (83.633, 22.0145),
+                                  radius='2 arcmin', band=['B', 'V'])
+    print('Configuration:', custom.name)
+    print('Sources:', len(custom))
+    print(custom.table()[:5])
+
+Coordinate columns must carry angular units in the response. Proper motion is
+used only when both configured motion columns are present in the schema;
+``pm_ra_column`` represents RA motion multiplied by cos(Dec). Preserve the
+catalog's coordinate frame and reference epoch rather than inferring them from
+an image date or the spelling of a column name.
+
+Schema variants
+^^^^^^^^^^^^^^^
+
+* ``column_aliases`` maps original response column names to local names.
+  For example, ``column_aliases: {'2MASS': '_2MASS'}`` requests the original
+  name and renames it for extraction when the alias is not already present.
+  Use the local alias in ``columns``, ``ids`` and other extraction fields.
+* ``epoch.column`` may be one name or a list of alternatives. The reader uses
+  the **first column present**; it does not average epochs or choose a fallback
+  per row. If none is present, no epoch is attached. Check missing values before
+  propagating positions.
+* ``epoch.value`` supplies a fixed epoch instead of a column. Specify
+  ``epoch.format`` explicitly: for example ``value: 2000.0`` with
+  ``format: jyear``, or a numeric MJD column with ``format: mjd``. String Julian
+  years such as ``J2000.0`` require ``jyear_str``. Use either ``value`` or
+  ``column``; if both are supplied, ``value`` takes precedence.
+* For an astrometry-only configuration, omit ``available_filters`` and
+  ``magnitudes``. Query with ``band=None`` (``'all'`` also selects no filters).
+  Asking for a named band in that configuration raises ``ValueError``.
+* For photometric configurations, provide both ``mag_column`` and
+  ``err_mag_column`` templates. A configured error column absent from the
+  response yields zero stored errors; zero does not establish an exact
+  measurement. Inspect the original response before using such values as weights.
+* ``ids.column`` accepts a name or a list of names joined with ``separator``
+  (default ``'-'``). ``prepend`` adds a prefix separated by a space. ``ids: null``
+  produces empty IDs, which cannot serve as the usual nonempty-ID matching
+  success indicator; choose a real identifier for matching workflows.
+
+The adapter retains the first returned table and exposes it as ``query_table``.
+An empty table list raises ``RuntimeError``. This differs from a returned table
+with zero rows; inspect its length before indexing. The schema does not apply
+survey-specific quality cuts. Test a custom configuration against a small field
+and inspect column names, units, missing values and quality flags before reuse.
 
 See :doc:`../../reference/catalogs` for the API reference.
 
