@@ -18,9 +18,12 @@
 
 ## Documentation
 
-- Task guides are module-oriented: explain the module's functions and classes
-  with simple local examples. Multi-step workflows combining several modules
-  belong in tutorials; identify concepts and troubleshooting separately.
+- Module chapters combine clear function/class explanations, simple examples,
+  technical details and an integrated Reference/API section. Keep one indexed
+  declaration per symbol; retain generated symbol pages under docs/api.
+- Group multi-module tutorials under real subsection indexes with inputs,
+  outputs and prerequisites. Place shared concepts with their owning modules;
+  do not restore parallel task-guide, concepts and API-reference trees.
 - Use `ImageLike` for 2D pixel-array inputs, with explicit scalar alternatives
   where supported. Keep coordinate vectors, stacks and broad `ImageInput`
   conversion contracts distinct.

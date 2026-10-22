@@ -9,14 +9,14 @@ Read the implementation, nearby tests, and the relevant guide under `docs/`. Kee
 
 ## Module guides and tutorials serve different readers
 
-Task guides are module-oriented documentation. Organize their explanations
+Module chapters combine explanatory documentation and their API reference. Organize their explanations
 around the module's functions and classes, with local, simple examples and
 useful results. A page that strings multiple modules together to produce a
 complete reduction belongs in tutorials. Keep cross-cutting concepts and
 troubleshooting identifiable as supporting material rather than treating them
 as substitutes for a module guide.
 
-Use `docs/reduction/polarimetry.rst` as the editorial model: explain the
+Use `docs/modules/polarimetry/index.rst` as the editorial model: explain the
 module's scientific model, then its classes/functions, their options, results
 and focused examples. Make API ownership visible in section headings where
 useful. Technical equations, algorithm details, figures and references belong
@@ -80,12 +80,28 @@ coordinate vectors and image stacks are different contracts. NumPy array
 outputs can retain concrete `NDArray` types and guaranteed dtypes. Do not claim
 that the alias enforces dimensionality statically or at runtime.
 
-Use `docs/tutorials/` for complete multi-module workflows, `docs/how_to/` for
-module-oriented task guides,
-`docs/concepts/` for shared assumptions, `docs/reference/` for API declarations,
-and `docs/development/` for contributor guidance. Existing module guides remain
-supported entry points. Consult [documentation maintenance](../../../docs/development/documentation.rst)
-for the maintained structure and example policy.
+Use `docs/getting_started/` for installation, first steps and example setup;
+`docs/tutorials/` for complete multi-module workflows grouped beneath real
+subsection landing pages; `docs/modules/` for explanatory module chapters with
+integrated Reference/API; `docs/development/` for contributor guidance; and
+`docs/project/` for migration, citation and license information. Do not restore
+parallel task-guide, concepts and API-reference trees. Place technical concepts
+with the module that owns their contract. The old source paths are compatibility
+gateways, not additional maintained copies.
+
+Each module chapter introduces its subject, gives simple examples, explains
+functions/classes and relevant scientific details, and contains Reference/API
+summaries. Individual symbol pages remain generated under `docs/api/`; merging
+API ownership does not require putting every signature on one giant page.
+
+Tutorial groups cover CCD reduction, photometric measurements, astrometry and
+catalogs, dual-beam polarimetry, and diagnostics/data handling. Their landing
+pages must describe prerequisites, inputs, outputs, dependencies and offline,
+network or external-program requirements. Keep half/quarter-wave workflows
+independent and preserve cross-module process coverage.
+
+Consult [documentation maintenance](../../../docs/development/documentation.rst)
+for the maintained structure and validation policy.
 
 Keep each indexed API declaration in one place. Generated `docs/api/` pages
 remain generated; do not edit or commit them. When extracting sections, preserve
@@ -157,9 +173,13 @@ python -m sphinx -b html -E -a -n -W --keep-going docs /tmp/astropop-docs-build
 python docs/development/check_docs.py --html /tmp/astropop-docs-build
 ```
 
+When moving tutorial sources, update SOURCE_PAGES in tutorial_notebooks.py,
+the bundle source copying, figure replay, pytest fixtures and notebook links
+together. Execute both sequential and independent notebook modes.
+
 The notebook check validates schema, code syntax and stored errors without
 execution. `--inventory` lists authored-example validation modes. Use a fresh
-Sphinx environment (`-E`) after moving API declarations to avoid stale indexed
+Sphinx environment (`-E`) after moving pages or API declarations to avoid stale indexed
 objects; `-a -n -W` rewrites all pages and treats missing references/warnings as
 failures. Inspect relevant rendered pages when navigation or layout changes.
 Read the Docs PR-preview enablement is a project setting, not proof supplied by
