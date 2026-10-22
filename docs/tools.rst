@@ -1,17 +1,13 @@
 :orphan:
 
-*****************
-General utilities
-*****************
+Documentation moved
+===================
 
-.. toctree::
-    :maxdepth: 1
+Current chapter
+---------------
 
-    tools/files.rst
-    tools/logger.rst
-    tools/testing.rst
-    tools/flags.rst
-    tools/math.rst
-    tools/py_utils.rst
-    tools/fits_utils.rst
-    tools/catalogs.rst
+Continue with :doc:`modules/utilities/index` for the maintained documentation.
+
+.. raw:: html
+
+    <span id="general-utilities"></span>

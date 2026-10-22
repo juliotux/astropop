@@ -4,11 +4,17 @@ Maintain and review documentation
 Reader paths and stable URLs
 ----------------------------
 
-The home page separates tutorials, task guides, shared concepts and API
-reference. Existing module guides remain supported entry points. Arithmetic
-and combination have separate task pages; their old combined URL is a gateway.
-API declarations live in ``reference/`` exactly once, while generated ``api/``
-URLs retain their names. Do not copy generated API files into version control.
+The home page has five destinations: Getting started, Tutorials, Modules and
+reference, Development, and Project information. Each module chapter contains
+its explanations, examples, technical background and Reference/API declarations.
+Generated ``api/`` pages provide individual symbol contracts and retain their
+URLs. Keep each indexed declaration in one owning chapter. Legacy authored
+paths remain compatibility gateways, not a second task/concept/reference tree.
+
+Tutorials are organized beneath five real subsection indexes: CCD reduction,
+photometry, astrometry/catalogs, polarimetry and diagnostics. Each index states
+its inputs, outputs, dependencies and execution requirements. The half-wave
+and quarter-wave tutorials are independent workflows and notebook companions.
 
 ``docs/development/urls.json`` records retained authored page URLs and
 fragment identifiers, including the pre-reorganization baseline and later
@@ -27,22 +33,23 @@ removed URLs, or that an external website still resolves.
 Module explanations and complete tutorials
 ------------------------------------------
 
-Task guides are module-oriented. Each guide should focus on a module or a
+Module chapters are module-oriented. Each chapter should focus on a module or a
 coherent API family, explaining its functions and classes with simple examples.
-Cross-module, multi-step reductions belong in tutorials; diagnostics and shared
-concepts remain supporting material.
+Cross-module, multi-step reductions belong in tutorials; technical concepts and
+input/result diagnostics stay with the module that owns their contract.
 
-Use :doc:`../reduction/polarimetry` as the model: connect the scientific model
+Use :doc:`../modules/polarimetry/index` as the model: connect the scientific model
 to the module's functions/classes, explain their options and results, and include
-focused examples. Keep general observing/restart policy, complete cross-module
-diagnostics and benchmarking instructions in concepts, tutorials or contributor
-guides, rather than filling module guides with unrelated advice.
+focused examples. Keep general observing/restart policy and complete cross-module
+diagnostics in tutorials, and benchmarking instructions in contributor guides,
+rather than filling module guides with unrelated advice.
 
 Module guides must explain their functions and classes in clear, descriptive,
 human-readable prose. Describe what an operation does, when it is useful, how
 to supply its inputs and how to interpret the result. Explain important options,
 units and scientific assumptions beside the corresponding operation. Generated
-API declarations provide exact signatures; they complement these explanations.
+API declarations provide exact signatures within the same chapter; they
+complement these explanations.
 
 Every module guide must include simple examples of its functions and classes.
 Introduce the purpose of each example and show meaningful output. Keep separate
@@ -54,8 +61,7 @@ When editing or reorganizing, preserve the explanations and behaviors those
 examples teach. Removing repetition must not remove that instructional coverage.
 
 Tutorials address more complex, multi-step tasks that combine APIs from several
-modules. Take
-the reader from prepared inputs through processing and inspection to a usable
+modules. Take the reader from prepared inputs through processing and inspection to a usable
 result. Module examples remain available for learning individual operations;
 link them from the integrated workflow where useful.
 
@@ -108,7 +114,7 @@ and expected results and use local temporary data.
   meaningful results for doctests to verify. Keep assertions and testing
   helpers in the test suite, rather than inside learning workflows.
 * ``tutorial-data`` generates the shared offline archive in the build directory.
-  It contains raw observations, local standards, reference products and nine
+  It contains raw observations, local standards, reference products and ten
   notebook companions. ``tutorial-notebook:: page_name`` links the corresponding
   generated notebook. Edit the RST, not a second notebook copy.
 * ``tutorial_notebooks.py`` converts prompted examples, expected console output,
@@ -118,7 +124,7 @@ and expected results and use local temporary data.
   calculations in temporary directories rather than duplicating the reduction.
 * Run ``python docs/development/run_tutorials.py --output /tmp/tutorial-review``
   from the repository root with the docs/test dependencies installed. It executes
-  all nine notebooks with fresh kernels, both sequentially using preceding
+  all ten notebooks with fresh kernels, both sequentially using preceding
   products and independently using the supplied references. Executed notebooks
   and figures remain under that dedicated output directory. ``--mode sequence``
   or ``--mode independent`` selects one run for focused debugging.
@@ -164,8 +170,9 @@ Distinguish methods (called with parentheses) from properties. Use “standard
 deviation” for stored uncertainty; distinguish it from variance and scatter.
 Explain zero-based ``(x, y)`` separately from NumPy ``[y, x]`` indexing.
 
-A tutorial teaches a complete multi-module workflow; a task guide explains a
-module or API family through focused operations; a concept explains assumptions; a reference specifies exact contracts.
+A tutorial teaches a complete multi-module workflow. A module chapter explains
+its API family, scientific assumptions and focused operations, and integrates
+the generated reference contracts.
 Link between them, preserving critical scientific limitations beside operations.
 Do not claim speed, memory bounds or scientific validation without a specified
 measurement or test. Follow :doc:`../dev/testing` for strict build commands and
@@ -181,7 +188,7 @@ and warning checks, then verifies retained URLs, anchors and annotation-derived
 parameter types on representative function and class pages. The GitHub docs
 job selects that environment. Read the Docs also selects Python 3.14 and
 ``sphinx.fail_on_warning: true``; ``nitpicky=True`` in ``docs/conf.py`` checks
-object references on both hosts. The tox job executes the nine offline
+object references on both hosts. The tox job executes the ten offline
 companions in fresh kernels, sequentially and independently. External solver
 and online-query recipes are not executed. A rendering pass alone is not a
 scientific test.
@@ -215,3 +222,15 @@ This checks annotation presence, including complete PEP 484 comments for
 Astropy model ``evaluate`` methods, whose inline annotations have unit semantics.
 It excludes generated version metadata and does not establish static type
 correctness. The test and documentation tox environments run this check.
+
+Moving tutorial sources
+-----------------------
+
+``SOURCE_PAGES`` in ``_ext/tutorial_notebooks.py`` maps stable workflow IDs to
+nested RST paths. Update it with page moves, along with notebook Markdown links,
+bundle source copying and the recursive tutorial fixture in ``docs/conftest.py``.
+Figure replay uses those same paths. The archive retains the source directory
+structure so helpers work both in the checkout and in extracted bundles.
+Execute the companions sequentially and independently after changing their paths
+or splitting a workflow; schema validation alone cannot detect shared-state
+assumptions.

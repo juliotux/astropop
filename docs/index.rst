@@ -1,28 +1,27 @@
 Astropop documentation
 ======================
 
+Astropop provides astronomical image reduction, photometry, polarimetry,
+astrometry and catalog tools. Learn complete reductions in tutorials, or use
+the module chapters for explanations, simple examples and API reference.
+
 .. py:module:: astropop
 
-Astropop is a Python library for astronomical image reduction, with tools for
-photometry, polarimetry, astrometry, and catalog matching. Combine its functions
-in scripts tailored to your detector and instrument; the library does not choose
-a universal reduction recipe.
-
-Choose a reading path
----------------------
+Explore the documentation
+-------------------------
 
 .. toctree::
     :maxdepth: 1
 
-    installation
+    getting_started/index
     tutorials/index
-    how_to/index
-    concepts/index
-    reference/index
+    modules/index
     development/index
+    project/index
 
 .. raw:: html
 
+    <span id="choose-a-reading-path"></span>
     <span id="api-reference"></span>
     <span id="developer-documentation"></span>
     <span id="getting-started"></span>

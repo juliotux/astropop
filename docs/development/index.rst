@@ -8,7 +8,7 @@ Start a contribution
 --------------------
 
 1. Create an editable checkout with test and documentation extras using
-   :doc:`../installation`.
+   :doc:`../getting_started/installation`.
 2. Reproduce the issue with a small local input and run the affected test file::
 
        python -m pytest tests/test_image_imcombine.py --remote-data=none
@@ -29,7 +29,7 @@ Start a contribution
    commits with an area prefix such as ``image:`` or ``docs:``.
 
 A proposal or local plan is not a release note. Describe confirmed public changes
-in :doc:`migration` with their actual version boundary; keep speculative design
+in :doc:`../project/migration` with their actual version boundary; keep speculative design
 notes separate from user-facing promises.
 
 Contributor guides
@@ -40,7 +40,7 @@ Contributor guides
 
     ../dev/testing
     ../dev/internal_interfaces
-    ../tools/testing
+    testing_helpers
     documentation
-    migration
-    citation
+    typing
+    benchmarking

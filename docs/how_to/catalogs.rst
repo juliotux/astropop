@@ -3,4 +3,4 @@
 Choose and reuse catalog queries
 ================================
 
-This material is maintained in :doc:`../concepts/catalog_queries`.
+This material is maintained in :doc:`../modules/catalogs/selection`.

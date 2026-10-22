@@ -2,7 +2,7 @@ Development and validation
 ==========================
 
 Install an editable checkout with the ``test`` and ``docs`` extras as described
-in :doc:`../installation`. Run tests from the repository root so the checkout,
+in :doc:`../getting_started/installation`. Run tests from the repository root so the checkout,
 not another installed copy, provides the source under test.
 
 Offline tests and live catalogs
@@ -62,23 +62,10 @@ builds. Generated API pages and build output are ignored by Git.
 ``tox -e build_docs`` runs these checks on Python 3.14, including offline
 prompted examples, generated-notebook schema/syntax checks and retained HTML URLs.
 CI uses the same tox environment. Read the Docs selects Python 3.14 and fails
-on Sphinx warnings. The tox job also executes the nine offline notebook
+on Sphinx warnings. The tox job also executes the ten offline notebook
 companions sequentially and independently. External solver and online-query
 recipes are not executed by builds. See :doc:`../development/documentation` for example classification
 and hosted preview review.
 
 
-Performance measurements
-------------------------
-
-Iterate over science products and write each result before processing the next.
-For measurements, record input count, image shape, dtype, optional-array policy,
-method/rejection settings, cache mode, memory budget, software versions and
-hardware. Benchmark in a fresh process and report both elapsed time and peak
-resident memory, distinguishing baseline interpreter/import cost from the
-increment during combination. Sampling RSS can miss short peaks and includes
-mapped pages; allocator tracing alone may omit native allocations. Keep those
-measurements separate from numerical correctness checks.
-
-See :doc:`../concepts/configuration` for restoring global settings and configuring
-spawned workers; :doc:`../data_structures/cache` describes cache ownership.
+:doc:`../development/benchmarking` describes reproducible timing and memory measurements.

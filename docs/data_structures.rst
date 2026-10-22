@@ -1,12 +1,13 @@
 :orphan:
 
-***************
-Data structures
-***************
+Documentation moved
+===================
 
-.. toctree::
-    :maxdepth: 1
+Current chapter
+---------------
 
-    data_structures/framedata.rst
-    data_structures/physical.rst
-    data_structures/cache.rst
+Continue with :doc:`modules/framedata/index` for the maintained documentation.
+
+.. raw:: html
+
+    <span id="data-structures"></span>

@@ -6,7 +6,7 @@ Building a reduction workflow
 Workflow policies
 -----------------
 
-This material is maintained in :doc:`../concepts/reduction_workflows`.
+This material is maintained in :doc:`../tutorials/ccd_reduction/policies`.
 
 .. raw:: html
 

@@ -1,22 +1,13 @@
 :orphan:
 
-************************
-Basic reduction routines
-************************
+Documentation moved
+===================
 
-.. toctree::
-    :maxdepth: 1
+Current chapter
+---------------
 
-    how_to/image_arithmetic
-    how_to/image_combination
-    reduction/ccdprocessing.rst
-    reduction/photometry.rst
-    reduction/registering.rst
-    reduction/polarimetry.rst
-    reduction/astrometry.rst
-    reduction/pipelines.rst
+Continue with :doc:`modules/image/index` for the maintained documentation.
 
-.. toctree::
-    :hidden:
+.. raw:: html
 
-    reduction/imarith
+    <span id="basic-reduction-routines"></span>

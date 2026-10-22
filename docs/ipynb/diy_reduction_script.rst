@@ -3,11 +3,11 @@
 CCD reduction notebook
 ======================
 
-The reduction notebook is now the maintained :doc:`../tutorials/ccd_reduction`
+The reduction notebook is now the maintained :doc:`../tutorials/ccd_reduction/index`
 workflow. Follow its links for observing logs, master calibrations, science
 processing, registration, stacking and photometry.
 
-Use :doc:`../tutorials/photometric_calibration` for magnitude calibration.
+Use :doc:`../tutorials/photometry/photometric_calibration` for magnitude calibration.
 The old notebook ended before implementing that step; the tutorial now carries
 the workflow through to a saved calibrated table.
 
