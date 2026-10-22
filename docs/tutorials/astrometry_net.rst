@@ -147,3 +147,5 @@ All three interfaces return the same solution container. Choose one input
 path for a given reduction, then attach, validate and save its WCS as above.
 If solving fails, inspect the solver log, available indexes, source quality
 and position/scale constraints before changing the scientific model.
+Use the :ref:`solver failure-handling recipe <astrometry-failure-handling>`
+to distinguish an unsolved field from a failed process and retain diagnostics.

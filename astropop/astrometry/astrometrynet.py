@@ -420,12 +420,12 @@ def _parse_crpix(options: dict[str, _t.Any]) -> list[str | float]:
 
 
 class AstrometricSolution():
-    """Store astrometric solution.
+    """Store a WCS, its FITS header and optional matched-source table.
 
     Parameters
     ----------
     header
-        Astrometric solved fits header. WCS will be extrated from it.
+        FITS header from which the WCS is constructed.
     correspondences
         A table containing the matched correspondences between the (x, y)
         positions and the matched (ra, dec) catalog coordinates.
@@ -460,23 +460,22 @@ class AstrometricSolution():
 
     @property
     def correspondences(self) -> Table | None:
-        """Correspondece `~astropy.table.Table` between image stars and
-        ``astrometry.net`` index objects.
+        """Copy of the matched-source table, or None if none was supplied.
 
-        This property is not so smart. It just returns a copy of the table
-        passed as input. If this is an ``astrometry.net`` correspondences
-        table, it will have the following columns:
+        No matching or residual calculation is performed by this property.
+        An Astrometry.net correspondence table includes the following columns:
 
         - field_x and field_y
-            Image coordinates of each star in the solved image.
+            FITS one-based image coordinates of each detected star.
         - index_x and index_y
-            X and Y coordinates of matched stars in the index file used to
-            solve the image.
+            Image-plane coordinates of matched index stars.
         - field_ra and field_dec
-            Physical RA and DEC solved coordinates of each star in the image.
+            Solved right ascension and declination of the detected stars.
         - index_ra and index_dec
-            Physical RA and DEC of the matched star in the index file used to
-            solve the image.
+            Reference right ascension and declination of the matched index stars.
+
+        These matches contributed to solving the image. Assess accuracy using
+        independent reference stars as well as residuals of these matches.
         """
         return copy.deepcopy(self._corr)
 
@@ -530,7 +529,7 @@ class AstrometrySolver():
         output_dir: _PathLike | None=None,
         **kwargs: _t.Any,
     ) -> AstrometricSolution:
-        """Try to solve an image using the astrometry.net.
+        """Solve an image or source-list file using local Astrometry.net.
 
         Parameters
         ----------
@@ -543,7 +542,7 @@ class AstrometrySolver():
             available options. The most useful are:
             - center or ra and dec: field center
             - radius: maximum search radius
-            - scale: pixel scale in arcsec/pixel
+            - scale-low and scale-high: bounds in the specified scale-units
             - tweak-order: SIP order to fit
         output_dir
             Directory to output all solved files.
@@ -557,6 +556,17 @@ class AstrometrySolver():
             Astrometric solution class containing the solved header,
             the `~astropy.wcs.WCS` solved class and the correspondence table
             between the sources and the catalog.
+
+        Raises
+        ------
+        AstrometryNetUnsolvedField
+            The solver did not produce a solved-field marker.
+        subprocess.CalledProcessError
+            The external command failed with a nonzero exit code.
+        KeyError
+            An option is not supported by this wrapper.
+        ValueError
+            Mutually exclusive options were supplied.
         """
         if options is None:
             options = {}

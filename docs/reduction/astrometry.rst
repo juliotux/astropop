@@ -3,244 +3,198 @@
 Astrometry Calibration
 ======================
 
-Performing astrometric calibration is simple in |astropop|. It uses as backend the `astrometry.net`_ program.
+Astrometric calibration assigns sky coordinates to image pixels. Astropop wraps
+the local Astrometry.net ``solve-field`` executable and returns a WCS, its FITS
+header and a table of matched stars. It does not install the solver or reference
+indexes, and solving does not resample pixels or modify the input frame.
 
-In summary, `astrometry.net`_ searches a given field in the sky and computes a `World Coordinate System <https://fits.gsfc.nasa.gov/fits_wcs.html>`_ astrometric solution that can be used to relate a image coorditate ``(x, y)`` to physical sky coordinates, like ``(ra, dec)``.
-
-For a more detailed WCS usage, see |astropy| documentation of |WCS|.
+Use :doc:`../tutorials/astrometry_net` for an observed-image workflow and
+:doc:`../tutorials/astrometric_calibration` for an executable offline example
+with independent reference-star residuals. This page describes setup and the
+wrapper's input, output and failure contracts.
 
 .. plot:: _ext/task_figures.py plot_wcs
     :include-source: False
     :alt: Five labeled stars on a detector grid and the same stars mapped into east and north sky offsets by a rotated TAN WCS. East increases left in the sky panel.
-    :caption: Mapping the same asterism through a supplied TAN WCS with 0.34 arcsec per pixel and a rotated detector. The grid lines are the same detector rows and columns in both panels. Pixel coordinates are zero-based; sky offsets are relative to the WCS reference position, with east displayed to the left.
-
-This is a coordinate-transformation illustration with a known WCS, not the
-output of an Astrometry.net solve. Attaching a WCS changes coordinate mapping;
-it does not rotate or resample the image pixels. Use :doc:`../tutorials/astrometry_net`
-to solve an observed field, and :doc:`../tutorials/astrometric_calibration` to
-inspect independently checked coordinate residuals.
+    :caption: A known TAN WCS maps this asterism at 0.34 arcsec per pixel. Grid lines represent the same detector rows and columns in both panels. This illustrates coordinate transformation, not an Astrometry.net solve.
 
 About astrometry.net
 --------------------
 
-From `astrometry.net`_ readme: Automatic recognition of astronomical images; or standards-compliant astrometric metadata from data.
-
-So, `astrometry.net`_ creates robust |WCS| calibrations with almost none or no information about the field. It searches the solution around the sky using `index files <http://astrometry.net/doc/readme.html#getting-index-files>`_ and find optimal solutions using a very smart and fast algorithm based on 4-stars asterisms. Detailed explanation of `astrometry.net`_ is given in `Lang et al. (2010) <https://ui.adsabs.harvard.edu/abs/2010AJ....139.1782L/abstract>`_ atricle.
-
-This code can be very fast if enough information about the field is needed. But, slowly, it can find the solution completely blind. It also can run locally in a common laptop. However, to run locally it needs the index files that, some times, can use a large disk space.
-
-An online service is also available at `nova.astrometry.net <https://nova.astrometry.net>`_ and can be accessed by python using `astroquery.astrometry_net <https://astroquery.readthedocs.io/en/latest/astrometry_net/astrometry_net.html>`_ interface. This is recomended for who don't want to download the index files.
+Astrometry.net identifies stellar patterns against precomputed reference
+indexes. Approximate pointing and angular scale can constrain the search;
+incorrect constraints can exclude the correct solution. See the
+`upstream solver guide <https://astrometry.net/doc/readme.html>`_ for solving
+and index selection. Astropop's wrapper runs the local executable; it does not
+submit images to the hosted service.
 
 Installing astrometry.net
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-`astrometry.net`_ is a C written language that runs in command line. Currently, it only is supported on Linux and Mac. Windows is not supported by the developers. Due to this, its install is a bit tricky and, for most users, it may envolve building from the code. Detailed instructions about building and installing from the code or Linux distribution-specific installs can be found in `astrometry.net installing read-me <http://astrometry.net/doc/build.html#build>`_.
-
-For `Anaconda <https://anaconda.com>`_ users, the project `conda-forge <https://conda-forge.org/>`_, that is a collection of community maintaned packages, provide a simplier way to install `astrometry.net`_ inside conda environments. You just need to:
-
-.. code-block:: bash
-
-    conda install -c conda-forge astrometry
-
-or, withing a specific separated environment, use:
+Follow the `upstream installation instructions
+<https://astrometry.net/doc/build.html>`_ for your platform. Those instructions
+include running the Linux build in WSL on Windows. Astropop requires
+``solve-field`` version 0.95 or newer. Check the executable in the environment
+that will run Python:
 
 .. code-block:: bash
 
-    conda install -n <environment_name> -c conda-forge astrometry
+    solve-field --version
+    solve-field --help
+
+The default executable is discovered on PATH when the module is imported.
+Restart the Python session after changing PATH, or pass an explicit executable
+path through ``AstrometrySolver(solve_field=...)``. The helper functions instead
+name this argument ``command``. Installing the Python package alone does not
+satisfy this external dependency.
 
 Index files
 ^^^^^^^^^^^
 
-There are several sets of pre-built index files that can be used to run `astrometry.net`_. They are listed in `<http://data.astrometry.net/>`_. For more informations about how to download it, see `astrometry.net indexes read-me <http://astrometry.net/doc/readme.html#getting-index-files>`_.
-
-If you want to download the index files and do not change anything to get it running, the files must be put in ``$INSTALL_DIR/data`` folder. If you download it to another location, you must change the ``$INSTALL_DIR/etc/astrometry.cfg``, adding the ``add_path <location of the indexes>`` line. `astrometry.net`_ will search all the folders listed in the configuration to seek index files.
-
-In |astropop|, there is also an option in all the functions that compute astrometric solutions where you can set the index locations. See individual functions for more information.
+Choose indexes covering the field's sky region and angular scale using the
+`index selection instructions
+<https://astrometry.net/doc/readme.html#getting-index-files>`_. Configure their
+location in Astrometry.net, or supply ``'index-dir'`` in the wrapper's options.
+For example, ``{'index-dir': '/data/astrometry-indexes'}`` adds a local directory
+to the search. Its contents must be actual index files, not the science images.
+Configuration-file directives such as ``add_path`` are not wrapper option keys.
 
 Astropop wrapper usage
 ----------------------
 
-|astropop| do not implement the solution by itself, it just wraps around the `astrometry.net`_ command-line code.
-
-There is two ways to run the `astrometry.net`_ code inside |astropop|. Using a class-like interface and specific helper funcions. |astropop| will take care of prepare the inputs, monitor the process (with realtime logging output), read the outputs and organize them in a structure useful in Python. So you don't need to manually read the solution and deal with a ton of files produced by `astrometry.net`_.
-
-All of them run the code in a similar way, giving the result in the same format.
+Choose the input interface that matches your data. All solver interfaces return
+an |AstrometricSolution|. Assign its WCS to a frame explicitly before writing
+that frame if the saved product should contain the solution.
 
 Solution Format
 ^^^^^^^^^^^^^^^
 
-The `astrometry.net`_ outputs several files, including plots, but, considering the astrometric solution itself, just a few of them are really useful. So, we decided to store this solution in a |AstrometricSolution| container. It contains:
+The solution exposes three properties, each returned as a copy:
 
-- wcs: the |WCS| solved instance, created from the solved header.
-- header: the FITS |Header| generated by `astrometry.net`_ containing the solution.
-- correspondences: a |Table| containing the correspondences between stars seen in the field and the index file used to solve the astrometry by `astrometry.net`_.
+* ``wcs``: an Astropy |WCS| for pixel/sky transformations.
+* ``header``: the FITS header describing that WCS.
+* ``correspondences``: the solver's matched-source table, or ``None`` when a
+  container was constructed without a table.
 
-To manually build an |AstrometricSolution| container, you just need to pass the solved header and, optionally, the correspondences table.
+A solution can also hold an already known WCS. This example constructs a TAN
+mapping, without invoking a solver or claiming to fit observations::
 
-.. code-block:: python
+    >>> from astropy.wcs import WCS
+    >>> from astropop.astrometry import AstrometricSolution
+    >>> known = WCS(naxis=2)
+    >>> known.wcs.crpix = [32.5, 24.5]
+    >>> known.wcs.crval = [132.5, 11.83]
+    >>> known.wcs.cdelt = [-0.5 / 3600, 0.5 / 3600]
+    >>> known.wcs.ctype = ['RA---TAN', 'DEC--TAN']
+    >>> solution = AstrometricSolution(known.to_header())
+    >>> center = solution.wcs.pixel_to_world(31.5, 23.5)
+    >>> print(f'Center: {center.ra.deg:.3f}, {center.dec.deg:.3f} deg')
+    Center: 132.500, 11.830 deg
+    >>> print('Correspondences:', solution.correspondences)
+    Correspondences: None
 
-    from astropop.astrometry import AstrometricSolution
-    from astropy.utils.data import get_pkg_data_filename
-    from astropy.io import fits
-    fn = get_pkg_data_filename('data/j94f05bgq_flt.fits', package='astropy.wcs.tests')
-    header = fits.open(fn)[1].header
-    # Correspondeces is optional
-    solution = AstrometricSolution(header)
-    print(solution.wcs)
+FITS CRPIX values are one-based; ``pixel_to_world`` accepts zero-based pixels.
+See :doc:`../dev/pixel_convention` before mixing image detections, source-list
+files and WCS calls. A plausible WCS grid is not an accuracy test. Inspect
+residuals across the detector using independent reference stars; solver
+correspondences participated in the fit and are not an independent validation
+set. The offline tutorial shows both the residual vectors and summary values.
 
 Class-like interface
 ^^^^^^^^^^^^^^^^^^^^
 
-.. |solve_field| replace:: `~astropop.astrometry.AstrometrySolver.solve_field`
-
-The most general wrapper interface implemented is trough a class-like object. The |AstrometrySolver| class can be used to run the ``solve-field`` `astrometry.net`_ interface and return the results in a very pythonic way.
-
-Its job is to organize the inputs, options and configuration files, prepare and execute the ``solve-field`` command, check for solution and return a |AstrometricSolution| object if there is a solution.
-
-To run the command, you must create a instance of |AstrometrySolver| and execute it using |solve_field| method. The |solve_field| method has, as main input, a ``filename`` that can be solved by ``solve-field`` `astrometry.net`_ command. There are several types accepted, like FITS files, common images (like .png, .jpg), and XYLS tables. For more information see the `astrometry.net solving documentation <http://astrometry.net/doc/readme.html#solving>`_.
-
-.. code-block:: text
-
-    # get the sample image
-    In [2]: from astroquery.skyview import SkyView
-
-    In [3]: from astropy.coordinates import Angle
-
-    In [4]: filename = 'M20_test_file.fits'
-
-    In [5]: s = SkyView.get_images('M20', radius=Angle('60 arcmin'),
-       ...:                        pixels=2048, survey='DSS')
-
-    In [6]: s[0][0].writeto(filename)
-
-    # Run the solution
-    In [8]: from astropop.astrometry import AstrometrySolver
-
-    In [9]: solver = AstrometrySolver()
-
-    In [10]: solution = solver.solve_field(filename,
-       ....:                               options={'radius': 5.0})
-    Out[10]: log messages appear here
-
-    In [11]: solution.wcs
-    Out[11]:
-    WCS Keywords
-    Number of WCS axes: 2
-    CTYPE : 'RA---TAN-SIP'  'DEC--TAN-SIP'
-    CRVAL : 270.675222111  -22.9719850171
-    CRPIX : 1024.5  1024.5
-    CD1_1 CD1_2  : -0.000976549933759  1.01589915847e-08
-    CD2_1 CD2_2  : 7.53462015161e-08  0.00097650746147
-    NAXIS : 0  0
-
-    In [12]: solution.correspondences
-    Out[12]:
-    <Table length=253>
-         field_x            field_y       ...    FLUX   BACKGROUND
-          pixels             pixels       ...  unknown   unknown
-         float64            float64       ...  float32   float32
-    ------------------ ------------------ ... --------- ----------
-     45.64460754394531  1968.970458984375 ... 21437.375   1706.625
-    1065.0677490234375  1092.709228515625 ... 21186.135  2324.8652
-       705.81591796875 1440.1300048828125 ... 21338.012  1834.9883
-     1705.599365234375 158.44154357910156 ... 21252.873   1919.127
-     787.1795654296875  640.0123291015625 ... 21140.668   1873.332
-    1748.0179443359375  996.6746215820312 ... 20962.152  1870.8477
-                   ...                ... ...       ...        ...
-    1808.2672119140625 265.38702392578125 ... 12775.386  1874.6143
-    241.27725219726562  670.1822509765625 ... 13805.926  1879.0742
-    1636.2926025390625 113.85559844970703 ... 12501.093  1906.9072
-      616.659423828125   44.4092903137207 ... 13424.324  1877.6758
-     587.6741943359375   186.121826171875 ...  12751.13  1899.8701
-     2021.401611328125 267.57586669921875 ...  9990.552  1847.4482
-
-
-Using keyword arguments to be passed to |run_command| you can store ``stdout`` and ``stderr`` of ``solve-field`` in lists. Check the API from more details. Also, setting ``stdout_loglevel`` and ``stderr_loglevel`` you can print the live output of the code using `~logging` system.
-
-.. code-block:: text
-
-    In [2]: solver = AstrometrySolver()
-
-    In [3]: stdout = []
-
-    In [4]: stderr = []
-
-    In [5]: solution = solver.solve_field(filename, options={'radius': 5.0},
-       ...:                               stdout=stdout, stderr=stderr)
-
-    In [6]: print("\n".join(stdout))
-    Reading input file 1 of 1: "M20_test_file.fits"...
-    Found an existing WCS header, will try to verify it.
-    Extracting sources...
-    simplexy: found 13193 sources.
-    Solving...
-    Reading file "/tmp/M20_test_file_6kk3quwg_astrometry.net/M20_test_file.axy"...
-    Verifying WCS using indices with quads of size [6, 60] arcmin
-    Verifying WCS with index 1 of 1 (/data/index-4107.fits)
-    Verifying WCS of field 1.
-      log-odds ratio 536.02 (6.17207e+232), 66 match, 0 conflict, 93 distractors, 68 index.
-      RA,Dec = (270.675,-22.9719), pixel scale 1.75781 arcsec/pix.
-      Hit/miss:   Hit/miss: +++++++++++++++++++++++++-++++-+++++++-+--+--+--++++--+++-+-+--+++-+++--+--------++-+--+-----++-----
-     --> log-odds 536.02
-    Got 1 solutions.
-    Field 1 solved: writing to file /tmp/M20_test_file_6kk3quwg_astrometry.net/M20_test_file.solved to indicate this.
-    Field: M20_test_file.fits
-    Field center: (RA,Dec) = (270.675235, -22.972045) deg.
-    Field center: (RA H:M:S, Dec D:M:S) = (18:02:42.056, -22:58:19.363).
-    Field size: 59.9993 x 59.9921 arcminutes
-    Field rotation angle: up is 0.00276933 degrees E of N
-    Field parity: pos
-    Creating new FITS file "/tmp/M20_test_file_6kk3quwg_astrometry.net/M20_test_file.new"...
-
-Set reusable command-line options through ``defaults`` and override them in
-individual calls through ``options``. Dictionary keys omit leading dashes;
-flag-only options use ``None`` values:
+Use |AstrometrySolver| for repeated calls with shared defaults. Per-call
+``options`` override ``defaults``; names omit leading dashes, and flag-only
+options use ``None``. The following is an external-command recipe requiring
+your own calibrated FITS image and installed indexes:
 
 .. code-block:: python
 
+    from astropop.astrometry import AstrometrySolver
+
     solver = AstrometrySolver(defaults={'cpulimit': 60})
-    solution = solver.solve_field(filename,
-                                  options={'scale-low': 0.2,
-                                           'scale-high': 0.4,
-                                           'scale-units': 'arcsecperpix'})
+    solution = solver.solve_field(
+        'reduced/science.fits',
+        options={'ra': 132.5, 'dec': 11.83, 'radius': 1.0,
+                 'scale-low': 0.4, 'scale-high': 0.6,
+                 'scale-units': 'arcsecperpix', 'crpix-center': None})
+    print('Matched stars:', len(solution.correspondences))
 
-The current constructor accepts ``solve_field``, ``defaults``, and
-``keep_files``. It has no ``config`` property or ``config_file`` constructor
-argument. Configure local index paths through Astrometry.net itself before
-running the wrapper; arbitrary astrometry.cfg entries are not translated into
-per-call configuration files.
+Numbers supplied for ``'ra'``, ``'dec'`` and ``'radius'`` are in degrees.
+Unitless sexagesimal RA strings are interpreted as hour angles; declination
+strings use degrees. Use explicit units to avoid ambiguous numeric strings:
+``'ra': '08h50m00s'`` and ``'dec': '+11d49m48s'`` describe the same center as
+above. A ``'center'`` SkyCoord is another alternative, but cannot be combined
+with ``'ra'`` or ``'dec'``. Both RA and Dec must be supplied to constrain the
+center; specifying only one leaves the center search blind.
 
-Additional Python inputs, like |ImageHDU|, |FrameData|, and ``(x, y, flux)`` arrays are supported trough hepler functions, described in the section bellow.
+The default temporary solver directory is removed after success and handled
+solver failures. ``keep_files=True`` retains it for diagnosis. An explicit
+``output_dir`` is retained regardless of that setting. Use a dedicated output
+directory: defaults include ``'overwrite': None`` for solver products.
+There is no ``config`` property or ``config_file`` constructor parameter.
+
+.. _astrometry-failure-handling:
+
+Handle failures and retain useful logs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Capture output without embedding a long solver transcript in the application.
+The specialized unsolved-field exception subclasses ``CalledProcessError``, so
+catch it first:
+
+.. code-block:: python
+
+    from subprocess import CalledProcessError
+    from astropop.astrometry.astrometrynet import AstrometryNetUnsolvedField
+
+    stdout, stderr = [], []
+    try:
+        solver = AstrometrySolver(keep_files=True)
+        solution = solver.solve_field('reduced/science.fits',
+                                      options={'cpulimit': 60},
+                                      stdout=stdout, stderr=stderr)
+    except FileNotFoundError as error:
+        print('Check the executable and input path:', error)
+    except AstrometryNetUnsolvedField as error:
+        print('No solution:', error)
+        print('\n'.join(stdout[-10:] + stderr[-10:]))
+    except CalledProcessError as error:
+        print('Solver process failed with exit code:', error.returncode)
+        print('\n'.join(stderr[-10:]))
+    else:
+        print('Solved axes:', solution.wcs.world_axis_physical_types)
+
+An unsupported option raises ``KeyError``; conflicting options or an unsupported
+solver version raise ``ValueError``. Correct these configuration errors before
+retrying. For an unsolved field, inspect index coverage, source quality and
+position/scale limits. Preserve the input and diagnostic products instead of
+silently treating an unsolved image as calibrated. This recipe is not executed
+by the offline documentation tests.
 
 Type-specific helper functions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Helper functions to handle some common Python formats are provided to make easy solving the fields directly from these objects, without manual save of files.
+The convenience functions prepare temporary input files and run the same solver:
 
-The helpers are:
+* `~astropop.astrometry.solve_astrometry_image`: an image filename.
+* `~astropop.astrometry.solve_astrometry_framedata`: a |FrameData| object.
+* `~astropop.astrometry.solve_astrometry_hdu`: a FITS image HDU.
+* `~astropop.astrometry.solve_astrometry_xy`: source ``x``, ``y`` and ``flux``
+  arrays plus image ``width`` and ``height``.
 
-- `~astropop.astrometry.solve_astrometry_xy`: for solving lists of sources with image coordinates and fluxes extracted outside `astrometry.net`_.
-- `~astropop.astrometry.solve_astrometry_framedata`: for solving |FrameData| objects.
-- `~astropop.astrometry.solve_astrometry_image`: image file saved on disk.
-- `~astropop.astrometry.solve_astrometry_hdu`: for solving |ImageHDU| objects.
-
-Each function has its own specific arguments, but all of them have the same optional arguments. They are:
-
-- ``command``: used to set the ``solve-field`` CLI path.
-- ``options``: custom options used in the run.
-- Any ``**kwargs`` keyword argument: passed to |run_command| function, like ``stdout``, ``stderr`` and log levels.
+Each accepts ``options``, an optional executable ``command``, and keyword
+arguments forwarded to |run_command|, including output lists and logging levels.
+For source lists, supply FITS one-based coordinates: add one to Astropop's
+zero-based detection coordinates exactly once. Image shape is
+``(height, width)``. See :doc:`../tutorials/astrometry_net` for a complete example
+of each input path and attaching the resulting WCS.
 
 Supported ``solve-field`` options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The |astropop| `astrometry.net`_ wrapper don't support all ``solve-field`` command-line interface options.
-
-Use only the supported command-line option names below. Configuration-file
-entries are not interchangeable with command-line options.
-
-Print the supported option names and descriptions with
-`~astropop.astrometry.AstrometrySolver.print_options_help` or
-`~astropop.astrometry.astrometrynet.get_options_help`:
+Only supported wrapper keys are accepted. Inspect their descriptions locally
+without invoking a solver:
 
 .. currentmodule:: None
 
@@ -254,6 +208,10 @@ Print the supported option names and descriptions with
     from astropop.astrometry.astrometrynet import get_options_help
     print(get_options_help())
 
+The same help is available through
+`~astropop.astrometry.AstrometrySolver.print_options_help`. Configuration-file
+entries and arbitrary ``solve-field`` options are not automatically accepted.
+
 Astrometry API
 --------------
 
@@ -261,6 +219,7 @@ See :doc:`../reference/astrometry` for the API reference.
 
 .. raw:: html
 
+    <span id="id1"></span>
     <span id="astropop-astrometry-package"></span>
     <span id="astropop.astrometry.astrometrynet.SolveFieldCommand"></span>
     <span id="astropop.astrometry.astrometrynet.SolveFieldCommand.run"></span>
