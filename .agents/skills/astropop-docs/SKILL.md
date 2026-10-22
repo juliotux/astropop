@@ -7,6 +7,41 @@ description: Write or repair Astropop reStructuredText guides, NumPy-style API d
 
 Read the implementation, nearby tests, and the relevant guide under `docs/`. Keep constructor APIs distinct from conversion helpers and describe actual defaults, mutation behavior, units, masks, and uncertainty semantics.
 
+## Module guides and tutorials serve different readers
+
+- **Module documentation must be clear, descriptive and human-readable about
+  every function and class the module offers.** Explain what each does, when
+  to use it, how to construct/call it and how to interpret its result. Include
+  relevant inputs, units, defaults, choices, outputs and scientific limitations
+  in connected prose. An API name list or generated signatures cannot replace
+  these explanations.
+- **Every module guide must contain simple examples.** Demonstrate the basic
+  construction/use of each class and the module's functions; related functions
+  may share a focused example if their individual use and results remain clear.
+  Explain the examples before the code and show useful outputs afterward.
+  Include distinct supported input forms when they teach different behavior.
+  For SourcesCatalog, retain separate examples for an astrometry-only catalog,
+  plain multi-band magnitudes and multi-band QFloat magnitudes with errors.
+- **Preserve explanatory content while editing.** Before removing or merging an
+  example, identify the behavior it teaches and retain that coverage in the
+  revised page. If an extended example moves to another page, retain the basic
+  module example locally and link to the extended treatment. Shorter text is not an
+  improvement if it replaces a useful explanation/example with a terse summary.
+  Moving API declarations to reference pages must not strip module guides of
+  their explanatory prose or examples.
+- **Tutorials must complete more complex tasks using several APIs together.**
+  Include preparation, the full processing sequence, inspection and a usable
+  result. Tutorials complement simple module examples; do not move all examples
+  out of module guides or substitute disconnected API demonstrations for a
+  complete tutorial workflow.
+- **Add technical detail and references where relevant.** Explain algorithms,
+  equations, estimator assumptions and conventions at the point they help the
+  reader understand the operation. Prefer original articles, scientific
+  references and technical descriptions from widely used software. Verify that
+  each source supports the specific claim, link/cite it near that explanation,
+  and distinguish the implemented Astropop behavior from the source's method.
+  A bibliography or an external link alone does not explain our API.
+
 ## Structure and contracts
 
 Annotations are the source of parameter and return types. For annotated

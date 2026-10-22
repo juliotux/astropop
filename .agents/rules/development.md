@@ -16,6 +16,20 @@
 - Test interpreter shutdown in a child process. Never call `atexit._run_exitfuncs()` inside pytest: it can stop coverage measurement and execute unrelated handlers.
 - Keep helpers inside their owning test classes where practical. Put genuinely shared fixtures in `conftest.py`; avoid one-off test files when an existing module fits.
 
+## Documentation
+
+- Module guides must give clear, descriptive, human-readable explanations of
+  the module's functions and classes, with simple examples and useful outputs.
+  Preserve distinct construction/input examples when reorganizing or shortening
+  text; do not replace their teaching content with brief descriptions or API lists.
+- Tutorials must combine several APIs to complete a more complex task from
+  inputs through an inspected result. They complement module-level examples.
+- Include relevant technical details, algorithm assumptions and references to
+  original articles, scientific literature or technical documentation of widely
+  used software. Tie references to the actual implemented behavior.
+- Follow [the documentation skill](../skills/astropop-docs/SKILL.md) for the full
+  writing and validation requirements when changing documentation.
+
 ## Validation
 
 - Treat `pyproject.toml`, `tox.ini`, and `.github/workflows/` in this checkout as authoritative. Do not assume a test option or feature from another branch exists here.

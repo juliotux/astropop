@@ -24,6 +24,36 @@ After building, verify the retained URLs and anchors::
 This checks local built HTML. It does not prove that a hosting service redirects
 removed URLs, or that an external website still resolves.
 
+Module explanations and complete tutorials
+------------------------------------------
+
+Module guides must explain their functions and classes in clear, descriptive,
+human-readable prose. Describe what an operation does, when it is useful, how
+to supply its inputs and how to interpret the result. Explain important options,
+units and scientific assumptions beside the corresponding operation. Generated
+API declarations provide exact signatures; they complement these explanations.
+
+Every module guide must include simple examples of its functions and classes.
+Introduce the purpose of each example and show meaningful output. Keep separate
+examples for input forms that teach different behavior: for SourcesCatalog,
+creating an astrometric catalog, supplying plain magnitudes in several bands,
+and supplying QFloat magnitudes with uncertainties are all useful cases.
+Related functions can share an example when each function's use remains clear.
+When editing or reorganizing, preserve the explanations and behaviors those
+examples teach. Removing repetition must not remove that instructional coverage.
+
+Tutorials address more complex, complete tasks that combine several APIs. Take
+the reader from prepared inputs through processing and inspection to a usable
+result. Module examples remain available for learning individual operations;
+link them from the integrated workflow where useful.
+
+Add technical details and references when they explain an algorithm, estimator,
+convention or limitation. Prefer original articles, scientific literature and
+technical descriptions from widely used software. Connect each citation to the
+claim it supports, explain the relevant method in the page itself, and state
+how Astropop's implementation follows or differs from it. A reference list
+alone is not a description of the implemented API.
+
 Example execution policy
 -------------------------
 
