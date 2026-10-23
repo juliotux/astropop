@@ -26,7 +26,6 @@ class TestCombinerMemory:
         # Imports and caller-owned frames are prepared before measurement;
         # loading internal copies, combining, errors and cleanup are measured.
         script = textwrap.dedent('''
-            import gc
             import json
             import logging
             import sys
@@ -47,7 +46,6 @@ class TestCombinerMemory:
             frames[0].mask_pixels((0, 0))
             frames[-1].mask_pixels((0, 0))
             cube_bytes = sum(frame.data.nbytes for frame in frames)
-            gc.collect()
             tracemalloc.start()
             # Fail explicitly if NumPy allocations are invisible to tracing.
             probe = np.empty(2**20, dtype=np.uint8)
