@@ -136,15 +136,10 @@ processing, ``hdus`` for both header and data, and ``framedata`` when reduction
 functions need units and optional arrays. These are read interfaces; changing
 a yielded object does not automatically write the source FITS file.
 
-Release the group before removing its database file. Collecting reference cycles
-also supports older DBasTable versions, whose SQL trace callback can keep the
-SQLite connection open on Windows::
-
-    >>> import gc
+Release the group before removing its database file so its SQLite connection
+is closed, including on Windows::
 
     >>> del small
-    >>> # Older DBasTable versions keep an internal SQL logging reference cycle.
-    >>> _ = gc.collect()
 
 .. doctest::
     :hide:

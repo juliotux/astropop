@@ -169,8 +169,5 @@ Continue with :doc:`master_bias`.
 .. doctest::
     :hide:
 
-    >>> import gc
-
     >>> del group, science_group
-    >>> _ = gc.collect()
     >>> _temporary.cleanup()

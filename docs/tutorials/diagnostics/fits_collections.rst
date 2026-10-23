@@ -122,14 +122,10 @@ measurements or output paths needed downstream, not every FrameData::
     >>> print('sorted(means):', sorted(means))
     sorted(means): [0.0, 1.0, 2.0]
 
-Release the groups and collect reference cycles before deleting the temporary
-directory. This finalizes dbastable's SQLite connections, which can otherwise
-keep the database file open on Windows::
-
-    >>> import gc
+Release the groups before deleting the temporary directory so their SQLite
+connections no longer hold the database files open on Windows::
 
     >>> del frame, group, reopened, red
-    >>> _ = gc.collect()
     >>> temporary.cleanup()
 
 Do not wrap the iterator in ``list`` when the purpose is to bound live image
