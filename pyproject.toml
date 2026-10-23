@@ -30,7 +30,7 @@ keywords = [
     "astrometry"
 ]
 dependencies = [
-    "astropy>=6.1.4",
+    "astropy>=7.0",
     "numpy>=2.0",
     "scipy>=1.13",
     "astroquery",

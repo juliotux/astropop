@@ -10,7 +10,7 @@ The main dependencies of |astropop| are:
 
 - Python 3.11 or newer
 - NumPy 2.0 or newer
-- Astropy 6.1.4 or newer
+- Astropy 7.0 or newer
 - SciPy 1.13 or newer
 - Photutils 3.0 or newer
 
