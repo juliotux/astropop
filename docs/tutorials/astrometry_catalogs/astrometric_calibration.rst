@@ -144,9 +144,12 @@ errors and masks in the FITS interchange::
     >>> image.write(output / 'astrometric.fits', overwrite=True)
     >>> matched = Table({'id': standards['id'][usable], 'source_row': nearest[usable],
     ...                  'residual_arcsec': radial[usable], 'used_in_fit': fit_rows[usable]})
+
+    >>> # ECSV metadata needs native Python strings rather than NumPy string scalars.
+    >>> fit_reference_ids = standards['id'][fit_rows].tolist()
     >>> matched.meta.update({'input_set': inputs.name, 'image': 'combined.fits',
     ...                      'measurements': 'instrumental.ecsv', 'projection': 'TAN',
-    ...                      'association_radius_pixels': 8, 'fit_reference_ids': list(standards['id'][fit_rows])})
+    ...                      'association_radius_pixels': 8, 'fit_reference_ids': fit_reference_ids})
     >>> matched.write(output / 'astrometric_matches.ecsv', overwrite=True)
 
     >>> print('Saved: astrometric.fits and astrometric_matches.ecsv')
